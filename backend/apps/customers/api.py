@@ -23,6 +23,8 @@ from apps.customers.schemas import (
 )
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
+from apps.audit.service import log_action, log_data_export
+from apps.audit.models import AuditAction
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -52,6 +54,14 @@ def list_customers(
 
     customers = queryset.order_by("-created_at")[offset : offset + limit]
     total = queryset.count()
+    
+    log_action(
+        request=request,
+        action=AuditAction.READ,
+        resource_type="customer_list",
+        details={"search": search, "limit": limit, "offset": offset, "returned_count": len(customers)}
+    )
+
     return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
 
 
@@ -239,6 +249,18 @@ def import_customers(request, file: UploadedFile = File(...)):
     }
     if errors:
         response_payload["errors"] = errors[:20]
+        
+    log_action(
+        request=request,
+        action=AuditAction.IMPORT,
+        resource_type="customer_database",
+        details={
+            "imported": len(customers_to_create),
+            "skipped_duplicate": skipped_duplicate,
+            "skipped_invalid": skipped_invalid
+        }
+    )
+    
     return response_payload
 
 
@@ -344,6 +366,15 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
 def get_customer(request, customer_id: str):
     """Customer profile with pass and transaction history."""
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
+    
+    log_action(
+        request=request,
+        action=AuditAction.READ,
+        resource_type="customer",
+        resource_id=str(customer.id),
+        details={"email": customer.email}
+    )
+    
     return CustomerOut.from_model(customer)
 
 
@@ -382,6 +413,15 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
         update_fields.append("is_active")
     if update_fields:
         customer.save(update_fields=update_fields + ["updated_at"])
+        
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="customer",
+            resource_id=str(customer.id),
+            details={"updated_fields": update_fields}
+        )
+        
     return CustomerOut.from_model(customer)
 
 
@@ -393,6 +433,15 @@ def delete_customer(request, customer_id: str):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
+    
+    log_action(
+        request=request,
+        action=AuditAction.DELETE,
+        resource_type="customer",
+        resource_id=str(customer.id),
+        details={"email": customer.email}
+    )
+    
     customer.delete()
     return {"success": True, "message": "Cliente eliminado permanentemente"}
 
@@ -458,3 +507,36 @@ def enroll_customer(request, customer_id: str, card_id: str):
         )
 
     return CustomerPassOut.from_model(pass_obj)
+
+
+import csv
+from django.http import HttpResponse
+
+@router.get("/export/", auth=jwt_auth, summary="Exportar clientes a CSV")
+def export_customers(request):
+    """Export all customer data to CSV. OWNER only. Forensic tracking enabled."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+        
+    customers = Customer.objects.filter(tenant=request.tenant).order_by("created_at")
+    
+    # LOPDP Forensic Audit Log
+    log_data_export(
+        request=request,
+        resource_type="customer_database",
+        record_count=customers.count()
+    )
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="clientes_loyallia.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(["ID", "Email", "Nombre", "Apellido", "Telefono", "Genero", "Fecha Nacimiento", "Gasto Total", "Visitas Totales", "Notas", "Registrado El"])
+    
+    for c in customers:
+        writer.writerow([
+            str(c.id), c.email, c.first_name, c.last_name, c.phone, c.gender,
+            c.date_of_birth, c.total_spent, c.total_visits, c.notes, c.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        ])
+        
+    return response
