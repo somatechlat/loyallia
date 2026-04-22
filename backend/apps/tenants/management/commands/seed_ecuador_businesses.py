@@ -3,16 +3,16 @@ Loyallia — Seed Ecuador Businesses
 REAL Ecuadorian business data with verified RUCs (from SRI/Supercias),
 REAL GPS coordinates (from Google Maps/Waze), and production-grade demo data.
 """
-from decimal import Decimal
 from datetime import timedelta
+from decimal import Decimal
+
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from django.db import transaction
+from django.utils import timezone
 
-from apps.tenants.models import Tenant, Location
 from apps.authentication.models import User, UserRole
-from apps.billing.models import SubscriptionPlan, Subscription, SubscriptionStatus, Invoice
-
+from apps.billing.models import Invoice, Subscription, SubscriptionPlan, SubscriptionStatus
+from apps.tenants.models import Location, Tenant
 
 # =============================================================================
 # SUBSCRIPTION PLANS (Ecuador-ready pricing with IVA)
@@ -433,7 +433,7 @@ class Command(BaseCommand):
                     },
                 )
             loc_count = len(biz.get("locations", []))
-            self.stdout.write(f"    Locations: {loc_count} ({', '.join(set(l['city'] for l in biz.get('locations', [])))})")
+            self.stdout.write(f"    Locations: {loc_count} ({', '.join({loc['city'] for loc in biz.get('locations', [])})})")
 
             # Create Subscription + Demo Invoices
             if plan_obj and not Subscription.objects.filter(tenant=tenant).exists():

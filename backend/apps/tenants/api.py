@@ -7,15 +7,14 @@ All endpoints require JWT auth with tenant scope.
 """
 import logging
 import uuid
-from typing import Optional
 
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
-from apps.tenants.models import Tenant, Location
+from apps.tenants.models import Location, Tenant
 from common.messages import get_message
-from common.permissions import jwt_auth, is_owner, is_manager_or_owner
+from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 
 logger = logging.getLogger(__name__)
 
@@ -63,14 +62,14 @@ class TenantOut(BaseModel):
 
 
 class TenantUpdateIn(BaseModel):
-    name: Optional[str] = None
-    logo_url: Optional[str] = None
-    primary_color: Optional[str] = None
-    secondary_color: Optional[str] = None
-    phone: Optional[str] = None
-    website: Optional[str] = None
-    address: Optional[str] = None
-    timezone: Optional[str] = None
+    name: str | None = None
+    logo_url: str | None = None
+    primary_color: str | None = None
+    secondary_color: str | None = None
+    phone: str | None = None
+    website: str | None = None
+    address: str | None = None
+    timezone: str | None = None
 
 
 class LocationOut(BaseModel):
@@ -79,8 +78,8 @@ class LocationOut(BaseModel):
     address: str
     city: str
     country: str
-    latitude: Optional[float]
-    longitude: Optional[float]
+    latitude: float | None
+    longitude: float | None
     phone: str
     is_active: bool
     is_primary: bool
@@ -106,21 +105,21 @@ class LocationCreateIn(BaseModel):
     address: str = ""
     city: str = ""
     country: str = "EC"
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
     phone: str = ""
     is_primary: bool = False
 
 
 class LocationUpdateIn(BaseModel):
-    name: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    phone: Optional[str] = None
-    is_active: Optional[bool] = None
-    is_primary: Optional[bool] = None
+    name: str | None = None
+    address: str | None = None
+    city: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    phone: str | None = None
+    is_active: bool | None = None
+    is_primary: bool | None = None
 
 
 class MessageOut(BaseModel):
@@ -369,8 +368,9 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    from apps.authentication.models import User, UserRole
     import secrets
+
+    from apps.authentication.models import User, UserRole
 
     if payload.role not in (UserRole.MANAGER, UserRole.STAFF):
         raise HttpError(400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF"))
@@ -396,8 +396,8 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     # Send welcome email with credentials
     if payload.send_email:
         try:
-            from django.core.mail import EmailMultiAlternatives
             from django.conf import settings as django_settings
+            from django.core.mail import EmailMultiAlternatives
 
             role_labels = {
                 "MANAGER": "Gerente",
@@ -487,8 +487,8 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
 
 class TeamMemberUpdateIn(BaseModel):
-    role: Optional[str] = None
-    is_active: Optional[bool] = None
+    role: str | None = None
+    is_active: bool | None = None
 
 
 @router.patch(

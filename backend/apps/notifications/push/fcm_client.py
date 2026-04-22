@@ -13,7 +13,6 @@ Dependencies: google-auth, google-auth-httplib2 (already in requirements.txt)
 import json
 import logging
 import os
-from typing import Optional
 
 import httpx
 from django.conf import settings
@@ -24,7 +23,7 @@ FCM_API_BASE = "https://fcm.googleapis.com/v1/projects/{project_id}/messages:sen
 FCM_SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
 
 
-def _get_access_token() -> tuple[Optional[str], Optional[str]]:
+def _get_access_token() -> tuple[str | None, str | None]:
     """
     Obtain a short-lived OAuth2 access token from the Firebase service account JSON.
 
@@ -41,8 +40,8 @@ def _get_access_token() -> tuple[Optional[str], Optional[str]]:
         return None, None
 
     try:
-        from google.oauth2 import service_account
         from google.auth.transport.requests import Request as GoogleRequest
+        from google.oauth2 import service_account
 
         credentials = service_account.Credentials.from_service_account_file(
             credential_file,
@@ -67,8 +66,8 @@ def send_fcm_message(
     fcm_token: str,
     title: str,
     body: str,
-    data: Optional[dict] = None,
-    image_url: Optional[str] = None,
+    data: dict | None = None,
+    image_url: str | None = None,
 ) -> bool:
     """
     Send a push notification to a single Android device via FCM HTTP v1 API.

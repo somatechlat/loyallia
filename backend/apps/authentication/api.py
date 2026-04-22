@@ -8,8 +8,7 @@ All auth via JWTAuth — Rule #8.
 """
 import logging
 import secrets
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -18,7 +17,7 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel, EmailStr, field_validator
 
-from apps.authentication.models import User, UserRole, RefreshToken
+from apps.authentication.models import RefreshToken, User, UserRole
 from apps.authentication.tokens import (
     create_access_token,
     create_refresh_token_string,
@@ -26,7 +25,7 @@ from apps.authentication.tokens import (
 )
 from apps.tenants.models import Tenant
 from common.messages import get_message
-from common.permissions import jwt_auth, is_owner, is_super_admin
+from common.permissions import is_owner, jwt_auth
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +76,7 @@ class TokenOut(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     user_id: str
-    tenant_id: Optional[str]
+    tenant_id: str | None
     role: str
 
 
@@ -473,8 +472,8 @@ def me(request):
 
 
 class ProfileUpdateIn(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
 
 
 @router.put("/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil")
@@ -532,7 +531,7 @@ def invite_user(request, payload: InviteIn):
             # User exists in another tenant — cannot cross-invite
             raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
-        invited_user = User.objects.create_user(
+        User.objects.create_user(
             email=payload.email,
             password=secrets.token_urlsafe(16),  # Random — user must set via invitation link
             first_name=payload.first_name.strip(),
@@ -639,8 +638,8 @@ def forgot_password(request, payload: ForgotPasswordIn):
     Always returns success to prevent email enumeration.
     """
     from django.contrib.auth.tokens import default_token_generator
-    from django.utils.http import urlsafe_base64_encode
     from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
 
     try:
         user = User.objects.get(email=payload.email, is_active=True)

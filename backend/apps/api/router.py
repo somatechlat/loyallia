@@ -3,9 +3,9 @@ Loyallia — API Router (Django Ninja)
 Central registration of all sub-routers.
 Mounted at /api/v1/ in loyallia/urls.py
 """
-from ninja import NinjaAPI
-from ninja.errors import ValidationError, HttpError
 from django.http import HttpRequest, JsonResponse
+from ninja import NinjaAPI
+from ninja.errors import HttpError, ValidationError
 
 api = NinjaAPI(
     title="Loyallia API",
@@ -25,18 +25,19 @@ def health_check(request: HttpRequest):
 
 
 # --- Mount all app routers ---
+from apps.analytics.api import router as analytics_router
+from apps.api.upload_api import router as upload_router
 from apps.authentication.api import router as auth_router
-from apps.tenants.api import router as tenants_router
+from apps.automation.api import router as automation_router
+from apps.billing.api import router as billing_router
 from apps.cards.api import router as cards_router
 from apps.customers.api import router as customers_router
-from apps.transactions.api import router as transactions_router, scanner_router
-from apps.notifications.api import router as notifications_router
-from apps.automation.api import router as automation_router
-from apps.analytics.api import router as analytics_router
-from apps.billing.api import router as billing_router
-from apps.tenants.super_admin_api import router as super_admin_router
 from apps.customers.wallet_api import router as wallet_router
-from apps.api.upload_api import router as upload_router
+from apps.notifications.api import router as notifications_router
+from apps.tenants.api import router as tenants_router
+from apps.tenants.super_admin_api import router as super_admin_router
+from apps.transactions.api import router as transactions_router
+from apps.transactions.api import scanner_router
 
 api.add_router("/auth/", auth_router, tags=["Authentication"])
 api.add_router("/tenants/", tenants_router, tags=["Tenants"])

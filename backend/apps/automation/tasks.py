@@ -2,6 +2,7 @@
 Loyallia — Automation Celery Tasks
 """
 import logging
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,9 @@ def evaluate_trigger_for_customer(
     Called asynchronously via engine.fire_trigger_async().
     """
     import uuid
-    from apps.customers.models import Customer
+
     from apps.automation.engine import fire_trigger
+    from apps.customers.models import Customer
 
     try:
         customer = Customer.objects.select_related("tenant").get(
@@ -58,7 +60,7 @@ def evaluate_scheduled_automations() -> dict:
     Daily Celery Beat task: evaluate all SCHEDULED_TIME automations.
     Runs all active scheduled automations against their target customer segments.
     """
-    from apps.automation.models import Automation, AutomationTrigger, AutomationExecution
+    from apps.automation.models import Automation, AutomationExecution, AutomationTrigger
     from apps.customers.models import Customer
 
     scheduled = Automation.objects.filter(
@@ -106,9 +108,11 @@ def evaluate_inactive_triggers(days_threshold: int = 30) -> dict:
     visited in `days_threshold` days.
     """
     from datetime import timedelta
+
     from django.utils import timezone
-    from apps.customers.models import Customer
+
     from apps.automation.engine import fire_trigger
+    from apps.customers.models import Customer
 
     cutoff = timezone.now() - timedelta(days=days_threshold)
     inactive = Customer.objects.filter(

@@ -6,27 +6,24 @@ All tenant operations with full audit logging.
 All strings via get_message() — Rule #11.
 """
 import logging
-import uuid
 import secrets
+import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Optional, List
 
 from django.db import transaction
-from django.db.models import Count, Sum, Q
+from django.db.models import Sum
 from django.utils import timezone as dj_timezone
 from django.utils.text import slugify
 from ninja import Router
 from ninja.errors import HttpError
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 
-from apps.tenants.models import Tenant, Location, Plan, IndustryType, EcuadorProvince
 from apps.authentication.models import User, UserRole
-from apps.billing.models import (
-    SubscriptionPlan, Subscription, SubscriptionStatus, Invoice
-)
+from apps.billing.models import Invoice, Subscription, SubscriptionPlan, SubscriptionStatus
+from apps.tenants.models import Location, Plan, Tenant
 from common.messages import get_message
-from common.permissions import jwt_auth, is_super_admin
+from common.permissions import is_super_admin, jwt_auth
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +86,8 @@ class LocationIn(BaseModel):
     name: str
     address: str = ""
     city: str = ""
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
     is_primary: bool = False
 
 
@@ -99,8 +96,8 @@ class LocationOut(BaseModel):
     name: str
     address: str
     city: str
-    latitude: Optional[float]
-    longitude: Optional[float]
+    latitude: float | None
+    longitude: float | None
     is_primary: bool
     is_active: bool
 
@@ -139,7 +136,7 @@ class CreateTenantWizardIn(BaseModel):
     owner_last_name: str
     owner_cedula: str = ""
     # Step 3 — Locations
-    locations: List[LocationIn] = []
+    locations: list[LocationIn] = []
     # Step 4 — Plan
     plan_slug: str = "starter"
     billing_cycle: str = "monthly"
@@ -243,34 +240,34 @@ class PlanCreateIn(BaseModel):
 
 
 class PlanUpdateIn(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    price_monthly: Optional[float] = None
-    price_annual: Optional[float] = None
-    max_locations: Optional[int] = None
-    max_users: Optional[int] = None
-    max_customers: Optional[int] = None
-    max_programs: Optional[int] = None
-    features: Optional[list] = None
-    is_featured: Optional[bool] = None
-    is_active: Optional[bool] = None
-    trial_days: Optional[int] = None
-    sort_order: Optional[int] = None
+    name: str | None = None
+    description: str | None = None
+    price_monthly: float | None = None
+    price_annual: float | None = None
+    max_locations: int | None = None
+    max_users: int | None = None
+    max_customers: int | None = None
+    max_programs: int | None = None
+    features: list | None = None
+    is_featured: bool | None = None
+    is_active: bool | None = None
+    trial_days: int | None = None
+    sort_order: int | None = None
 
 
 class TenantAdminUpdateIn(BaseModel):
-    name: Optional[str] = None
-    legal_name: Optional[str] = None
-    ruc: Optional[str] = None
-    industry: Optional[str] = None
-    province: Optional[str] = None
-    city: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    website: Optional[str] = None
-    plan: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    legal_name: str | None = None
+    ruc: str | None = None
+    industry: str | None = None
+    province: str | None = None
+    city: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    website: str | None = None
+    plan: str | None = None
+    is_active: bool | None = None
 
 
 # --- Invoice Schema ---
@@ -284,7 +281,7 @@ class InvoiceOut(BaseModel):
     status: str
     period_start: datetime
     period_end: datetime
-    paid_at: Optional[datetime] = None
+    paid_at: datetime | None = None
     created_at: datetime
 
 
@@ -314,7 +311,7 @@ def _get_tenant_or_404(tenant_id: str) -> Tenant:
     response=list[TenantAdminOut],
     summary="[SuperAdmin] Listar todos los negocios",
 )
-def list_all_tenants(request, plan: Optional[str] = None, is_active: Optional[bool] = None):
+def list_all_tenants(request, plan: str | None = None, is_active: bool | None = None):
     """Lists all tenants on the platform. SUPER_ADMIN only."""
     _require_super_admin(request)
 
@@ -613,8 +610,9 @@ def impersonate_tenant(request, tenant_id: str):
     except User.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    from apps.authentication.tokens import create_access_token
     from django.conf import settings
+
+    from apps.authentication.tokens import create_access_token
     original_lifetime = settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES
     settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 5
     access = create_access_token(
@@ -655,7 +653,7 @@ def platform_metrics(request):
     active_tenants = Tenant.objects.filter(is_active=True).count()
 
     # Calculate MRR from active paid subscriptions
-    active_subs = Subscription.objects.filter(status=SubscriptionStatus.ACTIVE)
+    Subscription.objects.filter(status=SubscriptionStatus.ACTIVE)
     mrr = float(
         Invoice.objects.filter(
             status=Invoice.InvoiceStatus.PAID,

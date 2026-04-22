@@ -3,12 +3,13 @@ Loyallia — Transaction Models
 All loyalty program transactions, validations, and reward issuances.
 """
 import uuid
-from decimal import Decimal
-from django.db import models
+
 from django.core.validators import MinValueValidator
-from apps.tenants.models import Tenant, Location
+from django.db import models
+
 from apps.authentication.models import User
 from apps.customers.models import Customer, CustomerPass
+from apps.tenants.models import Location, Tenant
 
 
 class TransactionType(models.TextChoices):

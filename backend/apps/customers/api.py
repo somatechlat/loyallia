@@ -3,18 +3,19 @@ Loyallia — Customers API router.
 Phase 5 implementation of customer + pass management endpoints.
 """
 
-from typing import List, Optional
+
 import pandas as pd
-from ninja import Router, File
-from ninja.files import UploadedFile
-from ninja.errors import HttpError
-from pydantic import BaseModel, EmailStr, field_validator
-from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from common.permissions import jwt_auth, is_owner, is_manager_or_owner
-from common.messages import get_message
-from apps.customers.models import Customer, CustomerPass
+from django.shortcuts import get_object_or_404
+from ninja import File, Router
+from ninja.errors import HttpError
+from ninja.files import UploadedFile
+from pydantic import BaseModel, EmailStr, field_validator
+
 from apps.cards.models import Card
+from apps.customers.models import Customer, CustomerPass
+from common.messages import get_message
+from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 
 router = Router()
 
@@ -28,10 +29,10 @@ class CustomerCreateIn(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    phone: Optional[str] = ""
-    date_of_birth: Optional[str] = None  # ISO format date
-    gender: Optional[str] = ""
-    notes: Optional[str] = ""
+    phone: str | None = ""
+    date_of_birth: str | None = None  # ISO format date
+    gender: str | None = ""
+    notes: str | None = ""
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -49,17 +50,17 @@ class CustomerCreateIn(BaseModel):
 
 
 class CustomerUpdateIn(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    gender: Optional[str] = None
-    notes: Optional[str] = None
-    is_active: Optional[bool] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    date_of_birth: str | None = None
+    gender: str | None = None
+    notes: str | None = None
+    is_active: bool | None = None
 
     @field_validator("first_name", "last_name")
     @classmethod
-    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+    def validate_name(cls, v: str | None) -> str | None:
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Name cannot be empty")
         return v.strip() if v else v
@@ -71,13 +72,13 @@ class CustomerOut(BaseModel):
     last_name: str
     email: str
     phone: str
-    date_of_birth: Optional[str]
+    date_of_birth: str | None
     gender: str
     referral_code: str
     is_active: bool
     total_visits: int
     total_spent: str  # Decimal as string
-    last_visit: Optional[str]
+    last_visit: str | None
     created_at: str
     updated_at: str
 
@@ -147,13 +148,13 @@ class MessageOut(BaseModel):
 
 
 class CustomerListOut(BaseModel):
-    customers: List[CustomerOut]
+    customers: list[CustomerOut]
     total: int
 
 
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
 def list_customers(
-    request, search: Optional[str] = None, limit: int = 50, offset: int = 0
+    request, search: str | None = None, limit: int = 50, offset: int = 0
 ):
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):
@@ -192,6 +193,7 @@ def import_customers(request, file: UploadedFile = File(...)):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     import logging
     import re
+
     from django.utils.dateparse import parse_date
 
     logger = logging.getLogger(__name__)
@@ -435,8 +437,9 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
     )
 
     # Generate QR code image asynchronously; do not fail enrollment if worker/broker is unavailable.
-    from apps.customers.tasks import generate_qr_for_pass
     import logging
+
+    from apps.customers.tasks import generate_qr_for_pass
 
     try:
         generate_qr_for_pass.delay(str(pass_obj.id))
@@ -490,9 +493,10 @@ _BUILTIN_SEGMENTS = {
 
 def _apply_segment_filter(queryset, segment_id: str):
     """Apply segment filter to a Customer queryset."""
-    from django.utils import timezone
     from datetime import timedelta
+
     from django.db.models import Q
+    from django.utils import timezone
 
     seg = _BUILTIN_SEGMENTS.get(segment_id)
     if not seg:
@@ -697,7 +701,7 @@ def delete_customer(request, customer_id: str):
 @router.get(
     "/{customer_id}/passes/",
     auth=jwt_auth,
-    response=List[CustomerPassOut],
+    response=list[CustomerPassOut],
     summary="Pases del cliente",
 )
 def get_customer_passes(request, customer_id: str):
@@ -753,8 +757,9 @@ def enroll_customer(request, customer_id: str, card_id: str):
     )
 
     # Generate QR code image asynchronously; do not fail enrollment if worker/broker is unavailable.
-    from apps.customers.tasks import generate_qr_for_pass
     import logging
+
+    from apps.customers.tasks import generate_qr_for_pass
 
     try:
         generate_qr_for_pass.delay(str(pass_obj.id))

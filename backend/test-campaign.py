@@ -1,9 +1,13 @@
-import sys, os, django, json
+import os
+
+import django
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
-from apps.authentication.models import User
 from django.test import Client
+
+from apps.authentication.models import User
 
 client = Client()
 owner = User.objects.get(email="test_owner@loyallia.com")

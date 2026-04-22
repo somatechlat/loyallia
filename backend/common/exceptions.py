@@ -2,10 +2,10 @@
 Loyallia — Shared Pagination for Django Ninja endpoints.
 Standard cursor and page-based pagination used across all list endpoints.
 """
-from typing import TypeVar, Generic, List, Optional, Any
-from pydantic import BaseModel
-from django.db.models import QuerySet
+from typing import Any, Generic, TypeVar
 
+from django.db.models import QuerySet
+from pydantic import BaseModel
 
 T = TypeVar("T")
 
@@ -20,9 +20,9 @@ class PaginatedResponse(BaseModel, Generic[T]):
     page: int
     page_size: int
     total_pages: int
-    next: Optional[str] = None
-    previous: Optional[str] = None
-    results: List[T]
+    next: str | None = None
+    previous: str | None = None
+    results: list[T]
 
 
 def paginate_queryset(
@@ -52,7 +52,7 @@ def paginate_queryset(
 
     results = list(queryset[offset : offset + page_size])
 
-    def build_url(p: int) -> Optional[str]:
+    def build_url(p: int) -> str | None:
         if not request_url:
             return None
         separator = "&" if "?" in request_url else "?"

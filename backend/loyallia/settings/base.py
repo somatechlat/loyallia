@@ -4,10 +4,10 @@ All environments inherit from this.
 Production-sensitive values are loaded from environment variables via decouple.
 """
 
-import os
 import sys
 from pathlib import Path
-from decouple import config, Csv
+
+from decouple import Csv, config
 
 # Base directory of the Django project (backend/)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -100,7 +100,7 @@ import dj_database_url
 DATABASES = {
     "default": dj_database_url.config(
         env="DATABASE_URL",
-        default="postgres://loyallia:loyallia_secret@localhost:6432/loyallia",
+        default="postgres://loyallia:loyallia_dev_password@localhost:6432/loyallia",
         conn_max_age=600,
         conn_health_checks=True,
     )
@@ -230,8 +230,8 @@ CELERY_BEAT_SCHEDULE = {
 # FILE STORAGE — MinIO (S3-compatible)
 # =============================================================================
 MINIO_ENDPOINT = config("MINIO_ENDPOINT", default="http://localhost:9000")
-MINIO_ACCESS_KEY = config("MINIO_ACCESS_KEY", default="loyallia_minio")
-MINIO_SECRET_KEY = config("MINIO_SECRET_KEY", default="loyallia_minio_secret")
+MINIO_ACCESS_KEY = config("MINIO_ACCESS_KEY", default="minioadmin")
+MINIO_SECRET_KEY = config("MINIO_SECRET_KEY", default="minioadmin")
 MINIO_BUCKET_PASSES = config("MINIO_BUCKET_PASSES", default="passes")
 MINIO_BUCKET_ASSETS = config("MINIO_BUCKET_ASSETS", default="assets")
 MINIO_USE_SSL = config("MINIO_USE_SSL", default=False, cast=bool)

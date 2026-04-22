@@ -4,7 +4,6 @@ Subscription management and payment processing via Claro Pay Ecuador.
 """
 import json
 import logging
-from typing import Optional
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -37,23 +36,23 @@ class SubscribeSchema(BaseModel):
     card_token: str
     card_brand: str = ""
     card_last_four: str = ""
-    card_exp_month: Optional[int] = None
-    card_exp_year: Optional[int] = None
+    card_exp_month: int | None = None
+    card_exp_year: int | None = None
     cardholder_name: str = ""
     billing_cycle: str = "monthly"
 
 
 class UpdateSubscriptionSchema(BaseModel):
-    billing_cycle: Optional[str] = None
-    cancel_at_period_end: Optional[bool] = None
+    billing_cycle: str | None = None
+    cancel_at_period_end: bool | None = None
 
 
 class AddPaymentMethodSchema(BaseModel):
     claro_pay_token: str
     card_brand: str = ""
     card_last_four: str = ""
-    card_exp_month: Optional[int] = None
-    card_exp_year: Optional[int] = None
+    card_exp_month: int | None = None
+    card_exp_year: int | None = None
     cardholder_name: str = ""
     is_default: bool = False
 
@@ -64,8 +63,9 @@ class AddPaymentMethodSchema(BaseModel):
 @router.get("/plans/", auth=jwt_auth, summary="Planes disponibles")
 def list_plans(request: HttpRequest):
     """Return available billing plans with pricing."""
-    from django.conf import settings
     from decimal import Decimal
+
+    from django.conf import settings
 
     price = Decimal(settings.PLAN_FULL_PRICE_USD)
     tax_rate = Decimal(str(settings.TAX_RATE_ECUADOR))
@@ -161,11 +161,11 @@ def get_subscription(request: HttpRequest):
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
 def get_usage(request: HttpRequest):
     """Return current plan usage metrics for the tenant."""
-    from apps.customers.models import Customer
+
     from apps.cards.models import Card
-    from apps.transactions.models import Transaction
+    from apps.customers.models import Customer
     from apps.notifications.models import Notification
-    from datetime import timedelta
+    from apps.transactions.models import Transaction
 
     tenant = request.tenant
     now = timezone.now()

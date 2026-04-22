@@ -6,24 +6,22 @@
 # 1. Email campaigns (for promotions)
 # 2. Wallet Pass Updates (when pass data changes, wallet auto-updates)
 # =============================================================================
+
+from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
-from typing import List, Optional
-from django.shortcuts import get_object_or_404
-from django.db.models import Q, Count
-from django.utils import timezone
 
-from common.messages import get_message
-from common.permissions import jwt_auth, is_owner
+from apps.customers.models import Customer
 from apps.notifications.models import (
     Notification,
-    NotificationType,
     NotificationChannel,
+    NotificationType,
     PushDevice,
 )
 from apps.notifications.service import NotificationService
-from apps.customers.models import Customer, CustomerPass
+from common.messages import get_message
+from common.permissions import is_owner, jwt_auth
 
 router = Router()
 
@@ -32,9 +30,9 @@ router = Router()
 class PushDeviceSchema(BaseModel):
     device_type: str  # ios, android, web
     device_token: str
-    device_model: Optional[str] = None
-    fcm_token: Optional[str] = None
-    apns_token: Optional[str] = None
+    device_model: str | None = None
+    fcm_token: str | None = None
+    apns_token: str | None = None
 
 
 class NotificationSchema(BaseModel):
@@ -53,8 +51,8 @@ class SendNotificationSchema(BaseModel):
     message: str
     notification_type: str
     channel: str = "push"
-    action_url: Optional[str] = None
-    image_url: Optional[str] = None
+    action_url: str | None = None
+    image_url: str | None = None
 
 
 # ============ Device Management ============
@@ -329,8 +327,8 @@ class CampaignCreateIn(BaseModel):
     title: str
     message: str
     segment_id: str
-    image_url: Optional[str] = ""
-    channel: Optional[str] = "email"  # 'email', 'wallet', or 'whatsapp'
+    image_url: str | None = ""
+    channel: str | None = "email"  # 'email', 'wallet', or 'whatsapp'
 
 
 @router.post("/campaigns/", auth=jwt_auth, response=dict, summary="Crear campaña")

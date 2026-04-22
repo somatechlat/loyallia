@@ -1,7 +1,7 @@
-import urllib.request
-import urllib.parse
 import json
 import re
+import urllib.parse
+import urllib.request
 
 data = json.dumps({"email":"test_owner@loyallia.com", "password":"123456"}).encode("utf-8")
 req = urllib.request.Request("http://localhost:8000/api/v1/auth/login/", data=data, headers={"Content-Type": "application/json"})

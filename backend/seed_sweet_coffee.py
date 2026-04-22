@@ -1,14 +1,16 @@
 import os
+
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'loyallia.settings')
 django.setup()
 
-from apps.tenants.models import Tenant
+
+from django.contrib.auth.hashers import make_password
+
 from apps.authentication.models import User
 from apps.cards.models import Card, CardType
-from django.contrib.auth.hashers import make_password
-import uuid
+from apps.tenants.models import Tenant
 
 # 1. Create Tenant
 tenant, created = Tenant.objects.get_or_create(
@@ -31,7 +33,7 @@ owner, created = User.objects.get_or_create(
     }
 )
 
-# 3. Create Card 
+# 3. Create Card
 card, created = Card.objects.get_or_create(
     tenant=tenant,
     name="Sweet & Coffee Rewards",
@@ -48,5 +50,5 @@ card, created = Card.objects.get_or_create(
     }
 )
 
-print(f"Data Seeded Successfully! ☕")
+print("Data Seeded Successfully! ☕")
 print(f"URL: {card.id}")

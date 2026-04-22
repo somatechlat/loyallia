@@ -1,31 +1,31 @@
 import random
-import uuid
-from decimal import Decimal
 from datetime import timedelta
+from decimal import Decimal
 
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum
+from django.utils import timezone
+
+from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
 
 # Core
 from apps.authentication.models import User, UserRole
-from apps.tenants.models import Tenant, Plan, Location
+from apps.automation.models import Automation
 
 # Billing
-from apps.billing.models import Subscription, SubscriptionStatus, PaymentMethod, Invoice
+from apps.billing.models import Invoice, PaymentMethod, Subscription, SubscriptionStatus
 
 # Loyalty
 from apps.cards.models import Card, CardType
 from apps.customers.models import Customer, CustomerPass
 
-# Transactions
-from apps.transactions.models import Transaction, TransactionType
-
 # Engagement
 from apps.notifications.models import Notification, NotificationType
-from apps.automation.models import Automation, AutomationTrigger, AutomationAction
-from apps.analytics.models import DailyAnalytics, CustomerAnalytics, ProgramAnalytics
+from apps.tenants.models import Location, Plan, Tenant
+
+# Transactions
+from apps.transactions.models import Transaction, TransactionType
 
 # =============================================================================
 # Authentic Ecuadorian / Latin American Name Pools
@@ -98,7 +98,7 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             self._seed_data()
-        
+
         self.stdout.write(self.style.SUCCESS("Successfully seeded massive test data!"))
         self.stdout.write("Test Credentials (Password is 123456):")
         self.stdout.write("  SuperAdmin: admin@loyallia.com")
@@ -223,7 +223,6 @@ class Command(BaseCommand):
                 "is_active": True,
             }
         )
-        all_cards = [c_stamp, c_points, c_vip, c_referral]
 
         # =====================================================================
         # 7. Mass Customers — 200 with authentic Ecuadorian names

@@ -4,6 +4,7 @@ Configured via Django settings (CELERY_* keys in base.py).
 Workers use this module: celery -A loyallia worker ...
 """
 import os
+
 from celery import Celery
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.development")

@@ -3,9 +3,11 @@ Loyallia — Notifications Models
 Push notifications, in-app notifications, and notification history.
 """
 import uuid
+
 from django.db import models
-from apps.tenants.models import Tenant
+
 from apps.customers.models import Customer, CustomerPass
+from apps.tenants.models import Tenant
 
 
 class NotificationChannel(models.TextChoices):
@@ -40,7 +42,7 @@ class PushDevice(models.Model):
         related_name="devices",
         verbose_name="Cliente"
     )
-    
+
     # Device information
     device_type = models.CharField(
         max_length=10,
@@ -49,11 +51,11 @@ class PushDevice(models.Model):
     )
     device_token = models.CharField(max_length=500, verbose_name="Token del dispositivo")
     device_model = models.CharField(max_length=100, blank=True, default="", verbose_name="Modelo del dispositivo")
-    
+
     # Push service identifiers
     apns_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token APNS")
     fcm_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token FCM")
-    
+
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Dispositivo activo")
     push_failures = models.PositiveSmallIntegerField(
@@ -61,11 +63,11 @@ class PushDevice(models.Model):
         verbose_name="Fallos consecutivos de push",
         help_text="Incremented per failed push; device deactivated at 5"
     )
-    
+
     # Timestamps
     registered_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
     last_used = models.DateTimeField(null=True, blank=True, verbose_name="Último uso")
-    
+
     class Meta:
         db_table = "loyallia_push_devices"
         verbose_name = "Dispositivo de push"
@@ -103,7 +105,7 @@ class Notification(models.Model):
         related_name="notifications",
         verbose_name="Pase del cliente"
     )
-    
+
     # Notification details
     notification_type = models.CharField(
         max_length=30,
@@ -116,27 +118,27 @@ class Notification(models.Model):
         default=NotificationChannel.PUSH,
         verbose_name="Canal"
     )
-    
+
     # Content
     title = models.CharField(max_length=200, verbose_name="Título")
     message = models.TextField(verbose_name="Mensaje")
     image_url = models.URLField(blank=True, default="", verbose_name="URL de imagen")
     action_url = models.URLField(blank=True, default="", verbose_name="URL de acción")
-    
+
     # Metadata
     notification_data = models.JSONField(default=dict, verbose_name="Datos adicionales")
-    
+
     # Delivery status
     is_sent = models.BooleanField(default=False, verbose_name="Enviado")
     is_read = models.BooleanField(default=False, verbose_name="Leído")
     is_clicked = models.BooleanField(default=False, verbose_name="Clickeado")
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de envío")
     read_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de lectura")
     clicked_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de click")
-    
+
     class Meta:
         db_table = "loyallia_notifications"
         verbose_name = "Notificación"

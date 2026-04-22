@@ -9,9 +9,9 @@ import django
 
 django.setup()
 
-from apps.customers.models import CustomerPass, Customer
-from apps.tenants.models import Tenant
 from apps.cards.models import Card
+from apps.customers.models import CustomerPass
+from apps.tenants.models import Tenant
 
 # Search for calro, claro, etc
 print("=== Searching for 'calro', 'claro', etc ===")

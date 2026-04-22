@@ -2,17 +2,17 @@
 Loyallia — Automation API router
 Campaign automation and workflow management.
 """
+
+from django.db.models import Count
+from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
-from typing import List, Optional
-from django.shortcuts import get_object_or_404
-from django.db.models import Count
 
-from common.permissions import jwt_auth, is_owner
-from common.messages import get_message
-from apps.automation.models import Automation, AutomationTrigger, AutomationAction, AutomationExecution
+from apps.automation.models import Automation, AutomationAction, AutomationExecution, AutomationTrigger
 from apps.cards.models import Card
+from common.messages import get_message
+from common.permissions import is_owner, jwt_auth
 
 router = Router()
 
@@ -26,35 +26,35 @@ class AutomationSchema(BaseModel):
     action: str
     is_active: bool
     total_executions: int
-    last_executed: Optional[str]
+    last_executed: str | None
     created_at: str
 
 
 class CreateAutomationSchema(BaseModel):
     name: str
-    description: Optional[str] = ""
+    description: str | None = ""
     trigger: str
     trigger_config: dict = {}
     action: str
     action_config: dict = {}
-    target_program_ids: List[str] = []
-    target_segments: List[str] = []
+    target_program_ids: list[str] = []
+    target_segments: list[str] = []
     schedule_config: dict = {}
-    max_executions_per_day: Optional[int] = None
+    max_executions_per_day: int | None = None
     cooldown_hours: int = 24
 
 
 class UpdateAutomationSchema(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    trigger_config: Optional[dict] = None
-    action_config: Optional[dict] = None
-    target_program_ids: Optional[List[str]] = None
-    target_segments: Optional[List[str]] = None
-    schedule_config: Optional[dict] = None
-    max_executions_per_day: Optional[int] = None
-    cooldown_hours: Optional[int] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    trigger_config: dict | None = None
+    action_config: dict | None = None
+    target_program_ids: list[str] | None = None
+    target_segments: list[str] | None = None
+    schedule_config: dict | None = None
+    max_executions_per_day: int | None = None
+    cooldown_hours: int | None = None
+    is_active: bool | None = None
 
 # ============ Automation Analytics ============
 @router.get("/stats/", auth=jwt_auth, summary="Get automation statistics")

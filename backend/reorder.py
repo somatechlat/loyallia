@@ -1,6 +1,5 @@
-import re
 
-with open("apps/customers/api.py", "r") as f:
+with open("apps/customers/api.py") as f:
     content = f.read()
 
 # 1. Extract import section

@@ -15,6 +15,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Show SQL queries in development (set to WARNING in production)
 import logging
+
 logging.getLogger("django.db.backends").setLevel(logging.DEBUG)
 
 # Django extensions (shell_plus, etc.)
