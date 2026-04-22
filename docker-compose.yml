@@ -3,14 +3,22 @@
 # All services open source — PostgreSQL + Redis + MinIO + Django + Next.js
 # PORT RANGE: 33900+ (see docs/PORT_AUTHORITY.md)
 # TOTAL CLUSTER LIMIT: 10GB RAM
+# ACTUAL BUDGET: ~8.9GB allocated (headroom for OS/Docker daemon)
+#
+# MEMORY ALLOCATION:
+#   postgres=1.5G | redis=512M | minio=512M | pgbouncer=128M
+#   api=2G | web=2G | celery-pass/push/default=384Mx3 | celery-beat=192M
+#   flower=192M | vault=256M | init containers=64Mx2 (ephemeral)
 #
 # SECRETS: All credentials pulled from .env (gitignored).
 # See .env.example for the full list of required variables.
 # =============================================================================
 
 x-common-env: &common-env
-  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-loyallia}
+  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
   DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
+  # PgBouncer available at pgbouncer:6432 for connection pooling in production
+  PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-loyallia}
   REDIS_URL: redis://redis:6379/0
   CELERY_BROKER_URL: redis://redis:6379/1
   CELERY_RESULT_BACKEND: redis://redis:6379/2
@@ -454,10 +462,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 192M
           cpus: "0.25"
         reservations:
-          memory: 64M
+          memory: 96M
 
   # ---------------------------------------------------------------------------
   # FLOWER — Celery Worker Monitor       → localhost:33907          [128M]
@@ -482,7 +490,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 192M
           cpus: "0.25"
 
   # ---------------------------------------------------------------------------
