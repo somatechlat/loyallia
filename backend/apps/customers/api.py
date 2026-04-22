@@ -111,6 +111,8 @@ def import_customers(request, file: UploadedFile = File(...)):
     )
     col_gender = _find_col(["genero", "género", "gender", "sexo"])
     col_notes = _find_col(["notas", "notes", "nota", "observaciones", "comentarios"])
+    col_total_spent = _find_col(["gasto", "spent", "total_spent", "compras", "monto"])
+    col_total_visits = _find_col(["visitas", "visits", "total_visits", "frecuencia", "scan"])
 
     if not col_first or not col_email:
         raise HttpError(
@@ -185,6 +187,24 @@ def import_customers(request, file: UploadedFile = File(...)):
 
         notes = str(row.get(col_notes, "")).strip()[:2000] if col_notes else ""
 
+        # KPI Metrics: Safely cast to float and int, fallback to 0
+        total_spent = 0.0
+        if col_total_spent:
+            try:
+                # Remove currency symbols and commas
+                spent_raw = re.sub(r"[^\d\.]", "", str(row.get(col_total_spent, "0")))
+                total_spent = float(spent_raw) if spent_raw else 0.0
+            except ValueError:
+                pass
+                
+        total_visits = 0
+        if col_total_visits:
+            try:
+                visits_raw = re.sub(r"[^\d]", "", str(row.get(col_total_visits, "0")))
+                total_visits = int(visits_raw) if visits_raw else 0
+            except ValueError:
+                pass
+
         seen_in_file.add(email_raw)
         customers_to_create.append(
             Customer(
@@ -196,6 +216,8 @@ def import_customers(request, file: UploadedFile = File(...)):
                 date_of_birth=date_of_birth,
                 gender=gender,
                 notes=notes,
+                total_spent=total_spent,
+                total_visits=total_visits,
             )
         )
 
