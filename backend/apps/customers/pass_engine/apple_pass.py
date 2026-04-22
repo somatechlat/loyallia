@@ -59,12 +59,28 @@ def _check_certs_exist() -> bool:
     return True
 
 
+# Mapping from Card.barcode_type to Apple PKBarcodeFormat constants.
+# Per Apple docs: QR, Aztec, Code128, PDF417 are valid on iOS 9+.
+# Code128 is NOT supported on watchOS — Apple auto-falls back.
+# DataMatrix has no Apple equivalent; we fall back to QR.
+APPLE_BARCODE_FORMATS = {
+    "qr_code": "PKBarcodeFormatQR",
+    "aztec": "PKBarcodeFormatAztec",
+    "code_128": "PKBarcodeFormatCode128",
+    "pdf417": "PKBarcodeFormatPDF417",
+    "data_matrix": "PKBarcodeFormatQR",  # No Apple DataMatrix — fallback
+}
+
+
 def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     """Build the pass.json structure per Apple PassKit specification."""
     config = _get_apple_config()
     pass_style = APPLE_PASS_STYLES.get(card.card_type, "generic")
     fields = _build_fields_for_type(card, customer_pass)
     barcode_value = customer_pass.qr_code or str(customer_pass.id)
+    barcode_format = APPLE_BARCODE_FORMATS.get(
+        card.barcode_type, "PKBarcodeFormatQR"
+    )
 
     pass_json = {
         "formatVersion": 1,
@@ -77,14 +93,14 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         "backgroundColor": _hex_to_rgb(card.background_color or "#1A1A2E"),
         "labelColor": _hex_to_rgb(card.text_color or "#FFFFFF"),
         "barcode": {
-            "format": "PKBarcodeFormatQR",
+            "format": barcode_format,
             "message": barcode_value,
             "messageEncoding": "iso-8859-1",
             "altText": barcode_value,
         },
         "barcodes": [
             {
-                "format": "PKBarcodeFormatQR",
+                "format": barcode_format,
                 "message": barcode_value,
                 "messageEncoding": "iso-8859-1",
                 "altText": barcode_value,

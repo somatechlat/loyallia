@@ -24,6 +24,7 @@ class CardCreateIn(BaseModel):
     name: str
     description: str | None = ""
     card_type: CardType
+    barcode_type: str | None = "qr_code"
     logo_url: str | None = ""
     background_color: str | None = "#1a1a2e"
     text_color: str | None = "#ffffff"
@@ -54,6 +55,7 @@ class CardCreateIn(BaseModel):
 class CardUpdateIn(BaseModel):
     name: str | None = None
     description: str | None = None
+    barcode_type: str | None = None
     logo_url: str | None = None
     background_color: str | None = None
     text_color: str | None = None
@@ -75,6 +77,7 @@ class CardOut(BaseModel):
     id: str
     tenant_id: str
     card_type: CardType
+    barcode_type: str
     name: str
     description: str
     logo_url: str
@@ -95,6 +98,7 @@ class CardOut(BaseModel):
             id=str(card.id),
             tenant_id=str(card.tenant_id),
             card_type=card.card_type,
+            barcode_type=card.barcode_type,
             name=card.name,
             description=card.description,
             logo_url=card.logo_url,
@@ -162,6 +166,7 @@ def create_program(request, data: CardCreateIn):
     card = Card.objects.create(
         tenant=request.tenant,
         card_type=data.card_type,
+        barcode_type=data.barcode_type,
         name=data.name,
         description=data.description,
         logo_url=data.logo_url,
@@ -238,6 +243,10 @@ def update_program(request, program_id: str, data: CardUpdateIn):
     if data.locations is not None:
         card.locations = data.locations
         update_fields.append("locations")
+
+    if data.barcode_type is not None:
+        card.barcode_type = data.barcode_type
+        update_fields.append("barcode_type")
 
     if data.is_active is not None:
         card.is_active = data.is_active

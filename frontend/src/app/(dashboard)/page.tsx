@@ -1,10 +1,12 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { analyticsApi } from '@/lib/api';
+import { analyticsApi, notificationsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import toast from 'react-hot-toast';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import InfoTooltip from '@/components/ui/InfoTooltip';
+import { GananciaTab, VisitasTab, CampaignsBlock, type DashboardTab, type CampaignStats } from '@/components/dashboard/DashboardTabs';
 
 /* ─── Types that MATCH the real API response ─────────────────────────── */
 interface OverviewResponse {
@@ -30,8 +32,18 @@ interface DemoGender { gender: string; count: number; percentage: number; }
 interface DemoAge { range: string; count: number; percentage: number; }
 interface RevenueBreakdown { total_revenue: number; loyalty: number; referral: number; non_loyalty: number; loyalty_pct: number; referral_pct: number; non_loyalty_pct: number; }
 interface ProgramType { type: string; label: string; visits: number; revenue: number; unique_customers: number; }
-type DateRange = 7 | 14 | 30 | 90;
+type DateRange = 1 | 7 | 28 | 30 | 180 | 365 | 'mtd' | 'custom';
 type ChartTab = 'revenue' | 'visits' | 'customers';
+
+/** Resolve DateRange to actual number of days for API calls. */
+function resolveDays(range: DateRange): number {
+  if (typeof range === 'number') return range;
+  if (range === 'mtd') {
+    const now = new Date();
+    return now.getDate(); // Days since start of month
+  }
+  return 30; // fallback for 'custom'
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -50,17 +62,23 @@ export default function DashboardPage() {
   const [ages, setAges] = useState<DemoAge[]>([]);
   const [revBreakdown, setRevBreakdown] = useState<RevenueBreakdown | null>(null);
   const [programTypes, setProgramTypes] = useState<ProgramType[]>([]);
+  const [campaignStats, setCampaignStats] = useState<CampaignStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>(30);
+  const [dashTab, setDashTab] = useState<DashboardTab>('ganancia');
   const [chartTab, setChartTab] = useState<ChartTab>('revenue');
   const [notifying, setNotifying] = useState(false);
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
-  const fetchData = useCallback(async (days: DateRange) => {
+  const fetchData = useCallback(async (range: DateRange) => {
     setLoading(true);
     setError(null);
+    const days = resolveDays(range);
     try {
-      const [dash, trend, vis, tb, demo, rb, pt] = await Promise.all([
+      const [dash, trend, vis, tb, demo, rb, pt, ns] = await Promise.all([
         analyticsApi.dashboard(),
         analyticsApi.trends(days),
         analyticsApi.visits(days),
@@ -68,6 +86,7 @@ export default function DashboardPage() {
         analyticsApi.demographics(),
         analyticsApi.revenueBreakdown(days),
         analyticsApi.byProgramType(days),
+        notificationsApi.stats().catch(() => ({ data: null })),
       ]);
       setOverview(dash.data);
       setTrends(trend.data.daily_data || []);
@@ -77,6 +96,7 @@ export default function DashboardPage() {
       setAges(demo.data.age_ranges || []);
       setRevBreakdown(rb.data);
       setProgramTypes(pt.data.program_types || []);
+      setCampaignStats(ns.data);
     } catch (err) {
       console.error('Dashboard fetch error:', err);
       setError('Error de conexión con el servidor');
@@ -89,8 +109,22 @@ export default function DashboardPage() {
     fetchData(dateRange);
   }, [dateRange, fetchData]);
 
-  const handleDateRange = (days: DateRange) => {
-    setDateRange(days);
+  const handleDateRange = (range: DateRange) => {
+    if (range === 'custom') {
+      setShowCustomPicker(true);
+      return;
+    }
+    setShowCustomPicker(false);
+    setDateRange(range);
+  };
+
+  const applyCustomRange = () => {
+    if (!customStart || !customEnd) return;
+    const start = new Date(customStart);
+    const end = new Date(customEnd);
+    const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    setDateRange(diffDays as DateRange);
+    setShowCustomPicker(false);
   };
 
   if (loading) {
@@ -160,10 +194,13 @@ export default function DashboardPage() {
   const formatCurrency = (v: number) => `$${v.toLocaleString()}`;
 
   const dateRanges: { days: DateRange; label: string }[] = [
-    { days: 7, label: '7d' },
-    { days: 14, label: '14d' },
-    { days: 30, label: '30d' },
-    { days: 90, label: '90d' },
+    { days: 1, label: 'Hoy' },
+    { days: 7, label: '7 días' },
+    { days: 28, label: '4 sem' },
+    { days: 180, label: '6 meses' },
+    { days: 365, label: '12 meses' },
+    { days: 'mtd', label: 'MTD' },
+    { days: 'custom', label: 'Periodo' },
   ];
 
   const chartTabs: { key: ChartTab; label: string; icon: string }[] = [
@@ -193,14 +230,14 @@ export default function DashboardPage() {
           <h1 className="page-title">Bienvenido, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}</h1>
           <p className="page-subtitle">Resumen de tu programa de fidelización</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Date range pills */}
-          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-1" id="date-range-selector">
+          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-0.5 flex-wrap" id="date-range-selector">
             {dateRanges.map(({ days, label }) => (
               <button
-                key={days}
+                key={String(days)}
                 onClick={() => handleDateRange(days)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                className={`px-2.5 py-1.5 text-[11px] font-medium rounded-lg transition-all duration-200 ${
                   dateRange === days
                     ? 'bg-brand-500 text-white shadow-sm'
                     : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
@@ -216,6 +253,42 @@ export default function DashboardPage() {
           </a>
         </div>
       </div>
+
+      {/* Custom date picker */}
+      {showCustomPicker && (
+        <div className="card p-4 flex items-center gap-3 animate-fade-in" id="custom-date-picker">
+          <label className="text-xs text-surface-500 font-medium">Desde</label>
+          <input type="date" className="input text-sm px-3 py-1.5" value={customStart} onChange={e => setCustomStart(e.target.value)} />
+          <label className="text-xs text-surface-500 font-medium">Hasta</label>
+          <input type="date" className="input text-sm px-3 py-1.5" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+          <button className="btn-primary text-xs px-4 py-1.5" onClick={applyCustomRange}>Aplicar</button>
+        </div>
+      )}
+
+      {/* Ganancia / Visitas tabs */}
+      <div className="flex items-center gap-2" id="dashboard-tab-selector">
+        {(['ganancia', 'visitas'] as DashboardTab[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setDashTab(tab)}
+            className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 ${
+              dashTab === tab
+                ? 'bg-brand-500 text-white shadow-sm'
+                : 'bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+            }`}
+            id={`dash-tab-${tab}`}
+          >
+            {tab === 'ganancia' ? 'Ganancia' : 'Visitas'}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {dashTab === 'ganancia' ? (
+        <GananciaTab revBreakdown={revBreakdown} visits={visits} />
+      ) : (
+        <VisitasTab visits={visits} />
+      )}
 
       {/* Stats grid — clickable cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -250,9 +323,12 @@ export default function DashboardPage() {
       {/* Main chart with tabs */}
       <div className="card p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">
-            Tendencias — Últimos {dateRange} días
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">
+              Tendencias — Últimos {resolveDays(dateRange)} días
+            </h2>
+            <InfoTooltip explanation="Gráfico de tendencias que muestra la evolución de ingresos, transacciones y nuevos clientes en el período seleccionado." />
+          </div>
           <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-1" id="chart-tabs">
             {chartTabs.map(({ key, label, icon }) => (
               <button
@@ -311,9 +387,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Demographics / engagement bar chart */}
         <div className="card p-6 lg:col-span-2">
-          <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4">
-            Recompensas — Emitidas vs Canjeadas
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">
+              Recompensas — Emitidas vs Canjeadas
+            </h2>
+            <InfoTooltip explanation="Comparación entre recompensas emitidas a clientes y recompensas efectivamente canjeadas. Una alta tasa de canjeo indica engagement saludable." />
+          </div>
+
           {trends.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={trends.slice(-14)} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -335,7 +415,7 @@ export default function DashboardPage() {
 
         {/* Quick stats sidebar with visit metrics */}
         <div className="card p-6 flex flex-col gap-4">
-          <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">Métricas de visitas</h2>
+          <div className="flex items-center gap-2"><h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">Métricas de visitas</h2><InfoTooltip explanation="Desglose de visitas: totales, clientes únicos, nuevos vs recurrentes y tasa de retorno." /></div>
           <div className="flex-1 flex flex-col justify-between gap-2">
             {[
               { l: 'Visitas totales', v: visits?.total_visits ?? 0, c: '' },
@@ -358,7 +438,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Revenue Breakdown donut */}
         <div className="card p-6" id="revenue-breakdown">
-          <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4">Desglose de ingresos</h2>
+          <div className="flex items-center gap-2 mb-4"><h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">Desglose de ingresos</h2><InfoTooltip explanation="Distribución porcentual de ingresos por tipo de cliente: fidelización, referencias y clientes sin programa." /></div>
           {revBreakdown && revBreakdown.total_revenue > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={180}>
@@ -397,7 +477,7 @@ export default function DashboardPage() {
         {/* Top 15 Buyers */}
         <div className="card p-6 lg:col-span-2" id="top-buyers">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">Top 15 compradores</h2>
+            <div className="flex items-center gap-2"><h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">Top 15 compradores</h2><InfoTooltip explanation="Los 15 clientes con mayor gasto acumulado en el período seleccionado. Puedes enviarles una notificación push personalizada." /></div>
             <button
               className="btn-primary text-xs px-3 py-1.5"
               disabled={notifying || topBuyers.length === 0}
@@ -440,7 +520,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Gender + Age */}
         <div className="card p-6" id="demographics">
-          <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4">Demografía de clientes</h2>
+          <div className="flex items-center gap-2 mb-4"><h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">Demografía de clientes</h2><InfoTooltip explanation="Distribución de tu base de clientes por género y rango de edad. Basado en los datos de perfil proporcionados al inscribirse." /></div>
           <div className="grid grid-cols-2 gap-6">
             <div>
               <h3 className="text-xs text-surface-500 uppercase tracking-wider mb-3">Género</h3>
@@ -469,7 +549,7 @@ export default function DashboardPage() {
 
         {/* Visits by Program Type */}
         <div className="card p-6" id="program-type-chart">
-          <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4">Visitas por tipo de programa</h2>
+          <div className="flex items-center gap-2 mb-4"><h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">Visitas por tipo de programa</h2><InfoTooltip explanation="Desglose de visitas según el tipo de programa de fidelización: Sellos, Cashback, Cupones, etc." /></div>
           {programTypes.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={programTypes} layout="vertical" margin={{ left: 10, right: 10 }}>
@@ -486,6 +566,9 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Campaigns Block */}
+      <CampaignsBlock stats={campaignStats} />
 
       {/* Date display footer */}
       <div className="text-center text-xs text-surface-400 py-2" id="current-date">

@@ -131,7 +131,7 @@ def get_visit_metrics(request, days: int = 30):
         "new_visitors": new_visitors,
         "recurring_visitors": recurring_visitors,
         "non_returning": non_returning,
-        "non_registered_visits": 0,
+        "unregistered_visits": 0,
         "retention_rate": round(retention_rate, 1),
     }
 
