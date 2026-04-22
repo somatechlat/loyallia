@@ -629,7 +629,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
                           {/* Powered by branding */}
                           <div className="relative z-10 mt-2 pt-1.5 border-t" style={{ borderColor: `${editForm.text_color || '#fff'}20` }}>
-                            <p className="text-[7px] text-center opacity-30 tracking-wide">Powered by Loyallia — Claro Partner</p>
+                            <p className="text-[7px] text-center opacity-30 tracking-wide">Powered by Loyallia — Intelligent Rewards</p>
                           </div>
                         </div>
                       </div>
@@ -651,7 +651,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
             {/* ── Footer ── */}
             <div className="flex items-center justify-between px-8 py-4 border-t border-slate-200/60 bg-white/60 shrink-0">
-              <p className="text-[10px] text-slate-300 font-medium">Powered by Loyallia — Claro Partner</p>
+              <p className="text-[10px] text-slate-300 font-medium">Powered by Loyallia — Intelligent Rewards</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowEdit(false)}
                   className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium border border-slate-200 transition-all">

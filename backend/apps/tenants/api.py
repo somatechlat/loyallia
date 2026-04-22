@@ -371,7 +371,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
   </p>
 </div>
 <div class="footer">
-  <p>Powered by <a href="https://loyallia.com">Loyallia</a> — Claro Partner</p>
+  <p>Powered by <a href="https://loyallia.com">Loyallia</a> — Intelligent Rewards</p>
   <p style="margin-top:4px;">© 2024 {tenant_name}. Todos los derechos reservados.</p>
 </div>
 </div>

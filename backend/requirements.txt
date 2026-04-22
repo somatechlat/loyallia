@@ -48,7 +48,7 @@ google-auth==2.29.0          # FCM HTTP v1 API token exchange (also used by fire
 google-auth-httplib2==0.2.0  # Required transport for google-auth
 httpx[http2]==0.27.2         # APNs HTTP/2 + general HTTP client
 
-# Claro Pay Ecuador (uses httpx — already listed above)
+# Payment Gateway — Bendo/PlacetoPay (uses httpx — already listed above)
 
 # Email
 django-anymail==11.1

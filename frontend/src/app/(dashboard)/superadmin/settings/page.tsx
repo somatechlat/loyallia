@@ -42,7 +42,7 @@ export default function SuperAdminSettings() {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-surface-700 mb-1">Días de prueba por defecto</label>
-            <input type="number" className="input" defaultValue={14} disabled />
+            <input type="number" className="input" defaultValue={5} disabled />
             <p className="text-xs text-surface-400 mt-1">Configurado en settings.py (TRIAL_DAYS)</p>
           </div>
           <div>
@@ -69,7 +69,7 @@ export default function SuperAdminSettings() {
           {[
             { name: 'Google Wallet', status: 'Configurado', ok: true, detail: 'Issuer ID: 3388000000023113505' },
             { name: 'Apple Wallet', status: 'Pendiente', ok: false, detail: 'Requiere certificado Apple Developer' },
-            { name: 'Claro Pay', status: 'UAT', ok: true, detail: 'Entorno de prueba activo' },
+            { name: 'Bendo / PlacetoPay', status: 'UAT', ok: true, detail: 'Pasarela de pagos — entorno de prueba activo' },
             { name: 'Firebase FCM', status: 'Pendiente', ok: false, detail: 'Requiere credenciales Firebase' },
           ].map(int => (
             <div key={int.name} className="flex items-center gap-3 p-3 rounded-xl border border-surface-100">
