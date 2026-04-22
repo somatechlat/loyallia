@@ -126,7 +126,7 @@ export default function CustomersPage() {
             <div className="mb-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-1">Columnas Opcionales</p>
               <div className="flex gap-2 flex-wrap">
-                {['apellido', 'telefono', 'fecha_nacimiento', 'genero (M/F/O)', 'notas'].map(col => (
+                {['apellido', 'telefono', 'fecha_nacimiento', 'genero (M/F/O)', 'notas', 'gasto_total', 'visitas_totales'].map(col => (
                   <span key={col} className="bg-surface-100 text-surface-600 text-xs px-2 py-1 rounded border border-surface-200 font-mono">{col}</span>
                 ))}
               </div>
