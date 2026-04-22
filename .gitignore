@@ -74,5 +74,10 @@ docker-data/
 *.bak
 *.tmp
 
+# Playwright test artifacts (NEVER commit)
+frontend/test-results/
+frontend/playwright-report/
+frontend/.auth/
+
 # Agents (credentials, deployment docs — NEVER commit)
 .agents/

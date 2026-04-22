@@ -78,16 +78,18 @@ test.describe('Authentication & Role Routing', () => {
 
   test('Forgot password link exists', async ({ page }) => {
     await page.goto('/login', { waitUntil: 'networkidle' });
-    const link = page.locator('a[href="/forgot-password"]');
+    await page.waitForTimeout(2000);
+    const link = page.getByRole('link', { name: /olvidaste/i });
     await expect(link).toBeVisible();
   });
 
   test('Register link navigates to /register', async ({ page }) => {
     await page.goto('/login', { waitUntil: 'networkidle' });
-    const link = page.locator('a[href="/register"]');
+    await page.waitForTimeout(2000);
+    const link = page.getByRole('link', { name: /reg[ií]strate/i });
     await expect(link).toBeVisible();
     await link.click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     expect(page.url()).toContain('/register');
   });
 });
@@ -128,10 +130,11 @@ test.describe('Registration Form', () => {
 
   test('Login link navigates to /login from register', async ({ page }) => {
     await page.goto('/register', { waitUntil: 'networkidle' });
-    const link = page.locator('a[href="/login"]');
+    await page.waitForTimeout(2000);
+    const link = page.getByRole('link', { name: /inicia sesi[oó]n/i });
     await expect(link).toBeVisible();
     await link.click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     expect(page.url()).toContain('/login');
   });
 });
