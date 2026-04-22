@@ -328,6 +328,8 @@ class CustomerPass(models.Model):
 
     def _process_coupon_transaction(self) -> dict:
         """Process coupon redemption."""
+        from apps.transactions.models import TransactionType
+
         if not self.coupon_used:
             self.set_pass_field("coupon_used", True)
             reward_description = self.card.get_metadata_field("coupon_description", "Coupon redeemed")
@@ -378,6 +380,7 @@ class CustomerPass(models.Model):
     def _process_referral_transaction(self) -> dict:
         """Process referral_pass card — increment successful referral count."""
         from apps.transactions.models import TransactionType
+
         current_count = self.referral_count
         new_count = current_count + 1
         self.set_pass_field("referral_count", new_count)
@@ -391,6 +394,8 @@ class CustomerPass(models.Model):
 
     def _process_membership_transaction(self) -> dict:
         """Process VIP membership validation."""
+        from apps.transactions.models import TransactionType
+
         return {
             "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,
             "pass_updated": False,
@@ -398,6 +403,8 @@ class CustomerPass(models.Model):
 
     def _process_corporate_transaction(self) -> dict:
         """Process corporate discount validation."""
+        from apps.transactions.models import TransactionType
+
         return {
             "transaction_type": TransactionType.CORPORATE_VALIDATED,
             "pass_updated": False,
@@ -405,6 +412,8 @@ class CustomerPass(models.Model):
 
     def _process_gift_transaction(self, amount: Decimal) -> dict:
         """Process gift certificate redemption."""
+        from apps.transactions.models import TransactionType
+
         current_balance = self.gift_balance
         if current_balance >= amount:
             new_balance = current_balance - amount
@@ -421,6 +430,8 @@ class CustomerPass(models.Model):
 
     def _process_multipass_transaction(self) -> dict:
         """Process multipass stamp usage."""
+        from apps.transactions.models import TransactionType
+
         remaining = self.multipass_remaining
         if remaining > 0:
             new_remaining = remaining - 1

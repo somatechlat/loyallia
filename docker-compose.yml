@@ -3,45 +3,52 @@
 # All services open source — PostgreSQL + Redis + MinIO + Django + Next.js
 # PORT RANGE: 33900+ (see docs/PORT_AUTHORITY.md)
 # TOTAL CLUSTER LIMIT: 8GB RAM
+#
+# SECRETS: All credentials pulled from .env (gitignored).
+# See .env.example for the full list of required variables.
 # =============================================================================
 
 x-common-env: &common-env
-  DATABASE_URL: postgres://loyallia:loyallia_secret@postgres:5432/loyallia
-  DATABASE_DIRECT_URL: postgres://loyallia:loyallia_secret@postgres:5432/loyallia
+  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
+  DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
   REDIS_URL: redis://redis:6379/0
   CELERY_BROKER_URL: redis://redis:6379/1
   CELERY_RESULT_BACKEND: redis://redis:6379/2
   MINIO_ENDPOINT: http://minio:9000
-  MINIO_ACCESS_KEY: loyallia_minio
-  MINIO_SECRET_KEY: loyallia_minio_secret
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
   MINIO_BUCKET_PASSES: passes
   MINIO_BUCKET_ASSETS: assets
-  SECRET_KEY: change-me-in-production-use-long-random-string
+  SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
   DJANGO_SETTINGS_MODULE: loyallia.settings.development
-  DEBUG: "True"
-  ALLOWED_HOSTS: "*"
-  CORS_ALLOWED_ORIGINS: "http://localhost:33906,http://localhost:33905,http://192.168.18.72:33906,http://192.168.18.72:33905"
+  DEBUG: "${DEBUG:-True}"
+  ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
+  CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:33906,http://localhost:33905}"
+  # Vault
+  VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+  VAULT_TOKEN: ${VAULT_TOKEN:-}
+  VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia}
   # Apple Wallet
-  APPLE_PASS_TYPE_IDENTIFIER: pass.com.loyallia.cards
-  APPLE_TEAM_IDENTIFIER: YOUR_APPLE_TEAM_ID
+  APPLE_PASS_TYPE_IDENTIFIER: ${APPLE_PASS_TYPE_IDENTIFIER:-pass.com.loyallia.cards}
+  APPLE_TEAM_IDENTIFIER: ${APPLE_TEAM_IDENTIFIER:-}
   APPLE_CERT_PATH: /app/certs/apple_pass.pem
   APPLE_CERT_KEY_PATH: /app/certs/apple_pass.key
   APPLE_WWDR_CERT_PATH: /app/certs/apple_wwdr.pem
   # Google Wallet
   GOOGLE_SERVICE_ACCOUNT_FILE: /app/certs/google_wallet_service_account.json
-  GOOGLE_WALLET_ISSUER_ID: "3388000000023113505"
-  # Claro Pay (Billing)
-  CLARO_PAY_BASE_URL: https://api-uat.claropay.com.ec
-  CLARO_PAY_MERCHANT_ID: YOUR_CLARO_PAY_MERCHANT_ID
-  CLARO_PAY_API_KEY: YOUR_CLARO_PAY_API_KEY
-  CLARO_PAY_API_SECRET: YOUR_CLARO_PAY_API_SECRET
-  CLARO_PAY_WEBHOOK_SECRET: YOUR_CLARO_PAY_WEBHOOK_SECRET
-  # Email
-  EMAIL_HOST: smtp.mailjet.com
-  EMAIL_PORT: "587"
-  EMAIL_HOST_USER: your_smtp_user
-  EMAIL_HOST_PASSWORD: your_smtp_password
-  EMAIL_FROM: noreply@loyallia.com
+  GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
+  # Claro Pay (Billing) — secrets from .env
+  CLARO_PAY_BASE_URL: ${CLARO_PAY_BASE_URL:-https://api-uat.claropay.com.ec}
+  CLARO_PAY_MERCHANT_ID: ${CLARO_PAY_MERCHANT_ID:-}
+  CLARO_PAY_API_KEY: ${CLARO_PAY_API_KEY:-}
+  CLARO_PAY_API_SECRET: ${CLARO_PAY_API_SECRET:-}
+  CLARO_PAY_WEBHOOK_SECRET: ${CLARO_PAY_WEBHOOK_SECRET:-}
+  # Email — secrets from .env
+  EMAIL_HOST: ${EMAIL_HOST:-smtp.mailjet.com}
+  EMAIL_PORT: "${EMAIL_PORT:-587}"
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+  EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
   # Firebase (Android push)
   FIREBASE_CREDENTIAL_FILE: /app/certs/firebase_service_account.json
 
@@ -53,9 +60,9 @@ services:
     image: postgres:16-alpine
     container_name: loyallia-postgres
     environment:
-      POSTGRES_DB: loyallia
-      POSTGRES_USER: loyallia
-      POSTGRES_PASSWORD: loyallia_secret
+      POSTGRES_DB: ${POSTGRES_DB:-loyallia}
+      POSTGRES_USER: ${POSTGRES_USER:-loyallia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -83,7 +90,7 @@ services:
     image: edoburu/pgbouncer:latest
     container_name: loyallia-pgbouncer
     environment:
-      DATABASE_URL: postgres://loyallia:loyallia_secret@postgres:5432/loyallia
+      DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
       POOL_MODE: transaction
       MAX_CLIENT_CONN: "200"
       DEFAULT_POOL_SIZE: "25"
@@ -134,8 +141,8 @@ services:
     container_name: loyallia-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: loyallia_minio
-      MINIO_ROOT_PASSWORD: loyallia_minio_secret
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
     ports:
@@ -164,12 +171,15 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 loyallia_minio loyallia_minio_secret &&
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
       mc mb --ignore-existing local/passes &&
       mc mb --ignore-existing local/assets &&
       mc anonymous set download local/assets &&
       echo 'MinIO buckets ready'
       "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     networks:
       - loyallia-net
     deploy:
@@ -388,7 +398,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: loyallia-flower
-    command: celery -A loyallia flower --port=5555 --basic_auth=admin:loyallia_flower_secret
+    command: celery -A loyallia flower --port=5555 --basic_auth=${FLOWER_BASIC_AUTH:-admin:changeme}
     environment:
       <<: *common-env
     ports:
@@ -405,6 +415,60 @@ services:
         limits:
           memory: 128M
           cpus: "0.25"
+
+  # ---------------------------------------------------------------------------
+  # HASHICORP VAULT — Secret Management   → localhost:33908           [256M]
+  # ---------------------------------------------------------------------------
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: loyallia-vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-loyallia-vault-root-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "33908:8200"
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Vault KV v2 initialization — seeds secrets for development
+  vault-init:
+    image: hashicorp/vault:1.15
+    container_name: loyallia-vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_TOKEN:-loyallia-vault-root-token}
+    entrypoint: >
+      /bin/sh -c "
+      vault secrets enable -path=secret kv-v2 2>/dev/null || true &&
+      vault kv put secret/loyallia \
+        postgres_password=$${POSTGRES_PASSWORD} \
+        minio_access_key=$${MINIO_ROOT_USER} \
+        minio_secret_key=$${MINIO_ROOT_PASSWORD} \
+        secret_key=$${SECRET_KEY:-change-me-in-production} &&
+      echo 'Vault secrets seeded'
+      "
+    networks:
+      - loyallia-net
+    deploy:
+      resources:
+        limits:
+          memory: 64M
 
 # =============================================================================
 # VOLUMES
