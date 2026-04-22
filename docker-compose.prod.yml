@@ -1,0 +1,133 @@
+# =============================================================================
+# LOYALLIA — Production Docker Compose Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This file overrides development defaults with production settings:
+#   - Gunicorn instead of runserver
+#   - Pre-built Next.js (standalone) instead of next dev
+#   - No source code volume mounts
+#   - DEBUG=False, production Django settings
+#   - No seed_test_data on startup
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # DJANGO API — Production: Gunicorn WSGI
+  # ---------------------------------------------------------------------------
+  api:
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput &&
+      python manage.py seed_subscription_plans 2>/dev/null || true &&
+      gunicorn loyallia.wsgi:application
+        --bind 0.0.0.0:8000
+        --workers 4
+        --worker-class gthread
+        --threads 2
+        --timeout 120
+        --keep-alive 5
+        --log-level info
+        --access-logfile -
+        --error-logfile -"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
+      DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
+      PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-loyallia}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET_PASSES: passes
+      MINIO_BUCKET_ASSETS: assets
+      SECRET_KEY: ${SECRET_KEY}
+      DJANGO_SETTINGS_MODULE: loyallia.settings.production
+      DEBUG: "False"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-rewards.loyallia.com}"
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-https://rewards.loyallia.com}"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      # Vault
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-}
+      VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia}
+      # Apple Wallet
+      APPLE_PASS_TYPE_IDENTIFIER: ${APPLE_PASS_TYPE_IDENTIFIER:-pass.com.loyallia.cards}
+      APPLE_TEAM_IDENTIFIER: ${APPLE_TEAM_IDENTIFIER:-}
+      APPLE_CERT_PATH: /app/certs/apple_pass.pem
+      APPLE_CERT_KEY_PATH: /app/certs/apple_pass.key
+      APPLE_WWDR_CERT_PATH: /app/certs/apple_wwdr.pem
+      # Google Wallet
+      GOOGLE_SERVICE_ACCOUNT_FILE: /app/certs/google_wallet_service_account.json
+      GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
+      # Payment Gateway
+      PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
+      PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
+      PAYMENT_GATEWAY_LOGIN: ${PAYMENT_GATEWAY_LOGIN:-}
+      PAYMENT_GATEWAY_TRAN_KEY: ${PAYMENT_GATEWAY_TRAN_KEY:-}
+      PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-}
+      # Email
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.mailjet.com}
+      EMAIL_PORT: "${EMAIL_PORT:-587}"
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
+      # Firebase
+      FIREBASE_CREDENTIAL_FILE: /app/certs/firebase_service_account.json
+      # Google OAuth
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://rewards.loyallia.com/api/v1/auth/google/callback/}
+    volumes:
+      - static_files:/app/staticfiles
+      - media_files:/app/mediafiles
+      - ./certs:/app/certs:ro
+    # NO source code mount in production
+
+  # ---------------------------------------------------------------------------
+  # NEXT.JS — Production: Pre-built standalone server
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://rewards.loyallia.com}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://rewards.loyallia.com}
+    environment:
+      NODE_ENV: production
+      NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://api:8000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://rewards.loyallia.com}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://rewards.loyallia.com}
+    volumes: []
+    # NO source code mounts, NO polling — uses pre-built standalone output
+
+  # ---------------------------------------------------------------------------
+  # CELERY WORKERS — Production: no source mounts
+  # ---------------------------------------------------------------------------
+  celery-pass:
+    environment:
+      DJANGO_SETTINGS_MODULE: loyallia.settings.production
+      DEBUG: "False"
+    volumes:
+      - ./certs:/app/certs:ro
+
+  celery-push:
+    environment:
+      DJANGO_SETTINGS_MODULE: loyallia.settings.production
+      DEBUG: "False"
+    volumes:
+      - ./certs:/app/certs:ro
+
+  celery-default:
+    environment:
+      DJANGO_SETTINGS_MODULE: loyallia.settings.production
+      DEBUG: "False"
+    volumes:
+      - ./certs:/app/certs:ro
+
+  celery-beat:
+    environment:
+      DJANGO_SETTINGS_MODULE: loyallia.settings.production
+      DEBUG: "False"
