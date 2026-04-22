@@ -44,24 +44,28 @@ graph TB
         end
 
         subgraph "Application Layer"
-            API[Django 5 + Django Ninja<br/>REST API<br/>Port 8000]
-            WEB[Next.js 14<br/>Dashboard + Scanner PWA<br/>Port 3000]
+            API[Django 5 + Django Ninja<br/>REST API<br/>Port 33905]
+            WEB[Next.js 14<br/>Dashboard + Scanner PWA<br/>Port 33906]
         end
 
         subgraph "Async Workers"
             CEL[Celery Workers<br/>Pass Generation<br/>Push Delivery<br/>Automation Rules]
             BEAT[Celery Beat<br/>Scheduled Jobs<br/>Win-back, Expiry Alerts]
-            FLW[Flower<br/>Worker Monitor<br/>Port 5555]
+            FLW[Flower<br/>Worker Monitor<br/>Port 33907]
         end
 
         subgraph "Data Layer"
-            PG[(PostgreSQL 16<br/>Primary Database<br/>Port 5432)]
-            RD[(Redis 7<br/>Cache + Queue<br/>Port 6379)]
-            PGB[PgBouncer<br/>Connection Pool<br/>Port 6432]
+            PG[(PostgreSQL 16<br/>Primary Database<br/>Port 33900)]
+            RD[(Redis 7<br/>Cache + Queue<br/>Port 33902)]
+            PGB[PgBouncer<br/>Connection Pool<br/>Port 33901]
         end
 
         subgraph "File Storage"
-            MIO[MinIO<br/>S3-Compatible Storage<br/>Logos, QR Codes, PKPass<br/>Port 9000/9001]
+            MIO[MinIO<br/>S3-Compatible Storage<br/>Logos, QR Codes, PKPass<br/>Port 33903/33904]
+        end
+
+        subgraph "Security"
+            VLT[HashiCorp Vault<br/>Secret Management<br/>Port 33908]
         end
     end
 
@@ -69,7 +73,7 @@ graph TB
         APN[Apple APN<br/>iOS Push]
         FCM[Google FCM<br/>Android Push]
         GW[Google Wallet API<br/>Pass Issuance]
-        STRIPE[Stripe<br/>Billing/Subscriptions]
+        CLARO[Claro Pay<br/>Billing/Subscriptions]
         SMTP[SMTP Provider<br/>Transactional Email]
     end
 
@@ -97,8 +101,9 @@ graph TB
     API -->|"Push campaigns"| RD
     CEL -->|"Deliver push"| APN
     CEL -->|"Deliver push"| FCM
-    CEL -->|"Charge subscription"| STRIPE
+    CEL -->|"Charge subscription"| CLARO
     CEL -->|"Send email"| SMTP
+    API -->|"Read secrets"| VLT
 
     BEAT -->|"Schedule jobs"| RD
     CEL -->|"Pass updates"| APN
