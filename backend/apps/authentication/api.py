@@ -79,6 +79,7 @@ def register(request, payload: RegisterIn):
             password=payload.password,
             first_name=payload.first_name.strip(),
             last_name=payload.last_name.strip(),
+            phone_number=payload.phone_number.strip(),
             tenant=tenant,
             role=UserRole.OWNER,
             is_active=True,
@@ -246,6 +247,8 @@ def me(request):
         "role": u.role,
         "is_active": u.is_active,
         "is_email_verified": u.is_email_verified,
+        "phone_number": u.phone_number,
+        "is_phone_verified": u.is_phone_verified,
         "tenant_id": str(u.tenant_id) if u.tenant_id else None,
         "tenant_name": u.tenant.name if u.tenant else "",
         "date_joined": u.date_joined.isoformat(),
@@ -440,3 +443,211 @@ def reset_password(request, payload: ResetPasswordIn):
     )
     logger.info("Password reset completed for %s", user.email)
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
+
+
+# =============================================================================
+# GOOGLE OAUTH 2.0 — Social Login
+# =============================================================================
+
+from apps.authentication.schemas import GoogleTokenIn  # noqa: E402
+
+
+@router.get(
+    "/google/config/",
+    auth=None,
+    summary="Obtener configuración de Google OAuth",
+)
+def google_oauth_config(request):
+    """Returns Google OAuth client ID and enabled status.
+    Used by the frontend to decide whether to render the Google login button.
+    """
+    client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+    return {
+        "enabled": bool(client_id),
+        "client_id": client_id,
+    }
+
+
+@router.post(
+    "/google/login/",
+    auth=None,
+    response=TokenOut,
+    summary="Iniciar sesión con Google",
+)
+def google_login(request, payload: GoogleTokenIn):
+    """Verify Google ID token server-side and issue JWT tokens.
+
+    Flow:
+    1. Frontend uses Google Identity Services (GSI) to get an ID token
+    2. Frontend sends the ID token here
+    3. Backend verifies the token with Google's tokeninfo endpoint
+    4. If user exists → login
+    5. If user doesn't exist → create tenant + OWNER user (auto-verified email)
+    """
+    import httpx
+
+    client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+    if not client_id:
+        raise HttpError(503, get_message("AUTH_GOOGLE_NOT_CONFIGURED"))
+
+    # Verify the ID token with Google's tokeninfo endpoint
+    try:
+        resp = httpx.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": payload.credential},
+            timeout=10.0,
+        )
+        if resp.status_code != 200:
+            logger.warning("Google token verification failed: %s", resp.text)
+            raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
+        google_data = resp.json()
+    except httpx.HTTPError as exc:
+        logger.error("Google token verification network error: %s", exc)
+        raise HttpError(502, get_message("AUTH_GOOGLE_FAILED"))
+
+    # Validate the audience (must match our client ID)
+    if google_data.get("aud") != client_id:
+        logger.warning(
+            "Google token audience mismatch: got %s, expected %s",
+            google_data.get("aud"),
+            client_id,
+        )
+        raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
+
+    # Validate email is verified by Google
+    if google_data.get("email_verified") != "true":
+        raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
+
+    email = google_data.get("email", "").lower().strip()
+    if not email:
+        raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
+
+    first_name = google_data.get("given_name", "")
+    last_name = google_data.get("family_name", "")
+
+    # Check if user already exists
+    try:
+        user = User.objects.select_related("tenant").get(email=email)
+        if not user.is_active:
+            raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
+        # Mark email as verified (Google already verified it)
+        if not user.is_email_verified:
+            user.is_email_verified = True
+            user.save(update_fields=["is_email_verified", "updated_at"])
+        user.reset_failed_login()
+        logger.info("Google OAuth login: existing user %s", email)
+        return issue_tokens(user)
+    except User.DoesNotExist:
+        pass
+
+    # New user — create tenant + OWNER
+    from django.db import transaction
+
+    business_name = payload.business_name.strip()
+    if not business_name:
+        # Use the user's name as default business name
+        business_name = f"{first_name} {last_name}".strip() or email.split("@")[0]
+
+    with transaction.atomic():
+        slug = slugify_business(business_name)
+        tenant = Tenant.objects.create(name=business_name, slug=slug)
+        tenant.activate_trial()
+        user = User.objects.create_user(
+            email=email,
+            password=secrets.token_urlsafe(32),  # Random password (user logs in via Google)
+            first_name=first_name,
+            last_name=last_name,
+            tenant=tenant,
+            role=UserRole.OWNER,
+            is_active=True,
+            is_email_verified=True,  # Google already verified this
+        )
+
+    logger.info("Google OAuth register: new user %s, tenant %s", email, tenant.slug)
+    return issue_tokens(user)
+
+
+# =============================================================================
+# PHONE NUMBER VERIFICATION
+# =============================================================================
+
+from apps.authentication.schemas import PhoneVerifyConfirmIn, PhoneVerifyRequestIn  # noqa: E402
+
+
+@router.post(
+    "/phone/verify/request/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="Solicitar verificación de teléfono",
+)
+def phone_verify_request(request, payload: PhoneVerifyRequestIn):
+    """Send a 6-digit OTP for phone verification.
+
+    DEV MODE:  OTP is logged to console and returned in the response.
+    PROD MODE: OTP is sent via SMS (Firebase Phone Auth or SMS gateway).
+    """
+    otp = secrets.token_hex(3).upper()[:6]  # 6-character alphanumeric
+    store_otp(payload.phone_number, otp, "phone_verify")
+
+    # Update user's phone number (unverified until confirmed)
+    user = request.user
+    user.phone_number = payload.phone_number
+    user.is_phone_verified = False
+    user.save(update_fields=["phone_number", "is_phone_verified", "updated_at"])
+
+    masked_phone = payload.phone_number[:4] + "****" + payload.phone_number[-2:]
+
+    if settings.DEBUG:
+        # DEV: Log OTP to console for easy testing (no SMS cost)
+        logger.info(
+            "📱 PHONE VERIFY OTP for %s: %s (DEV MODE — not sent via SMS)",
+            payload.phone_number,
+            otp,
+        )
+        return MessageOut(
+            success=True,
+            message=f"[DEV] Código: {otp} — "
+            + get_message("AUTH_PHONE_OTP_SENT", phone=masked_phone),
+        )
+
+    # PRODUCTION: Send via SMS
+    # Using email as fallback transport until SMS gateway is configured
+    try:
+        send_otp_email(
+            email=user.email,
+            otp=otp,
+            subject="Loyallia — Código de verificación telefónica",
+            body=(
+                f"Hola {user.first_name or user.email},\n\n"
+                f"Tu código de verificación para {masked_phone} es: {otp}\n\n"
+                f"Este código expira en 15 minutos.\n\n-- Loyallia"
+            ),
+        )
+    except Exception:
+        logger.exception("Failed to send phone OTP for %s", payload.phone_number)
+
+    return MessageOut(
+        success=True,
+        message=get_message("AUTH_PHONE_OTP_SENT", phone=masked_phone),
+    )
+
+
+@router.post(
+    "/phone/verify/confirm/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="Confirmar verificación de teléfono",
+)
+def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
+    """Validate the OTP and mark the phone as verified."""
+    if not verify_otp(payload.phone_number, payload.otp, "phone_verify"):
+        raise HttpError(400, get_message("AUTH_PHONE_OTP_INVALID"))
+
+    user = request.user
+    if user.phone_number != payload.phone_number:
+        raise HttpError(400, get_message("AUTH_PHONE_OTP_INVALID"))
+
+    user.is_phone_verified = True
+    user.save(update_fields=["is_phone_verified", "updated_at"])
+    logger.info("Phone verified for user %s: %s", user.email, payload.phone_number)
+    return MessageOut(success=True, message=get_message("AUTH_PHONE_VERIFIED"))

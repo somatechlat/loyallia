@@ -50,6 +50,13 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTH_PASSWORD_WRONG": "La contraseña actual es incorrecta.",
     "AUTH_RESET_EMAIL_SENT": "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.",
     "AUTH_RESET_INVALID": "El enlace de restablecimiento es inválido o ha expirado.",
+    "AUTH_GOOGLE_SUCCESS": "Inicio de sesión con Google exitoso.",
+    "AUTH_GOOGLE_FAILED": "No se pudo verificar la cuenta de Google. Intenta de nuevo.",
+    "AUTH_GOOGLE_NOT_CONFIGURED": "El inicio de sesión con Google no está configurado.",
+    "AUTH_GOOGLE_EMAIL_EXISTS": "Ya existe una cuenta con este correo. Inicia sesión con tu contraseña.",
+    "AUTH_PHONE_OTP_SENT": "Código de verificación enviado al {phone}.",
+    "AUTH_PHONE_VERIFIED": "Número telefónico verificado exitosamente.",
+    "AUTH_PHONE_OTP_INVALID": "El código de verificación es inválido o ha expirado.",
     # --- Tenant ---
     "TENANT_CREATED": "Negocio registrado. Tu prueba gratuita de {days} días ha comenzado.",
     "TENANT_UPDATED": "Configuración del negocio actualizada.",

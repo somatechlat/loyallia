@@ -4,6 +4,7 @@ import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import Tooltip from '@/components/ui/Tooltip';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905';
 
@@ -113,9 +114,9 @@ function StepBar({ step }: { step: number }) {
 /* ─── Default metadata per card type ──────────────────────────────────── */
 function defaultMeta(type: string): Record<string, unknown> {
   switch (type) {
-    case 'stamp':             return { stamps_required: 10, reward_description: 'Artículo gratis' };
+    case 'stamp':             return { stamps_required: 10, reward_description: '', stamp_type: 'visit', consumption_per_stamp: 10, stamp_expiry: 'unlimited', stamp_start_date: '', stamp_end_date: '', stamps_at_issue: 0, daily_stamp_limit: 5, birthday_stamps: 0 };
     case 'cashback':          return { cashback_percentage: 5, minimum_purchase: 0, credit_expiry_days: 365 };
-    case 'coupon':            return { discount_type: 'percentage', discount_value: 10, usage_limit_per_customer: 1, coupon_description: '10% de descuento en tu próxima compra' };
+    case 'coupon':            return { discount_type: 'fixed_amount', discount_value: 10, usage_limit_per_customer: 1, coupon_description: '', special_promotion_text: '', coupon_expiry: 'unlimited', coupon_start_date: '', coupon_end_date: '', push_message: '' };
     case 'affiliate':         return {};
     case 'discount':          return { tiers: [{ tier_name: 'Bronce', threshold: 0, discount_percentage: 5 }, { tier_name: 'Plata', threshold: 100, discount_percentage: 10 }, { tier_name: 'Oro', threshold: 500, discount_percentage: 15 }] };
     case 'gift_certificate':  return { denominations: [10, 25, 50], expiry_days: 365 };
@@ -127,6 +128,113 @@ function defaultMeta(type: string): Record<string, unknown> {
   }
 }
 
+/* ── Wallet Card Hover Preview inside Phone Frame (WIZ-001/002) ─────── */
+function WalletPreviewContent({ type }: { type: string }) {
+  const configs: Record<string, { title: string; detail: string; visual: React.ReactNode }> = {
+    stamp: {
+      title: 'Tarjeta de Sellos',
+      detail: 'Compra X, obtén 1 gratis',
+      visual: (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className={`w-5 h-5 rounded-full border-2 ${
+              i < 3 ? 'bg-amber-400 border-amber-500' : 'bg-white/20 border-white/30'
+            }`} />
+          ))}
+        </div>
+      ),
+    },
+    cashback: {
+      title: 'Cashback / Puntos',
+      detail: '5% de devolución',
+      visual: <p className="text-3xl font-black mt-2 text-emerald-400">5%</p>,
+    },
+    coupon: {
+      title: 'Cupón de Descuento',
+      detail: 'Descuento en tu próxima compra',
+      visual: <p className="text-3xl font-black mt-2 text-amber-300">$10</p>,
+    },
+    affiliate: {
+      title: 'Afiliación',
+      detail: 'Regístrate para recibir promos',
+      visual: <p className="text-2xl font-bold mt-2 text-blue-300">★ VIP</p>,
+    },
+    discount: {
+      title: 'Descuento por Niveles',
+      detail: 'Bronce 5% → Plata 10% → Oro 15%',
+      visual: <div className="flex gap-1 mt-2">{['5%','10%','15%'].map(v => <span key={v} className="px-2 py-1 bg-white/20 rounded-full text-xs font-bold">{v}</span>)}</div>,
+    },
+    gift_certificate: {
+      title: 'Certificado de Regalo',
+      detail: 'Regálale una experiencia',
+      visual: <p className="text-3xl font-black mt-2 text-pink-300">🎁 $25</p>,
+    },
+    vip_membership: {
+      title: 'Membresía VIP',
+      detail: 'Club exclusivo mensual',
+      visual: <p className="text-2xl font-black mt-2 text-yellow-300">👑 VIP</p>,
+    },
+    corporate_discount: {
+      title: 'Descuento Corporativo',
+      detail: 'Descuentos para empresas',
+      visual: <p className="text-2xl font-bold mt-2 text-blue-200">🏢 Corp</p>,
+    },
+    referral_pass: {
+      title: 'Programa de Referidos',
+      detail: 'Invita y gana recompensas',
+      visual: <p className="text-2xl font-bold mt-2 text-green-300">📣 Invita</p>,
+    },
+    multipass: {
+      title: 'Multipase Prepagado',
+      detail: '10 visitas por $25',
+      visual: <p className="text-2xl font-bold mt-2 text-cyan-300">10x 🎫</p>,
+    },
+  };
+
+  const cfg = configs[type] || configs.stamp;
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* iPhone Frame */}
+      <div className="relative w-[180px] h-[370px] bg-black rounded-[2.2rem] border-[3px] border-gray-700 shadow-2xl overflow-hidden flex flex-col">
+        {/* Dynamic Island */}
+        <div className="flex justify-center pt-2 pb-1">
+          <div className="w-20 h-5 bg-black rounded-full border border-gray-800" />
+        </div>
+        {/* Screen area */}
+        <div className="flex-1 bg-gradient-to-b from-gray-900 to-gray-950 px-3 pb-3 flex flex-col">
+          {/* Status bar */}
+          <div className="flex justify-between items-center py-1 px-1">
+            <span className="text-[8px] text-white/50">9:41</span>
+            <div className="flex gap-1">
+              <span className="text-[8px] text-white/50">●●●</span>
+            </div>
+          </div>
+          {/* Wallet Card */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full bg-gradient-to-br from-brand-500/80 to-brand-700/80 rounded-2xl p-3 shadow-lg border border-white/10">
+              <p className="text-[10px] font-bold text-white truncate">{cfg.title}</p>
+              <p className="text-[8px] text-white/70 mt-0.5">{cfg.detail}</p>
+              {cfg.visual}
+              {/* QR placeholder */}
+              <div className="mt-3 flex items-center gap-2">
+                <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center">
+                  <svg className="w-5 h-5 text-gray-800" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm11-2h2v2h-2v-2zm-4 0h2v2h-2v-2zm4 4h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                </div>
+                <span className="text-[7px] text-white/40">Powered by Loyallia</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Home indicator */}
+        <div className="flex justify-center pb-1">
+          <div className="w-16 h-1 bg-white/30 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Type-specific configuration fields ──────────────────────────────── */
 function TypeConfig({ type, meta, setMeta }: { type: string; meta: Record<string, unknown>; setMeta: (m: Record<string, unknown>) => void }) {
   const set = (k: string, v: unknown) => setMeta({ ...meta, [k]: v });
@@ -134,16 +242,138 @@ function TypeConfig({ type, meta, setMeta }: { type: string; meta: Record<string
   switch (type) {
     case 'stamp':
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Stamp Type Selector — STAMP-002/004 */}
           <div>
-            <label className="label">Sellos requeridos para la recompensa</label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="label mb-0">Tipo de sello</label>
+              <Tooltip text="Elige cómo tus clientes ganarán sellos: por cada visita individual o basado en el consumo monetario." />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                (meta.stamp_type ?? 'visit') === 'visit' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-surface-700'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <input type="radio" name="stamp_type" value="visit" checked={(meta.stamp_type ?? 'visit') === 'visit'}
+                    onChange={() => set('stamp_type', 'visit')} className="accent-brand-500" />
+                  <span className="font-semibold text-sm text-surface-900 dark:text-white">Otorgar sello por visita</span>
+                  <Tooltip text="Por cada consumo que tenga tu cliente, independientemente del monto, se le otorgará un sello." />
+                </div>
+                <p className="text-xs text-surface-500 ml-5">1 visita = 1 sello</p>
+              </label>
+              <label className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                meta.stamp_type === 'consumption' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-surface-700'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <input type="radio" name="stamp_type" value="consumption" checked={meta.stamp_type === 'consumption'}
+                    onChange={() => set('stamp_type', 'consumption')} className="accent-brand-500" />
+                  <span className="font-semibold text-sm text-surface-900 dark:text-white">Otorgar sello por consumo</span>
+                  <Tooltip text="Tú decides cuánto consumo equivale a un sello. Es obligatorio poner la equivalencia." />
+                </div>
+                <p className="text-xs text-surface-500 ml-5">$X consumo = 1 sello</p>
+              </label>
+            </div>
+            {/* Consumption Equivalence Panel — STAMP-005 */}
+            {meta.stamp_type === 'consumption' && (
+              <div className="mt-3 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl">
+                <label className="label">Equivalencia consumo-sello</label>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-surface-500">$</span>
+                  <input type="number" min={1} step={0.01} className="input w-24"
+                    value={meta.consumption_per_stamp as number ?? 10}
+                    onChange={e => set('consumption_per_stamp', parseFloat(e.target.value) || 10)} />
+                  <span className="text-sm text-surface-600 dark:text-surface-400">dólares en consumo equivale a 1 sello</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Stamps Required — existing functionality */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <label className="label mb-0">Sellos requeridos para la recompensa</label>
+              <Tooltip text="Cantidad total de sellos que el cliente debe acumular para obtener su recompensa." />
+            </div>
             <input type="number" min={1} max={99} className="input" value={meta.stamps_required as number ?? 10}
               onChange={e => set('stamps_required', parseInt(e.target.value) || 10)} />
           </div>
+
+          {/* Reward Description */}
           <div>
-            <label className="label">Descripción de la recompensa</label>
-            <input type="text" className="input" placeholder="Ej: Café gratis" value={meta.reward_description as string ?? ''}
+            <div className="flex items-center gap-2 mb-1">
+              <label className="label mb-0">Descripción de la recompensa</label>
+              <Tooltip text="El premio que obtendrá el cliente al completar todos los sellos." />
+            </div>
+            <input type="text" className="input" placeholder="Ej: Plato a la carta gratis" value={meta.reward_description as string ?? ''}
               onChange={e => set('reward_description', e.target.value)} />
+          </div>
+
+          {/* Expiry Options — STAMP-010/011 */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="label mb-0">Vigencia de la tarjeta</label>
+              <Tooltip text="Define si la tarjeta tiene vencimiento o es ilimitada. Si es ilimitada, se reinicia al completar todos los sellos." />
+            </div>
+            <div className="space-y-2">
+              <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                (meta.stamp_expiry ?? 'unlimited') === 'unlimited' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-surface-700'
+              }`}>
+                <input type="radio" name="stamp_expiry" value="unlimited" checked={(meta.stamp_expiry ?? 'unlimited') === 'unlimited'}
+                  onChange={() => set('stamp_expiry', 'unlimited')} className="accent-brand-500" />
+                <span className="text-sm text-surface-900 dark:text-white font-medium">Ilimitado</span>
+                <Tooltip text="La tarjeta no tiene fecha de vencimiento. Al completar los sellos, se reinicia de nuevo a 0." />
+              </label>
+              <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                meta.stamp_expiry === 'period' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-surface-700'
+              }`}>
+                <input type="radio" name="stamp_expiry" value="period" checked={meta.stamp_expiry === 'period'}
+                  onChange={() => set('stamp_expiry', 'period')} className="accent-brand-500" />
+                <span className="text-sm text-surface-900 dark:text-white font-medium">Por periodo de tiempo</span>
+              </label>
+            </div>
+            {meta.stamp_expiry === 'period' && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="label">Fecha de inicio</label>
+                  <input type="date" className="input" value={meta.stamp_start_date as string ?? ''}
+                    onChange={e => set('stamp_start_date', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Fecha de fin</label>
+                  <input type="date" className="input" value={meta.stamp_end_date as string ?? ''}
+                    min={meta.stamp_start_date as string ?? ''}
+                    onChange={e => set('stamp_end_date', e.target.value)} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Additional Config — STAMP-012/013/014 */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="label mb-0">Sellos al emitir</label>
+                <Tooltip text="Cantidad de sellos de bonificación que se otorgan cuando el cliente agrega la tarjeta a su wallet." />
+              </div>
+              <input type="number" min={0} max={10} className="input" value={meta.stamps_at_issue as number ?? 0}
+                onChange={e => set('stamps_at_issue', parseInt(e.target.value) || 0)} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="label mb-0">Límite por día</label>
+                <Tooltip text="Cantidad máxima de sellos que un cliente puede ganar en un solo día." />
+              </div>
+              <input type="number" min={1} max={99} className="input" value={meta.daily_stamp_limit as number ?? 5}
+                onChange={e => set('daily_stamp_limit', parseInt(e.target.value) || 5)} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="label mb-0">Sellos cumpleaños</label>
+                <Tooltip text="Sellos extra que se otorgan al cliente el día de su cumpleaños. Requiere fecha de nacimiento en el formulario de registro." />
+              </div>
+              <input type="number" min={0} max={10} className="input" value={meta.birthday_stamps as number ?? 0}
+                onChange={e => set('birthday_stamps', parseInt(e.target.value) || 0)} />
+            </div>
           </div>
         </div>
       );
@@ -169,32 +399,216 @@ function TypeConfig({ type, meta, setMeta }: { type: string; meta: Record<string
       );
     case 'coupon':
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Discount Type Selection — CPN-001/002 */}
           <div>
-            <label className="label">Tipo de descuento</label>
-            <select className="input" value={meta.discount_type as string ?? 'percentage'}
-              onChange={e => set('discount_type', e.target.value)}>
-              <option value="percentage">Porcentaje</option>
-              <option value="fixed_amount">Monto fijo</option>
-            </select>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="label mb-0">Tipo de descuento</label>
+              <Tooltip text="Crea un cupón para ofrecer beneficios directos a tus clientes. Elige el tipo de descuento que mejor se adapte a tu estrategia." />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { value: 'fixed_amount', label: 'Descuento de valor fijo', tooltip: 'Define un monto fijo que se descontará del total de la compra del cliente.' },
+                { value: 'percentage', label: 'Descuento porcentual', tooltip: 'Aplica un porcentaje de descuento sobre el total de la compra del cliente.' },
+                { value: 'special_promotion', label: 'Promoción especial', tooltip: 'Escribe el beneficio exacto que recibirá el cliente, como 2x1 o producto gratis.' },
+              ].map(opt => (
+                <label key={opt.value} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                  meta.discount_type === opt.value
+                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                    : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="discount_type"
+                    value={opt.value}
+                    checked={meta.discount_type === opt.value}
+                    onChange={() => set('discount_type', opt.value)}
+                    className="accent-brand-500"
+                  />
+                  <span className="font-medium text-sm text-surface-900 dark:text-white">{opt.label}</span>
+                  <Tooltip text={opt.tooltip} />
+                </label>
+              ))}
+            </div>
           </div>
+
+          {/* Dynamic Fields Based on Type — CPN-003/004/005 */}
+          {meta.discount_type === 'fixed_amount' && (
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="label mb-0">Monto del descuento</label>
+                <Tooltip text="Ingresa el valor en dólares que deseas descontar." />
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500 font-bold">$</span>
+                <input
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  className="input pl-8"
+                  placeholder="5.00"
+                  value={meta.discount_value as number ?? ''}
+                  onChange={e => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val) && val >= 0) set('discount_value', val);
+                    else if (e.target.value === '') set('discount_value', '');
+                  }}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {meta.discount_type === 'percentage' && (
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="label mb-0">Porcentaje de descuento</label>
+                <Tooltip text="Ingresa el porcentaje de descuento (entre 1 y 100)." />
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  step={0.01}
+                  className="input pr-8"
+                  placeholder="15"
+                  value={meta.discount_value as number ?? ''}
+                  onChange={e => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val) && val >= 0 && val <= 100) set('discount_value', val);
+                    else if (e.target.value === '') set('discount_value', '');
+                  }}
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-500 font-bold">%</span>
+              </div>
+            </div>
+          )}
+
+          {meta.discount_type === 'special_promotion' && (
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="label mb-0">Descripción de la promoción</label>
+                <Tooltip text="Describe la promoción tal como la verá el cliente." />
+              </div>
+              <input
+                type="text"
+                className="input"
+                placeholder="Ej: 2x1 en cervezas artesanales"
+                maxLength={100}
+                value={meta.special_promotion_text as string ?? ''}
+                onChange={e => set('special_promotion_text', e.target.value)}
+                required
+              />
+              <p className="text-xs text-surface-400 mt-1 text-right">
+                {(meta.special_promotion_text as string ?? '').length}/100 caracteres
+              </p>
+            </div>
+          )}
+
+          {/* Help Section — CPN-014 */}
+          <details className="group">
+            <summary className="cursor-pointer text-xs font-semibold text-brand-500 hover:text-brand-600 flex items-center gap-1">
+              <svg className="w-4 h-4 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+              ¿Cuál es la diferencia entre monto fijo y porcentual?
+            </summary>
+            <div className="mt-2 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl text-xs text-surface-600 dark:text-surface-300 space-y-2">
+              <p><strong className="text-surface-900 dark:text-white">Monto fijo:</strong> El valor que especifiques será el valor monetario exacto que obsequiarás a tu cliente. Ejemplo: si pones $5, el cliente recibirá $5 de descuento directo.</p>
+              <p><strong className="text-surface-900 dark:text-white">Porcentual:</strong> El descuento será calculado a partir del consumo que tenga el cliente. Ejemplo: si pones 15%, y el cliente consume $40, recibirá $6 de descuento.</p>
+              <p><strong className="text-surface-900 dark:text-white">Promoción especial:</strong> Texto libre para promociones como &quot;2x1&quot;, &quot;Postre gratis&quot;, o &quot;Bebida de cortesía&quot;.</p>
+            </div>
+          </details>
+
+          {/* Dates — DATE-001 thru DATE-005 */}
           <div>
-            <label className="label">Valor del descuento</label>
-            <input type="number" min={0.01} step={0.01} className="input" value={meta.discount_value as number ?? 10}
-              onChange={e => set('discount_value', parseFloat(e.target.value) || 10)} />
+            <div className="flex items-center gap-2 mb-2">
+              <label className="label mb-0">Vigencia del cupón</label>
+              <Tooltip text="Define desde cuándo y hasta cuándo el cupón estará disponible para los clientes." />
+            </div>
+            <div className="space-y-2">
+              <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                meta.coupon_expiry === 'unlimited' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-surface-700'
+              }`}>
+                <input type="radio" name="coupon_expiry" value="unlimited" checked={meta.coupon_expiry === 'unlimited' || !meta.coupon_expiry}
+                  onChange={() => set('coupon_expiry', 'unlimited')} className="accent-brand-500" />
+                <span className="text-sm text-surface-900 dark:text-white font-medium">Ilimitado (no vence)</span>
+              </label>
+              <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                meta.coupon_expiry === 'dates' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-surface-700'
+              }`}>
+                <input type="radio" name="coupon_expiry" value="dates" checked={meta.coupon_expiry === 'dates'}
+                  onChange={() => set('coupon_expiry', 'dates')} className="accent-brand-500" />
+                <span className="text-sm text-surface-900 dark:text-white font-medium">Fechas específicas</span>
+              </label>
+            </div>
+            {meta.coupon_expiry === 'dates' && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="label">Fecha de inicio</label>
+                  <input type="date" className="input" value={meta.coupon_start_date as string ?? ''} required
+                    onChange={e => set('coupon_start_date', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Fecha de fin</label>
+                  <input type="date" className="input" value={meta.coupon_end_date as string ?? ''} required
+                    min={meta.coupon_start_date as string ?? ''}
+                    onChange={e => set('coupon_end_date', e.target.value)} />
+                  {meta.coupon_end_date && meta.coupon_start_date && (meta.coupon_end_date as string) < (meta.coupon_start_date as string) && (
+                    <p className="text-xs text-red-500 mt-1">⚠️ La fecha de fin no puede ser anterior a la fecha de inicio</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Uses per customer */}
           <div>
             <label className="label">Usos máximos por cliente</label>
             <input type="number" min={1} className="input" value={meta.usage_limit_per_customer as number ?? 1}
               onChange={e => set('usage_limit_per_customer', parseInt(e.target.value) || 1)} />
           </div>
+
+          {/* Coupon Description */}
           <div>
             <label className="label">Descripción del cupón</label>
             <input type="text" className="input" value={meta.coupon_description as string ?? ''}
               onChange={e => set('coupon_description', e.target.value)} />
           </div>
+
+          {/* Push Notification Module — CPNPUSH-001 thru CPNPUSH-011 */}
+          <div className="border-t border-surface-200 dark:border-surface-700 pt-5 mt-5">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-sm font-bold text-surface-900 dark:text-white">Notificación automática al guardar el cupón</h3>
+              <Tooltip text="Define el mensaje que recibirá el cliente cuando guarde este cupón en su wallet." />
+            </div>
+            <p className="text-xs text-surface-500 mb-3">
+              Permite definir un mensaje de notificación push que el cliente recibirá automáticamente cuando agregue o descargue el cupón en su wallet.
+            </p>
+            <div className="relative">
+              <textarea
+                className="input min-h-[80px] resize-none"
+                placeholder="Tu cupón ya está activo. Disfruta $5 de descuento en tu próxima compra 🍕"
+                maxLength={178}
+                value={meta.push_message as string ?? ''}
+                onChange={e => set('push_message', e.target.value)}
+              />
+              <div className="flex items-center justify-between mt-1">
+                <div className="flex items-center gap-1">
+                  <Tooltip text="Este mensaje se enviará automáticamente una sola vez cuando el cliente active el cupón." />
+                  <span className="text-[10px] text-surface-400">Este campo es opcional</span>
+                </div>
+                <span className={`text-xs font-mono ${
+                  (meta.push_message as string ?? '').length > 160 ? 'text-amber-500' : 'text-surface-400'
+                }`}>
+                  {(meta.push_message as string ?? '').length}/178
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       );
+
     case 'discount':
       return (
         <div className="space-y-4">
@@ -497,6 +911,7 @@ function adjustColor(hex: string, amount: number): string {
 export default function NewProgramPage() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hoveredType, setHoveredType] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     card_type: '',
@@ -630,30 +1045,47 @@ export default function NewProgramPage() {
       {/* ──── STEP 0: Card type selection ──── */}
       {step === 0 && (
         <div className="space-y-4 animate-fade-in">
-          <h2 className="text-lg font-bold text-surface-900">Selecciona el tipo de programa</h2>
-          <p className="text-sm text-surface-500">Puedes crear múltiples programas combinando diferentes tipos.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {CARD_TYPES.map(ct => (
-              <button
-                key={ct.value}
-                type="button"
-                onClick={() => handleTypeSelect(ct.value)}
-                className={`text-left p-4 rounded-2xl border-2 transition-all duration-200
-                  ${form.card_type === ct.value
-                    ? 'border-brand-500 bg-brand-50 shadow-glow'
-                    : 'border-surface-200 bg-white hover:border-surface-300 hover:shadow-card'
-                  }`}
-                id={`card-type-${ct.value}`}
-              >
-                <div className="flex items-start gap-3">
-                  <CardTypeIcon icon={ct.icon} className="w-6 h-6 text-surface-600" />
-                  <div>
-                    <p className="font-semibold text-surface-900 text-sm">{ct.label}</p>
-                    <p className="text-xs text-surface-500 mt-0.5">{ct.desc}</p>
+          <h2 className="text-lg font-bold text-surface-900 dark:text-white">Selecciona el tipo de programa</h2>
+          <p className="text-sm text-surface-500">Puedes crear múltiples programas combinando diferentes tipos. <span className="text-brand-500">Pasa el mouse sobre cada tipo para ver una vista previa.</span></p>
+          <div className="relative flex gap-6">
+            {/* Left: Type Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+              {CARD_TYPES.map(ct => (
+                <button
+                  key={ct.value}
+                  type="button"
+                  onClick={() => handleTypeSelect(ct.value)}
+                  onMouseEnter={() => setHoveredType(ct.value)}
+                  onMouseLeave={() => setHoveredType(null)}
+                  className={`text-left p-4 rounded-2xl border-2 transition-all duration-200
+                    ${form.card_type === ct.value
+                      ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-glow'
+                      : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 hover:border-surface-300 dark:hover:border-surface-600 hover:shadow-card'
+                    }`}
+                  id={`card-type-${ct.value}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <CardTypeIcon icon={ct.icon} className="w-6 h-6 text-surface-600 dark:text-surface-400" />
+                    <div>
+                      <p className="font-semibold text-surface-900 dark:text-white text-sm">{ct.label}</p>
+                      <p className="text-xs text-surface-500 mt-0.5">{ct.desc}</p>
+                    </div>
                   </div>
+                </button>
+              ))}
+            </div>
+            {/* Right: Hover Preview Panel (desktop only) */}
+            <div className="hidden lg:flex items-start justify-center w-[220px] flex-shrink-0 sticky top-8" id="hover-preview-panel">
+              {hoveredType ? (
+                <div className="animate-fade-in">
+                  <WalletPreviewContent type={hoveredType} />
                 </div>
-              </button>
-            ))}
+              ) : (
+                <div className="w-full h-[370px] flex items-center justify-center text-center">
+                  <p className="text-xs text-surface-400">👆 Pasa el mouse sobre un tipo de programa para ver una vista previa de la tarjeta</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

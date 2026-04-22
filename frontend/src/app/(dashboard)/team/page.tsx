@@ -25,7 +25,7 @@ export default function TeamPage() {
   const fetchTeam = () => {
     fetch('/api/v1/tenants/team/', { headers })
       .then(r => r.json())
-      .then(data => setMembers(data || []))
+      .then(data => setMembers((data || []).filter((m: TeamMember) => m.role !== 'SUPER_ADMIN')))
       .catch(console.error)
       .finally(() => setLoading(false));
   };

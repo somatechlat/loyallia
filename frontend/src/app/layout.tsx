@@ -17,6 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Inline favicon as data URI */}
         <link rel="icon" href={LOYALLIA_LOGO} type="image/png" />
+        {/* Google Fonts — preconnect + non-blocking load (replaces render-blocking CSS @import) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
         {/* Inline script to prevent flash of wrong theme */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){

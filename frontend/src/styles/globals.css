@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Google Fonts loaded via <link> in layout.tsx for non-blocking render */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -272,3 +272,37 @@
 
 /* ── Focus visible ring ──────────────────────────────────────────────── */
 .dark *:focus-visible { outline-color: #6366f1 !important; }
+
+/* ── Dark Mode Fixes: indigo family (used in campaigns, programs modals) ─ */
+.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.12) !important; }
+.dark .bg-indigo-100 { background-color: rgba(99, 102, 241, 0.18) !important; }
+.dark .bg-indigo-500 { background-color: #6366f1 !important; }
+.dark .text-indigo-600 { color: #a5b4fc !important; }
+.dark .text-indigo-700 { color: #a5b4fc !important; }
+.dark .text-indigo-900 { color: #c7d2fe !important; }
+.dark .border-indigo-200 { border-color: rgba(99, 102, 241, 0.25) !important; }
+.dark .border-indigo-300 { border-color: rgba(99, 102, 241, 0.35) !important; }
+
+/* ── Dark Mode Fixes: slate family (used in modals, cards) ───────────── */
+.dark .bg-slate-50 { background-color: #1a2233 !important; }
+.dark .bg-slate-100 { background-color: #1f2937 !important; }
+.dark .bg-slate-200 { background-color: #2a3547 !important; }
+.dark .text-slate-500 { color: #9ca3af !important; }
+.dark .text-slate-600 { color: #9ca3af !important; }
+.dark .text-slate-700 { color: #d1d5db !important; }
+.dark .text-slate-800 { color: #e4e8f0 !important; }
+.dark .text-slate-900 { color: #f1f3f7 !important; }
+.dark .border-slate-200 { border-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .border-slate-300 { border-color: rgba(255, 255, 255, 0.12) !important; }
+
+/* ── Dark Mode Fixes: emerald family (used for status indicators) ─────── */
+.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.12) !important; }
+.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.18) !important; }
+.dark .text-emerald-600 { color: #34d399 !important; }
+.dark .text-emerald-700 { color: #6ee7b7 !important; }
+
+/* ── Dark Mode Fixes: amber family (used for draft/warning states) ────── */
+.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.12) !important; }
+.dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.18) !important; }
+.dark .text-amber-600 { color: #fbbf24 !important; }
+.dark .text-amber-700 { color: #fcd34d !important; }

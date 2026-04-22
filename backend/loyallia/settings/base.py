@@ -379,6 +379,17 @@ TAX_RATE_ECUADOR = config(
     "TAX_RATE_ECUADOR", default=0.15, cast=float
 )  # Ecuador IVA 15%
 
+# =============================================================================
+# GOOGLE OAUTH 2.0 (Social Login)
+# Get credentials from: https://console.cloud.google.com/apis/credentials
+# =============================================================================
+GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
+GOOGLE_OAUTH_CLIENT_SECRET = config("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+GOOGLE_OAUTH_REDIRECT_URI = config(
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    default="http://localhost:33905/api/v1/auth/google/callback/",
+)
+
 APP_URL = config("APP_URL", default="http://localhost")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
 
