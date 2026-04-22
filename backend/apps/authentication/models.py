@@ -64,6 +64,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)  # Django admin access
     is_email_verified = models.BooleanField(default=False)
 
+    # Phone verification
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        verbose_name="Teléfono",
+        help_text="E.164 format: +593991234567",
+    )
+    is_phone_verified = models.BooleanField(default=False)
+
     # Invitation tracking
     invited_by = models.ForeignKey(
         "self",

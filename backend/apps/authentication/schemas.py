@@ -15,6 +15,7 @@ class RegisterIn(BaseModel):
     password: str
     first_name: str = ""
     last_name: str = ""
+    phone_number: str = ""
 
     @field_validator("password")
     @classmethod
@@ -161,3 +162,36 @@ class ResetPasswordIn(BaseModel):
         if len(v) < 6:
             raise ValueError("La contrasena debe tener al menos 6 caracteres")
         return v
+
+
+class GoogleTokenIn(BaseModel):
+    """Schema for Google OAuth: frontend sends the Google ID token or authorization code."""
+
+    credential: str
+    business_name: str = ""
+
+
+class PhoneVerifyRequestIn(BaseModel):
+    """Request phone number verification OTP."""
+
+    phone_number: str
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        import re
+
+        v = v.strip()
+        # Accept E.164 format: +[country_code][number], 8-15 digits
+        if not re.match(r"^\+[1-9]\d{7,14}$", v):
+            raise ValueError(
+                "Formato inválido. Usa formato internacional: +593991234567"
+            )
+        return v
+
+
+class PhoneVerifyConfirmIn(BaseModel):
+    """Confirm phone verification with OTP code."""
+
+    phone_number: str
+    otp: str

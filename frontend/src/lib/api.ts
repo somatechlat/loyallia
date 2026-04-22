@@ -27,7 +27,7 @@ api.interceptors.response.use(
             '/api/v1/auth/refresh/',
             { refresh_token: refresh }
           );
-          Cookies.set('access_token', data.access_token, { expires: 1/96 });
+          Cookies.set('access_token', data.access_token, { expires: 1/24 });
           original.headers.Authorization = `Bearer ${data.access_token}`;
           return api(original);
         } catch {
@@ -57,6 +57,13 @@ export const authApi = {
     api.put('/api/v1/auth/profile/', data),
   changePassword: (data: { current_password: string; new_password: string }) =>
     api.post('/api/v1/auth/change-password/', data),
+  googleConfig: () => api.get('/api/v1/auth/google/config/'),
+  googleLogin: (credential: string, business_name?: string) =>
+    api.post('/api/v1/auth/google/login/', { credential, business_name: business_name || '' }),
+  phoneVerifyRequest: (phone_number: string) =>
+    api.post('/api/v1/auth/phone/verify/request/', { phone_number }),
+  phoneVerifyConfirm: (phone_number: string, otp: string) =>
+    api.post('/api/v1/auth/phone/verify/confirm/', { phone_number, otp }),
 };
 
 export const analyticsApi = {

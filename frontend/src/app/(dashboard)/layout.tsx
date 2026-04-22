@@ -133,6 +133,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }
 
+  // RBAC: Restrict OWNER-only routes from MANAGER/other roles (SYS-003)
+  const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation'];
+  if (user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN') {
+    const isRestricted = OWNER_ONLY_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+    if (isRestricted && typeof window !== 'undefined') {
+      window.location.replace('/');
+      return null;
+    }
+  }
+
   const handleLogout = async () => {
     await logout();
     toast.success('Sesión cerrada');

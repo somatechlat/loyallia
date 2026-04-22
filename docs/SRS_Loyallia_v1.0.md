@@ -111,7 +111,7 @@ Loyallia is a standalone, cloud-native, multi-tenant SaaS platform. It integrate
 
 | ID | Function |
 |----|----------|
-| F-01 | Multi-tenant business onboarding with 14-day free trial |
+| F-01 | Multi-tenant business onboarding with 5-day free trial |
 | F-02 | 10-type digital loyalty card creation with full branding customization |
 | F-03 | Customer self-enrollment via QR code (scan → form → Wallet in <60 seconds) |
 | F-04 | Real-time digital pass issuance to Apple Wallet / Google Wallet |
@@ -237,7 +237,7 @@ Manage tenant onboarding, user authentication, role-based access control, and te
 | Req ID | Requirement | Priority |
 |--------|-------------|----------|
 | LYL-FR-AUTH-001 | System SHALL allow a new business to register with: business name, email, phone, password, country | MUST |
-| LYL-FR-AUTH-002 | Upon registration, system SHALL automatically start a 14-day free trial with FULL feature access | MUST |
+| LYL-FR-AUTH-002 | Upon registration, system SHALL automatically start a 5-day free trial with FULL feature access | MUST |
 | LYL-FR-AUTH-003 | No credit card SHALL be required at registration | MUST |
 | LYL-FR-AUTH-004 | System SHALL send a verification email to confirm the business email address via OTP link | MUST |
 | LYL-FR-AUTH-005 | System SHALL automatically create a default tenant workspace, isolating all data | MUST |

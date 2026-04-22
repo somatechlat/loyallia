@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { notificationsApi, customersApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface Campaign {
   id: string; title: string; message: string; segment: string;
@@ -248,13 +249,69 @@ export default function CampaignsPage() {
               )}
             </div>
             <div>
-              <label className="label" htmlFor="campaign-segment">Segmento de destinatarios</label>
-              <select id="campaign-segment" className="input"
-                value={form.segment_id} onChange={e => setForm(f => ({ ...f, segment_id: e.target.value }))}>
-                {segments.map(s => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.member_count} clientes)</option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2 mb-3">
+                <label className="label mb-0">Segmento de destinatarios</label>
+                <Tooltip text="Selecciona a qué grupo de clientes se enviará esta campaña. Los segmentos se calculan automáticamente basados en el comportamiento de tus clientes." />
+              </div>
+              {/* Segment Wizard Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {segments.map(s => {
+                  const segmentMeta: Record<string, { icon: string; desc: string; color: string; darkColor: string }> = {
+                    all:      { icon: '📢', desc: 'Envía a toda tu base de clientes registrados.', color: 'border-brand-500 bg-brand-50', darkColor: 'dark:bg-brand-900/20' },
+                    vip:      { icon: '👑', desc: 'Clientes con alto volumen de compras y visitas frecuentes.', color: 'border-amber-500 bg-amber-50', darkColor: 'dark:bg-amber-900/20' },
+                    active:   { icon: '🟢', desc: 'Clientes con actividad reciente (últimos 30 días).', color: 'border-emerald-500 bg-emerald-50', darkColor: 'dark:bg-emerald-900/20' },
+                    at_risk:  { icon: '⚠️', desc: 'Clientes cuya frecuencia de visita ha disminuido.', color: 'border-orange-500 bg-orange-50', darkColor: 'dark:bg-orange-900/20' },
+                    inactive: { icon: '💤', desc: 'Clientes sin actividad en los últimos 60+ días.', color: 'border-red-400 bg-red-50', darkColor: 'dark:bg-red-900/20' },
+                    new:      { icon: '🆕', desc: 'Clientes registrados en los últimos 30 días.', color: 'border-blue-500 bg-blue-50', darkColor: 'dark:bg-blue-900/20' },
+                  };
+                  const meta = segmentMeta[s.id] ?? { icon: '📊', desc: `Segmento: ${s.name}`, color: 'border-surface-300 bg-surface-50', darkColor: 'dark:bg-surface-800' };
+                  const isSelected = form.segment_id === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, segment_id: s.id }))}
+                      className={`text-left p-4 rounded-xl border-2 transition-all duration-200 ${
+                        isSelected
+                          ? `${meta.color} ${meta.darkColor} shadow-md`
+                          : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 hover:border-surface-300 dark:hover:border-surface-600'
+                      }`}
+                      id={`segment-${s.id}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl">{meta.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-sm text-surface-900 dark:text-white truncate">{s.name}</p>
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                              </svg>
+                            )}
+                          </div>
+                          <p className="text-xs text-surface-500 mt-0.5 line-clamp-2">{meta.desc}</p>
+                          <p className="text-xs font-bold mt-2 text-brand-600 dark:text-brand-400">
+                            {s.member_count.toLocaleString()} cliente{s.member_count !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Selected summary */}
+              {form.segment_id && (
+                <div className="mt-3 p-3 bg-surface-50 dark:bg-surface-800 rounded-xl flex items-center gap-2">
+                  <span className="text-xs text-surface-500">📨 Esta campaña se enviará a</span>
+                  <span className="text-xs font-bold text-surface-900 dark:text-white">
+                    {segments.find(s => s.id === form.segment_id)?.member_count.toLocaleString() ?? 0} clientes
+                  </span>
+                  <span className="text-xs text-surface-500">del segmento</span>
+                  <span className="badge-purple text-[10px]">
+                    {segments.find(s => s.id === form.segment_id)?.name ?? form.segment_id}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1" id="cancel-campaign-btn">

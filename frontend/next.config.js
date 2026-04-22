@@ -3,6 +3,7 @@ const nextConfig = {
   output: 'standalone',
   trailingSlash: true,
   experimental: {
+    optimizePackageImports: ['recharts'],
     serverActions: {
       allowedOrigins: ['localhost:33906', '192.168.18.217:33906'],
     },
