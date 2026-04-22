@@ -3,6 +3,7 @@ Loyallia — Seed Ecuador Businesses
 REAL Ecuadorian business data with verified RUCs (from SRI/Supercias),
 REAL GPS coordinates (from Google Maps/Waze), and production-grade demo data.
 """
+
 from datetime import timedelta
 from decimal import Decimal
 
@@ -11,7 +12,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.authentication.models import User, UserRole
-from apps.billing.models import Invoice, Subscription, SubscriptionPlan, SubscriptionStatus
+from apps.billing.models import (
+    Invoice,
+    Subscription,
+    SubscriptionPlan,
+    SubscriptionStatus,
+)
 from apps.tenants.models import Location, Tenant
 
 # =============================================================================
@@ -117,28 +123,124 @@ BUSINESSES = [
             "last_name": "Vásquez",
         },
         "staff": [
-            {"email": "sucursal.mallsol@sweetandcoffee.com.ec", "first_name": "Andrés", "last_name": "Mora"},
-            {"email": "sucursal.urdesa@sweetandcoffee.com.ec", "first_name": "Gabriela", "last_name": "Flores"},
-            {"email": "sucursal.cci@sweetandcoffee.com.ec", "first_name": "Patricio", "last_name": "Herrera"},
+            {
+                "email": "sucursal.mallsol@sweetandcoffee.com.ec",
+                "first_name": "Andrés",
+                "last_name": "Mora",
+            },
+            {
+                "email": "sucursal.urdesa@sweetandcoffee.com.ec",
+                "first_name": "Gabriela",
+                "last_name": "Flores",
+            },
+            {
+                "email": "sucursal.cci@sweetandcoffee.com.ec",
+                "first_name": "Patricio",
+                "last_name": "Herrera",
+            },
         ],
         "locations": [
             # === GUAYAQUIL ===
-            {"name": "Mall del Sol", "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol, Planta Alta", "city": "Guayaquil", "lat": -2.1543, "lng": -79.8963},
-            {"name": "San Marino Shopping", "address": "Av. Francisco de Orellana y Miguel H. Alcívar, C.C. San Marino", "city": "Guayaquil", "lat": -2.1636, "lng": -79.9102},
-            {"name": "Urdesa Central", "address": "V.E. Estrada y Todos los Santos, Urdesa Central", "city": "Guayaquil", "lat": -2.1731, "lng": -79.9070},
-            {"name": "C.C. Policentro", "address": "Av. del Periodista, C.C. Policentro Shopping", "city": "Guayaquil", "lat": -2.1593, "lng": -79.9026},
-            {"name": "Riocentro Los Ceibos", "address": "Av. del Bombero, C.C. Riocentro Los Ceibos", "city": "Guayaquil", "lat": -2.1854, "lng": -79.9301},
-            {"name": "Plaza Lagos — Samborondón", "address": "Km 5.5 Vía Samborondón, Plaza Lagos Town Center", "city": "Samborondón", "lat": -1.9610, "lng": -79.8743},
+            {
+                "name": "Mall del Sol",
+                "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol, Planta Alta",
+                "city": "Guayaquil",
+                "lat": -2.1543,
+                "lng": -79.8963,
+            },
+            {
+                "name": "San Marino Shopping",
+                "address": "Av. Francisco de Orellana y Miguel H. Alcívar, C.C. San Marino",
+                "city": "Guayaquil",
+                "lat": -2.1636,
+                "lng": -79.9102,
+            },
+            {
+                "name": "Urdesa Central",
+                "address": "V.E. Estrada y Todos los Santos, Urdesa Central",
+                "city": "Guayaquil",
+                "lat": -2.1731,
+                "lng": -79.9070,
+            },
+            {
+                "name": "C.C. Policentro",
+                "address": "Av. del Periodista, C.C. Policentro Shopping",
+                "city": "Guayaquil",
+                "lat": -2.1593,
+                "lng": -79.9026,
+            },
+            {
+                "name": "Riocentro Los Ceibos",
+                "address": "Av. del Bombero, C.C. Riocentro Los Ceibos",
+                "city": "Guayaquil",
+                "lat": -2.1854,
+                "lng": -79.9301,
+            },
+            {
+                "name": "Plaza Lagos — Samborondón",
+                "address": "Km 5.5 Vía Samborondón, Plaza Lagos Town Center",
+                "city": "Samborondón",
+                "lat": -1.9610,
+                "lng": -79.8743,
+            },
             # === QUITO ===
-            {"name": "Quicentro Shopping", "address": "Av. Naciones Unidas y 6 de Diciembre, C.C. Quicentro, PB Isla PB-K05", "city": "Quito", "lat": -0.1712, "lng": -78.4749},
-            {"name": "Mall El Jardín", "address": "Av. de la República y Amazonas, C.C. Mall El Jardín, PB Local 14", "city": "Quito", "lat": -0.1815, "lng": -78.4852},
-            {"name": "C.C. Iñaquito (CCI)", "address": "Av. Amazonas y Naciones Unidas, C.C. Iñaquito, Planta Alta", "city": "Quito", "lat": -0.1703, "lng": -78.4812},
-            {"name": "Scala Shopping Cumbayá", "address": "Av. Interoceánica km 13, C.C. Scala Shopping", "city": "Cumbayá", "lat": -0.1925, "lng": -78.4365},
-            {"name": "C.C. El Condado", "address": "Av. de la Prensa y Mariscal Sucre, C.C. El Condado Shopping", "city": "Quito", "lat": -0.1096, "lng": -78.4987},
+            {
+                "name": "Quicentro Shopping",
+                "address": "Av. Naciones Unidas y 6 de Diciembre, C.C. Quicentro, PB Isla PB-K05",
+                "city": "Quito",
+                "lat": -0.1712,
+                "lng": -78.4749,
+            },
+            {
+                "name": "Mall El Jardín",
+                "address": "Av. de la República y Amazonas, C.C. Mall El Jardín, PB Local 14",
+                "city": "Quito",
+                "lat": -0.1815,
+                "lng": -78.4852,
+            },
+            {
+                "name": "C.C. Iñaquito (CCI)",
+                "address": "Av. Amazonas y Naciones Unidas, C.C. Iñaquito, Planta Alta",
+                "city": "Quito",
+                "lat": -0.1703,
+                "lng": -78.4812,
+            },
+            {
+                "name": "Scala Shopping Cumbayá",
+                "address": "Av. Interoceánica km 13, C.C. Scala Shopping",
+                "city": "Cumbayá",
+                "lat": -0.1925,
+                "lng": -78.4365,
+            },
+            {
+                "name": "C.C. El Condado",
+                "address": "Av. de la Prensa y Mariscal Sucre, C.C. El Condado Shopping",
+                "city": "Quito",
+                "lat": -0.1096,
+                "lng": -78.4987,
+            },
             # === CUENCA ===
-            {"name": "Mall del Río — Cuenca", "address": "Av. Felipe II s/n, C.C. Mall del Río", "city": "Cuenca", "lat": -2.9085, "lng": -79.0115},
-            {"name": "Plaza Wayra — Cuenca", "address": "Av. Ordóñez Lasso, C.C. Plaza Wayra", "city": "Cuenca", "lat": -2.8875, "lng": -79.0155},
-            {"name": "Plaza Europea — Cuenca", "address": "Roberto Crespo Toral, frente al Estadio Alejandro Serrano Aguilar", "city": "Cuenca", "lat": -2.9005, "lng": -79.0070},
+            {
+                "name": "Mall del Río — Cuenca",
+                "address": "Av. Felipe II s/n, C.C. Mall del Río",
+                "city": "Cuenca",
+                "lat": -2.9085,
+                "lng": -79.0115,
+            },
+            {
+                "name": "Plaza Wayra — Cuenca",
+                "address": "Av. Ordóñez Lasso, C.C. Plaza Wayra",
+                "city": "Cuenca",
+                "lat": -2.8875,
+                "lng": -79.0155,
+            },
+            {
+                "name": "Plaza Europea — Cuenca",
+                "address": "Roberto Crespo Toral, frente al Estadio Alejandro Serrano Aguilar",
+                "city": "Cuenca",
+                "lat": -2.9005,
+                "lng": -79.0070,
+            },
         ],
     },
     {
@@ -166,18 +268,64 @@ BUSINESSES = [
             "last_name": "Paredes",
         },
         "staff": [
-            {"email": "sucursal.cci@cebichesruminahui.ec", "first_name": "Roberto", "last_name": "Moreno"},
+            {
+                "email": "sucursal.cci@cebichesruminahui.ec",
+                "first_name": "Roberto",
+                "last_name": "Moreno",
+            },
         ],
         "locations": [
             # === QUITO ===
-            {"name": "C.C. Iñaquito (CCI)", "address": "Av. Amazonas y Naciones Unidas, C.C. Iñaquito", "city": "Quito", "lat": -0.1703, "lng": -78.4810},
-            {"name": "Plaza de las Américas", "address": "Av. de las Américas y Gonzalo Gallo, C.C. Plaza de las Américas", "city": "Quito", "lat": -0.2195, "lng": -78.5193},
-            {"name": "Scala Shopping Cumbayá", "address": "Av. Interoceánica, C.C. Scala Shopping", "city": "Cumbayá", "lat": -0.1925, "lng": -78.4365},
-            {"name": "Quicentro Sur", "address": "Av. Morán Valverde, C.C. Quicentro Sur", "city": "Quito", "lat": -0.2820, "lng": -78.5484},
-            {"name": "El Recreo", "address": "Av. Pedro Vicente Maldonado, C.C. El Recreo", "city": "Quito", "lat": -0.2513, "lng": -78.5218},
+            {
+                "name": "C.C. Iñaquito (CCI)",
+                "address": "Av. Amazonas y Naciones Unidas, C.C. Iñaquito",
+                "city": "Quito",
+                "lat": -0.1703,
+                "lng": -78.4810,
+            },
+            {
+                "name": "Plaza de las Américas",
+                "address": "Av. de las Américas y Gonzalo Gallo, C.C. Plaza de las Américas",
+                "city": "Quito",
+                "lat": -0.2195,
+                "lng": -78.5193,
+            },
+            {
+                "name": "Scala Shopping Cumbayá",
+                "address": "Av. Interoceánica, C.C. Scala Shopping",
+                "city": "Cumbayá",
+                "lat": -0.1925,
+                "lng": -78.4365,
+            },
+            {
+                "name": "Quicentro Sur",
+                "address": "Av. Morán Valverde, C.C. Quicentro Sur",
+                "city": "Quito",
+                "lat": -0.2820,
+                "lng": -78.5484,
+            },
+            {
+                "name": "El Recreo",
+                "address": "Av. Pedro Vicente Maldonado, C.C. El Recreo",
+                "city": "Quito",
+                "lat": -0.2513,
+                "lng": -78.5218,
+            },
             # === GUAYAQUIL ===
-            {"name": "Mall del Sol — Guayaquil", "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol", "city": "Guayaquil", "lat": -2.1543, "lng": -79.8963},
-            {"name": "Riocentro Norte — Guayaquil", "address": "Av. Fco. de Orellana, C.C. Riocentro Norte", "city": "Guayaquil", "lat": -2.1562, "lng": -79.9092},
+            {
+                "name": "Mall del Sol — Guayaquil",
+                "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol",
+                "city": "Guayaquil",
+                "lat": -2.1543,
+                "lng": -79.8963,
+            },
+            {
+                "name": "Riocentro Norte — Guayaquil",
+                "address": "Av. Fco. de Orellana, C.C. Riocentro Norte",
+                "city": "Guayaquil",
+                "lat": -2.1562,
+                "lng": -79.9092,
+            },
         ],
     },
     {
@@ -205,23 +353,91 @@ BUSINESSES = [
             "last_name": "Andrade",
         },
         "staff": [
-            {"email": "farmacia.cci@fybeca.com", "first_name": "Carolina", "last_name": "Rivadeneira"},
-            {"email": "farmacia.condado@fybeca.com", "first_name": "Diego", "last_name": "Salinas"},
+            {
+                "email": "farmacia.cci@fybeca.com",
+                "first_name": "Carolina",
+                "last_name": "Rivadeneira",
+            },
+            {
+                "email": "farmacia.condado@fybeca.com",
+                "first_name": "Diego",
+                "last_name": "Salinas",
+            },
         ],
         "locations": [
             # === QUITO ===
-            {"name": "Fybeca CCI", "address": "Av. Amazonas y NNUU, C.C. Iñaquito", "city": "Quito", "lat": -0.1710, "lng": -78.4815},
-            {"name": "Fybeca El Bosque", "address": "Av. Al Parque s/n, C.C. El Bosque", "city": "Quito", "lat": -0.1580, "lng": -78.4774},
-            {"name": "Fybeca Condado Shopping", "address": "Av. de la Prensa y John F. Kennedy, C.C. Condado", "city": "Quito", "lat": -0.1096, "lng": -78.4987},
-            {"name": "Fybeca Quicentro Sur", "address": "Av. Morán Valverde, C.C. Quicentro Sur", "city": "Quito", "lat": -0.2820, "lng": -78.5484},
-            {"name": "Fybeca La Floresta", "address": "Av. 12 de Octubre y Madrid, Barrio La Floresta", "city": "Quito", "lat": -0.2027, "lng": -78.4886},
+            {
+                "name": "Fybeca CCI",
+                "address": "Av. Amazonas y NNUU, C.C. Iñaquito",
+                "city": "Quito",
+                "lat": -0.1710,
+                "lng": -78.4815,
+            },
+            {
+                "name": "Fybeca El Bosque",
+                "address": "Av. Al Parque s/n, C.C. El Bosque",
+                "city": "Quito",
+                "lat": -0.1580,
+                "lng": -78.4774,
+            },
+            {
+                "name": "Fybeca Condado Shopping",
+                "address": "Av. de la Prensa y John F. Kennedy, C.C. Condado",
+                "city": "Quito",
+                "lat": -0.1096,
+                "lng": -78.4987,
+            },
+            {
+                "name": "Fybeca Quicentro Sur",
+                "address": "Av. Morán Valverde, C.C. Quicentro Sur",
+                "city": "Quito",
+                "lat": -0.2820,
+                "lng": -78.5484,
+            },
+            {
+                "name": "Fybeca La Floresta",
+                "address": "Av. 12 de Octubre y Madrid, Barrio La Floresta",
+                "city": "Quito",
+                "lat": -0.2027,
+                "lng": -78.4886,
+            },
             # === GUAYAQUIL ===
-            {"name": "Fybeca Mall del Sur", "address": "Av. 25 de Julio vía Puerto Marítimo, C.C. Mall del Sur", "city": "Guayaquil", "lat": -2.2290, "lng": -79.8906},
-            {"name": "Fybeca Mall del Sol", "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol", "city": "Guayaquil", "lat": -2.1543, "lng": -79.8963},
-            {"name": "Fybeca Riocentro Ceibos", "address": "Av. del Bombero, C.C. Riocentro Los Ceibos", "city": "Guayaquil", "lat": -2.1854, "lng": -79.9301},
+            {
+                "name": "Fybeca Mall del Sur",
+                "address": "Av. 25 de Julio vía Puerto Marítimo, C.C. Mall del Sur",
+                "city": "Guayaquil",
+                "lat": -2.2290,
+                "lng": -79.8906,
+            },
+            {
+                "name": "Fybeca Mall del Sol",
+                "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol",
+                "city": "Guayaquil",
+                "lat": -2.1543,
+                "lng": -79.8963,
+            },
+            {
+                "name": "Fybeca Riocentro Ceibos",
+                "address": "Av. del Bombero, C.C. Riocentro Los Ceibos",
+                "city": "Guayaquil",
+                "lat": -2.1854,
+                "lng": -79.9301,
+            },
             # === CUENCA ===
-            {"name": "Fybeca Mall del Río", "address": "Av. Felipe II s/n, C.C. Mall del Río", "city": "Cuenca", "lat": -2.9085, "lng": -79.0115},
-            {"name": "Fybeca Monay Shopping", "address": "Av. González Suárez s/n, C.C. Monay Shopping", "city": "Cuenca", "lat": -2.9072, "lng": -78.9880},
+            {
+                "name": "Fybeca Mall del Río",
+                "address": "Av. Felipe II s/n, C.C. Mall del Río",
+                "city": "Cuenca",
+                "lat": -2.9085,
+                "lng": -79.0115,
+            },
+            {
+                "name": "Fybeca Monay Shopping",
+                "address": "Av. González Suárez s/n, C.C. Monay Shopping",
+                "city": "Cuenca",
+                "lat": -2.9072,
+                "lng": -78.9880,
+            },
         ],
     },
     {
@@ -245,8 +461,20 @@ BUSINESSES = [
         },
         "locations": [
             # Small neighborhood spots in Quito
-            {"name": "La Mariscal", "address": "Av. Colón E5-23 y Reina Victoria", "city": "Quito", "lat": -0.2006, "lng": -78.4936},
-            {"name": "El Batán", "address": "Av. Eloy Alfaro N33-21 y Portugal", "city": "Quito", "lat": -0.1842, "lng": -78.4765},
+            {
+                "name": "La Mariscal",
+                "address": "Av. Colón E5-23 y Reina Victoria",
+                "city": "Quito",
+                "lat": -0.2006,
+                "lng": -78.4936,
+            },
+            {
+                "name": "El Batán",
+                "address": "Av. Eloy Alfaro N33-21 y Portugal",
+                "city": "Quito",
+                "lat": -0.1842,
+                "lng": -78.4765,
+            },
         ],
     },
     {
@@ -269,14 +497,42 @@ BUSINESSES = [
             "last_name": "Salazar Rendón",
         },
         "staff": [
-            {"email": "caja.mallsol@tropiburguer.com", "first_name": "Esteban", "last_name": "García"},
+            {
+                "email": "caja.mallsol@tropiburguer.com",
+                "first_name": "Esteban",
+                "last_name": "García",
+            },
         ],
         "locations": [
             # === GUAYAQUIL ===
-            {"name": "Mall del Sol", "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol, Patio de Comidas", "city": "Guayaquil", "lat": -2.1543, "lng": -79.8963},
-            {"name": "Terminal Terrestre", "address": "Terminal Terrestre Jaime Roldós Aguilera, Piso 2", "city": "Guayaquil", "lat": -2.1772, "lng": -79.8595},
-            {"name": "Riocentro Sur", "address": "Av. 25 de Julio, C.C. Riocentro Sur, Patio de Comidas", "city": "Guayaquil", "lat": -2.2285, "lng": -79.8895},
-            {"name": "Samborondón", "address": "Av. Principal de Samborondón, Plaza Batan", "city": "Samborondón", "lat": -1.9621, "lng": -79.8763},
+            {
+                "name": "Mall del Sol",
+                "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol, Patio de Comidas",
+                "city": "Guayaquil",
+                "lat": -2.1543,
+                "lng": -79.8963,
+            },
+            {
+                "name": "Terminal Terrestre",
+                "address": "Terminal Terrestre Jaime Roldós Aguilera, Piso 2",
+                "city": "Guayaquil",
+                "lat": -2.1772,
+                "lng": -79.8595,
+            },
+            {
+                "name": "Riocentro Sur",
+                "address": "Av. 25 de Julio, C.C. Riocentro Sur, Patio de Comidas",
+                "city": "Guayaquil",
+                "lat": -2.2285,
+                "lng": -79.8895,
+            },
+            {
+                "name": "Samborondón",
+                "address": "Av. Principal de Samborondón, Plaza Batan",
+                "city": "Samborondón",
+                "lat": -1.9621,
+                "lng": -79.8763,
+            },
         ],
     },
     {
@@ -299,9 +555,27 @@ BUSINESSES = [
             "last_name": "Crespo Ordóñez",
         },
         "locations": [
-            {"name": "Centro Histórico", "address": "Calle Larga 7-89 y Borrero, Centro Histórico", "city": "Cuenca", "lat": -2.8972, "lng": -79.0042},
-            {"name": "Av. Ordóñez Lasso", "address": "Av. Ordóñez Lasso 6-22 y Remigio Tamariz", "city": "Cuenca", "lat": -2.8920, "lng": -79.0185},
-            {"name": "Totoracocha", "address": "Av. González Suárez y Max Uhle, sector Totoracocha", "city": "Cuenca", "lat": -2.8980, "lng": -78.9850},
+            {
+                "name": "Centro Histórico",
+                "address": "Calle Larga 7-89 y Borrero, Centro Histórico",
+                "city": "Cuenca",
+                "lat": -2.8972,
+                "lng": -79.0042,
+            },
+            {
+                "name": "Av. Ordóñez Lasso",
+                "address": "Av. Ordóñez Lasso 6-22 y Remigio Tamariz",
+                "city": "Cuenca",
+                "lat": -2.8920,
+                "lng": -79.0185,
+            },
+            {
+                "name": "Totoracocha",
+                "address": "Av. González Suárez y Max Uhle, sector Totoracocha",
+                "city": "Cuenca",
+                "lat": -2.8980,
+                "lng": -78.9850,
+            },
         ],
     },
 ]
@@ -312,7 +586,11 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
-        self.stdout.write(self.style.WARNING("=== Seeding Loyallia with REAL Ecuadorian business data ==="))
+        self.stdout.write(
+            self.style.WARNING(
+                "=== Seeding Loyallia with REAL Ecuadorian business data ==="
+            )
+        )
 
         # 1. Create Subscription Plans
         self._seed_plans()
@@ -333,7 +611,9 @@ class Command(BaseCommand):
                 defaults=plan_data,
             )
             status = "CREATED" if created else "UPDATED"
-            self.stdout.write(f"  [{status}] Plan: {obj.name} — ${obj.price_monthly}/mes")
+            self.stdout.write(
+                f"  [{status}] Plan: {obj.name} — ${obj.price_monthly}/mes"
+            )
 
     def _seed_businesses(self):
         self.stdout.write("\n--- Creating Ecuadorian Businesses ---")
@@ -370,7 +650,9 @@ class Command(BaseCommand):
                     plan="full",
                     is_active=True,
                 )
-                self.stdout.write(f"  [CREATED] Tenant: {tenant.name} (RUC: {tenant.ruc})")
+                self.stdout.write(
+                    f"  [CREATED] Tenant: {tenant.name} (RUC: {tenant.ruc})"
+                )
 
             plan_obj = SubscriptionPlan.objects.filter(slug=biz["plan_slug"]).first()
 
@@ -433,7 +715,9 @@ class Command(BaseCommand):
                     },
                 )
             loc_count = len(biz.get("locations", []))
-            self.stdout.write(f"    Locations: {loc_count} ({', '.join({loc['city'] for loc in biz.get('locations', [])})})")
+            self.stdout.write(
+                f"    Locations: {loc_count} ({', '.join({loc['city'] for loc in biz.get('locations', [])})})"
+            )
 
             # Create Subscription + Demo Invoices
             if plan_obj and not Subscription.objects.filter(tenant=tenant).exists():
@@ -454,11 +738,14 @@ class Command(BaseCommand):
                         subtotal=plan_obj.price_monthly,
                         tax_rate=Decimal("0.1500"),
                         period_start=timezone.now() - timedelta(days=30 * month_ago),
-                        period_end=timezone.now() - timedelta(days=30 * (month_ago - 1)),
+                        period_end=timezone.now()
+                        - timedelta(days=30 * (month_ago - 1)),
                     )
                     inv.calculate_amounts()
                     inv.status = Invoice.InvoiceStatus.PAID
-                    inv.paid_at = timezone.now() - timedelta(days=30 * (month_ago - 1) + 2)
+                    inv.paid_at = timezone.now() - timedelta(
+                        days=30 * (month_ago - 1) + 2
+                    )
                     inv.save()
                 self.stdout.write(f"    Subscription: {plan_obj.name} + 3 invoices")
 
@@ -477,19 +764,44 @@ class Command(BaseCommand):
             self.stdout.write(f"  [UPDATED] {tenant.name}")
 
             # Add locations with GPS if none exist with GPS data
-            if not tenant.locations.filter(latitude__isnull=False, is_active=True).exists():
+            if not tenant.locations.filter(
+                latitude__isnull=False, is_active=True
+            ).exists():
                 tenant.locations.all().update(is_active=False)
                 locs = [
-                    {"name": "Sede Principal — La Floresta", "address": "Av. 12 de Octubre N24-551 y Cordero, La Floresta", "city": "Quito", "lat": -0.2034, "lng": -78.4894},
-                    {"name": "La Mariscal", "address": "Lugo E5-23 y Vizcaya, La Mariscal", "city": "Quito", "lat": -0.2012, "lng": -78.4843},
-                    {"name": "La Carolina", "address": "Av. Eloy Alfaro N34-182 y Portugal", "city": "Quito", "lat": -0.1842, "lng": -78.4765},
+                    {
+                        "name": "Sede Principal — La Floresta",
+                        "address": "Av. 12 de Octubre N24-551 y Cordero, La Floresta",
+                        "city": "Quito",
+                        "lat": -0.2034,
+                        "lng": -78.4894,
+                    },
+                    {
+                        "name": "La Mariscal",
+                        "address": "Lugo E5-23 y Vizcaya, La Mariscal",
+                        "city": "Quito",
+                        "lat": -0.2012,
+                        "lng": -78.4843,
+                    },
+                    {
+                        "name": "La Carolina",
+                        "address": "Av. Eloy Alfaro N34-182 y Portugal",
+                        "city": "Quito",
+                        "lat": -0.1842,
+                        "lng": -78.4765,
+                    },
                 ]
                 for i, loc in enumerate(locs):
                     Location.objects.create(
-                        tenant=tenant, name=loc["name"], address=loc["address"],
-                        city=loc["city"], country="EC",
-                        latitude=loc["lat"], longitude=loc["lng"],
-                        is_primary=(i == 0), is_active=True,
+                        tenant=tenant,
+                        name=loc["name"],
+                        address=loc["address"],
+                        city=loc["city"],
+                        country="EC",
+                        latitude=loc["lat"],
+                        longitude=loc["lng"],
+                        is_primary=(i == 0),
+                        is_active=True,
                     )
                 self.stdout.write(f"  Added {len(locs)} locations to Café El Ritmo")
         except Tenant.DoesNotExist:
