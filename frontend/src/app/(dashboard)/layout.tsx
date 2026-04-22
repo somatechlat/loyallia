@@ -240,7 +240,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="px-4 pb-3 pt-1">
           <p className="text-[10px] text-surface-300 dark:text-surface-500 text-center tracking-wide leading-relaxed">
             <span className="font-semibold text-surface-400 dark:text-surface-400">Loyallia</span> · Intelligent Rewards
-            <br /><span className="text-[9px] opacity-60">powered by Yachaq.ai</span>
+            <br /><a href="https://yachaq.ai" target="_blank" rel="noopener noreferrer" className="text-[9px] opacity-60 hover:opacity-100 transition-opacity">powered by Yachaq.ai</a>
           </p>
         </div>
       </aside>

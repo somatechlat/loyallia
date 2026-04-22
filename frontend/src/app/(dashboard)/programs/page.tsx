@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { programsApi } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { useAuth, User } from '@/lib/auth';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
 
@@ -19,8 +19,6 @@ interface Program {
 }
 
 /* ─── Status-classified sections (PROG-005/006/007) ──────────────────── */
-interface User { role: string; [key: string]: unknown; }
-
 function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: {
   programs: Program[];
   user: User | null;

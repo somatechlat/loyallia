@@ -71,6 +71,12 @@ export const analyticsApi = {
   trends: (days = 30) => api.get(`/api/v1/analytics/trends/?days=${days}`),
   segments: () => api.get('/api/v1/analytics/segments/'),
   programs: () => api.get('/api/v1/analytics/programs/'),
+  revenueBreakdown: (days = 30) => api.get(`/api/v1/analytics/revenue-breakdown/?days=${days}`),
+  visits: (days = 30) => api.get(`/api/v1/analytics/visits/?days=${days}`),
+  topBuyers: (limit = 15, days = 30) => api.get(`/api/v1/analytics/top-buyers/?limit=${limit}&days=${days}`),
+  notifyTopBuyers: () => api.post('/api/v1/analytics/notify-top-buyers/'),
+  demographics: () => api.get('/api/v1/analytics/demographics/'),
+  byProgramType: (days = 30) => api.get(`/api/v1/analytics/by-program-type/?days=${days}`),
 };
 
 export const customersApi = {

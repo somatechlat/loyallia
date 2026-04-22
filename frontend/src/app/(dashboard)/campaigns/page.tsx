@@ -22,7 +22,6 @@ export default function CampaignsPage() {
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
 
-  const API_URL = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905');
 
   const load = () => {
     Promise.all([notificationsApi.campaigns(), customersApi.segments()])
@@ -49,7 +48,7 @@ export default function CampaignsPage() {
       const token = Cookies.get('access_token');
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch(`${API_URL}/api/v1/upload/`, {
+      const res = await fetch('/api/v1/upload/', {
         method: 'POST',
         body: fd,
         headers: token ? { Authorization: `Bearer ${token}` } : {},

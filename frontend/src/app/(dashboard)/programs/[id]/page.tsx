@@ -4,17 +4,8 @@ import { programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
-
-const API_URL = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905');
-
-/* ─── Helpers ──────────────────────────────────────────────────────────── */
-function adjustColor(hex: string, amount: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amount));
-  const b = Math.min(255, Math.max(0, (num & 0x0000ff) + amount));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
+import { adjustColor } from '@/components/programs/constants';
+import PremiumQrSvg from '@/components/programs/PremiumQrSvg';
 
 /** Upload file to /api/v1/upload/ with JWT auth */
 async function uploadFile(file: File): Promise<string | null> {
@@ -22,7 +13,7 @@ async function uploadFile(file: File): Promise<string | null> {
   const fd = new FormData();
   fd.append('file', file);
   try {
-    const res = await fetch(`${API_URL}/api/v1/upload/`, {
+    const res = await fetch('/api/v1/upload/', {
       method: 'POST',
       body: fd,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -66,70 +57,7 @@ const DESIGN_TEMPLATES = [
   { id: 'custom',    name: 'Personalizado', bg: '',        text: '' },
 ];
 
-/* ─── Premium SVG QR Pattern (rounded-dot style) ──────────────────────── */
-function PremiumQrSvg({ color = '#1a1a2e', size = 48 }: { color?: string; size?: number }) {
-  // Rounded-dot QR-like pattern that looks modern and premium
-  const dots = [
-    // Top-left finder
-    [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-    [0,1],[6,1],
-    [0,2],[2,2],[3,2],[4,2],[6,2],
-    [0,3],[2,3],[3,3],[4,3],[6,3],
-    [0,4],[2,4],[3,4],[4,4],[6,4],
-    [0,5],[6,5],
-    [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
-    // Top-right finder
-    [14,0],[15,0],[16,0],[17,0],[18,0],[19,0],[20,0],
-    [14,1],[20,1],
-    [14,2],[16,2],[17,2],[18,2],[20,2],
-    [14,3],[16,3],[17,3],[18,3],[20,3],
-    [14,4],[16,4],[17,4],[18,4],[20,4],
-    [14,5],[20,5],
-    [14,6],[15,6],[16,6],[17,6],[18,6],[19,6],[20,6],
-    // Bottom-left finder
-    [0,14],[1,14],[2,14],[3,14],[4,14],[5,14],[6,14],
-    [0,15],[6,15],
-    [0,16],[2,16],[3,16],[4,16],[6,16],
-    [0,17],[2,17],[3,17],[4,17],[6,17],
-    [0,18],[2,18],[3,18],[4,18],[6,18],
-    [0,19],[6,19],
-    [0,20],[1,20],[2,20],[3,20],[4,20],[5,20],[6,20],
-    // Timing
-    [8,0],[10,0],[8,2],[10,2],[8,4],[10,4],[8,6],
-    [0,8],[0,10],[2,8],[2,10],[4,8],[4,10],[6,8],
-    // Data modules (aesthetically placed)
-    [8,8],[9,8],[10,8],[11,8],[12,8],
-    [8,9],[10,9],[12,9],[14,9],[16,9],[18,9],[20,9],
-    [8,10],[9,10],[11,10],[13,10],[15,10],[17,10],[19,10],
-    [8,11],[10,11],[12,11],[14,11],[16,11],[18,11],[20,11],
-    [8,12],[9,12],[11,12],[13,12],[15,12],[17,12],[19,12],
-    [9,14],[11,14],[13,14],[15,14],[17,14],[19,14],
-    [8,15],[10,15],[12,15],[14,15],[16,15],[18,15],[20,15],
-    [9,16],[11,16],[13,16],[15,16],[17,16],[19,16],
-    [8,17],[10,17],[12,17],[14,17],[16,17],[18,17],[20,17],
-    [9,18],[11,18],[13,18],[15,18],[17,18],[19,18],
-    [8,19],[10,19],[12,19],[14,19],[16,19],[18,19],[20,19],
-    [9,20],[11,20],[13,20],[15,20],[17,20],[19,20],
-  ];
 
-  const cellSize = size / 21;
-  const r = cellSize * 0.38; // rounded dot radius
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <rect width={size} height={size} fill="white" rx={size * 0.06} />
-      {dots.map(([x, y], i) => (
-        <circle
-          key={i}
-          cx={x * cellSize + cellSize / 2}
-          cy={y * cellSize + cellSize / 2}
-          r={r}
-          fill={color}
-        />
-      ))}
-    </svg>
-  );
-}
 
 /* ─── Main Page ────────────────────────────────────────────────────────── */
 /* eslint-disable @typescript-eslint/no-explicit-any */
