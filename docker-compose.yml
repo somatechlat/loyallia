@@ -537,16 +537,22 @@ services:
     environment:
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_TOKEN:-loyallia-vault-root-token}
-    entrypoint: >
-      /bin/sh -c "
-      vault secrets enable -path=secret kv-v2 2>/dev/null || true &&
-      vault kv put secret/loyallia \
-        postgres_password=$${POSTGRES_PASSWORD} \
-        minio_access_key=$${MINIO_ROOT_USER} \
-        minio_secret_key=$${MINIO_ROOT_PASSWORD} \
-        secret_key=$${SECRET_KEY:-change-me-in-production} &&
-      echo 'Vault secrets seeded'
-      "
+      # Pass secrets from .env into the container so they can be seeded into Vault
+      _SECRET_KEY: ${SECRET_KEY:-dev-only-change-me}
+      _POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-loyallia_dev_password}
+      _MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      _MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin_dev_password}
+      _PASS_HMAC_SECRET: ${PASS_HMAC_SECRET:-change-me-hmac-secret}
+      _GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      _GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      _PAYMENT_GATEWAY_LOGIN: ${PAYMENT_GATEWAY_LOGIN:-}
+      _PAYMENT_GATEWAY_TRAN_KEY: ${PAYMENT_GATEWAY_TRAN_KEY:-}
+      _PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-}
+      _EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    entrypoint: >-
+      /bin/sh -c "vault secrets enable -path=secret kv-v2 2>/dev/null || true &&
+      vault kv put -mount=secret loyallia secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" &&
+      echo 'Vault: all secrets seeded successfully'"
     networks:
       - loyallia-net
     deploy:

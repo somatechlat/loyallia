@@ -257,6 +257,12 @@ class Card(models.Model):
             self.validate_multipass_config()
 
     def save(self, *args, **kwargs) -> None:
-        """Override save to validate configuration."""
-        self.clean()
+        """Override save to validate configuration.
+
+        Validation only runs on full saves (user-driven creation/update).
+        Internal saves with update_fields (e.g., set_metadata_field) skip
+        validation to avoid rejecting partial configurations during editing.
+        """
+        if not kwargs.get("update_fields"):
+            self.clean()
         super().save(*args, **kwargs)
