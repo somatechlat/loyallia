@@ -19,7 +19,7 @@ services:
       sh -c "python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
       (python manage.py seed_subscription_plans 2>/dev/null || true) &&
-      gunicorn loyallia.wsgi:application --bind 0.0.0.0:8000 --workers 4 --worker-class gthread --threads 2 --timeout 120 --keep-alive 5 --log-level info --access-logfile - --error-logfile -"
+      gunicorn loyallia.wsgi:application --bind 0.0.0.0:8000 --workers 8 --worker-class gthread --threads 4 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --log-level info --access-logfile - --error-logfile -"
 
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
@@ -123,3 +123,35 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: loyallia.settings.production
       DEBUG: "False"
+
+  # ---------------------------------------------------------------------------
+  # NGINX — Reverse Proxy / SSL / Rate Limiting  → ports 80, 443  [256M]
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: loyallia-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certs/ssl:/etc/nginx/ssl:ro
+      - static_files:/app/staticfiles:ro
+      - media_files:/app/mediafiles:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost/api/v1/health/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

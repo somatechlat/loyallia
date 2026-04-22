@@ -2,11 +2,18 @@
 Loyallia — Advanced Analytics API router
 Extended business intelligence: revenue breakdown, visit metrics,
 top buyers, demographics, and program-type analysis.
+
+Performance notes:
+  - All endpoints use aggregate SQL queries (no Python iteration over rows).
+  - Analytics endpoints are cached in Redis (5-minute TTL, tenant-scoped keys).
+  - Cache is invalidated on transaction creation via cache.delete_pattern().
 """
 
 from datetime import date, timedelta
 
-from django.db.models import Count, F, Sum
+from django.core.cache import cache
+from django.db.models import Count, F, Q, Sum, Value
+from django.db.models.functions import ExtractYear
 from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
@@ -24,10 +31,16 @@ router = Router()
     "/revenue-breakdown/", auth=jwt_auth, summary="Get revenue breakdown by source"
 )
 def get_revenue_breakdown(request, days: int = 30):
-    """Revenue breakdown: loyalty, referral, non-loyalty. MANAGER+ only."""
+    """Revenue breakdown: loyalty, referral, non-loyalty. Cached 5min. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
+
+    cache_key = f"analytics:revenue:{tenant.id}:{days}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
     start_date = timezone.now() - timedelta(days=days)
 
     txns = Transaction.objects.filter(tenant=tenant, created_at__gte=start_date)
@@ -66,7 +79,7 @@ def get_revenue_breakdown(request, days: int = 30):
 
     total = float(loyalty_rev) + float(referral_rev) + float(non_loyalty_rev)
 
-    return {
+    result = {
         "period_days": days,
         "total_revenue": total,
         "loyalty": float(loyalty_rev),
@@ -76,15 +89,23 @@ def get_revenue_breakdown(request, days: int = 30):
         "referral_pct": (float(referral_rev) / total * 100) if total > 0 else 0,
         "non_loyalty_pct": (float(non_loyalty_rev) / total * 100) if total > 0 else 0,
     }
+    cache.set(cache_key, result, timeout=300)
+    return result
 
 
 # ============ Visit Metrics ============
 @router.get("/visits/", auth=jwt_auth, summary="Get visit metrics")
 def get_visit_metrics(request, days: int = 30):
-    """Detailed visit metrics for the dashboard. MANAGER+ only."""
+    """Detailed visit metrics for the dashboard. Cached 5min. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
+
+    cache_key = f"analytics:visits:{tenant.id}:{days}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
     start_date = timezone.now() - timedelta(days=days)
 
     total_visits = Transaction.objects.filter(
@@ -124,7 +145,7 @@ def get_visit_metrics(request, days: int = 30):
         (recurring_visitors / unique_customers * 100) if unique_customers > 0 else 0
     )
 
-    return {
+    result = {
         "period_days": days,
         "total_visits": total_visits,
         "unique_customers": unique_customers,
@@ -134,6 +155,8 @@ def get_visit_metrics(request, days: int = 30):
         "unregistered_visits": 0,
         "retention_rate": round(retention_rate, 1),
     }
+    cache.set(cache_key, result, timeout=300)
+    return result
 
 
 # ============ Top Buyers ============
@@ -222,12 +245,20 @@ def notify_top_buyers(request):
 # ============ Demographics ============
 @router.get("/demographics/", auth=jwt_auth, summary="Get customer demographics")
 def get_demographics(request):
-    """Age and gender distribution. MANAGER+ only."""
+    """Age and gender distribution via SQL aggregation. O(1) memory. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
+
+    # Check cache first (5-minute TTL)
+    cache_key = f"analytics:demographics:{tenant.id}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
     customers = Customer.objects.filter(tenant=tenant)
 
+    # Gender distribution — pure SQL aggregate
     gender_data = (
         customers.exclude(gender="")
         .values("gender")
@@ -238,39 +269,33 @@ def get_demographics(request):
 
     total = customers.count()
 
-    today = date.today()
-    age_ranges = {
-        "18-24": 0,
-        "25-34": 0,
-        "35-44": 0,
-        "45-54": 0,
-        "55+": 0,
-        "unknown": 0,
-    }
-    for c in customers.only("date_of_birth"):
-        if c.date_of_birth:
-            age = (
-                today.year
-                - c.date_of_birth.year
-                - (
-                    (today.month, today.day)
-                    < (c.date_of_birth.month, c.date_of_birth.day)
-                )
-            )
-            if age < 25:
-                age_ranges["18-24"] += 1
-            elif age < 35:
-                age_ranges["25-34"] += 1
-            elif age < 45:
-                age_ranges["35-44"] += 1
-            elif age < 55:
-                age_ranges["45-54"] += 1
-            else:
-                age_ranges["55+"] += 1
-        else:
-            age_ranges["unknown"] += 1
+    # Age distribution — single SQL query using ExtractYear + conditional Count
+    # No Python iteration; computation is entirely database-side.
+    today_year = date.today().year
+    age_dist = customers.exclude(date_of_birth=None).annotate(
+        birth_year=ExtractYear("date_of_birth"),
+    ).annotate(
+        age=Value(today_year) - F("birth_year"),
+    ).aggregate(
+        age_18_24=Count("id", filter=Q(age__gte=18, age__lt=25)),
+        age_25_34=Count("id", filter=Q(age__gte=25, age__lt=35)),
+        age_35_44=Count("id", filter=Q(age__gte=35, age__lt=45)),
+        age_45_54=Count("id", filter=Q(age__gte=45, age__lt=55)),
+        age_55_plus=Count("id", filter=Q(age__gte=55)),
+    )
 
-    return {
+    known_count = sum(age_dist.values())
+    unknown_count = total - known_count
+
+    age_ranges_data = [
+        ("18-24", age_dist["age_18_24"]),
+        ("25-34", age_dist["age_25_34"]),
+        ("35-44", age_dist["age_35_44"]),
+        ("45-54", age_dist["age_45_54"]),
+        ("55+", age_dist["age_55_plus"]),
+    ]
+
+    result = {
         "total_customers": total,
         "gender": [
             {
@@ -287,11 +312,13 @@ def get_demographics(request):
                 "count": cnt,
                 "percentage": (cnt / total * 100) if total > 0 else 0,
             }
-            for rng, cnt in age_ranges.items()
-            if rng != "unknown"
+            for rng, cnt in age_ranges_data
         ],
-        "unknown_age_count": age_ranges["unknown"],
+        "unknown_age_count": unknown_count,
     }
+
+    cache.set(cache_key, result, timeout=300)  # 5-minute cache
+    return result
 
 
 # ============ By Program Type ============

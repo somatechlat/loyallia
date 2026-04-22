@@ -61,6 +61,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "common.rate_limit.RateLimitMiddleware",  # Rate limiting (Redis-backed, fails open)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # i18n language detection
     "django.middleware.common.CommonMiddleware",
@@ -97,21 +98,29 @@ ASGI_APPLICATION = "loyallia.asgi.application"
 
 # =============================================================================
 # DATABASE — PostgreSQL via PgBouncer connection pool
+# conn_max_age=0 is MANDATORY for PgBouncer transaction-mode pooling.
+# Non-zero values cause "server connection was reset" under concurrent load.
 # =============================================================================
 import dj_database_url
 
 DATABASES = {
+    # Default: routed through PgBouncer (transaction pooling)
     "default": dj_database_url.config(
-        env="DATABASE_URL",
-        default="postgres://loyallia:loyallia_dev_password@localhost:6432/loyallia",
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+        env="PGBOUNCER_URL",
+        default="postgres://loyallia:loyallia_dev_password@pgbouncer:6432/loyallia",
+        conn_max_age=0,               # REQUIRED for PgBouncer transaction mode
+        conn_health_checks=False,     # PgBouncer manages health; skip Django checks
+    ),
+    # Direct: bypasses PgBouncer for migrations and schema operations
+    "direct": dj_database_url.config(
+        env="DATABASE_DIRECT_URL",
+        default="postgres://loyallia:loyallia_dev_password@postgres:5432/loyallia",
+        conn_max_age=0,
+    ),
 }
-# Separate direct connection for migrations (bypasses pgbouncer)
-_direct_db = config("DATABASE_DIRECT_URL", default="")
-if _direct_db:
-    DATABASES["direct"] = dj_database_url.parse(_direct_db, conn_max_age=0)
+
+# Database router: send migrations to 'direct', everything else to 'default' (PgBouncer)
+DATABASE_ROUTERS = ["common.db_routers.PgBouncerRouter"]
 
 # =============================================================================
 # CUSTOM USER MODEL
@@ -394,7 +403,7 @@ APP_URL = config("APP_URL", default="http://localhost")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
 
 # =============================================================================
-# LOGGING
+# LOGGING — Structured JSON for production log aggregation (ELK / CloudWatch)
 # =============================================================================
 LOGGING = {
     "version": 1,
@@ -404,15 +413,14 @@ LOGGING = {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
-        "simple": {
-            "format": "{levelname} {message}",
-            "style": "{",
+        "json": {
+            "()": "common.logging_utils.JsonFormatter",
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json" if not DEBUG else "verbose",
         },
     },
     "root": {
@@ -428,5 +436,10 @@ LOGGING = {
         },
         "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "apps": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "common.rate_limit": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
 }

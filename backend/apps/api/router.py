@@ -21,8 +21,59 @@ api = NinjaAPI(
 # --- Health check (unauthenticated) ---
 @api.get("/health/", auth=None, tags=["System"])
 def health_check(request: HttpRequest):
-    """Platform health check endpoint for load balancers and monitoring."""
-    return {"status": "ok", "version": "1.0.0", "platform": "Loyallia"}
+    """Comprehensive health check for load balancers and monitoring.
+
+    Verifies: PostgreSQL (via Django ORM), Redis (via cache backend).
+    Returns HTTP 200 if all dependencies are healthy, HTTP 503 if any are down.
+    """
+    import time
+
+    checks = {}
+    all_healthy = True
+
+    # PostgreSQL check
+    try:
+        from django.db import connection
+
+        start = time.monotonic()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        checks["database"] = {
+            "status": "ok",
+            "latency_ms": round((time.monotonic() - start) * 1000, 2),
+        }
+    except Exception as e:
+        checks["database"] = {"status": "error", "detail": str(e)}
+        all_healthy = False
+
+    # Redis check
+    try:
+        from django.core.cache import cache
+
+        start = time.monotonic()
+        cache.set("_health_check", "ok", timeout=5)
+        val = cache.get("_health_check")
+        checks["cache"] = {
+            "status": "ok" if val == "ok" else "error",
+            "latency_ms": round((time.monotonic() - start) * 1000, 2),
+        }
+        if val != "ok":
+            all_healthy = False
+    except Exception as e:
+        checks["cache"] = {"status": "error", "detail": str(e)}
+        all_healthy = False
+
+    status_code = 200 if all_healthy else 503
+    response = {
+        "status": "ok" if all_healthy else "degraded",
+        "version": "1.0.0",
+        "platform": "Loyallia",
+        "checks": checks,
+    }
+
+    from django.http import JsonResponse as DjJsonResponse
+
+    return DjJsonResponse(response, status=status_code)
 
 
 # --- Mount all app routers ---
