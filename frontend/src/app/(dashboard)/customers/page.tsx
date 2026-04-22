@@ -23,6 +23,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<{
     id: string;
@@ -137,7 +138,10 @@ export default function CustomersPage() {
         </div>
         {user?.role === "OWNER" && (
           <button
-            onClick={() => setShowImportModal(true)}
+            onClick={() => {
+              setShowImportModal(true);
+              setConsentGiven(false);
+            }}
             className="btn-secondary"
             id="open-import-modal-btn"
           >
@@ -204,6 +208,30 @@ export default function CustomersPage() {
               invalido o nombre vacio son descartadas y reportadas.
             </p>
 
+            <div className="mb-5 flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+              <input
+                type="checkbox"
+                id="data-consent"
+                className="mt-1 w-4 h-4 text-brand-600 rounded border-amber-300 focus:ring-brand-500"
+                checked={consentGiven}
+                onChange={(e) => setConsentGiven(e.target.checked)}
+              />
+              <label
+                htmlFor="data-consent"
+                className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed cursor-pointer select-none"
+              >
+                Declaro bajo juramento que he obtenido el{" "}
+                <strong>consentimiento expreso e inequívoco</strong> de todos
+                los titulares de los datos en este archivo para su tratamiento,
+                cumpliendo estrictamente con la{" "}
+                <strong>
+                  Ley Orgánica de Protección de Datos Personales (LOPDP) de
+                  Ecuador
+                </strong>
+                .
+              </label>
+            </div>
+
             <input
               type="file"
               accept=".csv, .xls, .xlsx"
@@ -215,9 +243,9 @@ export default function CustomersPage() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={importing}
+                disabled={importing || !consentGiven}
                 id="select-import-file-btn"
-                className="btn-primary w-full flex justify-center items-center gap-2 py-3"
+                className="btn-primary w-full flex justify-center items-center gap-2 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {importing ? (
                   <>
