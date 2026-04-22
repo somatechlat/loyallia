@@ -1,0 +1,274 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { @apply bg-surface-50 text-surface-900 dark:bg-surface-950 dark:text-surface-100; }
+}
+
+@layer components {
+  /* Premium Cards */
+  .card {
+    @apply bg-white rounded-3xl border border-surface-200/60 shadow-card shadow-inner-light overflow-hidden
+           dark:bg-surface-900 dark:border-white/[0.06] dark:shadow-none;
+  }
+  .card-hover {
+    @apply card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 hover:border-brand-200/50
+           dark:hover:border-brand-400/30 dark:hover:shadow-lg;
+  }
+
+  /* Premium Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-inner-light
+           dark:shadow-none;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-b from-brand-400 to-brand-600 text-white hover:from-brand-500 hover:to-brand-700 shadow-sm border border-brand-500 active:scale-95
+           dark:from-brand-500 dark:to-brand-700 dark:border-brand-600;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-surface-800 hover:text-brand-600 border border-surface-200 hover:border-brand-200 hover:bg-brand-50 shadow-sm active:scale-95
+           dark:bg-surface-800 dark:text-surface-200 dark:border-white/[0.08] dark:hover:bg-surface-700 dark:hover:text-brand-300 dark:hover:border-brand-500;
+  }
+  .btn-danger {
+    @apply btn bg-gradient-to-b from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-sm border border-red-600 active:scale-95;
+  }
+  .btn-ghost {
+    @apply btn text-surface-600 hover:bg-surface-100/50 hover:text-surface-900 shadow-none border border-transparent
+           dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-100;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-3 rounded-2xl border border-surface-200 bg-surface-50 text-sm text-surface-900 placeholder-surface-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-400 transition-all duration-200
+           dark:bg-surface-800 dark:border-white/[0.08] dark:text-surface-100 dark:placeholder-surface-500 dark:focus:bg-surface-700 dark:focus:ring-brand-500/30 dark:focus:border-brand-400;
+  }
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-surface-500 mb-2 ml-1
+           dark:text-surface-400;
+  }
+
+  /* Badges */
+  .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium; }
+  .badge-green  { @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800/50; }
+  .badge-amber  { @apply badge bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800/50; }
+  .badge-red    { @apply badge bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800/50; }
+  .badge-blue   { @apply badge bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800/50; }
+  .badge-purple { @apply badge bg-brand-50 text-brand-700 border border-brand-200 dark:bg-brand-900/40 dark:text-brand-300 dark:border-brand-800/50; }
+  .badge-gray   { @apply badge bg-surface-100 text-surface-600 border border-surface-200 dark:bg-surface-800 dark:text-surface-400 dark:border-white/[0.06]; }
+
+  /* Tables */
+  .table-wrapper {
+    @apply overflow-x-auto rounded-3xl border border-surface-200/60 bg-white shadow-card shadow-inner-light
+           dark:bg-surface-900 dark:border-white/[0.06] dark:shadow-none;
+  }
+  .table { @apply w-full text-sm text-left; }
+  .table th {
+    @apply px-5 py-4 text-xs font-bold text-surface-500 uppercase tracking-widest bg-surface-50 border-b border-surface-200/60
+           dark:bg-surface-800 dark:text-surface-400 dark:border-white/[0.06];
+  }
+  .table td {
+    @apply px-5 py-4 text-surface-800 border-b border-surface-100/50 transition-colors
+           dark:text-surface-200 dark:border-white/[0.04];
+  }
+  .table tr:last-child td { @apply border-b-0; }
+  .table tr:hover td { @apply bg-brand-50/30 dark:bg-brand-900/20; }
+
+  /* Stats Cards */
+  .stat-card { @apply card p-6 flex flex-col gap-4 relative overflow-hidden; }
+  .stat-value { @apply text-4xl font-extrabold text-surface-900 tracking-tight dark:text-surface-50; }
+  .stat-label { @apply text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400; }
+
+  /* Layout */
+  .page-header { @apply flex items-center justify-between mb-8 pb-4 border-b border-surface-200/60 dark:border-white/[0.06]; }
+  .page-title { @apply text-3xl font-extrabold tracking-tight text-surface-900 dark:text-white; }
+  .page-subtitle { @apply text-surface-500 font-medium mt-1 text-sm dark:text-surface-400; }
+
+  /* Base */
+  .spinner { @apply animate-spin rounded-full border-[3px] border-surface-100 border-t-brand-500 dark:border-surface-800 dark:border-t-brand-400; }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, #5660ff 0%, #9db3ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .glass {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .dark .glass {
+    background: rgba(10,15,26,0.85);
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DARK MODE — NUCLEAR global overrides.
+   Catches ALL Tailwind utility classes + opacity variants.
+   Uses [class*="..."] attribute selectors to match compiled class names.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Backgrounds ─────────────────────────────────────────────────────── */
+.dark [class*="bg-white"]  { background-color: #111827 !important; }
+.dark .bg-surface-50,
+.dark [class*="bg-surface-50"] { background-color: #0d1117 !important; }
+.dark .bg-surface-100,
+.dark [class*="bg-surface-100"] { background-color: #1a2233 !important; }
+.dark .bg-surface-200,
+.dark [class*="bg-surface-200"] { background-color: #1f2937 !important; }
+.dark .bg-surface-300 { background-color: #374151 !important; }
+
+/* Colored -50/-100 badges & tinted backgrounds */
+.dark .bg-brand-50,
+.dark [class*="bg-brand-50"] { background-color: rgba(86, 96, 255, 0.12) !important; }
+.dark .bg-brand-100,
+.dark [class*="bg-brand-100"] { background-color: rgba(86, 96, 255, 0.18) !important; }
+.dark .bg-emerald-50,
+.dark [class*="bg-emerald-50"] { background-color: rgba(5, 150, 105, 0.12) !important; }
+.dark .bg-red-50,
+.dark [class*="bg-red-50"] { background-color: rgba(220, 38, 38, 0.12) !important; }
+.dark .bg-red-100,
+.dark [class*="bg-red-100"] { background-color: rgba(220, 38, 38, 0.18) !important; }
+.dark .bg-amber-50,
+.dark [class*="bg-amber-50"] { background-color: rgba(217, 119, 6, 0.12) !important; }
+.dark .bg-yellow-50,
+.dark [class*="bg-yellow-50"] { background-color: rgba(234, 179, 8, 0.12) !important; }
+.dark .bg-yellow-100,
+.dark [class*="bg-yellow-100"] { background-color: rgba(234, 179, 8, 0.18) !important; }
+.dark .bg-purple-50,
+.dark [class*="bg-purple-50"] { background-color: rgba(147, 51, 234, 0.12) !important; }
+.dark .bg-blue-50,
+.dark [class*="bg-blue-50"] { background-color: rgba(59, 130, 246, 0.12) !important; }
+.dark .bg-green-50,
+.dark [class*="bg-green-50"] { background-color: rgba(34, 197, 94, 0.12) !important; }
+.dark .bg-gray-50,
+.dark [class*="bg-gray-50"] { background-color: #1a2233 !important; }
+.dark .bg-gray-100,
+.dark [class*="bg-gray-100"] { background-color: #1f2937 !important; }
+
+/* ── Text ────────────────────────────────────────────────────────────── */
+.dark .text-surface-900 { color: #f1f3f7 !important; }
+.dark .text-surface-800 { color: #e4e8f0 !important; }
+.dark .text-surface-700 { color: #d1d5db !important; }
+.dark .text-surface-600 { color: #9ca3af !important; }
+.dark .text-surface-500 { color: #6b7280 !important; }
+.dark .text-gray-900 { color: #f1f3f7 !important; }
+.dark .text-gray-800 { color: #e4e8f0 !important; }
+.dark .text-gray-700 { color: #d1d5db !important; }
+.dark .text-gray-600 { color: #9ca3af !important; }
+.dark .text-gray-500 { color: #6b7280 !important; }
+
+/* Badge text colors — keep readable in dark */
+.dark .text-brand-700 { color: #a5b4fc !important; }
+.dark .text-emerald-700 { color: #6ee7b7 !important; }
+.dark .text-red-700 { color: #fca5a5 !important; }
+.dark .text-amber-700 { color: #fcd34d !important; }
+.dark .text-yellow-700 { color: #fcd34d !important; }
+.dark .text-blue-700 { color: #93c5fd !important; }
+
+/* ── Borders — catch ALL variants ────────────────────────────────────── */
+.dark [class*="border-surface"] { border-color: rgba(255, 255, 255, 0.05) !important; }
+.dark [class*="border-white"]   { border-color: rgba(255, 255, 255, 0.04) !important; }
+.dark [class*="border-gray"]    { border-color: rgba(255, 255, 255, 0.05) !important; }
+.dark .card,
+.dark .table-wrapper,
+.dark .stat-card { border-color: rgba(255, 255, 255, 0.04) !important; }
+
+/* Dividers */
+.dark [class*="divide-surface"] > * + * { border-color: rgba(255, 255, 255, 0.04) !important; }
+.dark [class*="divide-gray"] > * + * { border-color: rgba(255, 255, 255, 0.04) !important; }
+
+/* Inline style overrides for borders */
+.dark [style*="border"] { border-color: rgba(255, 255, 255, 0.05) !important; }
+
+/* ── Hover states ────────────────────────────────────────────────────── */
+.dark [class*="hover:bg-surface"]:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+.dark [class*="hover:bg-white"]:hover   { background-color: #1f2937 !important; }
+.dark [class*="hover:bg-gray"]:hover    { background-color: rgba(255, 255, 255, 0.04) !important; }
+
+/* ── Inline box-shadow overrides ─────────────────────────────────────── */
+.dark [style*="boxShadow"],
+.dark [style*="box-shadow"] { box-shadow: none !important; }
+
+/* Component shadows */
+.dark .shadow-card,
+.dark .shadow-card-hover,
+.dark .shadow-inner-light,
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg { box-shadow: none !important; }
+
+/* ── Skeleton loaders ────────────────────────────────────────────────── */
+.dark [class*="bg-surface-200"][class*="animate-pulse"],
+.dark [class*="bg-surface-100"][class*="animate-pulse"],
+.dark [class*="bg-gray"][class*="animate-pulse"] { background-color: #1a2233 !important; }
+
+/* ── Modal overlays ──────────────────────────────────────────────────── */
+.dark [class*="bg-black\\/"] { background-color: rgba(0, 0, 0, 0.7) !important; }
+
+/* ── Gradients ───────────────────────────────────────────────────────── */
+.dark [class*="bg-gradient"][class*="from-brand-50"] { --tw-gradient-from: rgba(86, 96, 255, 0.12) !important; }
+
+/* ── Rings ───────────────────────────────────────────────────────────── */
+.dark [class*="ring-brand"]:hover { --tw-ring-color: rgba(86, 96, 255, 0.2) !important; }
+.dark [class*="ring-brand"]:focus { --tw-ring-color: rgba(86, 96, 255, 0.25) !important; }
+
+/* ── Scrollbar (WebKit) ──────────────────────────────────────────────── */
+.dark ::-webkit-scrollbar { width: 6px; }
+.dark ::-webkit-scrollbar-track { background: transparent; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 8px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* ── Toast / Sonner ──────────────────────────────────────────────────── */
+.dark [data-sonner-toaster] [data-sonner-toast],
+.dark .go2072408551 { background-color: #1f2937 !important; color: #f1f3f7 !important; border-color: rgba(255,255,255,0.06) !important; }
+
+/* ── Leaflet map ─────────────────────────────────────────────────────── */
+.leaflet-container { z-index: 1 !important; }
+.leaflet-pane { z-index: 2 !important; }
+.leaflet-map-pane { z-index: 1 !important; }
+.leaflet-popup-pane { z-index: 10 !important; }
+.leaflet-control-pane { z-index: 3 !important; }
+.dark .leaflet-tile-pane { filter: brightness(0.7) contrast(1.1) saturate(0.8); }
+.dark .leaflet-control-zoom a { background-color: #1f2937 !important; color: #e4e8f0 !important; border-color: rgba(255,255,255,0.06) !important; }
+.dark .leaflet-popup-content-wrapper { background-color: #1f2937 !important; color: #e4e8f0 !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important; }
+.dark .leaflet-popup-tip { background-color: #1f2937 !important; }
+.dark .leaflet-popup-content strong { color: #f1f3f7 !important; }
+.dark .leaflet-popup-content p { color: #9ca3af !important; }
+.dark .leaflet-popup-content a { color: #818cf8 !important; }
+.dark .leaflet-popup-close-button { color: #6b7280 !important; }
+
+/* ── Recharts ────────────────────────────────────────────────────────── */
+.dark .recharts-legend-item-text { color: #9ca3af !important; }
+.dark .recharts-label { fill: #9ca3af !important; }
+.dark .recharts-text { fill: #6b7280 !important; }
+.dark .recharts-default-tooltip { background-color: #1f2937 !important; border-color: rgba(255,255,255,0.08) !important; }
+.dark .recharts-tooltip-label { color: #e4e8f0 !important; }
+.dark .recharts-tooltip-item { color: #d1d5db !important; }
+
+/* ── Backdrop blur (keeps glassmorphism in dark) ─────────────────────── */
+.dark [class*="backdrop-blur"] { backdrop-filter: blur(20px) !important; }
+
+/* ── Select / dropdown native ────────────────────────────────────────── */
+.dark select,
+.dark option { background-color: #1f2937 !important; color: #e4e8f0 !important; }
+
+/* ── Placeholder text ────────────────────────────────────────────────── */
+.dark ::placeholder { color: #4b5563 !important; opacity: 1 !important; }
+
+/* ── Focus visible ring ──────────────────────────────────────────────── */
+.dark *:focus-visible { outline-color: #6366f1 !important; }

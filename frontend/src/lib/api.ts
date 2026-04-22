@@ -1,0 +1,123 @@
+import axios from 'axios';
+import Cookies from 'js-cookie';
+
+const api = axios.create({
+  baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905'),
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Attach JWT access token to every request
+api.interceptors.request.use((config) => {
+  const token = Cookies.get('access_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// On 401, attempt refresh — if refresh fails, clear tokens and redirect to login
+api.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status === 401 && !original._retry) {
+      original._retry = true;
+      const refresh = Cookies.get('refresh_token');
+      if (refresh) {
+        try {
+          const { data } = await axios.post(
+            '/api/v1/auth/refresh/',
+            { refresh_token: refresh }
+          );
+          Cookies.set('access_token', data.access_token, { expires: 1/96 });
+          original.headers.Authorization = `Bearer ${data.access_token}`;
+          return api(original);
+        } catch {
+          Cookies.remove('access_token');
+          Cookies.remove('refresh_token');
+          window.location.href = '/login';
+        }
+      } else {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+
+// Typed API helpers
+export const authApi = {
+  login: (email: string, password: string) =>
+    api.post('/api/v1/auth/login/', { email, password }),
+  register: (data: Record<string, unknown>) =>
+    api.post('/api/v1/auth/register/', data),
+  logout: () => api.post('/api/v1/auth/logout/'),
+  me: () => api.get('/api/v1/auth/me/'),
+  updateProfile: (data: { first_name?: string; last_name?: string }) =>
+    api.put('/api/v1/auth/profile/', data),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    api.post('/api/v1/auth/change-password/', data),
+};
+
+export const analyticsApi = {
+  dashboard: () => api.get('/api/v1/analytics/overview/'),
+  trends: (days = 30) => api.get(`/api/v1/analytics/trends/?days=${days}`),
+  segments: () => api.get('/api/v1/analytics/segments/'),
+  programs: () => api.get('/api/v1/analytics/programs/'),
+};
+
+export const customersApi = {
+  list: (params?: Record<string, unknown>) => api.get('/api/v1/customers/', { params }),
+  get: (id: string) => api.get(`/api/v1/customers/${id}/`),
+  create: (data: Record<string, unknown>) => api.post('/api/v1/customers/', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/api/v1/customers/${id}/`, data),
+  delete: (id: string) => api.delete(`/api/v1/customers/${id}/`),
+  importCsv: (formData: FormData) => api.post('/api/v1/customers/import/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  passes: (id: string) => api.get(`/api/v1/customers/${id}/passes/`),
+  enroll: (id: string, cardId: string) =>
+    api.post(`/api/v1/customers/${id}/enroll/?card_id=${cardId}`),
+  segments: () => api.get('/api/v1/analytics/segments/'),
+  segmentMembers: (segId: string, params?: Record<string, unknown>) =>
+    api.get(`/api/v1/customers/segments/${segId}/members/`, { params }),
+};
+
+export const programsApi = {
+  list: (params?: Record<string, unknown>) => api.get('/api/v1/programs/', { params }),
+  get: (id: string) => api.get(`/api/v1/programs/${id}/`),
+  create: (data: Record<string, unknown>) => api.post('/api/v1/programs/', data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/api/v1/programs/${id}/`, data),
+  suspend: (id: string) => api.post(`/api/v1/programs/${id}/suspend/`),
+  delete: (id: string) => api.delete(`/api/v1/programs/${id}/`),
+  stats: (id: string) => api.get(`/api/v1/programs/${id}/stats/`),
+};
+
+export const notificationsApi = {
+  list: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/', { params }),
+  campaigns: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/campaigns/', { params }),
+  createCampaign: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
+};
+
+export const automationApi = {
+  list: () => api.get('/api/v1/automation/'),
+  get: (id: string) => api.get(`/api/v1/automation/${id}/`),
+  create: (data: Record<string, unknown>) => api.post('/api/v1/automation/', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/api/v1/automation/${id}/`, data),
+  delete: (id: string) => api.delete(`/api/v1/automation/${id}/`),
+  toggle: (id: string) => api.post(`/api/v1/automation/${id}/toggle/`),
+  execute: (id: string, customerId: string) => api.post(`/api/v1/automation/${id}/execute/?customer_id=${customerId}`),
+  stats: () => api.get('/api/v1/automation/stats/'),
+};
+
+export const billingApi = {
+  plans: () => api.get('/api/v1/billing/plans/'),
+  subscription: () => api.get('/api/v1/billing/subscription/'),
+  usage: () => api.get('/api/v1/billing/usage/'),
+  invoices: () => api.get('/api/v1/billing/invoices/'),
+};
+
+export const transactionsApi = {
+  list: (params?: Record<string, unknown>) => api.get('/api/v1/transactions/', { params }),
+  get: (id: string) => api.get(`/api/v1/transactions/${id}/`),
+};

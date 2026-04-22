@@ -1,0 +1,427 @@
+# =============================================================================
+# LOYALLIA — Full Docker Compose Stack (DEVELOPMENT with Live Reload)
+# All services open source — PostgreSQL + Redis + MinIO + Django + Next.js
+# PORT RANGE: 33900+ (see docs/PORT_AUTHORITY.md)
+# TOTAL CLUSTER LIMIT: 8GB RAM
+# =============================================================================
+
+x-common-env: &common-env
+  DATABASE_URL: postgres://loyallia:loyallia_secret@postgres:5432/loyallia
+  DATABASE_DIRECT_URL: postgres://loyallia:loyallia_secret@postgres:5432/loyallia
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+  MINIO_ENDPOINT: http://minio:9000
+  MINIO_ACCESS_KEY: loyallia_minio
+  MINIO_SECRET_KEY: loyallia_minio_secret
+  MINIO_BUCKET_PASSES: passes
+  MINIO_BUCKET_ASSETS: assets
+  SECRET_KEY: change-me-in-production-use-long-random-string
+  DJANGO_SETTINGS_MODULE: loyallia.settings.development
+  DEBUG: "True"
+  ALLOWED_HOSTS: "*"
+  CORS_ALLOWED_ORIGINS: "http://localhost:33906,http://localhost:33905,http://192.168.18.72:33906,http://192.168.18.72:33905"
+  # Apple Wallet
+  APPLE_PASS_TYPE_IDENTIFIER: pass.com.loyallia.cards
+  APPLE_TEAM_IDENTIFIER: YOUR_APPLE_TEAM_ID
+  APPLE_CERT_PATH: /app/certs/apple_pass.pem
+  APPLE_CERT_KEY_PATH: /app/certs/apple_pass.key
+  APPLE_WWDR_CERT_PATH: /app/certs/apple_wwdr.pem
+  # Google Wallet
+  GOOGLE_SERVICE_ACCOUNT_FILE: /app/certs/google_wallet_service_account.json
+  GOOGLE_WALLET_ISSUER_ID: "3388000000023113505"
+  # Claro Pay (Billing)
+  CLARO_PAY_BASE_URL: https://api-uat.claropay.com.ec
+  CLARO_PAY_MERCHANT_ID: YOUR_CLARO_PAY_MERCHANT_ID
+  CLARO_PAY_API_KEY: YOUR_CLARO_PAY_API_KEY
+  CLARO_PAY_API_SECRET: YOUR_CLARO_PAY_API_SECRET
+  CLARO_PAY_WEBHOOK_SECRET: YOUR_CLARO_PAY_WEBHOOK_SECRET
+  # Email
+  EMAIL_HOST: smtp.mailjet.com
+  EMAIL_PORT: "587"
+  EMAIL_HOST_USER: your_smtp_user
+  EMAIL_HOST_PASSWORD: your_smtp_password
+  EMAIL_FROM: noreply@loyallia.com
+  # Firebase (Android push)
+  FIREBASE_CREDENTIAL_FILE: /app/certs/firebase_service_account.json
+
+services:
+  # ---------------------------------------------------------------------------
+  # POSTGRESQL 16 — Primary Database  → localhost:33900              [1GB limit]
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: loyallia-postgres
+    environment:
+      POSTGRES_DB: loyallia
+      POSTGRES_USER: loyallia
+      POSTGRES_PASSWORD: loyallia_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "33900:5432"
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loyallia -d loyallia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # PGBOUNCER — Connection Pooling      → localhost:33901            [128M limit]
+  # ---------------------------------------------------------------------------
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: loyallia-pgbouncer
+    environment:
+      DATABASE_URL: postgres://loyallia:loyallia_secret@postgres:5432/loyallia
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "200"
+      DEFAULT_POOL_SIZE: "25"
+    ports:
+      - "33901:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+
+  # ---------------------------------------------------------------------------
+  # REDIS 7 — Cache + Celery Broker     → localhost:33902            [256M limit]
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: loyallia-redis
+    command: redis-server --appendonly yes --maxmemory 200mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "33902:6379"
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # MINIO — S3-Compatible Object Storage → localhost:33903-33904     [256M limit]
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: loyallia-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: loyallia_minio
+      MINIO_ROOT_PASSWORD: loyallia_minio_secret
+    volumes:
+      - minio_data:/data
+    ports:
+      - "33903:9000"
+      - "33904:9001"
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO bucket initialization
+  minio-init:
+    image: minio/mc:latest
+    container_name: loyallia-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 loyallia_minio loyallia_minio_secret &&
+      mc mb --ignore-existing local/passes &&
+      mc mb --ignore-existing local/assets &&
+      mc anonymous set download local/assets &&
+      echo 'MinIO buckets ready'
+      "
+    networks:
+      - loyallia-net
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # ---------------------------------------------------------------------------
+  # DJANGO API — Django 5 + Django Ninja → localhost:33905           [1.5GB limit]
+  # !! LIVE RELOAD: uses Django dev server (runserver) with volume mount !!
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loyallia-api
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput &&
+      python manage.py seed_test_data 2>/dev/null || true &&
+      python manage.py runserver 0.0.0.0:8000"
+    environment:
+      <<: *common-env
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./backend:/app
+      - static_files:/app/staticfiles
+      - ./certs:/app/certs:ro
+    ports:
+      - "33905:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: "1.5"
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # NEXT.JS — Dashboard + Scanner PWA   → localhost:33906           [1.5GB limit]
+  # !! LIVE RELOAD: src/ and public/ mounted, NODE_ENV=development !!
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: loyallia-web
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:33905}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:33906}
+      NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://api:8000}
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      HOST: "0.0.0.0"
+    ports:
+      - "33906:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/next.config.js:/app/next.config.js
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/tests:/app/tests:ro
+      - ./frontend/playwright.config.ts:/app/playwright.config.ts:ro
+    depends_on:
+      - api
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: "1.5"
+        reservations:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # CELERY WORKERS — Async Task Processing                         [768M total]
+  # ---------------------------------------------------------------------------
+
+  # Worker 1: Pass generation (high priority)                      [256M]
+  celery-pass:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loyallia-celery-pass
+    command: celery -A loyallia worker -Q pass_generation -c 2 -l info --max-tasks-per-child=500
+    environment:
+      <<: *common-env
+    volumes:
+      - ./backend:/app
+      - ./certs:/app/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  # Worker 2: Push notification delivery                           [256M]
+  celery-push:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loyallia-celery-push
+    command: celery -A loyallia worker -Q push_delivery -c 2 -l info --max-tasks-per-child=500
+    environment:
+      <<: *common-env
+    volumes:
+      - ./backend:/app
+      - ./certs:/app/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  # Worker 3: Default queue (email, billing, automation)           [256M]
+  celery-default:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loyallia-celery-default
+    command: celery -A loyallia worker -Q default,email,billing -c 2 -l info --max-tasks-per-child=500
+    environment:
+      <<: *common-env
+    volumes:
+      - ./backend:/app
+      - ./certs:/app/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  # ---------------------------------------------------------------------------
+  # CELERY BEAT — Scheduled Jobs Scheduler                         [128M]
+  # ---------------------------------------------------------------------------
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loyallia-celery-beat
+    command: celery -A loyallia beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      <<: *common-env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+
+  # ---------------------------------------------------------------------------
+  # FLOWER — Celery Worker Monitor       → localhost:33907          [128M]
+  # ---------------------------------------------------------------------------
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loyallia-flower
+    command: celery -A loyallia flower --port=5555 --basic_auth=admin:loyallia_flower_secret
+    environment:
+      <<: *common-env
+    ports:
+      - "33907:5555"
+    depends_on:
+      - redis
+    networks:
+      - loyallia-net
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  static_files:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  loyallia-net:
+    driver: bridge
