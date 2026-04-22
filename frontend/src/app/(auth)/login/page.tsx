@@ -82,7 +82,7 @@ export default function LoginPage() {
   const handleGoogleCallback = async (response: { credential: string }) => {
     setGoogleLoading(true);
     try {
-      const user = await loginWithGoogle(response.credential);
+      const user = await loginWithGoogle(response.credential, undefined, true);
       if (user.role === 'STAFF') {
         router.replace('/scanner/scan');
       } else {

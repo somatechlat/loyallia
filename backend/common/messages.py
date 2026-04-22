@@ -57,6 +57,7 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTH_PHONE_OTP_SENT": "Código de verificación enviado al {phone}.",
     "AUTH_PHONE_VERIFIED": "Número telefónico verificado exitosamente.",
     "AUTH_PHONE_OTP_INVALID": "El código de verificación es inválido o ha expirado.",
+    "AUTH_USER_NOT_FOUND_REGISTER": "Cuenta no encontrada. Por favor, regístrate primero para acceder o disfrutar del periodo de prueba.",
     # --- Tenant ---
     "TENANT_CREATED": "Negocio registrado. Tu prueba gratuita de {days} días ha comenzado.",
     "TENANT_UPDATED": "Configuración del negocio actualizada.",

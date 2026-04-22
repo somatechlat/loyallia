@@ -58,8 +58,8 @@ export const authApi = {
   changePassword: (data: { current_password: string; new_password: string }) =>
     api.post('/api/v1/auth/change-password/', data),
   googleConfig: () => api.get('/api/v1/auth/google/config/'),
-  googleLogin: (credential: string, business_name?: string) =>
-    api.post('/api/v1/auth/google/login/', { credential, business_name: business_name || '' }),
+  googleLogin: (credential: string, business_name?: string, is_login_only: boolean = false) =>
+    api.post('/api/v1/auth/google/login/', { credential, business_name: business_name || '', is_login_only }),
   phoneVerifyRequest: (phone_number: string) =>
     api.post('/api/v1/auth/phone/verify/request/', { phone_number }),
   phoneVerifyConfirm: (phone_number: string, otp: string) =>

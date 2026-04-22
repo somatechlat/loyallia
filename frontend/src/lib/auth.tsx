@@ -24,7 +24,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  loginWithGoogle: (credential: string, businessName?: string) => Promise<User>;
+  loginWithGoogle: (credential: string, businessName?: string, isLoginOnly?: boolean) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<User | null>;
 }
@@ -110,8 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return userData;
   };
 
-  const loginWithGoogle = async (credential: string, businessName?: string): Promise<User> => {
-    const { data } = await authApi.googleLogin(credential, businessName);
+  const loginWithGoogle = async (credential: string, businessName?: string, isLoginOnly: boolean = false): Promise<User> => {
+    const { data } = await authApi.googleLogin(credential, businessName, isLoginOnly);
     const isProd = window.location.protocol === 'https:';
     Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
     Cookies.set('refresh_token', data.refresh_token, { expires: 7, secure: isProd, sameSite: 'strict' });

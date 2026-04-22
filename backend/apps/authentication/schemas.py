@@ -169,6 +169,7 @@ class GoogleTokenIn(BaseModel):
 
     credential: str
     business_name: str = ""
+    is_login_only: bool = False
 
 
 class PhoneVerifyRequestIn(BaseModel):

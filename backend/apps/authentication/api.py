@@ -538,7 +538,9 @@ def google_login(request, payload: GoogleTokenIn):
         logger.info("Google OAuth login: existing user %s", email)
         return issue_tokens(user)
     except User.DoesNotExist:
-        pass
+        if payload.is_login_only:
+            logger.warning("Google OAuth login failed: unregistered user %s", email)
+            raise HttpError(404, get_message("AUTH_USER_NOT_FOUND_REGISTER"))
 
     # New user — create tenant + OWNER
     from django.db import transaction
