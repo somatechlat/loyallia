@@ -71,6 +71,13 @@ def import_customers(request, file: UploadedFile = File(...)):
     from django.utils.dateparse import parse_date
 
     filename = file.name.lower()
+    
+    # SECURITY HARDENING: Prevent OOM (Memory Exhaustion) Attacks
+    # Limit max upload size to 5MB before allowing pandas to load it into RAM.
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    if file.size > MAX_FILE_SIZE:
+        raise HttpError(413, "El archivo es demasiado grande. El límite máximo es 5MB para proteger la estabilidad del sistema.")
+
     try:
         if filename.endswith(".csv"):
             df = pd.read_csv(file.file, dtype=str, keep_default_na=False)
