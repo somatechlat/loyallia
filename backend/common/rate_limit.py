@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 RATE_LIMIT_RULES = [
     ("/api/v1/auth/login", "ip", 5, 60),         # 5 login attempts per minute per IP
     ("/api/v1/auth/register", "ip", 10, 60),      # 10 registrations per minute per IP
+    ("/api/v1/auth/phone/", "ip", 3, 60),         # HARDENED: 3 OTP requests per min to prevent SMS spam cost
+    ("/api/v1/wallet/", "ip", 30, 60),            # HARDENED: 30 PKPass requests per min to prevent CPU exhaustion
     ("/api/v1/auth/google/config", "ip", 200, 60),# 200 config requests per minute per IP
     ("/api/v1/auth/me", "ip", 200, 60),           # 200 session checks per minute per IP
     ("/api/v1/auth/", "ip", 20, 60),              # 20 general auth requests per minute per IP
