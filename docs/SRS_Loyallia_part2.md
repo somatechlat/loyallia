@@ -191,7 +191,7 @@ Manage tenant subscription lifecycle: free trial, plan selection, payment, invoi
 | FULL | $75/month + IVA | 10 card types, geo-location, manager accounts, unlimited customers/messages/stamps/rewards/transactions |
 | ADDITIONAL_POS | $10/month per location | Extra scanner location |
 
-*Note: Loyallia-branded pricing may differ; the engine (Devotio) uses $75/month.*
+*Note: Loyallia-branded pricing may differ; the engine (Loyallia) uses $75/month.*
 
 ### 14.3 Functional Requirements
 

@@ -5,7 +5,7 @@
 **Status:** APPROVED FOR DEVELOPMENT  
 **Date:** 2026-04-05  
 **Standard:** ISO/IEC 29148:2018 — Requirements Engineering  
-**Engine:** Devotio Rewards  
+**Engine:** Loyallia  
 
 ---
 
@@ -13,7 +13,7 @@
 
 | Version | Date | Author | Change |
 |---------|------|--------|--------|
-| 1.0.0 | 2026-04-05 | Engineering Team | Initial SRS from product brief + Devotio Rewards website |
+| 1.0.0 | 2026-04-05 | Engineering Team | Initial SRS from product brief + Loyallia website |
 
 ---
 
@@ -53,7 +53,7 @@ This SRS defines the complete functional, non-functional, security, and integrat
 
 **System Name:** Loyallia  
 **Tagline:** Plataforma inteligente de fidelización digital.  
-**Underlying Engine:** Devotio Rewards  
+**Underlying Engine:** Loyallia  
 **Market Claim:** Aumenta un 30% las ventas y duplica la tasa de retorno de clientes.
 
 Loyallia enables businesses to create, deploy, and manage digital loyalty programs delivered natively through Apple Wallet and Google Wallet — requiring **zero customer app installation**. The platform is composed of:
@@ -91,7 +91,7 @@ Loyallia enables businesses to create, deploy, and manage digital loyalty progra
 | ISO/IEC 29148:2018 | Requirements Engineering standard |
 | Apple PassKit Developer Docs | https://developer.apple.com/wallet/ |
 | Google Wallet API | https://developers.google.com/wallet |
-| Devotio Rewards Platform | https://devotiorewards.com |
+| Loyallia Platform | https://loyallia.com |
 | LOPDP Ecuador 2021 | National personal data protection law |
 | PCI-DSS v4.0 | Payment industry security standard |
 | RFC 7519 | JSON Web Token |
@@ -777,7 +777,7 @@ Manage tenant subscription lifecycle: free trial, plan selection, payment, invoi
 | FULL | $75/month + IVA | 10 card types, geo-location, manager accounts, unlimited customers/messages/stamps/rewards/transactions |
 | ADDITIONAL_POS | $10/month per location | Extra scanner location |
 
-*Note: Loyallia-branded pricing may differ; the engine (Devotio) uses $75/month.*
+*Note: Loyallia-branded pricing may differ; the engine (Loyallia) uses $75/month.*
 
 ### 14.3 Functional Requirements
 
