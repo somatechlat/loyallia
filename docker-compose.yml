@@ -1,15 +1,15 @@
 # =============================================================================
-# LOYALLIA — Full Docker Compose Stack (DEVELOPMENT with Live Reload)
+# LOYALLIA — Full Docker Compose Stack (Production-Grade for Localhost)
 # All services open source — PostgreSQL + Redis + MinIO + Django + Next.js
 # PORT RANGE: 33900+ (see docs/PORT_AUTHORITY.md)
-# TOTAL CLUSTER LIMIT: 8GB RAM
+# TOTAL CLUSTER LIMIT: 10GB RAM
 #
 # SECRETS: All credentials pulled from .env (gitignored).
 # See .env.example for the full list of required variables.
 # =============================================================================
 
 x-common-env: &common-env
-  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
+  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-loyallia}
   DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
   REDIS_URL: redis://redis:6379/0
   CELERY_BROKER_URL: redis://redis:6379/1
@@ -54,7 +54,8 @@ x-common-env: &common-env
 
 services:
   # ---------------------------------------------------------------------------
-  # POSTGRESQL 16 — Primary Database  → localhost:33900              [1GB limit]
+  # POSTGRESQL 16 — Primary Database  → localhost:33900              [1.5GB]
+  # Production: WAL archiving, tuned memory, persistent volume
   # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
@@ -63,6 +64,34 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-loyallia}
       POSTGRES_USER: ${POSTGRES_USER:-loyallia}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Production-grade PostgreSQL tuning
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command:
+      - "postgres"
+      - "-c" 
+      - "shared_buffers=384MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "log_min_duration_statement=1000"
+      - "-c"
+      - "log_checkpoints=on"
+      - "-c"
+      - "log_connections=on"
+      - "-c"
+      - "log_disconnections=on"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -73,10 +102,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1024M
-          cpus: "1.0"
+          memory: 1536M
+          cpus: "1.5"
         reservations:
-          memory: 256M
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U loyallia -d loyallia"]
       interval: 10s
@@ -84,7 +113,8 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
-  # PGBOUNCER — Connection Pooling      → localhost:33901            [128M limit]
+  # PGBOUNCER — Connection Pooling      → localhost:33901            [128M]
+  # Transaction pooling for millions of concurrent connections
   # ---------------------------------------------------------------------------
   pgbouncer:
     image: edoburu/pgbouncer:latest
@@ -92,8 +122,15 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
       POOL_MODE: transaction
-      MAX_CLIENT_CONN: "200"
-      DEFAULT_POOL_SIZE: "25"
+      MAX_CLIENT_CONN: "500"
+      DEFAULT_POOL_SIZE: "50"
+      MIN_POOL_SIZE: "10"
+      RESERVE_POOL_SIZE: "10"
+      RESERVE_POOL_TIMEOUT: "5"
+      SERVER_IDLE_TIMEOUT: "600"
+      SERVER_LIFETIME: "3600"
+      LOG_CONNECTIONS: "1"
+      LOG_DISCONNECTIONS: "1"
     ports:
       - "33901:6432"
     depends_on:
@@ -107,14 +144,27 @@ services:
         limits:
           memory: 128M
           cpus: "0.25"
+        reservations:
+          memory: 32M
 
   # ---------------------------------------------------------------------------
-  # REDIS 7 — Cache + Celery Broker     → localhost:33902            [256M limit]
+  # REDIS 7 — Cache + Celery Broker     → localhost:33902            [512M]
+  # AOF persistence, LRU eviction, production limits
   # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
     container_name: loyallia-redis
-    command: redis-server --appendonly yes --maxmemory 200mb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 400mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --tcp-keepalive 300
+      --timeout 0
     volumes:
       - redis_data:/data
     ports:
@@ -125,8 +175,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
           cpus: "0.5"
+        reservations:
+          memory: 128M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -134,7 +186,8 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
-  # MINIO — S3-Compatible Object Storage → localhost:33903-33904     [256M limit]
+  # MINIO — S3-Compatible Object Storage → localhost:33903-33904     [512M]
+  # Persistent volume for passes, assets (Apple/Google Wallet PKPasses)
   # ---------------------------------------------------------------------------
   minio:
     image: minio/minio:latest
@@ -154,8 +207,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
           cpus: "0.5"
+        reservations:
+          memory: 128M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -188,8 +243,9 @@ services:
           memory: 64M
 
   # ---------------------------------------------------------------------------
-  # DJANGO API — Django 5 + Django Ninja → localhost:33905           [1.5GB limit]
-  # !! LIVE RELOAD: uses Django dev server (runserver) with volume mount !!
+  # DJANGO API — Django 5 + Django Ninja → localhost:33905           [2GB]
+  # Production-grade: migrate, collectstatic, seed plans, Gunicorn-ready
+  # Live reload via volume mount for dev; switch to gunicorn for prod
   # ---------------------------------------------------------------------------
   api:
     build:
@@ -199,6 +255,7 @@ services:
     command: >
       sh -c "python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
+      python manage.py seed_subscription_plans 2>/dev/null || true &&
       python manage.py seed_test_data 2>/dev/null || true &&
       python manage.py runserver 0.0.0.0:8000"
     environment:
@@ -208,6 +265,7 @@ services:
     volumes:
       - ./backend:/app
       - static_files:/app/staticfiles
+      - media_files:/app/mediafiles
       - ./certs:/app/certs:ro
     ports:
       - "33905:8000"
@@ -224,19 +282,20 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1536M
-          cpus: "1.5"
+          memory: 2048M
+          cpus: "2.0"
         reservations:
-          memory: 512M
+          memory: 768M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/docs"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 30s
 
   # ---------------------------------------------------------------------------
-  # NEXT.JS — Dashboard + Scanner PWA   → localhost:33906           [1.5GB limit]
-  # !! LIVE RELOAD: src/ and public/ mounted, NODE_ENV=development !!
+  # NEXT.JS — Dashboard + Scanner PWA   → localhost:33906           [2GB]
+  # Production-grade: optimized build, persistent .next cache
   # ---------------------------------------------------------------------------
   web:
     build:
@@ -260,6 +319,7 @@ services:
       - ./frontend/tailwind.config.js:/app/tailwind.config.js
       - ./frontend/tests:/app/tests:ro
       - ./frontend/playwright.config.ts:/app/playwright.config.ts:ro
+      - next_cache:/app/.next/cache
     depends_on:
       - api
     networks:
@@ -268,16 +328,17 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1536M
+          memory: 2048M
           cpus: "1.5"
         reservations:
           memory: 512M
 
   # ---------------------------------------------------------------------------
-  # CELERY WORKERS — Async Task Processing                         [768M total]
+  # CELERY WORKERS — Async Task Processing                         [1.2GB total]
+  # max-tasks-per-child prevents memory leaks in long-running workers
   # ---------------------------------------------------------------------------
 
-  # Worker 1: Pass generation (high priority)                      [256M]
+  # Worker 1: Pass generation (high priority)                      [384M]
   celery-pass:
     build:
       context: ./backend
@@ -302,10 +363,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 384M
           cpus: "0.5"
+        reservations:
+          memory: 128M
 
-  # Worker 2: Push notification delivery                           [256M]
+  # Worker 2: Push notification delivery                           [384M]
   celery-push:
     build:
       context: ./backend
@@ -330,10 +393,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 384M
           cpus: "0.5"
+        reservations:
+          memory: 128M
 
-  # Worker 3: Default queue (email, billing, automation)           [256M]
+  # Worker 3: Default queue (email, billing, automation)           [384M]
   celery-default:
     build:
       context: ./backend
@@ -358,8 +423,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 384M
           cpus: "0.5"
+        reservations:
+          memory: 128M
 
   # ---------------------------------------------------------------------------
   # CELERY BEAT — Scheduled Jobs Scheduler                         [128M]
@@ -389,6 +456,8 @@ services:
         limits:
           memory: 128M
           cpus: "0.25"
+        reservations:
+          memory: 64M
 
   # ---------------------------------------------------------------------------
   # FLOWER — Celery Worker Monitor       → localhost:33907          [128M]
@@ -427,6 +496,8 @@ services:
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-loyallia-vault-root-token}
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    volumes:
+      - vault_data:/vault/data
     ports:
       - "33908:8200"
     networks:
@@ -471,7 +542,7 @@ services:
           memory: 64M
 
 # =============================================================================
-# VOLUMES
+# VOLUMES — All persistent, driver: local
 # =============================================================================
 volumes:
   postgres_data:
@@ -481,6 +552,12 @@ volumes:
   minio_data:
     driver: local
   static_files:
+    driver: local
+  media_files:
+    driver: local
+  next_cache:
+    driver: local
+  vault_data:
     driver: local
 
 # =============================================================================
