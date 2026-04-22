@@ -1,7 +1,7 @@
 # Loyallia — Digital Loyalty Platform
 
 > **Plataforma inteligente de fidelización digital.**  
-> Powered by Devotio Rewards Engine.
+> Powered by SomaTech LAT.
 
 ---
 
@@ -168,4 +168,4 @@ After `seed_test_data` runs automatically:
 ---
 
 *SRS Standard: ISO/IEC 29148:2018 — Requirements Engineering*  
-*Engine: Devotio Rewards*
+*Platform: Loyallia by SomaTech LAT*
