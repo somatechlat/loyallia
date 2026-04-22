@@ -146,9 +146,10 @@ class CustomerPass(models.Model):
         max_length=100, blank=True, default="", verbose_name="Google Pass ID"
     )
 
-    # QR code for validation
+    # QR code for validation — indexed for O(log N) scan lookups
     qr_code = models.CharField(
-        max_length=100, unique=True, blank=True, default="", verbose_name="Código QR"
+        max_length=100, unique=True, db_index=True, blank=True, default="",
+        verbose_name="Código QR",
     )
 
     # Status
@@ -171,26 +172,48 @@ class CustomerPass(models.Model):
         return f"{self.customer.full_name} - {self.card.name}"
 
     def generate_qr_code(self) -> str:
-        """Generate a unique QR code for this pass."""
+        """Generate a unique QR code for this pass.
+
+        Uses cryptographically secure random (secrets) with a 12-char
+        alphanumeric space (36^12 ≈ 4.7 × 10^18 combinations).
+        Capped at 100 retries to prevent infinite loop under extreme load.
+        """
         import secrets
         import string
 
-        while True:
+        max_retries = 100
+        for _ in range(max_retries):
             code = "".join(
                 secrets.choice(string.ascii_uppercase + string.digits)
                 for _ in range(12)
             )
             if not CustomerPass.objects.filter(qr_code=code).exists():
                 return code
+        raise RuntimeError(
+            f"Failed to generate unique QR code after {max_retries} attempts"
+        )
 
     def get_pass_field(self, key: str, default=None):
         """Helper to safely get pass data fields."""
         return self.pass_data.get(key, default)
 
     def set_pass_field(self, key: str, value) -> None:
-        """Helper to safely set pass data fields."""
-        self.pass_data[key] = value
-        self.save(update_fields=["pass_data", "last_updated"])
+        """Atomically set a pass data field using select_for_update.
+
+        Prevents race conditions when concurrent scans modify the
+        same pass (e.g., two terminals validating simultaneously).
+        """
+        from django.db import transaction
+
+        with transaction.atomic():
+            locked = (
+                CustomerPass.objects.select_for_update()
+                .get(pk=self.pk)
+            )
+            locked.pass_data[key] = value
+            locked.save(update_fields=["pass_data", "last_updated"])
+        # Refresh in-memory instance to reflect the committed state
+        self.refresh_from_db(fields=["pass_data", "last_updated"])
 
     def save(self, *args, **kwargs) -> None:
         """Override save to generate QR code if needed."""

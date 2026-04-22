@@ -106,6 +106,15 @@ class Transaction(models.Model):
             models.Index(fields=["tenant", "created_at"]),
             models.Index(fields=["customer_pass", "created_at"]),
             models.Index(fields=["transaction_type"]),
+            # Compound indexes for production query patterns
+            models.Index(
+                fields=["tenant", "customer_pass", "created_at"],
+                name="idx_txn_tenant_pass_date",
+            ),
+            models.Index(
+                fields=["transaction_type", "created_at"],
+                name="idx_txn_type_date",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -191,6 +200,11 @@ class Enrollment(models.Model):
         indexes = [
             models.Index(fields=["tenant", "enrolled_at"]),
             models.Index(fields=["card", "enrolled_at"]),
+            # Compound index for tenant-scoped enrollment lookups
+            models.Index(
+                fields=["tenant", "customer", "card"],
+                name="idx_enroll_tnt_cust_card",
+            ),
         ]
 
     def __str__(self) -> str:
