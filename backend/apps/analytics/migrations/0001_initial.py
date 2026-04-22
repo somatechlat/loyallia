@@ -10,79 +10,319 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('cards', '0001_initial'),
-        ('customers', '0001_initial'),
-        ('tenants', '0001_initial'),
+        ("cards", "0001_initial"),
+        ("customers", "0001_initial"),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CustomerAnalytics',
+            name="CustomerAnalytics",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('total_passes', models.PositiveIntegerField(default=0, verbose_name='Total de pases')),
-                ('active_passes', models.PositiveIntegerField(default=0, verbose_name='Pases activos')),
-                ('total_visits', models.PositiveIntegerField(default=0, verbose_name='Total de visitas')),
-                ('total_spent', models.DecimalField(decimal_places=2, default=0, max_digits=12, verbose_name='Total gastado')),
-                ('average_transaction', models.DecimalField(decimal_places=2, default=0, max_digits=10, verbose_name='Transacción promedio')),
-                ('total_rewards_earned', models.PositiveIntegerField(default=0, verbose_name='Recompensas ganadas')),
-                ('total_rewards_redeemed', models.PositiveIntegerField(default=0, verbose_name='Recompensas canjeadas')),
-                ('segment', models.CharField(choices=[('high_value', 'Alto valor'), ('regular', 'Regular'), ('at_risk', 'En riesgo'), ('new', 'Nuevo'), ('inactive', 'Inactivo')], default='new', max_length=20, verbose_name='Segmento')),
-                ('last_updated', models.DateTimeField(auto_now=True, verbose_name='Última actualización')),
-                ('customer', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='analytics', to='customers.customer', verbose_name='Cliente')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='customer_analytics', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "total_passes",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Total de pases"
+                    ),
+                ),
+                (
+                    "active_passes",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Pases activos"
+                    ),
+                ),
+                (
+                    "total_visits",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Total de visitas"
+                    ),
+                ),
+                (
+                    "total_spent",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=12,
+                        verbose_name="Total gastado",
+                    ),
+                ),
+                (
+                    "average_transaction",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=10,
+                        verbose_name="Transacción promedio",
+                    ),
+                ),
+                (
+                    "total_rewards_earned",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Recompensas ganadas"
+                    ),
+                ),
+                (
+                    "total_rewards_redeemed",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Recompensas canjeadas"
+                    ),
+                ),
+                (
+                    "segment",
+                    models.CharField(
+                        choices=[
+                            ("high_value", "Alto valor"),
+                            ("regular", "Regular"),
+                            ("at_risk", "En riesgo"),
+                            ("new", "Nuevo"),
+                            ("inactive", "Inactivo"),
+                        ],
+                        default="new",
+                        max_length=20,
+                        verbose_name="Segmento",
+                    ),
+                ),
+                (
+                    "last_updated",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Última actualización"
+                    ),
+                ),
+                (
+                    "customer",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="analytics",
+                        to="customers.customer",
+                        verbose_name="Cliente",
+                    ),
+                ),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="customer_analytics",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Análisis de cliente',
-                'verbose_name_plural': 'Análisis de clientes',
-                'db_table': 'loyallia_customer_analytics',
+                "verbose_name": "Análisis de cliente",
+                "verbose_name_plural": "Análisis de clientes",
+                "db_table": "loyallia_customer_analytics",
             },
         ),
         migrations.CreateModel(
-            name='ProgramAnalytics',
+            name="ProgramAnalytics",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('total_enrollments', models.PositiveIntegerField(default=0, verbose_name='Total de inscritos')),
-                ('active_members', models.PositiveIntegerField(default=0, verbose_name='Miembros activos')),
-                ('total_transactions', models.PositiveIntegerField(default=0, verbose_name='Total de transacciones')),
-                ('total_revenue', models.DecimalField(decimal_places=2, default=0, max_digits=12, verbose_name='Ingresos totales')),
-                ('average_order_value', models.DecimalField(decimal_places=2, default=0, max_digits=10, verbose_name='Valor promedio de pedido')),
-                ('total_rewards_issued', models.PositiveIntegerField(default=0, verbose_name='Recompensas emitidas')),
-                ('total_rewards_redeemed', models.PositiveIntegerField(default=0, verbose_name='Recompensas canjeadas')),
-                ('redemption_rate', models.DecimalField(decimal_places=2, default=0, max_digits=5, verbose_name='Tasa de canje %')),
-                ('engagement_rate', models.DecimalField(decimal_places=2, default=0, max_digits=5, verbose_name='Tasa de participación %')),
-                ('repeat_purchase_rate', models.DecimalField(decimal_places=2, default=0, max_digits=5, verbose_name='Tasa de recompra %')),
-                ('last_updated', models.DateTimeField(auto_now=True, verbose_name='Última actualización')),
-                ('card', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='analytics', to='cards.card', verbose_name='Programa')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='program_analytics', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "total_enrollments",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Total de inscritos"
+                    ),
+                ),
+                (
+                    "active_members",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Miembros activos"
+                    ),
+                ),
+                (
+                    "total_transactions",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Total de transacciones"
+                    ),
+                ),
+                (
+                    "total_revenue",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=12,
+                        verbose_name="Ingresos totales",
+                    ),
+                ),
+                (
+                    "average_order_value",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=10,
+                        verbose_name="Valor promedio de pedido",
+                    ),
+                ),
+                (
+                    "total_rewards_issued",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Recompensas emitidas"
+                    ),
+                ),
+                (
+                    "total_rewards_redeemed",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Recompensas canjeadas"
+                    ),
+                ),
+                (
+                    "redemption_rate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=5,
+                        verbose_name="Tasa de canje %",
+                    ),
+                ),
+                (
+                    "engagement_rate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=5,
+                        verbose_name="Tasa de participación %",
+                    ),
+                ),
+                (
+                    "repeat_purchase_rate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=5,
+                        verbose_name="Tasa de recompra %",
+                    ),
+                ),
+                (
+                    "last_updated",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Última actualización"
+                    ),
+                ),
+                (
+                    "card",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="analytics",
+                        to="cards.card",
+                        verbose_name="Programa",
+                    ),
+                ),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="program_analytics",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Análisis de programa',
-                'verbose_name_plural': 'Análisis de programas',
-                'db_table': 'loyallia_program_analytics',
+                "verbose_name": "Análisis de programa",
+                "verbose_name_plural": "Análisis de programas",
+                "db_table": "loyallia_program_analytics",
             },
         ),
         migrations.CreateModel(
-            name='DailyAnalytics',
+            name="DailyAnalytics",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('analytics_date', models.DateField(db_index=True, verbose_name='Fecha')),
-                ('new_customers', models.PositiveIntegerField(default=0, verbose_name='Nuevos clientes')),
-                ('new_enrollments', models.PositiveIntegerField(default=0, verbose_name='Nuevas inscripciones')),
-                ('transactions', models.PositiveIntegerField(default=0, verbose_name='Transacciones')),
-                ('daily_revenue', models.DecimalField(decimal_places=2, default=0, max_digits=12, verbose_name='Ingresos diarios')),
-                ('rewards_issued', models.PositiveIntegerField(default=0, verbose_name='Recompensas emitidas')),
-                ('rewards_redeemed', models.PositiveIntegerField(default=0, verbose_name='Recompensas canjeadas')),
-                ('notifications_sent', models.PositiveIntegerField(default=0, verbose_name='Notificaciones enviadas')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='daily_analytics', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "analytics_date",
+                    models.DateField(db_index=True, verbose_name="Fecha"),
+                ),
+                (
+                    "new_customers",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Nuevos clientes"
+                    ),
+                ),
+                (
+                    "new_enrollments",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Nuevas inscripciones"
+                    ),
+                ),
+                (
+                    "transactions",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Transacciones"
+                    ),
+                ),
+                (
+                    "daily_revenue",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=0,
+                        max_digits=12,
+                        verbose_name="Ingresos diarios",
+                    ),
+                ),
+                (
+                    "rewards_issued",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Recompensas emitidas"
+                    ),
+                ),
+                (
+                    "rewards_redeemed",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Recompensas canjeadas"
+                    ),
+                ),
+                (
+                    "notifications_sent",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Notificaciones enviadas"
+                    ),
+                ),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="daily_analytics",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Análisis diario',
-                'verbose_name_plural': 'Análisis diarios',
-                'db_table': 'loyallia_daily_analytics',
-                'ordering': ['-analytics_date'],
-                'indexes': [models.Index(fields=['tenant', '-analytics_date'], name='loyallia_da_tenant__88fdd6_idx')],
-                'unique_together': {('tenant', 'analytics_date')},
+                "verbose_name": "Análisis diario",
+                "verbose_name_plural": "Análisis diarios",
+                "db_table": "loyallia_daily_analytics",
+                "ordering": ["-analytics_date"],
+                "indexes": [
+                    models.Index(
+                        fields=["tenant", "-analytics_date"],
+                        name="loyallia_da_tenant__88fdd6_idx",
+                    )
+                ],
+                "unique_together": {("tenant", "analytics_date")},
             },
         ),
     ]

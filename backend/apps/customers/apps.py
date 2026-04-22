@@ -1,6 +1,7 @@
 """
 Loyallia — Customers App Configuration
 """
+
 from django.apps import AppConfig
 
 

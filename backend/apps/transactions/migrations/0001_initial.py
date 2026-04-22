@@ -12,57 +12,234 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('cards', '0001_initial'),
-        ('customers', '0001_initial'),
-        ('tenants', '0001_initial'),
+        ("cards", "0001_initial"),
+        ("customers", "0001_initial"),
+        ("tenants", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Enrollment',
+            name="Enrollment",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('enrollment_method', models.CharField(choices=[('qr_scan', 'Escaneo QR'), ('direct_link', 'Enlace directo'), ('referral', 'Referido'), ('manual', 'Manual')], default='qr_scan', max_length=20, verbose_name='Método de inscripción')),
-                ('referral_code_used', models.CharField(blank=True, default='', max_length=20)),
-                ('user_agent', models.TextField(blank=True, default='', verbose_name='User Agent')),
-                ('ip_address', models.GenericIPAddressField(blank=True, null=True, verbose_name='Dirección IP')),
-                ('enrolled_at', models.DateTimeField(auto_now_add=True)),
-                ('card', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='enrollments', to='cards.card', verbose_name='Programa')),
-                ('customer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='enrollments', to='customers.customer', verbose_name='Cliente')),
-                ('location', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='enrollments', to='tenants.location', verbose_name='Ubicación')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='enrollments', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "enrollment_method",
+                    models.CharField(
+                        choices=[
+                            ("qr_scan", "Escaneo QR"),
+                            ("direct_link", "Enlace directo"),
+                            ("referral", "Referido"),
+                            ("manual", "Manual"),
+                        ],
+                        default="qr_scan",
+                        max_length=20,
+                        verbose_name="Método de inscripción",
+                    ),
+                ),
+                (
+                    "referral_code_used",
+                    models.CharField(blank=True, default="", max_length=20),
+                ),
+                (
+                    "user_agent",
+                    models.TextField(blank=True, default="", verbose_name="User Agent"),
+                ),
+                (
+                    "ip_address",
+                    models.GenericIPAddressField(
+                        blank=True, null=True, verbose_name="Dirección IP"
+                    ),
+                ),
+                ("enrolled_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "card",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="enrollments",
+                        to="cards.card",
+                        verbose_name="Programa",
+                    ),
+                ),
+                (
+                    "customer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="enrollments",
+                        to="customers.customer",
+                        verbose_name="Cliente",
+                    ),
+                ),
+                (
+                    "location",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="enrollments",
+                        to="tenants.location",
+                        verbose_name="Ubicación",
+                    ),
+                ),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="enrollments",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Inscripción',
-                'verbose_name_plural': 'Inscripciones',
-                'db_table': 'loyallia_enrollments',
-                'ordering': ['-enrolled_at'],
-                'indexes': [models.Index(fields=['tenant', 'enrolled_at'], name='loyallia_en_tenant__b599a0_idx'), models.Index(fields=['card', 'enrolled_at'], name='loyallia_en_card_id_f77ad1_idx')],
+                "verbose_name": "Inscripción",
+                "verbose_name_plural": "Inscripciones",
+                "db_table": "loyallia_enrollments",
+                "ordering": ["-enrolled_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["tenant", "enrolled_at"],
+                        name="loyallia_en_tenant__b599a0_idx",
+                    ),
+                    models.Index(
+                        fields=["card", "enrolled_at"],
+                        name="loyallia_en_card_id_f77ad1_idx",
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Transaction',
+            name="Transaction",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('transaction_type', models.CharField(choices=[('stamp_earned', 'Sello ganado'), ('stamp_redeemed', 'Sello canjeado'), ('cashback_earned', 'Cashback ganado'), ('cashback_redeemed', 'Cashback canjeado'), ('coupon_redeemed', 'Cupón canjeado'), ('gift_redeemed', 'Regalo canjeado'), ('membership_validated', 'Membresía validada'), ('corporate_validated', 'Corporativo validado'), ('referral_reward', 'Recompensa por referido'), ('multipass_used', 'Multipase usado'), ('remote_reward', 'Recompensa remota')], max_length=30, verbose_name='Tipo de transacción')),
-                ('amount', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Monto')),
-                ('quantity', models.PositiveIntegerField(blank=True, null=True, verbose_name='Cantidad')),
-                ('notes', models.TextField(blank=True, default='', verbose_name='Notas')),
-                ('transaction_data', models.JSONField(default=dict, verbose_name='Datos de transacción')),
-                ('is_remote', models.BooleanField(default=False, verbose_name='Transacción remota')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('customer_pass', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='transactions', to='customers.customerpass', verbose_name='Pase del cliente')),
-                ('location', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='transactions', to='tenants.location', verbose_name='Ubicación')),
-                ('staff', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='transactions', to=settings.AUTH_USER_MODEL, verbose_name='Personal')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='transactions', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "transaction_type",
+                    models.CharField(
+                        choices=[
+                            ("stamp_earned", "Sello ganado"),
+                            ("stamp_redeemed", "Sello canjeado"),
+                            ("cashback_earned", "Cashback ganado"),
+                            ("cashback_redeemed", "Cashback canjeado"),
+                            ("coupon_redeemed", "Cupón canjeado"),
+                            ("gift_redeemed", "Regalo canjeado"),
+                            ("membership_validated", "Membresía validada"),
+                            ("corporate_validated", "Corporativo validado"),
+                            ("referral_reward", "Recompensa por referido"),
+                            ("multipass_used", "Multipase usado"),
+                            ("remote_reward", "Recompensa remota"),
+                        ],
+                        max_length=30,
+                        verbose_name="Tipo de transacción",
+                    ),
+                ),
+                (
+                    "amount",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        max_digits=10,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Monto",
+                    ),
+                ),
+                (
+                    "quantity",
+                    models.PositiveIntegerField(
+                        blank=True, null=True, verbose_name="Cantidad"
+                    ),
+                ),
+                (
+                    "notes",
+                    models.TextField(blank=True, default="", verbose_name="Notas"),
+                ),
+                (
+                    "transaction_data",
+                    models.JSONField(default=dict, verbose_name="Datos de transacción"),
+                ),
+                (
+                    "is_remote",
+                    models.BooleanField(
+                        default=False, verbose_name="Transacción remota"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "customer_pass",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="transactions",
+                        to="customers.customerpass",
+                        verbose_name="Pase del cliente",
+                    ),
+                ),
+                (
+                    "location",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="transactions",
+                        to="tenants.location",
+                        verbose_name="Ubicación",
+                    ),
+                ),
+                (
+                    "staff",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="transactions",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Personal",
+                    ),
+                ),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="transactions",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Transacción',
-                'verbose_name_plural': 'Transacciones',
-                'db_table': 'loyallia_transactions',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['tenant', 'created_at'], name='loyallia_tr_tenant__daeefe_idx'), models.Index(fields=['customer_pass', 'created_at'], name='loyallia_tr_custome_8f0e69_idx'), models.Index(fields=['transaction_type'], name='loyallia_tr_transac_666c46_idx')],
+                "verbose_name": "Transacción",
+                "verbose_name_plural": "Transacciones",
+                "db_table": "loyallia_transactions",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["tenant", "created_at"],
+                        name="loyallia_tr_tenant__daeefe_idx",
+                    ),
+                    models.Index(
+                        fields=["customer_pass", "created_at"],
+                        name="loyallia_tr_custome_8f0e69_idx",
+                    ),
+                    models.Index(
+                        fields=["transaction_type"],
+                        name="loyallia_tr_transac_666c46_idx",
+                    ),
+                ],
             },
         ),
     ]

@@ -3,6 +3,7 @@ Loyallia — Centralized Message Registry (Rule #11: No Hardcoded Strings)
 All user-facing text is defined here and retrieved via get_message().
 Supports future i18n translation.
 """
+
 from typing import Any
 
 # =============================================================================
@@ -32,7 +33,6 @@ _MESSAGES: dict[str, str] = {
     "AUTH_PASSWORD_WRONG": "La contraseña actual es incorrecta.",
     "AUTH_RESET_EMAIL_SENT": "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.",
     "AUTH_RESET_INVALID": "El enlace de restablecimiento es inválido o ha expirado.",
-
     # --- Tenant ---
     "TENANT_CREATED": "Negocio registrado. Tu prueba gratuita de {days} días ha comenzado.",
     "TENANT_UPDATED": "Configuración del negocio actualizada.",
@@ -40,26 +40,22 @@ _MESSAGES: dict[str, str] = {
     "TENANT_TRIAL_EXPIRING": "Tu prueba gratuita vence en {days} días. Suscríbete para continuar.",
     "TENANT_TRIAL_EXPIRED": "Tu período de prueba ha terminado. Suscríbete para continuar usando Loyallia.",
     "TENANT_MAX_PROGRAMS": "Has alcanzado el límite de {max} programas de fidelización.",
-
     # --- Location ---
     "LOCATION_CREATED": "Ubicación '{name}' creada exitosamente.",
     "LOCATION_UPDATED": "Ubicación actualizada exitosamente.",
     "LOCATION_DELETED": "Ubicación eliminada exitosamente.",
     "LOCATION_NOT_FOUND": "Ubicación no encontrada.",
-
     # --- Loyalty Programs / Cards ---
     "PROGRAM_CREATED": "Programa de fidelización '{name}' creado exitosamente.",
     "PROGRAM_UPDATED": "Programa actualizado exitosamente.",
     "PROGRAM_DEACTIVATED": "Programa desactivado. Los pases existentes no se verán afectados.",
     "PROGRAM_NOT_FOUND": "Programa de fidelización no encontrado.",
     "PROGRAM_INVALID_CONFIG": "Configuración inválida para el tipo de tarjeta {card_type}: {detail}",
-
     # --- Customer Enrollment ---
     "ENROLLMENT_SUCCESS": "¡Bienvenido a {program_name}! Tu tarjeta está lista.",
     "ENROLLMENT_DUPLICATE": "Ya estás registrado en este programa. ¿Deseas reenviar tu tarjeta a {email}?",
     "ENROLLMENT_PASS_GENERATING": "Generando tu tarjeta de fidelidad...",
     "ENROLLMENT_PASS_READY": "¡Tu tarjeta está lista! Agrégala a tu Wallet.",
-
     # --- Pass ---
     "PASS_NOT_FOUND": "Tarjeta no encontrada.",
     "PASS_NOT_FOUND_INACTIVE": "Pase no encontrado o inactivo.",
@@ -71,7 +67,6 @@ _MESSAGES: dict[str, str] = {
     "PASS_UPDATED": "Tarjeta actualizada en tu Wallet.",
     "PASS_APPLE_GEN_ERROR": "Error al generar el pase de Apple Wallet.",
     "PASS_GOOGLE_GEN_ERROR": "Error al generar la URL de Google Wallet.",
-
     # --- Transactions ---
     "TRANSACTION_STAMP_ADDED": "{count} sello(s) agregado(s). Total: {current}/{required}.",
     "TRANSACTION_REWARD_READY": "¡Felicidades! Has ganado tu recompensa: {reward}.",
@@ -86,20 +81,17 @@ _MESSAGES: dict[str, str] = {
     "TRANSACTION_INVALID_AMOUNT": "El monto de la transacción debe ser mayor a cero.",
     "TRANSACTION_REMOTE_ISSUED": "Recompensa emitida remotamente a {customer_name}.",
     "TRANSACTION_SEARCH_MIN_CHARS": "Búsqueda debe tener al menos 2 caracteres.",
-
     # --- Push Notifications ---
     "CAMPAIGN_CREATED": "Campaña '{title}' creada exitosamente.",
     "CAMPAIGN_SENT": "Campaña enviada a {count} clientes.",
     "CAMPAIGN_SCHEDULED": "Campaña programada para {datetime}.",
     "CAMPAIGN_NOT_FOUND": "Campaña no encontrada.",
-
     # --- Automation ---
     "RULE_CREATED": "Regla de automatización '{name}' creada.",
     "RULE_UPDATED": "Regla actualizada.",
     "RULE_ACTIVATED": "Regla '{name}' activada.",
     "RULE_DEACTIVATED": "Regla '{name}' desactivada.",
     "RULE_NOT_FOUND": "Regla de automatización no encontrada.",
-
     # --- Billing ---
     "BILLING_SUBSCRIBED": "Suscripción activada. Bienvenido a Loyallia FULL.",
     "BILLING_CANCELLED": "Suscripción cancelada. Tu acceso continúa hasta el {end_date}.",
@@ -119,23 +111,19 @@ _MESSAGES: dict[str, str] = {
     "BILLING_DEFAULT_PM_SET": "Método de pago predeterminado actualizado exitosamente.",
     "BILLING_INVALID_SIGNATURE": "Firma inválida.",
     "BILLING_INVALID_PAYLOAD": "Payload JSON inválido.",
-
     # --- Generic ---
     "NOT_FOUND": "Recurso no encontrado.",
     "VALIDATION_ERROR": "Error de validación: {detail}",
     "SERVER_ERROR": "Error interno del servidor. Por favor intenta nuevamente.",
     "RATE_LIMITED": "Demasiadas solicitudes. Por favor espera antes de intentar nuevamente.",
-
     # --- Devices & Notifications ---
     "DEVICE_REGISTERED": "Dispositivo registrado exitosamente.",
     "DEVICE_NOT_FOUND": "Dispositivo no encontrado.",
     "NOTIFICATION_SENT": "Notificación enviada exitosamente.",
     "NOTIFICATION_NOT_FOUND": "Notificación no encontrada.",
-
     # --- Pass QR ---
     "PASS_QR_INVALID_SIGNATURE": "Firma del código QR inválida.",
     "PASS_QR_EXPIRED": "El código QR ha expirado. Abre tu tarjeta para actualizar el código.",
-
     # --- Customers ---
     "CUSTOMER_CREATED": "Cliente creado exitosamente.",
     "CUSTOMER_UPDATED": "Cliente actualizado exitosamente.",
@@ -144,22 +132,18 @@ _MESSAGES: dict[str, str] = {
     "CUSTOMER_IMPORT_INVALID_FORMAT": "Formato no soportado. Sube un archivo CSV, XLS o XLSX.",
     "CUSTOMER_IMPORT_FILE_CORRUPT": "El archivo está dañado o tiene un formato inválido.",
     "CUSTOMER_IMPORT_FILE_EMPTY": "El archivo está vacío.",
-
     # --- Programs ---
     "PROGRAM_DUPLICATE_NAME": "Ya existe un programa con este nombre.",
     "PROGRAM_DELETED": "Programa de fidelización eliminado permanentemente.",
     "PROGRAM_SUSPENDED": "Programa de fidelización suspendido exitosamente.",
     "PROGRAM_REACTIVATED": "Programa de fidelización reactivado exitosamente.",
-
     # --- Segments ---
     "SEGMENT_NOT_FOUND": "Segmento no encontrado.",
-
     # --- Birthday & Reminder Notifications ---
     "NOTIFICATION_BIRTHDAY_TITLE": "¡Feliz Cumpleaños!",
     "NOTIFICATION_BIRTHDAY_MSG": "Te deseamos un excelente día. ¡Visita {program_name} y reclama tu regalo especial!",
     "NOTIFICATION_REMINDER_TITLE": "¿Nos extranas?",
     "NOTIFICATION_REMINDER_MSG": "Tienes puntos esperando en {program_name}. ¡Ven a visitarnos!",
-
     # --- Automation ---
     "AUTOMATION_CREATED": "Automatización '{name}' creada exitosamente.",
     "AUTOMATION_UPDATED": "Automatización actualizada exitosamente.",
@@ -171,7 +155,6 @@ _MESSAGES: dict[str, str] = {
     "AUTOMATION_INVALID_TRIGGER": "Disparador inválido: {trigger}",
     "AUTOMATION_INVALID_ACTION": "Acción inválida: {action}",
     "AUTOMATION_NOT_FOUND": "Automatización no encontrada.",
-
     # --- Team ---
     "TEAM_MEMBER_ADDED": "Miembro del equipo agregado exitosamente.",
     "TEAM_MEMBER_REMOVED": "Miembro del equipo eliminado exitosamente.",

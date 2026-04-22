@@ -2,6 +2,7 @@
 Loyallia — Automation Models
 Campaign automation, triggers, and scheduled actions.
 """
+
 import uuid
 
 from django.core.validators import MinValueValidator
@@ -14,6 +15,7 @@ from apps.tenants.models import Tenant
 
 class AutomationTrigger(models.TextChoices):
     """Events that can trigger automations."""
+
     CUSTOMER_ENROLLED = "customer_enrolled", "Customer Enrolled"
     TRANSACTION_COMPLETED = "transaction_completed", "Transaction Completed"
     REWARD_EARNED = "reward_earned", "Reward Earned"
@@ -26,6 +28,7 @@ class AutomationTrigger(models.TextChoices):
 
 class AutomationAction(models.TextChoices):
     """Actions that can be automated."""
+
     SEND_NOTIFICATION = "send_notification", "Send Notification"
     SEND_EMAIL = "send_email", "Send Email"
     SEND_SMS = "send_sms", "Send SMS"
@@ -39,12 +42,13 @@ class Automation(models.Model):
     Automated workflow for customer engagement.
     Triggers actions based on events or schedules.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="automations",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
 
     # Basic info
@@ -53,54 +57,51 @@ class Automation(models.Model):
 
     # Trigger configuration
     trigger = models.CharField(
-        max_length=30,
-        choices=AutomationTrigger.choices,
-        verbose_name="Disparador"
+        max_length=30, choices=AutomationTrigger.choices, verbose_name="Disparador"
     )
-    trigger_config = models.JSONField(default=dict, verbose_name="Configuración del disparador")
+    trigger_config = models.JSONField(
+        default=dict, verbose_name="Configuración del disparador"
+    )
 
     # Action configuration
     action = models.CharField(
-        max_length=30,
-        choices=AutomationAction.choices,
-        verbose_name="Acción"
+        max_length=30, choices=AutomationAction.choices, verbose_name="Acción"
     )
-    action_config = models.JSONField(default=dict, verbose_name="Configuración de la acción")
+    action_config = models.JSONField(
+        default=dict, verbose_name="Configuración de la acción"
+    )
 
     # Targeting
     target_programs = models.ManyToManyField(
-        Card,
-        blank=True,
-        related_name="automations",
-        verbose_name="Programas objetivo"
+        Card, blank=True, related_name="automations", verbose_name="Programas objetivo"
     )
     target_segments = models.JSONField(
-        default=list,
-        verbose_name="Segmentos objetivo"
+        default=list, verbose_name="Segmentos objetivo"
     )  # List of segment names
 
     # Scheduling
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     schedule_config = models.JSONField(
-        default=dict,
-        verbose_name="Configuración de horario"
+        default=dict, verbose_name="Configuración de horario"
     )  # For scheduled automations
 
     # Limits and throttling
     max_executions_per_day = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        verbose_name="Ejecuciones máximas por día"
+        null=True, blank=True, verbose_name="Ejecuciones máximas por día"
     )
     cooldown_hours = models.PositiveIntegerField(
         default=24,
         validators=[MinValueValidator(1)],
-        verbose_name="Horas de enfriamiento"
+        verbose_name="Horas de enfriamiento",
     )
 
     # Analytics
-    total_executions = models.PositiveIntegerField(default=0, verbose_name="Ejecuciones totales")
-    last_executed = models.DateTimeField(null=True, blank=True, verbose_name="Última ejecución")
+    total_executions = models.PositiveIntegerField(
+        default=0, verbose_name="Ejecuciones totales"
+    )
+    last_executed = models.DateTimeField(
+        null=True, blank=True, verbose_name="Última ejecución"
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -131,8 +132,7 @@ class Automation(models.Model):
         # Check if customer is in target programs
         if self.target_programs.exists():
             customer_programs = customer.passes.filter(
-                card__in=self.target_programs,
-                is_active=True
+                card__in=self.target_programs, is_active=True
             )
             if not customer_programs.exists():
                 return False
@@ -142,6 +142,7 @@ class Automation(models.Model):
             from datetime import timedelta
 
             from django.utils import timezone
+
             cooldown_end = self.last_executed + timedelta(hours=self.cooldown_hours)
             if timezone.now() < cooldown_end:
                 return False
@@ -173,6 +174,7 @@ class Automation(models.Model):
             if success:
                 self.total_executions += 1
                 from django.utils import timezone
+
                 self.last_executed = timezone.now()
                 self.save(update_fields=["total_executions", "last_executed"])
 
@@ -180,6 +182,7 @@ class Automation(models.Model):
         except Exception as e:
             # Log error but don't crash
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Automation execution failed: {str(e)}")
             return False
@@ -191,14 +194,16 @@ class Automation(models.Model):
 
         title = self.action_config.get("title", "Notificación automática")
         message = self.action_config.get("message", "")
-        notification_type = self.action_config.get("notification_type", NotificationType.SYSTEM)
+        notification_type = self.action_config.get(
+            "notification_type", NotificationType.SYSTEM
+        )
 
         notification = NotificationService.send_notification(
             customer=customer,
             title=title,
             message=message,
             notification_type=notification_type,
-            tenant=self.tenant
+            tenant=self.tenant,
         )
         return notification is not None
 
@@ -233,9 +238,9 @@ class Automation(models.Model):
         new_segment = self.action_config.get("new_segment")
         if new_segment:
             from apps.analytics.models import CustomerAnalytics
+
             analytics, created = CustomerAnalytics.objects.get_or_create(
-                customer=customer,
-                defaults={"tenant": self.tenant}
+                customer=customer, defaults={"tenant": self.tenant}
             )
             analytics.segment = new_segment
             analytics.save(update_fields=["segment"])
@@ -247,23 +252,26 @@ class AutomationExecution(models.Model):
     """
     Log of automation executions for audit and analytics.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     automation = models.ForeignKey(
         Automation,
         on_delete=models.CASCADE,
         related_name="executions",
-        verbose_name="Automatización"
+        verbose_name="Automatización",
     )
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
         related_name="automation_executions",
-        verbose_name="Cliente"
+        verbose_name="Cliente",
     )
 
     # Execution details
     trigger_event = models.CharField(max_length=50, verbose_name="Evento disparador")
-    execution_context = models.JSONField(default=dict, verbose_name="Contexto de ejecución")
+    execution_context = models.JSONField(
+        default=dict, verbose_name="Contexto de ejecución"
+    )
     success = models.BooleanField(verbose_name="Éxito")
 
     # Timestamps

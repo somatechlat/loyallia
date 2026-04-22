@@ -2,6 +2,7 @@
 Loyallia — Shared Permission Classes for Django Ninja endpoints.
 All permissions extend TenantScopedPermission to enforce tenant isolation.
 """
+
 from typing import Any
 
 from django.http import HttpRequest
@@ -23,6 +24,7 @@ class JWTAuth(HttpBearer):
             return None
 
         from apps.authentication.models import User
+
         try:
             user = User.objects.select_related("tenant").get(
                 id=payload["user_id"],
@@ -46,6 +48,7 @@ class OptionalJWTAuth(HttpBearer):
         if payload is None:
             return None
         from apps.authentication.models import User
+
         try:
             user = User.objects.select_related("tenant").get(
                 id=payload["user_id"],
@@ -68,17 +71,22 @@ def require_role(*roles: str):
     Decorator factory for role-based access control on Ninja endpoints.
     Usage: @require_role("OWNER", "MANAGER")
     """
+
     def decorator(func):
         def wrapper(request, *args, **kwargs):
             if not hasattr(request, "user") or request.user is None:
                 from ninja.errors import HttpError
+
                 raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
             if request.user.role not in roles:
                 from ninja.errors import HttpError
+
                 raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
             return func(request, *args, **kwargs)
+
         wrapper.__wrapped__ = func
         return wrapper
+
     return decorator
 
 
@@ -91,7 +99,11 @@ def is_manager_or_owner(request: HttpRequest) -> bool:
 
 
 def is_staff_or_above(request: HttpRequest) -> bool:
-    return hasattr(request, "user") and request.user.role in ("OWNER", "MANAGER", "STAFF")
+    return hasattr(request, "user") and request.user.role in (
+        "OWNER",
+        "MANAGER",
+        "STAFF",
+    )
 
 
 def is_super_admin(request: HttpRequest) -> bool:

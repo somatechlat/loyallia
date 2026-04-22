@@ -89,9 +89,11 @@ class NotificationService:
                 message=f"Tienes un pase activo en {program.card.name}. ¡Ven a visitarnos!",
                 action_url=f"/passes/{program.id}",
                 notification_data={
-                    "days_since_last_visit": (timezone.now() - customer.last_visit).days
-                    if customer.last_visit
-                    else -1,
+                    "days_since_last_visit": (
+                        (timezone.now() - customer.last_visit).days
+                        if customer.last_visit
+                        else -1
+                    ),
                 },
             )
 

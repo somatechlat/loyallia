@@ -2,6 +2,7 @@
 Loyallia — Analytics Models
 Track customer behavior, program performance, and business metrics.
 """
+
 import uuid
 
 from django.db import models
@@ -17,42 +18,43 @@ class CustomerAnalytics(models.Model):
     Aggregated analytics for a single customer.
     Updated daily or on significant events.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="customer_analytics",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
     customer = models.OneToOneField(
         Customer,
         on_delete=models.CASCADE,
         related_name="analytics",
-        verbose_name="Cliente"
+        verbose_name="Cliente",
     )
 
     # Engagement metrics
     total_passes = models.PositiveIntegerField(default=0, verbose_name="Total de pases")
     active_passes = models.PositiveIntegerField(default=0, verbose_name="Pases activos")
-    total_visits = models.PositiveIntegerField(default=0, verbose_name="Total de visitas")
+    total_visits = models.PositiveIntegerField(
+        default=0, verbose_name="Total de visitas"
+    )
 
     # Financial metrics
     total_spent = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        verbose_name="Total gastado"
+        max_digits=12, decimal_places=2, default=0, verbose_name="Total gastado"
     )
     average_transaction = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0,
-        verbose_name="Transacción promedio"
+        max_digits=10, decimal_places=2, default=0, verbose_name="Transacción promedio"
     )
 
     # Reward metrics
-    total_rewards_earned = models.PositiveIntegerField(default=0, verbose_name="Recompensas ganadas")
-    total_rewards_redeemed = models.PositiveIntegerField(default=0, verbose_name="Recompensas canjeadas")
+    total_rewards_earned = models.PositiveIntegerField(
+        default=0, verbose_name="Recompensas ganadas"
+    )
+    total_rewards_redeemed = models.PositiveIntegerField(
+        default=0, verbose_name="Recompensas canjeadas"
+    )
 
     # Engagement segment
     segment = models.CharField(
@@ -62,14 +64,16 @@ class CustomerAnalytics(models.Model):
             ("regular", "Regular"),
             ("at_risk", "En riesgo"),
             ("new", "Nuevo"),
-            ("inactive", "Inactivo")
+            ("inactive", "Inactivo"),
         ],
         default="new",
-        verbose_name="Segmento"
+        verbose_name="Segmento",
     )
 
     # Timestamps
-    last_updated = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+    last_updated = models.DateTimeField(
+        auto_now=True, verbose_name="Última actualización"
+    )
 
     class Meta:
         db_table = "loyallia_customer_analytics"
@@ -102,23 +106,21 @@ class CustomerAnalytics(models.Model):
         earned_types = [
             TransactionType.STAMP_EARNED,
             TransactionType.CASHBACK_EARNED,
-            TransactionType.REFERRAL_REWARD
+            TransactionType.REFERRAL_REWARD,
         ]
         redeemed_types = [
             TransactionType.STAMP_REDEEMED,
             TransactionType.CASHBACK_REDEEMED,
             TransactionType.COUPON_REDEEMED,
-            TransactionType.GIFT_REDEEMED
+            TransactionType.GIFT_REDEEMED,
         ]
 
         self.total_rewards_earned = Transaction.objects.filter(
-            customer_pass__customer=self.customer,
-            transaction_type__in=earned_types
+            customer_pass__customer=self.customer, transaction_type__in=earned_types
         ).count()
 
         self.total_rewards_redeemed = Transaction.objects.filter(
-            customer_pass__customer=self.customer,
-            transaction_type__in=redeemed_types
+            customer_pass__customer=self.customer, transaction_type__in=redeemed_types
         ).count()
 
         # Determine segment based on LTV and activity
@@ -143,47 +145,52 @@ class ProgramAnalytics(models.Model):
     Aggregated analytics for a single loyalty program.
     Updated daily with program performance data.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="program_analytics",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
     card = models.OneToOneField(
         Card,
         on_delete=models.CASCADE,
         related_name="analytics",
-        verbose_name="Programa"
+        verbose_name="Programa",
     )
 
     # Enrollment metrics
-    total_enrollments = models.PositiveIntegerField(default=0, verbose_name="Total de inscritos")
-    active_members = models.PositiveIntegerField(default=0, verbose_name="Miembros activos")
+    total_enrollments = models.PositiveIntegerField(
+        default=0, verbose_name="Total de inscritos"
+    )
+    active_members = models.PositiveIntegerField(
+        default=0, verbose_name="Miembros activos"
+    )
 
     # Activity metrics
-    total_transactions = models.PositiveIntegerField(default=0, verbose_name="Total de transacciones")
+    total_transactions = models.PositiveIntegerField(
+        default=0, verbose_name="Total de transacciones"
+    )
     total_revenue = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        verbose_name="Ingresos totales"
+        max_digits=12, decimal_places=2, default=0, verbose_name="Ingresos totales"
     )
     average_order_value = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
-        verbose_name="Valor promedio de pedido"
+        verbose_name="Valor promedio de pedido",
     )
 
     # Reward metrics
-    total_rewards_issued = models.PositiveIntegerField(default=0, verbose_name="Recompensas emitidas")
-    total_rewards_redeemed = models.PositiveIntegerField(default=0, verbose_name="Recompensas canjeadas")
+    total_rewards_issued = models.PositiveIntegerField(
+        default=0, verbose_name="Recompensas emitidas"
+    )
+    total_rewards_redeemed = models.PositiveIntegerField(
+        default=0, verbose_name="Recompensas canjeadas"
+    )
     redemption_rate = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=0,
-        verbose_name="Tasa de canje %"
+        max_digits=5, decimal_places=2, default=0, verbose_name="Tasa de canje %"
     )
 
     # Engagement metrics
@@ -191,17 +198,16 @@ class ProgramAnalytics(models.Model):
         max_digits=5,
         decimal_places=2,
         default=0,
-        verbose_name="Tasa de participación %"
+        verbose_name="Tasa de participación %",
     )
     repeat_purchase_rate = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=0,
-        verbose_name="Tasa de recompra %"
+        max_digits=5, decimal_places=2, default=0, verbose_name="Tasa de recompra %"
     )
 
     # Timestamps
-    last_updated = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+    last_updated = models.DateTimeField(
+        auto_now=True, verbose_name="Última actualización"
+    )
 
     class Meta:
         db_table = "loyallia_program_analytics"
@@ -231,13 +237,13 @@ class ProgramAnalytics(models.Model):
         earned_types = [
             TransactionType.STAMP_EARNED,
             TransactionType.CASHBACK_EARNED,
-            TransactionType.REFERRAL_REWARD
+            TransactionType.REFERRAL_REWARD,
         ]
         redeemed_types = [
             TransactionType.STAMP_REDEEMED,
             TransactionType.CASHBACK_REDEEMED,
             TransactionType.COUPON_REDEEMED,
-            TransactionType.GIFT_REDEEMED
+            TransactionType.GIFT_REDEEMED,
         ]
 
         self.total_rewards_issued = transactions.filter(
@@ -249,18 +255,21 @@ class ProgramAnalytics(models.Model):
         ).count()
 
         if self.total_rewards_issued > 0:
-            self.redemption_rate = (self.total_rewards_redeemed / self.total_rewards_issued) * 100
+            self.redemption_rate = (
+                self.total_rewards_redeemed / self.total_rewards_issued
+            ) * 100
 
         # Engagement metrics
         if self.total_enrollments > 0:
             self.engagement_rate = (self.active_members / self.total_enrollments) * 100
 
         # Repeat purchase rate (customers with 2+ transactions)
-        repeat_customers = CustomerPass.objects.filter(
-            card=self.card
-        ).annotate(
-            transaction_count=Count('transactions')
-        ).filter(transaction_count__gte=2).count()
+        repeat_customers = (
+            CustomerPass.objects.filter(card=self.card)
+            .annotate(transaction_count=Count("transactions"))
+            .filter(transaction_count__gte=2)
+            .count()
+        )
 
         if self.active_members > 0:
             self.repeat_purchase_rate = (repeat_customers / self.active_members) * 100
@@ -273,34 +282,42 @@ class DailyAnalytics(models.Model):
     Daily snapshot of business metrics.
     Used for trend analysis and reporting.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="daily_analytics",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
 
     # Date
     analytics_date = models.DateField(db_index=True, verbose_name="Fecha")
 
     # Daily metrics
-    new_customers = models.PositiveIntegerField(default=0, verbose_name="Nuevos clientes")
-    new_enrollments = models.PositiveIntegerField(default=0, verbose_name="Nuevas inscripciones")
+    new_customers = models.PositiveIntegerField(
+        default=0, verbose_name="Nuevos clientes"
+    )
+    new_enrollments = models.PositiveIntegerField(
+        default=0, verbose_name="Nuevas inscripciones"
+    )
     transactions = models.PositiveIntegerField(default=0, verbose_name="Transacciones")
     daily_revenue = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-        verbose_name="Ingresos diarios"
+        max_digits=12, decimal_places=2, default=0, verbose_name="Ingresos diarios"
     )
 
     # Reward metrics
-    rewards_issued = models.PositiveIntegerField(default=0, verbose_name="Recompensas emitidas")
-    rewards_redeemed = models.PositiveIntegerField(default=0, verbose_name="Recompensas canjeadas")
+    rewards_issued = models.PositiveIntegerField(
+        default=0, verbose_name="Recompensas emitidas"
+    )
+    rewards_redeemed = models.PositiveIntegerField(
+        default=0, verbose_name="Recompensas canjeadas"
+    )
 
     # Notifications
-    notifications_sent = models.PositiveIntegerField(default=0, verbose_name="Notificaciones enviadas")
+    notifications_sent = models.PositiveIntegerField(
+        default=0, verbose_name="Notificaciones enviadas"
+    )
 
     class Meta:
         db_table = "loyallia_daily_analytics"

@@ -3,6 +3,7 @@ Loyallia — API Router (Django Ninja)
 Central registration of all sub-routers.
 Mounted at /api/v1/ in loyallia/urls.py
 """
+
 from django.http import HttpRequest, JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import HttpError, ValidationError
@@ -56,7 +57,9 @@ api.add_router("/upload/", upload_router, tags=["Uploads"])
 
 # --- Global error handlers ---
 @api.exception_handler(ValidationError)
-def validation_error_handler(request: HttpRequest, exc: ValidationError) -> JsonResponse:
+def validation_error_handler(
+    request: HttpRequest, exc: ValidationError
+) -> JsonResponse:
     return JsonResponse(
         {"success": False, "error": "VALIDATION_ERROR", "detail": exc.errors},
         status=422,

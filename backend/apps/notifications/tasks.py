@@ -219,7 +219,9 @@ def send_wallet_notification_campaign(
     # For "all" segment, we can use optimized broadcast for Google Wallet
     if segment_id == "all":
         from apps.cards.models import Card
-        from apps.customers.pass_engine.google_pass import send_push_notification_to_class
+        from apps.customers.pass_engine.google_pass import (
+            send_push_notification_to_class,
+        )
 
         active_cards = Card.objects.filter(tenant=tenant, is_active=True)
         for card in active_cards:
@@ -253,7 +255,9 @@ def send_wallet_notification_campaign(
             # Send individual push only if NOT a broadcast segment (to avoid double notification)
             if segment_id != "all":
                 for pass_obj in passes:
-                    action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
+                    action_url = (
+                        f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
+                    )
                     result = send_push_notification(
                         pass_obj, header=title, body=message, action_url=action_url
                     )

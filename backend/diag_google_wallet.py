@@ -43,10 +43,7 @@ def test_google_wallet_config():
             "typ": "savetowallet",
             "iat": int(time.time()),
             "origins": [],
-            "payload": {
-                "loyaltyClasses": [],
-                "loyaltyObjects": []
-            }
+            "payload": {"loyaltyClasses": [], "loyaltyObjects": []},
         }
 
         token = jwt.encode(claims, pk, algorithm="RS256")
@@ -55,6 +52,7 @@ def test_google_wallet_config():
 
     except Exception as e:
         print(f"❌ ERROR: Exception during diagnostic: {str(e)}")
+
 
 if __name__ == "__main__":
     test_google_wallet_config()

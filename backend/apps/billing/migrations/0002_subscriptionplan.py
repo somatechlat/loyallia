@@ -9,36 +9,108 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0001_initial'),
+        ("billing", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SubscriptionPlan',
+            name="SubscriptionPlan",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=100, verbose_name='Nombre del plan')),
-                ('slug', models.SlugField(unique=True)),
-                ('description', models.TextField(blank=True, default='', verbose_name='Descripción')),
-                ('price_monthly', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Precio mensual (USD)')),
-                ('price_annual', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Precio anual (USD)')),
-                ('max_locations', models.PositiveIntegerField(default=1, verbose_name='Máx. sucursales')),
-                ('max_users', models.PositiveIntegerField(default=3, verbose_name='Máx. usuarios')),
-                ('max_customers', models.PositiveIntegerField(default=500, verbose_name='Máx. clientes')),
-                ('max_programs', models.PositiveIntegerField(default=1, verbose_name='Máx. programas')),
-                ('features', models.JSONField(default=list, help_text='["Google Wallet", "Push Notifications", "Analytics"]', verbose_name='Características incluidas')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Activo')),
-                ('is_featured', models.BooleanField(default=False, verbose_name='Plan recomendado')),
-                ('trial_days', models.PositiveIntegerField(default=14, verbose_name='Días de prueba')),
-                ('sort_order', models.PositiveSmallIntegerField(default=0, verbose_name='Orden')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=100, verbose_name="Nombre del plan"),
+                ),
+                ("slug", models.SlugField(unique=True)),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True, default="", verbose_name="Descripción"
+                    ),
+                ),
+                (
+                    "price_monthly",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0.00"),
+                        max_digits=10,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Precio mensual (USD)",
+                    ),
+                ),
+                (
+                    "price_annual",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("0.00"),
+                        max_digits=10,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Precio anual (USD)",
+                    ),
+                ),
+                (
+                    "max_locations",
+                    models.PositiveIntegerField(
+                        default=1, verbose_name="Máx. sucursales"
+                    ),
+                ),
+                (
+                    "max_users",
+                    models.PositiveIntegerField(
+                        default=3, verbose_name="Máx. usuarios"
+                    ),
+                ),
+                (
+                    "max_customers",
+                    models.PositiveIntegerField(
+                        default=500, verbose_name="Máx. clientes"
+                    ),
+                ),
+                (
+                    "max_programs",
+                    models.PositiveIntegerField(
+                        default=1, verbose_name="Máx. programas"
+                    ),
+                ),
+                (
+                    "features",
+                    models.JSONField(
+                        default=list,
+                        help_text='["Google Wallet", "Push Notifications", "Analytics"]',
+                        verbose_name="Características incluidas",
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="Activo")),
+                (
+                    "is_featured",
+                    models.BooleanField(default=False, verbose_name="Plan recomendado"),
+                ),
+                (
+                    "trial_days",
+                    models.PositiveIntegerField(
+                        default=14, verbose_name="Días de prueba"
+                    ),
+                ),
+                (
+                    "sort_order",
+                    models.PositiveSmallIntegerField(default=0, verbose_name="Orden"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Plan de Suscripción',
-                'verbose_name_plural': 'Planes de Suscripción',
-                'db_table': 'loyallia_subscription_plans',
-                'ordering': ['sort_order', 'price_monthly'],
+                "verbose_name": "Plan de Suscripción",
+                "verbose_name_plural": "Planes de Suscripción",
+                "db_table": "loyallia_subscription_plans",
+                "ordering": ["sort_order", "price_monthly"],
             },
         ),
     ]

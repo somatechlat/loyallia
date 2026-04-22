@@ -3,6 +3,7 @@ Loyallia — Transactions API router.
 Handles scanner validation + transaction recording (Phase 6).
 Also sub-router for /transactions/ list endpoints.
 """
+
 from decimal import Decimal
 
 from django.db.models import Q
@@ -27,6 +28,8 @@ def _serialize_json_value(value):
     if isinstance(value, list):
         return [_serialize_json_value(v) for v in value]
     return value
+
+
 # Scanner router for /scanner/ endpoints
 scanner_router = Router()
 
@@ -102,19 +105,22 @@ def transact(request, data: ScanTransactIn):
 
     # Process transaction using pass business logic
     from decimal import Decimal
+
     amount_decimal = Decimal(str(data.amount))
     result = pass_obj.process_transaction(
         transaction_type="",  # Will be set by the method
         amount=amount_decimal,
-        quantity=1
+        quantity=1,
     )
 
     # Create transaction record
-    transaction_data = _serialize_json_value({
-        "qr_code": data.qr_code,
-        "amount": data.amount,
-        **result  # Include all result data
-    })
+    transaction_data = _serialize_json_value(
+        {
+            "qr_code": data.qr_code,
+            "amount": data.amount,
+            **result,  # Include all result data
+        }
+    )
     transaction = Transaction.objects.create(
         tenant=request.tenant,
         customer_pass=pass_obj,
@@ -135,6 +141,7 @@ def transact(request, data: ScanTransactIn):
 
     # Fire automation trigger asynchronously — do not block the scanner response
     from apps.automation.engine import fire_trigger_async
+
     fire_trigger_async(
         trigger="transaction_completed",
         customer_id=str(pass_obj.customer.id),
@@ -151,13 +158,14 @@ def transact(request, data: ScanTransactIn):
         import logging
 
         from apps.customers.tasks import trigger_pass_update
+
         try:
             trigger_pass_update.delay(str(pass_obj.id))  # type: ignore[reportCallIssue]
         except Exception:
             logging.getLogger(__name__).warning(
                 "Could not queue pass update task for pass %s; transaction completes.",
                 str(pass_obj.id),
-                exc_info=True
+                exc_info=True,
             )
 
     response_data = {
@@ -167,12 +175,14 @@ def transact(request, data: ScanTransactIn):
         "pass_updated": result["pass_updated"],
         "reward_earned": result.get("reward_earned", False),
         "reward_description": result.get("reward_description", ""),
-        **result
+        **result,
     }
     return _serialize_json_value(response_data)
 
 
-@scanner_router.get("/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono")
+@scanner_router.get(
+    "/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono"
+)
 def search_customer(request, query: str):
     """Search customer for remote issue. STAFF+ only."""
     if not is_staff_or_above(request):
@@ -180,38 +190,38 @@ def search_customer(request, query: str):
     if not query or len(query.strip()) < 2:
         raise HttpError(400, get_message("TRANSACTION_SEARCH_MIN_CHARS"))
 
-    customers = Customer.objects.filter(
-        tenant=request.tenant,
-        is_active=True
-    ).filter(
-        Q(email__icontains=query) |
-        Q(phone__icontains=query) |
-        Q(first_name__icontains=query) |
-        Q(last_name__icontains=query)
-    )[:10]  # Limit results
+    customers = Customer.objects.filter(tenant=request.tenant, is_active=True).filter(
+        Q(email__icontains=query)
+        | Q(phone__icontains=query)
+        | Q(first_name__icontains=query)
+        | Q(last_name__icontains=query)
+    )[
+        :10
+    ]  # Limit results
 
     results = []
     for customer in customers:
         passes = CustomerPass.objects.filter(
-            customer=customer,
-            is_active=True
+            customer=customer, is_active=True
         ).select_related("card")
 
-        results.append({
-            "id": str(customer.id),
-            "name": customer.full_name,
-            "email": customer.email,
-            "phone": customer.phone,
-            "passes": [
-                {
-                    "id": str(pass_obj.id),
-                    "card_name": pass_obj.card.name,
-                    "card_type": pass_obj.card.card_type,
-                    "qr_code": pass_obj.qr_code,
-                }
-                for pass_obj in passes
-            ]
-        })
+        results.append(
+            {
+                "id": str(customer.id),
+                "name": customer.full_name,
+                "email": customer.email,
+                "phone": customer.phone,
+                "passes": [
+                    {
+                        "id": str(pass_obj.id),
+                        "card_name": pass_obj.card.name,
+                        "card_type": pass_obj.card.card_type,
+                        "qr_code": pass_obj.qr_code,
+                    }
+                    for pass_obj in passes
+                ],
+            }
+        )
 
     return {"results": results}
 
@@ -222,26 +232,28 @@ def list_transactions(request, limit: int = 50, offset: int = 0):
     """List transactions with filtering. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    transactions = Transaction.objects.filter(
-        tenant=request.tenant
-    ).select_related(
-        "customer_pass__customer",
-        "customer_pass__card",
-        "staff"
-    ).order_by("-created_at")[offset:offset + limit]
+    transactions = (
+        Transaction.objects.filter(tenant=request.tenant)
+        .select_related("customer_pass__customer", "customer_pass__card", "staff")
+        .order_by("-created_at")[offset : offset + limit]
+    )
 
     results = []
     for transaction in transactions:
-        results.append({
-            "id": str(transaction.id),
-            "transaction_type": transaction.transaction_type,
-            "customer_name": transaction.customer.full_name,
-            "card_name": transaction.customer_pass.card.name,
-            "amount": str(transaction.amount) if transaction.amount else None,
-            "quantity": transaction.quantity,
-            "staff_name": transaction.staff.get_full_name() if transaction.staff else None,
-            "created_at": transaction.created_at.isoformat(),
-        })
+        results.append(
+            {
+                "id": str(transaction.id),
+                "transaction_type": transaction.transaction_type,
+                "customer_name": transaction.customer.full_name,
+                "card_name": transaction.customer_pass.card.name,
+                "amount": str(transaction.amount) if transaction.amount else None,
+                "quantity": transaction.quantity,
+                "staff_name": (
+                    transaction.staff.get_full_name() if transaction.staff else None
+                ),
+                "created_at": transaction.created_at.isoformat(),
+            }
+        )
 
     return {"transactions": results}
 
@@ -252,9 +264,7 @@ def get_transaction(request, transaction_id: str):
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     transaction = get_object_or_404(
-        Transaction,
-        id=transaction_id,
-        tenant=request.tenant
+        Transaction, id=transaction_id, tenant=request.tenant
     )
 
     return {
@@ -270,14 +280,22 @@ def get_transaction(request, transaction_id: str):
             "name": transaction.customer_pass.card.name,
             "type": transaction.customer_pass.card.card_type,
         },
-        "staff": {
-            "id": str(transaction.staff.id),
-            "name": transaction.staff.get_full_name(),
-        } if transaction.staff else None,
-        "location": {
-            "id": str(transaction.location.id),
-            "name": transaction.location.name,
-        } if transaction.location else None,
+        "staff": (
+            {
+                "id": str(transaction.staff.id),
+                "name": transaction.staff.get_full_name(),
+            }
+            if transaction.staff
+            else None
+        ),
+        "location": (
+            {
+                "id": str(transaction.location.id),
+                "name": transaction.location.name,
+            }
+            if transaction.location
+            else None
+        ),
         "amount": str(transaction.amount) if transaction.amount else None,
         "quantity": transaction.quantity,
         "notes": transaction.notes,
@@ -293,7 +311,9 @@ class RemoteIssueIn(BaseModel):
     notes: str = ""
 
 
-@router.post("/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota")
+@router.post(
+    "/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota"
+)
 def remote_issue(request, data: RemoteIssueIn):
     """
     Remote stamp/reward issuance without QR scan. STAFF+ only.
@@ -314,7 +334,9 @@ def remote_issue(request, data: RemoteIssueIn):
 
     # Tenant-scoped customer lookup
     try:
-        customer = Customer.objects.get(id=customer_uuid, tenant=request.tenant, is_active=True)
+        customer = Customer.objects.get(
+            id=customer_uuid, tenant=request.tenant, is_active=True
+        )
     except Customer.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
@@ -328,6 +350,7 @@ def remote_issue(request, data: RemoteIssueIn):
 
     # Process transaction
     from decimal import Decimal
+
     result = pass_obj.process_transaction(
         transaction_type="",
         amount=Decimal("0"),
@@ -350,7 +373,9 @@ def remote_issue(request, data: RemoteIssueIn):
     return {
         "transaction_id": str(transaction.id),
         "success": True,
-        "message": get_message("TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name),
+        "message": get_message(
+            "TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name
+        ),
         "pass_updated": result["pass_updated"],
         "reward_earned": result.get("reward_earned", False),
         "reward_description": result.get("reward_description", ""),

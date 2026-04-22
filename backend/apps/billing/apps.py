@@ -1,6 +1,7 @@
 """
 Loyallia — Billing App Configuration
 """
+
 from django.apps import AppConfig
 
 

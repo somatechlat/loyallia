@@ -2,6 +2,7 @@
 Loyallia — Card Models (Loyalty Programs)
 Core models for all 10 card types with shared base properties and type-specific metadata.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -12,6 +13,7 @@ from apps.tenants.models import Tenant
 
 class CardType(models.TextChoices):
     """The 10 supported loyalty card types."""
+
     STAMP = "stamp", "Tarjeta de Sellos"
     CASHBACK = "cashback", "Tarjeta de Cashback"
     COUPON = "coupon", "Tarjeta de Cupón"
@@ -26,6 +28,7 @@ class CardType(models.TextChoices):
 
 class BarcodeType(models.TextChoices):
     """Barcode types supported by Apple Wallet and Google Wallet passes."""
+
     QR_CODE = "qr_code", "Código QR"
     AZTEC = "aztec", "Aztec"
     CODE_128 = "code_128", "Code 128"
@@ -38,17 +41,13 @@ class Card(models.Model):
     Base loyalty program configuration.
     Every card type shares these properties.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
-        Tenant,
-        on_delete=models.CASCADE,
-        related_name="cards",
-        verbose_name="Negocio"
+        Tenant, on_delete=models.CASCADE, related_name="cards", verbose_name="Negocio"
     )
     card_type = models.CharField(
-        max_length=20,
-        choices=CardType.choices,
-        verbose_name="Tipo de tarjeta"
+        max_length=20, choices=CardType.choices, verbose_name="Tipo de tarjeta"
     )
     name = models.CharField(max_length=100, verbose_name="Nombre del programa")
     description = models.TextField(blank=True, default="", verbose_name="Descripción")
@@ -56,22 +55,20 @@ class Card(models.Model):
     # Branding
     logo_url = models.URLField(blank=True, default="", verbose_name="URL del logo")
     background_color = models.CharField(
-        max_length=7,
-        default="#1a1a2e",
-        verbose_name="Color de fondo (HEX)"
+        max_length=7, default="#1a1a2e", verbose_name="Color de fondo (HEX)"
     )
     text_color = models.CharField(
-        max_length=7,
-        default="#ffffff",
-        verbose_name="Color del texto (HEX)"
+        max_length=7, default="#ffffff", verbose_name="Color del texto (HEX)"
     )
-    strip_image_url = models.URLField(blank=True, default="", verbose_name="Imagen de tira")
+    strip_image_url = models.URLField(
+        blank=True, default="", verbose_name="Imagen de tira"
+    )
     icon_url = models.URLField(blank=True, default="", verbose_name="URL del ícono")
     barcode_type = models.CharField(
         max_length=20,
         choices=BarcodeType.choices,
         default=BarcodeType.QR_CODE,
-        verbose_name="Tipo de código de barras"
+        verbose_name="Tipo de código de barras",
     )
 
     # Status
@@ -81,7 +78,9 @@ class Card(models.Model):
     metadata = models.JSONField(default=dict, verbose_name="Configuración específica")
 
     # Geofencing Locations (Array of dicts: {"lat": float, "lng": float, "name": str})
-    locations = models.JSONField(default=list, blank=True, verbose_name="Ubicaciones (Geofencing)")
+    locations = models.JSONField(
+        default=list, blank=True, verbose_name="Ubicaciones (Geofencing)"
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -92,7 +91,10 @@ class Card(models.Model):
         verbose_name = "Programa de fidelización"
         verbose_name_plural = "Programas de fidelización"
         ordering = ["-created_at"]
-        unique_together = ["tenant", "name"]  # Prevent duplicate program names per tenant
+        unique_together = [
+            "tenant",
+            "name",
+        ]  # Prevent duplicate program names per tenant
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_card_type_display()}) - {self.tenant.name}"
@@ -110,7 +112,11 @@ class Card(models.Model):
     def validate_stamp_config(self) -> None:
         """Validate stamp card configuration."""
         stamps_required = self.get_metadata_field("stamps_required", 10)
-        if not isinstance(stamps_required, int) or stamps_required < 1 or stamps_required > 99:
+        if (
+            not isinstance(stamps_required, int)
+            or stamps_required < 1
+            or stamps_required > 99
+        ):
             raise ValueError("stamps_required must be integer 1-99")
 
         reward_description = self.get_metadata_field("reward_description", "")
@@ -120,7 +126,11 @@ class Card(models.Model):
     def validate_cashback_config(self) -> None:
         """Validate cashback card configuration."""
         percentage = self.get_metadata_field("cashback_percentage", 0)
-        if not isinstance(percentage, (int, float, Decimal)) or percentage <= 0 or percentage > 99.99:
+        if (
+            not isinstance(percentage, (int, float, Decimal))
+            or percentage <= 0
+            or percentage > 99.99
+        ):
             raise ValueError("cashback_percentage must be decimal 0.01-99.99")
 
         min_purchase = self.get_metadata_field("minimum_purchase", 0)
@@ -188,11 +198,15 @@ class Card(models.Model):
         monthly_fee = self.get_metadata_field("monthly_fee", 0)
         annual_fee = self.get_metadata_field("annual_fee", 0)
         if monthly_fee <= 0 and annual_fee <= 0:
-            raise ValueError("at least one of monthly_fee or annual_fee must be positive")
+            raise ValueError(
+                "at least one of monthly_fee or annual_fee must be positive"
+            )
 
         validity_period = self.get_metadata_field("validity_period", "monthly")
         if validity_period not in ["monthly", "quarterly", "annual", "lifetime"]:
-            raise ValueError("validity_period must be one of: monthly, quarterly, annual, lifetime")
+            raise ValueError(
+                "validity_period must be one of: monthly, quarterly, annual, lifetime"
+            )
 
     def validate_corporate_discount_config(self) -> None:
         """Validate corporate discount configuration."""

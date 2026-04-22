@@ -12,91 +12,387 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('tenants', '0001_initial'),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PaymentMethod',
+            name="PaymentMethod",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('claro_pay_token', models.CharField(max_length=200, verbose_name='Token Claro Pay')),
-                ('card_brand', models.CharField(blank=True, default='', max_length=20, verbose_name='Marca de tarjeta')),
-                ('card_last_four', models.CharField(blank=True, default='', max_length=4, verbose_name='Últimos 4 dígitos')),
-                ('card_exp_month', models.PositiveSmallIntegerField(blank=True, null=True, verbose_name='Mes de expiración')),
-                ('card_exp_year', models.PositiveSmallIntegerField(blank=True, null=True, verbose_name='Año de expiración')),
-                ('cardholder_name', models.CharField(blank=True, default='', max_length=200, verbose_name='Nombre del titular')),
-                ('is_default', models.BooleanField(default=False, verbose_name='Método predeterminado')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Activo')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='payment_methods', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "claro_pay_token",
+                    models.CharField(max_length=200, verbose_name="Token Claro Pay"),
+                ),
+                (
+                    "card_brand",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=20,
+                        verbose_name="Marca de tarjeta",
+                    ),
+                ),
+                (
+                    "card_last_four",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=4,
+                        verbose_name="Últimos 4 dígitos",
+                    ),
+                ),
+                (
+                    "card_exp_month",
+                    models.PositiveSmallIntegerField(
+                        blank=True, null=True, verbose_name="Mes de expiración"
+                    ),
+                ),
+                (
+                    "card_exp_year",
+                    models.PositiveSmallIntegerField(
+                        blank=True, null=True, verbose_name="Año de expiración"
+                    ),
+                ),
+                (
+                    "cardholder_name",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=200,
+                        verbose_name="Nombre del titular",
+                    ),
+                ),
+                (
+                    "is_default",
+                    models.BooleanField(
+                        default=False, verbose_name="Método predeterminado"
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="Activo")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="payment_methods",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Método de pago',
-                'verbose_name_plural': 'Métodos de pago',
-                'db_table': 'loyallia_payment_methods',
-                'ordering': ['-is_default', '-created_at'],
+                "verbose_name": "Método de pago",
+                "verbose_name_plural": "Métodos de pago",
+                "db_table": "loyallia_payment_methods",
+                "ordering": ["-is_default", "-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='Subscription',
+            name="Subscription",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('plan', models.CharField(choices=[('trial', 'Trial Gratuito (14 días)'), ('full', 'FULL ($75/mes + IVA)')], default='trial', max_length=20, verbose_name='Plan')),
-                ('billing_cycle', models.CharField(choices=[('monthly', 'Mensual'), ('annual', 'Anual')], default='monthly', max_length=10, verbose_name='Ciclo de facturación')),
-                ('status', models.CharField(choices=[('trialing', 'Período de prueba'), ('active', 'Activo'), ('past_due', 'Pago pendiente'), ('suspended', 'Suspendido'), ('canceled', 'Cancelado')], default='trialing', max_length=20, verbose_name='Estado')),
-                ('claro_pay_subscription_id', models.CharField(blank=True, default='', max_length=100, verbose_name='ID de suscripción Claro Pay')),
-                ('claro_pay_customer_id', models.CharField(blank=True, default='', max_length=100, verbose_name='ID de cliente Claro Pay')),
-                ('trial_start', models.DateTimeField(blank=True, null=True, verbose_name='Inicio del trial')),
-                ('trial_end', models.DateTimeField(blank=True, null=True, verbose_name='Fin del trial')),
-                ('current_period_start', models.DateTimeField(blank=True, null=True, verbose_name='Inicio del período actual')),
-                ('current_period_end', models.DateTimeField(blank=True, null=True, verbose_name='Fin del período actual')),
-                ('cancel_at_period_end', models.BooleanField(default=False, verbose_name='Cancelar al final del período')),
-                ('canceled_at', models.DateTimeField(blank=True, null=True, verbose_name='Cancelado en')),
-                ('failed_payment_count', models.SmallIntegerField(default=0, verbose_name='Intentos de pago fallidos')),
-                ('last_payment_error', models.TextField(blank=True, default='', verbose_name='Último error de pago')),
-                ('last_payment_at', models.DateTimeField(blank=True, null=True, verbose_name='Último pago exitoso')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('tenant', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='subscription', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "plan",
+                    models.CharField(
+                        choices=[
+                            ("trial", "Trial Gratuito (14 días)"),
+                            ("full", "FULL ($75/mes + IVA)"),
+                        ],
+                        default="trial",
+                        max_length=20,
+                        verbose_name="Plan",
+                    ),
+                ),
+                (
+                    "billing_cycle",
+                    models.CharField(
+                        choices=[("monthly", "Mensual"), ("annual", "Anual")],
+                        default="monthly",
+                        max_length=10,
+                        verbose_name="Ciclo de facturación",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("trialing", "Período de prueba"),
+                            ("active", "Activo"),
+                            ("past_due", "Pago pendiente"),
+                            ("suspended", "Suspendido"),
+                            ("canceled", "Cancelado"),
+                        ],
+                        default="trialing",
+                        max_length=20,
+                        verbose_name="Estado",
+                    ),
+                ),
+                (
+                    "claro_pay_subscription_id",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=100,
+                        verbose_name="ID de suscripción Claro Pay",
+                    ),
+                ),
+                (
+                    "claro_pay_customer_id",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=100,
+                        verbose_name="ID de cliente Claro Pay",
+                    ),
+                ),
+                (
+                    "trial_start",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Inicio del trial"
+                    ),
+                ),
+                (
+                    "trial_end",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Fin del trial"
+                    ),
+                ),
+                (
+                    "current_period_start",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Inicio del período actual"
+                    ),
+                ),
+                (
+                    "current_period_end",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Fin del período actual"
+                    ),
+                ),
+                (
+                    "cancel_at_period_end",
+                    models.BooleanField(
+                        default=False, verbose_name="Cancelar al final del período"
+                    ),
+                ),
+                (
+                    "canceled_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Cancelado en"
+                    ),
+                ),
+                (
+                    "failed_payment_count",
+                    models.SmallIntegerField(
+                        default=0, verbose_name="Intentos de pago fallidos"
+                    ),
+                ),
+                (
+                    "last_payment_error",
+                    models.TextField(
+                        blank=True, default="", verbose_name="Último error de pago"
+                    ),
+                ),
+                (
+                    "last_payment_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Último pago exitoso"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "tenant",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="subscription",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Suscripción',
-                'verbose_name_plural': 'Suscripciones',
-                'db_table': 'loyallia_subscriptions',
+                "verbose_name": "Suscripción",
+                "verbose_name_plural": "Suscripciones",
+                "db_table": "loyallia_subscriptions",
             },
         ),
         migrations.CreateModel(
-            name='Invoice',
+            name="Invoice",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('invoice_number', models.CharField(max_length=50, unique=True, verbose_name='Número de factura')),
-                ('subtotal', models.DecimalField(decimal_places=2, max_digits=10, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Subtotal')),
-                ('tax_rate', models.DecimalField(decimal_places=4, default=Decimal('0.1500'), max_digits=5, verbose_name='Tasa IVA')),
-                ('tax_amount', models.DecimalField(decimal_places=2, max_digits=10, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Monto IVA')),
-                ('total', models.DecimalField(decimal_places=2, max_digits=10, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Total')),
-                ('currency', models.CharField(default='USD', max_length=3, verbose_name='Moneda')),
-                ('period_start', models.DateTimeField(verbose_name='Inicio del período')),
-                ('period_end', models.DateTimeField(verbose_name='Fin del período')),
-                ('status', models.CharField(choices=[('draft', 'Borrador'), ('open', 'Abierta'), ('paid', 'Pagada'), ('void', 'Anulada'), ('uncollectible', 'Incobrable')], default='draft', max_length=20, verbose_name='Estado')),
-                ('claro_pay_charge_id', models.CharField(blank=True, default='', max_length=100, verbose_name='ID de cargo Claro Pay')),
-                ('paid_at', models.DateTimeField(blank=True, null=True, verbose_name='Pagado en')),
-                ('sri_authorization_number', models.CharField(blank=True, default='', max_length=49, verbose_name='Número de autorización SRI')),
-                ('sri_access_key', models.CharField(blank=True, default='', max_length=49, verbose_name='Clave de acceso SRI')),
-                ('invoice_data', models.JSONField(default=dict, verbose_name='Datos adicionales de factura')),
-                ('pdf_url', models.URLField(blank=True, default='', verbose_name='URL del PDF')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='invoices', to='tenants.tenant', verbose_name='Negocio')),
-                ('subscription', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='invoices', to='billing.subscription', verbose_name='Suscripción')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "invoice_number",
+                    models.CharField(
+                        max_length=50, unique=True, verbose_name="Número de factura"
+                    ),
+                ),
+                (
+                    "subtotal",
+                    models.DecimalField(
+                        decimal_places=2,
+                        max_digits=10,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Subtotal",
+                    ),
+                ),
+                (
+                    "tax_rate",
+                    models.DecimalField(
+                        decimal_places=4,
+                        default=Decimal("0.1500"),
+                        max_digits=5,
+                        verbose_name="Tasa IVA",
+                    ),
+                ),
+                (
+                    "tax_amount",
+                    models.DecimalField(
+                        decimal_places=2,
+                        max_digits=10,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Monto IVA",
+                    ),
+                ),
+                (
+                    "total",
+                    models.DecimalField(
+                        decimal_places=2,
+                        max_digits=10,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Total",
+                    ),
+                ),
+                (
+                    "currency",
+                    models.CharField(
+                        default="USD", max_length=3, verbose_name="Moneda"
+                    ),
+                ),
+                (
+                    "period_start",
+                    models.DateTimeField(verbose_name="Inicio del período"),
+                ),
+                ("period_end", models.DateTimeField(verbose_name="Fin del período")),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Borrador"),
+                            ("open", "Abierta"),
+                            ("paid", "Pagada"),
+                            ("void", "Anulada"),
+                            ("uncollectible", "Incobrable"),
+                        ],
+                        default="draft",
+                        max_length=20,
+                        verbose_name="Estado",
+                    ),
+                ),
+                (
+                    "claro_pay_charge_id",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=100,
+                        verbose_name="ID de cargo Claro Pay",
+                    ),
+                ),
+                (
+                    "paid_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Pagado en"
+                    ),
+                ),
+                (
+                    "sri_authorization_number",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=49,
+                        verbose_name="Número de autorización SRI",
+                    ),
+                ),
+                (
+                    "sri_access_key",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=49,
+                        verbose_name="Clave de acceso SRI",
+                    ),
+                ),
+                (
+                    "invoice_data",
+                    models.JSONField(
+                        default=dict, verbose_name="Datos adicionales de factura"
+                    ),
+                ),
+                (
+                    "pdf_url",
+                    models.URLField(blank=True, default="", verbose_name="URL del PDF"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="invoices",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
+                (
+                    "subscription",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="invoices",
+                        to="billing.subscription",
+                        verbose_name="Suscripción",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Factura',
-                'verbose_name_plural': 'Facturas',
-                'db_table': 'loyallia_invoices',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['tenant', 'created_at'], name='loyallia_in_tenant__00bb89_idx'), models.Index(fields=['status'], name='loyallia_in_status_089e96_idx')],
+                "verbose_name": "Factura",
+                "verbose_name_plural": "Facturas",
+                "db_table": "loyallia_invoices",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["tenant", "created_at"],
+                        name="loyallia_in_tenant__00bb89_idx",
+                    ),
+                    models.Index(
+                        fields=["status"], name="loyallia_in_status_089e96_idx"
+                    ),
+                ],
             },
         ),
     ]

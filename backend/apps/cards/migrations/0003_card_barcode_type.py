@@ -6,13 +6,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0002_card_locations'),
+        ("cards", "0002_card_locations"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='card',
-            name='barcode_type',
-            field=models.CharField(choices=[('qr_code', 'Código QR'), ('aztec', 'Aztec'), ('code_128', 'Code 128'), ('pdf417', 'PDF417'), ('data_matrix', 'Data Matrix')], default='qr_code', max_length=20, verbose_name='Tipo de código de barras'),
+            model_name="card",
+            name="barcode_type",
+            field=models.CharField(
+                choices=[
+                    ("qr_code", "Código QR"),
+                    ("aztec", "Aztec"),
+                    ("code_128", "Code 128"),
+                    ("pdf417", "PDF417"),
+                    ("data_matrix", "Data Matrix"),
+                ],
+                default="qr_code",
+                max_length=20,
+                verbose_name="Tipo de código de barras",
+            ),
         ),
     ]

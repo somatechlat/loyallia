@@ -11,68 +11,161 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('tenants', '0001_initial'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('email', models.EmailField(max_length=254, unique=True)),
-                ('first_name', models.CharField(blank=True, default='', max_length=100)),
-                ('last_name', models.CharField(blank=True, default='', max_length=100)),
-                ('role', models.CharField(choices=[('SUPER_ADMIN', 'Super Administrador'), ('OWNER', 'Propietario'), ('MANAGER', 'Gerente'), ('STAFF', 'Personal')], default='STAFF', max_length=20)),
-                ('is_active', models.BooleanField(default=True)),
-                ('is_staff', models.BooleanField(default=False)),
-                ('is_email_verified', models.BooleanField(default=False)),
-                ('invitation_token', models.CharField(blank=True, default='', max_length=200)),
-                ('invitation_accepted_at', models.DateTimeField(blank=True, null=True)),
-                ('failed_login_count', models.SmallIntegerField(default=0)),
-                ('locked_until', models.DateTimeField(blank=True, null=True)),
-                ('date_joined', models.DateTimeField(auto_now_add=True)),
-                ('last_login', models.DateTimeField(blank=True, null=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
-                ('invited_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='invited_users', to=settings.AUTH_USER_MODEL)),
-                ('tenant', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='users', to='tenants.tenant')),
-                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+                ("password", models.CharField(max_length=128, verbose_name="password")),
+                (
+                    "is_superuser",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates that this user has all permissions without explicitly assigning them.",
+                        verbose_name="superuser status",
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("email", models.EmailField(max_length=254, unique=True)),
+                (
+                    "first_name",
+                    models.CharField(blank=True, default="", max_length=100),
+                ),
+                ("last_name", models.CharField(blank=True, default="", max_length=100)),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("SUPER_ADMIN", "Super Administrador"),
+                            ("OWNER", "Propietario"),
+                            ("MANAGER", "Gerente"),
+                            ("STAFF", "Personal"),
+                        ],
+                        default="STAFF",
+                        max_length=20,
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("is_staff", models.BooleanField(default=False)),
+                ("is_email_verified", models.BooleanField(default=False)),
+                (
+                    "invitation_token",
+                    models.CharField(blank=True, default="", max_length=200),
+                ),
+                ("invitation_accepted_at", models.DateTimeField(blank=True, null=True)),
+                ("failed_login_count", models.SmallIntegerField(default=0)),
+                ("locked_until", models.DateTimeField(blank=True, null=True)),
+                ("date_joined", models.DateTimeField(auto_now_add=True)),
+                ("last_login", models.DateTimeField(blank=True, null=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "groups",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.group",
+                        verbose_name="groups",
+                    ),
+                ),
+                (
+                    "invited_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="invited_users",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="users",
+                        to="tenants.tenant",
+                    ),
+                ),
+                (
+                    "user_permissions",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Specific permissions for this user.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.permission",
+                        verbose_name="user permissions",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Usuario',
-                'verbose_name_plural': 'Usuarios',
-                'db_table': 'loyallia_users',
-                'ordering': ['-date_joined'],
+                "verbose_name": "Usuario",
+                "verbose_name_plural": "Usuarios",
+                "db_table": "loyallia_users",
+                "ordering": ["-date_joined"],
             },
         ),
         migrations.CreateModel(
-            name='RefreshToken',
+            name="RefreshToken",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('token_hash', models.CharField(max_length=64, unique=True)),
-                ('device_name', models.CharField(blank=True, default='', max_length=200)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('expires_at', models.DateTimeField()),
-                ('revoked_at', models.DateTimeField(blank=True, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='refresh_tokens', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("token_hash", models.CharField(max_length=64, unique=True)),
+                (
+                    "device_name",
+                    models.CharField(blank=True, default="", max_length=200),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("expires_at", models.DateTimeField()),
+                ("revoked_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="refresh_tokens",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'loyallia_refresh_tokens',
+                "db_table": "loyallia_refresh_tokens",
             },
         ),
         migrations.AddIndex(
-            model_name='user',
-            index=models.Index(fields=['tenant', 'role'], name='loyallia_us_tenant__4016f9_idx'),
+            model_name="user",
+            index=models.Index(
+                fields=["tenant", "role"], name="loyallia_us_tenant__4016f9_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='user',
-            index=models.Index(fields=['email'], name='loyallia_us_email_42f537_idx'),
+            model_name="user",
+            index=models.Index(fields=["email"], name="loyallia_us_email_42f537_idx"),
         ),
         migrations.AddIndex(
-            model_name='refreshtoken',
-            index=models.Index(fields=['token_hash'], name='loyallia_re_token_h_6fc435_idx'),
+            model_name="refreshtoken",
+            index=models.Index(
+                fields=["token_hash"], name="loyallia_re_token_h_6fc435_idx"
+            ),
         ),
     ]

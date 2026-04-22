@@ -53,7 +53,9 @@ def _get_apns_jwt_token() -> str | None:
         return None
 
     if not os.path.exists(apns_auth_key_path):
-        logger.warning("APNs auth key not found at '%s'. iOS push disabled.", apns_auth_key_path)
+        logger.warning(
+            "APNs auth key not found at '%s'. iOS push disabled.", apns_auth_key_path
+        )
         return None
 
     # Check cache
@@ -80,7 +82,9 @@ def _get_apns_jwt_token() -> str | None:
             "kid": apns_key_id,
         }
 
-        token_str = pyjwt.encode(payload, private_key, algorithm="ES256", headers=headers)
+        token_str = pyjwt.encode(
+            payload, private_key, algorithm="ES256", headers=headers
+        )
         expires_at = float(now + 3600)  # APNs tokens valid for 1 hour
 
         _token_cache[cache_key] = (token_str, expires_at)
@@ -164,7 +168,9 @@ def send_apns_message(
             reason = response.text[:100]
 
         if reason == "BadDeviceToken" or reason == "Unregistered":
-            logger.warning("APNs token invalid/unregistered (…%s): %s", device_token[-8:], reason)
+            logger.warning(
+                "APNs token invalid/unregistered (…%s): %s", device_token[-8:], reason
+            )
         else:
             logger.error(
                 "APNs HTTP %s for …%s: %s",

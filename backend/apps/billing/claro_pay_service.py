@@ -9,6 +9,7 @@ Gateway endpoints:
   UAT:  configured via CLARO_PAY_BASE_URL setting
   PROD: configured via CLARO_PAY_BASE_URL setting
 """
+
 import hashlib
 import hmac
 import logging
@@ -88,7 +89,10 @@ class ClaroPayService:
                 error_code = error_data.get("code", str(response.status_code))
                 logger.error(
                     "Claro Pay API error: %s %s → %s %s",
-                    method, endpoint, response.status_code, error_msg,
+                    method,
+                    endpoint,
+                    response.status_code,
+                    error_msg,
                 )
                 raise ClaroPayError(
                     message=error_msg,
@@ -165,7 +169,8 @@ class ClaroPayService:
         customer_id = result.get("customerId", "")
         logger.info(
             "Created Claro Pay customer %s for tenant %s",
-            customer_id, tenant.slug,
+            customer_id,
+            tenant.slug,
         )
         return customer_id
 
@@ -205,7 +210,8 @@ class ClaroPayService:
         result = self._request("POST", "/v1/subscriptions", payload)
         logger.info(
             "Created subscription %s for customer %s",
-            result.get("subscriptionId"), customer_id,
+            result.get("subscriptionId"),
+            customer_id,
         )
         return result
 
@@ -296,9 +302,9 @@ class ClaroPayService:
             customer_id = subscription.claro_pay_customer_id
 
         # Step 2: Store payment method
-        PaymentMethod.objects.filter(
-            tenant=tenant, is_default=True
-        ).update(is_default=False)
+        PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(
+            is_default=False
+        )
 
         PaymentMethod.objects.create(
             tenant=tenant,
@@ -351,7 +357,9 @@ class ClaroPayService:
 
         logger.info(
             "Tenant %s subscribed via Claro Pay: sub_id=%s, invoice=%s",
-            tenant.slug, claro_sub_id, invoice.invoice_number,
+            tenant.slug,
+            claro_sub_id,
+            invoice.invoice_number,
         )
 
         return subscription
@@ -376,7 +384,8 @@ class ClaroPayService:
             )
         except Subscription.DoesNotExist:
             logger.error(
-                "Webhook for unknown subscription: %s", subscription_id,
+                "Webhook for unknown subscription: %s",
+                subscription_id,
             )
             return
 
@@ -385,10 +394,15 @@ class ClaroPayService:
             subscription.last_payment_error = ""
             subscription.last_payment_at = timezone.now()
             subscription.status = SubscriptionStatus.ACTIVE
-            subscription.save(update_fields=[
-                "failed_payment_count", "last_payment_error",
-                "last_payment_at", "status", "updated_at",
-            ])
+            subscription.save(
+                update_fields=[
+                    "failed_payment_count",
+                    "last_payment_error",
+                    "last_payment_at",
+                    "status",
+                    "updated_at",
+                ]
+            )
 
             # Create invoice for this period
             invoice = Invoice(
@@ -399,14 +413,16 @@ class ClaroPayService:
                 tax_amount=Decimal(str(event_data.get("taxAmount", "0"))),
                 total=Decimal(str(event_data.get("totalAmount", "0"))),
                 period_start=subscription.current_period_start or timezone.now(),
-                period_end=subscription.current_period_end or timezone.now() + timedelta(days=30),
+                period_end=subscription.current_period_end
+                or timezone.now() + timedelta(days=30),
             )
             invoice.calculate_amounts()
             invoice.mark_paid(charge_id)
 
             logger.info(
                 "Payment success for tenant %s: invoice %s",
-                subscription.tenant.slug, invoice.invoice_number,
+                subscription.tenant.slug,
+                invoice.invoice_number,
             )
 
         elif event_type == "payment.failed":
@@ -422,7 +438,8 @@ class ClaroPayService:
         elif event_type == "subscription.canceled":
             subscription.execute_cancellation()
             logger.info(
-                "Subscription canceled for tenant %s", subscription.tenant.slug,
+                "Subscription canceled for tenant %s",
+                subscription.tenant.slug,
             )
 
         else:

@@ -84,7 +84,11 @@ def send_fcm_message(
     """
     access_token, project_id = _get_access_token()
     if not access_token or not project_id:
-        logger.warning("FCM not configured. Skipping push to token %s…%s", fcm_token[:8], fcm_token[-4:])
+        logger.warning(
+            "FCM not configured. Skipping push to token %s…%s",
+            fcm_token[:8],
+            fcm_token[-4:],
+        )
         return False
 
     notification_payload: dict = {

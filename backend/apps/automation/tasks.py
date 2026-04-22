@@ -1,6 +1,7 @@
 """
 Loyallia — Automation Celery Tasks
 """
+
 import logging
 
 from celery import shared_task
@@ -60,13 +61,21 @@ def evaluate_scheduled_automations() -> dict:
     Daily Celery Beat task: evaluate all SCHEDULED_TIME automations.
     Runs all active scheduled automations against their target customer segments.
     """
-    from apps.automation.models import Automation, AutomationExecution, AutomationTrigger
+    from apps.automation.models import (
+        Automation,
+        AutomationExecution,
+        AutomationTrigger,
+    )
     from apps.customers.models import Customer
 
-    scheduled = Automation.objects.filter(
-        trigger=AutomationTrigger.SCHEDULED_TIME,
-        is_active=True,
-    ).select_related("tenant").prefetch_related("target_programs")
+    scheduled = (
+        Automation.objects.filter(
+            trigger=AutomationTrigger.SCHEDULED_TIME,
+            is_active=True,
+        )
+        .select_related("tenant")
+        .prefetch_related("target_programs")
+    )
 
     total_executed = 0
 

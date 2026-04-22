@@ -11,58 +11,200 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('cards', '0001_initial'),
-        ('customers', '0001_initial'),
-        ('tenants', '0001_initial'),
+        ("cards", "0001_initial"),
+        ("customers", "0001_initial"),
+        ("tenants", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Automation',
+            name="Automation",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=200, verbose_name='Nombre')),
-                ('description', models.TextField(blank=True, default='', verbose_name='Descripción')),
-                ('trigger', models.CharField(choices=[('customer_enrolled', 'Customer Enrolled'), ('transaction_completed', 'Transaction Completed'), ('reward_earned', 'Reward Earned'), ('reward_ready', 'Reward Ready'), ('birthday_coming', 'Birthday Coming'), ('inactive_reminder', 'Inactive Reminder'), ('milestone_reached', 'Milestone Reached'), ('scheduled_time', 'Scheduled Time')], max_length=30, verbose_name='Disparador')),
-                ('trigger_config', models.JSONField(default=dict, verbose_name='Configuración del disparador')),
-                ('action', models.CharField(choices=[('send_notification', 'Send Notification'), ('send_email', 'Send Email'), ('send_sms', 'Send SMS'), ('issue_reward', 'Issue Reward'), ('update_segment', 'Update Segment'), ('create_campaign', 'Create Campaign')], max_length=30, verbose_name='Acción')),
-                ('action_config', models.JSONField(default=dict, verbose_name='Configuración de la acción')),
-                ('target_segments', models.JSONField(default=list, verbose_name='Segmentos objetivo')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Activo')),
-                ('schedule_config', models.JSONField(default=dict, verbose_name='Configuración de horario')),
-                ('max_executions_per_day', models.PositiveIntegerField(blank=True, null=True, verbose_name='Ejecuciones máximas por día')),
-                ('cooldown_hours', models.PositiveIntegerField(default=24, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Horas de enfriamiento')),
-                ('total_executions', models.PositiveIntegerField(default=0, verbose_name='Ejecuciones totales')),
-                ('last_executed', models.DateTimeField(blank=True, null=True, verbose_name='Última ejecución')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('target_programs', models.ManyToManyField(blank=True, related_name='automations', to='cards.card', verbose_name='Programas objetivo')),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='automations', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=200, verbose_name="Nombre")),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True, default="", verbose_name="Descripción"
+                    ),
+                ),
+                (
+                    "trigger",
+                    models.CharField(
+                        choices=[
+                            ("customer_enrolled", "Customer Enrolled"),
+                            ("transaction_completed", "Transaction Completed"),
+                            ("reward_earned", "Reward Earned"),
+                            ("reward_ready", "Reward Ready"),
+                            ("birthday_coming", "Birthday Coming"),
+                            ("inactive_reminder", "Inactive Reminder"),
+                            ("milestone_reached", "Milestone Reached"),
+                            ("scheduled_time", "Scheduled Time"),
+                        ],
+                        max_length=30,
+                        verbose_name="Disparador",
+                    ),
+                ),
+                (
+                    "trigger_config",
+                    models.JSONField(
+                        default=dict, verbose_name="Configuración del disparador"
+                    ),
+                ),
+                (
+                    "action",
+                    models.CharField(
+                        choices=[
+                            ("send_notification", "Send Notification"),
+                            ("send_email", "Send Email"),
+                            ("send_sms", "Send SMS"),
+                            ("issue_reward", "Issue Reward"),
+                            ("update_segment", "Update Segment"),
+                            ("create_campaign", "Create Campaign"),
+                        ],
+                        max_length=30,
+                        verbose_name="Acción",
+                    ),
+                ),
+                (
+                    "action_config",
+                    models.JSONField(
+                        default=dict, verbose_name="Configuración de la acción"
+                    ),
+                ),
+                (
+                    "target_segments",
+                    models.JSONField(default=list, verbose_name="Segmentos objetivo"),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="Activo")),
+                (
+                    "schedule_config",
+                    models.JSONField(
+                        default=dict, verbose_name="Configuración de horario"
+                    ),
+                ),
+                (
+                    "max_executions_per_day",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        null=True,
+                        verbose_name="Ejecuciones máximas por día",
+                    ),
+                ),
+                (
+                    "cooldown_hours",
+                    models.PositiveIntegerField(
+                        default=24,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Horas de enfriamiento",
+                    ),
+                ),
+                (
+                    "total_executions",
+                    models.PositiveIntegerField(
+                        default=0, verbose_name="Ejecuciones totales"
+                    ),
+                ),
+                (
+                    "last_executed",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Última ejecución"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "target_programs",
+                    models.ManyToManyField(
+                        blank=True,
+                        related_name="automations",
+                        to="cards.card",
+                        verbose_name="Programas objetivo",
+                    ),
+                ),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="automations",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Automatización',
-                'verbose_name_plural': 'Automatizaciones',
-                'db_table': 'loyallia_automations',
-                'ordering': ['-created_at'],
+                "verbose_name": "Automatización",
+                "verbose_name_plural": "Automatizaciones",
+                "db_table": "loyallia_automations",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='AutomationExecution',
+            name="AutomationExecution",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('trigger_event', models.CharField(max_length=50, verbose_name='Evento disparador')),
-                ('execution_context', models.JSONField(default=dict, verbose_name='Contexto de ejecución')),
-                ('success', models.BooleanField(verbose_name='Éxito')),
-                ('executed_at', models.DateTimeField(auto_now_add=True)),
-                ('automation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='executions', to='automation.automation', verbose_name='Automatización')),
-                ('customer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='automation_executions', to='customers.customer', verbose_name='Cliente')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "trigger_event",
+                    models.CharField(max_length=50, verbose_name="Evento disparador"),
+                ),
+                (
+                    "execution_context",
+                    models.JSONField(
+                        default=dict, verbose_name="Contexto de ejecución"
+                    ),
+                ),
+                ("success", models.BooleanField(verbose_name="Éxito")),
+                ("executed_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "automation",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="executions",
+                        to="automation.automation",
+                        verbose_name="Automatización",
+                    ),
+                ),
+                (
+                    "customer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="automation_executions",
+                        to="customers.customer",
+                        verbose_name="Cliente",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Ejecución de automatización',
-                'verbose_name_plural': 'Ejecuciones de automatizaciones',
-                'db_table': 'loyallia_automation_executions',
-                'ordering': ['-executed_at'],
-                'indexes': [models.Index(fields=['automation', '-executed_at'], name='loyallia_au_automat_3f7724_idx'), models.Index(fields=['customer', '-executed_at'], name='loyallia_au_custome_114222_idx')],
+                "verbose_name": "Ejecución de automatización",
+                "verbose_name_plural": "Ejecuciones de automatizaciones",
+                "db_table": "loyallia_automation_executions",
+                "ordering": ["-executed_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["automation", "-executed_at"],
+                        name="loyallia_au_automat_3f7724_idx",
+                    ),
+                    models.Index(
+                        fields=["customer", "-executed_at"],
+                        name="loyallia_au_custome_114222_idx",
+                    ),
+                ],
             },
         ),
     ]

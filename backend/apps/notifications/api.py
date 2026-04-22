@@ -375,9 +375,7 @@ def create_campaign(request, data: CampaignCreateIn):
         # Ready for future integration with WhatsApp Business API
         from apps.customers.api import _apply_segment_filter
 
-        base_qs = Customer.objects.filter(
-            tenant=request.tenant, is_active=True
-        )
+        base_qs = Customer.objects.filter(tenant=request.tenant, is_active=True)
         audience = _apply_segment_filter(base_qs, data.segment_id)
         total = audience.count()
         succeeded = 0
@@ -404,4 +402,3 @@ def create_campaign(request, data: CampaignCreateIn):
         }
     else:
         raise HttpError(400, "Canal no válido. Usa 'email', 'wallet' o 'whatsapp'.")
-

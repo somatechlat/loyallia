@@ -9,6 +9,7 @@ Endpoints:
   GET /api/v1/wallet/status/{pass_id}/ → Check wallet availability
   GET /api/v1/cards/public/{card_id}/  → Public card info for enrollment page
 """
+
 import logging
 import uuid
 
@@ -30,6 +31,7 @@ router = Router(tags=["wallet"])
 
 class PublicCardOut(Schema):
     """Public card info for enrollment page — no sensitive data."""
+
     id: str
     name: str
     description: str
@@ -42,6 +44,7 @@ class PublicCardOut(Schema):
 
 class WalletStatusOut(Schema):
     """Wallet configuration status."""
+
     pass_id: str
     apple_wallet_available: bool
     google_wallet_available: bool
@@ -51,6 +54,7 @@ class WalletStatusOut(Schema):
 
 class GoogleWalletOut(Schema):
     """Google Wallet save URL response."""
+
     save_url: str
 
 
@@ -109,12 +113,15 @@ def download_apple_pass(request, pass_id: str):
     The file auto-opens in iOS Wallet app when downloaded on an iPhone.
     """
     from apps.customers.models import CustomerPass
-    from apps.customers.pass_engine.apple_pass import generate_pkpass, is_apple_wallet_configured
+    from apps.customers.pass_engine.apple_pass import (
+        generate_pkpass,
+        is_apple_wallet_configured,
+    )
 
     if not is_apple_wallet_configured():
         raise HttpError(
             503,
-            "Apple Wallet no está configurado. Se requieren los certificados de Apple Developer."
+            "Apple Wallet no está configurado. Se requieren los certificados de Apple Developer.",
         )
 
     try:
@@ -132,7 +139,9 @@ def download_apple_pass(request, pass_id: str):
         pkpass_bytes,
         content_type="application/vnd.apple.pkpass",
     )
-    response["Content-Disposition"] = f'attachment; filename="{customer_pass.card.name}.pkpass"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="{customer_pass.card.name}.pkpass"'
+    )
     return response
 
 

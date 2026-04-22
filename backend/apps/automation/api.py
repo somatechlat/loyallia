@@ -9,7 +9,12 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
-from apps.automation.models import Automation, AutomationAction, AutomationExecution, AutomationTrigger
+from apps.automation.models import (
+    Automation,
+    AutomationAction,
+    AutomationExecution,
+    AutomationTrigger,
+)
 from apps.cards.models import Card
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
@@ -56,6 +61,7 @@ class UpdateAutomationSchema(BaseModel):
     cooldown_hours: int | None = None
     is_active: bool | None = None
 
+
 # ============ Automation Analytics ============
 @router.get("/stats/", auth=jwt_auth, summary="Get automation statistics")
 def get_automation_stats(request):
@@ -66,23 +72,19 @@ def get_automation_stats(request):
     active_automations = automations.filter(is_active=True).count()
 
     # Execution stats
-    executions = AutomationExecution.objects.filter(
-        automation__tenant=request.tenant
-    )
+    executions = AutomationExecution.objects.filter(automation__tenant=request.tenant)
 
     total_executions = executions.count()
     successful_executions = executions.filter(success=True).count()
-    success_rate = (successful_executions / total_executions * 100) if total_executions > 0 else 0
+    success_rate = (
+        (successful_executions / total_executions * 100) if total_executions > 0 else 0
+    )
 
     # By trigger type
-    trigger_stats = executions.values("automation__trigger").annotate(
-        count=Count("id")
-    )
+    trigger_stats = executions.values("automation__trigger").annotate(count=Count("id"))
 
     # By action type
-    action_stats = executions.values("automation__action").annotate(
-        count=Count("id")
-    )
+    action_stats = executions.values("automation__action").annotate(count=Count("id"))
 
     return {
         "total_automations": total_automations,
@@ -91,14 +93,13 @@ def get_automation_stats(request):
         "successful_executions": successful_executions,
         "success_rate": success_rate,
         "trigger_breakdown": {
-            item["automation__trigger"]: item["count"]
-            for item in trigger_stats
+            item["automation__trigger"]: item["count"] for item in trigger_stats
         },
         "action_breakdown": {
-            item["automation__action"]: item["count"]
-            for item in action_stats
+            item["automation__action"]: item["count"] for item in action_stats
         },
     }
+
 
 # ============ Automation Management ============
 @router.get("/", auth=jwt_auth, summary="List automations")
@@ -134,10 +135,14 @@ def create_automation(request, data: CreateAutomationSchema):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     # Validate trigger and action
     if data.trigger not in [choice[0] for choice in AutomationTrigger.choices]:
-        raise HttpError(400, get_message("AUTOMATION_INVALID_TRIGGER", trigger=data.trigger))
+        raise HttpError(
+            400, get_message("AUTOMATION_INVALID_TRIGGER", trigger=data.trigger)
+        )
 
     if data.action not in [choice[0] for choice in AutomationAction.choices]:
-        raise HttpError(400, get_message("AUTOMATION_INVALID_ACTION", action=data.action))
+        raise HttpError(
+            400, get_message("AUTOMATION_INVALID_ACTION", action=data.action)
+        )
 
     # Create automation
     automation = Automation.objects.create(
@@ -156,8 +161,7 @@ def create_automation(request, data: CreateAutomationSchema):
     # Set target programs
     if data.target_program_ids:
         programs = Card.objects.filter(
-            id__in=data.target_program_ids,
-            tenant=request.tenant
+            id__in=data.target_program_ids, tenant=request.tenant
         )
         automation.target_programs.set(programs)
 
@@ -179,11 +183,7 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
     """Update an automation. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    automation = get_object_or_404(
-        Automation,
-        id=automation_id,
-        tenant=request.tenant
-    )
+    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     # Update fields
     update_fields = []
@@ -222,8 +222,7 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
     # Update target programs
     if data.target_program_ids is not None:
         programs = Card.objects.filter(
-            id__in=data.target_program_ids,
-            tenant=request.tenant
+            id__in=data.target_program_ids, tenant=request.tenant
         )
         automation.target_programs.set(programs)
 
@@ -243,27 +242,21 @@ def delete_automation(request, automation_id: str):
     """Delete an automation. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    automation = get_object_or_404(
-        Automation,
-        id=automation_id,
-        tenant=request.tenant
-    )
+    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     automation.delete()
 
     return {"message": get_message("AUTOMATION_DELETED")}
 
 
-@router.post("/{automation_id}/toggle/", auth=jwt_auth, summary="Toggle automation active status")
+@router.post(
+    "/{automation_id}/toggle/", auth=jwt_auth, summary="Toggle automation active status"
+)
 def toggle_automation(request, automation_id: str):
     """Enable or disable an automation. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    automation = get_object_or_404(
-        Automation,
-        id=automation_id,
-        tenant=request.tenant
-    )
+    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     automation.is_active = not automation.is_active
     automation.save(update_fields=["is_active"])
@@ -272,22 +265,18 @@ def toggle_automation(request, automation_id: str):
     return {"message": get_message(status_key, name=automation.name)}
 
 
-
-
-
 # ============ Manual Execution ============
-@router.post("/{automation_id}/execute/", auth=jwt_auth, summary="Execute automation manually")
+@router.post(
+    "/{automation_id}/execute/", auth=jwt_auth, summary="Execute automation manually"
+)
 def execute_automation_manually(request, automation_id: str, customer_id: str):
     """Manually execute an automation for a specific customer. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    automation = get_object_or_404(
-        Automation,
-        id=automation_id,
-        tenant=request.tenant
-    )
+    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     from apps.customers.models import Customer
+
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
 
     # Execute automation
@@ -304,17 +293,18 @@ def execute_automation_manually(request, automation_id: str, customer_id: str):
 
     return {
         "success": success,
-        "message": get_message("AUTOMATION_EXECUTED") if success else get_message("AUTOMATION_FAILED"),
+        "message": (
+            get_message("AUTOMATION_EXECUTED")
+            if success
+            else get_message("AUTOMATION_FAILED")
+        ),
     }
+
 
 @router.get("/{automation_id}/", auth=jwt_auth, summary="Get automation details")
 def get_automation(request, automation_id: str):
     """Get detailed information about an automation."""
-    automation = get_object_or_404(
-        Automation,
-        id=automation_id,
-        tenant=request.tenant
-    )
+    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     return {
         "id": str(automation.id),
@@ -325,8 +315,7 @@ def get_automation(request, automation_id: str):
         "action": automation.action,
         "action_config": automation.action_config,
         "target_programs": [
-            {"id": str(p.id), "name": p.name}
-            for p in automation.target_programs.all()
+            {"id": str(p.id), "name": p.name} for p in automation.target_programs.all()
         ],
         "target_segments": automation.target_segments,
         "schedule_config": automation.schedule_config,
@@ -334,7 +323,9 @@ def get_automation(request, automation_id: str):
         "max_executions_per_day": automation.max_executions_per_day,
         "cooldown_hours": automation.cooldown_hours,
         "total_executions": automation.total_executions,
-        "last_executed": automation.last_executed.isoformat() if automation.last_executed else None,
+        "last_executed": (
+            automation.last_executed.isoformat() if automation.last_executed else None
+        ),
         "created_at": automation.created_at.isoformat(),
         "updated_at": automation.updated_at.isoformat(),
     }

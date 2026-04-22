@@ -6,18 +6,37 @@ Handles: registration, login, refresh, logout, password reset, email verificatio
 All strings via get_message() — Rule #11.
 All auth via JWTAuth — Rule #8.
 """
+
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone as dj_timezone
 from ninja import Router
 from ninja.errors import HttpError
-from pydantic import BaseModel, EmailStr, field_validator
 
 from apps.authentication.models import RefreshToken, User, UserRole
+from apps.authentication.schemas import (
+    ChangePasswordIn,
+    ForgotPasswordIn,
+    InviteIn,
+    LoginIn,
+    LogoutIn,
+    MessageOut,
+    PasswordResetConfirmIn,
+    PasswordResetRequestIn,
+    ProfileUpdateIn,
+    RefreshIn,
+    RefreshOut,
+    RegisterIn,
+    RegisterOut,
+    ResetPasswordIn,
+    TokenOut,
+    UserOut,
+    VerifyEmailIn,
+)
 from apps.authentication.tokens import (
     create_access_token,
     create_refresh_token_string,
@@ -28,147 +47,20 @@ from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
 
 logger = logging.getLogger(__name__)
-
 router = Router()
-
-
-# =============================================================================
-# SCHEMAS — Request / Response
-# =============================================================================
-
-class RegisterIn(BaseModel):
-    business_name: str
-    email: EmailStr
-    password: str
-    first_name: str = ""
-    last_name: str = ""
-
-    @field_validator("password")
-    @classmethod
-    def password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("La contraseña debe tener al menos 8 caracteres.")
-        return v
-
-    @field_validator("business_name")
-    @classmethod
-    def business_name_not_empty(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("El nombre del negocio es obligatorio.")
-        return v
-
-
-class RegisterOut(BaseModel):
-    success: bool
-    message: str
-    tenant_id: str
-    user_id: str
-
-
-class LoginIn(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class TokenOut(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-    user_id: str
-    tenant_id: str | None
-    role: str
-
-
-class RefreshIn(BaseModel):
-    refresh_token: str
-
-
-class RefreshOut(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class LogoutIn(BaseModel):
-    refresh_token: str
-
-
-class MessageOut(BaseModel):
-    success: bool
-    message: str
-
-
-class PasswordResetRequestIn(BaseModel):
-    email: EmailStr
-
-
-class PasswordResetConfirmIn(BaseModel):
-    email: EmailStr
-    otp: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("La contraseña debe tener al menos 8 caracteres.")
-        return v
-
-
-class VerifyEmailIn(BaseModel):
-    email: EmailStr
-    otp: str
-
-
-class InviteIn(BaseModel):
-    email: EmailStr
-    role: str
-    first_name: str = ""
-    last_name: str = ""
-
-    @field_validator("role")
-    @classmethod
-    def role_must_be_valid(cls, v: str) -> str:
-        allowed = {UserRole.MANAGER, UserRole.STAFF}
-        if v not in allowed:
-            raise ValueError(f"Rol inválido. Permitidos: {', '.join(allowed)}")
-        return v
-
-
-class UserOut(BaseModel):
-    id: str
-    email: str
-    first_name: str
-    last_name: str
-    role: str
-    is_active: bool
-    is_email_verified: bool
-    date_joined: datetime
-
-    @classmethod
-    def from_user(cls, user: User) -> "UserOut":
-        return cls(
-            id=str(user.id),
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            role=user.role,
-            is_active=user.is_active,
-            is_email_verified=user.is_email_verified,
-            date_joined=user.date_joined,
-        )
 
 
 # =============================================================================
 # HELPERS
 # =============================================================================
 
+
 def _slugify_business(name: str) -> str:
     """Generate a unique slug from business name."""
     import re
+
     slug_base = re.sub(r"[^a-z0-9]+", "-", name.lower().strip()).strip("-")
     slug = slug_base[:80]
-    # Ensure uniqueness
     counter = 1
     candidate = slug
     while Tenant.objects.filter(slug=candidate).exists():
@@ -194,13 +86,14 @@ def _send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
 def _store_otp(email: str, otp: str, purpose: str) -> None:
     """Store OTP in Django cache with 15-minute TTL."""
     from django.core.cache import cache
-    key = f"otp:{purpose}:{email}"
-    cache.set(key, otp, timeout=900)  # 15 minutes
+
+    cache.set(f"otp:{purpose}:{email}", otp, timeout=900)
 
 
 def _verify_otp(email: str, otp: str, purpose: str) -> bool:
     """Verify OTP from cache. Deletes key after verification (single-use)."""
     from django.core.cache import cache
+
     key = f"otp:{purpose}:{email}"
     stored = cache.get(key)
     if stored and stored == otp:
@@ -217,18 +110,14 @@ def _issue_tokens(user: User) -> dict:
         role=user.role,
     )
     refresh_str = create_refresh_token_string()
-    expires_at = dj_timezone.now() + timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS)
-
-    RefreshToken.objects.create(
-        user=user,
-        token_hash=hash_token(refresh_str),
-        expires_at=expires_at,
+    expires_at = dj_timezone.now() + timedelta(
+        days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS
     )
-
-    # Update last login
+    RefreshToken.objects.create(
+        user=user, token_hash=hash_token(refresh_str), expires_at=expires_at
+    )
     user.last_login = dj_timezone.now()
     user.save(update_fields=["last_login"])
-
     return {
         "access_token": access,
         "refresh_token": refresh_str,
@@ -240,31 +129,24 @@ def _issue_tokens(user: User) -> dict:
 
 
 # =============================================================================
-# ENDPOINTS
+# AUTH ENDPOINTS
 # =============================================================================
 
-@router.post("/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio")
+
+@router.post(
+    "/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio"
+)
 def register(request, payload: RegisterIn):
-    """
-    Creates a Tenant + OWNER user in a single atomic transaction.
-    Activates 14-day trial. Sends email verification OTP.
-    """
+    """Creates a Tenant + OWNER user in a single atomic transaction."""
     from django.db import transaction
 
-    # Check email uniqueness
     if User.objects.filter(email=payload.email).exists():
         raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
     with transaction.atomic():
-        # Create Tenant
         slug = _slugify_business(payload.business_name)
-        tenant = Tenant.objects.create(
-            name=payload.business_name.strip(),
-            slug=slug,
-        )
+        tenant = Tenant.objects.create(name=payload.business_name.strip(), slug=slug)
         tenant.activate_trial()
-
-        # Create OWNER user
         user = User.objects.create_user(
             email=payload.email,
             password=payload.password,
@@ -276,21 +158,14 @@ def register(request, payload: RegisterIn):
             is_email_verified=False,
         )
 
-    # Send email verification OTP (outside transaction — non-critical)
-    otp = secrets.token_hex(3).upper()  # 6-char hex OTP
+    otp = secrets.token_hex(3).upper()
     _store_otp(payload.email, otp, "verify_email")
     _send_otp_email(
         email=payload.email,
         otp=otp,
-        subject="Verifica tu correo — Loyallia",
-        body=(
-            f"Hola {user.first_name or payload.email},\n\n"
-            f"Tu código de verificación es: {otp}\n\n"
-            f"Este código expira en 15 minutos.\n\n"
-            f"— Loyallia"
-        ),
+        subject="Verifica tu correo -- Loyallia",
+        body=f"Hola {user.first_name or payload.email},\n\nTu codigo de verificacion es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",
     )
-
     return RegisterOut(
         success=True,
         message=get_message("TENANT_CREATED", days=settings.TRIAL_DAYS),
@@ -299,42 +174,34 @@ def register(request, payload: RegisterIn):
     )
 
 
-@router.post("/login/", auth=None, response=TokenOut, summary="Iniciar sesión")
+@router.post("/login/", auth=None, response=TokenOut, summary="Iniciar sesion")
 def login(request, payload: LoginIn):
-    """
-    Authenticates email+password. Returns JWT access + refresh tokens.
-    Enforces account lockout after 5 consecutive failures (15-minute cooldown).
-    """
+    """Authenticates email+password. Returns JWT access + refresh tokens."""
     try:
         user = User.objects.select_related("tenant").get(email=payload.email)
     except User.DoesNotExist:
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
 
-    # Lockout check
     if user.is_locked:
-        remaining = max(0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60))
+        remaining = max(
+            0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60)
+        )
         raise HttpError(423, get_message("AUTH_ACCOUNT_LOCKED", minutes=remaining))
-
-    # Inactive account
     if not user.is_active:
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
-
-    # Password check
     if not user.check_password(payload.password):
         user.record_failed_login()
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
 
-    # Successful login
     user.reset_failed_login()
     return _issue_tokens(user)
 
 
-@router.post("/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso")
+@router.post(
+    "/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso"
+)
 def refresh_token(request, payload: RefreshIn):
-    """
-    Validates a refresh token and issues a new access token.
-    Does NOT rotate the refresh token (rotation would require client updates).
-    """
+    """Validates a refresh token and issues a new access token."""
     token_hash = hash_token(payload.refresh_token)
     try:
         db_token = RefreshToken.objects.select_related("user__tenant").get(
@@ -345,7 +212,6 @@ def refresh_token(request, payload: RefreshIn):
 
     if not db_token.is_valid:
         raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
-
     user = db_token.user
     if not user.is_active:
         raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
@@ -358,16 +224,13 @@ def refresh_token(request, payload: RefreshIn):
     return RefreshOut(access_token=access, token_type="bearer")
 
 
-@router.post("/logout/", auth=jwt_auth, response=MessageOut, summary="Cerrar sesión")
+@router.post("/logout/", auth=jwt_auth, response=MessageOut, summary="Cerrar sesion")
 def logout(request, payload: LogoutIn):
-    """Revokes the given refresh token. Access token expires naturally (15 min)."""
+    """Revokes the given refresh token."""
     token_hash = hash_token(payload.refresh_token)
     RefreshToken.objects.filter(
-        token_hash=token_hash,
-        user=request.user,
-        revoked_at__isnull=True,
+        token_hash=token_hash, user=request.user, revoked_at__isnull=True
     ).update(revoked_at=dj_timezone.now())
-
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
 
 
@@ -375,13 +238,10 @@ def logout(request, payload: LogoutIn):
     "/password-reset/request/",
     auth=None,
     response=MessageOut,
-    summary="Solicitar restablecimiento de contraseña",
+    summary="Solicitar restablecimiento de contrasena",
 )
 def password_reset_request(request, payload: PasswordResetRequestIn):
-    """
-    Sends a 6-char OTP to the given email if an account exists.
-    Always returns 200 to prevent email enumeration.
-    """
+    """Sends a 6-char OTP. Always returns 200 to prevent email enumeration."""
     try:
         user = User.objects.get(email=payload.email, is_active=True)
         otp = secrets.token_hex(3).upper()
@@ -389,17 +249,11 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
         _send_otp_email(
             email=payload.email,
             otp=otp,
-            subject="Restablecer contraseña — Loyallia",
-            body=(
-                f"Hola {user.first_name or payload.email},\n\n"
-                f"Tu código de restablecimiento es: {otp}\n\n"
-                f"Este código expira en 15 minutos.\n\n"
-                f"— Loyallia"
-            ),
+            subject="Restablecer contrasena -- Loyallia",
+            body=f"Hola {user.first_name or payload.email},\n\nTu codigo de restablecimiento es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",
         )
     except User.DoesNotExist:
-        pass  # Silent - prevent enumeration
-
+        pass
     return MessageOut(
         success=True,
         message=get_message("AUTH_PASSWORD_RESET_SENT", email=payload.email),
@@ -410,13 +264,12 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
     "/password-reset/confirm/",
     auth=None,
     response=MessageOut,
-    summary="Confirmar restablecimiento de contraseña",
+    summary="Confirmar restablecimiento de contrasena",
 )
 def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     """Validates OTP and sets new password."""
     if not _verify_otp(payload.email, payload.otp, "password_reset"):
         raise HttpError(400, get_message("AUTH_PASSWORD_RESET_EXPIRED"))
-
     try:
         user = User.objects.get(email=payload.email, is_active=True)
     except User.DoesNotExist:
@@ -425,36 +278,37 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     user.set_password(payload.new_password)
     user.failed_login_count = 0
     user.locked_until = None
-    user.save(update_fields=["password", "failed_login_count", "locked_until", "updated_at"])
-
-    # Revoke all existing refresh tokens (security)
+    user.save(
+        update_fields=["password", "failed_login_count", "locked_until", "updated_at"]
+    )
     RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
         revoked_at=dj_timezone.now()
     )
-
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_RESET_SUCCESS"))
 
 
-@router.post("/verify-email/", auth=None, response=MessageOut, summary="Verificar correo electrónico")
+@router.post(
+    "/verify-email/",
+    auth=None,
+    response=MessageOut,
+    summary="Verificar correo electronico",
+)
 def verify_email(request, payload: VerifyEmailIn):
     """Validates email verification OTP and marks user as verified."""
     if not _verify_otp(payload.email, payload.otp, "verify_email"):
         raise HttpError(400, get_message("AUTH_TOKEN_INVALID"))
-
     try:
         user = User.objects.get(email=payload.email)
     except User.DoesNotExist:
         raise HttpError(400, get_message("AUTH_TOKEN_INVALID"))
-
     user.is_email_verified = True
     user.save(update_fields=["is_email_verified", "updated_at"])
-
     return MessageOut(success=True, message=get_message("AUTH_EMAIL_VERIFIED"))
 
 
 @router.get("/me/", auth=jwt_auth, summary="Perfil del usuario actual")
 def me(request):
-    """Returns the authenticated user's profile with tenant info for the dashboard."""
+    """Returns the authenticated user's profile with tenant info."""
     u = request.user
     return {
         "id": str(u.id),
@@ -471,12 +325,9 @@ def me(request):
     }
 
 
-class ProfileUpdateIn(BaseModel):
-    first_name: str | None = None
-    last_name: str | None = None
-
-
-@router.put("/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil")
+@router.put(
+    "/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil"
+)
 def update_profile(request, payload: ProfileUpdateIn):
     """Update the authenticated user's profile (name fields only)."""
     u = request.user
@@ -492,14 +343,14 @@ def update_profile(request, payload: ProfileUpdateIn):
     return MessageOut(success=True, message=get_message("AUTH_PROFILE_UPDATED"))
 
 
-class ChangePasswordIn(BaseModel):
-    current_password: str
-    new_password: str
-
-
-@router.post("/change-password/", auth=jwt_auth, response=MessageOut, summary="Cambiar contraseña")
+@router.post(
+    "/change-password/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="Cambiar contrasena",
+)
 def change_password(request, payload: ChangePasswordIn):
-    """Change the authenticated user's password. Requires current password verification."""
+    """Change the authenticated user's password."""
     u = request.user
     if not u.check_password(payload.current_password):
         raise HttpError(400, get_message("AUTH_PASSWORD_WRONG"))
@@ -508,32 +359,26 @@ def change_password(request, payload: ChangePasswordIn):
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
 
-@router.post("/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo")
+@router.post(
+    "/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo"
+)
 def invite_user(request, payload: InviteIn):
-    """
-    OWNER invites a MANAGER or STAFF user to their tenant.
-    Sends invitation email with a one-time token.
-    """
+    """OWNER invites a MANAGER or STAFF user."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
-    # Check if user already exists in this tenant
     if User.objects.filter(email=payload.email, tenant=request.tenant).exists():
         raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
     invitation_token = secrets.token_urlsafe(32)
-
-    # Create inactive user — becomes active on invitation acceptance
     from django.db import transaction
+
     with transaction.atomic():
         existing = User.objects.filter(email=payload.email).first()
         if existing:
-            # User exists in another tenant — cannot cross-invite
             raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
-
         User.objects.create_user(
             email=payload.email,
-            password=secrets.token_urlsafe(16),  # Random — user must set via invitation link
+            password=secrets.token_urlsafe(16),
             first_name=payload.first_name.strip(),
             last_name=payload.last_name.strip(),
             tenant=request.tenant,
@@ -547,24 +392,25 @@ def invite_user(request, payload: InviteIn):
     _send_otp_email(
         email=payload.email,
         otp="",
-        subject=f"Invitación a {request.tenant.name} — Loyallia",
-        body=(
-            f"Has sido invitado a unirte a {request.tenant.name} en Loyallia como {payload.role}.\n\n"
-            f"Haz clic en el siguiente enlace para aceptar la invitación:\n{invite_url}\n\n"
-            f"Este enlace expirará en 7 días.\n\n"
-            f"— Loyallia"
-        ),
+        subject=f"Invitacion a {request.tenant.name} -- Loyallia",
+        body=f"Has sido invitado a unirte a {request.tenant.name} en Loyallia como {payload.role}.\n\n"
+        f"Haz clic en el siguiente enlace para aceptar la invitacion:\n{invite_url}\n\nEste enlace expirara en 7 dias.\n\n-- Loyallia",
+    )
+    return MessageOut(
+        success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email)
     )
 
-    return MessageOut(success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email))
 
-
-@router.get("/users/", auth=jwt_auth, response=list[UserOut], summary="Listar usuarios del negocio")
+@router.get(
+    "/users/",
+    auth=jwt_auth,
+    response=list[UserOut],
+    summary="Listar usuarios del negocio",
+)
 def list_users(request):
     """Lists all users for the current tenant. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
     users = User.objects.filter(tenant=request.tenant).order_by("role", "email")
     return [UserOut.from_user(u) for u in users]
 
@@ -576,30 +422,22 @@ def list_users(request):
     summary="Desactivar usuario del equipo",
 )
 def deactivate_user(request, user_id: str):
-    """
-    Deactivates a user from the current tenant. OWNER only.
-    Cannot deactivate self.
-    """
+    """Deactivates a user. OWNER only. Cannot deactivate self."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
     if str(request.user.id) == user_id:
         raise HttpError(400, get_message("AUTH_PERMISSION_DENIED"))
-
     try:
         import uuid
+
         target = User.objects.get(id=uuid.UUID(user_id), tenant=request.tenant)
     except (User.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
-
     target.is_active = False
     target.save(update_fields=["is_active", "updated_at"])
-
-    # Revoke all refresh tokens
     RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
         revoked_at=dj_timezone.now()
     )
-
     return MessageOut(success=True, message=get_message("AUTH_USER_DEACTIVATED"))
 
 
@@ -607,36 +445,14 @@ def deactivate_user(request, user_id: str):
 # FORGOT PASSWORD (unauthenticated) — Request + Confirm
 # =============================================================================
 
-class ForgotPasswordIn(BaseModel):
-    """Schema for requesting a password reset link."""
-    email: EmailStr
-
-
-class ResetPasswordIn(BaseModel):
-    """Schema for confirming a password reset with a token."""
-    uid: str
-    token: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_min_length(cls, v: str) -> str:
-        if len(v) < 6:
-            raise ValueError("La contraseña debe tener al menos 6 caracteres")
-        return v
-
 
 @router.post(
     "/forgot-password/",
     response=MessageOut,
-    summary="Solicitar restablecimiento de contraseña",
+    summary="Solicitar restablecimiento de contrasena",
 )
 def forgot_password(request, payload: ForgotPasswordIn):
-    """Send a password reset email with a one-time token.
-
-    Uses Django's PasswordResetTokenGenerator for stateless, time-limited tokens.
-    Always returns success to prevent email enumeration.
-    """
+    """Send a password reset email with a one-time token."""
     from django.contrib.auth.tokens import default_token_generator
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
@@ -644,28 +460,21 @@ def forgot_password(request, payload: ForgotPasswordIn):
     try:
         user = User.objects.get(email=payload.email, is_active=True)
     except User.DoesNotExist:
-        # Return success even if user not found to prevent email enumeration
-        return MessageOut(
-            success=True,
-            message=get_message("AUTH_RESET_EMAIL_SENT"),
-        )
+        return MessageOut(success=True, message=get_message("AUTH_RESET_EMAIL_SENT"))
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-
     app_url = getattr(settings, "FRONTEND_URL", "http://localhost:33906")
     reset_link = f"{app_url}/reset-password?uid={uid}&token={token}"
 
     try:
         send_mail(
-            subject="Loyallia — Restablecer contraseña",
+            subject="Loyallia -- Restablecer contrasena",
             message=(
                 f"Hola {user.first_name or user.email},\n\n"
-                f"Recibimos una solicitud para restablecer tu contraseña.\n"
+                f"Recibimos una solicitud para restablecer tu contrasena.\n"
                 f"Haz clic en el siguiente enlace:\n\n{reset_link}\n\n"
-                f"Este enlace expira en 24 horas.\n"
-                f"Si no solicitaste esto, ignora este correo.\n\n"
-                f"— Loyallia"
+                f"Este enlace expira en 24 horas.\nSi no solicitaste esto, ignora este correo.\n\n-- Loyallia"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
@@ -675,23 +484,16 @@ def forgot_password(request, payload: ForgotPasswordIn):
         logger.exception("Failed to send password reset email to %s", user.email)
 
     logger.info("Password reset requested for %s", payload.email)
-
-    return MessageOut(
-        success=True,
-        message=get_message("AUTH_RESET_EMAIL_SENT"),
-    )
+    return MessageOut(success=True, message=get_message("AUTH_RESET_EMAIL_SENT"))
 
 
 @router.post(
     "/reset-password/",
     response=MessageOut,
-    summary="Confirmar restablecimiento de contraseña",
+    summary="Confirmar restablecimiento de contrasena",
 )
 def reset_password(request, payload: ResetPasswordIn):
-    """Validate the reset token and set a new password.
-
-    Token is generated by Django's PasswordResetTokenGenerator (stateless, HMAC-based).
-    """
+    """Validate the reset token and set a new password."""
     from django.contrib.auth.tokens import default_token_generator
     from django.utils.http import urlsafe_base64_decode
 
@@ -706,16 +508,8 @@ def reset_password(request, payload: ResetPasswordIn):
 
     user.set_password(payload.new_password)
     user.save(update_fields=["password", "updated_at"])
-
-    # Revoke all existing refresh tokens for security
     RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
         revoked_at=dj_timezone.now()
     )
-
     logger.info("Password reset completed for %s", user.email)
-
-    return MessageOut(
-        success=True,
-        message=get_message("AUTH_PASSWORD_CHANGED"),
-    )
-
+    return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))

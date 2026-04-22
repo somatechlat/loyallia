@@ -2,6 +2,7 @@
 Loyallia — File Upload API
 Handles direct image uploads (logos, etc.) to MinIO/S3 and returns public URLs.
 """
+
 import logging
 import os
 import uuid
@@ -29,14 +30,18 @@ def upload_file(request, file: UploadedFile = File(...)):
     """
     ext = os.path.splitext(file.name)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
-        raise HttpError(400, "Formato de archivo no permitido. Usa JPG, PNG, SVG o WEBP.")
+        raise HttpError(
+            400, "Formato de archivo no permitido. Usa JPG, PNG, SVG o WEBP."
+        )
 
     if file.size > MAX_FILE_SIZE:
         raise HttpError(400, "El archivo supera el tamaño máximo permitido (5MB).")
 
     try:
         # Generate random unique filename to prevent collisions and path traversal
-        tenant_dirname = str(request.tenant.id) if getattr(request, "tenant", None) else "platform"
+        tenant_dirname = (
+            str(request.tenant.id) if getattr(request, "tenant", None) else "platform"
+        )
         filename = f"uploads/{tenant_dirname}/{uuid.uuid4().hex}{ext}"
 
         # Save to S3/MinIO
