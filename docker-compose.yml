@@ -134,13 +134,13 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
       POOL_MODE: transaction
-      MAX_CLIENT_CONN: "500"
-      DEFAULT_POOL_SIZE: "50"
-      MIN_POOL_SIZE: "10"
-      RESERVE_POOL_SIZE: "10"
-      RESERVE_POOL_TIMEOUT: "5"
-      SERVER_IDLE_TIMEOUT: "600"
-      SERVER_LIFETIME: "3600"
+      MAX_CLIENT_CONN: "1000"
+      DEFAULT_POOL_SIZE: "80"
+      MIN_POOL_SIZE: "20"
+      RESERVE_POOL_SIZE: "20"
+      RESERVE_POOL_TIMEOUT: "3"
+      SERVER_IDLE_TIMEOUT: "300"
+      SERVER_LIFETIME: "1800"
       LOG_CONNECTIONS: "1"
       LOG_DISCONNECTIONS: "1"
     ports:

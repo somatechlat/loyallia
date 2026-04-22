@@ -90,6 +90,29 @@ class Customer(models.Model):
         verbose_name_plural = "Clientes"
         ordering = ["-created_at"]
         unique_together = ["tenant", "email"]  # One account per email per tenant
+        indexes = [
+            # Tenant-scoped time-series queries (analytics, sorting)
+            models.Index(
+                fields=["tenant", "created_at"],
+                name="idx_cust_tenant_created",
+            ),
+            # Tenant-scoped active customer lookups
+            models.Index(
+                fields=["tenant", "is_active", "created_at"],
+                name="idx_cust_tenant_active_date",
+            ),
+            # Demographics: SQL-based age aggregation
+            models.Index(
+                fields=["tenant", "date_of_birth"],
+                name="idx_cust_tenant_dob",
+            ),
+            # Customer search by name (icontains uses sequential scan,
+            # but this index helps with exact prefix matches)
+            models.Index(
+                fields=["tenant", "last_name", "first_name"],
+                name="idx_cust_tenant_name",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name} - {self.email}"
@@ -174,24 +197,11 @@ class CustomerPass(models.Model):
     def generate_qr_code(self) -> str:
         """Generate a unique QR code for this pass.
 
-        Uses cryptographically secure random (secrets) with a 12-char
-        alphanumeric space (36^12 ≈ 4.7 × 10^18 combinations).
-        Capped at 100 retries to prevent infinite loop under extreme load.
+        Uses UUID4 (128-bit random) truncated to 16 hex chars.
+        Collision probability: 1 in 1.8×10^19 — effectively zero.
+        No database query needed, unlike the previous exists()-loop approach.
         """
-        import secrets
-        import string
-
-        max_retries = 100
-        for _ in range(max_retries):
-            code = "".join(
-                secrets.choice(string.ascii_uppercase + string.digits)
-                for _ in range(12)
-            )
-            if not CustomerPass.objects.filter(qr_code=code).exists():
-                return code
-        raise RuntimeError(
-            f"Failed to generate unique QR code after {max_retries} attempts"
-        )
+        return uuid.uuid4().hex[:16].upper()
 
     def get_pass_field(self, key: str, default=None):
         """Helper to safely get pass data fields."""

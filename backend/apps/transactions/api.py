@@ -133,11 +133,24 @@ def transact(request, data: ScanTransactIn):
         transaction_data=transaction_data,
     )
 
-    # Update customer stats — cast amount to Decimal to avoid float+Decimal precision loss
-    pass_obj.customer.total_visits += 1
-    pass_obj.customer.total_spent += amount_decimal
-    pass_obj.customer.last_visit = transaction.created_at
-    pass_obj.customer.save(update_fields=["total_visits", "total_spent", "last_visit"])
+    # Update customer stats atomically via F() to prevent lost updates
+    # under concurrent scans from multiple POS terminals.
+    from django.db.models import F
+
+    Customer.objects.filter(pk=pass_obj.customer.pk).update(
+        total_visits=F("total_visits") + 1,
+        total_spent=F("total_spent") + amount_decimal,
+        last_visit=transaction.created_at,
+    )
+
+    # Invalidate analytics cache for this tenant (new transaction = stale dashboard data)
+    from django.core.cache import cache as django_cache
+
+    for prefix in ("revenue", "visits", "demographics"):
+        # Clear all day-variant keys for this tenant
+        django_cache.delete(f"analytics:{prefix}:{request.tenant.id}")
+        for days_variant in (1, 7, 28, 30, 180, 365):
+            django_cache.delete(f"analytics:{prefix}:{request.tenant.id}:{days_variant}")
 
     # Fire automation trigger asynchronously — do not block the scanner response
     from apps.automation.engine import fire_trigger_async
