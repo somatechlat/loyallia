@@ -1,0 +1,1 @@
+"""Loyallia Django settings package."""

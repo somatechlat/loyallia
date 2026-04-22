@@ -1,0 +1,75 @@
+# =============================================================================
+# Loyallia .gitignore
+# =============================================================================
+
+# Environment (NEVER commit)
+.env
+.env.local
+.env.production
+
+# Apple/Google/Firebase credentials (NEVER commit)
+certs/*.pem
+certs/*.key
+certs/*.p12
+certs/*.json
+backend/certs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+staticfiles/
+mediafiles/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.next/
+out/
+.vercel
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-data/
+
+# Misc
+*.bak
+*.tmp
