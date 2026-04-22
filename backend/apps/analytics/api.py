@@ -428,3 +428,10 @@ def get_segmentation_analytics(request):
             for s in segments
         ],
     }
+
+
+# ============ Advanced Analytics (split for Rule 245) ============
+from apps.analytics.advanced_api import router as advanced_router  # noqa: E402
+
+router.add_router("/", advanced_router)
+

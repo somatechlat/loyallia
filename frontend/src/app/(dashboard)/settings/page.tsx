@@ -39,7 +39,6 @@ export default function SettingsPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  const API_URL = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905');
 
   const token = Cookies.get('access_token');
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -216,7 +215,7 @@ export default function SettingsPage() {
                   try {
                     const fd = new FormData();
                     fd.append('file', file);
-                    const res = await fetch(`${API_URL}/api/v1/upload/`, {
+                    const res = await fetch('/api/v1/upload/', {
                       method: 'POST', body: fd,
                       headers: { Authorization: `Bearer ${Cookies.get('access_token')}` },
                     });

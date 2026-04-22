@@ -1,10 +1,38 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+
+const COUNTRY_CODES = [
+  { code: '+593', country: 'Ecuador', flag: '🇪🇨' },
+  { code: '+57',  country: 'Colombia', flag: '🇨🇴' },
+  { code: '+51',  country: 'Perú', flag: '🇵🇪' },
+  { code: '+56',  country: 'Chile', flag: '🇨🇱' },
+  { code: '+54',  country: 'Argentina', flag: '🇦🇷' },
+  { code: '+52',  country: 'México', flag: '🇲🇽' },
+  { code: '+55',  country: 'Brasil', flag: '🇧🇷' },
+  { code: '+58',  country: 'Venezuela', flag: '🇻🇪' },
+  { code: '+591', country: 'Bolivia', flag: '🇧🇴' },
+  { code: '+595', country: 'Paraguay', flag: '🇵🇾' },
+  { code: '+598', country: 'Uruguay', flag: '🇺🇾' },
+  { code: '+507', country: 'Panamá', flag: '🇵🇦' },
+  { code: '+506', country: 'Costa Rica', flag: '🇨🇷' },
+  { code: '+503', country: 'El Salvador', flag: '🇸🇻' },
+  { code: '+502', country: 'Guatemala', flag: '🇬🇹' },
+  { code: '+504', country: 'Honduras', flag: '🇭🇳' },
+  { code: '+505', country: 'Nicaragua', flag: '🇳🇮' },
+  { code: '+1',   country: 'EE.UU.', flag: '🇺🇸' },
+  { code: '+34',  country: 'España', flag: '🇪🇸' },
+  { code: '+44',  country: 'Reino Unido', flag: '🇬🇧' },
+  { code: '+49',  country: 'Alemania', flag: '🇩🇪' },
+  { code: '+33',  country: 'Francia', flag: '🇫🇷' },
+  { code: '+39',  country: 'Italia', flag: '🇮🇹' },
+  { code: '+86',  country: 'China', flag: '🇨🇳' },
+  { code: '+81',  country: 'Japón', flag: '🇯🇵' },
+];
 
 declare global {
   interface Window {
@@ -29,9 +57,25 @@ export default function RegisterPage() {
   const [showGoogleBizName, setShowGoogleBizName] = useState(false);
   const [googleCredential, setGoogleCredential] = useState('');
   const [googleBizName, setGoogleBizName] = useState('');
+  const [countryCode, setCountryCode] = useState('+593');
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const countryRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
     business_name: '', email: '', password: '', first_name: '', last_name: '', phone_number: '',
   });
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (countryRef.current && !countryRef.current.contains(e.target as Node)) setShowCountryDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filteredCountries = COUNTRY_CODES.filter(c =>
+    phoneSearch === '' || c.country.toLowerCase().includes(phoneSearch.toLowerCase()) || c.code.includes(phoneSearch)
+  );
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -123,7 +167,11 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await authApi.register(form);
+      const submitData = {
+        ...form,
+        phone_number: form.phone_number ? `${countryCode}${form.phone_number.replace(/^0+/, '')}` : '',
+      };
+      await authApi.register(submitData);
       toast.success('¡Cuenta creada! Redirigiendo al inicio de sesión...');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: unknown) {
@@ -224,7 +272,6 @@ export default function RegisterPage() {
         { id: 'first_name',    label: 'Nombre',             placeholder: 'Juan',             type: 'text', autoComplete: 'given-name' },
         { id: 'last_name',     label: 'Apellido',           placeholder: 'Pérez',            type: 'text', autoComplete: 'family-name' },
         { id: 'email',         label: 'Correo electrónico', placeholder: 'tu@negocio.com',   type: 'email', autoComplete: 'email' },
-        { id: 'phone_number',  label: 'Teléfono (opcional)', placeholder: '+593991234567',   type: 'tel', autoComplete: 'tel' },
         { id: 'password',      label: 'Contraseña',         placeholder: '••••••••',         type: 'password', autoComplete: 'new-password' },
       ].map(({ id, label, placeholder, type, autoComplete }) => (
         <div key={id}>
@@ -234,6 +281,67 @@ export default function RegisterPage() {
             value={form[id as keyof typeof form]} onChange={set(id)} required />
         </div>
       ))}
+
+      {/* Phone with country prefix selector */}
+      <div>
+        <label className="label" htmlFor="register-phone_number">Teléfono (opcional)</label>
+        <div className="flex gap-2">
+          <div className="relative" ref={countryRef}>
+            <button
+              type="button"
+              className="input flex items-center gap-1.5 min-w-[110px] text-sm"
+              onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+              id="country-code-btn"
+            >
+              <span>{COUNTRY_CODES.find(c => c.code === countryCode)?.flag}</span>
+              <span className="font-mono text-xs">{countryCode}</span>
+              <svg className="w-3 h-3 ml-auto text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            {showCountryDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-60 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-hidden flex flex-col">
+                <div className="p-2 border-b border-surface-100 dark:border-surface-700">
+                  <input
+                    type="text"
+                    className="input text-xs py-1.5"
+                    placeholder="Buscar país..."
+                    value={phoneSearch}
+                    onChange={e => setPhoneSearch(e.target.value)}
+                    autoFocus
+                    id="country-search"
+                  />
+                </div>
+                <div className="overflow-y-auto max-h-48">
+                  {filteredCountries.map(c => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors ${
+                        countryCode === c.code ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 font-semibold' : ''
+                      }`}
+                      onClick={() => { setCountryCode(c.code); setShowCountryDropdown(false); setPhoneSearch(''); }}
+                    >
+                      <span className="text-base">{c.flag}</span>
+                      <span className="flex-1 text-left truncate">{c.country}</span>
+                      <span className="font-mono text-xs text-surface-400">{c.code}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <input
+            id="register-phone_number"
+            name="phone_number"
+            type="tel"
+            className="input flex-1"
+            placeholder="991234567"
+            autoComplete="tel"
+            value={form.phone_number}
+            onChange={set('phone_number')}
+          />
+        </div>
+        <p className="text-[10px] text-surface-400 mt-1">Se enviará {countryCode} + número al registrar</p>
+      </div>
       <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading} id="register-btn">
         {loading ? <span className="spinner w-4 h-4" /> : 'Crear cuenta gratis'}
       </button>

@@ -216,7 +216,7 @@ export default function AutomationPage() {
           <p className="text-surface-500 text-sm mt-1">Reglas automáticas de engagement con clientes</p>
         </div>
         {isOwner && (
-          <button onClick={openCreate} className="btn-primary flex items-center gap-2" id="create-automation-btn">
+          <button onClick={() => openCreate()} className="btn-primary flex items-center gap-2" id="create-automation-btn">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
             Nueva automatización
           </button>
@@ -270,7 +270,7 @@ export default function AutomationPage() {
             Las automatizaciones envían mensajes y recompensas automáticamente basándose en el comportamiento de tus clientes.
           </p>
           {isOwner && (
-            <button onClick={openCreate} className="btn-primary mt-6" id="create-first-automation">
+            <button onClick={() => openCreate()} className="btn-primary mt-6" id="create-first-automation">
               Crear primera automatización
             </button>
           )}

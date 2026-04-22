@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import Cookies from 'js-cookie';
 import { authApi } from './api';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   first_name: string;
