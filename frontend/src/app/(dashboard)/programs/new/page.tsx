@@ -10,6 +10,7 @@ import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
+import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 
 
 /** Upload file to /api/v1/upload/ with JWT auth */
@@ -255,6 +256,14 @@ export default function NewProgramPage() {
             </div>
           </div>
           <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />
+
+          {/* Form Builder — dynamic enrollment fields */}
+          <div className="border-t border-surface-200 dark:border-surface-700 pt-5 mt-5">
+            <FormBuilder
+              fields={(meta.form_fields as FormField[]) || []}
+              onChange={(fields) => setMeta(m => ({ ...m, form_fields: fields }))}
+            />
+          </div>
         </div>
       )}
 

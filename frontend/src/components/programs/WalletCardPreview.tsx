@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BARCODE_TYPES, CardTypeIcon, APPLE_PASS_STYLES, adjustColor } from './constants';
+import { BARCODE_TYPES, CARD_TYPES, CardTypeIcon, APPLE_PASS_STYLES, adjustColor } from './constants';
 
 /* ─── Barcode SVG Previews ────────────────────────────────────────── */
 function BarcodeSvg({ type, size = 48 }: { type: string; size?: number }) {
