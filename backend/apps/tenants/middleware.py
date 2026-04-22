@@ -5,6 +5,7 @@ Attaches request.tenant for downstream code to use without re-querying.
 
 Middleware position: After AuthenticationMiddleware in MIDDLEWARE list.
 """
+
 import logging
 
 from django.http import HttpRequest, HttpResponse

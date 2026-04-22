@@ -2,6 +2,7 @@
 Loyallia Django Settings — DEVELOPMENT
 Inherits from base. Enables DEBUG, relaxed CORS, console email.
 """
+
 from .base import *  # noqa: F401, F403
 
 DEBUG = True

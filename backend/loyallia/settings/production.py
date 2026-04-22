@@ -2,6 +2,7 @@
 Loyallia Django Settings — PRODUCTION
 Inherits from base. Enforces HTTPS, strict security headers.
 """
+
 from .base import *  # noqa: F401, F403
 
 DEBUG = False

@@ -3,7 +3,6 @@ Loyallia — Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
 
-
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -249,10 +248,14 @@ def update_program(request, program_id: str, data: CardUpdateIn):
         # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
         try:
             from apps.customers.pass_engine.google_pass import update_loyalty_class
+
             update_loyalty_class(card)
         except Exception as e:
             import logging
-            logging.getLogger(__name__).error(f"Failed to sync Card {card.id} to Google Wallet on update: {e}")
+
+            logging.getLogger(__name__).error(
+                f"Failed to sync Card {card.id} to Google Wallet on update: {e}"
+            )
 
     return CardOut.from_model(card)
 

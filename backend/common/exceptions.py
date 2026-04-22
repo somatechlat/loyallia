@@ -2,6 +2,7 @@
 Loyallia — Shared Pagination for Django Ninja endpoints.
 Standard cursor and page-based pagination used across all list endpoints.
 """
+
 from typing import Any, Generic, TypeVar
 
 from django.db.models import QuerySet
@@ -16,6 +17,7 @@ MAX_PAGE_SIZE = 100
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Standard paginated response envelope for all list endpoints."""
+
     count: int
     page: int
     page_size: int

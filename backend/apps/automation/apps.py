@@ -1,6 +1,7 @@
 """
 Loyallia — Automation App Configuration
 """
+
 from django.apps import AppConfig
 
 

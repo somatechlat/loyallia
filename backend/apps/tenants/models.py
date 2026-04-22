@@ -3,6 +3,7 @@ Loyallia — Tenant & Location Models
 Core multi-tenant entity. All business data ties to Tenant.
 Ecuadorian business fields for SRI compliance.
 """
+
 import re
 import uuid
 
@@ -15,12 +16,13 @@ from django.utils import timezone
 # VALIDATORS — Ecuadorian Identity Documents
 # =============================================================================
 
+
 def validate_ruc(value: str) -> None:
     """Validate Ecuadorian RUC (Registro Único de Contribuyentes).
     Rules: 13 digits. First 2 = province (01-24, or 30 for foreign).
     Last 3 digits must be '001' for natural persons.
     """
-    if not re.match(r'^\d{13}$', value):
+    if not re.match(r"^\d{13}$", value):
         raise ValidationError("El RUC debe tener exactamente 13 dígitos numéricos.")
     province = int(value[:2])
     if province < 1 or (province > 24 and province not in (30,)):
@@ -33,7 +35,7 @@ def validate_cedula(value: str) -> None:
     """Validate Ecuadorian Cédula de Identidad.
     Rules: 10 digits. Province (01-24). Module 10 check.
     """
-    if not re.match(r'^\d{10}$', value):
+    if not re.match(r"^\d{10}$", value):
         raise ValidationError("La cédula debe tener exactamente 10 dígitos numéricos.")
     province = int(value[:2])
     if province < 1 or province > 24:
@@ -54,6 +56,7 @@ def validate_cedula(value: str) -> None:
 # =============================================================================
 # ENUMS
 # =============================================================================
+
 
 class Plan(models.TextChoices):
     TRIAL = "trial", "Trial Gratuito"
@@ -111,12 +114,14 @@ class EntityType(models.TextChoices):
 # TENANT MODEL
 # =============================================================================
 
+
 class Tenant(models.Model):
     """
     Represents a registered business account on Loyallia.
     Root entity for all multi-tenant data isolation.
     Expanded with Ecuadorian business fields (RUC, legal name, etc.)
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200, verbose_name="Nombre comercial")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
@@ -129,41 +134,48 @@ class Tenant(models.Model):
         choices=EntityType.choices,
         default=EntityType.JURIDICA,
         verbose_name="Tipo de entidad",
-        help_text="Persona Natural (cédula) o Jurídica (RUC)"
+        help_text="Persona Natural (cédula) o Jurídica (RUC)",
     )
     cedula = models.CharField(
-        max_length=10, blank=True, default="",
+        max_length=10,
+        blank=True,
+        default="",
         verbose_name="Cédula de identidad",
         validators=[validate_cedula],
-        help_text="Cédula del propietario (solo persona natural, 10 dígitos)"
+        help_text="Cédula del propietario (solo persona natural, 10 dígitos)",
     )
 
     # Ecuadorian Legal Entity
     legal_name = models.CharField(
-        max_length=300, blank=True, default="",
+        max_length=300,
+        blank=True,
+        default="",
         verbose_name="Razón social",
-        help_text="Nombre legal registrado en SRI"
+        help_text="Nombre legal registrado en SRI",
     )
     ruc = models.CharField(
-        max_length=13, blank=True, default="",
+        max_length=13,
+        blank=True,
+        default="",
         verbose_name="RUC",
         validators=[validate_ruc],
-        help_text="Registro Único de Contribuyentes (13 dígitos)"
+        help_text="Registro Único de Contribuyentes (13 dígitos)",
     )
     industry = models.CharField(
         max_length=30,
         choices=IndustryType.choices,
         default=IndustryType.OTHER,
-        verbose_name="Industria"
+        verbose_name="Industria",
     )
 
     # Legal Representative
     legal_rep_name = models.CharField(
-        max_length=200, blank=True, default="",
-        verbose_name="Representante legal"
+        max_length=200, blank=True, default="", verbose_name="Representante legal"
     )
     legal_rep_cedula = models.CharField(
-        max_length=10, blank=True, default="",
+        max_length=10,
+        blank=True,
+        default="",
         verbose_name="Cédula del representante",
         validators=[validate_cedula],
     )
@@ -181,10 +193,13 @@ class Tenant(models.Model):
     province = models.CharField(
         max_length=30,
         choices=EcuadorProvince.choices,
-        blank=True, default="",
-        verbose_name="Provincia"
+        blank=True,
+        default="",
+        verbose_name="Provincia",
     )
-    city = models.CharField(max_length=100, blank=True, default="", verbose_name="Ciudad")
+    city = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Ciudad"
+    )
     timezone = models.CharField(max_length=50, default="America/Guayaquil")
     phone = models.CharField(max_length=20, blank=True, default="")
     email = models.EmailField(blank=True, default="", verbose_name="Email corporativo")
@@ -228,6 +243,7 @@ class Tenant(models.Model):
     def activate_trial(self) -> None:
         """Set trial_end to now + TRIAL_DAYS. Called on registration."""
         from datetime import timedelta
+
         self.trial_end = timezone.now() + timedelta(days=settings.TRIAL_DAYS)
         self.plan = Plan.TRIAL
         self.save(update_fields=["trial_end", "plan", "updated_at"])
@@ -235,6 +251,7 @@ class Tenant(models.Model):
 
 class Location(models.Model):
     """Physical business location. Each tenant can have multiple."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
@@ -247,8 +264,12 @@ class Location(models.Model):
     country = models.CharField(max_length=2, default="EC")
 
     # Geo-coordinates for geo-fencing push notifications
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
 
     phone = models.CharField(max_length=20, blank=True, default="")
     is_active = models.BooleanField(default=True)

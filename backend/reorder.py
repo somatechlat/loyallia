@@ -1,4 +1,3 @@
-
 with open("apps/customers/api.py") as f:
     content = f.read()
 
@@ -12,7 +11,9 @@ enroll_public_start = content.find('\n@router.post("/enroll/"')
 cust_id_section = content[cust_id_start:enroll_public_start]
 
 # 3. Extract enroll_public section
-seg_start = content.find('\n# =============================================================================\n# SEGMENTATION')
+seg_start = content.find(
+    "\n# =============================================================================\n# SEGMENTATION"
+)
 enroll_public_section = content[enroll_public_start:seg_start]
 
 # 4. Extract segments section

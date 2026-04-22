@@ -2,6 +2,7 @@
 Loyallia — Customer Models
 Customer profiles, passes, and enrollment management.
 """
+
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -18,31 +19,35 @@ class Customer(models.Model):
     Customer profile with contact information.
     Customers can enroll in multiple programs (passes).
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="customers",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
 
     # Contact Information
     first_name = models.CharField(max_length=100, verbose_name="Nombre")
     last_name = models.CharField(max_length=100, verbose_name="Apellido")
     email = models.EmailField(
-        validators=[EmailValidator()],
-        verbose_name="Correo electrónico"
+        validators=[EmailValidator()], verbose_name="Correo electrónico"
     )
-    phone = models.CharField(max_length=20, blank=True, default="", verbose_name="Teléfono")
+    phone = models.CharField(
+        max_length=20, blank=True, default="", verbose_name="Teléfono"
+    )
 
     # Optional additional info
-    date_of_birth = models.DateField(null=True, blank=True, verbose_name="Fecha de nacimiento")
+    date_of_birth = models.DateField(
+        null=True, blank=True, verbose_name="Fecha de nacimiento"
+    )
     gender = models.CharField(
         max_length=1,
         choices=[("M", "Masculino"), ("F", "Femenino"), ("O", "Otro")],
         blank=True,
         default="",
-        verbose_name="Género"
+        verbose_name="Género",
     )
 
     # Referral system
@@ -53,7 +58,7 @@ class Customer(models.Model):
         null=True,
         blank=True,
         related_name="referrals",
-        verbose_name="Referido por"
+        verbose_name="Referido por",
     )
 
     # Status
@@ -61,15 +66,19 @@ class Customer(models.Model):
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
 
     # Analytics
-    total_visits = models.PositiveIntegerField(default=0, verbose_name="Total de visitas")
+    total_visits = models.PositiveIntegerField(
+        default=0, verbose_name="Total de visitas"
+    )
     total_spent = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        verbose_name="Total gastado"
+        verbose_name="Total gastado",
     )
-    last_visit = models.DateTimeField(null=True, blank=True, verbose_name="Última visita")
+    last_visit = models.DateTimeField(
+        null=True, blank=True, verbose_name="Última visita"
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -96,7 +105,9 @@ class Customer(models.Model):
         import string
 
         while True:
-            code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            code = "".join(
+                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
+            )
             if not Customer.objects.filter(referral_code=code).exists():
                 return code
 
@@ -112,34 +123,42 @@ class CustomerPass(models.Model):
     A customer's enrollment in a specific loyalty program.
     Contains the pass data and current state.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
         related_name="passes",
-        verbose_name="Cliente"
+        verbose_name="Cliente",
     )
     card = models.ForeignKey(
-        Card,
-        on_delete=models.CASCADE,
-        related_name="passes",
-        verbose_name="Programa"
+        Card, on_delete=models.CASCADE, related_name="passes", verbose_name="Programa"
     )
 
     # Pass state stored as JSONB (balances, counters, etc.)
     pass_data = models.JSONField(default=dict, verbose_name="Datos del pase")
 
     # Wallet pass identifiers
-    apple_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Apple Pass ID")
-    google_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Google Pass ID")
+    apple_pass_id = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Apple Pass ID"
+    )
+    google_pass_id = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Google Pass ID"
+    )
 
     # QR code for validation
-    qr_code = models.CharField(max_length=100, unique=True, blank=True, default="", verbose_name="Código QR")
+    qr_code = models.CharField(
+        max_length=100, unique=True, blank=True, default="", verbose_name="Código QR"
+    )
 
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Pase activo")
-    enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de inscripción")
-    last_updated = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+    enrolled_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Fecha de inscripción"
+    )
+    last_updated = models.DateTimeField(
+        auto_now=True, verbose_name="Última actualización"
+    )
 
     class Meta:
         db_table = "loyallia_customer_passes"
@@ -157,7 +176,10 @@ class CustomerPass(models.Model):
         import string
 
         while True:
-            code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(12))
+            code = "".join(
+                secrets.choice(string.ascii_uppercase + string.digits)
+                for _ in range(12)
+            )
             if not CustomerPass.objects.filter(qr_code=code).exists():
                 return code
 
@@ -206,6 +228,7 @@ class CustomerPass(models.Model):
     def membership_expiry(self) -> datetime:
         """Membership expiry date."""
         from django.utils.dateparse import parse_datetime
+
         expiry_str = self.get_pass_field("membership_expiry")
         return parse_datetime(expiry_str) if expiry_str else None
 
@@ -224,7 +247,9 @@ class CustomerPass(models.Model):
         """Remaining prepaid stamps in multipass."""
         return self.get_pass_field("multipass_remaining", 0)
 
-    def process_transaction(self, transaction_type: str, amount: Decimal = 0, quantity: int = 1) -> dict:
+    def process_transaction(
+        self, transaction_type: str, amount: Decimal = 0, quantity: int = 1
+    ) -> dict:
         """
         Process a transaction for this pass based on card type.
         Card type values match CardType TextChoices in cards/models.py:
@@ -270,9 +295,11 @@ class CustomerPass(models.Model):
         else:
             # Unknown card type — log but do not crash
             import logging
+
             logging.getLogger(__name__).warning(
                 "Unknown card type '%s' in process_transaction for pass %s",
-                card_type, self.id,
+                card_type,
+                self.id,
             )
 
         return result
@@ -282,7 +309,9 @@ class CustomerPass(models.Model):
         from apps.transactions.models import TransactionType
 
         stamps_required = self.card.get_metadata_field("stamps_required", 10)
-        reward_description = self.card.get_metadata_field("reward_description", "Free item")
+        reward_description = self.card.get_metadata_field(
+            "reward_description", "Free item"
+        )
 
         current_stamps = self.stamp_count
         new_stamps = current_stamps + quantity
@@ -324,7 +353,10 @@ class CustomerPass(models.Model):
                 "new_balance": new_balance,
             }
 
-        return {"transaction_type": TransactionType.CASHBACK_EARNED, "pass_updated": False}
+        return {
+            "transaction_type": TransactionType.CASHBACK_EARNED,
+            "pass_updated": False,
+        }
 
     def _process_coupon_transaction(self) -> dict:
         """Process coupon redemption."""
@@ -332,7 +364,9 @@ class CustomerPass(models.Model):
 
         if not self.coupon_used:
             self.set_pass_field("coupon_used", True)
-            reward_description = self.card.get_metadata_field("coupon_description", "Coupon redeemed")
+            reward_description = self.card.get_metadata_field(
+                "coupon_description", "Coupon redeemed"
+            )
 
             return {
                 "transaction_type": TransactionType.COUPON_REDEEMED,
@@ -341,7 +375,10 @@ class CustomerPass(models.Model):
                 "reward_description": reward_description,
             }
 
-        return {"transaction_type": TransactionType.COUPON_REDEEMED, "pass_updated": False}
+        return {
+            "transaction_type": TransactionType.COUPON_REDEEMED,
+            "pass_updated": False,
+        }
 
     def _process_discount_transaction(self, amount: Decimal) -> dict:
         """
@@ -351,6 +388,7 @@ class CustomerPass(models.Model):
         Sorted by threshold ascending; highest qualifying tier wins.
         """
         from apps.transactions.models import TransactionType
+
         tiers = self.card.get_metadata_field("tiers", [])
         total_spent = self.get_pass_field("total_spent_at_business", 0)
 
@@ -391,7 +429,6 @@ class CustomerPass(models.Model):
             "new_referral_count": new_count,
         }
 
-
     def _process_membership_transaction(self) -> dict:
         """Process VIP membership validation."""
         from apps.transactions.models import TransactionType
@@ -426,7 +463,10 @@ class CustomerPass(models.Model):
                 "new_balance": new_balance,
             }
 
-        return {"transaction_type": TransactionType.GIFT_REDEEMED, "pass_updated": False}
+        return {
+            "transaction_type": TransactionType.GIFT_REDEEMED,
+            "pass_updated": False,
+        }
 
     def _process_multipass_transaction(self) -> dict:
         """Process multipass stamp usage."""
@@ -444,4 +484,7 @@ class CustomerPass(models.Model):
                 "remaining_stamps": new_remaining,
             }
 
-        return {"transaction_type": TransactionType.MULTIPASS_USED, "pass_updated": False}
+        return {
+            "transaction_type": TransactionType.MULTIPASS_USED,
+            "pass_updated": False,
+        }

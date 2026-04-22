@@ -2,6 +2,7 @@
 Loyallia — Notifications Models
 Push notifications, in-app notifications, and notification history.
 """
+
 import uuid
 
 from django.db import models
@@ -12,6 +13,7 @@ from apps.tenants.models import Tenant
 
 class NotificationChannel(models.TextChoices):
     """Available notification channels."""
+
     PUSH = "push", "Push Notification"
     SMS = "sms", "SMS"
     EMAIL = "email", "Email"
@@ -20,6 +22,7 @@ class NotificationChannel(models.TextChoices):
 
 class NotificationType(models.TextChoices):
     """Types of notifications."""
+
     REWARD_EARNED = "reward_earned", "Reward Earned"
     REWARD_READY = "reward_ready", "Reward Ready for Redemption"
     SPECIAL_OFFER = "special_offer", "Special Offer"
@@ -35,37 +38,48 @@ class PushDevice(models.Model):
     Device registration for push notifications.
     Supports Apple and Google push services.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
         related_name="devices",
-        verbose_name="Cliente"
+        verbose_name="Cliente",
     )
 
     # Device information
     device_type = models.CharField(
         max_length=10,
         choices=[("ios", "iOS"), ("android", "Android"), ("web", "Web")],
-        verbose_name="Tipo de dispositivo"
+        verbose_name="Tipo de dispositivo",
     )
-    device_token = models.CharField(max_length=500, verbose_name="Token del dispositivo")
-    device_model = models.CharField(max_length=100, blank=True, default="", verbose_name="Modelo del dispositivo")
+    device_token = models.CharField(
+        max_length=500, verbose_name="Token del dispositivo"
+    )
+    device_model = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Modelo del dispositivo"
+    )
 
     # Push service identifiers
-    apns_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token APNS")
-    fcm_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token FCM")
+    apns_token = models.CharField(
+        max_length=500, blank=True, default="", verbose_name="Token APNS"
+    )
+    fcm_token = models.CharField(
+        max_length=500, blank=True, default="", verbose_name="Token FCM"
+    )
 
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Dispositivo activo")
     push_failures = models.PositiveSmallIntegerField(
         default=0,
         verbose_name="Fallos consecutivos de push",
-        help_text="Incremented per failed push; device deactivated at 5"
+        help_text="Incremented per failed push; device deactivated at 5",
     )
 
     # Timestamps
-    registered_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
+    registered_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Fecha de registro"
+    )
     last_used = models.DateTimeField(null=True, blank=True, verbose_name="Último uso")
 
     class Meta:
@@ -84,18 +98,19 @@ class Notification(models.Model):
     Notification record for audit trail and analytics.
     Tracks all sent notifications across all channels.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="notifications",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
         related_name="notifications",
-        verbose_name="Cliente"
+        verbose_name="Cliente",
     )
     customer_pass = models.ForeignKey(
         CustomerPass,
@@ -103,20 +118,20 @@ class Notification(models.Model):
         null=True,
         blank=True,
         related_name="notifications",
-        verbose_name="Pase del cliente"
+        verbose_name="Pase del cliente",
     )
 
     # Notification details
     notification_type = models.CharField(
         max_length=30,
         choices=NotificationType.choices,
-        verbose_name="Tipo de notificación"
+        verbose_name="Tipo de notificación",
     )
     channel = models.CharField(
         max_length=20,
         choices=NotificationChannel.choices,
         default=NotificationChannel.PUSH,
-        verbose_name="Canal"
+        verbose_name="Canal",
     )
 
     # Content
@@ -134,10 +149,16 @@ class Notification(models.Model):
     is_clicked = models.BooleanField(default=False, verbose_name="Clickeado")
 
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Fecha de creación"
+    )
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de envío")
-    read_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de lectura")
-    clicked_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de click")
+    read_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Fecha de lectura"
+    )
+    clicked_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Fecha de click"
+    )
 
     class Meta:
         db_table = "loyallia_notifications"
@@ -155,6 +176,7 @@ class Notification(models.Model):
     def mark_as_sent(self) -> None:
         """Mark notification as sent."""
         from django.utils import timezone
+
         self.is_sent = True
         self.sent_at = timezone.now()
         self.save(update_fields=["is_sent", "sent_at"])
@@ -162,6 +184,7 @@ class Notification(models.Model):
     def mark_as_read(self) -> None:
         """Mark notification as read."""
         from django.utils import timezone
+
         self.is_read = True
         self.read_at = timezone.now()
         self.save(update_fields=["is_read", "read_at"])
@@ -169,6 +192,7 @@ class Notification(models.Model):
     def mark_as_clicked(self) -> None:
         """Mark notification as clicked."""
         from django.utils import timezone
+
         self.is_clicked = True
         self.clicked_at = timezone.now()
         self.save(update_fields=["is_clicked", "clicked_at"])

@@ -6,6 +6,7 @@ Entry points:
   fire_trigger(trigger_name, customer, context)  → called from API on events
   evaluate_scheduled_automations()               → called by Celery Beat daily
 """
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,11 @@ def fire_trigger(
 
     logger.debug(
         "fire_trigger: trigger=%s customer=%s tenant=%s → %d/%d executed",
-        trigger, customer.id, tenant.id, executed, matching.count()
+        trigger,
+        customer.id,
+        tenant.id,
+        executed,
+        matching.count(),
     )
     return executed
 
@@ -88,6 +93,7 @@ def fire_trigger_async(
     import logging
 
     from apps.automation.tasks import evaluate_trigger_for_customer
+
     try:
         evaluate_trigger_for_customer.delay(  # type: ignore[reportCallIssue]
             trigger=trigger,

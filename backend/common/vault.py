@@ -34,7 +34,9 @@ def _fetch_vault_secrets() -> dict:
     Cached for the lifetime of the process (secrets reload on restart).
     """
     if not VAULT_ADDR or not VAULT_TOKEN:
-        logger.debug("Vault not configured (VAULT_ADDR or VAULT_TOKEN missing). Using env fallback.")
+        logger.debug(
+            "Vault not configured (VAULT_ADDR or VAULT_TOKEN missing). Using env fallback."
+        )
         return {}
 
     import json
@@ -49,13 +51,19 @@ def _fetch_vault_secrets() -> dict:
         with urllib.request.urlopen(req, timeout=5) as response:
             body = json.loads(response.read().decode("utf-8"))
             secrets = body.get("data", {}).get("data", {})
-            logger.info("Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH)
+            logger.info(
+                "Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH
+            )
             return secrets
     except urllib.error.URLError as exc:
-        logger.warning("Vault: connection failed (%s). Falling back to env vars.", exc.reason)
+        logger.warning(
+            "Vault: connection failed (%s). Falling back to env vars.", exc.reason
+        )
         return {}
     except (json.JSONDecodeError, KeyError) as exc:
-        logger.warning("Vault: invalid response format (%s). Falling back to env vars.", exc)
+        logger.warning(
+            "Vault: invalid response format (%s). Falling back to env vars.", exc
+        )
         return {}
     except Exception as exc:
         logger.warning("Vault: unexpected error (%s). Falling back to env vars.", exc)

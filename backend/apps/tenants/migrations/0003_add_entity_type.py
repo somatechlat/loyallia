@@ -7,18 +7,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenants', '0002_tenant_city_tenant_email_tenant_industry_and_more'),
+        ("tenants", "0002_tenant_city_tenant_email_tenant_industry_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tenant',
-            name='cedula',
-            field=models.CharField(blank=True, default='', help_text='Cédula del propietario (solo persona natural, 10 dígitos)', max_length=10, validators=[apps.tenants.models.validate_cedula], verbose_name='Cédula de identidad'),
+            model_name="tenant",
+            name="cedula",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Cédula del propietario (solo persona natural, 10 dígitos)",
+                max_length=10,
+                validators=[apps.tenants.models.validate_cedula],
+                verbose_name="Cédula de identidad",
+            ),
         ),
         migrations.AddField(
-            model_name='tenant',
-            name='entity_type',
-            field=models.CharField(choices=[('natural', 'Persona Natural'), ('juridica', 'Persona Jurídica (Empresa)')], default='juridica', help_text='Persona Natural (cédula) o Jurídica (RUC)', max_length=10, verbose_name='Tipo de entidad'),
+            model_name="tenant",
+            name="entity_type",
+            field=models.CharField(
+                choices=[
+                    ("natural", "Persona Natural"),
+                    ("juridica", "Persona Jurídica (Empresa)"),
+                ],
+                default="juridica",
+                help_text="Persona Natural (cédula) o Jurídica (RUC)",
+                max_length=10,
+                verbose_name="Tipo de entidad",
+            ),
         ),
     ]

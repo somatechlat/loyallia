@@ -31,33 +31,145 @@ from apps.transactions.models import Transaction, TransactionType
 # Authentic Ecuadorian / Latin American Name Pools
 # =============================================================================
 EC_FIRST_NAMES_M = [
-    "Carlos", "Juan", "Sebastián", "Andrés", "Diego", "Mateo", "Santiago",
-    "Ricardo", "Fernando", "Alejandro", "Daniel", "Gabriel", "Luis", "Roberto",
-    "Eduardo", "Francisco", "Emilio", "Pablo", "Nicolás", "Martín",
-    "Cristian", "Xavier", "Leonardo", "Javier", "Jorge", "Patricio",
-    "Mauricio", "Esteban", "Héctor", "Iván", "Óscar", "Marco",
-    "Adrián", "Camilo", "Tomás", "Simón", "Samuel", "Josué",
+    "Carlos",
+    "Juan",
+    "Sebastián",
+    "Andrés",
+    "Diego",
+    "Mateo",
+    "Santiago",
+    "Ricardo",
+    "Fernando",
+    "Alejandro",
+    "Daniel",
+    "Gabriel",
+    "Luis",
+    "Roberto",
+    "Eduardo",
+    "Francisco",
+    "Emilio",
+    "Pablo",
+    "Nicolás",
+    "Martín",
+    "Cristian",
+    "Xavier",
+    "Leonardo",
+    "Javier",
+    "Jorge",
+    "Patricio",
+    "Mauricio",
+    "Esteban",
+    "Héctor",
+    "Iván",
+    "Óscar",
+    "Marco",
+    "Adrián",
+    "Camilo",
+    "Tomás",
+    "Simón",
+    "Samuel",
+    "Josué",
 ]
 EC_FIRST_NAMES_F = [
-    "María", "Ana", "Valentina", "Camila", "Sofía", "Isabella", "Paula",
-    "Daniela", "Gabriela", "Andrea", "Fernanda", "Carolina", "Lucía",
-    "Lorena", "Patricia", "Verónica", "Cristina", "Diana", "Alejandra",
-    "Natalia", "Paola", "Estefanía", "Catalina", "Juliana", "Valeria",
-    "Mariana", "Monserrat", "Rocío", "Karina", "Soledad", "Elena",
-    "Micaela", "Renata", "Ximena", "Tatiana", "Priscila", "Jessica",
+    "María",
+    "Ana",
+    "Valentina",
+    "Camila",
+    "Sofía",
+    "Isabella",
+    "Paula",
+    "Daniela",
+    "Gabriela",
+    "Andrea",
+    "Fernanda",
+    "Carolina",
+    "Lucía",
+    "Lorena",
+    "Patricia",
+    "Verónica",
+    "Cristina",
+    "Diana",
+    "Alejandra",
+    "Natalia",
+    "Paola",
+    "Estefanía",
+    "Catalina",
+    "Juliana",
+    "Valeria",
+    "Mariana",
+    "Monserrat",
+    "Rocío",
+    "Karina",
+    "Soledad",
+    "Elena",
+    "Micaela",
+    "Renata",
+    "Ximena",
+    "Tatiana",
+    "Priscila",
+    "Jessica",
 ]
 EC_LASTNAMES = [
-    "García", "Rodríguez", "Martínez", "López", "González", "Hernández",
-    "Pérez", "Sánchez", "Ramírez", "Torres", "Flores", "Rivera",
-    "Gómez", "Díaz", "Morales", "Reyes", "Cruz", "Ortega",
-    "Castillo", "Jiménez", "Vargas", "Romero", "Herrera", "Medina",
-    "Aguilar", "Vega", "Castro", "Ramos", "Zambrano", "Cevallos",
-    "Pacheco", "Espinoza", "Salazar", "Mendoza", "Guerrero", "Paredes",
-    "Cárdenas", "Suárez", "Chávez", "Delgado", "Andrade", "Vinueza",
-    "Jaramillo", "Villacís", "Benalcázar", "Proaño", "Córdova", "Intriago",
+    "García",
+    "Rodríguez",
+    "Martínez",
+    "López",
+    "González",
+    "Hernández",
+    "Pérez",
+    "Sánchez",
+    "Ramírez",
+    "Torres",
+    "Flores",
+    "Rivera",
+    "Gómez",
+    "Díaz",
+    "Morales",
+    "Reyes",
+    "Cruz",
+    "Ortega",
+    "Castillo",
+    "Jiménez",
+    "Vargas",
+    "Romero",
+    "Herrera",
+    "Medina",
+    "Aguilar",
+    "Vega",
+    "Castro",
+    "Ramos",
+    "Zambrano",
+    "Cevallos",
+    "Pacheco",
+    "Espinoza",
+    "Salazar",
+    "Mendoza",
+    "Guerrero",
+    "Paredes",
+    "Cárdenas",
+    "Suárez",
+    "Chávez",
+    "Delgado",
+    "Andrade",
+    "Vinueza",
+    "Jaramillo",
+    "Villacís",
+    "Benalcázar",
+    "Proaño",
+    "Córdova",
+    "Intriago",
 ]
 
-EC_CITIES = ["Quito", "Guayaquil", "Cuenca", "Ambato", "Manta", "Riobamba", "Loja", "Ibarra"]
+EC_CITIES = [
+    "Quito",
+    "Guayaquil",
+    "Cuenca",
+    "Ambato",
+    "Manta",
+    "Riobamba",
+    "Loja",
+    "Ibarra",
+]
 
 # Phone prefixes for Ecuador
 EC_PHONE_PREFIXES = ["+59398", "+59399", "+59396", "+59397"]
@@ -68,13 +180,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--wipe',
-            action='store_true',
-            help='Wipe the database before seeding (Destructive!)',
+            "--wipe",
+            action="store_true",
+            help="Wipe the database before seeding (Destructive!)",
         )
 
     def handle(self, *args, **options):
-        if options['wipe']:
+        if options["wipe"]:
             self.stdout.write(self.style.WARNING("Wiping existing synthetic data..."))
             with transaction.atomic():
                 DailyAnalytics.objects.all().delete()
@@ -114,11 +226,14 @@ class Command(BaseCommand):
             slug="cafe-el-ritmo",
             defaults={
                 "name": "Café El Ritmo",
-                "plan": Plan.FULL, "is_active": True, "country": "EC",
+                "plan": Plan.FULL,
+                "is_active": True,
+                "country": "EC",
                 "phone": "+593998765432",
                 "address": "Av. República del Salvador N34-127 y Suiza, Quito",
-                "primary_color": "#8B4513", "secondary_color": "#D2691E",
-            }
+                "primary_color": "#8B4513",
+                "secondary_color": "#D2691E",
+            },
         )
 
         # =====================================================================
@@ -126,7 +241,13 @@ class Command(BaseCommand):
         # =====================================================================
         admin, _ = User.objects.get_or_create(
             email="admin@loyallia.com",
-            defaults={"first_name": "Sistema", "last_name": "Admin", "role": UserRole.SUPER_ADMIN, "tenant": tenant, "is_active": True}
+            defaults={
+                "first_name": "Sistema",
+                "last_name": "Admin",
+                "role": UserRole.SUPER_ADMIN,
+                "tenant": tenant,
+                "is_active": True,
+            },
         )
         if not admin.tenant:
             admin.tenant = tenant
@@ -138,12 +259,24 @@ class Command(BaseCommand):
         # =====================================================================
         users_data = [
             ("carlos@cafeelritmo.ec", "Carlos", "Andrade Pacheco", UserRole.OWNER),
-            ("gabriela@cafeelritmo.ec", "Gabriela", "Cevallos Torres", UserRole.MANAGER),
+            (
+                "gabriela@cafeelritmo.ec",
+                "Gabriela",
+                "Cevallos Torres",
+                UserRole.MANAGER,
+            ),
             ("sebastian@cafeelritmo.ec", "Sebastián", "Zambrano Reyes", UserRole.STAFF),
         ]
         for email, first, last, role in users_data:
             u, _ = User.objects.get_or_create(
-                email=email, defaults={"first_name": first, "last_name": last, "role": role, "tenant": tenant, "is_active": True}
+                email=email,
+                defaults={
+                    "first_name": first,
+                    "last_name": last,
+                    "role": role,
+                    "tenant": tenant,
+                    "is_active": True,
+                },
             )
             if not u.tenant:
                 u.tenant = tenant
@@ -155,15 +288,36 @@ class Command(BaseCommand):
         # =====================================================================
         locations = []
         locations_data = [
-            ("Café El Ritmo — La Pradera", "Quito", "Av. República del Salvador N34-127", True),
-            ("Sucursal Cumbayá", "Cumbayá", "Centro Comercial Paseo San Francisco, Local 24", False),
-            ("Sucursal CCI", "Quito", "Centro Comercial Iñaquito, Piso 2, Local 213", False),
-            ("Sucursal Mall del Sol", "Guayaquil", "Mall del Sol, Planta Baja, Local B-12", False),
+            (
+                "Café El Ritmo — La Pradera",
+                "Quito",
+                "Av. República del Salvador N34-127",
+                True,
+            ),
+            (
+                "Sucursal Cumbayá",
+                "Cumbayá",
+                "Centro Comercial Paseo San Francisco, Local 24",
+                False,
+            ),
+            (
+                "Sucursal CCI",
+                "Quito",
+                "Centro Comercial Iñaquito, Piso 2, Local 213",
+                False,
+            ),
+            (
+                "Sucursal Mall del Sol",
+                "Guayaquil",
+                "Mall del Sol, Planta Baja, Local B-12",
+                False,
+            ),
         ]
         for name, city, addr, is_primary in locations_data:
             loc, _ = Location.objects.get_or_create(
-                tenant=tenant, name=name,
-                defaults={"city": city, "address": addr, "is_primary": is_primary}
+                tenant=tenant,
+                name=name,
+                defaults={"city": city, "address": addr, "is_primary": is_primary},
             )
             locations.append(loc)
 
@@ -171,57 +325,88 @@ class Command(BaseCommand):
         # 5. Billing — Active FULL subscription
         # =====================================================================
         sub, _ = Subscription.objects.get_or_create(
-            tenant=tenant, defaults={"plan": "full", "billing_cycle": "monthly", "status": SubscriptionStatus.ACTIVE}
+            tenant=tenant,
+            defaults={
+                "plan": "full",
+                "billing_cycle": "monthly",
+                "status": SubscriptionStatus.ACTIVE,
+            },
         )
 
         # =====================================================================
         # 6. Loyalty Programs (4 real-world programs)
         # =====================================================================
         c_stamp, _ = Card.objects.get_or_create(
-            tenant=tenant, name="Café Frecuente ☕",
+            tenant=tenant,
+            name="Café Frecuente ☕",
             defaults={
                 "card_type": CardType.STAMP,
                 "description": "Compra 6 cafés y el 7mo es GRATIS. Válido en todas las sucursales.",
-                "background_color": "#8B4513", "text_color": "#FFFFFF",
-                "metadata": {"total_stamps": 6, "stamps_to_reward": 1, "reward_description": "Café de especialidad gratis"},
+                "background_color": "#8B4513",
+                "text_color": "#FFFFFF",
+                "metadata": {
+                    "total_stamps": 6,
+                    "stamps_to_reward": 1,
+                    "reward_description": "Café de especialidad gratis",
+                },
                 "is_active": True,
-            }
+            },
         )
         c_points, _ = Card.objects.get_or_create(
-            tenant=tenant, name="Puntos Ritmo 🎯",
+            tenant=tenant,
+            name="Puntos Ritmo 🎯",
             defaults={
                 "card_type": CardType.CASHBACK,
                 "description": "Acumula el 10% de cada compra como crédito. Canjeable en cualquier producto.",
-                "background_color": "#1A1A2E", "text_color": "#FFFFFF",
-                "metadata": {"cashback_percentage": 10.0, "points_conversion_rate": 1.0, "credit_expiry_days": 365},
+                "background_color": "#1A1A2E",
+                "text_color": "#FFFFFF",
+                "metadata": {
+                    "cashback_percentage": 10.0,
+                    "points_conversion_rate": 1.0,
+                    "credit_expiry_days": 365,
+                },
                 "is_active": True,
-            }
+            },
         )
         c_vip, _ = Card.objects.get_or_create(
-            tenant=tenant, name="Club VIP El Ritmo 👑",
+            tenant=tenant,
+            name="Club VIP El Ritmo 👑",
             defaults={
                 "card_type": CardType.VIP_MEMBERSHIP,
                 "description": "Membresía exclusiva con 15% de descuento permanente, prioridad y eventos VIP.",
-                "background_color": "#2D1B69", "text_color": "#FFD700",
+                "background_color": "#2D1B69",
+                "text_color": "#FFD700",
                 "metadata": {
                     "membership_name": "Club VIP El Ritmo",
-                    "monthly_fee": 9.99, "annual_fee": 99.99,
+                    "monthly_fee": 9.99,
+                    "annual_fee": 99.99,
                     "validity_period": "monthly",
-                    "discount_percentage": 15, "trial_days": 30,
-                    "perks": ["Descuento 15%", "Prioridad en fila", "Eventos exclusivos"],
+                    "discount_percentage": 15,
+                    "trial_days": 30,
+                    "perks": [
+                        "Descuento 15%",
+                        "Prioridad en fila",
+                        "Eventos exclusivos",
+                    ],
                 },
                 "is_active": True,
-            }
+            },
         )
         c_referral, _ = Card.objects.get_or_create(
-            tenant=tenant, name="Refiere y Gana 🤝",
+            tenant=tenant,
+            name="Refiere y Gana 🤝",
             defaults={
                 "card_type": CardType.REFERRAL_PASS,
                 "description": "Invita a un amigo y ambos reciben $3 de crédito.",
-                "background_color": "#0F766E", "text_color": "#FFFFFF",
-                "metadata": {"referrer_reward": 3.00, "referee_reward": 3.00, "max_referrals_per_customer": 10},
+                "background_color": "#0F766E",
+                "text_color": "#FFFFFF",
+                "metadata": {
+                    "referrer_reward": 3.00,
+                    "referee_reward": 3.00,
+                    "max_referrals_per_customer": 10,
+                },
                 "is_active": True,
-            }
+            },
         )
 
         # =====================================================================
@@ -250,40 +435,51 @@ class Command(BaseCommand):
             c_date = now - timedelta(days=created_days_ago)
 
             c = Customer.objects.create(
-                tenant=tenant, email=email,
-                first_name=first, last_name=full_last,
+                tenant=tenant,
+                email=email,
+                first_name=first,
+                last_name=full_last,
                 phone=phone,
-                date_of_birth=(now - timedelta(days=365 * random.randint(18, 55))).date(),
+                date_of_birth=(
+                    now - timedelta(days=365 * random.randint(18, 55))
+                ).date(),
             )
             Customer.objects.filter(id=c.id).update(created_at=c_date)
             customers.append(c)
 
             # Enroll in stamp program (everyone)
             CustomerPass.objects.create(
-                customer=c, card=c_stamp,
+                customer=c,
+                card=c_stamp,
                 pass_data={"stamp_count": random.randint(0, 5)},
-                enrolled_at=c_date
+                enrolled_at=c_date,
             )
             # 60% also enroll in cashback
             if random.random() > 0.4:
                 CustomerPass.objects.create(
-                    customer=c, card=c_points,
+                    customer=c,
+                    card=c_points,
                     pass_data={"cashback_balance": str(Decimal(random.randint(2, 45)))},
-                    enrolled_at=c_date + timedelta(days=random.randint(0, 5))
+                    enrolled_at=c_date + timedelta(days=random.randint(0, 5)),
                 )
             # 20% VIP
             if random.random() > 0.8:
                 CustomerPass.objects.create(
-                    customer=c, card=c_vip,
+                    customer=c,
+                    card=c_vip,
                     pass_data={"membership_tier": "gold", "discount_active": True},
-                    enrolled_at=c_date + timedelta(days=random.randint(1, 10))
+                    enrolled_at=c_date + timedelta(days=random.randint(1, 10)),
                 )
             # 15% referral
             if random.random() > 0.85:
                 CustomerPass.objects.create(
-                    customer=c, card=c_referral,
-                    pass_data={"referral_code": f"REF-{first[:3].upper()}{random.randint(100,999)}", "referrals_made": random.randint(0, 5)},
-                    enrolled_at=c_date + timedelta(days=random.randint(0, 7))
+                    customer=c,
+                    card=c_referral,
+                    pass_data={
+                        "referral_code": f"REF-{first[:3].upper()}{random.randint(100,999)}",
+                        "referrals_made": random.randint(0, 5),
+                    },
+                    enrolled_at=c_date + timedelta(days=random.randint(0, 7)),
                 )
 
         # =====================================================================
@@ -304,16 +500,25 @@ class Command(BaseCommand):
 
             amount = Decimal(str(round(random.uniform(3.50, 28.00), 2)))
             t_type = random.choices(
-                [TransactionType.STAMP_EARNED, TransactionType.CASHBACK_EARNED, TransactionType.STAMP_REDEEMED, TransactionType.CASHBACK_REDEEMED],
-                weights=[45, 30, 15, 10], k=1
+                [
+                    TransactionType.STAMP_EARNED,
+                    TransactionType.CASHBACK_EARNED,
+                    TransactionType.STAMP_REDEEMED,
+                    TransactionType.CASHBACK_REDEEMED,
+                ],
+                weights=[45, 30, 15, 10],
+                k=1,
             )[0]
 
             transactions_to_create.append(
                 Transaction(
-                    tenant=tenant, customer_pass=t_pass,
+                    tenant=tenant,
+                    customer_pass=t_pass,
                     location=random.choice(locations),
-                    staff=cashier, transaction_type=t_type,
-                    amount=amount, quantity=1,
+                    staff=cashier,
+                    transaction_type=t_type,
+                    amount=amount,
+                    quantity=1,
                 )
             )
 
@@ -333,14 +538,32 @@ class Command(BaseCommand):
         self.stdout.write("  -> Hidratando analítica de series de tiempo (90 días)...")
         for day_offset in range(90, -1, -1):
             target_date = (now - timedelta(days=day_offset)).date()
-            daily_tx = Transaction.objects.filter(tenant=tenant, created_at__date=target_date)
+            daily_tx = Transaction.objects.filter(
+                tenant=tenant, created_at__date=target_date
+            )
 
             tx_count = daily_tx.count()
-            daily_rev = daily_tx.aggregate(Sum('amount'))['amount__sum'] or Decimal("0.00")
-            new_customers = Customer.objects.filter(tenant=tenant, created_at__date=target_date).count()
-            new_enrollments = CustomerPass.objects.filter(card__tenant=tenant, enrolled_at__date=target_date).count()
-            rewards_issued = daily_tx.filter(transaction_type__in=[TransactionType.STAMP_EARNED, TransactionType.CASHBACK_EARNED]).count()
-            rewards_redeemed = daily_tx.filter(transaction_type__in=[TransactionType.STAMP_REDEEMED, TransactionType.CASHBACK_REDEEMED]).count()
+            daily_rev = daily_tx.aggregate(Sum("amount"))["amount__sum"] or Decimal(
+                "0.00"
+            )
+            new_customers = Customer.objects.filter(
+                tenant=tenant, created_at__date=target_date
+            ).count()
+            new_enrollments = CustomerPass.objects.filter(
+                card__tenant=tenant, enrolled_at__date=target_date
+            ).count()
+            rewards_issued = daily_tx.filter(
+                transaction_type__in=[
+                    TransactionType.STAMP_EARNED,
+                    TransactionType.CASHBACK_EARNED,
+                ]
+            ).count()
+            rewards_redeemed = daily_tx.filter(
+                transaction_type__in=[
+                    TransactionType.STAMP_REDEEMED,
+                    TransactionType.CASHBACK_REDEEMED,
+                ]
+            ).count()
 
             DailyAnalytics.objects.update_or_create(
                 tenant=tenant,
@@ -360,7 +583,9 @@ class Command(BaseCommand):
         # =====================================================================
         self.stdout.write("  -> Calculando segmentación de clientes...")
         for c in Customer.objects.filter(tenant=tenant):
-            analytics, _ = CustomerAnalytics.objects.get_or_create(customer=c, tenant=tenant)
+            analytics, _ = CustomerAnalytics.objects.get_or_create(
+                customer=c, tenant=tenant
+            )
             analytics.update_metrics()
 
         for p in Card.objects.filter(tenant=tenant):
@@ -372,16 +597,44 @@ class Command(BaseCommand):
         # =====================================================================
         self.stdout.write("  -> Creando reglas de automatización...")
         automations_data = [
-            ("Bienvenida automática", "Envía un mensaje de bienvenida 15 minutos después de registrarse", "customer_enrolled", "send_notification", 200),
-            ("Alerta de recompensa", "Notifica al cliente cuando acumula 100 puntos de cashback", "reward_earned", "send_notification", 134),
-            ("Recuperación de clientes inactivos", "Envía cupón especial después de 30 días sin visita", "days_inactive", "send_notification", 67),
-            ("Felicitación de cumpleaños", "Envía un café gratis en el cumpleaños del cliente", "birthday", "send_notification", 42),
+            (
+                "Bienvenida automática",
+                "Envía un mensaje de bienvenida 15 minutos después de registrarse",
+                "customer_enrolled",
+                "send_notification",
+                200,
+            ),
+            (
+                "Alerta de recompensa",
+                "Notifica al cliente cuando acumula 100 puntos de cashback",
+                "reward_earned",
+                "send_notification",
+                134,
+            ),
+            (
+                "Recuperación de clientes inactivos",
+                "Envía cupón especial después de 30 días sin visita",
+                "days_inactive",
+                "send_notification",
+                67,
+            ),
+            (
+                "Felicitación de cumpleaños",
+                "Envía un café gratis en el cumpleaños del cliente",
+                "birthday",
+                "send_notification",
+                42,
+            ),
         ]
         for name, desc, trigger, action, execs in automations_data:
             Automation.objects.create(
-                tenant=tenant, name=name, description=desc,
-                trigger=trigger, action=action,
-                is_active=True, total_executions=execs,
+                tenant=tenant,
+                name=name,
+                description=desc,
+                trigger=trigger,
+                action=action,
+                is_active=True,
+                total_executions=execs,
             )
 
         # =====================================================================
@@ -427,19 +680,26 @@ class Command(BaseCommand):
         for campaign in campaigns:
             notifs = []
             for c in campaign["recipients"]:
-                notifs.append(Notification(
-                    tenant=tenant, customer=c,
-                    title=campaign["title"],
-                    message=campaign["message"],
-                    notification_type=NotificationType.MARKETING,
-                    is_sent=True,
-                    is_read=random.random() > 0.5,
-                    is_clicked=random.random() > 0.7,
-                ))
+                notifs.append(
+                    Notification(
+                        tenant=tenant,
+                        customer=c,
+                        title=campaign["title"],
+                        message=campaign["message"],
+                        notification_type=NotificationType.MARKETING,
+                        is_sent=True,
+                        is_read=random.random() > 0.5,
+                        is_clicked=random.random() > 0.7,
+                    )
+                )
             Notification.objects.bulk_create(notifs)
             Notification.objects.filter(title=campaign["title"]).update(
                 created_at=now - timedelta(days=campaign["days_ago"])
             )
             total_notifs += len(notifs)
 
-        self.stdout.write(self.style.SUCCESS(f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas"
+            )
+        )

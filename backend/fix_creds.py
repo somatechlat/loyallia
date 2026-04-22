@@ -15,7 +15,7 @@ for filepath in glob.glob("../frontend/tests/e2e/*.ts"):
     for old, new in replacements.items():
         content = content.replace(old, new)
 
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         f.write(content)
 
 print("Credentials replaced successfully")

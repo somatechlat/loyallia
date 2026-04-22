@@ -3,6 +3,7 @@ Loyallia — Billing Models
 Subscription management via Claro Pay Ecuador payment processing.
 All payment operations route through Claro Pay's gateway infrastructure.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -16,6 +17,7 @@ from apps.tenants.models import Tenant
 
 class BillingPlan(models.TextChoices):
     """Available billing plans. Loyallia uses a FULL flat-rate model."""
+
     TRIAL = "trial", "Trial Gratuito (14 días)"
     FULL = "full", "FULL ($75/mes + IVA)"
 
@@ -25,6 +27,7 @@ class SubscriptionPlan(models.Model):
     Configurable SaaS pricing plan. Managed by SUPER_ADMIN.
     Allows dynamic creation of pricing tiers (Starter, Professional, Enterprise).
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, verbose_name="Nombre del plan")
     slug = models.SlugField(max_length=50, unique=True)
@@ -32,27 +35,35 @@ class SubscriptionPlan(models.Model):
 
     # Pricing
     price_monthly = models.DecimalField(
-        max_digits=10, decimal_places=2, default=Decimal("0.00"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
         validators=[MinValueValidator(0)],
-        verbose_name="Precio mensual (USD)"
+        verbose_name="Precio mensual (USD)",
     )
     price_annual = models.DecimalField(
-        max_digits=10, decimal_places=2, default=Decimal("0.00"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
         validators=[MinValueValidator(0)],
-        verbose_name="Precio anual (USD)"
+        verbose_name="Precio anual (USD)",
     )
 
     # Limits
-    max_locations = models.PositiveIntegerField(default=1, verbose_name="Máx. sucursales")
+    max_locations = models.PositiveIntegerField(
+        default=1, verbose_name="Máx. sucursales"
+    )
     max_users = models.PositiveIntegerField(default=3, verbose_name="Máx. usuarios")
-    max_customers = models.PositiveIntegerField(default=500, verbose_name="Máx. clientes")
+    max_customers = models.PositiveIntegerField(
+        default=500, verbose_name="Máx. clientes"
+    )
     max_programs = models.PositiveIntegerField(default=1, verbose_name="Máx. programas")
 
     # Features (JSON array of feature strings)
     features = models.JSONField(
         default=list,
         verbose_name="Características incluidas",
-        help_text='["Google Wallet", "Push Notifications", "Analytics"]'
+        help_text='["Google Wallet", "Push Notifications", "Analytics"]',
     )
 
     # Status
@@ -75,14 +86,13 @@ class SubscriptionPlan(models.Model):
 
     @property
     def price_monthly_with_tax(self) -> Decimal:
-        tax_rate = Decimal(str(getattr(settings, 'TAX_RATE_ECUADOR', '0.15')))
+        tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
         return (self.price_monthly * (1 + tax_rate)).quantize(Decimal("0.01"))
-
-
 
 
 class SubscriptionStatus(models.TextChoices):
     """Subscription lifecycle states."""
+
     TRIALING = "trialing", "Período de prueba"
     ACTIVE = "active", "Activo"
     PAST_DUE = "past_due", "Pago pendiente"
@@ -96,12 +106,13 @@ class Subscription(models.Model):
     Payment processing via Claro Pay Ecuador.
     One subscription per tenant (OneToOne).
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.OneToOneField(
         Tenant,
         on_delete=models.CASCADE,
         related_name="subscription",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
 
     # Plan
@@ -109,13 +120,13 @@ class Subscription(models.Model):
         max_length=20,
         choices=BillingPlan.choices,
         default=BillingPlan.TRIAL,
-        verbose_name="Plan"
+        verbose_name="Plan",
     )
     billing_cycle = models.CharField(
         max_length=10,
         choices=[("monthly", "Mensual"), ("annual", "Anual")],
         default="monthly",
-        verbose_name="Ciclo de facturación"
+        verbose_name="Ciclo de facturación",
     )
 
     # Status
@@ -123,17 +134,18 @@ class Subscription(models.Model):
         max_length=20,
         choices=SubscriptionStatus.choices,
         default=SubscriptionStatus.TRIALING,
-        verbose_name="Estado"
+        verbose_name="Estado",
     )
 
     # Claro Pay identifiers
     claro_pay_subscription_id = models.CharField(
-        max_length=100, blank=True, default="",
-        verbose_name="ID de suscripción Claro Pay"
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="ID de suscripción Claro Pay",
     )
     claro_pay_customer_id = models.CharField(
-        max_length=100, blank=True, default="",
-        verbose_name="ID de cliente Claro Pay"
+        max_length=100, blank=True, default="", verbose_name="ID de cliente Claro Pay"
     )
 
     # Dates
@@ -218,13 +230,14 @@ class Subscription(models.Model):
     def activate_trial(self) -> None:
         """Set trial period. Called on tenant registration."""
         from datetime import timedelta
+
         self.plan = BillingPlan.TRIAL
         self.status = SubscriptionStatus.TRIALING
         self.trial_start = timezone.now()
         self.trial_end = timezone.now() + timedelta(days=settings.TRIAL_DAYS)
-        self.save(update_fields=[
-            "plan", "status", "trial_start", "trial_end", "updated_at"
-        ])
+        self.save(
+            update_fields=["plan", "status", "trial_start", "trial_end", "updated_at"]
+        )
 
     def activate_paid(self, claro_pay_subscription_id: str) -> None:
         """Transition from trial/suspended to active paid subscription."""
@@ -233,6 +246,7 @@ class Subscription(models.Model):
         self.claro_pay_subscription_id = claro_pay_subscription_id
         self.current_period_start = timezone.now()
         from datetime import timedelta
+
         if self.billing_cycle == "annual":
             self.current_period_end = timezone.now() + timedelta(days=365)
         else:
@@ -250,9 +264,14 @@ class Subscription(models.Model):
             self.status = SubscriptionStatus.SUSPENDED
         else:
             self.status = SubscriptionStatus.PAST_DUE
-        self.save(update_fields=[
-            "failed_payment_count", "last_payment_error", "status", "updated_at"
-        ])
+        self.save(
+            update_fields=[
+                "failed_payment_count",
+                "last_payment_error",
+                "status",
+                "updated_at",
+            ]
+        )
 
     def cancel(self) -> None:
         """Mark subscription for cancellation at period end."""
@@ -264,9 +283,14 @@ class Subscription(models.Model):
         self.status = SubscriptionStatus.CANCELED
         self.canceled_at = timezone.now()
         self.cancel_at_period_end = False
-        self.save(update_fields=[
-            "status", "canceled_at", "cancel_at_period_end", "updated_at"
-        ])
+        self.save(
+            update_fields=[
+                "status",
+                "canceled_at",
+                "cancel_at_period_end",
+                "updated_at",
+            ]
+        )
 
 
 class PaymentMethod(models.Model):
@@ -274,27 +298,24 @@ class PaymentMethod(models.Model):
     Stored payment method for a tenant.
     Tokenized card data stored by Claro Pay — we only keep last4 and brand.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="payment_methods",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
 
     # Claro Pay token (PCI-compliant — we never store raw card data)
-    claro_pay_token = models.CharField(
-        max_length=200, verbose_name="Token Claro Pay"
-    )
+    claro_pay_token = models.CharField(max_length=200, verbose_name="Token Claro Pay")
 
     # Display info only
     card_brand = models.CharField(
-        max_length=20, blank=True, default="",
-        verbose_name="Marca de tarjeta"
+        max_length=20, blank=True, default="", verbose_name="Marca de tarjeta"
     )
     card_last_four = models.CharField(
-        max_length=4, blank=True, default="",
-        verbose_name="Últimos 4 dígitos"
+        max_length=4, blank=True, default="", verbose_name="Últimos 4 dígitos"
     )
     card_exp_month = models.PositiveSmallIntegerField(
         null=True, blank=True, verbose_name="Mes de expiración"
@@ -303,8 +324,7 @@ class PaymentMethod(models.Model):
         null=True, blank=True, verbose_name="Año de expiración"
     )
     cardholder_name = models.CharField(
-        max_length=200, blank=True, default="",
-        verbose_name="Nombre del titular"
+        max_length=200, blank=True, default="", verbose_name="Nombre del titular"
     )
 
     # Status
@@ -348,13 +368,13 @@ class Invoice(models.Model):
         Tenant,
         on_delete=models.CASCADE,
         related_name="invoices",
-        verbose_name="Negocio"
+        verbose_name="Negocio",
     )
     subscription = models.ForeignKey(
         Subscription,
         on_delete=models.CASCADE,
         related_name="invoices",
-        verbose_name="Suscripción"
+        verbose_name="Suscripción",
     )
 
     # Invoice number (sequential per tenant)
@@ -364,28 +384,30 @@ class Invoice(models.Model):
 
     # Amounts
     subtotal = models.DecimalField(
-        max_digits=10, decimal_places=2,
+        max_digits=10,
+        decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name="Subtotal"
+        verbose_name="Subtotal",
     )
     tax_rate = models.DecimalField(
-        max_digits=5, decimal_places=4,
+        max_digits=5,
+        decimal_places=4,
         default=Decimal("0.1500"),
-        verbose_name="Tasa IVA"
+        verbose_name="Tasa IVA",
     )
     tax_amount = models.DecimalField(
-        max_digits=10, decimal_places=2,
+        max_digits=10,
+        decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name="Monto IVA"
+        verbose_name="Monto IVA",
     )
     total = models.DecimalField(
-        max_digits=10, decimal_places=2,
+        max_digits=10,
+        decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name="Total"
+        verbose_name="Total",
     )
-    currency = models.CharField(
-        max_length=3, default="USD", verbose_name="Moneda"
-    )
+    currency = models.CharField(max_length=3, default="USD", verbose_name="Moneda")
 
     # Billing period
     period_start = models.DateTimeField(verbose_name="Inicio del período")
@@ -396,33 +418,26 @@ class Invoice(models.Model):
         max_length=20,
         choices=InvoiceStatus.choices,
         default=InvoiceStatus.DRAFT,
-        verbose_name="Estado"
+        verbose_name="Estado",
     )
     claro_pay_charge_id = models.CharField(
-        max_length=100, blank=True, default="",
-        verbose_name="ID de cargo Claro Pay"
+        max_length=100, blank=True, default="", verbose_name="ID de cargo Claro Pay"
     )
-    paid_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Pagado en"
-    )
+    paid_at = models.DateTimeField(null=True, blank=True, verbose_name="Pagado en")
 
     # SRI Ecuador electronic invoice fields
     sri_authorization_number = models.CharField(
-        max_length=49, blank=True, default="",
-        verbose_name="Número de autorización SRI"
+        max_length=49, blank=True, default="", verbose_name="Número de autorización SRI"
     )
     sri_access_key = models.CharField(
-        max_length=49, blank=True, default="",
-        verbose_name="Clave de acceso SRI"
+        max_length=49, blank=True, default="", verbose_name="Clave de acceso SRI"
     )
 
     # Additional data
     invoice_data = models.JSONField(
         default=dict, verbose_name="Datos adicionales de factura"
     )
-    pdf_url = models.URLField(
-        blank=True, default="", verbose_name="URL del PDF"
-    )
+    pdf_url = models.URLField(blank=True, default="", verbose_name="URL del PDF")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -458,6 +473,6 @@ class Invoice(models.Model):
         self.status = self.InvoiceStatus.PAID
         self.claro_pay_charge_id = claro_pay_charge_id
         self.paid_at = timezone.now()
-        self.save(update_fields=[
-            "status", "claro_pay_charge_id", "paid_at", "updated_at"
-        ])
+        self.save(
+            update_fields=["status", "claro_pay_charge_id", "paid_at", "updated_at"]
+        )

@@ -3,9 +3,14 @@ Loyallia — Custom User Model
 Extends AbstractBaseUser for full control.
 Supports per-tenant RBAC with OWNER, MANAGER, STAFF, SUPER_ADMIN roles.
 """
+
 import uuid
 
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 from django.db import models
 
 
@@ -39,6 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     Custom user model with per-tenant role-based access control.
     tenant is nullable for SUPER_ADMIN users (platform-level access).
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         "tenants.Tenant",
@@ -50,7 +56,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100, blank=True, default="")
     last_name = models.CharField(max_length=100, blank=True, default="")
-    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.STAFF)
+    role = models.CharField(
+        max_length=20, choices=UserRole.choices, default=UserRole.STAFF
+    )
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Django admin access
@@ -100,6 +108,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_locked(self) -> bool:
         from django.utils import timezone
+
         if self.locked_until is None:
             return False
         return timezone.now() < self.locked_until
@@ -109,6 +118,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         from datetime import timedelta
 
         from django.utils import timezone
+
         self.failed_login_count += 1
         if self.failed_login_count >= 5:
             self.locked_until = timezone.now() + timedelta(minutes=15)
@@ -123,8 +133,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class RefreshToken(models.Model):
     """Stores issued refresh tokens for revocation support."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refresh_tokens")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="refresh_tokens"
+    )
     token_hash = models.CharField(max_length=64, unique=True)  # SHA-256 hash
     device_name = models.CharField(max_length=200, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -138,4 +151,5 @@ class RefreshToken(models.Model):
     @property
     def is_valid(self) -> bool:
         from django.utils import timezone
+
         return self.revoked_at is None and timezone.now() < self.expires_at

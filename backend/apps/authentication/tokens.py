@@ -2,6 +2,7 @@
 Loyallia — JWT Token Utilities
 Issue and verify access + refresh tokens using HS256 with Django SECRET_KEY.
 """
+
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
@@ -31,10 +32,16 @@ def create_access_token(user_id: str, tenant_id: str | None, role: str) -> str:
         "tenant_id": str(tenant_id) if tenant_id else None,
         "role": role,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES)).timestamp()),
+        "exp": int(
+            (
+                now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES)
+            ).timestamp()
+        ),
         "type": "access",
     }
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
 
 
 def create_refresh_token_string() -> str:

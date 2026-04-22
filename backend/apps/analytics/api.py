@@ -2,6 +2,7 @@
 Loyallia — Analytics API router
 Business intelligence and reporting endpoints.
 """
+
 from datetime import timedelta
 
 from django.db.models import Avg, Count, Sum
@@ -22,7 +23,7 @@ router = Router()
 # ============ Pydantic Schemas ============
 class AnalyticsDateRange(BaseModel):
     start_date: str  # ISO format
-    end_date: str    # ISO format
+    end_date: str  # ISO format
 
 
 class CustomerAnalyticsSchema(BaseModel):
@@ -58,6 +59,7 @@ def get_overview_analytics(request, days: int = 30):
     """Get key business metrics for dashboard overview. MANAGER+ only."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
     start_date = timezone.now() - timedelta(days=days)
@@ -65,30 +67,25 @@ def get_overview_analytics(request, days: int = 30):
     # Customer metrics
     total_customers = Customer.objects.filter(tenant=tenant).count()
     new_customers = Customer.objects.filter(
-        tenant=tenant,
-        created_at__gte=start_date
+        tenant=tenant, created_at__gte=start_date
     ).count()
 
     # Transaction metrics
-    transactions = Transaction.objects.filter(
-        tenant=tenant,
-        created_at__gte=start_date
-    )
+    transactions = Transaction.objects.filter(tenant=tenant, created_at__gte=start_date)
     total_transactions = transactions.count()
     total_revenue = transactions.aggregate(Sum("amount"))["amount__sum"] or 0
 
     # Program metrics
     total_programs = Card.objects.filter(tenant=tenant).count()
-    active_programs = Card.objects.filter(
-        tenant=tenant,
-        passes__is_active=True
-    ).distinct().count()
+    active_programs = (
+        Card.objects.filter(tenant=tenant, passes__is_active=True).distinct().count()
+    )
 
     # Notification metrics
     from apps.notifications.models import Notification
+
     notifications_sent = Notification.objects.filter(
-        tenant=tenant,
-        created_at__gte=start_date
+        tenant=tenant, created_at__gte=start_date
     ).count()
 
     return {
@@ -96,12 +93,18 @@ def get_overview_analytics(request, days: int = 30):
         "customers": {
             "total": total_customers,
             "new": new_customers,
-            "growth_rate": (new_customers / total_customers * 100) if total_customers > 0 else 0,
+            "growth_rate": (
+                (new_customers / total_customers * 100) if total_customers > 0 else 0
+            ),
         },
         "transactions": {
             "total": total_transactions,
             "revenue": float(total_revenue),
-            "average_value": float(total_revenue / total_transactions) if total_transactions > 0 else 0,
+            "average_value": (
+                float(total_revenue / total_transactions)
+                if total_transactions > 0
+                else 0
+            ),
         },
         "programs": {
             "total": total_programs,
@@ -116,14 +119,12 @@ def get_overview_analytics(request, days: int = 30):
 # ============ Customer Analytics ============
 @router.get("/customers/", auth=jwt_auth, summary="Get customer analytics")
 def get_customer_analytics(
-    request,
-    segment: str | None = None,
-    limit: int = 50,
-    offset: int = 0
+    request, segment: str | None = None, limit: int = 50, offset: int = 0
 ):
     """Get detailed customer analytics. MANAGER+ only."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
@@ -131,8 +132,7 @@ def get_customer_analytics(
     customers = Customer.objects.filter(tenant=tenant)
     for customer in customers:
         analytics, created = CustomerAnalytics.objects.get_or_create(
-            customer=customer,
-            defaults={"tenant": tenant}
+            customer=customer, defaults={"tenant": tenant}
         )
         analytics.update_metrics()
 
@@ -143,7 +143,7 @@ def get_customer_analytics(
         query = query.filter(segment=segment)
 
     total = query.count()
-    analytics = query[offset:offset + limit]
+    analytics = query[offset : offset + limit]
 
     return {
         "total": total,
@@ -158,25 +158,32 @@ def get_customer_analytics(
                 "total_rewards_earned": a.total_rewards_earned,
                 "total_rewards_redeemed": a.total_rewards_redeemed,
                 "segment": a.segment,
-                "last_visit": a.customer.last_visit.isoformat() if a.customer.last_visit else None,
+                "last_visit": (
+                    a.customer.last_visit.isoformat() if a.customer.last_visit else None
+                ),
             }
             for a in analytics
-        ]
+        ],
     }
 
 
-@router.get("/customers/{customer_id}/", auth=jwt_auth, summary="Get individual customer analytics")
+@router.get(
+    "/customers/{customer_id}/",
+    auth=jwt_auth,
+    summary="Get individual customer analytics",
+)
 def get_customer_detail_analytics(request, customer_id: str):
     """Get detailed analytics for a specific customer. MANAGER+ only."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     from django.shortcuts import get_object_or_404
+
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
 
     analytics, created = CustomerAnalytics.objects.get_or_create(
-        customer=customer,
-        defaults={"tenant": request.tenant}
+        customer=customer, defaults={"tenant": request.tenant}
     )
     analytics.update_metrics()
 
@@ -203,7 +210,9 @@ def get_customer_detail_analytics(request, customer_id: str):
             "total_rewards_earned": analytics.total_rewards_earned,
             "total_rewards_redeemed": analytics.total_rewards_redeemed,
             "segment": analytics.segment,
-            "last_visit": customer.last_visit.isoformat() if customer.last_visit else None,
+            "last_visit": (
+                customer.last_visit.isoformat() if customer.last_visit else None
+            ),
         },
         "recent_transactions": [
             {
@@ -223,7 +232,7 @@ def get_customer_detail_analytics(request, customer_id: str):
                 "qr_code": p.qr_code,
             }
             for p in enrollments
-        ]
+        ],
     }
 
 
@@ -233,6 +242,7 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
     """Get detailed program analytics. MANAGER+ only."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
@@ -240,15 +250,14 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
     programs = Card.objects.filter(tenant=tenant)
     for program in programs:
         analytics, created = ProgramAnalytics.objects.get_or_create(
-            card=program,
-            defaults={"tenant": tenant}
+            card=program, defaults={"tenant": tenant}
         )
         analytics.update_metrics()
 
     # Query
     query = ProgramAnalytics.objects.filter(tenant=tenant)
     total = query.count()
-    analytics = query[offset:offset + limit]
+    analytics = query[offset : offset + limit]
 
     return {
         "total": total,
@@ -270,31 +279,34 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
                 "repeat_purchase_rate": float(a.repeat_purchase_rate),
             }
             for a in analytics
-        ]
+        ],
     }
 
 
-@router.get("/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics")
+@router.get(
+    "/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics"
+)
 def get_program_detail_analytics(request, program_id: str):
     """Get detailed analytics for a specific program. MANAGER+ only."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     from django.shortcuts import get_object_or_404
+
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
     analytics, created = ProgramAnalytics.objects.get_or_create(
-        card=card,
-        defaults={"tenant": request.tenant}
+        card=card, defaults={"tenant": request.tenant}
     )
     analytics.update_metrics()
 
     # Get top customers for this program
-    top_customers = Customer.objects.filter(
-        passes__card=card
-    ).annotate(
-        total_spent=Sum("passes__transactions__amount")
-    ).order_by("-total_spent")[:10]
+    top_customers = (
+        Customer.objects.filter(passes__card=card)
+        .annotate(total_spent=Sum("passes__transactions__amount"))
+        .order_by("-total_spent")[:10]
+    )
 
     return {
         "program": {
@@ -324,7 +336,7 @@ def get_program_detail_analytics(request, program_id: str):
                 "visits": c.total_visits,
             }
             for c in top_customers
-        ]
+        ],
     }
 
 
@@ -334,14 +346,14 @@ def get_trends_analytics(request, days: int = 30):
     """Get daily analytics trends. MANAGER+ only."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
     start_date = timezone.now().date() - timedelta(days=days)
 
     # Get daily analytics
     daily_data = DailyAnalytics.objects.filter(
-        tenant=tenant,
-        analytics_date__gte=start_date
+        tenant=tenant, analytics_date__gte=start_date
     ).order_by("analytics_date")
 
     # If no data, generate from transactions
@@ -362,7 +374,7 @@ def get_trends_analytics(request, days: int = 30):
                 "notifications_sent": d.notifications_sent,
             }
             for d in daily_data
-        ]
+        ],
     }
 
 
@@ -372,6 +384,7 @@ def get_segmentation_analytics(request):
     """Get customer segmentation breakdown. MANAGER+ only."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
@@ -379,20 +392,21 @@ def get_segmentation_analytics(request):
     customers = Customer.objects.filter(tenant=tenant)
     for customer in customers:
         analytics, created = CustomerAnalytics.objects.get_or_create(
-            customer=customer,
-            defaults={"tenant": tenant}
+            customer=customer, defaults={"tenant": tenant}
         )
         analytics.update_metrics()
 
     # Group by segment
-    segments = CustomerAnalytics.objects.filter(
-        tenant=tenant
-    ).values("segment").annotate(
-        count=Count("id"),
-        sum_spent=Sum("total_spent"),
-        avg_spent=Avg("total_spent"),
-        sum_visits=Sum("total_visits"),
-        avg_visits=Avg("total_visits")
+    segments = (
+        CustomerAnalytics.objects.filter(tenant=tenant)
+        .values("segment")
+        .annotate(
+            count=Count("id"),
+            sum_spent=Sum("total_spent"),
+            avg_spent=Avg("total_spent"),
+            sum_visits=Sum("total_visits"),
+            avg_visits=Avg("total_visits"),
+        )
     )
 
     return {
@@ -401,12 +415,16 @@ def get_segmentation_analytics(request):
             {
                 "segment": s["segment"],
                 "count": s["count"],
-                "percentage": (s["count"] / customers.count() * 100) if customers.count() > 0 else 0,
+                "percentage": (
+                    (s["count"] / customers.count() * 100)
+                    if customers.count() > 0
+                    else 0
+                ),
                 "total_spent": float(s["sum_spent"] or 0),
                 "avg_spent": float(s["avg_spent"] or 0),
                 "total_visits": s["sum_visits"],
                 "avg_visits": float(s["avg_visits"] or 0),
             }
             for s in segments
-        ]
+        ],
     }

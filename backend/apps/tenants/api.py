@@ -5,14 +5,25 @@ Handles: current tenant profile, branding update, location management.
 All strings via get_message() — Rule #11.
 All endpoints require JWT auth with tenant scope.
 """
+
 import logging
 import uuid
 
 from ninja import Router
 from ninja.errors import HttpError
-from pydantic import BaseModel
 
-from apps.tenants.models import Location, Tenant
+from apps.tenants.models import Location
+from apps.tenants.schemas import (
+    LocationCreateIn,
+    LocationOut,
+    LocationUpdateIn,
+    MessageOut,
+    TeamMemberCreateIn,
+    TeamMemberOut,
+    TeamMemberUpdateIn,
+    TenantOut,
+    TenantUpdateIn,
+)
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 
@@ -22,122 +33,21 @@ router = Router()
 
 
 # =============================================================================
-# SCHEMAS
-# =============================================================================
-
-class TenantOut(BaseModel):
-    id: str
-    name: str
-    slug: str
-    plan: str
-    is_active: bool
-    trial_days_remaining: int
-    logo_url: str
-    primary_color: str
-    secondary_color: str
-    country: str
-    timezone: str
-    phone: str
-    website: str
-    address: str
-
-    @classmethod
-    def from_tenant(cls, t: Tenant) -> "TenantOut":
-        return cls(
-            id=str(t.id),
-            name=t.name,
-            slug=t.slug,
-            plan=t.plan,
-            is_active=t.is_active,
-            trial_days_remaining=t.trial_days_remaining,
-            logo_url=t.logo_url,
-            primary_color=t.primary_color,
-            secondary_color=t.secondary_color,
-            country=t.country,
-            timezone=t.timezone,
-            phone=t.phone,
-            website=t.website,
-            address=t.address,
-        )
-
-
-class TenantUpdateIn(BaseModel):
-    name: str | None = None
-    logo_url: str | None = None
-    primary_color: str | None = None
-    secondary_color: str | None = None
-    phone: str | None = None
-    website: str | None = None
-    address: str | None = None
-    timezone: str | None = None
-
-
-class LocationOut(BaseModel):
-    id: str
-    name: str
-    address: str
-    city: str
-    country: str
-    latitude: float | None
-    longitude: float | None
-    phone: str
-    is_active: bool
-    is_primary: bool
-
-    @classmethod
-    def from_location(cls, loc: Location) -> "LocationOut":
-        return cls(
-            id=str(loc.id),
-            name=loc.name,
-            address=loc.address,
-            city=loc.city,
-            country=loc.country,
-            latitude=float(loc.latitude) if loc.latitude is not None else None,
-            longitude=float(loc.longitude) if loc.longitude is not None else None,
-            phone=loc.phone,
-            is_active=loc.is_active,
-            is_primary=loc.is_primary,
-        )
-
-
-class LocationCreateIn(BaseModel):
-    name: str
-    address: str = ""
-    city: str = ""
-    country: str = "EC"
-    latitude: float | None = None
-    longitude: float | None = None
-    phone: str = ""
-    is_primary: bool = False
-
-
-class LocationUpdateIn(BaseModel):
-    name: str | None = None
-    address: str | None = None
-    city: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-    phone: str | None = None
-    is_active: bool | None = None
-    is_primary: bool | None = None
-
-
-class MessageOut(BaseModel):
-    success: bool
-    message: str
-
-
-# =============================================================================
 # TENANT ENDPOINTS
 # =============================================================================
 
-@router.get("/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual")
+
+@router.get(
+    "/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual"
+)
 def get_tenant(request):
     """Returns the current tenant's profile."""
     return TenantOut.from_tenant(request.tenant)
 
 
-@router.patch("/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio")
+@router.patch(
+    "/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio"
+)
 def update_tenant(request, payload: TenantUpdateIn):
     """Updates tenant branding and settings. OWNER only."""
     if not is_owner(request):
@@ -179,6 +89,7 @@ def update_tenant(request, payload: TenantUpdateIn):
 # LOCATION ENDPOINTS
 # =============================================================================
 
+
 @router.get(
     "/locations/",
     auth=jwt_auth,
@@ -206,9 +117,13 @@ def create_location(request, payload: LocationCreateIn):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     from django.conf import settings
+
     count = Location.objects.filter(tenant=request.tenant).count()
     if count >= settings.MAX_LOCATIONS_PER_TENANT:
-        raise HttpError(400, get_message("TENANT_MAX_PROGRAMS", max=settings.MAX_LOCATIONS_PER_TENANT))
+        raise HttpError(
+            400,
+            get_message("TENANT_MAX_PROGRAMS", max=settings.MAX_LOCATIONS_PER_TENANT),
+        )
 
     loc = Location.objects.create(
         tenant=request.tenant,
@@ -224,7 +139,9 @@ def create_location(request, payload: LocationCreateIn):
 
     # If this is set as primary, demote all others
     if payload.is_primary:
-        Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(is_primary=False)
+        Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(
+            is_primary=False
+        )
 
     return LocationOut.from_location(loc)
 
@@ -247,11 +164,14 @@ def update_location(request, location_id: str):
 
     # Parse body manually since we need the request body
     import json
+
     try:
         body = json.loads(request.body)
         payload = LocationUpdateIn(**body)
     except Exception:
-        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
+        raise HttpError(
+            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
+        )
 
     update_fields = ["updated_at"]
 
@@ -280,7 +200,9 @@ def update_location(request, location_id: str):
         loc.is_primary = payload.is_primary
         update_fields.append("is_primary")
         if payload.is_primary:
-            Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(is_primary=False)
+            Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(
+                is_primary=False
+            )
 
     loc.save(update_fields=update_fields)
     return LocationOut.from_location(loc)
@@ -310,35 +232,6 @@ def delete_location(request, location_id: str):
 # TEAM ENDPOINTS
 # =============================================================================
 
-class TeamMemberOut(BaseModel):
-    id: str
-    email: str
-    first_name: str
-    last_name: str
-    role: str
-    is_active: bool
-    date_joined: str
-
-    @classmethod
-    def from_user(cls, u) -> "TeamMemberOut":
-        return cls(
-            id=str(u.id),
-            email=u.email,
-            first_name=u.first_name,
-            last_name=u.last_name,
-            role=u.role,
-            is_active=u.is_active,
-            date_joined=u.date_joined.isoformat(),
-        )
-
-
-class TeamMemberCreateIn(BaseModel):
-    email: str
-    first_name: str
-    last_name: str
-    role: str = "MANAGER"
-    send_email: bool = True
-
 
 @router.get(
     "/team/",
@@ -352,6 +245,7 @@ def list_team(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     from apps.authentication.models import User
+
     users = User.objects.filter(tenant=request.tenant).order_by("-date_joined")
     return [TeamMemberOut.from_user(u) for u in users]
 
@@ -373,10 +267,14 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     from apps.authentication.models import User, UserRole
 
     if payload.role not in (UserRole.MANAGER, UserRole.STAFF):
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF"))
+        raise HttpError(
+            400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF")
+        )
 
     if User.objects.filter(email=payload.email).exists():
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Email ya registrado"))
+        raise HttpError(
+            400, get_message("VALIDATION_ERROR", detail="Email ya registrado")
+        )
 
     temp_password = secrets.token_urlsafe(8)
     user = User.objects.create_user(
@@ -390,7 +288,10 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
     logger.info(
         "OWNER %s added team member %s (%s) to tenant %s",
-        request.user.email, user.email, user.role, request.tenant.name,
+        request.user.email,
+        user.email,
+        user.role,
+        request.tenant.name,
     )
 
     # Send welcome email with credentials
@@ -405,9 +306,16 @@ def add_team_member(request, payload: TeamMemberCreateIn):
             }
             role_label = role_labels.get(payload.role, payload.role)
             tenant_name = request.tenant.name
-            login_url = getattr(django_settings, "FRONTEND_URL", "https://rewards.loyallia.com") + "/login"
-            from_email = getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
-            primary_color = getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
+            login_url = (
+                getattr(django_settings, "FRONTEND_URL", "https://rewards.loyallia.com")
+                + "/login"
+            )
+            from_email = getattr(
+                django_settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com"
+            )
+            primary_color = (
+                getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
+            )
 
             html_content = f"""<!DOCTYPE html>
 <html lang="es">
@@ -486,11 +394,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
     }
 
 
-class TeamMemberUpdateIn(BaseModel):
-    role: str | None = None
-    is_active: bool | None = None
-
-
 @router.patch(
     "/team/{user_id}/",
     auth=jwt_auth,
@@ -517,7 +420,10 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
 
     if payload.role is not None:
         if payload.role not in (UserRole.MANAGER, UserRole.STAFF):
-            raise HttpError(400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF"))
+            raise HttpError(
+                400,
+                get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF"),
+            )
         member.role = payload.role
         update_fields.append("role")
 
@@ -529,7 +435,11 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
 
     logger.info(
         "OWNER %s updated team member %s (role=%s, active=%s) in tenant %s",
-        request.user.email, member.email, member.role, member.is_active, request.tenant.name,
+        request.user.email,
+        member.email,
+        member.role,
+        member.is_active,
+        request.tenant.name,
     )
 
     return {"success": True, "message": "Miembro actualizado"}
@@ -562,8 +472,9 @@ def delete_team_member(request, user_id: str):
 
     logger.info(
         "OWNER %s removed team member %s from tenant %s",
-        request.user.email, email, request.tenant.name,
+        request.user.email,
+        email,
+        request.tenant.name,
     )
 
     return {"success": True, "message": "Miembro eliminado"}
-

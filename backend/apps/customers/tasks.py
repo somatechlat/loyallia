@@ -2,6 +2,7 @@
 Loyallia — Customers Celery Tasks
 Async pass generation and update tasks.
 """
+
 import logging
 
 from celery import shared_task
@@ -81,7 +82,11 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
     import uuid
 
     from apps.customers.models import CustomerPass
-    from apps.notifications.models import Notification, NotificationChannel, NotificationType
+    from apps.notifications.models import (
+        Notification,
+        NotificationChannel,
+        NotificationType,
+    )
     from apps.notifications.service import NotificationService
 
     try:

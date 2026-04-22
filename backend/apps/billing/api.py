@@ -2,6 +2,7 @@
 Loyallia — Billing API Router
 Subscription management and payment processing via Claro Pay Ecuador.
 """
+
 import json
 import logging
 
@@ -10,7 +11,6 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
-from pydantic import BaseModel
 
 from apps.billing.claro_pay_service import ClaroPayError, claro_pay_service
 from apps.billing.models import (
@@ -19,6 +19,11 @@ from apps.billing.models import (
     PaymentMethod,
     Subscription,
     SubscriptionStatus,
+)
+from apps.billing.schemas import (
+    AddPaymentMethodSchema,
+    SubscribeSchema,
+    UpdateSubscriptionSchema,
 )
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
@@ -29,37 +34,10 @@ router = Router()
 
 
 # ============================================================================
-# Pydantic Schemas
-# ============================================================================
-class SubscribeSchema(BaseModel):
-    """Input for subscribing a tenant to the FULL plan."""
-    card_token: str
-    card_brand: str = ""
-    card_last_four: str = ""
-    card_exp_month: int | None = None
-    card_exp_year: int | None = None
-    cardholder_name: str = ""
-    billing_cycle: str = "monthly"
-
-
-class UpdateSubscriptionSchema(BaseModel):
-    billing_cycle: str | None = None
-    cancel_at_period_end: bool | None = None
-
-
-class AddPaymentMethodSchema(BaseModel):
-    claro_pay_token: str
-    card_brand: str = ""
-    card_last_four: str = ""
-    card_exp_month: int | None = None
-    card_exp_year: int | None = None
-    cardholder_name: str = ""
-    is_default: bool = False
-
-
-# ============================================================================
 # Plans
 # ============================================================================
+
+
 @router.get("/plans/", auth=jwt_auth, summary="Planes disponibles")
 def list_plans(request: HttpRequest):
     """Return available billing plans with pricing."""
@@ -130,7 +108,9 @@ def get_subscription(request: HttpRequest):
 
     # Get default payment method
     default_pm = PaymentMethod.objects.filter(
-        tenant=request.tenant, is_default=True, is_active=True,
+        tenant=request.tenant,
+        is_default=True,
+        is_active=True,
     ).first()
 
     return {
@@ -141,20 +121,36 @@ def get_subscription(request: HttpRequest):
         "status": subscription.status,
         "status_display": subscription.get_status_display(),
         "is_access_allowed": subscription.is_access_allowed,
-        "trial_start": subscription.trial_start.isoformat() if subscription.trial_start else None,
-        "trial_end": subscription.trial_end.isoformat() if subscription.trial_end else None,
+        "trial_start": (
+            subscription.trial_start.isoformat() if subscription.trial_start else None
+        ),
+        "trial_end": (
+            subscription.trial_end.isoformat() if subscription.trial_end else None
+        ),
         "days_until_trial_end": subscription.days_until_trial_end,
-        "current_period_start": subscription.current_period_start.isoformat() if subscription.current_period_start else None,
-        "current_period_end": subscription.current_period_end.isoformat() if subscription.current_period_end else None,
+        "current_period_start": (
+            subscription.current_period_start.isoformat()
+            if subscription.current_period_start
+            else None
+        ),
+        "current_period_end": (
+            subscription.current_period_end.isoformat()
+            if subscription.current_period_end
+            else None
+        ),
         "cancel_at_period_end": subscription.cancel_at_period_end,
         "monthly_price": float(subscription.monthly_price),
         "monthly_total_with_tax": float(subscription.monthly_total_with_tax),
-        "payment_method": {
-            "id": str(default_pm.id),
-            "brand": default_pm.card_brand,
-            "last_four": default_pm.card_last_four,
-            "display": default_pm.display_name,
-        } if default_pm else None,
+        "payment_method": (
+            {
+                "id": str(default_pm.id),
+                "brand": default_pm.card_brand,
+                "last_four": default_pm.card_last_four,
+                "display": default_pm.display_name,
+            }
+            if default_pm
+            else None
+        ),
     }
 
 
@@ -173,21 +169,42 @@ def get_usage(request: HttpRequest):
 
     total_customers = Customer.objects.filter(tenant=tenant).count()
     total_programs = Card.objects.filter(tenant=tenant).count()
-    monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
-    monthly_notifs = Notification.objects.filter(tenant=tenant, created_at__gte=month_start).count()
+    monthly_txns = Transaction.objects.filter(
+        tenant=tenant, created_at__gte=month_start
+    ).count()
+    monthly_notifs = Notification.objects.filter(
+        tenant=tenant, created_at__gte=month_start
+    ).count()
 
     # FULL plan = unlimited, but we show usage for visibility
     limits = {
-        "clientes": {"used": total_customers, "limit": 999999, "percentage": min(total_customers / 1000 * 100, 100)},
-        "programas": {"used": total_programs, "limit": 50, "percentage": min(total_programs / 50 * 100, 100)},
-        "transacciones_mes": {"used": monthly_txns, "limit": 999999, "percentage": min(monthly_txns / 10000 * 100, 100)},
-        "notificaciones_mes": {"used": monthly_notifs, "limit": 999999, "percentage": min(monthly_notifs / 5000 * 100, 100)},
+        "clientes": {
+            "used": total_customers,
+            "limit": 999999,
+            "percentage": min(total_customers / 1000 * 100, 100),
+        },
+        "programas": {
+            "used": total_programs,
+            "limit": 50,
+            "percentage": min(total_programs / 50 * 100, 100),
+        },
+        "transacciones_mes": {
+            "used": monthly_txns,
+            "limit": 999999,
+            "percentage": min(monthly_txns / 10000 * 100, 100),
+        },
+        "notificaciones_mes": {
+            "used": monthly_notifs,
+            "limit": 999999,
+            "percentage": min(monthly_notifs / 5000 * 100, 100),
+        },
     }
 
     return {
         "status": "ok",
         "limits": limits,
     }
+
 
 @router.post("/subscribe/", auth=jwt_auth, summary="Suscribirse al plan FULL")
 @require_role("OWNER")
@@ -218,8 +235,11 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
             "subscription": {
                 "plan": subscription.plan,
                 "status": subscription.status,
-                "current_period_end": subscription.current_period_end.isoformat()
-                if subscription.current_period_end else None,
+                "current_period_end": (
+                    subscription.current_period_end.isoformat()
+                    if subscription.current_period_end
+                    else None
+                ),
             },
         }
 
@@ -275,12 +295,17 @@ def cancel_subscription(request: HttpRequest):
     return {
         "success": True,
         "message": get_message("BILLING_CANCEL_SCHEDULED"),
-        "effective_date": subscription.current_period_end.isoformat()
-        if subscription.current_period_end else None,
+        "effective_date": (
+            subscription.current_period_end.isoformat()
+            if subscription.current_period_end
+            else None
+        ),
     }
 
 
-@router.post("/subscription/reactivate/", auth=jwt_auth, summary="Reactivar suscripción")
+@router.post(
+    "/subscription/reactivate/", auth=jwt_auth, summary="Reactivar suscripción"
+)
 @require_role("OWNER")
 def reactivate_subscription(request: HttpRequest):
     """Reactivate a canceled-but-not-yet-expired subscription."""
@@ -305,7 +330,8 @@ def reactivate_subscription(request: HttpRequest):
 def list_payment_methods(request: HttpRequest):
     """List all active payment methods for the tenant."""
     methods = PaymentMethod.objects.filter(
-        tenant=request.tenant, is_active=True,
+        tenant=request.tenant,
+        is_active=True,
     )
 
     return {
@@ -332,7 +358,8 @@ def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
     """Add a new tokenized payment method."""
     if data.is_default:
         PaymentMethod.objects.filter(
-            tenant=request.tenant, is_default=True,
+            tenant=request.tenant,
+            is_default=True,
         ).update(is_default=False)
 
     pm = PaymentMethod.objects.create(
@@ -374,8 +401,10 @@ def remove_payment_method(request: HttpRequest, payment_method_id: str):
         subscription
         and subscription.status == SubscriptionStatus.ACTIVE
         and PaymentMethod.objects.filter(
-            tenant=request.tenant, is_active=True,
-        ).count() == 1
+            tenant=request.tenant,
+            is_active=True,
+        ).count()
+        == 1
     ):
         raise HttpError(400, get_message("BILLING_CANNOT_REMOVE_LAST_PM"))
 
@@ -401,7 +430,8 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
     )
 
     PaymentMethod.objects.filter(
-        tenant=request.tenant, is_default=True,
+        tenant=request.tenant,
+        is_default=True,
     ).update(is_default=False)
 
     pm.is_default = True
