@@ -16,6 +16,11 @@ class CustomerCreateIn(BaseModel):
     gender: str | None = ""
     notes: str | None = ""
 
+    # Allow dynamic custom fields from the Form Builder to be captured
+    model_config = {
+        "extra": "allow"
+    }
+
     @field_validator("first_name", "last_name")
     @classmethod
     def validate_name(cls, v: str) -> str:
