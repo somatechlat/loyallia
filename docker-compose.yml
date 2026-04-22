@@ -517,10 +517,11 @@ services:
           memory: 256M
           cpus: "0.25"
     healthcheck:
-      test: ["CMD", "vault", "status"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8200/v1/sys/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
   # Vault KV v2 initialization — seeds secrets for development
   vault-init:

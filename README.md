@@ -11,6 +11,7 @@
 |----------|------|-------------|
 | **SRS (Complete)** | `docs/SRS_Loyallia_COMPLETE.md` | Full ISO/IEC 29148:2018 Software Requirements Specification |
 | **Architecture & Diagrams** | `docs/ARCHITECTURE.md` | System architecture, sequence diagrams, flowcharts, ERD (Mermaid) |
+| **Port Authority** | `docs/PORT_AUTHORITY.md` | Development port map and test credentials |
 | **Docker Compose** | `docker-compose.yml` | Full local/staging stack — all open source |
 
 ---
@@ -19,7 +20,7 @@
 
 Loyallia enables businesses to run digital loyalty programs delivered natively through **Apple Wallet** and **Google Wallet** — **zero customer app installation required**.
 
-### Key Modules Specified
+### Key Modules
 
 | # | Module |
 |---|--------|
@@ -32,10 +33,13 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 | 7 | Customer Segmentation & Retargeting |
 | 8 | Analytics & KPI Reporting |
 | 9 | Referral Program Engine |
-| 10 | Subscription & Billing (Stripe + IVA) |
+| 10 | Subscription & Billing (Bendo/PlacetoPay + IVA) |
 | 11 | Customer Wallet Experience |
-| 12 | REST API & Integration Layer |
+| 12 | REST API & Integration Layer (Django Ninja) |
 | 13 | Super-Admin Panel |
+| 14 | Agent API (Enterprise — AI Assistant) |
+| 15 | Audit & Compliance (LOPDP/GDPR) |
+| 16 | i18n — Multi-Language (ES, EN, FR, DE) |
 
 ### 10 Loyalty Card Types
 
@@ -67,17 +71,19 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 ## Technology Stack (All Open Source)
 
 | Layer | Technology |
-|-------|-----------|
+|-------|-----------| 
 | Backend API | Django 5 + Django Ninja |
 | ORM | Django ORM + PostgreSQL 16 |
 | Dashboard | Next.js 14 (React 18) |
 | Scanner | Progressive Web App (browser-based) |
 | Task Queue | Celery 5 + Redis 7 |
-| Scheduler | Celery Beat |
+| Scheduler | Celery Beat + django-celery-beat |
 | Connection Pool | PgBouncer |
 | File Storage | MinIO (S3-compatible) |
-| Reverse Proxy | Nginx |
+| Reverse Proxy | Nginx (production) |
 | Worker Monitor | Flower |
+| Secret Management | HashiCorp Vault |
+| Payment Gateway | Bendo / PlacetoPay (pluggable) |
 | Containers | Docker + Docker Compose |
 
 ---
@@ -90,7 +96,7 @@ git clone <repo> loyallia && cd loyallia
 
 # 2. Copy environment template
 cp .env.example .env
-# Edit .env with your Apple/Google/Stripe credentials
+# Edit .env with your credentials (payment gateway, email, etc.)
 
 # 3. Place certificates
 mkdir -p certs
@@ -98,37 +104,66 @@ mkdir -p certs
 # certs/google_wallet_service_account.json
 # certs/firebase_service_account.json
 
-# 4. Start all services
-docker-compose up -d
+# 4. Start all services (builds images + migrates + seeds data)
+docker compose up -d --build
 
-# 5. Run migrations
-docker-compose exec api python manage.py migrate
+# The API service automatically runs:
+#   - migrate --noinput
+#   - collectstatic --noinput
+#   - seed_subscription_plans
+#   - seed_test_data
+#   - runserver 0.0.0.0:8000
 
-# 6. Create superuser
-docker-compose exec api python manage.py createsuperuser
-
-# 7. Access points
-# Dashboard:      http://localhost
-# API docs:       http://localhost/api/v1/docs
-# MinIO Console:  http://localhost:9001
-# Flower:         http://localhost:5555
+# 5. Access points
+# Dashboard:       http://localhost:33906
+# API Docs:        http://localhost:33905/api/v1/docs/
+# API Health:      http://localhost:33905/api/v1/health/
+# MinIO Console:   http://localhost:33904
+# Flower:          http://localhost:33907
+# Vault UI:        http://localhost:33908
 ```
 
 ---
 
-## Service Ports
+## Service Ports (33900+ Range)
 
-| Service | Port | Notes |
-|---------|------|-------|
-| Nginx | 80 / 443 | Main entry point |
-| Django API | 8000 | Internal |
-| Next.js | 3000 | Internal |
-| PostgreSQL | 5432 | Internal |
-| PgBouncer | 6432 | Internal |
-| Redis | 6379 | Internal |
-| MinIO API | 9000 | File storage |
-| MinIO Console | 9001 | Admin UI |
-| Flower | 5555 | Celery monitor |
+| Port  | Service           | Internal Port | Notes              |
+|-------|-------------------|---------------|--------------------|
+| 33900 | PostgreSQL 16     | 5432          | Primary database   |
+| 33901 | PgBouncer         | 6432          | Connection pooling |
+| 33902 | Redis 7           | 6379          | Cache + Celery     |
+| 33903 | MinIO (API)       | 9000          | File storage       |
+| 33904 | MinIO (Console)   | 9001          | Admin UI           |
+| 33905 | Django API        | 8000          | REST API           |
+| 33906 | Next.js Dashboard | 3000          | Frontend           |
+| 33907 | Flower            | 5555          | Celery monitor     |
+| 33908 | HashiCorp Vault   | 8200          | Secrets            |
+
+> **Memory Budget**: 10GB total cluster limit. See `docker-compose.yml` header for per-service allocation.
+
+---
+
+## Subscription Plans
+
+| Plan | Monthly | Annual | AI | Agent API | Geo |
+|------|---------|--------|-----|-----------|-----|
+| Trial (5 days) | Free | — | ✅ | ✅ | ✅ |
+| Starter | $29 | $290 | ❌ | ❌ | ❌ |
+| Professional | $75 | $750 | ❌ | ❌ | ✅ |
+| Enterprise | $149 | $1,490 | ✅ | ✅ | ✅ |
+
+---
+
+## Test Credentials (Development Only)
+
+After `seed_test_data` runs automatically:
+
+| Email                   | Password | Role        |
+|-------------------------|----------|-------------|
+| admin@loyallia.com      | 123456   | SUPER_ADMIN |
+| carlos@cafeelritmo.ec   | 123456   | OWNER       |
+| gabriela@cafeelritmo.ec | 123456   | MANAGER     |
+| sebastian@cafeelritmo.ec| 123456   | STAFF       |
 
 ---
 

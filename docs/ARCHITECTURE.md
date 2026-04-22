@@ -73,7 +73,7 @@ graph TB
         APN[Apple APN<br/>iOS Push]
         FCM[Google FCM<br/>Android Push]
         GW[Google Wallet API<br/>Pass Issuance]
-        CLARO[Claro Pay<br/>Billing/Subscriptions]
+        GWY[Bendo / PlacetoPay<br/>Payment Gateway]
         SMTP[SMTP Provider<br/>Transactional Email]
     end
 
@@ -101,7 +101,7 @@ graph TB
     API -->|"Push campaigns"| RD
     CEL -->|"Deliver push"| APN
     CEL -->|"Deliver push"| FCM
-    CEL -->|"Charge subscription"| CLARO
+    CEL -->|"Process payment"| GWY
     CEL -->|"Send email"| SMTP
     API -->|"Read secrets"| VLT
 
@@ -320,25 +320,25 @@ sequenceDiagram
     participant DASH as Dashboard
     participant API as Django API
     participant DB as PostgreSQL
-    participant STRIPE as Stripe
+    participant GWY as Bendo / PlacetoPay
     participant CEL as Celery
     participant SMTP as Email
 
-    Owner->>DASH: Enters credit card after trial
+    Owner->>DASH: Selects plan after trial (5 days)
     DASH->>API: POST /api/v1/billing/subscribe/
-    API->>STRIPE: Create Customer + Subscription
-    STRIPE-->>API: subscription_id + status: active
-    API->>DB: Update Tenant (plan=FULL, stripe_subscription_id)
+    API->>GWY: Create session + process payment
+    GWY-->>API: gateway_subscription_id + status: active
+    API->>DB: Update Tenant (plan, gateway_subscription_id)
     API-->>DASH: Subscription active ✅
 
-    Note over BEAT,STRIPE: Monthly recurring billing
-    STRIPE->>API: Webhook: invoice.payment_succeeded
+    Note over BEAT,GWY: Monthly/Annual recurring billing
+    GWY->>API: Webhook: payment.approved
     API->>DB: Record payment + create Invoice
     API->>CEL: Queue: send_invoice_email(tenant_id)
     CEL->>SMTP: Send invoice PDF
 
-    Note over STRIPE,CEL: Failed payment
-    STRIPE->>API: Webhook: invoice.payment_failed
+    Note over GWY,CEL: Failed payment
+    GWY->>API: Webhook: payment.failed
     API->>DB: Mark payment_status = FAILED
     API->>CEL: Queue: notify_payment_failed(tenant_id)
     CEL->>SMTP: "Payment failed — please update billing"
@@ -520,7 +520,7 @@ erDiagram
         string plan
         datetime trial_end
         bool is_active
-        string stripe_customer_id
+        string gateway_customer_id
         string timezone
         string country
     }
@@ -622,7 +622,7 @@ erDiagram
         uuid id PK
         uuid tenant_id FK
         string plan
-        string stripe_subscription_id
+        string gateway_subscription_id
         string status
         datetime period_start
         datetime period_end

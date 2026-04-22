@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import api from '@/lib/api';
+import { authApi } from '@/lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,15 +17,30 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.business_name.trim() || !form.email.trim() || !form.password.trim()
+      || !form.first_name.trim() || !form.last_name.trim()) {
+      toast.error('Todos los campos son obligatorios');
+      return;
+    }
+    if (form.password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
     setLoading(true);
     try {
-      await api.post('/api/auth/register/', form);
-      toast.success('¡Cuenta creada! Redirigiendo...');
+      await authApi.register(form);
+      toast.success('¡Cuenta creada! Redirigiendo al inicio de sesión...');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: unknown) {
-      const data = (err as { response?: { data?: Record<string, string[]> } })?.response?.data;
-      const msg = data ? Object.values(data).flat().join(' ') : 'Error al registrarse';
-      toast.error(msg);
+      const data = (err as { response?: { data?: Record<string, string | string[]> } })?.response?.data;
+      if (data) {
+        const msg = typeof data.error === 'string'
+          ? data.error
+          : Object.values(data).flat().join(' ');
+        toast.error(msg);
+      } else {
+        toast.error('Error al registrarse. Inténtalo de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -34,19 +49,20 @@ export default function RegisterPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div>
-        <h2 className="text-xl font-bold text-surface-900">Crear cuenta gratuita</h2>
-        <p className="text-surface-500 text-sm mt-1">14 días de prueba sin tarjeta de crédito</p>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">Crear cuenta gratuita</h2>
+        <p className="text-surface-500 text-sm mt-1">5 días de prueba sin tarjeta de crédito</p>
       </div>
       {[
-        { id: 'business_name', label: 'Nombre del negocio', placeholder: 'Mi Negocio S.A.', type: 'text' },
-        { id: 'first_name',    label: 'Nombre',             placeholder: 'Juan',             type: 'text' },
-        { id: 'last_name',     label: 'Apellido',           placeholder: 'Pérez',            type: 'text' },
-        { id: 'email',         label: 'Correo electrónico', placeholder: 'tu@negocio.com',   type: 'email' },
-        { id: 'password',      label: 'Contraseña',         placeholder: '••••••••',         type: 'password' },
-      ].map(({ id, label, placeholder, type }) => (
+        { id: 'business_name', label: 'Nombre del negocio', placeholder: 'Mi Negocio S.A.', type: 'text', autoComplete: 'organization' },
+        { id: 'first_name',    label: 'Nombre',             placeholder: 'Juan',             type: 'text', autoComplete: 'given-name' },
+        { id: 'last_name',     label: 'Apellido',           placeholder: 'Pérez',            type: 'text', autoComplete: 'family-name' },
+        { id: 'email',         label: 'Correo electrónico', placeholder: 'tu@negocio.com',   type: 'email', autoComplete: 'email' },
+        { id: 'password',      label: 'Contraseña',         placeholder: '••••••••',         type: 'password', autoComplete: 'new-password' },
+      ].map(({ id, label, placeholder, type, autoComplete }) => (
         <div key={id}>
-          <label className="label" htmlFor={id}>{label}</label>
-          <input id={id} type={type} className="input" placeholder={placeholder}
+          <label className="label" htmlFor={`register-${id}`}>{label}</label>
+          <input id={`register-${id}`} name={id} type={type} className="input" placeholder={placeholder}
+            autoComplete={autoComplete}
             value={form[id as keyof typeof form]} onChange={set(id)} required />
         </div>
       ))}
