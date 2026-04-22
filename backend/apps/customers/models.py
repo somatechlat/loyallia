@@ -208,19 +208,24 @@ class CustomerPass(models.Model):
         return self.pass_data.get(key, default)
 
     def set_pass_field(self, key: str, value) -> None:
-        """Atomically set a pass data field using select_for_update.
+        """Atomically set a single pass data field. Use update_pass_data for multiple fields."""
+        self.update_pass_data({key: value})
 
-        Prevents race conditions when concurrent scans modify the
-        same pass (e.g., two terminals validating simultaneously).
+    def update_pass_data(self, updates: dict) -> None:
+        """Atomically update multiple pass data fields in a single transaction.
+
+        Prevents race conditions and minimizes database round-trips when
+        concurrent scans modify the same pass.
         """
+        if not updates:
+            return
+
         from django.db import transaction
 
         with transaction.atomic():
-            locked = (
-                CustomerPass.objects.select_for_update()
-                .get(pk=self.pk)
-            )
-            locked.pass_data[key] = value
+            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+            for k, v in updates.items():
+                locked.pass_data[k] = v
             locked.save(update_fields=["pass_data", "last_updated"])
         # Refresh in-memory instance to reflect the committed state
         self.refresh_from_db(fields=["pass_data", "last_updated"])
@@ -351,12 +356,14 @@ class CustomerPass(models.Model):
 
         # Check if reward is earned
         reward_earned = new_stamps >= stamps_required
+        updates = {}
         if reward_earned:
             # Reset stamps after reward
             new_stamps = new_stamps - stamps_required
-            self.set_pass_field("reward_ready", True)
-
-        self.set_pass_field("stamp_count", new_stamps)
+            updates["reward_ready"] = True
+            
+        updates["stamp_count"] = new_stamps
+        self.update_pass_data(updates)
 
         return {
             "transaction_type": TransactionType.STAMP_EARNED,

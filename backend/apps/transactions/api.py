@@ -143,14 +143,12 @@ def transact(request, data: ScanTransactIn):
         last_visit=transaction.created_at,
     )
 
-    # Invalidate analytics cache for this tenant (new transaction = stale dashboard data)
-    from django.core.cache import cache as django_cache
-
-    for prefix in ("revenue", "visits", "demographics"):
-        # Clear all day-variant keys for this tenant
-        django_cache.delete(f"analytics:{prefix}:{request.tenant.id}")
-        for days_variant in (1, 7, 28, 30, 180, 365):
-            django_cache.delete(f"analytics:{prefix}:{request.tenant.id}:{days_variant}")
+    # Cache invalidation is delegated to the 5-minute TTL defined in apps/analytics/advanced_api.py.
+    # Aggressively deleting the cache here causes 'thundering herd' database load under extreme scale.
+    
+    # Trigger async tenant analytics recalculation
+    from apps.analytics.tasks import update_tenant_analytics
+    update_tenant_analytics.apply_async(args=[str(request.tenant.id)], countdown=2)
 
     # Fire automation trigger asynchronously — do not block the scanner response
     from apps.automation.engine import fire_trigger_async

@@ -128,13 +128,8 @@ def get_customer_analytics(
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
-    # Update analytics for all customers (in production, this would be a background task)
-    customers = Customer.objects.filter(tenant=tenant)
-    for customer in customers:
-        analytics, created = CustomerAnalytics.objects.get_or_create(
-            customer=customer, defaults={"tenant": tenant}
-        )
-        analytics.update_metrics()
+    # Analytics metrics are updated asynchronously via Celery tasks (update_customer_analytics)
+    # when transactions occur. The synchronous O(N) update loop has been removed for production scale.
 
     # Query with filters
     query = CustomerAnalytics.objects.filter(tenant=tenant)
@@ -185,7 +180,7 @@ def get_customer_detail_analytics(request, customer_id: str):
     analytics, created = CustomerAnalytics.objects.get_or_create(
         customer=customer, defaults={"tenant": request.tenant}
     )
-    analytics.update_metrics()
+    # Analytics are pre-calculated by background tasks on transaction boundaries.
 
     # Get recent transactions
     recent_transactions = Transaction.objects.filter(
@@ -246,13 +241,8 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
-    # Update analytics for all programs
-    programs = Card.objects.filter(tenant=tenant)
-    for program in programs:
-        analytics, created = ProgramAnalytics.objects.get_or_create(
-            card=program, defaults={"tenant": tenant}
-        )
-        analytics.update_metrics()
+    # Analytics metrics are updated asynchronously. The synchronous O(N) update loop
+    # has been removed to prevent database lockups under production loads.
 
     # Query
     query = ProgramAnalytics.objects.filter(tenant=tenant)
@@ -299,7 +289,7 @@ def get_program_detail_analytics(request, program_id: str):
     analytics, created = ProgramAnalytics.objects.get_or_create(
         card=card, defaults={"tenant": request.tenant}
     )
-    analytics.update_metrics()
+    # Analytics are pre-calculated by background tasks.
 
     # Get top customers for this program
     top_customers = (
@@ -388,13 +378,7 @@ def get_segmentation_analytics(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
-    # Update all customer analytics
-    customers = Customer.objects.filter(tenant=tenant)
-    for customer in customers:
-        analytics, created = CustomerAnalytics.objects.get_or_create(
-            customer=customer, defaults={"tenant": tenant}
-        )
-        analytics.update_metrics()
+    # Segment metrics rely on background asynchronous updates to ensure database stability.
 
     # Group by segment
     segments = (

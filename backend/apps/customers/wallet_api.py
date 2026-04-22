@@ -131,9 +131,17 @@ def download_apple_pass(request, pass_id: str):
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
-    pkpass_bytes = generate_pkpass(customer_pass)
-    if pkpass_bytes is None:
-        raise HttpError(500, get_message("PASS_APPLE_GEN_ERROR"))
+    # Cache the heavily CPU/Network bound .pkpass generation
+    from django.core.cache import cache
+    cache_key = f"pkpass:{pass_id}:{customer_pass.last_updated.timestamp()}"
+    pkpass_bytes = cache.get(cache_key)
+
+    if not pkpass_bytes:
+        pkpass_bytes = generate_pkpass(customer_pass)
+        if pkpass_bytes is None:
+            raise HttpError(500, get_message("PASS_APPLE_GEN_ERROR"))
+        # Cache for 24 hours (it will auto-invalidate if last_updated changes)
+        cache.set(cache_key, pkpass_bytes, timeout=86400)
 
     response = HttpResponse(
         pkpass_bytes,
