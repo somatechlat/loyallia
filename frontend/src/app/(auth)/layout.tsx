@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <h1 className="text-3xl font-black text-white tracking-tight">Loyallia</h1>
           <p className="text-white/70 mt-1 text-sm">Plataforma de Fidelización Digital</p>
         </div>
-        <div className="card p-8 shadow-2xl">{children}</div>
+        <div className="card p-8 shadow-2xl !overflow-visible">{children}</div>
         <p className="text-center text-[10px] text-white/30 mt-6 tracking-wide leading-relaxed">
           <span className="font-semibold text-white/50">Loyallia</span> · Intelligent Rewards
           <br /><a href="https://yachaq.ai" target="_blank" rel="noopener noreferrer" className="text-[9px] opacity-60 hover:opacity-100 transition-opacity">powered by Yachaq.ai</a>
