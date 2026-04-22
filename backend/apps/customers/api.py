@@ -268,7 +268,15 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
     if existing_pass:
         raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
 
+    # Extract any dynamic extra fields from the Pydantic model
+    standard_fields = {"first_name", "last_name", "email", "phone", "date_of_birth", "gender", "notes"}
+    dynamic_fields = {k: v for k, v in customer_data.model_dump().items() if k not in standard_fields}
+
     pass_obj = CustomerPass.objects.create(customer=customer, card=card)
+    
+    # Store custom enrollment metadata in pass_data
+    if dynamic_fields:
+        pass_obj.update_pass_data({"enrollment_data": dynamic_fields})
 
     from apps.transactions.models import Enrollment
 
