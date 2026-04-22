@@ -9,7 +9,6 @@ All auth via JWTAuth — Rule #8.
 
 import logging
 import secrets
-from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -17,6 +16,13 @@ from django.utils import timezone as dj_timezone
 from ninja import Router
 from ninja.errors import HttpError
 
+from apps.authentication.helpers import (
+    issue_tokens,
+    send_otp_email,
+    slugify_business,
+    store_otp,
+    verify_otp,
+)
 from apps.authentication.models import RefreshToken, User, UserRole
 from apps.authentication.schemas import (
     ChangePasswordIn,
@@ -39,7 +45,6 @@ from apps.authentication.schemas import (
 )
 from apps.authentication.tokens import (
     create_access_token,
-    create_refresh_token_string,
     hash_token,
 )
 from apps.tenants.models import Tenant
@@ -48,84 +53,6 @@ from common.permissions import is_owner, jwt_auth
 
 logger = logging.getLogger(__name__)
 router = Router()
-
-
-# =============================================================================
-# HELPERS
-# =============================================================================
-
-
-def _slugify_business(name: str) -> str:
-    """Generate a unique slug from business name."""
-    import re
-
-    slug_base = re.sub(r"[^a-z0-9]+", "-", name.lower().strip()).strip("-")
-    slug = slug_base[:80]
-    counter = 1
-    candidate = slug
-    while Tenant.objects.filter(slug=candidate).exists():
-        candidate = f"{slug}-{counter}"
-        counter += 1
-    return candidate
-
-
-def _send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
-    """Send OTP email. Logs failure but does not raise — prevents timing attacks."""
-    try:
-        send_mail(
-            subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
-    except Exception as exc:
-        logger.error("Failed to send OTP email to %s: %s", email, exc)
-
-
-def _store_otp(email: str, otp: str, purpose: str) -> None:
-    """Store OTP in Django cache with 15-minute TTL."""
-    from django.core.cache import cache
-
-    cache.set(f"otp:{purpose}:{email}", otp, timeout=900)
-
-
-def _verify_otp(email: str, otp: str, purpose: str) -> bool:
-    """Verify OTP from cache. Deletes key after verification (single-use)."""
-    from django.core.cache import cache
-
-    key = f"otp:{purpose}:{email}"
-    stored = cache.get(key)
-    if stored and stored == otp:
-        cache.delete(key)
-        return True
-    return False
-
-
-def _issue_tokens(user: User) -> dict:
-    """Create access + refresh token pair, persist refresh token hash in DB."""
-    access = create_access_token(
-        user_id=str(user.id),
-        tenant_id=str(user.tenant_id) if user.tenant_id else None,
-        role=user.role,
-    )
-    refresh_str = create_refresh_token_string()
-    expires_at = dj_timezone.now() + timedelta(
-        days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS
-    )
-    RefreshToken.objects.create(
-        user=user, token_hash=hash_token(refresh_str), expires_at=expires_at
-    )
-    user.last_login = dj_timezone.now()
-    user.save(update_fields=["last_login"])
-    return {
-        "access_token": access,
-        "refresh_token": refresh_str,
-        "token_type": "bearer",
-        "user_id": str(user.id),
-        "tenant_id": str(user.tenant_id) if user.tenant_id else None,
-        "role": user.role,
-    }
 
 
 # =============================================================================
@@ -144,7 +71,7 @@ def register(request, payload: RegisterIn):
         raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
     with transaction.atomic():
-        slug = _slugify_business(payload.business_name)
+        slug = slugify_business(payload.business_name)
         tenant = Tenant.objects.create(name=payload.business_name.strip(), slug=slug)
         tenant.activate_trial()
         user = User.objects.create_user(
@@ -159,8 +86,8 @@ def register(request, payload: RegisterIn):
         )
 
     otp = secrets.token_hex(3).upper()
-    _store_otp(payload.email, otp, "verify_email")
-    _send_otp_email(
+    store_otp(payload.email, otp, "verify_email")
+    send_otp_email(
         email=payload.email,
         otp=otp,
         subject="Verifica tu correo -- Loyallia",
@@ -194,7 +121,7 @@ def login(request, payload: LoginIn):
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
 
     user.reset_failed_login()
-    return _issue_tokens(user)
+    return issue_tokens(user)
 
 
 @router.post(
@@ -245,8 +172,8 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
     try:
         user = User.objects.get(email=payload.email, is_active=True)
         otp = secrets.token_hex(3).upper()
-        _store_otp(payload.email, otp, "password_reset")
-        _send_otp_email(
+        store_otp(payload.email, otp, "password_reset")
+        send_otp_email(
             email=payload.email,
             otp=otp,
             subject="Restablecer contrasena -- Loyallia",
@@ -268,7 +195,7 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
 )
 def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     """Validates OTP and sets new password."""
-    if not _verify_otp(payload.email, payload.otp, "password_reset"):
+    if not verify_otp(payload.email, payload.otp, "password_reset"):
         raise HttpError(400, get_message("AUTH_PASSWORD_RESET_EXPIRED"))
     try:
         user = User.objects.get(email=payload.email, is_active=True)
@@ -295,7 +222,7 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
 )
 def verify_email(request, payload: VerifyEmailIn):
     """Validates email verification OTP and marks user as verified."""
-    if not _verify_otp(payload.email, payload.otp, "verify_email"):
+    if not verify_otp(payload.email, payload.otp, "verify_email"):
         raise HttpError(400, get_message("AUTH_TOKEN_INVALID"))
     try:
         user = User.objects.get(email=payload.email)
@@ -389,7 +316,7 @@ def invite_user(request, payload: InviteIn):
         )
 
     invite_url = f"{settings.APP_URL}/invite/accept/?token={invitation_token}"
-    _send_otp_email(
+    send_otp_email(
         email=payload.email,
         otp="",
         subject=f"Invitacion a {request.tenant.name} -- Loyallia",

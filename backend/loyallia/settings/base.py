@@ -119,8 +119,13 @@ AUTH_USER_MODEL = "authentication.User"
 # PASSWORD VALIDATION
 # =============================================================================
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
@@ -168,7 +173,9 @@ CACHES = {
 # CELERY CONFIGURATION
 # =============================================================================
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/2")
+CELERY_RESULT_BACKEND = config(
+    "CELERY_RESULT_BACKEND", default="redis://localhost:6379/2"
+)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -176,7 +183,9 @@ CELERY_TIMEZONE = "UTC"
 CELERY_ENABLE_UTC = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300  # 5 minutes hard limit
-CELERY_TASK_SOFT_TIME_LIMIT = 240  # 4 minutes soft time limit (triggers SoftTimeLimitExceeded)
+CELERY_TASK_SOFT_TIME_LIMIT = (
+    240  # 4 minutes soft time limit (triggers SoftTimeLimitExceeded)
+)
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Fair task distribution
 CELERY_ACKS_LATE = True  # Acknowledge after completion (prevents task loss)
 
@@ -271,30 +280,43 @@ JWT_SECRET_KEY = config("SECRET_KEY")  # Uses Django SECRET_KEY
 # =============================================================================
 # PASS SIGNING
 # =============================================================================
-APPLE_PASS_TYPE_IDENTIFIER = config("APPLE_PASS_TYPE_IDENTIFIER", default="pass.com.loyallia.cards")
+APPLE_PASS_TYPE_IDENTIFIER = config(
+    "APPLE_PASS_TYPE_IDENTIFIER", default="pass.com.loyallia.cards"
+)
 APPLE_TEAM_IDENTIFIER = config("APPLE_TEAM_IDENTIFIER", default="")
 APPLE_CERT_PATH = config("APPLE_CERT_PATH", default="/app/certs/apple_pass.pem")
 APPLE_CERT_KEY_PATH = config("APPLE_CERT_KEY_PATH", default="/app/certs/apple_pass.key")
-APPLE_WWDR_CERT_PATH = config("APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem")
+APPLE_WWDR_CERT_PATH = config(
+    "APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem"
+)
 PASS_HMAC_SECRET = config("PASS_HMAC_SECRET", default="change-me-hmac-secret")
 
 # APNs token-based auth (JWT) — for push notifications to iOS
 # Separate from the PassKit signing certificates above
 APPLE_APNS_KEY_ID = config("APPLE_APNS_KEY_ID", default="")
-APPLE_APNS_AUTH_KEY_PATH = config("APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8")
+APPLE_APNS_AUTH_KEY_PATH = config(
+    "APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8"
+)
 
-GOOGLE_SERVICE_ACCOUNT_FILE = config("GOOGLE_SERVICE_ACCOUNT_FILE", default="/app/certs/google_wallet_service_account.json")
+GOOGLE_SERVICE_ACCOUNT_FILE = config(
+    "GOOGLE_SERVICE_ACCOUNT_FILE",
+    default="/app/certs/google_wallet_service_account.json",
+)
 GOOGLE_WALLET_ISSUER_ID = config("GOOGLE_WALLET_ISSUER_ID", default="")
 
 # =============================================================================
 # FIREBASE (Android Push)
 # =============================================================================
-FIREBASE_CREDENTIAL_FILE = config("FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json")
+FIREBASE_CREDENTIAL_FILE = config(
+    "FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json"
+)
 
 # =============================================================================
 # CLARO PAY (Ecuador Payment Gateway)
 # =============================================================================
-CLARO_PAY_BASE_URL = config("CLARO_PAY_BASE_URL", default="https://api-uat.claropay.com.ec")
+CLARO_PAY_BASE_URL = config(
+    "CLARO_PAY_BASE_URL", default="https://api-uat.claropay.com.ec"
+)
 CLARO_PAY_MERCHANT_ID = config("CLARO_PAY_MERCHANT_ID", default="")
 CLARO_PAY_API_KEY = config("CLARO_PAY_API_KEY", default="")
 CLARO_PAY_API_SECRET = config("CLARO_PAY_API_SECRET", default="")
@@ -339,7 +361,9 @@ GEO_PUSH_COOLDOWN_HOURS = config("GEO_PUSH_COOLDOWN_HOURS", default=4, cast=int)
 GEO_FENCE_RADIUS_METERS = config("GEO_FENCE_RADIUS_METERS", default=100, cast=int)
 PLAN_FULL_PRICE_USD = config("PLAN_FULL_PRICE_USD", default="75.00")
 PLAN_ADDITIONAL_POS_PRICE_USD = config("PLAN_ADDITIONAL_POS_PRICE_USD", default="10.00")
-TAX_RATE_ECUADOR = config("TAX_RATE_ECUADOR", default=0.15, cast=float)  # Ecuador 2024 IVA
+TAX_RATE_ECUADOR = config(
+    "TAX_RATE_ECUADOR", default=0.15, cast=float
+)  # Ecuador 2024 IVA
 
 APP_URL = config("APP_URL", default="http://localhost")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
@@ -372,7 +396,11 @@ LOGGING = {
     },
     "loggers": {
         "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
-        "django.db.backends": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
         "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "apps": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
