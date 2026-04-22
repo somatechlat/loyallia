@@ -81,3 +81,51 @@ export function adjustColor(hex: string, amount: number): string {
   const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
+
+/* ─── Barcode Types Registry ──────────────────────────────────────── */
+export const BARCODE_TYPES = [
+  {
+    value: 'qr_code',
+    label: 'QR Code',
+    desc: 'Compatible con Apple Wallet, Google Wallet y watchOS',
+    shape: 'square' as const,
+  },
+  {
+    value: 'aztec',
+    label: 'Aztec',
+    desc: 'Compatible con Apple Wallet, Google Wallet y watchOS',
+    shape: 'square' as const,
+  },
+  {
+    value: 'pdf417',
+    label: 'PDF417',
+    desc: 'Compatible con Apple Wallet y Google Wallet',
+    shape: 'rect' as const,
+  },
+  {
+    value: 'code_128',
+    label: 'Code 128',
+    desc: 'Compatible con Apple Wallet y Google Wallet. No soportado en watchOS',
+    shape: 'rect' as const,
+  },
+  {
+    value: 'data_matrix',
+    label: 'Data Matrix',
+    desc: 'Compatible con Google Wallet. En Apple Wallet se muestra como QR Code',
+    shape: 'square' as const,
+  },
+];
+
+/* ─── Apple Pass Style per Card Type ──────────────────────────────── */
+export const APPLE_PASS_STYLES: Record<string, string> = {
+  stamp: 'storeCard',
+  cashback: 'storeCard',
+  coupon: 'coupon',
+  discount: 'storeCard',
+  affiliate: 'generic',
+  gift_certificate: 'storeCard',
+  vip_membership: 'generic',
+  corporate_discount: 'generic',
+  referral_pass: 'generic',
+  multipass: 'storeCard',
+};

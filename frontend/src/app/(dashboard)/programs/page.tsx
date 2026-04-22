@@ -26,10 +26,11 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: 
   openDeleteModal: (p: Program) => void;
 }) {
   const [expandActive, setExpandActive] = useState(false);
+  const [expandDraft, setExpandDraft] = useState(false);
   const [expandInactive, setExpandInactive] = useState(false);
 
-  const active = programs.filter(p => p.is_active);
-  // Draft: programs that have no enrollments and were created recently (proxy for "draft")
+  const active = programs.filter(p => p.is_active && (p.enrollments_count ?? 0) > 0);
+  const drafts = programs.filter(p => p.is_active && (p.enrollments_count ?? 0) === 0);
   const inactive = programs.filter(p => !p.is_active);
 
   const sections = [
@@ -38,6 +39,12 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: 
       accentBorder: 'border-l-emerald-500', accentBg: 'bg-emerald-50 dark:bg-emerald-900/20',
       accentText: 'text-emerald-600 dark:text-emerald-400', badge: 'badge-green',
       icon: '●',
+    },
+    {
+      title: 'Borradores', items: drafts, expanded: expandDraft, setExpanded: setExpandDraft,
+      accentBorder: 'border-l-amber-500', accentBg: 'bg-amber-50 dark:bg-amber-900/20',
+      accentText: 'text-amber-600 dark:text-amber-400', badge: 'badge-amber',
+      icon: '◐',
     },
     {
       title: 'Inactivas', items: inactive, expanded: expandInactive, setExpanded: setExpandInactive,

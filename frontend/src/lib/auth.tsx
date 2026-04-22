@@ -1,6 +1,7 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import Cookies from 'js-cookie';
+import axios from 'axios';
 import { authApi } from './api';
 
 export interface User {
@@ -30,9 +31,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+/** Parse JWT exp claim without a library (base64url decode of payload). */
+function getTokenExpiry(token: string): number | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.exp === 'number' ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Refresh interval: 5 minutes before expiry (in ms). Minimum 30 seconds. */
+const REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const MIN_REFRESH_MS = 30 * 1000;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Schedule a silent token refresh based on current access token expiry. */
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    const token = Cookies.get('access_token');
+    if (!token) return;
+    const exp = getTokenExpiry(token);
+    if (!exp) return;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const msUntilExpiry = (exp - nowSec) * 1000;
+    const delay = Math.max(msUntilExpiry - REFRESH_BUFFER_MS, MIN_REFRESH_MS);
+    refreshTimerRef.current = setTimeout(async () => {
+      const refresh = Cookies.get('refresh_token');
+      if (!refresh) return;
+      try {
+        const { data } = await axios.post('/api/v1/auth/refresh/', { refresh_token: refresh });
+        const isProd = typeof window !== 'undefined' && window.location.protocol === 'https:';
+        Cookies.set('access_token', data.access_token, { expires: 1 / 24, secure: isProd, sameSite: 'strict' });
+        scheduleRefresh(); // Re-schedule for the new token
+      } catch {
+        // Refresh failed — 401 interceptor in api.ts will handle on next request
+      }
+    }, delay);
+  }, []);
 
   const fetchUser = useCallback(async (): Promise<User | null> => {
     const token = Cookies.get('access_token');
@@ -51,13 +93,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { fetchUser(); }, [fetchUser]);
+  useEffect(() => {
+    fetchUser();
+    scheduleRefresh();
+    return () => { if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current); };
+  }, [fetchUser, scheduleRefresh]);
 
   const login = async (email: string, password: string): Promise<User> => {
     const { data } = await authApi.login(email, password);
     const isProd = window.location.protocol === 'https:';
     Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
     Cookies.set('refresh_token', data.refresh_token, { expires: 7, secure: isProd, sameSite: 'strict' });
+    scheduleRefresh();
     const userData = await fetchUser();
     if (!userData) throw new Error("Login falló al obtener perfil de usuario");
     return userData;
@@ -68,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isProd = window.location.protocol === 'https:';
     Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
     Cookies.set('refresh_token', data.refresh_token, { expires: 7, secure: isProd, sameSite: 'strict' });
+    scheduleRefresh();
     const userData = await fetchUser();
     if (!userData) throw new Error("Login con Google falló al obtener perfil de usuario");
     return userData;
@@ -75,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try { await authApi.logout(); } catch {}
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     Cookies.remove('access_token');
     Cookies.remove('refresh_token');
     setUser(null);

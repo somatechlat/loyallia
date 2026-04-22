@@ -340,16 +340,33 @@ function TypeConfig({ type, meta, setMeta }: { type: string; meta: Record<string
             <input type="text" className="input" value={meta.coupon_description as string ?? ''}
               onChange={e => set('coupon_description', e.target.value)} />
           </div>
+          {/* Coupon Image — CPN-IMG */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="label mb-0">Imagen del cupón (URL)</label>
+              <Tooltip text="Sube o pega la URL de una imagen que represente el cupón. Se mostrará en la tarjeta de wallet del cliente." />
+            </div>
+            <input type="url" className="input" placeholder="https://example.com/coupon-image.jpg" value={meta.coupon_image_url as string ?? ''}
+              onChange={e => set('coupon_image_url', e.target.value)} />
+          </div>
 
           {/* Push Notification Module — CPNPUSH-001 thru CPNPUSH-011 */}
           <div className="border-t border-surface-200 dark:border-surface-700 pt-5 mt-5">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-sm font-bold text-surface-900 dark:text-white">Notificación automática al guardar el cupón</h3>
-              <Tooltip text="Define el mensaje que recibirá el cliente cuando guarde este cupón en su wallet." />
+              <Tooltip text="Define el título y mensaje que recibirá el cliente cuando guarde este cupón en su wallet." />
             </div>
             <p className="text-xs text-surface-500 mb-3">
               Permite definir un mensaje de notificación push que el cliente recibirá automáticamente cuando agregue o descargue el cupón en su wallet.
             </p>
+            {/* Push Title — CPNPUSH-TITLE */}
+            <div className="mb-3">
+              <label className="label">Título de la notificación</label>
+              <input type="text" className="input" placeholder="¡Tu cupón está listo!" maxLength={60}
+                value={meta.push_title as string ?? ''}
+                onChange={e => set('push_title', e.target.value)} />
+              <span className="text-[10px] text-surface-400 mt-0.5 block">{(meta.push_title as string ?? '').length}/60</span>
+            </div>
             <div className="relative">
               <textarea
                 className="input min-h-[80px] resize-none"
@@ -369,6 +386,16 @@ function TypeConfig({ type, meta, setMeta }: { type: string; meta: Record<string
                   {(meta.push_message as string ?? '').length}/178
                 </span>
               </div>
+            </div>
+            {/* Expiry Reminder — CPNPUSH-EXPIRY */}
+            <div className="mt-4 flex items-center gap-3">
+              <input type="checkbox" id="push_expiry_reminder" className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
+                checked={!!meta.push_expiry_reminder}
+                onChange={e => set('push_expiry_reminder', e.target.checked)} />
+              <label htmlFor="push_expiry_reminder" className="text-sm text-surface-700 dark:text-surface-300">
+                Enviar recordatorio push antes de que expire el cupón
+              </label>
+              <Tooltip text="Se enviará un push de recordatorio 24 horas antes de que el cupón expire." />
             </div>
           </div>
         </div>

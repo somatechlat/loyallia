@@ -144,19 +144,40 @@ class Card(models.Model):
     def validate_coupon_config(self) -> None:
         """Validate coupon card configuration."""
         discount_type = self.get_metadata_field("discount_type")
-        if discount_type not in ["percentage", "fixed_amount"]:
-            raise ValueError("discount_type must be 'percentage' or 'fixed_amount'")
+        if discount_type not in ["percentage", "fixed_amount", "special_promo"]:
+            raise ValueError(
+                "discount_type must be 'percentage', 'fixed_amount', or 'special_promo'"
+            )
 
-        discount_value = self.get_metadata_field("discount_value", 0)
-        if not isinstance(discount_value, (int, float, Decimal)) or discount_value <= 0:
-            raise ValueError("discount_value must be positive")
+        if discount_type == "special_promo":
+            promo_text = self.get_metadata_field("promo_text", "")
+            if not promo_text or len(str(promo_text)) > 100:
+                raise ValueError(
+                    "special_promo requires promo_text (max 100 characters)"
+                )
+        else:
+            discount_value = self.get_metadata_field("discount_value", 0)
+            if (
+                not isinstance(discount_value, (int, float, Decimal))
+                or discount_value <= 0
+            ):
+                raise ValueError("discount_value must be positive")
 
-        if discount_type == "percentage" and discount_value > 100:
-            raise ValueError("percentage discount cannot exceed 100%")
+            if discount_type == "percentage" and discount_value > 100:
+                raise ValueError("percentage discount cannot exceed 100%")
 
         usage_limit = self.get_metadata_field("usage_limit_per_customer", 1)
         if not isinstance(usage_limit, int) or usage_limit < 1:
             raise ValueError("usage_limit_per_customer must be positive integer")
+
+        # Date validation: end_date must be after start_date when provided
+        coupon_start = self.get_metadata_field("coupon_start_date")
+        coupon_end = self.get_metadata_field("coupon_end_date")
+        if coupon_start and coupon_end:
+            if str(coupon_end) <= str(coupon_start):
+                raise ValueError(
+                    "coupon_end_date must be after coupon_start_date"
+                )
 
     def validate_discount_config(self) -> None:
         """Validate discount card configuration."""

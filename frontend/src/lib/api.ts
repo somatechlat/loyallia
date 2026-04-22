@@ -110,6 +110,7 @@ export const notificationsApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/', { params }),
   campaigns: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/campaigns/', { params }),
   createCampaign: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
+  stats: () => api.get('/api/v1/notifications/stats/'),
 };
 
 export const automationApi = {

@@ -5,9 +5,10 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
 import Tooltip from '@/components/ui/Tooltip';
-import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta } from '@/components/programs/constants';
+import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, BARCODE_TYPES, defaultMeta } from '@/components/programs/constants';
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
+import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
 
 
@@ -73,6 +74,7 @@ export default function NewProgramPage() {
     logo_url: '',
     strip_image_url: '',
     icon_url: '',
+    barcode_type: 'qr_code',
     locations: [] as Array<{lat: number, lng: number, name: string}>,
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
@@ -472,6 +474,12 @@ export default function NewProgramPage() {
               />
             </div>
 
+            {/* Barcode Type Selector */}
+            <BarcodeTypeSelector
+              value={form.barcode_type}
+              onChange={(v) => setForm(f => ({ ...f, barcode_type: v }))}
+            />
+
             {/* Design Templates */}
             <div className="card p-6 space-y-4">
               <h2 className="text-base font-bold text-surface-900">Plantilla de diseño</h2>
@@ -524,7 +532,7 @@ export default function NewProgramPage() {
 
           {/* Right: Live Wallet Preview */}
           <div className="sticky top-24">
-            <WalletCardPreview form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} />
+            <WalletCardPreview form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={form.barcode_type} />
           </div>
         </div>
       )}
@@ -542,6 +550,10 @@ export default function NewProgramPage() {
               <div className="flex justify-between py-2 border-b border-surface-100">
                 <span className="text-sm text-surface-500">Nombre</span>
                 <span className="text-sm font-semibold">{form.name}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-surface-100">
+                <span className="text-sm text-surface-500">Código</span>
+                <span className="text-sm font-semibold">{BARCODE_TYPES.find(b => b.value === form.barcode_type)?.label || 'QR Code'}</span>
               </div>
               {form.description && (
                 <div className="flex justify-between py-2 border-b border-surface-100">
@@ -571,7 +583,7 @@ export default function NewProgramPage() {
 
           {/* Preview */}
           <div>
-            <WalletCardPreview form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} />
+            <WalletCardPreview form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={form.barcode_type} />
           </div>
         </div>
       )}
