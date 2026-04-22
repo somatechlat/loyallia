@@ -37,12 +37,12 @@ x-common-env: &common-env
   # Google Wallet
   GOOGLE_SERVICE_ACCOUNT_FILE: /app/certs/google_wallet_service_account.json
   GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
-  # Claro Pay (Billing) — secrets from .env
-  CLARO_PAY_BASE_URL: ${CLARO_PAY_BASE_URL:-https://api-uat.claropay.com.ec}
-  CLARO_PAY_MERCHANT_ID: ${CLARO_PAY_MERCHANT_ID:-}
-  CLARO_PAY_API_KEY: ${CLARO_PAY_API_KEY:-}
-  CLARO_PAY_API_SECRET: ${CLARO_PAY_API_SECRET:-}
-  CLARO_PAY_WEBHOOK_SECRET: ${CLARO_PAY_WEBHOOK_SECRET:-}
+  # Payment Gateway (Bendo/PlacetoPay) — secrets from .env
+  PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
+  PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
+  PAYMENT_GATEWAY_LOGIN: ${PAYMENT_GATEWAY_LOGIN:-}
+  PAYMENT_GATEWAY_TRAN_KEY: ${PAYMENT_GATEWAY_TRAN_KEY:-}
+  PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-}
   # Email — secrets from .env
   EMAIL_HOST: ${EMAIL_HOST:-smtp.mailjet.com}
   EMAIL_PORT: "${EMAIL_PORT:-587}"

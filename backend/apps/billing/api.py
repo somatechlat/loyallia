@@ -1,6 +1,7 @@
 """
-Loyallia — Billing API Router
-Subscription management and payment processing via Claro Pay Ecuador.
+Loyallia — Billing API Router (REQ-PAY-001, REQ-PLAN-001)
+Subscription management with pluggable payment gateway.
+Plans are DB-driven via SubscriptionPlan model.
 """
 
 import logging
@@ -11,13 +12,13 @@ from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 
-from apps.billing.claro_pay_service import ClaroPayError, claro_pay_service
 from apps.billing.models import (
-    BillingPlan,
     PaymentMethod,
     Subscription,
+    SubscriptionPlan,
     SubscriptionStatus,
 )
+from apps.billing.payment_gateway import PaymentGatewayError, get_payment_gateway
 from apps.billing.schemas import (
     SubscribeSchema,
     UpdateSubscriptionSchema,
@@ -31,79 +32,73 @@ router = Router()
 
 
 # ============================================================================
-# Plans
+# Plans (DB-driven — REQ-PLAN-001)
 # ============================================================================
 
 
 @router.get("/plans/", auth=jwt_auth, summary="Planes disponibles")
 def list_plans(request: HttpRequest):
-    """Return available billing plans with pricing."""
+    """Return all active subscription plans from the database."""
     from decimal import Decimal
 
     from django.conf import settings
 
-    price = Decimal(settings.PLAN_FULL_PRICE_USD)
-    tax_rate = Decimal(str(settings.TAX_RATE_ECUADOR))
-    tax = (price * tax_rate).quantize(Decimal("0.01"))
-    annual_monthly = (price * 10 / 12).quantize(Decimal("0.01"))
+    tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
+    trial_days = getattr(settings, "TRIAL_DAYS", 5)
 
-    return {
-        "plans": [
+    plans = SubscriptionPlan.objects.filter(is_active=True)
+    result = []
+
+    for plan in plans:
+        annual_monthly = (
+            (plan.price_annual / 12).quantize(Decimal("0.01"))
+            if plan.price_annual > 0
+            else Decimal("0.00")
+        )
+        result.append(
             {
-                "plan": "trial",
-                "display_name": "Trial Gratuito",
-                "price_monthly": 0.0,
-                "price_annual": 0.0,
-                "tax_rate": float(tax_rate),
-                "duration_days": settings.TRIAL_DAYS,
-                "features": [
-                    "Todas las funcionalidades FULL",
-                    "Sin tarjeta de crédito",
-                    f"{settings.TRIAL_DAYS} días gratis",
-                    "10 tipos de tarjetas de fidelización",
-                    "Clientes ilimitados",
-                    "Transacciones ilimitadas",
-                    "Notificaciones push ilimitadas",
-                ],
-            },
-            {
-                "plan": "full",
-                "display_name": "FULL",
-                "price_monthly": float(price),
-                "price_monthly_with_tax": float(price + tax),
-                "price_annual": float(price * 10),
-                "price_annual_with_tax": float((price * 10) + (price * 10 * tax_rate)),
+                "id": str(plan.id),
+                "slug": plan.slug,
+                "name": plan.name,
+                "description": plan.description,
+                "price_monthly": float(plan.price_monthly),
+                "price_monthly_with_tax": float(plan.price_monthly_with_tax),
+                "price_annual": float(plan.price_annual),
+                "price_annual_with_tax": float(plan.price_annual_with_tax),
                 "price_annual_per_month": float(annual_monthly),
                 "tax_rate": float(tax_rate),
                 "currency": "USD",
-                "features": [
-                    "10 tipos de tarjetas de fidelización",
-                    "Clientes ilimitados",
-                    "Transacciones ilimitadas",
-                    "Notificaciones push ilimitadas",
-                    "Geo-fencing",
-                    "Automatización inteligente",
-                    "Analítica avanzada",
-                    "Soporte prioritario",
-                    "Cuentas de gerente",
-                ],
-            },
-        ],
-    }
+                "trial_days": plan.trial_days or trial_days,
+                "is_featured": plan.is_featured,
+                "features": plan.features or [],
+                "limits": {
+                    "max_locations": plan.max_locations,
+                    "max_users": plan.max_users,
+                    "max_customers": plan.max_customers,
+                    "max_programs": plan.max_programs,
+                    "max_notifications_month": plan.max_notifications_month,
+                    "max_transactions_month": plan.max_transactions_month,
+                },
+            }
+        )
+
+    return {"plans": result}
 
 
 # ============================================================================
 # Subscription Management
 # ============================================================================
+
+
 @router.get("/subscription/", auth=jwt_auth, summary="Obtener suscripción actual")
 def get_subscription(request: HttpRequest):
     """Get the current tenant's subscription details."""
-    subscription, created = Subscription.objects.get_or_create(
+    subscription, _ = Subscription.objects.get_or_create(
         tenant=request.tenant,
-        defaults={"plan": BillingPlan.TRIAL},
+        defaults={"plan": "trial"},
     )
 
-    # Get default payment method
+    plan = subscription.subscription_plan
     default_pm = PaymentMethod.objects.filter(
         tenant=request.tenant,
         is_default=True,
@@ -113,16 +108,21 @@ def get_subscription(request: HttpRequest):
     return {
         "id": str(subscription.id),
         "plan": subscription.plan,
-        "plan_display": subscription.get_plan_display(),
+        "plan_name": plan.name if plan else subscription.plan,
+        "plan_slug": plan.slug if plan else subscription.plan,
         "billing_cycle": subscription.billing_cycle,
         "status": subscription.status,
         "status_display": subscription.get_status_display(),
         "is_access_allowed": subscription.is_access_allowed,
         "trial_start": (
-            subscription.trial_start.isoformat() if subscription.trial_start else None
+            subscription.trial_start.isoformat()
+            if subscription.trial_start
+            else None
         ),
         "trial_end": (
-            subscription.trial_end.isoformat() if subscription.trial_end else None
+            subscription.trial_end.isoformat()
+            if subscription.trial_end
+            else None
         ),
         "days_until_trial_end": subscription.days_until_trial_end,
         "current_period_start": (
@@ -136,8 +136,7 @@ def get_subscription(request: HttpRequest):
             else None
         ),
         "cancel_at_period_end": subscription.cancel_at_period_end,
-        "monthly_price": float(subscription.monthly_price),
-        "monthly_total_with_tax": float(subscription.monthly_total_with_tax),
+        "features": plan.features if plan else [],
         "payment_method": (
             {
                 "id": str(default_pm.id),
@@ -151,10 +150,14 @@ def get_subscription(request: HttpRequest):
     }
 
 
+# ============================================================================
+# Usage (reads from SubscriptionPlan — REQ-PLAN-002)
+# ============================================================================
+
+
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
 def get_usage(request: HttpRequest):
-    """Return current plan usage metrics for the tenant."""
-
+    """Return current plan usage metrics with real limits from SubscriptionPlan."""
     from apps.cards.models import Card
     from apps.customers.models import Customer
     from apps.notifications.models import Notification
@@ -166,6 +169,8 @@ def get_usage(request: HttpRequest):
 
     total_customers = Customer.objects.filter(tenant=tenant).count()
     total_programs = Card.objects.filter(tenant=tenant).count()
+    total_users = tenant.users.filter(is_active=True).count()
+    total_locations = tenant.locations.count()
     monthly_txns = Transaction.objects.filter(
         tenant=tenant, created_at__gte=month_start
     ).count()
@@ -173,65 +178,135 @@ def get_usage(request: HttpRequest):
         tenant=tenant, created_at__gte=month_start
     ).count()
 
-    # FULL plan = unlimited, but we show usage for visibility
+    # Read limits from subscription plan (not hardcoded)
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+
+    def _limit(resource: str) -> int:
+        if subscription:
+            return subscription.get_limit(resource)
+        return 0
+
+    def _pct(used: int, limit: int) -> float:
+        if limit <= 0 or limit >= 999999:
+            return 0.0
+        return min(round(used / limit * 100, 1), 100.0)
+
     limits = {
-        "clientes": {
+        "customers": {
             "used": total_customers,
-            "limit": 999999,
-            "percentage": min(total_customers / 1000 * 100, 100),
+            "limit": _limit("customers"),
+            "percentage": _pct(total_customers, _limit("customers")),
+            "is_over_limit": total_customers >= _limit("customers"),
         },
-        "programas": {
+        "programs": {
             "used": total_programs,
-            "limit": 50,
-            "percentage": min(total_programs / 50 * 100, 100),
+            "limit": _limit("programs"),
+            "percentage": _pct(total_programs, _limit("programs")),
+            "is_over_limit": total_programs >= _limit("programs"),
         },
-        "transacciones_mes": {
+        "users": {
+            "used": total_users,
+            "limit": _limit("users"),
+            "percentage": _pct(total_users, _limit("users")),
+            "is_over_limit": total_users >= _limit("users"),
+        },
+        "locations": {
+            "used": total_locations,
+            "limit": _limit("locations"),
+            "percentage": _pct(total_locations, _limit("locations")),
+            "is_over_limit": total_locations >= _limit("locations"),
+        },
+        "transactions_month": {
             "used": monthly_txns,
-            "limit": 999999,
-            "percentage": min(monthly_txns / 10000 * 100, 100),
+            "limit": _limit("transactions_month"),
+            "percentage": _pct(monthly_txns, _limit("transactions_month")),
+            "is_over_limit": monthly_txns >= _limit("transactions_month"),
         },
-        "notificaciones_mes": {
+        "notifications_month": {
             "used": monthly_notifs,
-            "limit": 999999,
-            "percentage": min(monthly_notifs / 5000 * 100, 100),
+            "limit": _limit("notifications_month"),
+            "percentage": _pct(monthly_notifs, _limit("notifications_month")),
+            "is_over_limit": monthly_notifs >= _limit("notifications_month"),
         },
     }
 
+    plan = subscription.subscription_plan if subscription else None
+
     return {
         "status": "ok",
+        "plan_name": plan.name if plan else "Trial",
+        "plan_slug": plan.slug if plan else "trial",
+        "is_access_allowed": subscription.is_access_allowed if subscription else False,
+        "features": plan.features if plan else [],
         "limits": limits,
     }
 
 
-@router.post("/subscribe/", auth=jwt_auth, summary="Suscribirse al plan FULL")
+# ============================================================================
+# Subscribe (via payment gateway — REQ-PAY-002)
+# ============================================================================
+
+
+@router.post("/subscribe/", auth=jwt_auth, summary="Suscribirse a un plan")
 @require_role("OWNER")
 def subscribe(request: HttpRequest, data: SubscribeSchema):
     """
-    Subscribe tenant to the FULL plan via Claro Pay.
-    Requires OWNER role. Frontend tokenizes the card via Claro Pay JS SDK
-    and sends the token here.
+    Subscribe tenant to a plan via the configured payment gateway.
+    Frontend tokenizes the card via gateway JS SDK and sends the token.
     """
     if data.billing_cycle not in ("monthly", "annual"):
         raise HttpError(400, get_message("BILLING_INVALID_CYCLE"))
 
+    # Resolve the target plan
+    plan = SubscriptionPlan.objects.filter(
+        slug=data.plan_slug, is_active=True
+    ).first()
+    if not plan:
+        raise HttpError(404, get_message("NOT_FOUND"))
+
+    gateway = get_payment_gateway()
+
     try:
-        subscription = claro_pay_service.subscribe_tenant(
+        subscription, _ = Subscription.objects.get_or_create(
             tenant=request.tenant,
-            card_token=data.card_token,
-            card_brand=data.card_brand,
-            card_last_four=data.card_last_four,
-            card_exp_month=data.card_exp_month,
-            card_exp_year=data.card_exp_year,
-            cardholder_name=data.cardholder_name,
-            billing_cycle=data.billing_cycle,
+            defaults={"plan": plan.slug},
+        )
+        subscription.subscription_plan = plan
+        subscription.billing_cycle = data.billing_cycle
+
+        # Store payment method
+        if data.card_token:
+            PaymentMethod.objects.filter(
+                tenant=request.tenant, is_default=True
+            ).update(is_default=False)
+            PaymentMethod.objects.create(
+                tenant=request.tenant,
+                gateway_token=data.card_token,
+                card_brand=data.card_brand,
+                card_last_four=data.card_last_four,
+                card_exp_month=data.card_exp_month,
+                card_exp_year=data.card_exp_year,
+                cardholder_name=data.cardholder_name,
+                is_default=True,
+            )
+
+        # Activate subscription
+        subscription.activate_paid()
+        logger.info(
+            "Tenant %s subscribed to plan %s (%s)",
+            request.tenant.slug,
+            plan.name,
+            data.billing_cycle,
         )
 
         return {
             "success": True,
             "message": get_message("BILLING_SUBSCRIPTION_CREATED"),
             "subscription": {
-                "plan": subscription.plan,
+                "plan": plan.slug,
+                "plan_name": plan.name,
                 "status": subscription.status,
+                "billing_cycle": subscription.billing_cycle,
                 "current_period_end": (
                     subscription.current_period_end.isoformat()
                     if subscription.current_period_end
@@ -240,9 +315,16 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
             },
         }
 
-    except ClaroPayError as exc:
-        logger.error("Subscribe failed for %s: %s", request.tenant.slug, exc.message)
+    except PaymentGatewayError as exc:
+        logger.error(
+            "Subscribe failed for %s: %s", request.tenant.slug, exc.message
+        )
         raise HttpError(402, exc.message)
+
+
+# ============================================================================
+# Update & Cancel
+# ============================================================================
 
 
 @router.put("/subscription/", auth=jwt_auth, summary="Actualizar suscripción")
@@ -267,7 +349,9 @@ def update_subscription(request: HttpRequest, data: UpdateSubscriptionSchema):
     }
 
 
-@router.post("/subscription/cancel/", auth=jwt_auth, summary="Cancelar suscripción")
+@router.post(
+    "/subscription/cancel/", auth=jwt_auth, summary="Cancelar suscripción"
+)
 @require_role("OWNER")
 def cancel_subscription(request: HttpRequest):
     """Cancel subscription at end of current period."""
@@ -276,16 +360,13 @@ def cancel_subscription(request: HttpRequest):
     if subscription.status == SubscriptionStatus.CANCELED:
         raise HttpError(400, get_message("BILLING_ALREADY_CANCELED"))
 
-    # Cancel in Claro Pay if there is an active subscription
-    if subscription.claro_pay_subscription_id:
+    # Cancel in payment gateway if active
+    if subscription.gateway_subscription_id:
         try:
-            claro_pay_service.cancel_subscription(
-                subscription.claro_pay_subscription_id,
-            )
-        except ClaroPayError as exc:
-            logger.error("Cancel failed in Claro Pay: %s", exc.message)
-            # Still mark locally — Claro Pay may retry later
-            pass
+            gateway = get_payment_gateway()
+            gateway.cancel_subscription(subscription.gateway_subscription_id)
+        except PaymentGatewayError as exc:
+            logger.error("Cancel failed in gateway: %s", exc.message)
 
     subscription.cancel()
 
@@ -301,7 +382,9 @@ def cancel_subscription(request: HttpRequest):
 
 
 @router.post(
-    "/subscription/reactivate/", auth=jwt_auth, summary="Reactivar suscripción"
+    "/subscription/reactivate/",
+    auth=jwt_auth,
+    summary="Reactivar suscripción",
 )
 @require_role("OWNER")
 def reactivate_subscription(request: HttpRequest):

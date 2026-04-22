@@ -48,6 +48,8 @@ LOCAL_APPS = [
     "apps.automation.apps.AutomationConfig",
     "apps.analytics.apps.AnalyticsConfig",
     "apps.billing.apps.BillingConfig",
+    "apps.agent_api.apps.AgentApiConfig",
+    "apps.audit.apps.AuditConfig",
     "apps.api.apps.ApiConfig",
 ]
 
@@ -60,6 +62,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # i18n language detection
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -137,12 +140,26 @@ PASSWORD_HASHERS = [
 ]
 
 # =============================================================================
-# INTERNATIONALIZATION
+# INTERNATIONALIZATION (REQ-I18N-001)
 # =============================================================================
-LANGUAGE_CODE = "es-ec"
+LANGUAGE_CODE = "es"
 TIME_ZONE = "UTC"  # All timestamps stored in UTC; converted per-tenant in display
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
+
+# Supported languages (ES=default for Ecuador, EN, FR, DE)
+LANGUAGES = [
+    ("es", "Español"),
+    ("en", "English"),
+    ("fr", "Français"),
+    ("de", "Deutsch"),
+]
+
+# Path to .po/.mo translation files
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
 
 # =============================================================================
 # STATIC & MEDIA FILES
@@ -312,15 +329,15 @@ FIREBASE_CREDENTIAL_FILE = config(
 )
 
 # =============================================================================
-# CLARO PAY (Ecuador Payment Gateway)
+# PAYMENT GATEWAY (Pluggable — Bendo/PlacetoPay/Kushki/etc.)
 # =============================================================================
-CLARO_PAY_BASE_URL = config(
-    "CLARO_PAY_BASE_URL", default="https://api-uat.claropay.com.ec"
+PAYMENT_GATEWAY_PROVIDER = config("PAYMENT_GATEWAY_PROVIDER", default="bendo")
+PAYMENT_GATEWAY_BASE_URL = config(
+    "PAYMENT_GATEWAY_BASE_URL", default="https://checkout.placetopay.com"
 )
-CLARO_PAY_MERCHANT_ID = config("CLARO_PAY_MERCHANT_ID", default="")
-CLARO_PAY_API_KEY = config("CLARO_PAY_API_KEY", default="")
-CLARO_PAY_API_SECRET = config("CLARO_PAY_API_SECRET", default="")
-CLARO_PAY_WEBHOOK_SECRET = config("CLARO_PAY_WEBHOOK_SECRET", default="")
+PAYMENT_GATEWAY_LOGIN = config("PAYMENT_GATEWAY_LOGIN", default="")
+PAYMENT_GATEWAY_TRAN_KEY = config("PAYMENT_GATEWAY_TRAN_KEY", default="")
+PAYMENT_GATEWAY_WEBHOOK_SECRET = config("PAYMENT_GATEWAY_WEBHOOK_SECRET", default="")
 
 
 # =============================================================================
@@ -353,17 +370,14 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # =============================================================================
 # BUSINESS RULES CONFIGURATION
+# Limits are DB-driven via SubscriptionPlan. These are fallback defaults.
 # =============================================================================
-TRIAL_DAYS = config("TRIAL_DAYS", default=14, cast=int)
-MAX_PROGRAMS_PER_TENANT = config("MAX_PROGRAMS_PER_TENANT", default=10, cast=int)
-MAX_LOCATIONS_PER_TENANT = config("MAX_LOCATIONS_PER_TENANT", default=50, cast=int)
+TRIAL_DAYS = config("TRIAL_DAYS", default=5, cast=int)
 GEO_PUSH_COOLDOWN_HOURS = config("GEO_PUSH_COOLDOWN_HOURS", default=4, cast=int)
 GEO_FENCE_RADIUS_METERS = config("GEO_FENCE_RADIUS_METERS", default=100, cast=int)
-PLAN_FULL_PRICE_USD = config("PLAN_FULL_PRICE_USD", default="75.00")
-PLAN_ADDITIONAL_POS_PRICE_USD = config("PLAN_ADDITIONAL_POS_PRICE_USD", default="10.00")
 TAX_RATE_ECUADOR = config(
     "TAX_RATE_ECUADOR", default=0.15, cast=float
-)  # Ecuador 2024 IVA
+)  # Ecuador IVA 15%
 
 APP_URL = config("APP_URL", default="http://localhost")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")

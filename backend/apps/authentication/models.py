@@ -79,6 +79,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     failed_login_count = models.SmallIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
 
+    # i18n — user language preference (REQ-I18N-001)
+    preferred_language = models.CharField(
+        max_length=5,
+        default="",
+        blank=True,
+        verbose_name="Idioma preferido",
+        help_text="ISO 639-1 code (es, en, fr, de). Empty = tenant default.",
+    )
+
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -1,14 +1,16 @@
 """
 Loyallia — Billing API Schemas (Pydantic models)
+Generic payment gateway — no provider-specific fields.
 """
 
 from pydantic import BaseModel
 
 
 class SubscribeSchema(BaseModel):
-    """Input for subscribing a tenant to the FULL plan."""
+    """Input for subscribing a tenant to a plan."""
 
-    card_token: str
+    plan_slug: str  # Slug of the SubscriptionPlan to subscribe to
+    card_token: str = ""
     card_brand: str = ""
     card_last_four: str = ""
     card_exp_month: int | None = None
@@ -23,7 +25,7 @@ class UpdateSubscriptionSchema(BaseModel):
 
 
 class AddPaymentMethodSchema(BaseModel):
-    claro_pay_token: str
+    gateway_token: str
     card_brand: str = ""
     card_last_four: str = ""
     card_exp_month: int | None = None

@@ -39,6 +39,8 @@ from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
 from apps.tenants.api import router as tenants_router
 from apps.tenants.super_admin_api import router as super_admin_router
+from apps.audit.api import router as audit_router
+from apps.agent_api.api import router as agent_api_router
 from apps.transactions.api import router as transactions_router
 from apps.transactions.api import scanner_router
 
@@ -57,6 +59,8 @@ api.add_router("/billing/", billing_payment_router, tags=["Billing - Payments"])
 api.add_router("/admin/", super_admin_router, tags=["Super Admin"])
 api.add_router("/", wallet_router, tags=["Wallet"])
 api.add_router("/upload/", upload_router, tags=["Uploads"])
+api.add_router("/agent/", agent_api_router, tags=["Agent API"])
+api.add_router("/admin/audit/", audit_router, tags=["Audit"])
 
 
 # --- Global error handlers ---
