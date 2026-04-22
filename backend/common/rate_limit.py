@@ -107,11 +107,15 @@ class RateLimitMiddleware:
                 rate_key = f"rl:{rule_path}:ip:{client_ip}"
 
             try:
+                # Use pipeline to minimize round-trips
                 pipe = redis.pipeline()
                 pipe.incr(rate_key)
-                pipe.expire(rate_key, window)
+                # Only set TTL on first request to prevent permanent lockouts
                 results = pipe.execute()
                 current_count = results[0]
+                
+                if current_count == 1:
+                    redis.expire(rate_key, window)
             except Exception:
                 # Redis error — fail open
                 logger.warning("Rate limiter: Redis pipeline error. Failing open.")
