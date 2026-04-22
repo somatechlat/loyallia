@@ -73,3 +73,6 @@ docker-data/
 # Misc
 *.bak
 *.tmp
+
+# Agents (credentials, deployment docs — NEVER commit)
+.agents/
