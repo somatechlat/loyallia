@@ -111,7 +111,7 @@ Loyallia is a standalone, cloud-native, multi-tenant SaaS platform. It integrate
 
 | ID | Function |
 |----|----------|
-| F-01 | Multi-tenant business onboarding with 14-day free trial |
+| F-01 | Multi-tenant business onboarding with 5-day free trial |
 | F-02 | 10-type digital loyalty card creation with full branding customization |
 | F-03 | Customer self-enrollment via QR code (scan → form → Wallet in <60 seconds) |
 | F-04 | Real-time digital pass issuance to Apple Wallet / Google Wallet |
@@ -237,7 +237,7 @@ Manage tenant onboarding, user authentication, role-based access control, and te
 | Req ID | Requirement | Priority |
 |--------|-------------|----------|
 | LYL-FR-AUTH-001 | System SHALL allow a new business to register with: business name, email, phone, password, country | MUST |
-| LYL-FR-AUTH-002 | Upon registration, system SHALL automatically start a 14-day free trial with FULL feature access | MUST |
+| LYL-FR-AUTH-002 | Upon registration, system SHALL automatically start a 5-day free trial with FULL feature access | MUST |
 | LYL-FR-AUTH-003 | No credit card SHALL be required at registration | MUST |
 | LYL-FR-AUTH-004 | System SHALL send a verification email to confirm the business email address via OTP link | MUST |
 | LYL-FR-AUTH-005 | System SHALL automatically create a default tenant workspace, isolating all data | MUST |
@@ -773,7 +773,7 @@ Manage tenant subscription lifecycle: free trial, plan selection, payment, invoi
 
 | Plan | Price | Features |
 |------|-------|----------|
-| TRIAL | Free (14 days) | All FULL features — no credit card |
+| TRIAL | Free (5 days) | All FULL features — no credit card |
 | FULL | $75/month + IVA | 10 card types, geo-location, manager accounts, unlimited customers/messages/stamps/rewards/transactions |
 | ADDITIONAL_POS | $10/month per location | Extra scanner location |
 
@@ -783,11 +783,11 @@ Manage tenant subscription lifecycle: free trial, plan selection, payment, invoi
 
 | Req ID | Requirement | Priority |
 |--------|-------------|----------|
-| LYL-FR-BILL-001 | System SHALL automatically activate 14-day free trial upon tenant registration | MUST |
+| LYL-FR-BILL-001 | System SHALL automatically activate 5-day free trial upon tenant registration | MUST |
 | LYL-FR-BILL-002 | Trial SHALL include ALL FULL plan features with no credit card required | MUST |
 | LYL-FR-BILL-003 | System SHALL notify tenant at: 7 days, 3 days, 1 day before trial expiry | MUST |
 | LYL-FR-BILL-004 | Upon trial expiry without subscription: tenant account SHALL be suspended (read-only mode) | MUST |
-| LYL-FR-BILL-005 | System SHALL integrate with Stripe API for credit card payment processing | MUST |
+| LYL-FR-BILL-005 | System SHALL integrate with Bendo/PlacetoPay API for credit card payment processing | MUST |
 | LYL-FR-BILL-006 | System SHALL apply correct IVA rate per country (12% for Ecuador) | MUST |
 | LYL-FR-BILL-007 | System SHALL issue invoice PDF per billing cycle | MUST |
 | LYL-FR-BILL-008 | System SHALL allow tenant to cancel subscription at any time; access continues until period end | MUST |
@@ -971,7 +971,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 
 | Entity | Key Fields |
 |--------|-----------|
-| Tenant | id, name, slug, owner_id, plan, trial_end, is_active, stripe_customer_id, timezone, country |
+| Tenant | id, name, slug, owner_id, plan, trial_end, is_active, gateway_customer_id, timezone, country |
 | User | id, tenant_id, email, password_hash, role (OWNER/MANAGER/STAFF), is_active, last_login |
 | Location | id, tenant_id, name, address, lat, long, is_active |
 | LoyaltyProgram | id, tenant_id, card_type, name, config (JSONB), is_active, logo_url, colors |
@@ -980,7 +980,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | Transaction | id, tenant_id, pass_id, customer_id, staff_id, location_id, type, amount, metadata (JSONB), created_at |
 | PushCampaign | id, tenant_id, title, message, target_segment, status, scheduled_at, sent_count, open_count |
 | AutomationRule | id, tenant_id, name, trigger, conditions (JSONB), actions (JSONB), is_active, execution_count |
-| Subscription | id, tenant_id, plan, stripe_subscription_id, status, billing_cycle_start, billing_cycle_end |
+| Subscription | id, tenant_id, plan, gateway_subscription_id, status, billing_cycle_start, billing_cycle_end |
 | AuditLog | id, actor_id, tenant_id, action, target_type, target_id, metadata (JSONB), created_at |
 
 ### 20.2 Data Retention Policy
@@ -1004,7 +1004,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 2. Apple APN requires a valid Apple Developer Program membership and PassKit certificate.
 3. Google Wallet API requires a Google Cloud project with Wallet API enabled.
 4. PKPass files must be re-signed upon any pass field update.
-5. Stripe is the payment processor; no alternative is in scope for v1.0.
+5. Bendo/PlacetoPay is the payment gateway; pluggable architecture supports future alternatives.
 6. All open-source components must have permissive licenses (MIT, Apache 2.0, BSD).
 
 ### 21.2 Business Constraints
@@ -1018,7 +1018,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 1. Businesses have reliable internet for dashboard and scanner operations.
 2. Customers have iOS 15+ or Android 10+ with Apple/Google Wallet installed.
 3. All push notification device tokens are collected upon pass installation.
-4. Stripe is available in the target market; fallback payment processing is out of scope v1.0.
+4. Bendo/PlacetoPay is available in the target market (Ecuador/LATAM); pluggable gateway architecture supports alternatives.
 5. Email delivery depends on a configured SMTP provider (e.g., SendGrid, Mailjet).
 
 ---
@@ -1040,7 +1040,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | GEO | ACC-009 | Apple Wallet geo-push appears when test device enters 100m radius of configured location |
 | AUTO | ACC-010 | Win-back rule triggers push for customer inactive 30 days |
 | ANA | ACC-011 | Transaction history displays correct data matching Scanner App entries |
-| BILL | ACC-012 | 14-day trial activates on registration; account suspends on day 15 without subscription |
+| BILL | ACC-012 | 5-day trial activates on registration; account suspends on day 6 without subscription |
 | API | ACC-013 | All documented endpoints return correct responses per OpenAPI spec |
 | SEC | ACC-014 | Cross-tenant data access attempt returns 403 Forbidden |
 | WALL | ACC-015 | Customer enrollment flow completes in ≤60 seconds end-to-end |

@@ -9,7 +9,7 @@ This document outlines **EVERY** core transactional and operational journey hand
 **Goal**: Administer global multi-tenant infrastructure.
 *   **2.1 Global Governance Login**: SuperAdmin authenticates to the root `/admin` Next.js interface. Platform issues wildcard root JWT access.
 *   **2.2 Tenant Provisioning**: SuperAdmin creates a new business tenant (`UUID`), generating the standard branch structures and isolated database schema rows.
-*   **2.3 Plan Overrides & Subscriptions**: SuperAdmin views existing tenants and manually forces a "Pioneer Plan" active subscription status bypassing the Stripe gateway constraints.
+*   **2.3 Plan Overrides & Subscriptions**: SuperAdmin views existing tenants and manually forces a "Pioneer Plan" active subscription status bypassing the payment gateway constraints.
 *   **2.4 Global Monitoring**: SuperAdmin loads the root health dashboard to view global system limits and memory.
 
 ---
