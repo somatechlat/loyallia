@@ -15,20 +15,12 @@ services:
   # DJANGO API — Production: Gunicorn WSGI
   # ---------------------------------------------------------------------------
   api:
-    command: >
+    command: >-
       sh -c "python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
-      python manage.py seed_subscription_plans 2>/dev/null || true &&
-      gunicorn loyallia.wsgi:application
-        --bind 0.0.0.0:8000
-        --workers 4
-        --worker-class gthread
-        --threads 2
-        --timeout 120
-        --keep-alive 5
-        --log-level info
-        --access-logfile -
-        --error-logfile -"
+      (python manage.py seed_subscription_plans 2>/dev/null || true) &&
+      gunicorn loyallia.wsgi:application --bind 0.0.0.0:8000 --workers 4 --worker-class gthread --threads 2 --timeout 120 --keep-alive 5 --log-level info --access-logfile - --error-logfile -"
+
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
       DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
