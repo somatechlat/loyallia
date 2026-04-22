@@ -26,7 +26,7 @@ interface TrendPoint {
   rewards_redeemed: number;
 }
 
-interface VisitMetrics { total_visits: number; unique_customers: number; new_visitors: number; recurring_visitors: number; non_returning: number; retention_rate: number; }
+interface VisitMetrics { total_visits: number; unique_customers: number; new_visitors: number; recurring_visitors: number; non_returning: number; unregistered_visits: number; retention_rate: number; }
 interface TopBuyer { customer_id: string; name: string; email: string; total_spent: number; visits: number; }
 interface DemoGender { gender: string; count: number; percentage: number; }
 interface DemoAge { range: string; count: number; percentage: number; }
