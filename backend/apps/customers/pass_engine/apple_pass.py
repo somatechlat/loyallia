@@ -182,35 +182,44 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
     bg_color = card.background_color or "#5660ff"
 
-    logo_bytes = None
-    if card.logo_url:
+    def fetch_image_bytes(url):
+        if not url: return None
         try:
             import requests
-
-            resp = requests.get(card.logo_url, timeout=10)
+            resp = requests.get(url, timeout=10)
             if resp.status_code == 200:
-                logo_bytes = resp.content
-                logger.info("Using card logo from URL: %s", card.logo_url)
+                return resp.content
         except Exception as exc:
-            logger.warning("Failed to fetch logo from %s: %s", card.logo_url, exc)
+            logger.warning("Failed to fetch image from %s: %s", url, exc)
+        return None
 
+    logo_bytes = fetch_image_bytes(card.logo_url)
+    icon_bytes = fetch_image_bytes(card.icon_url)
+    strip_bytes = fetch_image_bytes(card.strip_image_url)
+
+    from PIL import Image
+
+    # Default fallbacks
     icon_29 = _generate_placeholder_icon(card.name, bg_color, 29)
     icon_58 = _generate_placeholder_icon(card.name, bg_color, 58)
+    logo_87 = _generate_placeholder_icon(card.name, bg_color, 87)
+    logo_174 = _generate_placeholder_icon(card.name, bg_color, 174)
 
     if logo_bytes:
-        from PIL import Image
-
         try:
-            logo_img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-            logo_87 = _resize_image(logo_img, 87, 87)
-            logo_174 = _resize_image(logo_img, 174, 174)
+            img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+            logo_87 = _resize_image(img, 87, 87)
+            logo_174 = _resize_image(img, 174, 174)
         except Exception as exc:
-            logger.warning("Failed to process logo image: %s, using placeholder", exc)
-            logo_87 = _generate_placeholder_icon(card.name, bg_color, 87)
-            logo_174 = _generate_placeholder_icon(card.name, bg_color, 174)
-    else:
-        logo_87 = _generate_placeholder_icon(card.name, bg_color, 87)
-        logo_174 = _generate_placeholder_icon(card.name, bg_color, 174)
+            logger.warning("Failed to process logo image: %s", exc)
+
+    if icon_bytes:
+        try:
+            img = Image.open(io.BytesIO(icon_bytes)).convert("RGBA")
+            icon_29 = _resize_image(img, 29, 29)
+            icon_58 = _resize_image(img, 58, 58)
+        except Exception as exc:
+            logger.warning("Failed to process icon image: %s", exc)
 
     files = {
         "pass.json": pass_json_bytes,
@@ -219,6 +228,15 @@ def generate_pkpass(customer_pass) -> bytes | None:
         "logo.png": logo_87,
         "logo@2x.png": logo_174,
     }
+
+    if strip_bytes:
+        try:
+            img = Image.open(io.BytesIO(strip_bytes)).convert("RGBA")
+            # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
+            files["strip.png"] = _resize_image(img, 375, 123)
+            files["strip@2x.png"] = _resize_image(img, 750, 246)
+        except Exception as exc:
+            logger.warning("Failed to process strip image: %s", exc)
 
     manifest = {}
     for filename, data in files.items():
