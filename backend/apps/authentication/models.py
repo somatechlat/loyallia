@@ -4,6 +4,7 @@ Extends AbstractBaseUser for full control.
 Supports per-tenant RBAC with OWNER, MANAGER, STAFF, SUPER_ADMIN roles.
 """
 import uuid
+
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
@@ -105,8 +106,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def record_failed_login(self) -> None:
         """Increment failed login counter. Lock after 5 failures."""
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
         self.failed_login_count += 1
         if self.failed_login_count >= 5:
             self.locked_until = timezone.now() + timedelta(minutes=15)

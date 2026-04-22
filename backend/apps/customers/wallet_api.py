@@ -154,6 +154,7 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     - If redirect=True: Issues a 302 redirect to Google.
     """
     from django.shortcuts import redirect as django_redirect
+
     from apps.customers.models import CustomerPass
     from apps.customers.pass_engine.google_pass import (
         generate_google_wallet_url,
@@ -211,7 +212,7 @@ def get_wallet_status(request, pass_id: str):
     apple_available = is_apple_wallet_configured()
     google_available = is_google_wallet_configured()
 
-    base_url = getattr(request, "build_absolute_uri", lambda p: p)
+    getattr(request, "build_absolute_uri", lambda p: p)
 
     return WalletStatusOut(
         pass_id=str(customer_pass.id),

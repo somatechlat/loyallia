@@ -13,18 +13,15 @@ Reference: https://developers.google.com/wallet/loyalty
 import json
 import logging
 import time
-import uuid as uuid_module
 from pathlib import Path
-from typing import Optional
 
 import jwt  # PyJWT
-
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
-def _load_service_account() -> Optional[dict]:
+def _load_service_account() -> dict | None:
     """
     Load Google Service Account JSON from the configured path.
     Returns None if file is not found or is empty.
@@ -44,7 +41,7 @@ def _load_service_account() -> Optional[dict]:
         return None
 
     try:
-        with open(sa_path, "r") as f:
+        with open(sa_path) as f:
             data = json.load(f)
 
         if not isinstance(data, dict):
@@ -60,7 +57,7 @@ def _load_service_account() -> Optional[dict]:
             return None
 
         return data
-    except (json.JSONDecodeError, IOError) as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         logger.error("Failed to load or parse Service Account JSON at %s: %s", sa_path, exc)
         return None
 
@@ -293,7 +290,7 @@ def _build_points_for_type(card, customer_pass) -> dict:
     pass_data = customer_pass.pass_data or {}
 
     if card.card_type == "stamp":
-        total = card.metadata.get("total_stamps", 6) if card.metadata else 6
+        card.metadata.get("total_stamps", 6) if card.metadata else 6
         current = pass_data.get("stamp_count", 0)
         return {
             "label": "Sellos",
@@ -493,7 +490,7 @@ def _build_gift_card_object(customer_pass, card, customer, tenant) -> dict:
     }
 
 
-def generate_google_wallet_url(customer_pass) -> Optional[str]:
+def generate_google_wallet_url(customer_pass) -> str | None:
     """
     Generate a Google Wallet "Save to Google Pay" URL for a CustomerPass.
 
@@ -583,7 +580,7 @@ def is_google_wallet_configured() -> bool:
     return sa_data is not None and bool(issuer_id)
 
 
-def _get_access_token() -> Optional[str]:
+def _get_access_token() -> str | None:
     """
     Get an access token from the Google Service Account using OAuth2.
     Uses the google-auth library to create credentials and get a token.
@@ -648,15 +645,12 @@ def send_push_notification(
 
     if gw_type == "offer":
         object_id = f"{issuer_id}.offer-pass-{customer_pass.id}"
-        class_id = f"{issuer_id}.offer-{card.id}"
         api_endpoint = "offerObjects"
     elif gw_type == "giftCard":
         object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
-        class_id = f"{issuer_id}.giftcard-{card.id}"
         api_endpoint = "giftCardObjects"
     else:
         object_id = f"{issuer_id}.loyallia-pass-{customer_pass.id}"
-        class_id = f"{issuer_id}.loyallia-{card.id}"
         api_endpoint = "loyaltyObjects"
 
     message_body = body

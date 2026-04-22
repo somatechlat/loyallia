@@ -3,16 +3,18 @@ Loyallia — Transactions API router.
 Handles scanner validation + transaction recording (Phase 6).
 Also sub-router for /transactions/ list endpoints.
 """
+from decimal import Decimal
+
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
-from decimal import Decimal
-from common.permissions import jwt_auth, is_staff_or_above, is_manager_or_owner
-from common.messages import get_message
+
+from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
-from apps.customers.models import CustomerPass, Customer
+from common.messages import get_message
+from common.permissions import is_manager_or_owner, is_staff_or_above, jwt_auth
 
 router = Router()
 
@@ -146,8 +148,9 @@ def transact(request, data: ScanTransactIn):
 
     # Schedule QR image refresh if pass state changed (digest=True means wallet update needed)
     if result.get("pass_updated"):
-        from apps.customers.tasks import trigger_pass_update
         import logging
+
+        from apps.customers.tasks import trigger_pass_update
         try:
             trigger_pass_update.delay(str(pass_obj.id))  # type: ignore[reportCallIssue]
         except Exception:
@@ -298,8 +301,9 @@ def remote_issue(request, data: RemoteIssueIn):
     """
     if not is_staff_or_above(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    from apps.customers.models import Customer
     import uuid
+
+    from apps.customers.models import Customer
 
     # Validate UUID format
     try:

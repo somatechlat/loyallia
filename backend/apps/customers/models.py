@@ -5,10 +5,12 @@ Customer profiles, passes, and enrollment management.
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from django.db import models
+
 from django.core.validators import EmailValidator, MinValueValidator
-from apps.tenants.models import Tenant
+from django.db import models
+
 from apps.cards.models import Card
+from apps.tenants.models import Tenant
 
 
 class Customer(models.Model):
@@ -231,8 +233,6 @@ class CustomerPass(models.Model):
           referral_pass | multipass
         Returns dict with transaction details and updated pass data.
         """
-        from apps.transactions.models import TransactionType
-        from decimal import Decimal
 
         result = {
             "transaction_type": transaction_type,

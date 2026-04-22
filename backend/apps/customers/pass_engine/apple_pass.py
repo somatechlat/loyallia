@@ -23,7 +23,6 @@ import json
 import logging
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 from django.conf import settings
 
@@ -121,11 +120,13 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         pass_json["locations"] = locations
         pass_json["maxDistance"] = 100  # meters — triggers geo-notification
 
-    # Add NFC Dictionary for Smart Tap / Apple VAS
-    pass_json["nfc"] = {
-        "message": barcode_value,
-        "encryptionPublicKey": "DUMMY_KEY_REPLACE_WITH_REAL_CERT",  # Required Apple VAS structure
-    }
+    # Add NFC Dictionary for Smart Tap / Apple VAS (only if key is configured)
+    nfc_public_key = getattr(settings, "APPLE_NFC_ENCRYPTION_PUBLIC_KEY", "")
+    if nfc_public_key:
+        pass_json["nfc"] = {
+            "message": barcode_value,
+            "encryptionPublicKey": nfc_public_key,
+        }
 
     # Web service URL for live pass updates (if configured)
     web_service_url = getattr(settings, "PASS_WEB_SERVICE_URL", "")
@@ -326,7 +327,7 @@ def _generate_placeholder_icon(
         font = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(size * 0.5)
         )
-    except (IOError, OSError):
+    except OSError:
         font = ImageFont.load_default()
 
     bbox = draw.textbbox((0, 0), letter, font=font)
@@ -342,7 +343,7 @@ def _generate_placeholder_icon(
     return buf.getvalue()
 
 
-def _sign_manifest(manifest_json: bytes, config: dict) -> Optional[bytes]:
+def _sign_manifest(manifest_json: bytes, config: dict) -> bytes | None:
     """
     Sign the manifest.json using PKCS#7 detached signature.
     Uses pyOpenSSL with the Apple Pass Type Certificate + WWDR cert.
@@ -384,7 +385,7 @@ def _sign_manifest(manifest_json: bytes, config: dict) -> Optional[bytes]:
         return None
 
 
-def generate_pkpass(customer_pass) -> Optional[bytes]:
+def generate_pkpass(customer_pass) -> bytes | None:
     """
     Generate a real .pkpass file (signed ZIP) for Apple Wallet.
 
@@ -436,8 +437,9 @@ def generate_pkpass(customer_pass) -> Optional[bytes]:
 
     if logo_bytes:
         # Resize logo to appropriate sizes for Apple Wallet
-        from PIL import Image
         import io
+
+        from PIL import Image
 
         try:
             logo_img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
@@ -493,10 +495,11 @@ def generate_pkpass(customer_pass) -> Optional[bytes]:
     return pkpass_bytes
 
 
-def _resize_image(img: "Image.Image", width: int, height: int) -> bytes:
+def _resize_image(img, width: int, height: int) -> bytes:
     """Resize an image to the specified dimensions and return as PNG bytes."""
-    from PIL import Image
     import io
+
+    from PIL import Image
 
     resized = img.resize((width, height), Image.Resampling.LANCZOS)
     buf = io.BytesIO()

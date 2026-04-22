@@ -4,6 +4,7 @@ Email and Wallet campaign delivery.
 """
 
 import logging
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 def send_single_notification(self, notification_id: str) -> dict:
     """Dispatch a single notification record."""
     import uuid
+
     from apps.notifications.models import Notification
     from apps.notifications.service import NotificationService
 
@@ -59,15 +61,17 @@ def send_email_campaign(
 ) -> dict:
     """Send a rich HTML email campaign to customers in a segment."""
     import uuid
-    from django.core.mail import EmailMultiAlternatives
+
     from django.conf import settings
-    from apps.tenants.models import Tenant
+    from django.core.mail import EmailMultiAlternatives
+
     from apps.customers.models import Customer
     from apps.notifications.models import (
         Notification,
         NotificationChannel,
         NotificationType,
     )
+    from apps.tenants.models import Tenant
 
     try:
         tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))
@@ -89,7 +93,6 @@ def send_email_campaign(
     succeeded = 0
     failed = 0
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
-    tenant_logo = tenant.logo_url or ""
     primary_color = getattr(tenant, "primary_color", "#6366f1")
 
     for customer in audience.iterator(chunk_size=50):
@@ -179,15 +182,17 @@ def send_wallet_notification_campaign(
 ) -> dict:
     """Send wallet notification campaign to customers with active passes using Google Wallet Push API."""
     import uuid
+
     from django.conf import settings
-    from apps.tenants.models import Tenant
+
     from apps.customers.models import Customer, CustomerPass
+    from apps.customers.pass_engine.google_pass import send_push_notification
     from apps.notifications.models import (
         Notification,
         NotificationChannel,
         NotificationType,
     )
-    from apps.customers.pass_engine.google_pass import send_push_notification
+    from apps.tenants.models import Tenant
 
     try:
         tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))
@@ -215,7 +220,7 @@ def send_wallet_notification_campaign(
     if segment_id == "all":
         from apps.cards.models import Card
         from apps.customers.pass_engine.google_pass import send_push_notification_to_class
-        
+
         active_cards = Card.objects.filter(tenant=tenant, is_active=True)
         for card in active_cards:
             broadcast_url = f"{settings.FRONTEND_URL}/enroll/{str(card.id)}"
@@ -281,6 +286,7 @@ def send_wallet_notification_campaign(
 def send_birthday_notifications() -> dict:
     """Daily task: send birthday notifications."""
     from datetime import date
+
     from apps.customers.models import Customer
     from apps.notifications.service import NotificationService
 
@@ -311,7 +317,9 @@ def send_birthday_notifications() -> dict:
 def send_inactive_reminders(days_inactive: int = 30) -> dict:
     """Daily task: send reminders to inactive customers."""
     from datetime import timedelta
+
     from django.utils import timezone
+
     from apps.customers.models import Customer
     from apps.notifications.service import NotificationService
 

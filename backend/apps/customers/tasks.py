@@ -3,8 +3,8 @@ Loyallia — Customers Celery Tasks
 Async pass generation and update tasks.
 """
 import logging
+
 from celery import shared_task
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ def generate_qr_for_pass(self, customer_pass_id: str) -> dict:
         dict with qr_url and success flag
     """
     import uuid
+
     from apps.customers.models import CustomerPass
     from apps.customers.pass_engine.qr_generator import generate_and_store_qr
 
@@ -78,6 +79,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         dict with success status
     """
     import uuid
+
     from apps.customers.models import CustomerPass
     from apps.notifications.models import Notification, NotificationChannel, NotificationType
     from apps.notifications.service import NotificationService
@@ -138,8 +140,9 @@ def update_customer_analytics(self, customer_id: str) -> dict:
         dict with success status
     """
     import uuid
-    from apps.customers.models import Customer
+
     from apps.analytics.models import CustomerAnalytics
+    from apps.customers.models import Customer
 
     try:
         customer = Customer.objects.select_related("tenant").get(

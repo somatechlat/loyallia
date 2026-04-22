@@ -4,18 +4,18 @@ Handles sending push notifications, emails, and SMS.
 """
 
 import logging
+
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils import timezone
-from typing import List, Optional
 
-from apps.tenants.models import Tenant
 from apps.customers.models import Customer, CustomerPass
 from apps.notifications.models import (
     Notification,
-    NotificationType,
     NotificationChannel,
+    NotificationType,
 )
+from apps.tenants.models import Tenant
 from common.messages import get_message
 
 logger = logging.getLogger(__name__)
@@ -236,7 +236,7 @@ class NotificationService:
 
     @staticmethod
     def send_bulk_notifications(
-        customers: List[Customer],
+        customers: list[Customer],
         title: str,
         message: str,
         notification_type: NotificationType,

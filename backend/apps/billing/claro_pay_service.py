@@ -15,7 +15,6 @@ import logging
 import uuid
 from datetime import timedelta
 from decimal import Decimal
-from typing import Optional
 
 import httpx
 from django.conf import settings
@@ -23,14 +22,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.billing.models import (
-    BillingPlan,
     Invoice,
     PaymentMethod,
     Subscription,
     SubscriptionStatus,
 )
 from apps.tenants.models import Tenant
-from common.messages import get_message
 
 logger = logging.getLogger("loyallia.billing")
 
@@ -303,7 +300,7 @@ class ClaroPayService:
             tenant=tenant, is_default=True
         ).update(is_default=False)
 
-        payment_method = PaymentMethod.objects.create(
+        PaymentMethod.objects.create(
             tenant=tenant,
             claro_pay_token=card_token,
             card_brand=card_brand,

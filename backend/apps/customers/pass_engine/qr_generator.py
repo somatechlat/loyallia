@@ -16,12 +16,11 @@ import hmac
 import io
 import logging
 import time
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
-def generate_qr_token(serial: str, secret: str, timestamp: Optional[int] = None) -> str:
+def generate_qr_token(serial: str, secret: str, timestamp: int | None = None) -> str:
     """
     Generate a signed QR token string.
 
@@ -46,7 +45,7 @@ def generate_qr_token(serial: str, secret: str, timestamp: Optional[int] = None)
     return f"{payload}:{sig}"
 
 
-def verify_qr_token(token: str, secret: str, max_age_seconds: int = 86400) -> tuple[bool, Optional[str]]:
+def verify_qr_token(token: str, secret: str, max_age_seconds: int = 86400) -> tuple[bool, str | None]:
     """
     Verify a QR token.
 

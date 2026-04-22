@@ -3,14 +3,15 @@ Loyallia — Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
 
-from typing import List, Optional
-from ninja import Router, Schema
+
+from django.shortcuts import get_object_or_404
+from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel, field_validator
-from django.shortcuts import get_object_or_404
-from common.permissions import jwt_auth, is_owner, is_manager_or_owner
-from common.messages import get_message
+
 from apps.cards.models import Card, CardType
+from common.messages import get_message
+from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 
 router = Router()
 
@@ -22,15 +23,15 @@ router = Router()
 
 class CardCreateIn(BaseModel):
     name: str
-    description: Optional[str] = ""
+    description: str | None = ""
     card_type: CardType
-    logo_url: Optional[str] = ""
-    background_color: Optional[str] = "#1a1a2e"
-    text_color: Optional[str] = "#ffffff"
-    strip_image_url: Optional[str] = ""
-    icon_url: Optional[str] = ""
-    metadata: Optional[dict] = {}
-    locations: Optional[list] = []
+    logo_url: str | None = ""
+    background_color: str | None = "#1a1a2e"
+    text_color: str | None = "#ffffff"
+    strip_image_url: str | None = ""
+    icon_url: str | None = ""
+    metadata: dict | None = {}
+    locations: list | None = []
 
     @field_validator("name")
     @classmethod
@@ -52,20 +53,20 @@ class CardCreateIn(BaseModel):
 
 
 class CardUpdateIn(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    logo_url: Optional[str] = None
-    background_color: Optional[str] = None
-    text_color: Optional[str] = None
-    strip_image_url: Optional[str] = None
-    icon_url: Optional[str] = None
-    metadata: Optional[dict] = None
-    is_active: Optional[bool] = None
-    locations: Optional[list] = None
+    name: str | None = None
+    description: str | None = None
+    logo_url: str | None = None
+    background_color: str | None = None
+    text_color: str | None = None
+    strip_image_url: str | None = None
+    icon_url: str | None = None
+    metadata: dict | None = None
+    is_active: bool | None = None
+    locations: list | None = None
 
     @field_validator("name")
     @classmethod
-    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+    def validate_name(cls, v: str | None) -> str | None:
         if v is not None and len(v.strip()) < 2:
             raise ValueError("Program name must be at least 2 characters")
         return v.strip() if v else v
@@ -122,7 +123,7 @@ class MessageOut(BaseModel):
 
 
 class CardListOut(BaseModel):
-    programs: List[CardOut]
+    programs: list[CardOut]
     total: int
 
 

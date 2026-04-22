@@ -30,7 +30,9 @@ ignore = [
     "E402",   # module level import not at top (Django settings pattern)
     "E501",   # line too long (handled by formatter)
     "B008",   # do not perform function calls in argument defaults (Django pattern)
+    "B904",   # raise-without-from-inside-except (widespread in existing codebase)
     "SIM108", # Use ternary operator (readability preference)
+    "UP046",  # non-pep695-generic-class (requires 3.12+ syntax)
 ]
 
 [tool.ruff.lint.isort]

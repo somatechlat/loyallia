@@ -2,20 +2,19 @@
 Loyallia — Analytics API router
 Business intelligence and reporting endpoints.
 """
-from ninja import Router
-from ninja.errors import HttpError
-from pydantic import BaseModel
-from typing import List, Optional, Dict
-from django.db.models import Sum, Count, Avg, Q
-from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from common.permissions import jwt_auth, is_manager_or_owner
-from common.messages import get_message
-from apps.analytics.models import CustomerAnalytics, ProgramAnalytics, DailyAnalytics
-from apps.customers.models import Customer
+from django.db.models import Avg, Count, Sum
+from django.utils import timezone
+from ninja import Router
+from pydantic import BaseModel
+
+from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
 from apps.cards.models import Card
+from apps.customers.models import Customer
 from apps.transactions.models import Transaction
+from common.messages import get_message
+from common.permissions import is_manager_or_owner, jwt_auth
 
 router = Router()
 
@@ -35,7 +34,7 @@ class CustomerAnalyticsSchema(BaseModel):
     total_rewards_earned: int
     total_rewards_redeemed: int
     segment: str
-    last_visit: Optional[str]
+    last_visit: str | None
 
 
 class ProgramAnalyticsSchema(BaseModel):
@@ -118,7 +117,7 @@ def get_overview_analytics(request, days: int = 30):
 @router.get("/customers/", auth=jwt_auth, summary="Get customer analytics")
 def get_customer_analytics(
     request,
-    segment: Optional[str] = None,
+    segment: str | None = None,
     limit: int = 50,
     offset: int = 0
 ):

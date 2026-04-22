@@ -3,8 +3,10 @@ Loyallia — Shared Permission Classes for Django Ninja endpoints.
 All permissions extend TenantScopedPermission to enforce tenant isolation.
 """
 from typing import Any
-from ninja.security import HttpBearer
+
 from django.http import HttpRequest
+from ninja.security import HttpBearer
+
 from apps.authentication.tokens import decode_access_token
 from common.messages import get_message
 

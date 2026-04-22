@@ -7,7 +7,6 @@ Entry points:
   evaluate_scheduled_automations()               → called by Celery Beat daily
 """
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +15,7 @@ def fire_trigger(
     trigger: str,
     customer,
     tenant=None,
-    context: Optional[dict] = None,
+    context: dict | None = None,
 ) -> int:
     """
     Fire all active automations matching a trigger event for a customer.
@@ -73,8 +72,8 @@ def fire_trigger(
 def fire_trigger_async(
     trigger: str,
     customer_id: str,
-    tenant_id: Optional[str] = None,
-    context: Optional[dict] = None,
+    tenant_id: str | None = None,
+    context: dict | None = None,
 ) -> None:
     """
     Enqueue automation trigger evaluation as a Celery task.
@@ -86,8 +85,9 @@ def fire_trigger_async(
         tenant_id:   UUID string of the Tenant (optional, resolved from customer if omitted)
         context:     Optional event context dict
     """
-    from apps.automation.tasks import evaluate_trigger_for_customer
     import logging
+
+    from apps.automation.tasks import evaluate_trigger_for_customer
     try:
         evaluate_trigger_for_customer.delay(  # type: ignore[reportCallIssue]
             trigger=trigger,

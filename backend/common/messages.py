@@ -5,7 +5,6 @@ Supports future i18n translation.
 """
 from typing import Any
 
-
 # =============================================================================
 # MESSAGE REGISTRY
 # Format: "CODE": "Message string {placeholder}"

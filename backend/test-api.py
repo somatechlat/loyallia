@@ -1,5 +1,6 @@
-import requests
 import sys
+
+import requests
 
 res = requests.post('http://localhost:8000/api/v1/auth/login/', json={"email": "test_owner@loyallia.com", "password": "123456"})
 token = res.json()["access_token"]
@@ -7,7 +8,7 @@ token = res.json()["access_token"]
 list_res = requests.get('http://localhost:8000/api/v1/customers/', headers={"Authorization": f"Bearer {token}"})
 try:
     first_id = list_res.json()["customers"][0]["id"]
-except Exception as e:
+except Exception:
     print("NO CUSTOMERS:", list_res.text)
     sys.exit(1)
 

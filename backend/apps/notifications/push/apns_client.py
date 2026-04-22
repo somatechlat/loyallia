@@ -19,11 +19,9 @@ NOTE: APNs HTTP/2 requires httpx with HTTP/2 support (httpx[http2]) or httpcore[
       We use httpx with h2 support explicitly.
 """
 
-import json
 import logging
 import os
 import time
-from typing import Optional
 
 import httpx
 from django.conf import settings
@@ -37,7 +35,7 @@ APNS_SANDBOX_HOST = "https://api.sandbox.push.apple.com"
 _token_cache: dict[tuple, tuple[str, float]] = {}
 
 
-def _get_apns_jwt_token() -> Optional[str]:
+def _get_apns_jwt_token() -> str | None:
     """
     Generate (or return cached) APNs Provider JWT token.
 
@@ -97,10 +95,10 @@ def send_apns_message(
     device_token: str,
     title: str,
     body: str,
-    data: Optional[dict] = None,
-    badge: Optional[int] = None,
+    data: dict | None = None,
+    badge: int | None = None,
     sound: str = "default",
-    sandbox: Optional[bool] = None,
+    sandbox: bool | None = None,
 ) -> bool:
     """
     Send a push notification to a single iOS device via APNs HTTP/2.

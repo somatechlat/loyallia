@@ -3,13 +3,13 @@ Loyallia — Tenant & Location Models
 Core multi-tenant entity. All business data ties to Tenant.
 Ecuadorian business fields for SRI compliance.
 """
-import uuid
 import re
-from django.db import models
-from django.utils import timezone
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
-
+from django.db import models
+from django.utils import timezone
 
 # =============================================================================
 # VALIDATORS — Ecuadorian Identity Documents

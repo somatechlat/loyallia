@@ -4,9 +4,9 @@ Core models for all 10 card types with shared base properties and type-specific 
 """
 import uuid
 from decimal import Decimal
+
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.utils import timezone
+
 from apps.tenants.models import Tenant
 
 

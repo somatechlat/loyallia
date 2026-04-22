@@ -3,12 +3,14 @@ Loyallia — File Upload API
 Handles direct image uploads (logos, etc.) to MinIO/S3 and returns public URLs.
 """
 import logging
-import uuid
 import os
-from ninja import Router, File
-from ninja.files import UploadedFile
-from ninja.errors import HttpError
+import uuid
+
 from django.core.files.storage import default_storage
+from ninja import File, Router
+from ninja.errors import HttpError
+from ninja.files import UploadedFile
+
 from common.permissions import jwt_auth
 
 logger = logging.getLogger(__name__)

@@ -4,17 +4,17 @@ Issue and verify access + refresh tokens using HS256 with Django SECRET_KEY.
 """
 import hashlib
 import secrets
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
+
 import jwt
 from django.conf import settings
 
 
 def _utcnow() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
-def create_access_token(user_id: str, tenant_id: Optional[str], role: str) -> str:
+def create_access_token(user_id: str, tenant_id: str | None, role: str) -> str:
     """
     Create a short-lived JWT access token (15 minutes).
 
@@ -47,7 +47,7 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def decode_access_token(token: str) -> Optional[dict]:
+def decode_access_token(token: str) -> dict | None:
     """
     Decode and verify a JWT access token.
     Returns payload dict on success, None on any failure.

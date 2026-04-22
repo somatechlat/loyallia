@@ -3,11 +3,13 @@ Loyallia — Automation Models
 Campaign automation, triggers, and scheduled actions.
 """
 import uuid
-from django.db import models
+
 from django.core.validators import MinValueValidator
-from apps.tenants.models import Tenant
-from apps.customers.models import Customer
+from django.db import models
+
 from apps.cards.models import Card
+from apps.customers.models import Customer
+from apps.tenants.models import Tenant
 
 
 class AutomationTrigger(models.TextChoices):
@@ -137,8 +139,9 @@ class Automation(models.Model):
 
         # Check cooldown
         if self.last_executed and self.cooldown_hours > 0:
-            from django.utils import timezone
             from datetime import timedelta
+
+            from django.utils import timezone
             cooldown_end = self.last_executed + timedelta(hours=self.cooldown_hours)
             if timezone.now() < cooldown_end:
                 return False
@@ -183,8 +186,8 @@ class Automation(models.Model):
 
     def _execute_send_notification(self, customer, context) -> bool:
         """Send notification to customer."""
-        from apps.notifications.service import NotificationService
         from apps.notifications.models import NotificationType
+        from apps.notifications.service import NotificationService
 
         title = self.action_config.get("title", "Notificación automática")
         message = self.action_config.get("message", "")

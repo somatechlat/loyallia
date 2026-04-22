@@ -9,8 +9,8 @@ import django
 
 django.setup()
 
-from apps.tenants.models import Tenant
 from apps.cards.models import Card
+from apps.tenants.models import Tenant
 
 # Search for claro tenant
 tenants = Tenant.objects.filter(name__icontains="claro")

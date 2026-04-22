@@ -4,13 +4,15 @@ Run with: python manage.py test
 """
 import json
 from decimal import Decimal
+
 from django.test import TestCase
-from common.messages import get_message
-from apps.tenants.models import Tenant
+
 from apps.authentication.models import User
 from apps.authentication.tokens import create_access_token
 from apps.cards.models import Card, CardType
 from apps.customers.models import Customer, CustomerPass
+from apps.tenants.models import Tenant
+from common.messages import get_message
 
 
 class ModelTests(TestCase):
