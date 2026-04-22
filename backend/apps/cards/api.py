@@ -146,11 +146,12 @@ def create_program(request, data: CardCreateIn):
 
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    # Check tenant limit
-    from django.conf import settings
+    # Check tenant program limit (from subscription plan, not hardcoded)
+    from apps.billing.models import Subscription
 
     current_count = Card.objects.filter(tenant=request.tenant).count()
-    max_programs = getattr(settings, "MAX_PROGRAMS_PER_TENANT", 10)
+    sub = Subscription.objects.filter(tenant=request.tenant).first()
+    max_programs = sub.get_limit("programs") if sub else 0
     if current_count >= max_programs:
         raise HttpError(400, get_message("TENANT_MAX_PROGRAMS", max=max_programs))
 

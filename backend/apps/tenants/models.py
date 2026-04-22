@@ -206,6 +206,14 @@ class Tenant(models.Model):
     website = models.URLField(blank=True, default="")
     address = models.TextField(blank=True, default="")
 
+    # i18n — tenant default language (REQ-I18N-001)
+    default_language = models.CharField(
+        max_length=5,
+        default="es",
+        verbose_name="Idioma predeterminado",
+        help_text="ISO 639-1: es, en, fr, de. Set at tenant registration.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

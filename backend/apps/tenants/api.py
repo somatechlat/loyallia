@@ -116,13 +116,15 @@ def create_location(request, payload: LocationCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    from django.conf import settings
+    from apps.billing.models import Subscription
 
     count = Location.objects.filter(tenant=request.tenant).count()
-    if count >= settings.MAX_LOCATIONS_PER_TENANT:
+    sub = Subscription.objects.filter(tenant=request.tenant).first()
+    max_locations = sub.get_limit("locations") if sub else 0
+    if count >= max_locations:
         raise HttpError(
             400,
-            get_message("TENANT_MAX_PROGRAMS", max=settings.MAX_LOCATIONS_PER_TENANT),
+            get_message("TENANT_MAX_PROGRAMS", max=max_locations),
         )
 
     loc = Location.objects.create(

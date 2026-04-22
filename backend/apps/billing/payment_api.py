@@ -1,5 +1,5 @@
 """
-Loyallia — Billing Payment Methods, Invoices & Webhook API
+Loyallia — Billing Payment Methods, Invoices & Webhook API (REQ-PAY-001)
 Split from billing/api.py per the 500-line architectural limit.
 """
 
@@ -11,13 +11,13 @@ from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 
-from apps.billing.claro_pay_service import claro_pay_service
 from apps.billing.models import (
     Invoice,
     PaymentMethod,
     Subscription,
     SubscriptionStatus,
 )
+from apps.billing.payment_gateway import get_payment_gateway
 from apps.billing.schemas import AddPaymentMethodSchema
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
@@ -70,7 +70,7 @@ def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
 
     pm = PaymentMethod.objects.create(
         tenant=request.tenant,
-        claro_pay_token=data.claro_pay_token,
+        gateway_token=data.gateway_token,
         card_brand=data.card_brand,
         card_last_four=data.card_last_four,
         card_exp_month=data.card_exp_month,
@@ -200,7 +200,7 @@ def get_invoice(request: HttpRequest, invoice_id: str):
         "period_start": invoice.period_start.isoformat(),
         "period_end": invoice.period_end.isoformat(),
         "paid_at": invoice.paid_at.isoformat() if invoice.paid_at else None,
-        "claro_pay_charge_id": invoice.claro_pay_charge_id,
+        "gateway_charge_id": invoice.gateway_charge_id,
         "sri_authorization": invoice.sri_authorization_number,
         "sri_access_key": invoice.sri_access_key,
         "pdf_url": invoice.pdf_url,
@@ -210,19 +210,20 @@ def get_invoice(request: HttpRequest, invoice_id: str):
 
 
 # ============================================================================
-# Claro Pay Webhook
+# Payment Gateway Webhook
 # ============================================================================
 
 
-@router.post("/webhook/", summary="Claro Pay Webhook")
-def claro_pay_webhook(request: HttpRequest):
+@router.post("/webhook/", summary="Payment Gateway Webhook")
+def payment_webhook(request: HttpRequest):
     """
-    Receive and process Claro Pay webhook events.
+    Receive and process payment gateway webhook events.
     Verifies HMAC signature before processing.
     """
-    signature = request.headers.get("X-ClaroPay-Signature", "")
+    signature = request.headers.get("X-Payment-Signature", "")
+    gateway = get_payment_gateway()
 
-    if not claro_pay_service.verify_webhook_signature(request.body, signature):
+    if not gateway.verify_webhook(request.body, signature):
         logger.warning("Invalid webhook signature received")
         raise HttpError(401, get_message("BILLING_INVALID_SIGNATURE"))
 
@@ -234,8 +235,8 @@ def claro_pay_webhook(request: HttpRequest):
     event_type = payload.get("event", "")
     event_data = payload.get("data", {})
 
-    logger.info("Claro Pay webhook: event=%s", event_type)
+    logger.info("Payment webhook: event=%s", event_type)
 
-    claro_pay_service.process_webhook_event(event_type, event_data)
+    gateway.process_webhook(event_type, event_data)
 
     return {"received": True}
