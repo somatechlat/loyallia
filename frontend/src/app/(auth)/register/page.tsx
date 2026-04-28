@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useGoogleScript } from '@/lib/useGoogleScript';
 
 const COUNTRY_CODES = [
   { code: '+593', country: 'Ecuador', flag: '🇪🇨' },
@@ -34,7 +35,8 @@ const COUNTRY_CODES = [
   { code: '+81',  country: 'Japón', flag: '🇯🇵' },
 ];
 
- = useAuth();
+export default function RegisterPage() {
+  const { loginWithGoogle } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
@@ -47,6 +49,7 @@ const COUNTRY_CODES = [
   const [phoneSearch, setPhoneSearch] = useState('');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [form, setForm] = useState({
     business_name: '', email: '', password: '', first_name: '', last_name: '', phone_number: '',
   });
@@ -77,50 +80,20 @@ const COUNTRY_CODES = [
       .catch(() => {/* Google OAuth not available */});
   }, []);
 
-  // Load Google Identity Services script and render button
-  useEffect(() => {
-    if (!googleEnabled || !googleClientId) return;
-
-    const scriptId = 'google-gsi-script';
-    if (document.getElementById(scriptId)) {
-      initGoogleButton();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => initGoogleButton();
-    document.head.appendChild(script);
-  }, [googleEnabled, googleClientId]);
-
-  const initGoogleButton = () => {
-    const el = document.getElementById('google-register-btn-container');
-    if (!el || !window.google) return;
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleGoogleCallback,
-      auto_select: false,
-      context: 'signup',
-      ux_mode: 'popup',
-    });
-    window.google.accounts.id.renderButton(el, {
-      theme: 'outline',
-      size: 'large',
-      width: '100%',
-      text: 'signup_with',
-      shape: 'pill',
-      logo_alignment: 'center',
-    });
-  };
-
-  const handleGoogleCallback = async (response: { credential: string }) => {
-    // Show business name input for new Google registrations
+  const handleGoogleCallback = useCallback(async (response: { credential: string }) => {
     setGoogleCredential(response.credential);
     setShowGoogleBizName(true);
-  };
+  }, []);
+
+  // Load Google Identity Services script and render button
+  useGoogleScript({
+    enabled: googleEnabled,
+    clientId: googleClientId,
+    containerId: 'google-register-btn-container',
+    context: 'signup',
+    text: 'signup_with',
+    onCallback: handleGoogleCallback,
+  });
 
   const completeGoogleRegistration = async () => {
     if (!googleBizName.trim()) {
@@ -276,7 +249,14 @@ const COUNTRY_CODES = [
             <button
               type="button"
               className="input flex items-center gap-1.5 min-w-[110px] text-sm"
-              onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+              onClick={() => { setShowCountryDropdown(!showCountryDropdown); setHighlightedIndex(-1); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') { setShowCountryDropdown(false); }
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCountryDropdown(!showCountryDropdown); setHighlightedIndex(-1); }
+              }}
+              aria-haspopup="listbox"
+              aria-expanded={showCountryDropdown}
+              aria-label={`Código de país: ${COUNTRY_CODES.find(c => c.code === countryCode)?.country} ${countryCode}`}
               id="country-code-btn"
             >
               <span>{COUNTRY_CODES.find(c => c.code === countryCode)?.flag}</span>
@@ -284,27 +264,37 @@ const COUNTRY_CODES = [
               <svg className="w-3 h-3 ml-auto text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
             </button>
             {showCountryDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-60 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-hidden flex flex-col">
+              <div className="absolute top-full left-0 mt-1 w-60 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-hidden flex flex-col"
+                role="listbox" aria-label="Seleccionar código de país" id="country-listbox">
                 <div className="p-2 border-b border-surface-100 dark:border-surface-700">
                   <input
                     type="text"
                     className="input text-xs py-1.5"
                     placeholder="Buscar país..."
                     value={phoneSearch}
-                    onChange={e => setPhoneSearch(e.target.value)}
+                    onChange={e => { setPhoneSearch(e.target.value); setHighlightedIndex(-1); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') { setShowCountryDropdown(false); }
+                      if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightedIndex(0); }
+                    }}
                     autoFocus
                     id="country-search"
+                    aria-label="Buscar país"
+                    aria-controls="country-listbox"
                   />
                 </div>
-                <div className="overflow-y-auto max-h-48">
-                  {filteredCountries.map(c => (
+                <div className="overflow-y-auto max-h-48" role="group">
+                  {filteredCountries.map((c, idx) => (
                     <button
                       key={c.code}
                       type="button"
+                      role="option"
+                      aria-selected={countryCode === c.code}
                       className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors ${
                         countryCode === c.code ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 font-semibold' : ''
-                      }`}
+                      } ${highlightedIndex === idx ? 'bg-surface-100 dark:bg-surface-700' : ''}`}
                       onClick={() => { setCountryCode(c.code); setShowCountryDropdown(false); setPhoneSearch(''); }}
+                      onMouseEnter={() => setHighlightedIndex(idx)}
                     >
                       <span className="text-base">{c.flag}</span>
                       <span className="flex-1 text-left truncate">{c.country}</span>

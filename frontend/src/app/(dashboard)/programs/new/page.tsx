@@ -3,8 +3,8 @@ import { useState, useRef } from 'react';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import Cookies from 'js-cookie';
 import Tooltip from '@/components/ui/Tooltip';
+import { uploadFile } from '@/lib/upload';
 import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, BARCODE_TYPES, defaultMeta } from '@/components/programs/constants';
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
@@ -12,27 +12,6 @@ import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 
-
-/** Upload file to /api/v1/upload/ with JWT auth */
-async function uploadFileAuth(file: File): Promise<string | null> {
-  const token = Cookies.get('access_token');
-  const fd = new FormData();
-  fd.append('file', file);
-  try {
-    const res = await fetch('/api/v1/upload/', {
-      method: 'POST',
-      body: fd,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.url || null;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 /* ─── Step indicator ──────────────────────────────────────────────────── */
 function StepBar({ step }: { step: number }) {
@@ -98,70 +77,37 @@ export default function NewProgramPage() {
     }
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /** Shared file upload handler (PERF-007) — replaces 3 identical handlers */
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    formField: 'logo_url' | 'strip_image_url' | 'icon_url',
+    setPreview: (val: string | null) => void,
+    setUploading: (val: boolean) => void,
+    successMsg: string,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Preview immediately
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      setLogoPreview(ev.target?.result as string);
-    };
+    reader.onload = (ev) => setPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
-
-    // Upload to backend with JWT auth
-    setLogoUploading(true);
-    const url = await uploadFileAuth(file);
+    setUploading(true);
+    const url = await uploadFile(file, false);
     if (url) {
-      setForm(f => ({ ...f, logo_url: url }));
-      toast.success('Logo subido correctamente');
+      setForm(f => ({ ...f, [formField]: url }));
+      toast.success(successMsg);
     } else {
-      toast('Logo guardado localmente', { icon: 'ℹ️' });
+      toast('Guardado localmente', { icon: 'ℹ️' });
     }
-    setLogoUploading(false);
+    setUploading(false);
   };
 
   const [stripPreview, setStripPreview] = useState<string | null>(null);
   const [stripUploading, setStripUploading] = useState(false);
   const stripInputRef = useRef<HTMLInputElement>(null);
 
-  const handleStripUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setStripPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-    setStripUploading(true);
-    const url = await uploadFileAuth(file);
-    if (url) {
-      setForm(f => ({ ...f, strip_image_url: url }));
-      toast.success('Imagen de cabecera subida');
-    } else {
-      toast('Guardada localmente', { icon: 'ℹ️' });
-    }
-    setStripUploading(false);
-  };
-
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [iconUploading, setIconUploading] = useState(false);
   const iconInputRef = useRef<HTMLInputElement>(null);
-
-  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setIconPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-    setIconUploading(true);
-    const url = await uploadFileAuth(file);
-    if (url) {
-      setForm(f => ({ ...f, icon_url: url }));
-      toast.success('Ícono subido');
-    } else {
-      toast('Guardado localmente', { icon: 'ℹ️' });
-    }
-    setIconUploading(false);
-  };
 
   const canNext = () => {
     if (step === 0) return !!form.card_type;
@@ -381,7 +327,7 @@ export default function NewProgramPage() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleLogoUpload}
+                onChange={e => handleFileUpload(e, 'logo_url', setLogoPreview, setLogoUploading, 'Logo subido correctamente')}
                 className="hidden"
                 id="logo-file-input"
               />
@@ -429,7 +375,7 @@ export default function NewProgramPage() {
                 ref={stripInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleStripUpload}
+                onChange={e => handleFileUpload(e, 'strip_image_url', setStripPreview, setStripUploading, 'Imagen de cabecera subida')}
                 className="hidden"
                 id="strip-file-input"
               />
@@ -477,7 +423,7 @@ export default function NewProgramPage() {
                 ref={iconInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleIconUpload}
+                onChange={e => handleFileUpload(e, 'icon_url', setIconPreview, setIconUploading, 'Ícono subido')}
                 className="hidden"
                 id="icon-file-input"
               />
