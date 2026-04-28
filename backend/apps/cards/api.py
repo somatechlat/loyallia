@@ -3,6 +3,7 @@ Loyallia — Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
 
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -93,7 +94,7 @@ class CardOut(BaseModel):
     enrollments_count: int = 0
 
     @staticmethod
-    def from_model(card: Card) -> "CardOut":
+    def from_model(card: Card, enrollments_count: int | None = None) -> "CardOut":
         return CardOut(
             id=str(card.id),
             tenant_id=str(card.tenant_id),
@@ -111,7 +112,7 @@ class CardOut(BaseModel):
             locations=card.locations,
             created_at=card.created_at.isoformat(),
             updated_at=card.updated_at.isoformat(),
-            enrollments_count=card.passes.count(),
+            enrollments_count=enrollments_count if enrollments_count is not None else card.passes.count(),
         )
 
 
@@ -137,8 +138,10 @@ def list_programs(request):
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    cards = Card.objects.filter(tenant=request.tenant).order_by("-created_at")
-    return {"programs": [CardOut.from_model(c) for c in cards], "total": cards.count()}
+    cards = Card.objects.filter(tenant=request.tenant).annotate(
+        _enrollments_count=Count("passes", distinct=True)
+    ).order_by("-created_at")
+    return {"programs": [CardOut.from_model(c, getattr(c, '_enrollments_count', c.passes.count())) for c in cards], "total": cards.count()}
 
 
 @router.post(

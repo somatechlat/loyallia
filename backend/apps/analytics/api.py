@@ -381,6 +381,9 @@ def get_segmentation_analytics(request):
     # Segment metrics rely on background asynchronous updates to ensure database stability.
 
     # Group by segment
+    customers = Customer.objects.filter(tenant=tenant)
+    total_customers = customers.count()
+
     segments = (
         CustomerAnalytics.objects.filter(tenant=tenant)
         .values("segment")
@@ -394,14 +397,14 @@ def get_segmentation_analytics(request):
     )
 
     return {
-        "total_customers": customers.count(),
+        "total_customers": total_customers,
         "segments": [
             {
                 "segment": s["segment"],
                 "count": s["count"],
                 "percentage": (
-                    (s["count"] / customers.count() * 100)
-                    if customers.count() > 0
+                    (s["count"] / total_customers * 100)
+                    if total_customers > 0
                     else 0
                 ),
                 "total_spent": float(s["sum_spent"] or 0),

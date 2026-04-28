@@ -29,8 +29,8 @@ x-common-env: &common-env
   MINIO_BUCKET_ASSETS: assets
   SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
   DJANGO_SETTINGS_MODULE: loyallia.settings.development
-  DEBUG: "${DEBUG:-True}"
-  ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
+  DEBUG: "${DEBUG:-False}"
+  ALLOWED_HOSTS: "${ALLOWED_HOSTS:-rewards.loyallia.com,localhost,127.0.0.1}"
   CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:33906,http://localhost:33905}"
   # Vault
   VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}

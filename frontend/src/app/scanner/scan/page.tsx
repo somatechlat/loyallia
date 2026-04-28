@@ -28,9 +28,11 @@ export default function ScannerPage() {
   const processTransaction = useCallback(async (qrCode: string) => {
     setStatus('scanning');
     try {
-      const { data } = await api.post(
-        `/api/v1/scanner/transact/?qr_code=${encodeURIComponent(qrCode)}&amount=${amount}&notes=${encodeURIComponent(notes)}`
-      );
+      const { data } = await api.post('/api/v1/scanner/transact/', {
+        qr_code: qrCode,
+        amount: parseFloat(amount) || 0,
+        notes: notes,
+      });
       setResult(data);
       setStatus('success');
     } catch (err: unknown) {

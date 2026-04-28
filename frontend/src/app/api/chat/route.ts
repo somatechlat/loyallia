@@ -8,7 +8,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    const payload: any = {
+    const apiKey = process.env.AI_AGENT_API_KEY;
+    if (!apiKey) {
+      console.error('AI_AGENT_API_KEY environment variable is not set');
+      return NextResponse.json(
+        { error: 'AI agent service is not configured' },
+        { status: 503 }
+      );
+    }
+
+    const agentBaseUrl = process.env.AI_AGENT_BASE_URL || 'https://agente.ingelsi.com.ec';
+
+    const payload: Record<string, unknown> = {
       message,
       lifetime_hours: 24,
     };
@@ -17,11 +28,11 @@ export async function POST(req: Request) {
       payload.context_id = context_id;
     }
 
-    const response = await fetch('https://agente.ingelsi.com.ec/api_message', {
+    const response = await fetch(`${agentBaseUrl}/api_message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': 'C5ZfFYI-QOxHsMuJ',
+        'X-API-KEY': apiKey,
       },
       body: JSON.stringify(payload),
     });
@@ -36,7 +47,7 @@ export async function POST(req: Request) {
         { status: response.status }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Chat API Error:', error);
     return NextResponse.json(
       { error: 'Internal server error while contacting AI agent' },
