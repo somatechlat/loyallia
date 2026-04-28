@@ -234,6 +234,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-4 border-t border-surface-100 dark:border-white/[0.06]">
           <div
             className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowProfile(true); }}}
             onClick={() => setShowProfile(true)}
             title="Editar perfil"
           >

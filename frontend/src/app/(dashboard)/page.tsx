@@ -232,7 +232,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Date range pills */}
-          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-0.5 flex-wrap" id="date-range-selector">
+          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-0.5 flex-wrap" id="date-range-selector" role="radiogroup" aria-label="Período de tiempo">
             {dateRanges.map(({ days, label }) => (
               <button
                 key={String(days)}
@@ -329,7 +329,7 @@ export default function DashboardPage() {
             </h2>
             <InfoTooltip explanation="Gráfico de tendencias que muestra la evolución de ingresos, transacciones y nuevos clientes en el período seleccionado." />
           </div>
-          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-1" id="chart-tabs">
+          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-1" id="chart-tabs" role="tablist">
             {chartTabs.map(({ key, label, icon }) => (
               <button
                 key={key}
