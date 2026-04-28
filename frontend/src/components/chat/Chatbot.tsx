@@ -239,6 +239,9 @@ export default function Chatbot() {
 
       {/* Chat Window — 2.5x bigger */}
       <div
+        role="dialog"
+        aria-label="Asistente de chat"
+        aria-modal="false"
         className={`fixed bottom-4 right-4 w-[560px] h-[780px] bg-white dark:bg-surface-900 rounded-3xl shadow-2xl flex flex-col z-50 transition-all duration-300 origin-bottom-right border border-surface-200/80 dark:border-white/[0.06]
         ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
         style={{ maxHeight: 'calc(100vh - 32px)' }}

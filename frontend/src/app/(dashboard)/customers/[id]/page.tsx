@@ -10,11 +10,31 @@ interface Program {
   is_active: boolean;
 }
 
+interface Customer {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  total_spent: string;
+  total_visits: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface Pass {
+  id: string;
+  card_name: string;
+  card_type: string;
+  enrolled_at: string;
+  card?: { id: string };
+}
+
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
   const id = params.id;
 
-  const [customer, setCustomer] = useState<any>(null);
-  const [passes, setPasses] = useState<any[]>([]);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [passes, setPasses] = useState<Pass[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -72,8 +92,8 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
       toast.success('Cliente inscrito exitosamente');
       setShowEnrollModal(false);
       loadData();
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Error al inscribir cliente';
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al inscribir cliente';
       toast.error(msg);
     } finally {
       setEnrolling(false);

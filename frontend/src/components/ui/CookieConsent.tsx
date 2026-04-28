@@ -13,6 +13,16 @@ export default function CookieConsent() {
     }
   }, []);
 
+  // A11Y-016: Keyboard dismiss via Escape key
+  useEffect(() => {
+    if (!show) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleAccept();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [show]);
+
   const handleAccept = () => {
     localStorage.setItem("loyallia_cookie_consent", "true");
     setShow(false);
