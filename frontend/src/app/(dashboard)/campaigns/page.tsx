@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { notificationsApi, customersApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import Cookies from 'js-cookie';
 import Tooltip from '@/components/ui/Tooltip';
+import { uploadFile } from '@/lib/upload';
 
 interface Campaign {
   id: string; title: string; message: string; segment: string;
@@ -44,22 +44,14 @@ export default function CampaignsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingImg(true);
-    try {
-      const token = Cookies.get('access_token');
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/v1/upload/', {
-        method: 'POST',
-        body: fd,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setForm(f => ({ ...f, image_url: data.url || '' }));
-        toast.success('Imagen cargada');
-      }
-    } catch { toast.error('Error al subir imagen'); }
-    finally { setUploadingImg(false); }
+    const url = await uploadFile(file, false);
+    if (url) {
+      setForm(f => ({ ...f, image_url: url }));
+      toast.success('Imagen cargada');
+    } else {
+      toast.error('Error al subir imagen');
+    }
+    setUploadingImg(false);
   };
 
   const sendCampaign = async (e: React.FormEvent) => {
@@ -237,8 +229,10 @@ export default function CampaignsPage() {
                   <textarea id="campaign-msg"
                     className="input min-h-[120px] resize-none font-mono text-sm"
                     placeholder="<p>Hola!</p><p>Tenemos una oferta especial para ti...</p>"
+                    maxLength={10000}
                     value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
-                  <p className="text-xs text-surface-400 mt-1">Puedes usar HTML: &lt;b&gt;, &lt;i&gt;, &lt;img&gt;</p>
+                  <p className="text-xs text-surface-400 mt-1">Puedes usar HTML: &lt;b&gt;, &lt;i&gt;, &lt;img&gt; · Máximo 10,000 caracteres</p>
+                  <p className="text-xs text-amber-600 mt-1">⚠️ El HTML será sanitizado automáticamente antes del envío para prevenir inyección de código.</p>
                 </>
               ) : (
                 <textarea id="campaign-msg"

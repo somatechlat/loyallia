@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import { adjustColor } from '@/components/programs/constants';
@@ -124,9 +124,22 @@ export default function EnrollPage() {
   const [loading, setLoading] = useState(false);
   const [cardLoading, setCardLoading] = useState(true);
   const [form, setForm] = useState<Record<string, string>>({ first_name: '', last_name: '', email: '', phone: '', date_of_birth: '' });
+  const [honeypot, setHoneypot] = useState(''); // SEC-011: hidden field to catch bots
   const [enrollResult, setEnrollResult] = useState<EnrollResult | null>(null);
   const [walletStatus, setWalletStatus] = useState<WalletStatus | null>(null);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [cooldown, setCooldown] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+
+  // SEC-011: Cooldown timer for rate limiting
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown(c => (c <= 1 ? 0 : c - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   // Fetch card info
   useEffect(() => {
@@ -146,16 +159,26 @@ export default function EnrollPage() {
 
   const handleEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.first_name || !form.last_name || !form.email) {
-      toast.error('Por favor completa nombre y correo'); return;
+    // SEC-011: Honeypot check — if filled, it's a bot. Silently "succeed" without actually enrolling.
+    if (honeypot) {
+      setStep('success');
+      return;
     }
+    const errors: Record<string, string> = {};
+    if (!form.first_name) errors.first_name = 'El nombre es obligatorio';
+    if (!form.last_name) errors.last_name = 'El apellido es obligatorio';
+    if (!form.email) errors.email = 'El correo electrónico es obligatorio';
+    if (Object.keys(errors).length > 0) { setFormErrors(errors); toast.error('Por favor completa los campos obligatorios'); return; }
+    setFormErrors({});
+    if (submitting || cooldown > 0) return; // SEC-011: rate limiting
+    setSubmitting(true);
     setLoading(true);
     const baseUrl = getBaseUrl();
     try {
       const res = await fetch(`${baseUrl}/api/v1/customers/enroll/?card_id=${cardId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, privacy_accepted: true }), // SEC-012: include consent server-side
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -163,6 +186,7 @@ export default function EnrollPage() {
       }
       const result: EnrollResult = await res.json();
       setEnrollResult(result);
+      setCooldown(30); // SEC-011: 30-second cooldown after successful enrollment
 
       // Check which wallets are available
       if (result.wallet_urls?.status) {
@@ -182,6 +206,7 @@ export default function EnrollPage() {
       setStep('error');
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -288,7 +313,8 @@ export default function EnrollPage() {
                     {type === 'select' && options ? (
                       <select id={id}
                         className="w-full px-4 py-2.5 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
-                        value={form[id] || ''} onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
+                        value={form[id] || ''} onChange={e => { setForm(f => ({ ...f, [id]: e.target.value })); setFormErrors(prev => { const n = { ...prev }; delete n[id]; return n; }); }}
+                        aria-invalid={!!formErrors[id]} aria-describedby={formErrors[id] ? `${id}-error` : undefined}
                         required={required}>
                         <option value="">Seleccionar...</option>
                         {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -305,19 +331,29 @@ export default function EnrollPage() {
                         <input id={id} type="tel"
                           className="flex-1 px-4 py-2.5 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
                           placeholder={placeholder}
-                          value={form[id] || ''} onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
+                          value={form[id] || ''} onChange={e => { setForm(f => ({ ...f, [id]: e.target.value })); setFormErrors(prev => { const n = { ...prev }; delete n[id]; return n; }); }}
+                          aria-invalid={!!formErrors[id]} aria-describedby={formErrors[id] ? `${id}-error` : undefined}
                           required={required} />
                       </div>
                     ) : (
                       <input id={id} type={type}
                         className="w-full px-4 py-2.5 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
                         placeholder={placeholder}
-                        value={form[id] || ''} onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
+                        value={form[id] || ''} onChange={e => { setForm(f => ({ ...f, [id]: e.target.value })); setFormErrors(prev => { const n = { ...prev }; delete n[id]; return n; }); }}
+                        aria-invalid={!!formErrors[id]} aria-describedby={formErrors[id] ? `${id}-error` : undefined}
                         required={required} />
                     )}
+                    {formErrors[id] && <p id={`${id}-error`} role="alert" className="text-xs text-red-500 mt-1">{formErrors[id]}</p>}
                   </div>
                 ));
               })()}
+
+              {/* SEC-011: Honeypot field — hidden from real users, catches bots */}
+              <div className="absolute opacity-0 pointer-events-none" aria-hidden="true" tabIndex={-1}>
+                <label htmlFor="website">Website</label>
+                <input id="website" type="text" autoComplete="off" tabIndex={-1}
+                  value={honeypot} onChange={e => setHoneypot(e.target.value)} />
+              </div>
 
               {/* Privacy consent */}
               <label className="flex items-start gap-2 cursor-pointer">
@@ -331,8 +367,9 @@ export default function EnrollPage() {
 
               <button type="submit"
                 className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
-                disabled={loading || !privacyAccepted} id="enroll-btn">
-                {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Inscribirme gratis'}
+                disabled={loading || !privacyAccepted || cooldown > 0} id="enroll-btn">
+                {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> :
+                 cooldown > 0 ? `Espera ${cooldown}s...` : 'Inscribirme gratis'}
               </button>
               <p className="text-center text-[10px] text-surface-400">
                 Al inscribirte aceptas recibir notificaciones de este programa.

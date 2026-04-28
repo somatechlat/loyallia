@@ -18,6 +18,8 @@ export default function ScannerPage() {
   const [amount, setAmount] = useState('0');
   const [notes, setNotes] = useState('');
   const [pendingQr, setPendingQr] = useState<string | null>(null);
+  const [manualQr, setManualQr] = useState('');
+  const [cameraError, setCameraError] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const scannerDivId = 'qr-reader';
   const { theme } = useTheme();
@@ -45,19 +47,23 @@ export default function ScannerPage() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    scannerRef.current = new Html5QrcodeScanner(
-      scannerDivId,
-      { fps: 10, qrbox: { width: 280, height: 280 }, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
-      false
-    );
+    try {
+      scannerRef.current = new Html5QrcodeScanner(
+        scannerDivId,
+        { fps: 10, qrbox: { width: 280, height: 280 }, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
+        false
+      );
 
-    scannerRef.current.render(
-      (decodedText) => {
-        setPendingQr(decodedText);
-        scannerRef.current?.clear().catch(() => {});
-      },
-      () => {}
-    );
+      scannerRef.current.render(
+        (decodedText) => {
+          setPendingQr(decodedText);
+          scannerRef.current?.clear().catch(() => {});
+        },
+        () => {}
+      );
+    } catch {
+      setCameraError(true);
+    }
 
     return () => { scannerRef.current?.clear().catch(() => {}); };
   }, [isAuthenticated]);
@@ -130,7 +136,28 @@ export default function ScannerPage() {
         {!pendingQr && status === 'idle' && (
           <div className="w-full">
             <p className="text-center text-white/60 text-sm mb-4">Apunta la cámara al código QR del cliente</p>
-            <div id={scannerDivId} className="rounded-2xl overflow-hidden w-full" />
+            {!cameraError && <div id={scannerDivId} className="rounded-2xl overflow-hidden w-full" />}
+            {cameraError && (
+              <div className="text-center p-4 bg-white/5 rounded-2xl border border-white/10">
+                <p className="text-white/60 text-sm mb-3">Cámara no disponible. Ingresa el código QR manualmente.</p>
+              </div>
+            )}
+            <div className="mt-4">
+              <label className="label text-white/70" htmlFor="manual-qr-input">Código QR manual</label>
+              <div className="flex gap-2">
+                <input id="manual-qr-input" type="text"
+                  className="input flex-1 bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-brand-400"
+                  placeholder="Ingresa el código QR del cliente..."
+                  value={manualQr} onChange={e => setManualQr(e.target.value)}
+                  aria-describedby="manual-qr-hint" />
+                <button onClick={() => { if (manualQr.trim()) { setPendingQr(manualQr.trim()); } }}
+                  className="btn-primary px-4" disabled={!manualQr.trim()}
+                  id="manual-qr-submit-btn">
+                  Enviar
+                </button>
+              </div>
+              <p id="manual-qr-hint" className="text-[10px] text-white/40 mt-1">Usa esta opción si no puedes escanear el código QR con la cámara</p>
+            </div>
           </div>
         )}
 

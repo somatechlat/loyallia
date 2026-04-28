@@ -1,7 +1,21 @@
 import { NextResponse } from 'next/server';
+import { createRateLimiter, getClientIp, rateLimitHeaders } from '@/lib/security/rate-limiter';
+
+// SEC-013: Per-IP rate limiter — 30 messages per minute with sliding window + auto-cleanup
+const chatRateLimiter = createRateLimiter({ maxRequests: 30, windowMs: 60 * 1000 });
 
 export async function POST(req: Request) {
   try {
+    // SEC-013: Rate limit per IP
+    const ip = getClientIp(req);
+    const rlResult = chatRateLimiter.check(ip);
+    if (!rlResult.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Try again in a minute.' },
+        { status: 429, headers: rateLimitHeaders(rlResult, 30) }
+      );
+    }
+
     const { message, context_id } = await req.json();
 
     if (!message || typeof message !== 'string') {
@@ -13,8 +27,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Message too long (max 2000 characters)' }, { status: 400 });
     }
 
-    // SEC-014: Basic sanitization — strip control characters
-    const sanitizedMessage = message.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim();
+    // SEC-014: Strip control characters (keep newlines, tabs, carriage returns)
+    const sanitizedMessage = message
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      .trim();
+
     if (!sanitizedMessage) {
       return NextResponse.json({ error: 'Message is empty after sanitization' }, { status: 400 });
     }
@@ -51,7 +68,7 @@ export async function POST(req: Request) {
     const data = await response.json();
 
     if (response.ok) {
-      return NextResponse.json(data);
+      return NextResponse.json(data, { headers: rateLimitHeaders(rlResult, 30) });
     } else {
       return NextResponse.json(
         { error: data.error || 'Failed to fetch from AI agent' },

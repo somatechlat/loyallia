@@ -34,6 +34,8 @@ export default function CustomersPage() {
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const deleteModalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const LIMIT = 25;
 
   const load = useCallback(async () => {
@@ -56,6 +58,34 @@ export default function CustomersPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Focus trap for delete modal
+  useEffect(() => {
+    if (!showDeleteModal) return;
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    const modal = deleteModalRef.current;
+    if (!modal) return;
+    const focusable = modal.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length > 0) focusable[0].focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowDeleteModal(false);
+        setCustomerToDelete(null);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [showDeleteModal]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,7 +431,7 @@ export default function CustomersPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" ref={deleteModalRef}>
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 w-full max-w-md shadow-2xl">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -415,7 +445,7 @@ export default function CustomersPage() {
                   <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">
+              <h3 id="delete-modal-title" className="text-xl font-bold text-white mb-2">
                 Eliminar Cliente
               </h3>
               <p className="text-white/70 mb-6">

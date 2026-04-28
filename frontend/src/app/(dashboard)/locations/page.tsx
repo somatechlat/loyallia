@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth';
 import dynamic from 'next/dynamic';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), { ssr: false });
 
@@ -43,6 +44,7 @@ export default function LocationsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<Omit<LocationData, 'id'>>(emptyLocation);
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadLocations = useCallback(async () => {
     setLoading(true);
@@ -89,20 +91,26 @@ export default function LocationsPage() {
       }
       closeModal();
       await loadLocations();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al guardar');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al guardar');
     } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
-    if (!selectedLoc || !confirm('¿Eliminar esta sucursal permanentemente?')) return;
+    if (!selectedLoc) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedLoc) return;
+    setShowDeleteConfirm(false);
     try {
       const res = await api(`/locations/${selectedLoc.id}/`, { method: 'DELETE' });
       if (!res.ok) throw new Error(await res.text());
       toast.success('Sucursal eliminada');
       closeModal();
       await loadLocations();
-    } catch (e: any) { toast.error(e.message || 'Error al eliminar'); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al eliminar'); }
   };
 
   const handleToggleActive = async (loc: LocationData) => {
@@ -387,11 +395,20 @@ export default function LocationsPage() {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedLoc && (
+        <ConfirmModal
+          title="Eliminar sucursal"
+          message={`¿Eliminar "${selectedLoc.name}" permanentemente? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }
-
-/* ── Subcomponents ── */
 
 function InfoRow({ label, value, full }: { label: string; value: string; full?: boolean }) {
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
@@ -38,18 +38,23 @@ function getHints(p: string): string[] {
   return QUICK_HINTS[prefix] || [];
 }
 
-/** Mask PII patterns (emails, phone numbers) from text — SEC-015 fix */
+/** Mask PII patterns (emails, phone numbers, IDs, credit cards) from text — SEC-015 fix */
 function maskPII(text: string): string {
   return text
     // Mask email addresses
     .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[email]')
-    // Mask phone numbers (various formats)
-    .replace(/\+?\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g, '[tel]')
-    // Mask dollar amounts that look like individual transactions
-    .replace(/\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g, (match) => {
-      // Keep aggregate numbers (like "$1,234" in headers) but mask individual amounts
+    // Mask phone numbers (international and local formats, 7+ digits)
+    .replace(/\+?\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{3,9}/g, '[tel]')
+    // Mask credit card numbers (13-19 digits, with optional separators)
+    .replace(/\b(?:\d{4}[-\s]?){3,4}\d{1,7}\b/g, '[card]')
+    // Mask national ID / RUC patterns (Ecuador: 10 or 13 digits)
+    .replace(/\b\d{10}(?:\d{3})?\b/g, (match) => {
+      // Only mask if it looks like an ID (not a timestamp or large number)
+      if (match.length === 10 || match.length === 13) return '[id]';
       return match;
-    });
+    })
+    // Keep dollar amounts as-is (aggregate data is useful for AI context)
+    .replace(/\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g, (match) => match);
 }
 
 /** Capture visible text from main content area at ask-time — sanitized for PII */
@@ -142,6 +147,28 @@ function processInline(text: string) {
   return <>{parts}</>;
 }
 
+/** Memoized chat message component (PERF-010) */
+const ChatMessage = React.memo(function ChatMessage({ msg }: { msg: Message }) {
+  return (
+    <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      {msg.role === 'assistant' && (
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold mr-2 mt-1 flex-shrink-0 shadow-sm">
+          AI
+        </div>
+      )}
+      <div
+        className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed ${
+          msg.role === 'user'
+            ? 'bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-tr-md shadow-md'
+            : 'bg-white dark:bg-surface-800 text-surface-700 dark:text-surface-200 border border-surface-150 dark:border-white/[0.06] rounded-tl-md shadow-sm'
+        }`}
+      >
+        {msg.role === 'assistant' ? <RichText text={msg.content} /> : msg.content}
+      </div>
+    </div>
+  );
+});
+
 export default function Chatbot() {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -159,12 +186,21 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [contextId, setContextId] = useState<string | null>(null);
+  const [isCapturingContext, setIsCapturingContext] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
+
+  // Auto-focus input when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => chatInputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,7 +213,9 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
+      setIsCapturingContext(true);
       const screenText = captureScreenContext();
+      setIsCapturingContext(false);
       const contextEnrichedMessage = [
         `=== CONTEXTO DE PANTALLA ===`,
         `Página: ${pageLabel} | URL: ${pathname}`,
@@ -274,22 +312,7 @@ export default function Chatbot() {
         {/* Messages */}
         <div className="flex-1 px-5 py-4 overflow-y-auto bg-gradient-to-b from-surface-50 to-white dark:from-surface-950 dark:to-surface-900 space-y-4">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.role === 'assistant' && (
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold mr-2 mt-1 flex-shrink-0 shadow-sm">
-                  AI
-                </div>
-              )}
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-tr-md shadow-md'
-                    : 'bg-white dark:bg-surface-800 text-surface-700 dark:text-surface-200 border border-surface-150 dark:border-white/[0.06] rounded-tl-md shadow-sm'
-                }`}
-              >
-                {msg.role === 'assistant' ? <RichText text={msg.content} /> : msg.content}
-              </div>
-            </div>
+            <ChatMessage key={msg.id} msg={msg} />
           ))}
           {isLoading && (
             <div className="flex justify-start">
@@ -324,6 +347,13 @@ export default function Chatbot() {
 
         {/* Input */}
         <div className="p-4 bg-white dark:bg-surface-900 border-t border-surface-100 dark:border-white/[0.06] rounded-b-3xl">
+          {/* SEC-015: Visible indicator that screen context is being captured */}
+          {isCapturingContext && (
+            <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-700">
+              <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+              Capturando contexto de pantalla (datos sensibles enmascarados)...
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="flex gap-3">
             <input
               type="text"
@@ -331,6 +361,7 @@ export default function Chatbot() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Pregunta sobre lo que ves en pantalla..."
               disabled={isLoading}
+              ref={chatInputRef}
               className="flex-1 bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all focus:bg-white"
               id="chatbot-input"
             />

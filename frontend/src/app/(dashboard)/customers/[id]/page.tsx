@@ -67,7 +67,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
       const activePrograms = (data.programs || []).filter((p: Program) => p.is_active);
       setPrograms(activePrograms);
       
-      const enrolledCardIds = passes.map(p => p.card?.id);
+      const enrolledCardIds = passes.map(p => p.card?.id).filter((id): id is string => id !== undefined);
       const availablePrograms = activePrograms.filter((p: Program) => !enrolledCardIds.includes(p.id));
       setPrograms(availablePrograms);
       
