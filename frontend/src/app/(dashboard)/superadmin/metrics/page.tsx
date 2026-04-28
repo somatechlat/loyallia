@@ -15,8 +15,8 @@ const api = (path: string) => {
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
 export default function SuperAdminMetrics() {
-  const [tenants, setTenants] = useState<any[]>([]);
-  const [metrics, setMetrics] = useState<any>(null);
+  const [tenants, setTenants] = useState<Record<string, unknown>[]>([]);
+  const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -67,7 +67,7 @@ export default function SuperAdminMetrics() {
   ).map(([name, value]) => ({ name, value })).sort((a, b) => (b.value as number) - (a.value as number));
 
   const locationsByTenant = tenants
-    .map((t: any) => ({ name: t.name.length > 15 ? t.name.slice(0, 15) + '…' : t.name, locations: t.location_count || 0, users: t.user_count || 0 }))
+    .map((t: Record<string, unknown>) => ({ name: t.name.length > 15 ? t.name.slice(0, 15) + '…' : t.name, locations: t.location_count || 0, users: t.user_count || 0 }))
     .sort((a, b) => b.locations - a.locations);
 
   // Synthetic monthly growth (from created_at dates)
@@ -236,7 +236,7 @@ export default function SuperAdminMetrics() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 text-sm">
-              {tenants.map((t: any) => (
+              {tenants.map((t: Record<string, unknown>) => (
                 <tr key={t.id} className="hover:bg-surface-50/50 transition-colors">
                   <td className="px-5 py-3">
                     <p className="font-semibold text-surface-900">{t.name}</p>
