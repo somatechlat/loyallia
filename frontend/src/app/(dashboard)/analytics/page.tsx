@@ -1,4 +1,3 @@
-// @ts-nocheck — recharts + next/dynamic structural TS incompatibility (runtime-safe)
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -6,21 +5,21 @@ import { analyticsApi } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import toast from 'react-hot-toast';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Dynamic import to avoid SSR hydration mismatch with recharts
-const BarChart = dynamic(() => import('recharts').then(m => m.BarChart) as any, { ssr: false });
-const Bar = dynamic(() => import('recharts').then(m => m.Bar) as any, { ssr: false });
-const LineChart = dynamic(() => import('recharts').then(m => m.LineChart) as any, { ssr: false });
-const Line = dynamic(() => import('recharts').then(m => m.Line) as any, { ssr: false });
-const PieChart = dynamic(() => import('recharts').then(m => m.PieChart) as any, { ssr: false });
-const Pie = dynamic(() => import('recharts').then(m => m.Pie) as any, { ssr: false });
-const Cell = dynamic(() => import('recharts').then(m => m.Cell) as any, { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(m => m.XAxis) as any, { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(m => m.YAxis) as any, { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip) as any, { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(m => m.CartesianGrid) as any, { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer) as any, { ssr: false });
-const Legend = dynamic(() => import('recharts').then(m => m.Legend) as any, { ssr: false });
+// BUG-003/004 fix: removed @ts-nocheck and `as any` casts
+// Dynamic import with proper default export wrapping to avoid SSR hydration mismatch
+const BarChart = dynamic(() => import('recharts').then(m => ({ default: m.BarChart })), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(m => ({ default: m.Bar })), { ssr: false });
+const LineChart = dynamic(() => import('recharts').then(m => ({ default: m.LineChart })), { ssr: false });
+const Line = dynamic(() => import('recharts').then(m => ({ default: m.Line })), { ssr: false });
+const PieChart = dynamic(() => import('recharts').then(m => ({ default: m.PieChart })), { ssr: false });
+const Pie = dynamic(() => import('recharts').then(m => ({ default: m.Pie })), { ssr: false });
+const Cell = dynamic(() => import('recharts').then(m => ({ default: m.Cell })), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(m => ({ default: m.XAxis })), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(m => ({ default: m.YAxis })), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(m => ({ default: m.Tooltip })), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(m => ({ default: m.CartesianGrid })), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })), { ssr: false });
+const Legend = dynamic(() => import('recharts').then(m => ({ default: m.Legend })), { ssr: false });
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Overview {

@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!refresh) return;
       try {
         const { data } = await axios.post('/api/v1/auth/refresh/', { refresh_token: refresh });
-        const isProd = typeof window !== 'undefined' && window.location.protocol === 'https:';
+        const isProd = process.env.NODE_ENV === 'production';
         Cookies.set('access_token', data.access_token, { expires: 1 / 24, secure: isProd, sameSite: 'strict' });
         scheduleRefresh(); // Re-schedule for the new token
       } catch {
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<User> => {
     const { data } = await authApi.login(email, password);
-    const isProd = window.location.protocol === 'https:';
+    const isProd = process.env.NODE_ENV === 'production';
     Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
     Cookies.set('refresh_token', data.refresh_token, { expires: 7, secure: isProd, sameSite: 'strict' });
     scheduleRefresh();
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async (credential: string, businessName?: string, isLoginOnly: boolean = false): Promise<User> => {
     const { data } = await authApi.googleLogin(credential, businessName, isLoginOnly);
-    const isProd = window.location.protocol === 'https:';
+    const isProd = process.env.NODE_ENV === 'production';
     Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
     Cookies.set('refresh_token', data.refresh_token, { expires: 7, secure: isProd, sameSite: 'strict' });
     scheduleRefresh();

@@ -111,37 +111,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  // STAFF is kicked completely to PWA
-  if (user.role === 'STAFF') {
-    if (typeof window !== 'undefined' && !pathname.startsWith('/scanner')) {
-      window.location.replace('/scanner/scan');
-    }
-    return null;
-  }
-
-  // SUPER_ADMIN Isolation: Should only be in /superadmin
-  if (user.role === 'SUPER_ADMIN') {
-    if (typeof window !== 'undefined' && !pathname.startsWith('/superadmin')) {
-      window.location.replace('/superadmin');
-      return null;
-    }
-  } else {
-    // Normal users shouldn't access superadmin
-    if (typeof window !== 'undefined' && pathname.startsWith('/superadmin')) {
-      window.location.replace('/');
-      return null;
-    }
-  }
-
-  // RBAC: Restrict OWNER-only routes from MANAGER/other roles (SYS-003)
+  // RBAC redirects — moved from render body to useEffect (BUG-001/002 fix)
   const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation'];
-  if (user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN') {
-    const isRestricted = OWNER_ONLY_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
-    if (isRestricted && typeof window !== 'undefined') {
-      window.location.replace('/');
-      return null;
+  const isRestrictedRoute = user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN'
+    && OWNER_ONLY_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+
+  useEffect(() => {
+    if (loading || !user) return;
+
+    // STAFF → scanner only
+    if (user.role === 'STAFF' && !pathname.startsWith('/scanner')) {
+      window.location.replace('/scanner/scan');
+      return;
     }
+    // SUPER_ADMIN → superadmin only
+    if (user.role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) {
+      window.location.replace('/superadmin');
+      return;
+    }
+    // Non-superadmin → block superadmin routes
+    if (user.role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) {
+      window.location.replace('/');
+      return;
+    }
+    // RBAC: block non-owner routes
+    if (isRestrictedRoute) {
+      window.location.replace('/');
+    }
+  }, [loading, user, pathname, isRestrictedRoute]);
+
+  // Show loading while checking auth or while redirect is pending
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
+        <div className="spinner w-10 h-10" />
+      </div>
+    );
   }
+
+  // STAFF: render nothing while redirect happens
+  if (user.role === 'STAFF') return null;
+
+  // Block rendering for wrong role paths (redirect is in-flight)
+  if (user.role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) return null;
+  if (user.role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) return null;
+  if (isRestrictedRoute) return null;
 
   const handleLogout = async () => {
     await logout();
@@ -173,6 +187,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const active = pathname === href || (href !== '/' && pathname.startsWith(href));
             return (
               <Link key={href} href={href}
+                aria-current={active ? 'page' : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                   ${active
                     ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 font-semibold'
@@ -190,6 +205,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center bg-surface-50 dark:bg-surface-800 rounded-xl p-1 gap-1">
             <button
               onClick={() => setMode('light')}
+              aria-pressed={theme === 'light'}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all
                 ${theme === 'light' ? 'bg-white dark:bg-surface-700 shadow-sm text-brand-600 dark:text-brand-300' : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-300'}`}
               id="theme-light-btn"
@@ -201,6 +217,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <button
               onClick={() => setMode('dark')}
+              aria-pressed={theme === 'dark'}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all
                 ${theme === 'dark' ? 'bg-white dark:bg-surface-700 shadow-sm text-brand-600 dark:text-brand-300' : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-300'}`}
               id="theme-dark-btn"

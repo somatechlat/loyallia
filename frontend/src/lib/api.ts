@@ -13,6 +13,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// SEC-001 fix: Shared refresh lock prevents concurrent refresh requests
+let refreshPromise: Promise<string> | null = null;
+
+function doRefresh(): Promise<string> {
+  if (!refreshPromise) {
+    const refresh = Cookies.get('refresh_token');
+    if (!refresh) {
+      return Promise.reject(new Error('No refresh token'));
+    }
+    refreshPromise = axios
+      .post('/api/v1/auth/refresh/', { refresh_token: refresh })
+      .then(({ data }) => {
+        Cookies.set('access_token', data.access_token, { expires: 1 / 24 });
+        return data.access_token;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
 // On 401, attempt refresh — if refresh fails, clear tokens and redirect to login
 api.interceptors.response.use(
   (res) => res,
@@ -20,23 +42,14 @@ api.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
-      const refresh = Cookies.get('refresh_token');
-      if (refresh) {
-        try {
-          const { data } = await axios.post(
-            '/api/v1/auth/refresh/',
-            { refresh_token: refresh }
-          );
-          Cookies.set('access_token', data.access_token, { expires: 1/24 });
-          original.headers.Authorization = `Bearer ${data.access_token}`;
-          return api(original);
-        } catch {
-          Cookies.remove('access_token');
-          Cookies.remove('refresh_token');
-          window.location.href = '/login';
-        }
-      } else {
-        window.location.href = '/login';
+      try {
+        const token = await doRefresh();
+        original.headers.Authorization = `Bearer ${token}`;
+        return api(original);
+      } catch {
+        Cookies.remove('access_token');
+        Cookies.remove('refresh_token');
+        window.location.replace('/login'); // SEC-004 fix: use replace to avoid referrer leak
       }
     }
     return Promise.reject(error);

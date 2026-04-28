@@ -416,7 +416,20 @@ export default function SuperAdminTenants() {
                   <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200/50">
                     <h4 className="font-bold text-surface-900 text-sm mb-2">Impersonar</h4>
                     <p className="text-xs text-surface-500 mb-3">Iniciar sesión como el propietario de este negocio para soporte.</p>
-                    <button onClick={async () => { try { const r = await api(`/tenants/${dt.id}/impersonate/`, { method: 'POST' }); const d = await r.json(); if (d.access_token) { Cookies.set('access_token', d.access_token); window.location.href = '/dashboard'; } } catch { toast.error('Error'); } }}
+                    {/* SEC-009 fix: backup admin token before impersonation */}
+                    <button onClick={async () => {
+                      if (!confirm(`¿Impersonar a "${dt.name}"? Podrás volver al panel de admin.`)) return;
+                      try {
+                        // Backup superadmin token
+                        sessionStorage.setItem('superadmin_token', Cookies.get('access_token') || '');
+                        const r = await api(`/tenants/${dt.id}/impersonate/`, { method: 'POST' });
+                        const d = await r.json();
+                        if (d.access_token) {
+                          Cookies.set('access_token', d.access_token, { expires: 1/24 });
+                          window.location.href = '/'; // BUG-009 fix: was '/dashboard' (doesn't exist)
+                        }
+                      } catch { toast.error('Error al impersonar'); }
+                    }}
                       className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.key} Impersonar Propietario</button>
                   </div>
                   <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200/50">
