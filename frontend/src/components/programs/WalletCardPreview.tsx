@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BARCODE_TYPES, CARD_TYPES, CardTypeIcon, APPLE_PASS_STYLES, adjustColor } from './constants';
 
 /* ─── Barcode SVG Previews ────────────────────────────────────────── */
@@ -325,9 +325,11 @@ export default function WalletCardPreview({ form, selectedType, logoPreview, str
   const [platform, setPlatform] = useState(walletPlatform);
 
   // Sync external prop changes
-  if (walletPlatform !== platform && walletPlatform !== 'apple') {
-    setPlatform(walletPlatform);
-  }
+  useEffect(() => {
+    if (walletPlatform !== platform && walletPlatform !== 'apple') {
+      setPlatform(walletPlatform);
+    }
+  }, [walletPlatform]);
 
   return (
     <div className="relative w-full max-w-sm mx-auto">

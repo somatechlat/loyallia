@@ -63,14 +63,31 @@ def store_otp(email: str, otp: str, purpose: str) -> None:
 
 
 def verify_otp(email: str, otp: str, purpose: str) -> bool:
-    """Verify OTP from cache using constant-time comparison. Deletes key after verification (single-use)."""
+    """Verify OTP from cache using constant-time comparison.
+
+    Tracks failed attempts: after 5 failures the OTP is deleted (lockout).
+    Successful verification clears both the OTP and the attempt counter.
+    """
     from django.core.cache import cache
 
     key = f"otp:{purpose}:{email}"
+    attempts_key = f"otp_attempts:{purpose}:{email}"
+
     stored_hash = cache.get(key)
-    if stored_hash and hmac_module.compare_digest(stored_hash, _hash_otp(otp)):
+    if not stored_hash:
+        return False
+
+    attempts = cache.get(attempts_key, 0)
+    if attempts >= 5:
         cache.delete(key)
+        return False
+
+    if hmac_module.compare_digest(stored_hash, _hash_otp(otp)):
+        cache.delete(key)
+        cache.delete(attempts_key)
         return True
+
+    cache.set(attempts_key, attempts + 1, 900)
     return False
 
 

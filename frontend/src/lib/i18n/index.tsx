@@ -74,22 +74,20 @@ const I18nContext = createContext<I18nContextValue>({
 
 // ---- Provider ----
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<SupportedLocale>(DEFAULT_LOCALE);
+  const [locale, setLocaleState] = useState<SupportedLocale>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY) as SupportedLocale | null;
+      if (stored && LOCALES[stored]) return stored;
+      const browserLang = navigator.language?.slice(0, 2).toLowerCase();
+      if (browserLang && LOCALES[browserLang as SupportedLocale]) return browserLang as SupportedLocale;
+    }
+    return DEFAULT_LOCALE;
+  });
 
-  // Initialize from storage/browser on mount
+  // Apply lang attribute on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as SupportedLocale | null;
-    if (stored && LOCALES[stored]) {
-      setLocaleState(stored);
-      return;
-    }
-
-    // Browser language detection
-    const browserLang = navigator.language?.slice(0, 2).toLowerCase();
-    if (browserLang && LOCALES[browserLang as SupportedLocale]) {
-      setLocaleState(browserLang as SupportedLocale);
-    }
-  }, []);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const setLocale = useCallback((newLocale: SupportedLocale) => {
     if (!LOCALES[newLocale]) return;

@@ -218,6 +218,15 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
 )
 def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     """Validates OTP and sets new password."""
+    from django.core.cache import cache
+
+    # Rate limit OTP verification attempts — 5 per 15 min per email
+    cache_key = f"otp_attempts:password_reset:{payload.email}"
+    attempts = cache.get(cache_key, 0)
+    if attempts >= 5:
+        raise HttpError(429, get_message("RATE_LIMITED"))
+    cache.set(cache_key, attempts + 1, 900)
+
     if not verify_otp(payload.email, payload.otp, "password_reset"):
         raise HttpError(400, get_message("AUTH_PASSWORD_RESET_EXPIRED"))
     try:
@@ -245,6 +254,15 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
 )
 def verify_email(request, payload: VerifyEmailIn):
     """Validates email verification OTP and marks user as verified."""
+    from django.core.cache import cache
+
+    # Rate limit OTP verification attempts — 5 per 15 min per email
+    cache_key = f"otp_attempts:verify_email:{payload.email}"
+    attempts = cache.get(cache_key, 0)
+    if attempts >= 5:
+        raise HttpError(429, get_message("RATE_LIMITED"))
+    cache.set(cache_key, attempts + 1, 900)
+
     if not verify_otp(payload.email, payload.otp, "verify_email"):
         raise HttpError(400, get_message("AUTH_TOKEN_INVALID"))
     try:
@@ -675,6 +693,15 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
 )
 def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
     """Validate the OTP and mark the phone as verified."""
+    from django.core.cache import cache
+
+    # Rate limit OTP verification attempts — 5 per 15 min per phone
+    cache_key = f"otp_attempts:phone_verify:{payload.phone_number}"
+    attempts = cache.get(cache_key, 0)
+    if attempts >= 5:
+        raise HttpError(429, get_message("RATE_LIMITED"))
+    cache.set(cache_key, attempts + 1, 900)
+
     if not verify_otp(payload.phone_number, payload.otp, "phone_verify"):
         raise HttpError(400, get_message("AUTH_PHONE_OTP_INVALID"))
 

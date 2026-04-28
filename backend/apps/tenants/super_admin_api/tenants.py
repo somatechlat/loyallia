@@ -8,6 +8,7 @@ import secrets
 import uuid
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 from django.utils.text import slugify
@@ -163,7 +164,6 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 message=get_message("TENANT_UPDATED"),
                 tenant_id=str(tenant.id),
                 owner_id=str(owner.id),
-                temp_password=temp_password,
             )
     except Exception as e:
         logger.error("Tenant creation failed: %s", e)
@@ -368,20 +368,22 @@ def impersonate_tenant(request, tenant_id: str):
     except User.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    from apps.authentication.tokens import create_access_token
+    import jwt as pyjwt
+    from datetime import UTC, datetime, timedelta
 
-    # Use short-lived token for impersonation without mutating global settings
-    # Override lifetime locally by passing through the token creation
-    original_lifetime = settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES
-    try:
-        settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 5
-        access = create_access_token(
-            user_id=str(owner.id),
-            tenant_id=str(tenant.id),
-            role=owner.role,
-        )
-    finally:
-        settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES = original_lifetime
+    # Short-lived impersonation token — no global settings mutation
+    now = datetime.now(tz=UTC)
+    payload = {
+        "user_id": str(owner.id),
+        "tenant_id": str(tenant.id),
+        "role": owner.role,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=5)).timestamp()),
+        "type": "access",
+        "impersonated_by": str(request.user.id),
+        "impersonated": True,
+    }
+    access = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
     logger.warning(
         "IMPERSONATION: SUPER_ADMIN %s impersonated OWNER %s of tenant %s (%s)",

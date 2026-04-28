@@ -548,11 +548,17 @@ def export_customers(request):
     
     for c in customers:
         writer.writerow([
-            str(c.id), _sanitize_csv_cell(c.email), _sanitize_csv_cell(c.first_name),
-            _sanitize_csv_cell(c.last_name), _sanitize_csv_cell(c.phone),
-            _sanitize_csv_cell(c.gender), c.date_of_birth, c.total_spent,
-            c.total_visits, _sanitize_csv_cell(c.notes),
-            c.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            _sanitize_csv_cell(str(c.id)),
+            _sanitize_csv_cell(c.email),
+            _sanitize_csv_cell(c.first_name),
+            _sanitize_csv_cell(c.last_name),
+            _sanitize_csv_cell(c.phone),
+            _sanitize_csv_cell(c.gender),
+            _sanitize_csv_cell(str(c.date_of_birth) if c.date_of_birth else ""),
+            c.total_spent,
+            c.total_visits,
+            _sanitize_csv_cell(c.notes),
+            _sanitize_csv_cell(c.created_at.strftime("%Y-%m-%d %H:%M:%S")),
         ])
         
     return response

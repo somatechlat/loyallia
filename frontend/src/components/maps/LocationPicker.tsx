@@ -56,6 +56,10 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
   const hasPin = lat !== null && lng !== null;
 
   useEffect(() => {
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
+
+  useEffect(() => {
     L.Marker.prototype.options.icon = DefaultIcon;
   }, []);
 
