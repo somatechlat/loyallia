@@ -105,8 +105,12 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // PERF-001: Debounce date range changes to avoid rapid API calls
   useEffect(() => {
-    fetchData(dateRange);
+    const timer = setTimeout(() => {
+      fetchData(dateRange);
+    }, 200);
+    return () => clearTimeout(timer);
   }, [dateRange, fetchData]);
 
   const handleDateRange = (range: DateRange) => {
