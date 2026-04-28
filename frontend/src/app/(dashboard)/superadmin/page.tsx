@@ -119,7 +119,7 @@ export default function SuperAdminDashboard() {
             <h2 className="font-bold text-surface-900">Actividad Reciente</h2>
           </div>
           <div className="divide-y divide-surface-100 max-h-[400px] overflow-y-auto">
-            {(metrics?.recent_tenants || []).map((t: any) => (
+            {(metrics?.recent_tenants || []).map((t) => (
               <div key={t.id} className="px-4 py-3 flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${t.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
                 <div className="flex-1 min-w-0">

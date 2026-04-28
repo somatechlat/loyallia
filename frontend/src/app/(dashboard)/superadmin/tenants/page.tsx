@@ -36,6 +36,55 @@ const PROVINCES = [
 
 type LocEntry = { name: string; address: string; city: string; latitude: number | null; longitude: number | null; is_primary: boolean; };
 
+interface Tenant {
+  id: string;
+  name: string;
+  slug?: string;
+  legal_name?: string;
+  ruc?: string;
+  cedula?: string;
+  entity_type?: string;
+  industry?: string;
+  province?: string;
+  city?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  plan: string;
+  is_active: boolean;
+  user_count: number;
+  location_count: number;
+  trial_days_remaining?: number;
+  created_at: string;
+}
+
+interface Plan {
+  slug: string;
+  name: string;
+  price_monthly: number;
+  trial_days: number;
+  is_active: boolean;
+}
+
+interface CreationResult {
+  tenant_id?: string;
+  owner_email?: string;
+  temp_password?: string;
+}
+
+interface TenantLocation {
+  id: string;
+  name: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_active?: boolean;
+  is_primary?: boolean;
+}
+
 // Flat SVG icons (no emojis)
 const IC = {
   info: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
@@ -54,14 +103,18 @@ const IC = {
   arrow: <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
 };
 
+/* ─── Module-level constants (QUAL-007: avoid recreation per render) ──── */
+const WIZARD_STEPS = [{ n: 1, l: 'Tipo & Datos' }, { n: 2, l: 'Propietario' }, { n: 3, l: 'Sucursales' }, { n: 4, l: 'Plan' }];
+const formatProvince = (p: string) => p.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
 export default function SuperAdminTenants() {
-  const [tenants, setTenants] = useState<Record<string, unknown>[]>([]);
-  const [plans, setPlans] = useState<Record<string, unknown>[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   // Wizard
   const [wizardOpen, setWizardOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [creationResult, setCreationResult] = useState<Record<string, unknown> | null>(null);
+  const [creationResult, setCreationResult] = useState<CreationResult | null>(null);
   const [entityType, setEntityType] = useState<'natural'|'juridica'>('juridica');
   const [company, setCompany] = useState({ name: '', legal_name: '', ruc: '', cedula: '', industry: 'food_beverage', province: 'pichincha', city: '', address: '', phone: '', email: '', website: '' });
   const [owner, setOwner] = useState({ owner_email: '', owner_first_name: '', owner_last_name: '', owner_cedula: '' });
@@ -69,15 +122,15 @@ export default function SuperAdminTenants() {
   const [planSlug, setPlanSlug] = useState('professional');
   const [billingCycle, setBillingCycle] = useState('monthly');
   // Detail modal
-  const [dt, setDt] = useState<Record<string, unknown> | null>(null);
+  const [dt, setDt] = useState<Tenant | null>(null);
   const [dtTab, setDtTab] = useState<'info'|'locs'|'actions'>('info');
   const [dtEdit, setDtEdit] = useState(false);
-  const [dtForm, setDtForm] = useState<Record<string, unknown>>({});
+  const [dtForm, setDtForm] = useState<Partial<Tenant>>({});
   const [dtSaving, setDtSaving] = useState(false);
-  const [dtLocs, setDtLocs] = useState<Record<string, unknown>[]>([]);
+  const [dtLocs, setDtLocs] = useState<TenantLocation[]>([]);
   const [dtLocsLoading, setDtLocsLoading] = useState(false);
-  const [editLoc, setEditLoc] = useState<Record<string, unknown> | null>(null);
-  const [locForm, setLocForm] = useState<Record<string, unknown>>({});
+  const [editLoc, setEditLoc] = useState<TenantLocation | 'new' | null>(null);
+  const [locForm, setLocForm] = useState<Partial<TenantLocation>>({});
 
   const fetchData = useCallback(async () => {
     try {
@@ -99,7 +152,7 @@ export default function SuperAdminTenants() {
   };
   const addWLoc = () => setWLocs([...wLocs, { name: '', address: '', city: '', latitude: null, longitude: null, is_primary: false }]);
   const rmWLoc = (i: number) => setWLocs(wLocs.filter((_, j) => j !== i));
-  const upWLoc = (i: number, f: string, v: any) => { const u = [...wLocs]; (u[i] as any)[f] = v; setWLocs(u); };
+  const upWLoc = (i: number, f: keyof LocEntry, v: LocEntry[keyof LocEntry]) => { const u = [...wLocs]; u[i] = { ...u[i], [f]: v }; setWLocs(u); };
   const handleSubmit = async () => {
     const tid = toast.loading('Registrando negocio...');
     try {
@@ -109,11 +162,11 @@ export default function SuperAdminTenants() {
       if (!res.ok) throw new Error(data.detail || data.message || JSON.stringify(data));
       toast.success('Negocio registrado', { id: tid });
       setCreationResult({ ...data, owner_email: owner.owner_email }); setWizardOpen(false); fetchData();
-    } catch (e: any) { toast.error(e.message, { id: tid }); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al registrar'); }
   };
 
   // ── Detail Modal ──
-  const openDetail = async (t: any) => {
+  const openDetail = async (t: Tenant) => {
     setDt(t); setDtTab('info'); setDtEdit(false); setEditLoc(null);
     setDtForm({ name: t.name, legal_name: t.legal_name||'', ruc: t.ruc||'', industry: t.industry||'other', province: t.province||'', city: t.city||'', phone: t.phone||'', email: t.email||'' });
     // Fetch locations for this tenant
@@ -127,14 +180,16 @@ export default function SuperAdminTenants() {
   };
   const closeDetail = () => { setDt(null); setDtEdit(false); setEditLoc(null); };
   const saveDetail = async () => {
+    if (!dt) return;
     setDtSaving(true);
-    try { const r = await api(`/tenants/${dt.id}/`, { method: 'PATCH', body: JSON.stringify(dtForm) }); if (!r.ok) throw new Error('Error'); toast.success('Negocio actualizado'); closeDetail(); fetchData(); } catch (e: any) { toast.error(e.message); } finally { setDtSaving(false); }
+    try { const r = await api(`/tenants/${dt.id}/`, { method: 'PATCH', body: JSON.stringify(dtForm) }); if (!r.ok) throw new Error('Error'); toast.success('Negocio actualizado'); closeDetail(); fetchData(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); } finally { setDtSaving(false); }
   };
-  const doSuspend = async () => { if (!confirm(`¿Suspender "${dt.name}"?`)) return; await api(`/tenants/${dt.id}/suspend/`, { method: 'POST' }); toast.success('Suspendido'); closeDetail(); fetchData(); };
-  const doReactivate = async () => { await api(`/tenants/${dt.id}/reactivate/`, { method: 'POST' }); toast.success('Reactivado'); closeDetail(); fetchData(); };
-  const openLocEdit = (loc: any) => { setEditLoc(loc); setLocForm({ name: loc.name, address: loc.address||'', city: loc.city||'', phone: '', latitude: loc.latitude, longitude: loc.longitude, is_active: loc.is_active, is_primary: loc.is_primary }); };
+  const doSuspend = async () => { if (!dt || !confirm(`¿Suspender "${dt.name}"?`)) return; await api(`/tenants/${dt.id}/suspend/`, { method: 'POST' }); toast.success('Suspendido'); closeDetail(); fetchData(); };
+  const doReactivate = async () => { if (!dt) return; await api(`/tenants/${dt.id}/reactivate/`, { method: 'POST' }); toast.success('Reactivado'); closeDetail(); fetchData(); };
+  const openLocEdit = (loc: TenantLocation) => { setEditLoc(loc); setLocForm({ name: loc.name, address: loc.address||'', city: loc.city||'', phone: '', latitude: loc.latitude, longitude: loc.longitude, is_active: loc.is_active, is_primary: loc.is_primary }); };
   const openLocNew = () => { setEditLoc('new'); setLocForm({ name: '', address: '', city: '', phone: '', latitude: null, longitude: null, is_active: true, is_primary: false }); };
   const saveLoc = async () => {
+    if (!dt) return;
     try {
       if (editLoc === 'new') {
         const r = await api(`/tenants/${dt.id}/locations/`, { method: 'POST', body: JSON.stringify(locForm) });
@@ -144,11 +199,10 @@ export default function SuperAdminTenants() {
       setEditLoc(null);
       const r2 = await api(`/tenants/${dt.id}/locations/`);
       if (r2.ok) setDtLocs(await r2.json());
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
   };
 
-  const selPlan = plans.find((p: any) => p.slug === planSlug);
-  const STEPS = [{ n: 1, l: 'Tipo & Datos' }, { n: 2, l: 'Propietario' }, { n: 3, l: 'Sucursales' }, { n: 4, l: 'Plan' }];
+  const selPlan = plans.find((p) => p.slug === planSlug);
 
   return (
     <div className="space-y-6">
@@ -187,7 +241,7 @@ export default function SuperAdminTenants() {
                 <h2 className="text-xl font-black text-surface-900">Registrar Nuevo Negocio</h2>
                 <button onClick={() => setWizardOpen(false)} className="w-8 h-8 rounded-xl bg-surface-100 hover:bg-surface-200 flex items-center justify-center">{IC.x}</button>
               </div>
-              <div className="flex gap-2">{STEPS.map(s => (<div key={s.n} className="flex-1"><div className={`h-1.5 rounded-full transition-all ${step >= s.n ? 'bg-brand-500' : 'bg-surface-200'}`} /><p className={`text-xs mt-1 ${step >= s.n ? 'text-brand-600 font-semibold' : 'text-surface-400'}`}>{s.n}. {s.l}</p></div>))}</div>
+              <div className="flex gap-2">{WIZARD_STEPS.map(s => (<div key={s.n} className="flex-1"><div className={`h-1.5 rounded-full transition-all ${step >= s.n ? 'bg-brand-500' : 'bg-surface-200'}`} /><p className={`text-xs mt-1 ${step >= s.n ? 'text-brand-600 font-semibold' : 'text-surface-400'}`}>{s.n}. {s.l}</p></div>))}</div>
             </div>
             <div className="p-6">
               {/* STEP 1: Entity Type + Company */}
@@ -219,7 +273,7 @@ export default function SuperAdminTenants() {
                     <div><label className="label">Cédula (10 dígitos)</label><input id="wiz-cedula" className="input font-mono" maxLength={10} placeholder="1712345678" value={company.cedula} onChange={e => setCompany({...company, cedula: e.target.value.replace(/\D/g, '')})} />{company.cedula && company.cedula.length !== 10 && <p className="text-xs text-red-500 mt-1">La cédula debe tener 10 dígitos</p>}</div>
                   )}
                   <div><label className="label">Industria</label><select id="wiz-industry" className="input" value={company.industry} onChange={e => setCompany({...company, industry: e.target.value})}>{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
-                  <div><label className="label">Provincia</label><select className="input" value={company.province} onChange={e => setCompany({...company, province: e.target.value})}>{PROVINCES.map(p => <option key={p} value={p}>{p.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>)}</select></div>
+                  <div><label className="label">Provincia</label><select className="input" value={company.province} onChange={e => setCompany({...company, province: e.target.value})}>{PROVINCES.map(p => <option key={p} value={p}>{formatProvince(p)}</option>)}</select></div>
                   <div><label className="label">Ciudad</label><input className="input" placeholder="Quito" value={company.city} onChange={e => setCompany({...company, city: e.target.value})} /></div>
                   <div className="col-span-2"><label className="label">Dirección</label><input className="input" placeholder="Av. 9 de Octubre y Malecón" value={company.address} onChange={e => setCompany({...company, address: e.target.value})} /></div>
                   <div><label className="label">Teléfono</label><input className="input" placeholder="+593 4 268 8000" value={company.phone} onChange={e => setCompany({...company, phone: e.target.value})} /></div>
@@ -244,7 +298,7 @@ export default function SuperAdminTenants() {
                 </div></div>))}</div></div>)}
               {/* STEP 4: Plan */}
               {step === 4 && (<div className="space-y-6"><h3 className="font-bold text-surface-800 text-lg">Plan y Facturación</h3>
-                <div className="grid grid-cols-3 gap-3">{plans.filter((p: any) => p.is_active).map((plan: any) => (<button key={plan.slug} onClick={() => setPlanSlug(plan.slug)} className={`text-left p-4 rounded-xl border-2 transition-all ${planSlug === plan.slug ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 hover:border-surface-300'}`}><p className="font-bold text-surface-900 text-sm">{plan.name}</p><p className="text-2xl font-black text-surface-900 mt-1">${plan.price_monthly}<span className="text-xs text-surface-400">/mes</span></p><p className="text-xs text-surface-500 mt-1">{plan.trial_days} días gratis</p></button>))}</div>
+                <div className="grid grid-cols-3 gap-3">{plans.filter((p) => p.is_active).map((plan) => (<button key={plan.slug} onClick={() => setPlanSlug(plan.slug)} className={`text-left p-4 rounded-xl border-2 transition-all ${planSlug === plan.slug ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 hover:border-surface-300'}`}><p className="font-bold text-surface-900 text-sm">{plan.name}</p><p className="text-2xl font-black text-surface-900 mt-1">${plan.price_monthly}<span className="text-xs text-surface-400">/mes</span></p><p className="text-xs text-surface-500 mt-1">{plan.trial_days} días gratis</p></button>))}</div>
                 <div><label className="label">Ciclo de Facturación</label><div className="flex gap-3"><button onClick={() => setBillingCycle('monthly')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'monthly' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200'}`}>Mensual</button><button onClick={() => setBillingCycle('annual')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'annual' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200'}`}>Anual (20% desc.)</button></div></div>
                 <div className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-5 border border-surface-200/50 space-y-2 text-sm"><h4 className="font-bold text-surface-900 mb-3">Resumen</h4><div className="grid grid-cols-2 gap-y-2"><span className="text-surface-500">Tipo:</span><span className="font-medium">{entityType === 'natural' ? 'Persona Natural' : 'Persona Jurídica'}</span><span className="text-surface-500">Empresa:</span><span className="font-medium">{company.name||'—'}</span><span className="text-surface-500">{entityType === 'juridica' ? 'RUC:' : 'Cédula:'}</span><span className="font-mono">{entityType === 'juridica' ? company.ruc||'—' : company.cedula||'—'}</span><span className="text-surface-500">Propietario:</span><span>{owner.owner_first_name} {owner.owner_last_name}</span><span className="text-surface-500">Email:</span><span>{owner.owner_email}</span><span className="text-surface-500">Sucursales:</span><span>{wLocs.filter(l => l.name.trim()).length}</span><span className="text-surface-500">Plan:</span><span className="font-semibold text-brand-600">{selPlan?.name || planSlug}</span></div></div>
               </div>)}
@@ -265,7 +319,7 @@ export default function SuperAdminTenants() {
               <th className="px-5 py-3">Negocio</th><th className="px-5 py-3">RUC / Cédula</th><th className="px-5 py-3">Ciudad</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3 text-center">Usuarios</th><th className="px-5 py-3 text-center">Sucursales</th><th className="px-5 py-3">Estado</th><th className="px-5 py-3"></th>
             </tr></thead>
             <tbody className="divide-y divide-surface-100 text-sm text-surface-900">
-              {tenants.map((t: any) => (
+              {tenants.map((t) => (
                 <tr key={t.id} className="hover:bg-surface-50 transition-colors cursor-pointer" onClick={() => openDetail(t)}>
                   <td className="px-5 py-3"><p className="font-semibold">{t.name}</p>{t.legal_name && <p className="text-xs text-surface-400 truncate max-w-[180px]">{t.legal_name}</p>}</td>
                   <td className="px-5 py-3 font-mono text-xs">{t.ruc || t.cedula || '—'}</td>
@@ -303,7 +357,7 @@ export default function SuperAdminTenants() {
             {/* Tabs */}
             <div className="px-6 flex gap-1 border-b border-surface-200/50 flex-shrink-0">
               {([['info', IC.info, 'Información'], ['locs', IC.pin, 'Sucursales'], ['actions', IC.bolt, 'Acciones']] as const).map(([key, icon, label]) => (
-                <button key={key} onClick={() => { setDtTab(key as any); setDtEdit(false); setEditLoc(null); }}
+                <button key={key} onClick={() => { setDtTab(key); setDtEdit(false); setEditLoc(null); }}
                   className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${dtTab===key?'border-brand-500 text-brand-600':'border-transparent text-surface-400 hover:text-surface-600'}`}>{icon}{label}</button>
               ))}
             </div>
@@ -328,14 +382,14 @@ export default function SuperAdminTenants() {
               {dtTab === 'info' && dtEdit && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <EF l="Nombre Comercial" v={dtForm.name} c={v => setDtForm((f:any) => ({...f, name: v}))} />
-                    <EF l="Razón Social" v={dtForm.legal_name} c={v => setDtForm((f:any) => ({...f, legal_name: v}))} />
-                    <EF l="RUC" v={dtForm.ruc} c={v => setDtForm((f:any) => ({...f, ruc: v.replace(/\D/g,'')}))} />
-                    <div><label className="text-xs font-semibold text-surface-500 mb-1 block">Industria</label><select value={dtForm.industry} onChange={e => setDtForm((f:any) => ({...f, industry: e.target.value}))} className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white/60 backdrop-blur-sm text-sm">{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
-                    <EF l="Ciudad" v={dtForm.city} c={v => setDtForm((f:any) => ({...f, city: v}))} />
-                    <EF l="Teléfono" v={dtForm.phone} c={v => setDtForm((f:any) => ({...f, phone: v}))} />
+                    <EF l="Nombre Comercial" v={dtForm.name || ''} c={v => setDtForm(f => ({...f, name: v}))} />
+                    <EF l="Razón Social" v={dtForm.legal_name || ''} c={v => setDtForm(f => ({...f, legal_name: v}))} />
+                    <EF l="RUC" v={dtForm.ruc || ''} c={v => setDtForm(f => ({...f, ruc: v.replace(/\D/g,'')}))} />
+                    <div><label className="text-xs font-semibold text-surface-500 mb-1 block">Industria</label><select value={dtForm.industry || ''} onChange={e => setDtForm(f => ({...f, industry: e.target.value}))} className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white/60 backdrop-blur-sm text-sm">{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
+                    <EF l="Ciudad" v={dtForm.city || ''} c={v => setDtForm(f => ({...f, city: v}))} />
+                    <EF l="Teléfono" v={dtForm.phone || ''} c={v => setDtForm(f => ({...f, phone: v}))} />
                   </div>
-                  <EF l="Email Corporativo" v={dtForm.email} c={v => setDtForm((f:any) => ({...f, email: v}))} />
+                  <EF l="Email Corporativo" v={dtForm.email || ''} c={v => setDtForm(f => ({...f, email: v}))} />
                   <div className="flex gap-2 pt-3">
                     <button onClick={saveDetail} disabled={dtSaving} className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 text-white py-2.5 rounded-xl font-semibold text-sm">{dtSaving ? 'Guardando...' : 'Guardar Cambios'}</button>
                     <button onClick={() => setDtEdit(false)} className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-surface-100 text-surface-600 hover:bg-surface-200">Cancelar</button>
@@ -375,12 +429,12 @@ export default function SuperAdminTenants() {
                   )}
                   {editLoc && (
                     <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-brand-200 shadow-lg space-y-3">
-                      <h4 className="font-bold text-surface-900 text-sm">{editLoc === 'new' ? 'Nueva Sucursal' : `Editar: ${editLoc.name}`}</h4>
+                      <h4 className="font-bold text-surface-900 text-sm">{editLoc === 'new' ? 'Nueva Sucursal' : `Editar: ${editLoc?.name}`}</h4>
                       <div className="grid grid-cols-2 gap-3">
-                        <EF l="Nombre" v={locForm.name} c={v => setLocForm((f:any) => ({...f, name: v}))} />
-                        <EF l="Ciudad" v={locForm.city} c={v => setLocForm((f:any) => ({...f, city: v}))} />
-                        <EF l="Dirección" v={locForm.address} c={v => setLocForm((f:any) => ({...f, address: v}))} />
-                        <EF l="Teléfono" v={locForm.phone||''} c={v => setLocForm((f:any) => ({...f, phone: v}))} />
+                        <EF l="Nombre" v={locForm.name || ''} c={v => setLocForm(f => ({...f, name: v}))} />
+                        <EF l="Ciudad" v={locForm.city || ''} c={v => setLocForm(f => ({...f, city: v}))} />
+                        <EF l="Dirección" v={locForm.address || ''} c={v => setLocForm(f => ({...f, address: v}))} />
+                        <EF l="Teléfono" v={locForm.phone || ''} c={v => setLocForm(f => ({...f, phone: v}))} />
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-surface-500 mb-1 block">Ubicación en el Mapa</label>
@@ -388,7 +442,7 @@ export default function SuperAdminTenants() {
                           lat={locForm.latitude}
                           lng={locForm.longitude}
                           onChange={(lat, lng, address) => {
-                            setLocForm((f:any) => ({ ...f, latitude: lat, longitude: lng, ...(address && !f.address ? { address: address.split(',').slice(0, 3).join(',') } : {}) }));
+                            setLocForm(f => ({ ...f, latitude: lat, longitude: lng, ...(address && !f.address ? { address: address.split(',').slice(0, 3).join(',') } : {}) }));
                           }}
                         />
                       </div>
@@ -418,15 +472,18 @@ export default function SuperAdminTenants() {
                     <p className="text-xs text-surface-500 mb-3">Iniciar sesión como el propietario de este negocio para soporte.</p>
                     {/* SEC-009 fix: backup admin token before impersonation */}
                     <button onClick={async () => {
-                      if (!confirm(`¿Impersonar a "${dt.name}"? Podrás volver al panel de admin.`)) return;
+                      if (!dt || !confirm(`¿Impersonar a "${dt.name}"? Podrás volver al panel de admin.`)) return;
                       try {
-                        // Backup superadmin token
-                        sessionStorage.setItem('superadmin_token', Cookies.get('access_token') || '');
+                        // Backup superadmin token + timestamp for auto-expiry
+                        const currentToken = Cookies.get('access_token') || '';
+                        sessionStorage.setItem('superadmin_token', currentToken);
+                        sessionStorage.setItem('impersonation_started_at', String(Date.now()));
                         const r = await api(`/tenants/${dt.id}/impersonate/`, { method: 'POST' });
                         const d = await r.json();
                         if (d.access_token) {
-                          Cookies.set('access_token', d.access_token, { expires: 1/24 });
-                          window.location.href = '/'; // BUG-009 fix: was '/dashboard' (doesn't exist)
+                          const isProd = process.env.NODE_ENV === 'production';
+                          Cookies.set('access_token', d.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
+                          window.location.href = '/';
                         }
                       } catch { toast.error('Error al impersonar'); }
                     }}

@@ -23,9 +23,10 @@ function doRefresh(): Promise<string> {
       return Promise.reject(new Error('No refresh token'));
     }
     refreshPromise = axios
-      .post('/api/v1/auth/refresh/', { refresh_token: refresh })
+      .post('/api/v1/auth/refresh/', { refresh_token: refresh }, { withCredentials: true })
       .then(({ data }) => {
-        Cookies.set('access_token', data.access_token, { expires: 1 / 24 });
+        const isProd = process.env.NODE_ENV === 'production';
+        Cookies.set('access_token', data.access_token, { expires: 1 / 24, secure: isProd, sameSite: 'strict' });
         return data.access_token;
       })
       .finally(() => {

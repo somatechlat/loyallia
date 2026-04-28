@@ -1,8 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import Cookies from 'js-cookie';
-import axios from 'axios';
-import { authApi } from './api';
+import api, { authApi } from './api';
 
 export interface User {
   id: string;
@@ -51,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoad = useRef(true);
 
   /** Schedule a silent token refresh based on current access token expiry. */
   const scheduleRefresh = useCallback(() => {
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const refresh = Cookies.get('refresh_token');
       if (!refresh) return;
       try {
-        const { data } = await axios.post('/api/v1/auth/refresh/', { refresh_token: refresh });
+        const { data } = await api.post('/api/v1/auth/refresh/', { refresh_token: refresh });
         const isProd = process.env.NODE_ENV === 'production';
         Cookies.set('access_token', data.access_token, { expires: 1 / 24, secure: isProd, sameSite: 'strict' });
         scheduleRefresh(); // Re-schedule for the new token
@@ -78,7 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = useCallback(async (): Promise<User | null> => {
     const token = Cookies.get('access_token');
-    if (!token) { setLoading(false); return null; }
+    if (!token) {
+      if (isInitialLoad.current) { setLoading(false); isInitialLoad.current = false; }
+      return null;
+    }
     try {
       const { data } = await authApi.me();
       setUser(data);
@@ -89,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       return null;
     } finally {
-      setLoading(false);
+      if (isInitialLoad.current) { setLoading(false); isInitialLoad.current = false; }
     }
   }, []);
 
@@ -127,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     Cookies.remove('access_token');
     Cookies.remove('refresh_token');
     setUser(null);
-    window.location.href = '/login';
+    window.location.replace('/login');
   };
 
   return (
