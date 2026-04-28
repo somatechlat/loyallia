@@ -6,21 +6,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth';
 import { authApi } from '@/lib/api';
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: Record<string, unknown>) => void;
-          renderButton: (el: HTMLElement, config: Record<string, unknown>) => void;
-        };
-      };
-    };
-  }
-}
-
-export default function LoginPage() {
-  const { login, loginWithGoogle } = useAuth();
+ = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
