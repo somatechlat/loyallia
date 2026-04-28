@@ -151,9 +151,9 @@ export default function CustomersPage() {
       </div>
 
       {showImportModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
           <div className="bg-white dark:bg-surface-900 p-6 rounded-2xl shadow-2xl w-full max-w-md">
-            <h2 className="text-xl font-bold mb-1">
+            <h2 id="import-modal-title" className="text-xl font-bold mb-1">
               Importar Base de Clientes
             </h2>
             <p className="text-sm text-surface-500 mb-4">
