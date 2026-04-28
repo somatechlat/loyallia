@@ -34,21 +34,7 @@ const COUNTRY_CODES = [
   { code: '+81',  country: 'Japón', flag: '🇯🇵' },
 ];
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: Record<string, unknown>) => void;
-          renderButton: (el: HTMLElement, config: Record<string, unknown>) => void;
-        };
-      };
-    };
-  }
-}
-
-export default function RegisterPage() {
-  const { loginWithGoogle } = useAuth();
+ = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);

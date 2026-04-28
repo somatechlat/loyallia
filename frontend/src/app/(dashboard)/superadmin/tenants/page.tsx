@@ -55,13 +55,13 @@ const IC = {
 };
 
 export default function SuperAdminTenants() {
-  const [tenants, setTenants] = useState<any[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
+  const [tenants, setTenants] = useState<Record<string, unknown>[]>([]);
+  const [plans, setPlans] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   // Wizard
   const [wizardOpen, setWizardOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [creationResult, setCreationResult] = useState<any>(null);
+  const [creationResult, setCreationResult] = useState<Record<string, unknown> | null>(null);
   const [entityType, setEntityType] = useState<'natural'|'juridica'>('juridica');
   const [company, setCompany] = useState({ name: '', legal_name: '', ruc: '', cedula: '', industry: 'food_beverage', province: 'pichincha', city: '', address: '', phone: '', email: '', website: '' });
   const [owner, setOwner] = useState({ owner_email: '', owner_first_name: '', owner_last_name: '', owner_cedula: '' });
@@ -69,15 +69,15 @@ export default function SuperAdminTenants() {
   const [planSlug, setPlanSlug] = useState('professional');
   const [billingCycle, setBillingCycle] = useState('monthly');
   // Detail modal
-  const [dt, setDt] = useState<any>(null);
+  const [dt, setDt] = useState<Record<string, unknown> | null>(null);
   const [dtTab, setDtTab] = useState<'info'|'locs'|'actions'>('info');
   const [dtEdit, setDtEdit] = useState(false);
-  const [dtForm, setDtForm] = useState<any>({});
+  const [dtForm, setDtForm] = useState<Record<string, unknown>>({});
   const [dtSaving, setDtSaving] = useState(false);
-  const [dtLocs, setDtLocs] = useState<any[]>([]);
+  const [dtLocs, setDtLocs] = useState<Record<string, unknown>[]>([]);
   const [dtLocsLoading, setDtLocsLoading] = useState(false);
-  const [editLoc, setEditLoc] = useState<any>(null);
-  const [locForm, setLocForm] = useState<any>({});
+  const [editLoc, setEditLoc] = useState<Record<string, unknown> | null>(null);
+  const [locForm, setLocForm] = useState<Record<string, unknown>>({});
 
   const fetchData = useCallback(async () => {
     try {
