@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import Cookies from 'js-cookie';
+import api from '@/lib/api';
 
 export default function SuperAdminSettings() {
   const [broadcastForm, setBroadcastForm] = useState({ subject: '', message: '' });
@@ -12,18 +12,12 @@ export default function SuperAdminSettings() {
     setSending(true);
     const toastId = toast.loading('Enviando a todos los propietarios...');
     try {
-      const token = Cookies.get('access_token');
-      const res = await fetch('/api/v1/admin/broadcast/', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(broadcastForm),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Error');
+      const { data } = await api.post('/api/v1/admin/broadcast/', broadcastForm);
       toast.success(data.message || 'Enviado', { id: toastId });
       setBroadcastForm({ subject: '', message: '' });
-    } catch (err: any) {
-      toast.error(err.message, { id: toastId });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al enviar';
+      toast.error(msg, { id: toastId });
     } finally {
       setSending(false);
     }

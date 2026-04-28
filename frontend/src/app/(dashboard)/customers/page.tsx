@@ -145,10 +145,10 @@ export default function CustomersPage() {
         setShowImportModal(false);
         load();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const detail =
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
+        (err as { response?: { data?: { detail?: string; message?: string } } })?.response?.data?.detail ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         "Error al importar archivo";
       toast.error(detail);
     } finally {

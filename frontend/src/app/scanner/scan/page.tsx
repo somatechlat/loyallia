@@ -104,7 +104,7 @@ export default function ScannerPage() {
           <span className="font-semibold">Scanner Loyallia</span>
         </div>
         <button
-          onClick={() => { Cookies.remove('access_token'); Cookies.remove('refresh_token'); window.location.href = '/login'; }}
+          onClick={() => { Cookies.remove('access_token'); Cookies.remove('refresh_token'); window.location.replace('/login'); }}
           className="text-white/50 text-sm hover:text-red-400 transition-colors flex items-center gap-1.5"
           id="scanner-logout-btn"
         >

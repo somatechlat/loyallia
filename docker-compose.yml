@@ -63,6 +63,10 @@ x-common-env: &common-env
   GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
   GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
   GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:33905/api/v1/auth/google/callback/}
+  # JWT secret (separate from Django SECRET_KEY — B-001)
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+  # Sentry error tracking (B-013)
+  SENTRY_DSN: ${SENTRY_DSN:-}
 
 services:
   # ---------------------------------------------------------------------------
@@ -283,6 +287,7 @@ services:
       - ./certs:/app/certs:ro
     ports:
       - "33905:8000"
+    stop_grace_period: 30s  # B-012: Graceful shutdown for in-flight requests
     depends_on:
       postgres:
         condition: service_healthy
@@ -326,6 +331,7 @@ services:
       HOST: "0.0.0.0"
     ports:
       - "33906:3000"
+    stop_grace_period: 30s  # B-012: Graceful shutdown
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
@@ -364,6 +370,7 @@ services:
     volumes:
       - ./backend:/app
       - ./certs:/app/certs:ro
+    stop_grace_period: 30s  # B-012: Graceful shutdown for in-flight tasks
     depends_on:
       postgres:
         condition: service_healthy
@@ -394,6 +401,7 @@ services:
     volumes:
       - ./backend:/app
       - ./certs:/app/certs:ro
+    stop_grace_period: 30s  # B-012: Graceful shutdown
     depends_on:
       postgres:
         condition: service_healthy
@@ -424,6 +432,7 @@ services:
     volumes:
       - ./backend:/app
       - ./certs:/app/certs:ro
+    stop_grace_period: 30s  # B-012: Graceful shutdown
     depends_on:
       postgres:
         condition: service_healthy

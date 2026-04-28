@@ -114,27 +114,22 @@ def get_programs(request: HttpRequest):
     cards = Card.objects.filter(tenant=tenant).annotate(
         enrollments_count=Count("enrollments", distinct=True),
         active_passes_count=Count("passes", filter=Q(passes__is_active=True), distinct=True),
-    ).prefetch_related("passes__transactions")
+        total_txn_count=Count("passes__transactions", distinct=True),
+    )
 
-    programs = []
-    for card in cards:
-        # Count transactions from prefetched data
-        txn_count = sum(
-            1 for p in card.passes.all()
-            for _ in p.transactions.all()
+    programs = [
+        ProgramSchema(
+            id=str(card.id),
+            name=card.name,
+            card_type=card.card_type,
+            is_active=card.is_active,
+            enrollments=card.enrollments_count,
+            active_passes=card.active_passes_count,
+            total_transactions=card.total_txn_count,
+            created_at=card.created_at.isoformat(),
         )
-        programs.append(
-            ProgramSchema(
-                id=str(card.id),
-                name=card.name,
-                card_type=card.card_type,
-                is_active=card.is_active,
-                enrollments=card.enrollments_count,
-                active_passes=card.active_passes_count,
-                total_transactions=txn_count,
-                created_at=card.created_at.isoformat(),
-            )
-        )
+        for card in cards
+    ]
 
     return ProgramsResponseSchema(total_programs=len(programs), programs=programs)
 

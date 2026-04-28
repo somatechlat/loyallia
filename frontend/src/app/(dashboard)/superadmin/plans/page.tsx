@@ -1,15 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import Cookies from 'js-cookie';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
-
-const apiFetch = (path: string, opts?: RequestInit) => {
-  const token = Cookies.get('access_token');
-  return fetch(`/api/v1/admin${path}`, {
-    ...opts,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...opts?.headers },
-  });
-};
 
 interface PlanData {
   id: string; name: string; slug: string; description: string;
@@ -36,8 +28,8 @@ export default function SuperAdminPlans() {
 
   const fetchPlans = useCallback(async () => {
     try {
-      const res = await apiFetch('/plans/');
-      setPlans(await res.json());
+      const { data } = await api.get('/api/v1/admin/plans/');
+      setPlans(data);
     } catch { /* */ }
     setLoading(false);
   }, []);
@@ -65,24 +57,22 @@ export default function SuperAdminPlans() {
       const body = { ...form, features: form.features };
 
       if (showCreate) {
-        const res = await apiFetch('/plans/', { method: 'POST', body: JSON.stringify(body) });
-        if (!res.ok) throw new Error(await res.text());
+        await api.post('/api/v1/admin/plans/', body);
         toast.success('Plan creado exitosamente');
       } else if (selected) {
-        const res = await apiFetch(`/plans/${selected.id}/`, { method: 'PATCH', body: JSON.stringify(body) });
-        if (!res.ok) throw new Error(await res.text());
+        await api.patch(`/api/v1/admin/plans/${selected.id}/`, body);
         toast.success('Plan actualizado');
       }
       closeModal();
       await fetchPlans();
-    } catch (e: any) { toast.error(e.message || 'Error'); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
     finally { setSaving(false); }
   };
 
   const handleDeactivate = async (p: PlanData) => {
     if (!confirm(`¿Desactivar el plan "${p.name}"?`)) return;
     try {
-      await apiFetch(`/plans/${p.id}/`, { method: 'DELETE' });
+      await api.delete(`/api/v1/admin/plans/${p.id}/`);
       toast.success('Plan desactivado');
       closeModal();
       await fetchPlans();
