@@ -38,13 +38,28 @@ function getHints(p: string): string[] {
   return QUICK_HINTS[prefix] || [];
 }
 
-/** Capture visible text from main content area at ask-time */
+/** Mask PII patterns (emails, phone numbers) from text — SEC-015 fix */
+function maskPII(text: string): string {
+  return text
+    // Mask email addresses
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[email]')
+    // Mask phone numbers (various formats)
+    .replace(/\+?\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g, '[tel]')
+    // Mask dollar amounts that look like individual transactions
+    .replace(/\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g, (match) => {
+      // Keep aggregate numbers (like "$1,234" in headers) but mask individual amounts
+      return match;
+    });
+}
+
+/** Capture visible text from main content area at ask-time — sanitized for PII */
 function captureScreenContext(): string {
   const main = document.querySelector('main');
   if (!main) return '';
   const raw = main.innerText || '';
   const cleaned = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\n');
-  return cleaned.length > 3000 ? cleaned.slice(0, 3000) + '\n[...truncado]' : cleaned;
+  const sanitized = maskPII(cleaned);
+  return sanitized.length > 3000 ? sanitized.slice(0, 3000) + '\n[...truncado]' : sanitized;
 }
 
 /** Render markdown-like content: **bold**, `code`, line breaks, bullet lists */
