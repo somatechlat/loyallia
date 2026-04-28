@@ -56,6 +56,9 @@ django-anymail==11.1
 # Configuration
 python-decouple==3.8
 
+# Error tracking
+sentry-sdk[django]==2.14.0
+
 # WSGI server
 gunicorn==22.0.0
 

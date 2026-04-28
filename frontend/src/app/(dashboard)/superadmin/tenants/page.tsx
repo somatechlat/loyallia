@@ -3,16 +3,13 @@ import { useEffect, useState, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import api from '@/lib/api';
 
 const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), { ssr: false });
 const LocationPicker = dynamic(() => import('@/components/maps/LocationPicker'), { ssr: false });
 
-const api = (path: string, opts?: RequestInit) => {
-  const token = Cookies.get('access_token');
-  return fetch(`/api/v1/admin${path}`, {
-    ...opts,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...opts?.headers },
-  });
+const adminApi = (path: string, opts?: RequestInit) => {
+  return api(`/api/v1/admin${path}`, opts);
 };
 
 const INDUSTRIES = [

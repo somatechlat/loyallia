@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import dynamic from 'next/dynamic';
-import Cookies from 'js-cookie';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
@@ -27,14 +27,6 @@ const emptyLocation: Omit<LocationData, 'id'> = {
   is_active: true, is_primary: false,
 };
 
-const api = (path: string, opts?: RequestInit) => {
-  const token = Cookies.get('access_token');
-  return fetch(`/api/v1/tenants${path}`, {
-    ...opts,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...opts?.headers },
-  });
-};
-
 export default function LocationsPage() {
   const { user } = useAuth();
   const [locations, setLocations] = useState<LocationData[]>([]);
@@ -49,8 +41,7 @@ export default function LocationsPage() {
   const loadLocations = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api('/locations/');
-      const data = await res.json();
+      const { data } = await api.get('/api/v1/tenants/locations/');
       setLocations(Array.isArray(data) ? data : data?.items || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -81,12 +72,10 @@ export default function LocationsPage() {
     setSaving(true);
     try {
       if (showCreate) {
-        const res = await api('/locations/', { method: 'POST', body: JSON.stringify(form) });
-        if (!res.ok) throw new Error(await res.text());
+        await api.post('/api/v1/tenants/locations/', form);
         toast.success('Sucursal creada exitosamente');
       } else if (selectedLoc) {
-        const res = await api(`/locations/${selectedLoc.id}/`, { method: 'PATCH', body: JSON.stringify(form) });
-        if (!res.ok) throw new Error(await res.text());
+        await api.patch(`/api/v1/tenants/locations/${selectedLoc.id}/`, form);
         toast.success('Sucursal actualizada');
       }
       closeModal();
@@ -105,8 +94,7 @@ export default function LocationsPage() {
     if (!selectedLoc) return;
     setShowDeleteConfirm(false);
     try {
-      const res = await api(`/locations/${selectedLoc.id}/`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(await res.text());
+      await api.delete(`/api/v1/tenants/locations/${selectedLoc.id}/`);
       toast.success('Sucursal eliminada');
       closeModal();
       await loadLocations();
@@ -115,10 +103,7 @@ export default function LocationsPage() {
 
   const handleToggleActive = async (loc: LocationData) => {
     try {
-      await api(`/locations/${loc.id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify({ is_active: !loc.is_active }),
-      });
+      await api.patch(`/api/v1/tenants/locations/${loc.id}/`, { is_active: !loc.is_active });
       toast.success(loc.is_active ? 'Sucursal desactivada' : 'Sucursal activada');
       await loadLocations();
     } catch { toast.error('Error al cambiar estado'); }

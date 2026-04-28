@@ -1,15 +1,12 @@
-'use client';
 import { useState, useEffect } from 'react';
 import { automationApi, programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import toast from 'react-hot-toast';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface Automation {
   id: string; name: string; description: string; trigger: string;
   action: string; is_active: boolean; total_executions: number;
-  last_executed: string | null; trigger_config: any; action_config: any;
+  last_executed: string | null; trigger_config: Record<string, unknown>; action_config: Record<string, unknown>;
   cooldown_hours: number; max_executions_per_day: number | null;
 }
 
@@ -143,7 +140,7 @@ export default function AutomationPage() {
     load();
     programsApi.list().then(res => {
       const items = Array.isArray(res.data) ? res.data : res.data.items || [];
-      setPrograms(items.map((p: any) => ({ id: p.id, name: p.name, card_type: p.card_type })));
+      setPrograms(items.map((p: { id: string; name: string; card_type: string }) => ({ id: p.id, name: p.name, card_type: p.card_type })));
     }).catch(() => {});
   }, []);
 

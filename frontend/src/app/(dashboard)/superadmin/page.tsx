@@ -16,16 +16,11 @@ interface LocationPin {
   id: string; name: string; lat: number; lng: number; city?: string; address?: string; is_active?: boolean;
 }
 import { useAuth } from '@/lib/auth';
-import Cookies from 'js-cookie';
+import api from '@/lib/api';
 import dynamic from 'next/dynamic';
 
 // Leaflet map loaded dynamically (SSR-incompatible)
 const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), { ssr: false });
-
-const api = (path: string) => {
-  const token = Cookies.get('access_token');
-  return fetch(`/api/v1/admin${path}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
-};
 
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
@@ -35,11 +30,11 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     Promise.all([
-      api('/platform/metrics/'),
-      api('/platform/locations/'),
+      api.get('/api/v1/admin/platform/metrics/'),
+      api.get('/api/v1/admin/platform/locations/'),
     ]).then(([m, locs]) => {
-      setMetrics(m);
-      setLocations(locs || []);
+      setMetrics(m.data);
+      setLocations(locs.data || []);
     }).catch(console.error)
       .finally(() => setLoading(false));
   }, []);

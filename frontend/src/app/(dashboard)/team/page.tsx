@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import Cookies from 'js-cookie';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface TeamMember {
@@ -19,13 +19,9 @@ export default function TeamPage() {
   const [form, setForm] = useState({ email: '', first_name: '', last_name: '', role: 'MANAGER', send_email: true });
   const [createdPassword, setCreatedPassword] = useState<string | null>(null);
 
-  const token = Cookies.get('access_token');
-  const headers: HeadersInit = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
   const fetchTeam = () => {
-    fetch('/api/v1/tenants/team/', { headers })
-      .then(r => r.json())
-      .then(data => setMembers((data || []).filter((m: TeamMember) => m.role !== 'SUPER_ADMIN')))
+    api.get('/api/v1/tenants/team/')
+      .then(({ data }) => setMembers((data || []).filter((m: TeamMember) => m.role !== 'SUPER_ADMIN')))
       .catch(console.error)
       .finally(() => setLoading(false));
   };
@@ -39,12 +35,7 @@ export default function TeamPage() {
     e.preventDefault();
     const toastId = toast.loading('Invitando...');
     try {
-      const res = await fetch('/api/v1/tenants/team/', {
-        method: 'POST', headers,
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.message || 'Error');
+      const { data } = await api.post('/api/v1/tenants/team/', form);
       toast.success('Miembro creado exitosamente', { id: toastId });
       setCreatedPassword(data.temp_password || null);
       setInviting(false);
@@ -59,12 +50,7 @@ export default function TeamPage() {
   const handleUpdate = async (memberId: string) => {
     const toastId = toast.loading('Actualizando...');
     try {
-      const res = await fetch(`/api/v1/tenants/team/${memberId}/`, {
-        method: 'PATCH', headers,
-        body: JSON.stringify(editForm),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.message || 'Error');
+      await api.patch(`/api/v1/tenants/team/${memberId}/`, editForm);
       toast.success('Miembro actualizado', { id: toastId });
       setEditingId(null);
       fetchTeam();
@@ -78,11 +64,7 @@ export default function TeamPage() {
     if (!confirm(`Estas seguro de eliminar a ${memberEmail}? Esta accion no se puede deshacer.`)) return;
     const toastId = toast.loading('Eliminando...');
     try {
-      const res = await fetch(`/api/v1/tenants/team/${memberId}/`, {
-        method: 'DELETE', headers,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.message || 'Error');
+      await api.delete(`/api/v1/tenants/team/${memberId}/`);
       toast.success('Miembro eliminado', { id: toastId });
       fetchTeam();
     } catch (err: unknown) {
@@ -94,11 +76,7 @@ export default function TeamPage() {
   const toggleActive = async (member: TeamMember) => {
     const toastId = toast.loading(member.is_active ? 'Desactivando...' : 'Activando...');
     try {
-      const res = await fetch(`/api/v1/tenants/team/${member.id}/`, {
-        method: 'PATCH', headers,
-        body: JSON.stringify({ is_active: !member.is_active }),
-      });
-      if (!res.ok) throw new Error('Error');
+      await api.patch(`/api/v1/tenants/team/${member.id}/`, { is_active: !member.is_active });
       toast.success(member.is_active ? 'Miembro desactivado' : 'Miembro activado', { id: toastId });
       fetchTeam();
     } catch {

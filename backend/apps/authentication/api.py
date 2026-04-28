@@ -129,7 +129,11 @@ def login(request, payload: LoginIn):
     "/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso"
 )
 def refresh_token(request, payload: RefreshIn):
-    """Validates a refresh token and issues a new access token."""
+    """Validates a refresh token and issues a new access token.
+
+    B-002: Implements refresh token rotation — old token is revoked after use
+    and a new refresh token is issued. Stolen tokens become single-use.
+    """
     token_hash = hash_token(payload.refresh_token)
     try:
         db_token = RefreshToken.objects.select_related("user__tenant").get(
@@ -144,12 +148,14 @@ def refresh_token(request, payload: RefreshIn):
     if not user.is_active:
         raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
 
-    access = create_access_token(
-        user_id=str(user.id),
-        tenant_id=str(user.tenant_id) if user.tenant_id else None,
-        role=user.role,
-    )
-    return RefreshOut(access_token=access, token_type="bearer")
+    # B-002: Revoke the old refresh token (one-time use)
+    db_token.revoked_at = dj_timezone.now()
+    db_token.save(update_fields=["revoked_at"])
+
+    # Issue new tokens (access + refresh rotation)
+    from apps.authentication.helpers import issue_tokens
+
+    return issue_tokens(user)
 
 
 @router.post("/logout/", auth=jwt_auth, response=MessageOut, summary="Cerrar sesion")
@@ -169,7 +175,23 @@ def logout(request, payload: LogoutIn):
     summary="Solicitar restablecimiento de contrasena",
 )
 def password_reset_request(request, payload: PasswordResetRequestIn):
-    """Sends a 6-char OTP. Always returns 200 to prevent email enumeration."""
+    """Sends a 6-char OTP. Always returns 200 to prevent email enumeration.
+
+    B-003: Rate limited to 3 requests per hour per email.
+    """
+    from django.core.cache import cache
+
+    # B-003: Rate limit — 3 password reset requests per hour per email
+    cache_key = f"pwd_reset_rate:{payload.email}"
+    attempts = cache.get(cache_key, 0)
+    if attempts >= 3:
+        # Still return 200 to prevent enumeration
+        return MessageOut(
+            success=True,
+            message=get_message("AUTH_PASSWORD_RESET_SENT", email=payload.email),
+        )
+    cache.set(cache_key, attempts + 1, 3600)  # 1 hour TTL
+
     try:
         user = User.objects.get(email=payload.email, is_active=True)
         otp = secrets.token_hex(3).upper()
@@ -382,10 +404,21 @@ def deactivate_user(request, user_id: str):
     summary="Solicitar restablecimiento de contrasena",
 )
 def forgot_password(request, payload: ForgotPasswordIn):
-    """Send a password reset email with a one-time token."""
+    """Send a password reset email with a one-time token.
+
+    B-003: Rate limited to 3 requests per hour per email.
+    """
     from django.contrib.auth.tokens import default_token_generator
+    from django.core.cache import cache
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
+
+    # B-003: Rate limit — 3 password reset requests per hour per email
+    cache_key = f"pwd_reset_rate:{payload.email}"
+    attempts = cache.get(cache_key, 0)
+    if attempts >= 3:
+        return MessageOut(success=True, message=get_message("AUTH_RESET_EMAIL_SENT"))
+    cache.set(cache_key, attempts + 1, 3600)  # 1 hour TTL
 
     try:
         user = User.objects.get(email=payload.email, is_active=True)

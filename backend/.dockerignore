@@ -22,6 +22,7 @@ mediafiles/
 # Development / Test files (NOT in production image)
 seed_sweet_coffee.py
 adrian_passes.py
+seed_*.py
 debug_focus.py
 debug_ui.py
 screenshot.py
