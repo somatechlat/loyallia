@@ -1,3 +1,4 @@
+import React from 'react';
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -27,14 +28,14 @@ const NAV_ICONS: Record<string, string> = {
   plans: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
 };
 
-function NavIcon({ icon, className = 'w-5 h-5' }: { icon: string; className?: string }) {
+const NavIcon = React.memo(function NavIcon({ icon, className = 'w-5 h-5' }: { icon: string; className?: string }) {
   const d = NAV_ICONS[icon] || NAV_ICONS['home'];
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d={d} />
     </svg>
   );
-}
+});
 
 /* ───────── Navigation Per Role ───────── */
 
