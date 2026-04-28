@@ -1,5 +1,20 @@
 'use client';
 import { useEffect, useState } from 'react';
+
+interface PlatformMetrics {
+  total_tenants: number;
+  active_tenants: number;
+  trial_tenants: number;
+  suspended_tenants: number;
+  total_users: number;
+  total_locations: number;
+  total_customers: number;
+  mrr: number;
+  recent_tenants: Array<{ id: string; name: string; city?: string; plan: string; is_active: boolean }>;
+}
+interface LocationPin {
+  id: string; name: string; lat: number; lng: number; city?: string; address?: string; is_active?: boolean;
+}
 import { useAuth } from '@/lib/auth';
 import Cookies from 'js-cookie';
 import dynamic from 'next/dynamic';
@@ -14,8 +29,8 @@ const api = (path: string) => {
 
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
-  const [metrics, setMetrics] = useState<any>(null);
-  const [locations, setLocations] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
+  const [locations, setLocations] = useState<LocationPin[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
