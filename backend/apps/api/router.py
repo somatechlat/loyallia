@@ -21,9 +21,13 @@ api = NinjaAPI(
 # --- Health check (unauthenticated) ---
 @api.get("/health/", auth=None, tags=["System"])
 def health_check(request: HttpRequest):
-    """Comprehensive health check for load balancers and monitoring.
+    """Liveness probe — returns 200 if the process is running."""
+    return {"status": "ok", "version": "1.0.0", "platform": "Loyallia"}
 
-    Verifies: PostgreSQL (via Django ORM), Redis (via cache backend).
+
+@api.get("/health/ready/", auth=None, tags=["System"])
+def readiness_check(request: HttpRequest):
+    """Readiness probe — verifies all dependencies (PostgreSQL, Redis) are healthy.
     Returns HTTP 200 if all dependencies are healthy, HTTP 503 if any are down.
     """
     import time

@@ -392,7 +392,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         "success": True,
         "message": get_message("TEAM_MEMBER_ADDED"),
         "user_id": str(user.id),
-        "temp_password": temp_password,
     }
 
 

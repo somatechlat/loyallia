@@ -510,7 +510,20 @@ def enroll_customer(request, customer_id: str, card_id: str):
 
 
 import csv
+import re as _re
 from django.http import HttpResponse
+
+
+def _sanitize_csv_cell(value: str) -> str:
+    """Sanitize a CSV cell value to prevent CSV injection attacks.
+    Prefixes dangerous characters with a single quote."""
+    if not value:
+        return value
+    value_str = str(value)
+    if value_str and value_str[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + value_str
+    return value_str
+
 
 @router.get("/export/", auth=jwt_auth, summary="Exportar clientes a CSV")
 def export_customers(request):
@@ -535,8 +548,11 @@ def export_customers(request):
     
     for c in customers:
         writer.writerow([
-            str(c.id), c.email, c.first_name, c.last_name, c.phone, c.gender,
-            c.date_of_birth, c.total_spent, c.total_visits, c.notes, c.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            str(c.id), _sanitize_csv_cell(c.email), _sanitize_csv_cell(c.first_name),
+            _sanitize_csv_cell(c.last_name), _sanitize_csv_cell(c.phone),
+            _sanitize_csv_cell(c.gender), c.date_of_birth, c.total_spent,
+            c.total_visits, _sanitize_csv_cell(c.notes),
+            c.created_at.strftime("%Y-%m-%d %H:%M:%S")
         ])
         
     return response

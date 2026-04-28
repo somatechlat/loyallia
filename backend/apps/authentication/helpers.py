@@ -3,6 +3,8 @@ Loyallia — Authentication Helpers
 Internal utility functions for the authentication module.
 """
 
+import hashlib
+import hmac as hmac_module
 import logging
 import re
 from datetime import timedelta
@@ -48,20 +50,25 @@ def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
         logger.error("Failed to send OTP email to %s: %s", email, exc)
 
 
+def _hash_otp(otp: str) -> str:
+    """Hash an OTP using SHA-256 for secure storage."""
+    return hashlib.sha256(otp.encode("utf-8")).hexdigest()
+
+
 def store_otp(email: str, otp: str, purpose: str) -> None:
-    """Store OTP in Django cache with 15-minute TTL."""
+    """Store hashed OTP in Django cache with 15-minute TTL."""
     from django.core.cache import cache
 
-    cache.set(f"otp:{purpose}:{email}", otp, timeout=900)
+    cache.set(f"otp:{purpose}:{email}", _hash_otp(otp), timeout=900)
 
 
 def verify_otp(email: str, otp: str, purpose: str) -> bool:
-    """Verify OTP from cache. Deletes key after verification (single-use)."""
+    """Verify OTP from cache using constant-time comparison. Deletes key after verification (single-use)."""
     from django.core.cache import cache
 
     key = f"otp:{purpose}:{email}"
-    stored = cache.get(key)
-    if stored and stored == otp:
+    stored_hash = cache.get(key)
+    if stored_hash and hmac_module.compare_digest(stored_hash, _hash_otp(otp)):
         cache.delete(key)
         return True
     return False
