@@ -45,8 +45,10 @@ MINIO_SECRET_KEY = get_secret("minio_secret_key", env_fallback="MINIO_ROOT_PASSW
 AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
 STORAGES["default"]["OPTIONS"]["secret_key"] = MINIO_SECRET_KEY
 
-# JWT / Auth tokens — uses SECRET_KEY from Vault
-JWT_SECRET_KEY = SECRET_KEY
+# JWT / Auth tokens — separate key from SECRET_KEY (Vault → env fallback)
+JWT_SECRET_KEY = get_secret("jwt_secret_key", env_fallback="JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    JWT_SECRET_KEY = SECRET_KEY
 
 # Pass HMAC signing
 PASS_HMAC_SECRET = get_secret(

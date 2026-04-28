@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+
 interface ConfirmModalProps {
   title: string;
   message: string;
@@ -22,6 +24,14 @@ export default function ConfirmModal({
     warning: 'bg-amber-500 hover:bg-amber-600 text-white',
     default: 'bg-brand-500 hover:bg-brand-600 text-white',
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
 
   return (
     <div

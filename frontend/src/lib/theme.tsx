@@ -42,13 +42,17 @@ function applyClass(theme: 'light' | 'dark') {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>('system');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem(STORAGE_KEY) as ThemeMode) || 'system';
+    }
+    return 'system';
+  });
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => resolveTheme('system'));
 
   /* Initialise from localStorage on mount */
   useEffect(() => {
     const saved = (localStorage.getItem(STORAGE_KEY) as ThemeMode) || 'system';
-    setModeState(saved);
     const resolved = resolveTheme(saved);
     setTheme(resolved);
     applyClass(resolved);
