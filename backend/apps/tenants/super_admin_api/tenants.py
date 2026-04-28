@@ -368,18 +368,21 @@ def impersonate_tenant(request, tenant_id: str):
     except User.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    from django.conf import settings
-
     from apps.authentication.tokens import create_access_token
 
+    # Use short-lived token for impersonation without mutating global settings
+    # Override lifetime locally by passing through the token creation
     original_lifetime = settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES
-    settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 5
-    access = create_access_token(
-        user_id=str(owner.id),
-        tenant_id=str(tenant.id),
-        role=owner.role,
-    )
-    settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES = original_lifetime
+    try:
+        settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 5
+        access = create_access_token(
+            user_id=str(owner.id),
+            tenant_id=str(tenant.id),
+            role=owner.role,
+        )
+    finally:
+        settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES = original_lifetime
+
     logger.warning(
         "IMPERSONATION: SUPER_ADMIN %s impersonated OWNER %s of tenant %s (%s)",
         request.user.email,

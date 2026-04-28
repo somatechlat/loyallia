@@ -170,7 +170,7 @@ def send_push_notification(
     Send a push notification to a Google Wallet pass using the Add Message API.
     Reference: https://developers.google.com/wallet/generic/use-cases/trigger-push-notifications
     """
-    import requests
+    import httpx
 
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
@@ -217,13 +217,14 @@ def send_push_notification(
     url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}/{object_id}/addMessage"
 
     try:
-        response = requests.post(
+        response = httpx.post(
             url,
             json=message_payload,
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {access_token}",
             },
+            timeout=10.0,
         )
         if response.status_code in (200, 201):
             logger.info(
@@ -247,7 +248,7 @@ def update_loyalty_class(card) -> dict:
     Upsert the Google Wallet Class for a card (PATCH existing, POST if not found).
     Reference: https://developers.google.com/wallet/generic/rest/v1/loyaltyclass/patch
     """
-    import requests
+    import httpx
 
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
@@ -279,15 +280,15 @@ def update_loyalty_class(card) -> dict:
     }
 
     try:
-        patch_resp = requests.patch(
-            f"{base_url}/{class_id}", json=payload, headers=headers
+        patch_resp = httpx.patch(
+            f"{base_url}/{class_id}", json=payload, headers=headers, timeout=10.0
         )
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Class patched successfully: %s", class_id)
             return {"success": True, "action": "patch"}
         if patch_resp.status_code == 404:
             logger.info("Class %s not found — creating via POST", class_id)
-            post_resp = requests.post(base_url, json=payload, headers=headers)
+            post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Class created: %s", class_id)
                 return {"success": True, "action": "create"}
@@ -310,7 +311,7 @@ def send_push_notification_to_class(
     card, header: str, body: str, action_url: str = ""
 ) -> dict:
     """Send a push notification to EVERYONE holding this card class."""
-    import requests
+    import httpx
 
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
@@ -348,10 +349,11 @@ def send_push_notification_to_class(
     url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}/{class_id}/addMessage"
 
     try:
-        response = requests.post(
+        response = httpx.post(
             url,
             json=message_payload,
             headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10.0,
         )
         return {
             "success": response.status_code in (200, 201),

@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# Django
+*.log
+db.sqlite3
+staticfiles/
+mediafiles/
+
+# Development / Test files (NOT in production image)
+seed_sweet_coffee.py
+adrian_passes.py
+debug_focus.py
+debug_ui.py
+screenshot.py
+test-api.js
+test-campaign.js
+auth.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docs
+docs/
+*.md
+*.pptx
+
+# Tests
+tests/
+*_test.py
+test_*.py
+
+# Certs (mounted at runtime, not baked in)
+certs/

@@ -430,23 +430,31 @@ class CustomerPass(models.Model):
         from apps.transactions.models import TransactionType
 
         tiers = self.card.get_metadata_field("tiers", [])
-        total_spent = self.get_pass_field("total_spent_at_business", 0)
 
-        # Accumulate spend
-        new_total = float(total_spent) + float(amount)
-        self.set_pass_field("total_spent_at_business", new_total)
+        # Atomically read and update total_spent_at_business inside select_for_update
+        # to prevent race conditions under concurrent scans.
+        from django.db import transaction as db_transaction
 
-        # Determine current discount tier
-        applicable_tier = None
-        for tier in sorted(tiers, key=lambda t: t.get("threshold", 0)):
-            if new_total >= tier.get("threshold", 0):
-                applicable_tier = tier
+        with db_transaction.atomic():
+            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+            total_spent = locked.pass_data.get("total_spent_at_business", 0)
+            new_total = float(total_spent) + float(amount)
 
-        discount_pct = applicable_tier["discount_percentage"] if applicable_tier else 0
-        tier_name = applicable_tier["tier_name"] if applicable_tier else ""
+            # Determine current discount tier
+            applicable_tier = None
+            for tier in sorted(tiers, key=lambda t: t.get("threshold", 0)):
+                if new_total >= tier.get("threshold", 0):
+                    applicable_tier = tier
 
-        self.set_pass_field("current_discount_percentage", discount_pct)
-        self.set_pass_field("current_tier_name", tier_name)
+            discount_pct = applicable_tier["discount_percentage"] if applicable_tier else 0
+            tier_name = applicable_tier["tier_name"] if applicable_tier else ""
+
+            locked.pass_data["total_spent_at_business"] = new_total
+            locked.pass_data["current_discount_percentage"] = discount_pct
+            locked.pass_data["current_tier_name"] = tier_name
+            locked.save(update_fields=["pass_data", "last_updated"])
+
+        self.refresh_from_db(fields=["pass_data", "last_updated"])
 
         return {
             "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,

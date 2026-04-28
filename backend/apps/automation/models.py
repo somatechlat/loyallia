@@ -184,12 +184,12 @@ class Automation(models.Model):
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.error(f"Automation execution failed: {str(e)}")
+            logger.error("Automation execution failed: %s", e)
             return False
 
     def _execute_send_notification(self, customer, context) -> bool:
         """Send notification to customer."""
-        from apps.notifications.models import NotificationType
+        from apps.notifications.models import Notification, NotificationChannel, NotificationType
         from apps.notifications.service import NotificationService
 
         title = self.action_config.get("title", "Notificación automática")
@@ -198,14 +198,16 @@ class Automation(models.Model):
             "notification_type", NotificationType.SYSTEM
         )
 
-        notification = NotificationService.send_notification(
+        notification = Notification.objects.create(
+            tenant=self.tenant,
             customer=customer,
+            notification_type=notification_type,
+            channel=NotificationChannel.PUSH,
             title=title,
             message=message,
-            notification_type=notification_type,
-            tenant=self.tenant,
         )
-        return notification is not None
+
+        return NotificationService.send_notification(notification)
 
     def _execute_send_email(self, customer, context) -> bool:
         """Send email to customer."""

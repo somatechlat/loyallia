@@ -165,7 +165,7 @@ class NotificationService:
                 notification.mark_as_sent()
                 return True
         except Exception as e:
-            logger.error(f"Failed to send notification {notification.id}: {str(e)}")
+            logger.error("Failed to send notification %s: %s", notification.id, e)
             return False
 
         return False
@@ -213,7 +213,7 @@ class NotificationService:
             notification.mark_as_sent()
             return True
         except Exception as e:
-            logger.error(f"Failed to send email: {str(e)}")
+            logger.error("Failed to send email: %s", e)
             return False
 
     @staticmethod
@@ -233,7 +233,7 @@ class NotificationService:
             notification.mark_as_sent()
             return True
         except Exception as e:
-            logger.error(f"Failed to send SMS: {str(e)}")
+            logger.error("Failed to send SMS: %s", e)
             return False
 
     @staticmethod

@@ -81,3 +81,4 @@ frontend/.auth/
 
 # Agents (credentials, deployment docs — NEVER commit)
 .agents/
+backend/auth.json

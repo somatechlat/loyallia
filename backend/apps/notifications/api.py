@@ -56,6 +56,13 @@ class SendNotificationSchema(BaseModel):
 
 
 # ============ Device Management ============
+def _get_customer_or_403(request):
+    """Resolve the Customer object for the authenticated user, or raise 403."""
+    if not hasattr(request.user, "customer") or request.user.customer is None:
+        raise HttpError(403, get_message("CUSTOMER_REQUIRED"))
+    return request.user.customer
+
+
 @router.post(
     "/devices/register/",
     auth=jwt_auth,
@@ -63,9 +70,7 @@ class SendNotificationSchema(BaseModel):
 )
 def register_device(request, data: PushDeviceSchema):
     """Register a device for push notifications."""
-    customer = request.user.customer
-    if not customer:
-        raise HttpError(403, get_message("CUSTOMER_REQUIRED"))
+    customer = _get_customer_or_403(request)
 
     # Get or create device
     device, created = PushDevice.objects.update_or_create(
@@ -90,10 +95,11 @@ def register_device(request, data: PushDeviceSchema):
 @router.delete("/devices/{device_id}/", auth=jwt_auth, summary="Unregister device")
 def unregister_device(request, device_id: str):
     """Unregister a device from push notifications."""
+    customer = _get_customer_or_403(request)
     device = get_object_or_404(PushDevice, id=device_id)
 
     # Verify ownership
-    if device.customer.id != request.user.customer.id:
+    if device.customer.id != customer.id:
         raise HttpError(403, get_message("DEVICE_NOT_FOUND"))
 
     device.is_active = False
@@ -105,9 +111,7 @@ def unregister_device(request, device_id: str):
 @router.get("/devices/", auth=jwt_auth, summary="List registered devices")
 def list_devices(request):
     """List all registered devices for current user."""
-    customer = request.user.customer
-    if not customer:
-        raise HttpError(403, get_message("CUSTOMER_REQUIRED"))
+    customer = _get_customer_or_403(request)
 
     devices = PushDevice.objects.filter(customer=customer, is_active=True)
 

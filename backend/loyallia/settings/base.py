@@ -259,6 +259,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=8, minute=30),
         "kwargs": {"days_threshold": 30},
     },
+    "cleanup-expired-refresh-tokens": {
+        "task": "apps.authentication.tasks.cleanup_expired_tokens",
+        "schedule": crontab(hour=3, minute=0),  # Daily at 3 AM
+        "options": {"queue": "default"},
+    },
 }
 
 # =============================================================================
@@ -369,6 +374,7 @@ CORS_ALLOWED_ORIGINS = config(
     cast=Csv(),
 )
 CORS_ALLOW_CREDENTIALS = True
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours — reduce preflight overhead
 
 # =============================================================================
 # SECURITY HEADERS (enforced in production settings)
