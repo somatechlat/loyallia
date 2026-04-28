@@ -111,7 +111,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "33900:5432"
+      - "127.0.0.1:33900:5432"
     networks:
       - loyallia-net
     restart: unless-stopped
@@ -150,7 +150,7 @@ services:
       LOG_CONNECTIONS: "1"
       LOG_DISCONNECTIONS: "1"
     ports:
-      - "33901:6432"
+      - "127.0.0.1:33901:6432"
     depends_on:
       postgres:
         condition: service_healthy
@@ -186,7 +186,7 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "33902:6379"
+      - "127.0.0.1:33902:6379"
     networks:
       - loyallia-net
     restart: unless-stopped
@@ -217,8 +217,8 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "33903:9000"
-      - "33904:9001"
+      - "127.0.0.1:33903:9000"
+      - "127.0.0.1:33904:9001"
     networks:
       - loyallia-net
     restart: unless-stopped
@@ -306,7 +306,7 @@ services:
         reservations:
           memory: 768M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -494,7 +494,7 @@ services:
     environment:
       <<: *common-env
     ports:
-      - "33907:5555"
+      - "127.0.0.1:33907:5555"
     depends_on:
       - redis
     networks:
@@ -522,7 +522,7 @@ services:
     volumes:
       - vault_data:/vault/data
     ports:
-      - "33908:8200"
+      - "127.0.0.1:33908:8200"
     networks:
       - loyallia-net
     restart: unless-stopped
