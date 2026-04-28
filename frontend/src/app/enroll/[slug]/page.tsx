@@ -228,7 +228,6 @@ export default function EnrollPage() {
     const baseUrl = getBaseUrl();
     const redirectUrl = `${baseUrl}${enrollResult.wallet_urls.google}?redirect=true`;
     
-    console.log(`[GoogleWallet] Redirecting directly to: ${redirectUrl}`);
     window.location.href = redirectUrl;
   };
 

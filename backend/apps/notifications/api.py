@@ -174,10 +174,11 @@ def get_notifications(
 )
 def mark_notification_read(request, notification_id: str):
     """Mark a notification as read."""
+    customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
     # Verify ownership
-    if notification.customer.id != request.user.customer.id:
+    if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
     notification.mark_as_read()
@@ -192,10 +193,11 @@ def mark_notification_read(request, notification_id: str):
 )
 def mark_notification_clicked(request, notification_id: str):
     """Mark a notification as clicked (action taken)."""
+    customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
     # Verify ownership
-    if notification.customer.id != request.user.customer.id:
+    if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
     notification.mark_as_clicked()
@@ -208,10 +210,11 @@ def mark_notification_clicked(request, notification_id: str):
 )
 def delete_notification(request, notification_id: str):
     """Delete a notification."""
+    customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
     # Verify ownership
-    if notification.customer.id != request.user.customer.id:
+    if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
     notification.delete()

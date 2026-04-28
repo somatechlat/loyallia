@@ -34,6 +34,20 @@ class CardCreateIn(BaseModel):
     metadata: dict | None = {}
     locations: list | None = []
 
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata_size(cls, v: dict | None) -> dict | None:
+        """B-007: Limit metadata JSON to 10KB to prevent abuse."""
+        if v is not None:
+            import json
+
+            size = len(json.dumps(v))
+            if size > 10240:
+                raise ValueError(
+                    f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
+                )
+        return v
+
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:

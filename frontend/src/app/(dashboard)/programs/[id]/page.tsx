@@ -37,8 +37,30 @@ const DESIGN_TEMPLATES = [
 
 
 /** Edit modal — extracted to avoid unconditional rendering (PERF-006) */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function EditProgramModal({ id, program, onClose, onSaved }: { id: string; program: any; onClose: () => void; onSaved: () => void }) {
+interface ProgramData {
+  id: string;
+  name: string;
+  description: string;
+  card_type: string;
+  background_color: string;
+  text_color: string;
+  logo_url: string;
+  strip_image_url: string;
+  icon_url: string;
+  barcode_type: string;
+  metadata: Record<string, unknown>;
+}
+
+interface ProgramStats {
+  active_passes?: number;
+  active_members?: number;
+  transactions?: number;
+  total_rewards_redeemed?: number;
+  engagement_rate?: number;
+  enrollments?: number;
+}
+
+function EditProgramModal({ id, program, onClose, onSaved }: { id: string; program: ProgramData; onClose: () => void; onSaved: () => void }) {
   const [editForm, setEditForm] = useState({
     name: program.name || '',
     description: program.description || '',
@@ -396,7 +418,6 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
 }
 
 /* ─── Main Page ────────────────────────────────────────────────────────── */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export default function ProgramDetailsPage({ params }: { params: { id: string } }) {
   const [appUrl, setAppUrl] = useState('');
   useEffect(() => {
@@ -408,8 +429,8 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   const { user } = useAuth();
   const isOwner = user?.role === 'OWNER';
 
-  const [program, setProgram] = useState<any>(null);
-  const [stats, setStats] = useState<any>(null);
+  const [program, setProgram] = useState<ProgramData | null>(null);
+  const [stats, setStats] = useState<ProgramStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [showEdit, setShowEdit] = useState(false);

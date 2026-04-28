@@ -1,21 +1,28 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
+import api from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
 
-const api = (path: string) => {
-  const token = Cookies.get('access_token');
-  return fetch(`/api/v1/admin${path}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
-};
-
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
+interface TenantMetric {
+  id: string;
+  name: string;
+  plan: string;
+  is_active: boolean;
+  user_count: number;
+  location_count: number;
+  created_at: string;
+  industry?: string;
+  city?: string;
+}
+
 export default function SuperAdminMetrics() {
-  const [tenants, setTenants] = useState<Record<string, unknown>[]>([]);
+  const [tenants, setTenants] = useState<TenantMetric[]>([]);
   const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
@@ -27,8 +34,8 @@ export default function SuperAdminMetrics() {
   const cardShadow = isDark ? {} : { boxShadow: '0 4px 30px rgba(0,0,0,0.05)' };
 
   useEffect(() => {
-    Promise.all([api('/tenants/'), api('/platform/metrics/')])
-      .then(([t, m]) => { setTenants(t || []); setMetrics(m); })
+    Promise.all([api.get('/api/v1/admin/tenants/'), api.get('/api/v1/admin/platform/metrics/')])
+      .then(([t, m]) => { setTenants(t.data || []); setMetrics(m.data); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -51,7 +58,7 @@ export default function SuperAdminMetrics() {
   ].filter(d => d.value > 0);
 
   const industryData = Object.entries(
-    tenants.reduce((acc: Record<string, number>, t: any) => {
+    tenants.reduce((acc: Record<string, number>, t: TenantMetric) => {
       const ind = (t.industry || 'other').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
       acc[ind] = (acc[ind] || 0) + 1;
       return acc;
@@ -59,7 +66,7 @@ export default function SuperAdminMetrics() {
   ).map(([name, value]) => ({ name, value })).sort((a, b) => (b.value as number) - (a.value as number));
 
   const cityData = Object.entries(
-    tenants.reduce((acc: Record<string, number>, t: any) => {
+    tenants.reduce((acc: Record<string, number>, t: TenantMetric) => {
       const city = t.city || 'Sin Ciudad';
       acc[city] = (acc[city] || 0) + 1;
       return acc;
@@ -90,8 +97,8 @@ export default function SuperAdminMetrics() {
     return keys.map(k => ({ month: k, ...months[k] }));
   })();
 
-  const totalUsers = tenants.reduce((s: number, t: any) => s + (t.user_count || 0), 0);
-  const totalLocations = tenants.reduce((s: number, t: any) => s + (t.location_count || 0), 0);
+  const totalUsers = tenants.reduce((s: number, t: TenantMetric) => s + (t.user_count || 0), 0);
+  const totalLocations = tenants.reduce((s: number, t: TenantMetric) => s + (t.location_count || 0), 0);
 
   return (
     <div className="space-y-6">

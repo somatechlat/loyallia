@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
-import Cookies from 'js-cookie';
+import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface TenantProfile {
@@ -40,13 +40,9 @@ export default function SettingsPage() {
   const logoInputRef = useRef<HTMLInputElement>(null);
 
 
-  const token = Cookies.get('access_token');
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
   const loadTenant = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/tenants/me/', { headers });
-      const data = await res.json();
+      const { data } = await api.get('/api/v1/tenants/me/');
       setTenant(data);
       setForm({
         name: data.name || '',
@@ -70,12 +66,7 @@ export default function SettingsPage() {
     setSaving(true);
     const toastId = toast.loading('Guardando cambios...');
     try {
-      const res = await fetch('/api/v1/tenants/me/', {
-        method: 'PATCH', headers,
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) throw new Error('Error al guardar');
-      const updated = await res.json();
+      const { data: updated } = await api.patch('/api/v1/tenants/me/', form);
       setTenant(updated);
       toast.success('Configuración actualizada', { id: toastId });
     } catch (err: unknown) {
@@ -97,17 +88,10 @@ export default function SettingsPage() {
     setChangingPw(true);
     const toastId = toast.loading('Actualizando contraseña...');
     try {
-      const res = await fetch('/api/v1/auth/change-password/', {
-        method: 'POST', headers,
-        body: JSON.stringify({
-          current_password: passwordForm.current,
-          new_password: passwordForm.new_password,
-        }),
+      await api.post('/api/v1/auth/change-password/', {
+        current_password: passwordForm.current,
+        new_password: passwordForm.new_password,
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || data.message || 'Error al cambiar contraseña');
-      }
       toast.success('Contraseña actualizada', { id: toastId });
       setPasswordForm({ current: '', new_password: '', confirm: '' });
       setShowPwSection(false);
@@ -215,15 +199,11 @@ export default function SettingsPage() {
                   try {
                     const fd = new FormData();
                     fd.append('file', file);
-                    const res = await fetch('/api/v1/upload/', {
-                      method: 'POST', body: fd,
-                      headers: { Authorization: `Bearer ${Cookies.get('access_token')}` },
+                    const { data } = await api.post('/api/v1/upload/', fd, {
+                      headers: { 'Content-Type': 'multipart/form-data' },
                     });
-                    if (res.ok) {
-                      const data = await res.json();
-                      setForm(f => ({ ...f, logo_url: data.url || '' }));
-                      toast.success('Logo subido correctamente');
-                    }
+                    setForm(f => ({ ...f, logo_url: data.url || '' }));
+                    toast.success('Logo subido correctamente');
                   } catch { toast('Logo guardado localmente', { icon: 'i' }); }
                   finally { setLogoUploading(false); }
                 }} />

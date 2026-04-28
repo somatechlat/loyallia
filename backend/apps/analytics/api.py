@@ -132,7 +132,7 @@ def get_customer_analytics(
     # when transactions occur. The synchronous O(N) update loop has been removed for production scale.
 
     # Query with filters
-    query = CustomerAnalytics.objects.filter(tenant=tenant)
+    query = CustomerAnalytics.objects.filter(tenant=tenant).select_related("customer")
 
     if segment:
         query = query.filter(segment=segment)
@@ -381,11 +381,11 @@ def get_segmentation_analytics(request):
     # Segment metrics rely on background asynchronous updates to ensure database stability.
 
     # Group by segment
-    customers = Customer.objects.filter(tenant=tenant)
-    total_customers = customers.count()
+    total_customers = Customer.objects.filter(tenant=tenant).count()
 
     segments = (
         CustomerAnalytics.objects.filter(tenant=tenant)
+        .select_related("customer")  # B-010: avoid N+1
         .values("segment")
         .annotate(
             count=Count("id"),

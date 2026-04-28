@@ -61,6 +61,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "common.middleware.RequestIDMiddleware",  # B-011: Request tracing
     "common.rate_limit.RateLimitMiddleware",  # Rate limiting (Redis-backed, fails open)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # i18n language detection
@@ -306,7 +307,7 @@ STORAGES = {
 JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 60  # FR-008: 60 minutes per spec
 JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 JWT_ALGORITHM = "HS256"
-JWT_SECRET_KEY = config("SECRET_KEY")  # Uses Django SECRET_KEY
+JWT_SECRET_KEY = config("JWT_SECRET_KEY", default=config("SECRET_KEY"))  # B-001: Separate from Django SECRET_KEY
 
 # =============================================================================
 # PASS SIGNING
@@ -382,6 +383,18 @@ CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours — reduce preflight overhead
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "SAMEORIGIN"
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+
+# Content-Security-Policy — set via custom middleware or Nginx in production
+# Default CSP header (can be overridden in production settings)
+CSP_DEFAULT_SRC = "'self'"
+CSP_SCRIPT_SRC = "'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com"
+CSP_STYLE_SRC = "'self' 'unsafe-inline'"
+CSP_IMG_SRC = "'self' data: https:"
+CSP_FONT_SRC = "'self' https://fonts.gstatic.com"
+CSP_CONNECT_SRC = "'self' https://oauth2.googleapis.com"
+CSP_FRAME_SRC = "'self' https://accounts.google.com"
 
 # =============================================================================
 # BUSINESS RULES CONFIGURATION
@@ -407,6 +420,22 @@ GOOGLE_OAUTH_REDIRECT_URI = config(
 
 APP_URL = config("APP_URL", default="http://localhost")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
+
+# =============================================================================
+# SENTRY — Error Tracking (B-013)
+# =============================================================================
+SENTRY_DSN = config("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=config("SENTRY_TRACES_SAMPLE_RATE", default=0.1, cast=float),
+        send_default_pii=False,
+        environment=config("SENTRY_ENVIRONMENT", default="production"),
+    )
 
 # =============================================================================
 # LOGGING — Structured JSON for production log aggregation (ELK / CloudWatch)
