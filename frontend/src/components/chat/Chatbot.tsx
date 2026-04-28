@@ -190,6 +190,9 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const msgIdRef = useRef(0);
+  const nextId = () => `msg-${++msgIdRef.current}`;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -202,6 +205,11 @@ export default function Chatbot() {
     }
   }, [isOpen]);
 
+  // Cleanup AbortController on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -209,7 +217,7 @@ export default function Chatbot() {
     const userMessage = input.trim();
     setInput('');
 
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', content: userMessage }]);
+    setMessages((prev) => [...prev, { id: nextId(), role: 'user', content: userMessage }]);
     setIsLoading(true);
 
     try {
@@ -228,10 +236,12 @@ export default function Chatbot() {
         `Pregunta del usuario: ${userMessage}`,
       ].join('\n');
 
+      abortRef.current = new AbortController();
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: contextEnrichedMessage, context_id: contextId }),
+        signal: abortRef.current.signal,
       });
 
       const data = await response.json();
@@ -239,18 +249,18 @@ export default function Chatbot() {
         if (data.context_id) setContextId(data.context_id);
         setMessages((prev) => [
           ...prev,
-          { id: Date.now().toString(), role: 'assistant', content: data.response },
+          { id: nextId(), role: 'assistant', content: data.response },
         ]);
       } else {
         setMessages((prev) => [
           ...prev,
-          { id: Date.now().toString(), role: 'assistant', content: 'Lo siento, ocurrió un error al procesar tu solicitud.' },
+          { id: nextId(), role: 'assistant', content: 'Lo siento, ocurrió un error al procesar tu solicitud.' },
         ]);
       }
     } catch {
       setMessages((prev) => [
         ...prev,
-        { id: Date.now().toString(), role: 'assistant', content: 'Lo siento, hubo un problema de conexión.' },
+        { id: nextId(), role: 'assistant', content: 'Lo siento, hubo un problema de conexión.' },
       ]);
     } finally {
       setIsLoading(false);

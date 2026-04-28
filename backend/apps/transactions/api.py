@@ -53,17 +53,13 @@ def validate_qr(request, data: ScanValidateIn):
     if not data.qr_code:
         raise HttpError(400, get_message("PASS_QR_REQUIRED"))
 
-    # Find pass by QR code
+    # Find pass by QR code with tenant isolation
     try:
         pass_obj = CustomerPass.objects.select_related(
             "customer", "card", "card__tenant"
-        ).get(qr_code=data.qr_code, is_active=True)
+        ).get(qr_code=data.qr_code, is_active=True, card__tenant=request.tenant)
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
-
-    # Check tenant access
-    if pass_obj.card.tenant != request.tenant:
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     # Return pass information
     return {
@@ -91,61 +87,61 @@ def transact(request, data: ScanTransactIn):
     if not data.qr_code:
         raise HttpError(400, get_message("PASS_INVALID_QR"))
 
-    # Find pass
+    # Find pass with tenant isolation
     try:
         pass_obj = CustomerPass.objects.select_related(
             "customer", "card", "card__tenant"
-        ).get(qr_code=data.qr_code, is_active=True)
+        ).get(qr_code=data.qr_code, is_active=True, card__tenant=request.tenant)
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
-
-    # Check tenant access
-    if pass_obj.card.tenant != request.tenant:
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     # Process transaction using pass business logic
     from decimal import Decimal
 
+    from django.db import transaction as db_transaction
+
     amount_decimal = Decimal(str(data.amount))
-    result = pass_obj.process_transaction(
-        transaction_type="",  # Will be set by the method
-        amount=amount_decimal,
-        quantity=1,
-    )
 
-    # Create transaction record
-    transaction_data = _serialize_json_value(
-        {
-            "qr_code": data.qr_code,
-            "amount": data.amount,
-            **result,  # Include all result data
-        }
-    )
-    transaction = Transaction.objects.create(
-        tenant=request.tenant,
-        customer_pass=pass_obj,
-        staff=request.user,
-        location=getattr(request, "location", None),
-        transaction_type=result["transaction_type"],
-        amount=data.amount if data.amount > 0 else None,
-        quantity=result.get("quantity", 1),
-        notes=data.notes,
-        transaction_data=transaction_data,
-    )
+    with db_transaction.atomic():
+        result = pass_obj.process_transaction(
+            transaction_type="",  # Will be set by the method
+            amount=amount_decimal,
+            quantity=1,
+        )
 
-    # Update customer stats atomically via F() to prevent lost updates
-    # under concurrent scans from multiple POS terminals.
-    from django.db.models import F
+        # Create transaction record
+        transaction_data = _serialize_json_value(
+            {
+                "qr_code": data.qr_code,
+                "amount": data.amount,
+                **result,  # Include all result data
+            }
+        )
+        transaction = Transaction.objects.create(
+            tenant=request.tenant,
+            customer_pass=pass_obj,
+            staff=request.user,
+            location=getattr(request, "location", None),
+            transaction_type=result["transaction_type"],
+            amount=data.amount if data.amount > 0 else None,
+            quantity=result.get("quantity", 1),
+            notes=data.notes,
+            transaction_data=transaction_data,
+        )
 
-    Customer.objects.filter(pk=pass_obj.customer.pk).update(
-        total_visits=F("total_visits") + 1,
-        total_spent=F("total_spent") + amount_decimal,
-        last_visit=transaction.created_at,
-    )
+        # Update customer stats atomically via F() to prevent lost updates
+        # under concurrent scans from multiple POS terminals.
+        from django.db.models import F
+
+        Customer.objects.filter(pk=pass_obj.customer.pk).update(
+            total_visits=F("total_visits") + 1,
+            total_spent=F("total_spent") + amount_decimal,
+            last_visit=transaction.created_at,
+        )
 
     # Cache invalidation is delegated to the 5-minute TTL defined in apps/analytics/advanced_api.py.
     # Aggressively deleting the cache here causes 'thundering herd' database load under extreme scale.
-    
+
     # Trigger async tenant analytics recalculation
     from apps.analytics.tasks import update_tenant_analytics
     update_tenant_analytics.apply_async(args=[str(request.tenant.id)], countdown=2)
@@ -206,16 +202,14 @@ def search_customer(request, query: str):
         | Q(phone__icontains=query)
         | Q(first_name__icontains=query)
         | Q(last_name__icontains=query)
+    ).prefetch_related(
+        "passes__card"
     )[
         :10
     ]  # Limit results
 
     results = []
     for customer in customers:
-        passes = CustomerPass.objects.filter(
-            customer=customer, is_active=True
-        ).select_related("card")
-
         results.append(
             {
                 "id": str(customer.id),
@@ -229,7 +223,8 @@ def search_customer(request, query: str):
                         "card_type": pass_obj.card.card_type,
                         "qr_code": pass_obj.qr_code,
                     }
-                    for pass_obj in passes
+                    for pass_obj in customer.passes.all()
+                    if pass_obj.is_active
                 ],
             }
         )
@@ -378,7 +373,7 @@ def remote_issue(request, data: RemoteIssueIn):
         quantity=data.quantity,
         notes=data.notes,
         is_remote=True,
-        transaction_data=result,
+        transaction_data=_serialize_json_value(result),
     )
 
     return {

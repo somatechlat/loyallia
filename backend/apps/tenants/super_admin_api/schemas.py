@@ -147,7 +147,6 @@ class CreateTenantOut(BaseModel):
     message: str
     tenant_id: str
     owner_id: str
-    temp_password: str
 
 
 class PlatformMetricsOut(BaseModel):

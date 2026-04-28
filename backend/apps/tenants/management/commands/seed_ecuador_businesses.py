@@ -586,6 +586,11 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        from django.conf import settings
+
+        if not settings.DEBUG:
+            self.stderr.write("ERROR: Seed commands can only run in DEBUG mode.")
+            return
         self.stdout.write(
             self.style.WARNING(
                 "=== Seeding Loyallia with REAL Ecuadorian business data ==="

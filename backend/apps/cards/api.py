@@ -152,10 +152,10 @@ def list_programs(request):
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    cards = Card.objects.filter(tenant=request.tenant).annotate(
+    cards = list(Card.objects.filter(tenant=request.tenant).annotate(
         _enrollments_count=Count("passes", distinct=True)
-    ).order_by("-created_at")
-    return {"programs": [CardOut.from_model(c, getattr(c, '_enrollments_count', c.passes.count())) for c in cards], "total": cards.count()}
+    ).order_by("-created_at"))
+    return {"programs": [CardOut.from_model(c, getattr(c, '_enrollments_count', c.passes.count())) for c in cards], "total": len(cards)}
 
 
 @router.post(

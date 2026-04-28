@@ -345,26 +345,27 @@ class CustomerPass(models.Model):
     def _process_stamp_transaction(self, amount: Decimal, quantity: int) -> dict:
         """Process stamp card transaction."""
         from apps.transactions.models import TransactionType
+        from django.db import transaction as db_transaction
 
         stamps_required = self.card.get_metadata_field("stamps_required", 10)
         reward_description = self.card.get_metadata_field(
             "reward_description", "Free item"
         )
 
-        current_stamps = self.stamp_count
-        new_stamps = current_stamps + quantity
+        with db_transaction.atomic():
+            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+            current_stamps = locked.pass_data.get("stamp_count", 0)
+            new_stamps = current_stamps + quantity
+            reward_earned = new_stamps >= stamps_required
+            updates = {}
+            if reward_earned:
+                new_stamps = new_stamps - stamps_required
+                updates["reward_ready"] = True
+            updates["stamp_count"] = new_stamps
+            locked.pass_data.update(updates)
+            locked.save(update_fields=["pass_data", "last_updated"])
 
-        # Check if reward is earned
-        reward_earned = new_stamps >= stamps_required
-        updates = {}
-        if reward_earned:
-            # Reset stamps after reward
-            new_stamps = new_stamps - stamps_required
-            updates["reward_ready"] = True
-            
-        updates["stamp_count"] = new_stamps
-        self.update_pass_data(updates)
-
+        self.refresh_from_db(fields=["pass_data", "last_updated"])
         return {
             "transaction_type": TransactionType.STAMP_EARNED,
             "pass_updated": True,
@@ -375,17 +376,24 @@ class CustomerPass(models.Model):
 
     def _process_cashback_transaction(self, amount: Decimal) -> dict:
         """Process cashback card transaction."""
+        from decimal import Decimal as D
         from apps.transactions.models import TransactionType
+        from django.db import transaction as db_transaction
 
-        percentage = self.card.get_metadata_field("cashback_percentage", 0)
-        min_purchase = self.card.get_metadata_field("minimum_purchase", 0)
+        percentage = D(str(self.card.get_metadata_field("cashback_percentage", 0)))
+        min_purchase = D(str(self.card.get_metadata_field("minimum_purchase", 0)))
 
         if amount >= min_purchase:
-            earned = (amount * percentage) / 100
-            current_balance = self.cashback_balance
-            new_balance = current_balance + earned
-            self.set_pass_field("cashback_balance", str(new_balance))
+            earned = (amount * percentage) / D("100")
 
+            with db_transaction.atomic():
+                locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+                current_balance = Decimal(str(locked.pass_data.get("cashback_balance", "0")))
+                new_balance = current_balance + earned
+                locked.pass_data["cashback_balance"] = str(new_balance)
+                locked.save(update_fields=["pass_data", "last_updated"])
+
+            self.refresh_from_db(fields=["pass_data", "last_updated"])
             return {
                 "transaction_type": TransactionType.CASHBACK_EARNED,
                 "pass_updated": True,
@@ -466,11 +474,16 @@ class CustomerPass(models.Model):
     def _process_referral_transaction(self) -> dict:
         """Process referral_pass card — increment successful referral count."""
         from apps.transactions.models import TransactionType
+        from django.db import transaction as db_transaction
 
-        current_count = self.referral_count
-        new_count = current_count + 1
-        self.set_pass_field("referral_count", new_count)
+        with db_transaction.atomic():
+            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+            current_count = locked.pass_data.get("referral_count", 0)
+            new_count = current_count + 1
+            locked.pass_data["referral_count"] = new_count
+            locked.save(update_fields=["pass_data", "last_updated"])
 
+        self.refresh_from_db(fields=["pass_data", "last_updated"])
         return {
             "transaction_type": TransactionType.REFERRAL_REWARD,
             "pass_updated": True,
@@ -498,18 +511,23 @@ class CustomerPass(models.Model):
     def _process_gift_transaction(self, amount: Decimal) -> dict:
         """Process gift certificate redemption."""
         from apps.transactions.models import TransactionType
+        from django.db import transaction as db_transaction
 
-        current_balance = self.gift_balance
-        if current_balance >= amount:
-            new_balance = current_balance - amount
-            self.set_pass_field("gift_balance", str(new_balance))
+        with db_transaction.atomic():
+            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+            current_balance = Decimal(str(locked.pass_data.get("gift_balance", "0")))
+            if current_balance >= amount:
+                new_balance = current_balance - amount
+                locked.pass_data["gift_balance"] = str(new_balance)
+                locked.save(update_fields=["pass_data", "last_updated"])
 
-            return {
-                "transaction_type": TransactionType.GIFT_REDEEMED,
-                "pass_updated": True,
-                "amount_redeemed": amount,
-                "new_balance": new_balance,
-            }
+                self.refresh_from_db(fields=["pass_data", "last_updated"])
+                return {
+                    "transaction_type": TransactionType.GIFT_REDEEMED,
+                    "pass_updated": True,
+                    "amount_redeemed": amount,
+                    "new_balance": new_balance,
+                }
 
         return {
             "transaction_type": TransactionType.GIFT_REDEEMED,
@@ -519,18 +537,23 @@ class CustomerPass(models.Model):
     def _process_multipass_transaction(self) -> dict:
         """Process multipass stamp usage."""
         from apps.transactions.models import TransactionType
+        from django.db import transaction as db_transaction
 
-        remaining = self.multipass_remaining
-        if remaining > 0:
-            new_remaining = remaining - 1
-            self.set_pass_field("multipass_remaining", new_remaining)
+        with db_transaction.atomic():
+            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+            remaining = locked.pass_data.get("multipass_remaining", 0)
+            if remaining > 0:
+                new_remaining = remaining - 1
+                locked.pass_data["multipass_remaining"] = new_remaining
+                locked.save(update_fields=["pass_data", "last_updated"])
 
-            return {
-                "transaction_type": TransactionType.MULTIPASS_USED,
-                "pass_updated": True,
-                "stamps_used": 1,
-                "remaining_stamps": new_remaining,
-            }
+                self.refresh_from_db(fields=["pass_data", "last_updated"])
+                return {
+                    "transaction_type": TransactionType.MULTIPASS_USED,
+                    "pass_updated": True,
+                    "stamps_used": 1,
+                    "remaining_stamps": new_remaining,
+                }
 
         return {
             "transaction_type": TransactionType.MULTIPASS_USED,

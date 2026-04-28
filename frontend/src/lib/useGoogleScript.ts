@@ -2,7 +2,7 @@
  * Shared hook for loading Google Identity Services script and rendering the Google button.
  * Used by both login and register pages.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface UseGoogleScriptOptions {
   enabled: boolean;
@@ -21,6 +21,9 @@ export function useGoogleScript({
   text,
   onCallback,
 }: UseGoogleScriptOptions) {
+  const callbackRef = useRef(onCallback);
+  callbackRef.current = onCallback;
+
   useEffect(() => {
     if (!enabled || !clientId) return;
 
@@ -29,7 +32,7 @@ export function useGoogleScript({
       if (!el || !window.google) return;
       window.google.accounts.id.initialize({
         client_id: clientId,
-        callback: onCallback,
+        callback: callbackRef.current,
         auto_select: false,
         context,
         ux_mode: 'popup',
@@ -57,5 +60,5 @@ export function useGoogleScript({
     script.defer = true;
     script.onload = () => initButton();
     document.head.appendChild(script);
-  }, [enabled, clientId, containerId, context, text, onCallback]);
+  }, [enabled, clientId, containerId, context, text]);
 }
