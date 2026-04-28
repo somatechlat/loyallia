@@ -75,7 +75,9 @@ export function defaultMeta(type: string): Record<string, unknown> {
 
 /* ─── Helper: adjust color brightness ─────────────────────────────── */
 export function adjustColor(hex: string, amount: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const num = parseInt(hex, 16);
   const r = Math.min(255, Math.max(0, (num >> 16) + amount));
   const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
   const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));

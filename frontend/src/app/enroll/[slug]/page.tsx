@@ -3,23 +3,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
+import { adjustColor } from '@/components/programs/constants';
 
 // Global helper for local host environment detection
 const getBaseUrl = () => {
   if (typeof window === 'undefined') return '';
   return window.location.origin;
 };
-
-const BASE_URL = ''; // Legacy - don't use this
-
-// Helper function to adjust color brightness
-function adjustColor(hex: string, amount: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
-  const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
 
 interface Card {
   id: string; name: string; description: string; card_type: string; tenant_name: string;
