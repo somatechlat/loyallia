@@ -3,13 +3,17 @@ import { useEffect, useState, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import api from '@/lib/api';
+import centralizedApi from '@/lib/api';
 
 const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), { ssr: false });
 const LocationPicker = dynamic(() => import('@/components/maps/LocationPicker'), { ssr: false });
 
-const adminApi = (path: string, opts?: RequestInit) => {
-  return api(`/api/v1/admin${path}`, opts);
+/** Admin API helper — uses centralized axios instance (auto-attaches auth token) */
+const api = (path: string, opts?: { method?: string; body?: string }) => {
+  const url = `/api/v1/admin${path}`;
+  const method = (opts?.method || 'GET').toLowerCase();
+  const body = opts?.body ? JSON.parse(opts.body) : undefined;
+  return centralizedApi({ url, method, data: body });
 };
 
 const INDUSTRIES = [
@@ -132,8 +136,8 @@ export default function SuperAdminTenants() {
   const fetchData = useCallback(async () => {
     try {
       const [tRes, pRes] = await Promise.all([api('/tenants/'), api('/plans/')]);
-      setTenants(await tRes.json());
-      setPlans(await pRes.json());
+      setTenants(tRes.data);
+      setPlans(pRes.data);
     } catch { /* */ }
     setLoading(false);
   }, []);
@@ -155,8 +159,8 @@ export default function SuperAdminTenants() {
     try {
       const payload = { ...company, ...owner, entity_type: entityType, locations: wLocs.filter(l => l.name.trim()), plan_slug: planSlug, billing_cycle: billingCycle };
       const res = await api('/tenants/', { method: 'POST', body: JSON.stringify(payload) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.message || JSON.stringify(data));
+      const data = res.data;
+      if (!res.data) throw new Error('Error al registrar');
       toast.success('Negocio registrado', { id: tid });
       setCreationResult({ ...data, owner_email: owner.owner_email }); setWizardOpen(false); fetchData();
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al registrar'); }
@@ -169,9 +173,8 @@ export default function SuperAdminTenants() {
     // Fetch locations for this tenant
     setDtLocs([]); setDtLocsLoading(true);
     try {
-      const r = await api(`/tenants/${t.id}/locations/`);
-      if (r.ok) { const data = await r.json(); setDtLocs(Array.isArray(data) ? data : []); }
-      else { console.error('Locations fetch error:', r.status); setDtLocs([]); }
+      const { data } = await api(`/tenants/${t.id}/locations/`);
+      setDtLocs(Array.isArray(data) ? data : []);
     } catch (e) { console.error('Locations fetch failed:', e); setDtLocs([]); }
     setDtLocsLoading(false);
   };
@@ -179,7 +182,7 @@ export default function SuperAdminTenants() {
   const saveDetail = async () => {
     if (!dt) return;
     setDtSaving(true);
-    try { const r = await api(`/tenants/${dt.id}/`, { method: 'PATCH', body: JSON.stringify(dtForm) }); if (!r.ok) throw new Error('Error'); toast.success('Negocio actualizado'); closeDetail(); fetchData(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); } finally { setDtSaving(false); }
+    try { await api(`/tenants/${dt.id}/`, { method: 'PATCH', body: JSON.stringify(dtForm) }); toast.success('Negocio actualizado'); closeDetail(); fetchData(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); } finally { setDtSaving(false); }
   };
   const doSuspend = async () => { if (!dt || !confirm(`¿Suspender "${dt.name}"?`)) return; await api(`/tenants/${dt.id}/suspend/`, { method: 'POST' }); toast.success('Suspendido'); closeDetail(); fetchData(); };
   const doReactivate = async () => { if (!dt) return; await api(`/tenants/${dt.id}/reactivate/`, { method: 'POST' }); toast.success('Reactivado'); closeDetail(); fetchData(); };
@@ -189,13 +192,12 @@ export default function SuperAdminTenants() {
     if (!dt) return;
     try {
       if (editLoc === 'new') {
-        const r = await api(`/tenants/${dt.id}/locations/`, { method: 'POST', body: JSON.stringify(locForm) });
-        if (!r.ok) throw new Error('Error al crear');
+        await api(`/tenants/${dt.id}/locations/`, { method: 'POST', body: JSON.stringify(locForm) });
         toast.success('Sucursal creada');
       }
       setEditLoc(null);
-      const r2 = await api(`/tenants/${dt.id}/locations/`);
-      if (r2.ok) setDtLocs(await r2.json());
+      const { data } = await api(`/tenants/${dt.id}/locations/`);
+      setDtLocs(data);
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
   };
 
@@ -475,8 +477,7 @@ export default function SuperAdminTenants() {
                         const currentToken = Cookies.get('access_token') || '';
                         sessionStorage.setItem('superadmin_token', currentToken);
                         sessionStorage.setItem('impersonation_started_at', String(Date.now()));
-                        const r = await api(`/tenants/${dt.id}/impersonate/`, { method: 'POST' });
-                        const d = await r.json();
+                        const { data: d } = await api(`/tenants/${dt.id}/impersonate/`, { method: 'POST' });
                         if (d.access_token) {
                           const isProd = process.env.NODE_ENV === 'production';
                           Cookies.set('access_token', d.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
