@@ -151,7 +151,7 @@ export default function CampaignsPage() {
             <div className="flex gap-3 mt-2">
               <button
                 type="button"
-                onClick={() => setCampaignType('email')}
+                onClick={() => setCampaignType('email')} aria-pressed={campaignType === 'email'}
                 className={`flex-1 p-4 rounded-xl border-2 transition-all ${campaignType === 'email' ? 'border-blue-500 bg-blue-50' : 'border-surface-200 hover:border-surface-300'}`}
               >
                 <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export default function CampaignsPage() {
               
               <button
                 type="button"
-                onClick={() => setCampaignType('wallet')}
+                onClick={() => setCampaignType('wallet')} aria-pressed={campaignType === 'wallet'}
                 className={`flex-1 p-4 rounded-xl border-2 transition-all ${campaignType === 'wallet' ? 'border-purple-500 bg-purple-50' : 'border-surface-200 hover:border-surface-300'}`}
               >
                 <div className="flex items-center gap-2">
@@ -179,7 +179,7 @@ export default function CampaignsPage() {
 
               <button
                 type="button"
-                onClick={() => setCampaignType('whatsapp')}
+                onClick={() => setCampaignType('whatsapp')} aria-pressed={campaignType === 'whatsapp'}
                 className={`flex-1 p-4 rounded-xl border-2 transition-all ${campaignType === 'whatsapp' ? 'border-emerald-500 bg-emerald-50' : 'border-surface-200 hover:border-surface-300'}`}
               >
                 <div className="flex items-center gap-2">
