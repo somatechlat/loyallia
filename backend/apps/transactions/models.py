@@ -120,6 +120,9 @@ class Transaction(models.Model):
             ),
         ]
 
+    def __repr__(self) -> str:
+        return f"<Transaction: {self.transaction_type} - {self.customer_pass} - {self.created_at}>"
+
     def __str__(self) -> str:
         return f"{self.transaction_type} - {self.customer_pass.customer.full_name} - {self.created_at}"
 
@@ -209,6 +212,9 @@ class Enrollment(models.Model):
                 name="idx_enroll_tnt_cust_card",
             ),
         ]
+
+    def __repr__(self) -> str:
+        return f"<Enrollment: {self.customer.full_name} in {self.card.name} via {self.enrollment_method}>"
 
     def __str__(self) -> str:
         return f"{self.customer.full_name} enrolled in {self.card.name} via {self.enrollment_method}"

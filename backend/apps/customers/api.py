@@ -439,11 +439,13 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
 )
 @require_active_subscription
 def delete_customer(request, customer_id: str):
-    """Permanent delete of a customer and all associated data. OWNER only."""
+    """Permanent delete of a customer and all associated data. OWNER only.
+    LYL-M-API-023: Return 204 No Content on successful delete.
+    """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
-    
+
     log_action(
         request=request,
         action=AuditAction.DELETE,
@@ -451,9 +453,12 @@ def delete_customer(request, customer_id: str):
         resource_id=str(customer.id),
         details={"email": customer.email}
     )
-    
+
     customer.delete()
-    return {"success": True, "message": "Cliente eliminado permanentemente"}
+
+    from django.http import HttpResponse
+
+    return HttpResponse(status=204)
 
 
 @router.get(

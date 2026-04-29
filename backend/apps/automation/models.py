@@ -11,6 +11,7 @@ from django.db import models
 from apps.cards.models import Card
 from apps.customers.models import Customer
 from apps.tenants.models import Tenant
+from common.models import TimestampedModel
 
 
 class AutomationTrigger(models.TextChoices):
@@ -37,13 +38,12 @@ class AutomationAction(models.TextChoices):
     CREATE_CAMPAIGN = "create_campaign", "Create Campaign"
 
 
-class Automation(models.Model):
+class Automation(TimestampedModel):
     """
     Automated workflow for customer engagement.
     Triggers actions based on events or schedules.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -103,15 +103,14 @@ class Automation(models.Model):
         null=True, blank=True, verbose_name="Última ejecución"
     )
 
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_automations"
         verbose_name = "Automatización"
         verbose_name_plural = "Automatizaciones"
         ordering = ["-created_at"]
+
+    def __repr__(self) -> str:
+        return f"<Automation: {self.name} - {self.trigger} → {self.action}>"
 
     def __str__(self) -> str:
         return f"{self.name} - {self.trigger} → {self.action}"
@@ -322,6 +321,9 @@ class AutomationExecution(models.Model):
             models.Index(fields=["automation", "-executed_at"]),
             models.Index(fields=["customer", "-executed_at"]),
         ]
+
+    def __repr__(self) -> str:
+        return f"<AutomationExecution: {self.automation.name} → {self.customer.full_name}>"
 
     def __str__(self) -> str:
         return f"{self.automation.name} → {self.customer.full_name}"

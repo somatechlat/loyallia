@@ -2,6 +2,10 @@
 # Loyallia Backend — Multi-stage Dockerfile
 # Stage 1: build dependencies
 # Stage 2: production image (python:3.12-slim)
+#
+# LYL-L-INFRA-035: Docker layer caching optimized
+#   - requirements.txt copied first (changes rarely)
+#   - Application code copied last (changes frequently)
 # =============================================================================
 
 # --- Stage 1: Builder ---
@@ -19,7 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies into a prefix
+# LYL-L-INFRA-035: Copy requirements.txt first for better layer caching
+# This layer is only rebuilt when dependencies change
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --prefix=/install --no-cache-dir -r requirements.txt
@@ -41,6 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /install /usr/local
 
 # Copy application code (excluding dev/test files via .dockerignore)
+# This layer changes frequently — placed last for optimal caching
 COPY . .
 
 # Create non-root user for security

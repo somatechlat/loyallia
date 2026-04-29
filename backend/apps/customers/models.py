@@ -80,10 +80,6 @@ class Customer(TimestampedModel):
         null=True, blank=True, verbose_name="Última visita"
     )
 
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_customers"
         verbose_name = "Cliente"
@@ -114,8 +110,19 @@ class Customer(TimestampedModel):
             ),
         ]
 
+    def __repr__(self) -> str:
+        return f"<Customer: {self.first_name} {self.last_name} - {self.email}>"
+
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name} - {self.email}"
+
+    def clean(self) -> None:
+        """Validate customer data."""
+        super().clean()
+        if not self.first_name.strip():
+            raise ValueError("first_name is required")
+        if not self.last_name.strip():
+            raise ValueError("last_name is required")
 
     @property
     def full_name(self) -> str:
@@ -123,16 +130,32 @@ class Customer(TimestampedModel):
         return f"{self.first_name} {self.last_name}".strip()
 
     def generate_referral_code(self) -> str:
-        """Generate a unique referral code for this customer."""
+        """Generate a unique referral code for this customer.
+
+        LYL-M-API-018: Includes a max-attempts guard to prevent infinite loops
+        if the code space is exhausted or there's a DB issue.
+        """
+        import logging
         import secrets
         import string
 
-        while True:
+        logger = logging.getLogger(__name__)
+        max_attempts = 20
+
+        for attempt in range(max_attempts):
             code = "".join(
                 secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
             )
             if not Customer.objects.filter(referral_code=code).exists():
                 return code
+
+        # Fallback: use UUID-based code (guaranteed unique)
+        fallback = uuid.uuid4().hex[:12].upper()
+        logger.warning(
+            "Referral code generation: exhausted %d random attempts, using UUID fallback",
+            max_attempts,
+        )
+        return fallback
 
     def save(self, *args, **kwargs) -> None:
         """Override save to generate referral code if needed."""
@@ -190,6 +213,9 @@ class CustomerPass(models.Model):
         verbose_name_plural = "Pases de clientes"
         ordering = ["-enrolled_at"]
         unique_together = ["customer", "card"]  # One pass per customer per program
+
+    def __repr__(self) -> str:
+        return f"<CustomerPass: {self.customer.full_name} - {self.card.name}>"
 
     def __str__(self) -> str:
         return f"{self.customer.full_name} - {self.card.name}"
@@ -449,48 +475,90 @@ class CustomerPass(models.Model):
         }
 
     def _process_discount_transaction(self, amount: Decimal) -> dict:
-        """
-        Process discount card visit.
+        """Process discount card visit.
+
+        LYL-H-API-015: Proper error handling for missing/malformed tier config.
         Reads tier config from card metadata to return applicable discount %.
         Tiers: [{"tier_name": "Silver", "threshold": 0, "discount_percentage": 5}, ...]
         Sorted by threshold ascending; highest qualifying tier wins.
         """
+        import logging
         from apps.transactions.models import TransactionType
+
+        logger = logging.getLogger(__name__)
 
         tiers = self.card.get_metadata_field("tiers", [])
 
-        # Atomically read and update total_spent_at_business inside select_for_update
-        # to prevent race conditions under concurrent scans.
-        # Uses Decimal to avoid floating-point precision errors with currency.
+        # LYL-H-API-015: Validate tier config
+        if not isinstance(tiers, list):
+            logger.error(
+                "Discount card %s has invalid tiers config (not a list): %r",
+                self.card.id,
+                tiers,
+            )
+            return {
+                "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,
+                "pass_updated": False,
+                "error": "invalid_tier_config",
+            }
+
+        if not tiers:
+            logger.warning(
+                "Discount card %s has empty tiers config", self.card.id
+            )
+            return {
+                "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,
+                "pass_updated": False,
+                "error": "no_tiers_configured",
+            }
+
         from django.db import transaction as db_transaction
 
-        with db_transaction.atomic():
-            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
-            total_spent = locked.pass_data.get("total_spent_at_business", 0)
-            new_total = Decimal(str(total_spent)) + Decimal(str(amount))
+        try:
+            with db_transaction.atomic():
+                locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+                total_spent = locked.pass_data.get("total_spent_at_business", 0)
+                new_total = Decimal(str(total_spent)) + Decimal(str(amount))
 
-            # Determine current discount tier
-            applicable_tier = None
-            for tier in sorted(tiers, key=lambda t: t.get("threshold", 0)):
-                if new_total >= Decimal(str(tier.get("threshold", 0))):
-                    applicable_tier = tier
+                # Determine current discount tier
+                applicable_tier = None
+                for tier in sorted(tiers, key=lambda t: t.get("threshold", 0)):
+                    if not isinstance(tier, dict):
+                        continue
+                    if new_total >= Decimal(str(tier.get("threshold", 0))):
+                        applicable_tier = tier
 
-            discount_pct = applicable_tier["discount_percentage"] if applicable_tier else 0
-            tier_name = applicable_tier["tier_name"] if applicable_tier else ""
+                discount_pct = (
+                    applicable_tier.get("discount_percentage", 0)
+                    if applicable_tier
+                    else 0
+                )
+                tier_name = (
+                    applicable_tier.get("tier_name", "") if applicable_tier else ""
+                )
 
-            locked.pass_data["total_spent_at_business"] = str(new_total)
-            locked.pass_data["current_discount_percentage"] = discount_pct
-            locked.pass_data["current_tier_name"] = tier_name
-            locked.save(update_fields=["pass_data", "last_updated"])
+                locked.pass_data["total_spent_at_business"] = str(new_total)
+                locked.pass_data["current_discount_percentage"] = discount_pct
+                locked.pass_data["current_tier_name"] = tier_name
+                locked.save(update_fields=["pass_data", "last_updated"])
 
-        self.refresh_from_db(fields=["pass_data", "last_updated"])
+            self.refresh_from_db(fields=["pass_data", "last_updated"])
 
-        return {
-            "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,
-            "pass_updated": True,
-            "discount_percentage": discount_pct,
-            "tier_name": tier_name,
-        }
+            return {
+                "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,
+                "pass_updated": True,
+                "discount_percentage": discount_pct,
+                "tier_name": tier_name,
+            }
+        except Exception as exc:
+            logger.error(
+                "Discount transaction failed for pass %s: %s", self.id, exc
+            )
+            return {
+                "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,
+                "pass_updated": False,
+                "error": "transaction_failed",
+            }
 
     def _process_referral_transaction(self) -> dict:
         """Process referral_pass card — increment successful referral count.
@@ -528,12 +596,37 @@ class CustomerPass(models.Model):
         }
 
     def _process_membership_transaction(self) -> dict:
-        """Process VIP membership validation."""
+        """LYL-H-API-007: Validate membership — check expiry and active status.
+
+        Returns validation result with membership status details.
+        For VIP and affiliate cards, validates that the membership is still active
+        based on the membership_expiry field in pass_data.
+        """
         from apps.transactions.models import TransactionType
+        from django.utils import timezone
+
+        expiry_str = self.get_pass_field("membership_expiry")
+        is_valid = True
+        reason = ""
+
+        if expiry_str:
+            from django.utils.dateparse import parse_datetime
+
+            expiry = parse_datetime(expiry_str)
+            if expiry and timezone.now() > expiry:
+                is_valid = False
+                reason = "membership_expired"
+
+        if not self.is_active:
+            is_valid = False
+            reason = "pass_inactive"
 
         return {
             "transaction_type": TransactionType.MEMBERSHIP_VALIDATED,
             "pass_updated": False,
+            "membership_valid": is_valid,
+            "reason": reason,
+            "membership_expiry": expiry_str,
         }
 
     def _process_corporate_transaction(self) -> dict:

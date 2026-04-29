@@ -1,20 +1,32 @@
 # =============================================================================
 # Loyallia Frontend — Multi-stage Production Build
-# Stage 1: Install dependencies
+# Stage 1: Install dependencies (LYL-L-INFRA-031: npm ci for reproducible builds)
 # Stage 2: Build optimized Next.js bundle (standalone output)
 # Stage 3: Minimal production runner (~200MB vs ~1.5GB dev)
+#
+# LYL-L-INFRA-035: Docker layer caching optimized
+#   - package.json + package-lock.json copied first (changes rarely)
+#   - Source code copied last (changes frequently)
+#   - .dockerignore excludes node_modules, .next, .git
 # =============================================================================
 
 # --- Stage 1: Dependencies ---
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json ./
-RUN npm install --legacy-peer-deps
+
+# LYL-L-INFRA-035: Copy only dependency files first for better layer caching
+# These change infrequently, so npm ci layer is cached until lockfile changes
+COPY package.json package-lock.json* ./
+RUN npm ci --legacy-peer-deps
 
 # --- Stage 2: Builder ---
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# LYL-L-INFRA-035: Copy node_modules from deps stage (cached)
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code (changes frequently — last for better caching)
 COPY . .
 RUN rm -f package-lock.json bun.lock
 ENV NEXT_TELEMETRY_DISABLED=1
