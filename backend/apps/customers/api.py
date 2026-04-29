@@ -44,7 +44,7 @@ def list_customers(
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    queryset = Customer.objects.filter(tenant=request.tenant)
+    queryset = Customer.objects.filter(tenant=request.tenant).select_related("tenant")
 
     if search:
         queryset = queryset.filter(

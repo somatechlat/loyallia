@@ -183,32 +183,12 @@ def generate_pkpass(customer_pass) -> bytes | None:
     bg_color = card.background_color or "#5660ff"
 
     def fetch_image_bytes(url):
-        """Fetch image bytes from a URL with SSRF protection."""
+        """Fetch image bytes from a URL with SSRF protection (LYL-H-SEC-009)."""
         if not url:
             return None
         try:
-            from urllib.parse import urlparse
-            import ipaddress
-
-            parsed = urlparse(url)
-
-            # Only allow HTTPS
-            if parsed.scheme not in ("https",):
-                logger.warning("Image URL rejected (non-https scheme): %s", url)
-                return None
-
-            # Block private/reserved IP ranges
-            hostname = parsed.hostname or ""
-            try:
-                ip = ipaddress.ip_address(hostname)
-                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-                    logger.warning("Image URL rejected (private IP): %s", url)
-                    return None
-            except ValueError:
-                # hostname is a domain name, not an IP — block obvious localhost patterns
-                if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
-                    logger.warning("Image URL rejected (localhost): %s", url)
-                    return None
+            from common.url_validator import validate_external_url, SSRFError
+            validate_external_url(url, allow_http=False)
 
             import httpx
 
@@ -221,6 +201,8 @@ def generate_pkpass(customer_pass) -> bytes | None:
                         logger.warning("Image too large (%d bytes): %s", len(content), url)
                         return None
                     return content
+        except SSRFError as exc:
+            logger.warning("SSRF blocked for image URL %s: %s", url, exc)
         except Exception as exc:
             logger.warning("Failed to fetch image from %s: %s", url, exc)
         return None

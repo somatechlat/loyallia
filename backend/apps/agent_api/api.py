@@ -111,10 +111,14 @@ def get_programs(request: HttpRequest):
     from django.db.models import Count, Q
 
     tenant = request.tenant
-    cards = Card.objects.filter(tenant=tenant).annotate(
-        enrollments_count=Count("enrollments", distinct=True),
-        active_passes_count=Count("passes", filter=Q(passes__is_active=True), distinct=True),
-        total_txn_count=Count("passes__transactions", distinct=True),
+    cards = (
+        Card.objects.filter(tenant=tenant)
+        .prefetch_related("enrollments", "passes", "passes__transactions")
+        .annotate(
+            enrollments_count=Count("enrollments", distinct=True),
+            active_passes_count=Count("passes", filter=Q(passes__is_active=True), distinct=True),
+            total_txn_count=Count("passes__transactions", distinct=True),
+        )
     )
 
     programs = [

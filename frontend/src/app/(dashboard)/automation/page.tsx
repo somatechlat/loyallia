@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from 'react';
 import { automationApi, programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -108,7 +109,7 @@ function ActionIcon({ action, className = 'w-5 h-5' }: { action: string; classNa
 
 const EMPTY_FORM = {
   name: '', description: '', trigger: 'customer_enrolled', action: 'send_notification',
-  trigger_config: {}, action_config: { title: '', message: '' } as Record<string, string>,
+  trigger_config: {} as Record<string, string>, action_config: { title: '', message: '' } as Record<string, string>,
   cooldown_hours: 24, max_executions_per_day: null as number | null,
 };
 
@@ -173,7 +174,8 @@ export default function AutomationPage() {
     setEditingId(a.id);
     setForm({
       name: a.name, description: a.description, trigger: a.trigger, action: a.action,
-      trigger_config: a.trigger_config || {}, action_config: a.action_config || { title: '', message: '' },
+      trigger_config: (a.trigger_config || {}) as Record<string, string>,
+      action_config: (a.action_config || { title: '', message: '' }) as Record<string, string>,
       cooldown_hours: a.cooldown_hours || 24, max_executions_per_day: a.max_executions_per_day,
     });
     setStep(1);
