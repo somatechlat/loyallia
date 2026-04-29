@@ -53,8 +53,8 @@ export default function PremiumQrSvg({ color = '#1a1a2e', size = 48 }: { color?:
       {dots.map(([x, y], i) => (
         <circle
           key={i}
-          cx={x * cellSize + cellSize / 2}
-          cy={y * cellSize + cellSize / 2}
+          cx={x! * cellSize + cellSize / 2}
+          cy={y! * cellSize + cellSize / 2}
           r={r}
           fill={color}
         />
