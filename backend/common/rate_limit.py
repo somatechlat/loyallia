@@ -34,13 +34,26 @@ RATE_LIMIT_RULES = [
     ("/api/v1/", "ip", 200, 60),                   # 200 general API requests per minute per IP
 ]
 
+# SECURITY (LYL-C-SEC-002): Auth endpoints MUST fail CLOSED when Redis is unavailable.
+# These paths will return 503 instead of passing through unchecked.
+AUTH_PATHS = [
+    "/api/v1/auth/login",
+    "/api/v1/auth/register",
+    "/api/v1/auth/phone/",
+    "/api/v1/auth/password-reset/",
+    "/api/v1/auth/forgot-password/",
+    "/api/v1/auth/verify-email/",
+]
+
 
 def _get_client_ip(request: HttpRequest) -> str:
-    """Extract real client IP from X-Forwarded-For (behind Nginx) or REMOTE_ADDR."""
-    xff = request.META.get("HTTP_X_FORWARDED_FOR")
-    if xff:
-        # Take the first IP (client), not proxy IPs
-        return xff.split(",")[0].strip()
+    """Extract real client IP from REMOTE_ADDR only.
+
+    SECURITY (LYL-H-SEC-004): Do NOT trust X-Forwarded-For from arbitrary clients.
+    REMOTE_ADDR is set by the web server (Nginx) and cannot be spoofed by the client.
+    If behind a load balancer that sets X-Forwarded-For, configure TRUSTED_PROXIES
+    in Django settings and add middleware to handle it properly.
+    """
     return request.META.get("REMOTE_ADDR", "unknown")
 
 
@@ -83,7 +96,14 @@ class RateLimitMiddleware:
 
         redis = self._get_redis()
         if redis is None:
-            # Fail open — no Redis, no rate limiting
+            # SECURITY (LYL-C-SEC-002): Fail CLOSED for auth endpoints.
+            # Auth endpoints must not pass through unchecked when Redis is down.
+            if any(request.path.startswith(p) for p in AUTH_PATHS):
+                return JsonResponse(
+                    {"error": "Service temporarily unavailable"},
+                    status=503,
+                )
+            # Non-auth endpoints: fail open (allow through)
             return self.get_response(request)
 
         client_ip = _get_client_ip(request)

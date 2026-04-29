@@ -153,9 +153,22 @@ class Automation(models.Model):
         """
         Execute the automation for a customer.
         Returns True if successful.
+        Enforces max_executions_per_day limit if configured.
         """
         if not self.can_execute_for_customer(customer):
             return False
+
+        # Enforce max_executions_per_day limit
+        if self.max_executions_per_day is not None and self.max_executions_per_day > 0:
+            from datetime import timedelta
+            from django.utils import timezone
+
+            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            executions_today = self.executions.filter(
+                executed_at__gte=today_start
+            ).count()
+            if executions_today >= self.max_executions_per_day:
+                return False
 
         try:
             success = False

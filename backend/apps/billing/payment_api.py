@@ -3,8 +3,10 @@ Loyallia — Billing Payment Methods, Invoices & Webhook API (REQ-PAY-001)
 Split from billing/api.py per the 500-line architectural limit.
 """
 
+import hashlib
 import json
 import logging
+import time
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -18,6 +20,7 @@ from apps.billing.models import (
     SubscriptionStatus,
 )
 from apps.billing.payment_gateway import get_payment_gateway
+from apps.billing.payment_models import WebhookEvent
 from apps.billing.schemas import AddPaymentMethodSchema
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
@@ -219,6 +222,10 @@ def payment_webhook(request: HttpRequest):
     """
     Receive and process payment gateway webhook events.
     Verifies HMAC signature before processing.
+
+    SECURITY (LYL-H-SEC-003):
+    - Timestamp validation: rejects webhooks older than 5 minutes (replay protection)
+    - Idempotency: deduplicates events using WebhookEvent model
     """
     signature = request.headers.get("X-Payment-Signature", "")
     gateway = get_payment_gateway()
@@ -232,11 +239,45 @@ def payment_webhook(request: HttpRequest):
     except json.JSONDecodeError:
         raise HttpError(400, get_message("BILLING_INVALID_PAYLOAD"))
 
+    # SECURITY (LYL-H-SEC-003): Timestamp validation — reject stale webhooks (replay protection)
+    timestamp = payload.get("timestamp")
+    if timestamp:
+        try:
+            ts = float(timestamp)
+            if abs(time.time() - ts) > 300:  # 5 minutes
+                logger.warning("Webhook timestamp expired: ts=%.1f, now=%.1f, delta=%.1fs", ts, time.time(), abs(time.time() - ts))
+                raise HttpError(400, "Webhook timestamp expired")
+        except (ValueError, TypeError):
+            pass
+
+    # SECURITY (LYL-H-SEC-003): Idempotency — prevent duplicate event processing
+    event_id = payload.get("id") or payload.get("event_id") or ""
     event_type = payload.get("event", "")
-    event_data = payload.get("data", {})
+    payload_hash = hashlib.sha256(request.body).hexdigest()
 
-    logger.info("Payment webhook: event=%s", event_type)
+    if not event_id:
+        # Fallback: use payload hash as event ID for deduplication
+        event_id = payload_hash
 
-    gateway.process_webhook(event_type, event_data)
+    # Check if this event was already processed
+    if WebhookEvent.objects.filter(event_id=event_id).exists():
+        logger.info("Webhook event already processed (idempotent): event_id=%s", event_id)
+        return {"received": True, "duplicate": True}
+
+    logger.info("Payment webhook: event=%s event_id=%s", event_type, event_id)
+
+    # Record the event BEFORE processing to prevent race-condition duplicates
+    try:
+        WebhookEvent.objects.create(
+            event_id=event_id,
+            event_type=event_type,
+            payload_hash=payload_hash,
+        )
+    except Exception:
+        # If insert fails (duplicate), another request processed it first
+        logger.info("Webhook event race-condition caught: event_id=%s", event_id)
+        return {"received": True, "duplicate": True}
+
+    gateway.process_webhook(event_type, payload.get("data", {}))
 
     return {"received": True}

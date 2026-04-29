@@ -1,4 +1,5 @@
 import os
+import secrets
 
 import django
 
@@ -17,7 +18,9 @@ tenant, created = Tenant.objects.get_or_create(
     name="Sweet and Coffee", defaults={"slug": "sweet-and-coffee"}
 )
 
-# 2. Create Owner
+# 2. Create Owner — password is auto-generated and printed once.
+#    SECURITY: No hardcoded passwords in source control.
+generated_password = secrets.token_urlsafe(16)
 owner, created = User.objects.get_or_create(
     email="owner@sweetandcoffee.com",
     defaults={
@@ -25,12 +28,16 @@ owner, created = User.objects.get_or_create(
         "first_name": "Gerente",
         "last_name": "SweetCoffee",
         "role": "OWNER",
-        "password": make_password("Admin1234!"),
+        "password": make_password(generated_password),
         "is_active": True,
         "is_superuser": False,
         "is_staff": False,
     },
 )
+if created:
+    print(f"Owner created — password: {generated_password}")
+else:
+    print("Owner already exists (password not changed).")
 
 # 3. Create Card
 card, created = Card.objects.get_or_create(

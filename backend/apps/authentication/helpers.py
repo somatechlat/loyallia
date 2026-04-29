@@ -7,6 +7,7 @@ import hashlib
 import hmac as hmac_module
 import logging
 import re
+import secrets
 from datetime import timedelta
 
 from django.conf import settings
@@ -50,16 +51,25 @@ def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
         logger.error("Failed to send OTP email to %s: %s", email, exc)
 
 
-def _hash_otp(otp: str) -> str:
-    """Hash an OTP using SHA-256 for secure storage."""
-    return hashlib.sha256(otp.encode("utf-8")).hexdigest()
+def _hash_otp(otp: str, salt: str) -> str:
+    """Hash an OTP using salted SHA-256 for secure storage.
+
+    SECURITY (LYL-M-SEC-012): Per-OTP salt prevents rainbow table attacks.
+    """
+    return hashlib.sha256((salt + otp).encode("utf-8")).hexdigest()
 
 
 def store_otp(email: str, otp: str, purpose: str) -> None:
-    """Store hashed OTP in Django cache with 15-minute TTL."""
+    """Store hashed OTP with its salt in Django cache with 15-minute TTL.
+
+    SECURITY (LYL-M-SEC-012): Generates a random salt per OTP and stores
+    both the hash and salt in cache. Salt is stored in a separate key.
+    """
     from django.core.cache import cache
 
-    cache.set(f"otp:{purpose}:{email}", _hash_otp(otp), timeout=900)
+    salt = secrets.token_hex(16)
+    cache.set(f"otp:{purpose}:{email}", _hash_otp(otp, salt), timeout=900)
+    cache.set(f"otp_salt:{purpose}:{email}", salt, timeout=900)
 
 
 def verify_otp(email: str, otp: str, purpose: str) -> bool:
@@ -67,23 +77,29 @@ def verify_otp(email: str, otp: str, purpose: str) -> bool:
 
     Tracks failed attempts: after 5 failures the OTP is deleted (lockout).
     Successful verification clears both the OTP and the attempt counter.
+
+    SECURITY (LYL-M-SEC-012): Retrieves salt from cache and uses it for hashing.
     """
     from django.core.cache import cache
 
     key = f"otp:{purpose}:{email}"
+    salt_key = f"otp_salt:{purpose}:{email}"
     attempts_key = f"otp_attempts:{purpose}:{email}"
 
     stored_hash = cache.get(key)
-    if not stored_hash:
+    salt = cache.get(salt_key)
+    if not stored_hash or not salt:
         return False
 
     attempts = cache.get(attempts_key, 0)
     if attempts >= 5:
         cache.delete(key)
+        cache.delete(salt_key)
         return False
 
-    if hmac_module.compare_digest(stored_hash, _hash_otp(otp)):
+    if hmac_module.compare_digest(stored_hash, _hash_otp(otp, salt)):
         cache.delete(key)
+        cache.delete(salt_key)
         cache.delete(attempts_key)
         return True
 

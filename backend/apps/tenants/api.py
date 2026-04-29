@@ -26,6 +26,7 @@ from apps.tenants.schemas import (
 )
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
+from common.plan_enforcement import enforce_limit
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,7 @@ def list_locations(request):
     response=LocationOut,
     summary="Crear ubicación",
 )
+@enforce_limit("locations")
 def create_location(request, payload: LocationCreateIn):
     """Creates a new location for the current tenant. OWNER only."""
     if not is_owner(request):
