@@ -6,7 +6,7 @@ type ConfigProps = { meta: Record<string, unknown>; setMeta: (m: Record<string, 
 /* ─── Memoized per-type config components (PERF-009) ──────────────────── */
 
 const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-5">
@@ -147,7 +147,7 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
 });
 
 const CashbackConfig = React.memo(function CashbackConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-4">
@@ -171,7 +171,7 @@ const CashbackConfig = React.memo(function CashbackConfig({ meta, setMeta }: Con
 });
 
 const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-5">
@@ -413,7 +413,7 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
 });
 
 const DiscountConfig = React.memo(function DiscountConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-4">
@@ -456,7 +456,7 @@ const DiscountConfig = React.memo(function DiscountConfig({ meta, setMeta }: Con
 });
 
 const GiftCertificateConfig = React.memo(function GiftCertificateConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-4">
@@ -477,7 +477,7 @@ const GiftCertificateConfig = React.memo(function GiftCertificateConfig({ meta, 
 });
 
 const VipMembershipConfig = React.memo(function VipMembershipConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-4">
@@ -513,7 +513,7 @@ const VipMembershipConfig = React.memo(function VipMembershipConfig({ meta, setM
 });
 
 const ReferralPassConfig = React.memo(function ReferralPassConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-4">
@@ -537,7 +537,7 @@ const ReferralPassConfig = React.memo(function ReferralPassConfig({ meta, setMet
 });
 
 const MultipassConfig = React.memo(function MultipassConfig({ meta, setMeta }: ConfigProps) {
-  const set = useCallback((k: string, v: unknown) => setMeta(prev => ({ ...prev, [k]: v })), [setMeta]);
+  const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
     <div className="space-y-4">
