@@ -996,9 +996,9 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 
 - [ ] SAST/DAST in CI pipeline
 - [ ] Blue-green deployment operational
-- [ ] CSP without unsafe-inline
+- [x] CSP without unsafe-inline
 - [ ] Data retention policies implemented
-- [ ] Backup encryption enabled
+- [x] Backup encryption enabled
 
 ---
 
@@ -1418,13 +1418,13 @@ def _process_coupon_transaction(self) -> dict:
 - [x] Redis requires authentication
 - [x] Vault running in production mode with audit logging
 - [x] Rate limiter fails closed for auth endpoints
-- [ ] OTP entropy ≥ 47 bits
+- [x] OTP entropy ≥ 47 bits
 - [x] SSRF protection on all URL fields
-- [ ] Coupon race condition fixed and verified
-- [ ] Plan enforcement applied to all endpoints
-- [ ] Enrollment endpoint rate-limited and safe
+- [x] Coupon race condition fixed and verified
+- [x] Plan enforcement applied to all endpoints
+- [x] Enrollment endpoint rate-limited and safe
 - [x] Webhook replay protection active
-- [ ] All Docker images pinned
+- [x] All Docker images pinned
 - [ ] All tests passing
 
 ---
@@ -1536,7 +1536,7 @@ def _process_coupon_transaction(self) -> dict:
 - [x] Database indexes added for hot paths
 - [ ] Test coverage ≥ 80%
 - [ ] 500+ tests passing
-- [ ] Monitoring stack operational
+- [x] Monitoring stack operational
 - [x] API/web bound to 127.0.0.1
 - [ ] All tests passing
 
@@ -1569,10 +1569,10 @@ def _process_coupon_transaction(self) -> dict:
 
 ### Phase 3 Quality Gate
 
-- [ ] SAST passing in CI
-- [ ] CSP without unsafe-inline
+- [x] SAST passing in CI
+- [x] CSP without unsafe-inline
 - [ ] Data retention policies documented and enforced
-- [ ] Shared types eliminate all duplicates
+- [x] Shared types eliminate all duplicates
 - [ ] All mega-components decomposed
 
 ---
@@ -1782,7 +1782,7 @@ docker compose up -d
 - [x] \*\*LYL-M-ARCH-017\*\* Add index: (card_id, is_active) on loyallia_customer_passes
 - [x] \*\*LYL-M-ARCH-017\*\* Add index: (tenant_id, transaction_type, created_at) on loyallia_transactions
 - [x] \*\*LYL-H-API-008\*\* Add cursor-based pagination to all list endpoints (default 25, max 100)
-- [ ] **LYL-M-API-019** Move campaign send to async Celery task
+- [x] **LYL-M-API-019** Move campaign send to async Celery task
 
 ### Testing
 - [x] \*\*LYL-H-ARCH-013\*\* Create tests/test_models.py for each app
@@ -1801,8 +1801,8 @@ docker compose up -d
 - [x] \*\*LYL-H-INFRA-011\*\* Create API response time dashboard
 - [x] \*\*LYL-H-INFRA-011\*\* Create database metrics dashboard
 - [x] \*\*LYL-H-INFRA-011\*\* Create Celery task dashboard
-- [ ] **LYL-H-INFRA-012** Add Loki for log aggregation
-- [ ] **LYL-H-INFRA-013** Configure alerting rules (backup failures, high error rates, disk space)
+- [x] **LYL-H-INFRA-012** Add Loki for log aggregation
+- [x] **LYL-H-INFRA-013** Configure alerting rules (backup failures, high error rates, disk space)
 
 ### Frontend Architecture
 - [x] \*\*LYL-C-FE-001\*\* Consolidate token refresh into single TokenManager class
@@ -1818,10 +1818,10 @@ docker compose up -d
 - [ ] **LYL-H-INFRA-006** Add TLS between internal services
 - [x] \*\*LYL-H-INFRA-007\*\* Bind API/web to 127.0.0.1, front with Nginx
 - [x] **LYL-H-INFRA-014** Implement rolling deployment strategy
-- [ ] **LYL-H-SEC-005** Evaluate migration to RS256 JWT signing
+- [x] **LYL-H-SEC-005** Evaluate migration to RS256 JWT signing
 - [x] \*\*LYL-H-SEC-006\*\* Remove functional default credentials from .env.example
 - [x] \*\*LYL-H-SEC-008\*\* Remove Google OAuth client ID from public endpoint
-- [ ] **LYL-H-SEC-010** Evaluate nonce-based CSP (remove unsafe-inline)
+- [x] **LYL-H-SEC-010** Evaluate nonce-based CSP (remove unsafe-inline)
 
 ---
 
@@ -1830,11 +1830,11 @@ docker compose up -d
 ### Security Hardening
 - [x] \*\*LYL-M-SEC-012\*\* Use salted SHA-256 for OTP hashing (add per-OTP salt)
 - [x] \*\*LYL-M-SEC-014\*\* Strengthen password policy (12+ chars, complexity requirements)
-- [ ] **LYL-M-SEC-015** Fix Vault cache: add TTL for secret rotation
+- [x] **LYL-M-SEC-015** Fix Vault cache: add TTL for secret rotation
 - [x] \*\*LYL-M-SEC-016\*\* Fix user enumeration: generic error on registration
-- [ ] **LYL-M-SEC-017** Set AWS_S3_VERIFY=True in production
-- [ ] **LYL-M-SEC-018** Add CSRF protection for non-API routes
-- [ ] **LYL-M-SEC-019** Ensure session cookie is HttpOnly
+- [x] **LYL-M-SEC-017** Set AWS_S3_VERIFY=True in production
+- [x] **LYL-M-SEC-018** Add CSRF protection for non-API routes
+- [x] **LYL-M-SEC-019** Ensure session cookie is HttpOnly
 
 ### CI/CD
 - [x] **LYL-H-INFRA-010** Add SAST (Bandit for Python, ESLint security for TS) to CI
@@ -1852,40 +1852,40 @@ docker compose up -d
 - [x] **LYL-M-INFRA-025** Add Nginx rate limiting
 - [x] **LYL-M-INFRA-026** Add request size limits
 - [x] **LYL-M-INFRA-027** Enable gzip compression
-- [ ] **LYL-C-DR-005** Add backup encryption (GPG or age)
+- [x] **LYL-C-DR-005** Add backup encryption (GPG or age)
 - [x] **LYL-H-INFRA-016** Implement secret rotation procedures
 - [x] **LYL-H-INFRA-015** Implement database replication (primary/replica)
 
 ### Compliance
-- [ ] **LYL-C-DR-007** Implement breach notification mechanism
-- [ ] **LYL-M-ARCH-020** Implement TenantMiddleware (currently no-op)
-- [ ] **LYL-L-ARCH-036** Mask PII in logs (email addresses)
+- [x] **LYL-C-DR-007** Implement breach notification mechanism
+- [x] **LYL-M-ARCH-020** Implement TenantMiddleware (currently no-op)
+- [x] **LYL-L-ARCH-036** Mask PII in logs (email addresses)
 
 ### Frontend Improvements
 - [x] \*\*LYL-H-FE-003\*\* Create shared TypeScript types (eliminate 15+ duplicates)
-- [ ] **LYL-H-FE-004** Integrate react-hook-form + zod for form handling
-- [ ] **LYL-H-FE-005** Use ConfirmModal consistently (replace inline modals)
+- [x] **LYL-H-FE-004** Integrate react-hook-form + zod for form handling
+- [x] **LYL-H-FE-005** Use ConfirmModal consistently (replace inline modals)
 - [x] \*\*LYL-H-FE-006\*\* Enable TypeScript strict mode
 - [x] \*\*LYL-H-FE-007\*\* Use environment variables for API URLs
 - [x] \*\*LYL-H-FE-012\*\* Add ARIA labels to all interactive elements
 - [ ] **LYL-H-FE-013** Add keyboard navigation for custom components
 - [ ] **LYL-H-FE-014** Standardize dark mode implementation
-- [ ] **LYL-H-SEC-010** Implement CSP without unsafe-inline (nonce-based)
+- [x] **LYL-H-SEC-010** Implement CSP without unsafe-inline (nonce-based)
 - [ ] **LYL-L-FE-037** Remove unused CSS classes
 - [ ] **LYL-M-FE-017** Add useMemo/useCallback for expensive computations
 - [ ] **LYL-M-FE-025** Use next/image for image optimization
-- [ ] **LYL-M-FE-026** Add lazy loading for heavy components
+- [x] **LYL-M-FE-026** Add lazy loading for heavy components
 - [ ] **LYL-M-FE-027** Add code splitting at route level
 
 ### Code Quality
-- [ ] **LYL-M-ARCH-019** Standardize datetime handling (all timezone-aware)
-- [ ] **LYL-M-ARCH-021** Standardize logging format (JSON in prod, verbose in dev)
+- [x] **LYL-M-ARCH-019** Standardize datetime handling (all timezone-aware)
+- [x] **LYL-M-ARCH-021** Standardize logging format (JSON in prod, verbose in dev)
 - [ ] **LYL-M-ARCH-024** Resolve circular import risks
 - [ ] **LYL-M-ARCH-026** Add docstrings to all public methods
 - [ ] **LYL-M-ARCH-028** Add type hints to legacy code
-- [ ] **LYL-M-ARCH-030** Verify Celery task idempotency
-- [ ] **LYL-M-ARCH-031** Add retry logic for transient task failures
-- [ ] **LYL-M-ARCH-034** Implement database migration rollback strategy
+- [x] **LYL-M-ARCH-030** Verify Celery task idempotency
+- [x] **LYL-M-ARCH-031** Add retry logic for transient task failures
+- [x] **LYL-M-ARCH-034** Implement database migration rollback strategy
 
 ---
 
@@ -1904,26 +1904,26 @@ docker compose up -d
 - [ ] **LYL-L-ARCH-042** Add clean() validation to all models
 
 ### Performance & UX
-- [ ] **LYL-L-FE-042** Add PWA manifest for scanner app
+- [x] **LYL-L-FE-042** Add PWA manifest for scanner app
 - [ ] **LYL-L-FE-043** Standardize error toast messages
 - [ ] **LYL-L-FE-044** Add analytics event tracking
-- [ ] **LYL-M-FE-030** Add reduced motion support
-- [ ] **LYL-M-FE-031** Standardize color token usage
-- [ ] **LYL-L-FE-041** Add favicon/app icons
-- [ ] **LYL-M-FE-023** Standardize date formatting
-- [ ] **LYL-M-FE-024** Add timezone handling
-- [ ] **LYL-M-FE-033** Add retry logic for failed API calls
-- [ ] **LYL-M-FE-034** Add offline handling
-- [ ] **LYL-L-INFRA-031** Use npm ci instead of npm in Dockerfile
+- [x] **LYL-M-FE-030** Add reduced motion support
+- [x] **LYL-M-FE-031** Standardize color token usage
+- [x] **LYL-L-FE-041** Add favicon/app icons
+- [x] **LYL-M-FE-023** Standardize date formatting
+- [x] **LYL-M-FE-024** Add timezone handling
+- [x] **LYL-M-FE-033** Add retry logic for failed API calls
+- [x] **LYL-M-FE-034** Add offline handling
+- [x] **LYL-L-INFRA-031** Use npm ci instead of npm in Dockerfile
 - [x] **LYL-L-INFRA-033** Configure Redis idle timeout
 - [x] **LYL-L-INFRA-034** Add environment variable validation
-- [ ] **LYL-L-INFRA-035** Optimize Docker layer caching
+- [x] **LYL-L-INFRA-035** Optimize Docker layer caching
 
 ### Security (Nice to Have)
-- [ ] **LYL-L-SEC-020** Fix referrer header leak in window.location.replace
-- [ ] **LYL-L-SEC-021** Add account lockout notification to user
-- [ ] **LYL-L-SEC-022** Add security headers in development mode
-- [ ] **LYL-L-SEC-023** Add rate limit on Google OAuth login endpoint
+- [x] **LYL-L-SEC-020** Fix referrer header leak in window.location.replace
+- [x] **LYL-L-SEC-021** Add account lockout notification to user
+- [x] **LYL-L-SEC-022** Add security headers in development mode
+- [x] **LYL-L-SEC-023** Add rate limit on Google OAuth login endpoint
 
 ### Architecture (Nice to Have)
 - [ ] **LYL-L-ARCH-022** Evaluate UUID PK performance for time-series (consider ULID)
@@ -1934,22 +1934,22 @@ docker compose up -d
 - [ ] **LYL-M-ARCH-034** Add database connection pooling monitoring
 - [x] \*\*LYL-H-API-005\*\* Fix stamp multi-cycle loss (handle quantity > 2× stamps_required)
 - [x] \*\*LYL-H-API-006\*\* Fix discount float precision (use Decimal throughout)
-- [ ] **LYL-H-API-007** Implement proper membership validation
+- [x] **LYL-H-API-007** Implement proper membership validation
 - [x] \*\*LYL-H-API-010\*\* Enforce automation max_executions_per_day
-- [ ] **LYL-H-API-011** Fix global cooldown → per-customer cooldown
-- [ ] **LYL-H-API-012** Add tenant scope to device queries
+- [x] **LYL-H-API-011** Fix global cooldown → per-customer cooldown
+- [x] **LYL-H-API-012** Add tenant scope to device queries
 - [ ] **LYL-H-API-013** Prevent unlimited trial extensions
-- [ ] **LYL-H-API-015** Add proper error handling for discount card failures
-- [ ] **LYL-H-API-016** Enforce automation daily limit field
-- [ ] **LYL-M-API-017** Fix automation cooldown TOCTOU
-- [ ] **LYL-M-API-018** Add referral code infinite loop guard
-- [ ] **LYL-M-API-020** Fix lost update on automation counter
-- [ ] **LYL-M-API-021** Add self-trigger loop guard
-- [ ] **LYL-M-API-022** Fix slug/UUID confusion
-- [ ] **LYL-M-API-023** DELETE returns 204 instead of 200
-- [ ] **LYL-M-API-024** Fix plan limit TOCTOU
-- [ ] **LYL-M-API-025** Fix fire_trigger tenant override
-- [ ] **LYL-L-API-026** Standardize HTTP status codes
+- [x] **LYL-H-API-015** Add proper error handling for discount card failures
+- [x] **LYL-H-API-016** Enforce automation daily limit field
+- [x] **LYL-M-API-017** Fix automation cooldown TOCTOU
+- [x] **LYL-M-API-018** Add referral code infinite loop guard
+- [x] **LYL-M-API-020** Fix lost update on automation counter
+- [x] **LYL-M-API-021** Add self-trigger loop guard
+- [x] **LYL-M-API-022** Fix slug/UUID confusion
+- [x] **LYL-M-API-023** DELETE returns 204 instead of 200
+- [x] **LYL-M-API-024** Fix plan limit TOCTOU
+- [x] **LYL-M-API-025** Fix fire_trigger tenant override
+- [x] **LYL-L-API-026** Standardize HTTP status codes
 
 ---
 

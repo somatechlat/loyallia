@@ -822,6 +822,7 @@ EOF
     container_name: loyallia-prometheus
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/alerts:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
     ports:
       - "127.0.0.1:33909:9090"

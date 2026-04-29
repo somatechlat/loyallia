@@ -219,7 +219,10 @@ def delete_notification(request, notification_id: str):
 
     notification.delete()
 
-    return {"success": True, "message": "Notification deleted"}
+    # LYL-M-API-023: Return 204 No Content on successful delete
+    from django.http import HttpResponse
+
+    return HttpResponse(status=204)
 
 
 # ============ Business Owner Notifications ============
