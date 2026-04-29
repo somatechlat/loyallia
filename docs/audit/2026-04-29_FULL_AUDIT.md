@@ -1817,7 +1817,7 @@ docker compose up -d
 ### Security Hardening
 - [ ] **LYL-H-INFRA-006** Add TLS between internal services
 - [x] \*\*LYL-H-INFRA-007\*\* Bind API/web to 127.0.0.1, front with Nginx
-- [ ] **LYL-H-INFRA-014** Implement rolling deployment strategy
+- [x] **LYL-H-INFRA-014** Implement rolling deployment strategy
 - [ ] **LYL-H-SEC-005** Evaluate migration to RS256 JWT signing
 - [x] \*\*LYL-H-SEC-006\*\* Remove functional default credentials from .env.example
 - [x] \*\*LYL-H-SEC-008\*\* Remove Google OAuth client ID from public endpoint
@@ -1837,24 +1837,24 @@ docker compose up -d
 - [ ] **LYL-M-SEC-019** Ensure session cookie is HttpOnly
 
 ### CI/CD
-- [ ] **LYL-H-INFRA-010** Add SAST (Bandit for Python, ESLint security for TS) to CI
+- [x] **LYL-H-INFRA-010** Add SAST (Bandit for Python, ESLint security for TS) to CI
 - [ ] **LYL-H-INFRA-010** Add DAST (OWASP ZAP) to CI
-- [ ] **LYL-M-INFRA-021** Add SBOM generation to CI
-- [ ] **LYL-M-INFRA-023** Add container image scanning (Trivy) to CI
-- [ ] **LYL-M-INFRA-024** Add dependency vulnerability scanning (pip-audit, npm audit)
-- [ ] **LYL-L-INFRA-032** Add test coverage upload to CI
+- [x] **LYL-M-INFRA-021** Add SBOM generation to CI
+- [x] **LYL-M-INFRA-023** Add container image scanning (Trivy) to CI
+- [x] **LYL-M-INFRA-024** Add dependency vulnerability scanning (pip-audit, npm audit)
+- [x] **LYL-L-INFRA-032** Add test coverage upload to CI
 
 ### Infrastructure
-- [ ] **LYL-M-INFRA-017** Add container network segmentation (separate frontend/backend networks)
-- [ ] **LYL-M-INFRA-018** Add container hardening (read-only fs, no-new-privileges)
+- [x] **LYL-M-INFRA-017** Add container network segmentation (separate frontend/backend networks)
+- [x] **LYL-M-INFRA-018** Add container hardening (read-only fs, no-new-privileges)
 - [x] \*\*LYL-M-INFRA-019\*\* Add PgBouncer healthcheck
-- [ ] **LYL-M-INFRA-020** Enable Celery worker healthchecks
-- [ ] **LYL-M-INFRA-025** Add Nginx rate limiting
-- [ ] **LYL-M-INFRA-026** Add request size limits
-- [ ] **LYL-M-INFRA-027** Enable gzip compression
+- [x] **LYL-M-INFRA-020** Enable Celery worker healthchecks
+- [x] **LYL-M-INFRA-025** Add Nginx rate limiting
+- [x] **LYL-M-INFRA-026** Add request size limits
+- [x] **LYL-M-INFRA-027** Enable gzip compression
 - [ ] **LYL-C-DR-005** Add backup encryption (GPG or age)
-- [ ] **LYL-H-INFRA-016** Implement secret rotation procedures
-- [ ] **LYL-H-INFRA-015** Implement database replication (primary/replica)
+- [x] **LYL-H-INFRA-016** Implement secret rotation procedures
+- [x] **LYL-H-INFRA-015** Implement database replication (primary/replica)
 
 ### Compliance
 - [ ] **LYL-C-DR-007** Implement breach notification mechanism
@@ -1915,8 +1915,8 @@ docker compose up -d
 - [ ] **LYL-M-FE-033** Add retry logic for failed API calls
 - [ ] **LYL-M-FE-034** Add offline handling
 - [ ] **LYL-L-INFRA-031** Use npm ci instead of npm in Dockerfile
-- [ ] **LYL-L-INFRA-033** Configure Redis idle timeout
-- [ ] **LYL-L-INFRA-034** Add environment variable validation
+- [x] **LYL-L-INFRA-033** Configure Redis idle timeout
+- [x] **LYL-L-INFRA-034** Add environment variable validation
 - [ ] **LYL-L-INFRA-035** Optimize Docker layer caching
 
 ### Security (Nice to Have)
