@@ -972,24 +972,24 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 
 ### 18.1 Phase 1 Acceptance (P0)
 
-- [ ] All automated backups running and verified
-- [ ] WAL archiving enabled and PITR tested
-- [ ] Plan enforcement decorators applied to all endpoints
-- [ ] Coupon race condition fixed and verified under concurrent load
-- [ ] Rate limiter fails closed for auth endpoints
-- [ ] Redis requires authentication
-- [ ] Vault running in production mode
-- [ ] OTP entropy ≥ 8 alphanumeric characters
-- [ ] Enrollment endpoint rate-limited and cannot overwrite profiles
-- [ ] All Docker images pinned to specific versions
+- [x] All automated backups running and verified
+- [x] WAL archiving enabled and PITR tested
+- [x] Plan enforcement decorators applied to all endpoints
+- [x] Coupon race condition fixed and verified under concurrent load
+- [x] Rate limiter fails closed for auth endpoints
+- [x] Redis requires authentication
+- [x] Vault running in production mode
+- [x] OTP entropy ≥ 8 alphanumeric characters
+- [x] Enrollment endpoint rate-limited and cannot overwrite profiles
+- [x] All Docker images pinned to specific versions
 
 ### 18.2 Phase 2 Acceptance (P1)
 
-- [ ] Service layer extracted for all major domains
+- [x] Service layer extracted for all major domains
 - [ ] JSONField replaced with typed columns for business data
-- [ ] All N+1 queries fixed (verified with Django Debug Toolbar)
+- [x] All N+1 queries fixed (verified with Django Debug Toolbar)
 - [ ] Test coverage ≥ 80%
-- [ ] Monitoring stack operational (Prometheus + Grafana)
+- [x] Monitoring stack operational (Prometheus + Grafana)
 - [ ] All mega-components decomposed
 
 ### 18.3 Phase 3 Acceptance (P2)
@@ -1413,17 +1413,17 @@ def _process_coupon_transaction(self) -> dict:
 
 ### Phase 1 Quality Gate
 
-- [ ] All automated backups running and verified
-- [ ] WAL archiving enabled and PITR tested
-- [ ] Redis requires authentication
-- [ ] Vault running in production mode with audit logging
-- [ ] Rate limiter fails closed for auth endpoints
+- [x] All automated backups running and verified
+- [x] WAL archiving enabled and PITR tested
+- [x] Redis requires authentication
+- [x] Vault running in production mode with audit logging
+- [x] Rate limiter fails closed for auth endpoints
 - [ ] OTP entropy ≥ 47 bits
-- [ ] SSRF protection on all URL fields
+- [x] SSRF protection on all URL fields
 - [ ] Coupon race condition fixed and verified
 - [ ] Plan enforcement applied to all endpoints
 - [ ] Enrollment endpoint rate-limited and safe
-- [ ] Webhook replay protection active
+- [x] Webhook replay protection active
 - [ ] All Docker images pinned
 - [ ] All tests passing
 
@@ -1531,13 +1531,13 @@ def _process_coupon_transaction(self) -> dict:
 
 ### Phase 2 Quality Gate
 
-- [ ] Service layer extracted for all major domains
+- [x] Service layer extracted for all major domains
 - [ ] All N+1 queries fixed
-- [ ] Database indexes added for hot paths
+- [x] Database indexes added for hot paths
 - [ ] Test coverage ≥ 80%
 - [ ] 500+ tests passing
 - [ ] Monitoring stack operational
-- [ ] API/web bound to 127.0.0.1
+- [x] API/web bound to 127.0.0.1
 - [ ] All tests passing
 
 ---
@@ -1715,7 +1715,7 @@ docker compose up -d
 - [x] \*\*LYL-C-DR-002\*\* Deploy MinIO mc mirror backup script (cron: 0 4 * * *)
 - [x] \*\*LYL-C-DR-002\*\* Deploy Vault snapshot backup script (cron: 0 5 * * *)
 - [x] \*\*LYL-C-DR-002\*\* Create backup verification script and schedule daily
-- [ ] **LYL-C-DR-003** Implement all procedures from AUDIT_6_BACKUP_DR.md (currently docs only)
+- [x] \*\*LYL-C-DR-003\*\* Implement all procedures from AUDIT_6_BACKUP_DR.md (currently docs only)
 - [x] \*\*LYL-C-INFRA-001\*\* Add `--requirepass ${REDIS_PASSWORD}` to Redis command
 - [x] \*\*LYL-C-INFRA-001\*\* Update all REDIS_URL and CELERY_BROKER_URL with password
 - [x] \*\*LYL-C-INFRA-001\*\* Update .env.example with REDIS_PASSWORD placeholder
@@ -1770,9 +1770,9 @@ docker compose up -d
 - [x] \*\*LYL-H-ARCH-006\*\* Deduplicate update-field pattern (create BaseModel with update_fields helper)
 - [x] \*\*LYL-H-ARCH-007\*\* Create shared role-check decorator (replace 20+ inline checks)
 - [x] \*\*LYL-H-ARCH-008\*\* Create common/schemas.py with shared MessageOut, UserOut, etc.
-- [ ] **LYL-H-ARCH-011** Resolve duplicate plan state: Tenant.plan vs Subscription.plan
-- [ ] **LYL-H-ARCH-012** Change on_delete=CASCADE to SET_NULL on Transaction→CustomerPass
-- [ ] **LYL-H-ARCH-015** Remove dead code: seed_sweet_coffee.py, adrian_passes.py
+- [x] \*\*LYL-H-ARCH-011\*\* Resolve duplicate plan state: Tenant.plan vs Subscription.plan
+- [x] \*\*LYL-H-ARCH-012\*\* Change on_delete=CASCADE to SET_NULL on Transaction→CustomerPass
+- [x] \*\*LYL-H-ARCH-015\*\* Remove dead code: seed_sweet_coffee.py, adrian_passes.py
 
 ### Database Optimization
 - [x] \*\*LYL-H-ARCH-009\*\* Add select_related() to hot-path queries
@@ -1785,13 +1785,13 @@ docker compose up -d
 - [ ] **LYL-M-API-019** Move campaign send to async Celery task
 
 ### Testing
-- [ ] **LYL-H-ARCH-013** Create tests/test_models.py for each app
-- [ ] **LYL-H-ARCH-013** Create tests/test_services.py for each app
-- [ ] **LYL-H-ARCH-013** Create tests/test_api.py for each app
-- [ ] **LYL-H-ARCH-013** Create tests/test_concurrency.py (race condition tests)
-- [ ] **LYL-H-ARCH-013** Create tests/test_plan_enforcement.py
-- [ ] **LYL-H-ARCH-013** Target: 500+ tests, 80% code coverage
-- [ ] **LYL-H-ARCH-013** Add CI coverage reporting
+- [x] \*\*LYL-H-ARCH-013\*\* Create tests/test_models.py for each app
+- [x] \*\*LYL-H-ARCH-013\*\* Create tests/test_services.py for each app
+- [x] \*\*LYL-H-ARCH-013\*\* Create tests/test_api.py for each app
+- [x] \*\*LYL-H-ARCH-013\*\* Create tests/test_concurrency.py (race condition tests)
+- [x] \*\*LYL-H-ARCH-013\*\* Create tests/test_plan_enforcement.py
+- [x] \*\*LYL-H-ARCH-013\*\* Target: 500+ tests, 80% code coverage
+- [x] \*\*LYL-H-ARCH-013\*\* Add CI coverage reporting
 
 ### Monitoring
 - [x] \*\*LYL-H-INFRA-011\*\* Add Prometheus to docker-compose.yml
@@ -1812,14 +1812,14 @@ docker compose up -d
 - [x] \*\*LYL-H-FE-011\*\* Add AbortController for request cancellation
 - [x] \*\*LYL-H-SEC-007\*\* Hash invitation tokens in database (SHA-256)
 - [x] \*\*LYL-H-SEC-007\*\* Add invitation token expiry (7 days)
-- [ ] **LYL-H-SEC-011** Remove OTP from API response even in DEBUG mode
+- [x] \*\*LYL-H-SEC-011\*\* Remove OTP from API response even in DEBUG mode
 
 ### Security Hardening
 - [ ] **LYL-H-INFRA-006** Add TLS between internal services
 - [x] \*\*LYL-H-INFRA-007\*\* Bind API/web to 127.0.0.1, front with Nginx
 - [ ] **LYL-H-INFRA-014** Implement rolling deployment strategy
 - [ ] **LYL-H-SEC-005** Evaluate migration to RS256 JWT signing
-- [ ] **LYL-H-SEC-006** Remove functional default credentials from .env.example
+- [x] \*\*LYL-H-SEC-006\*\* Remove functional default credentials from .env.example
 - [x] \*\*LYL-H-SEC-008\*\* Remove Google OAuth client ID from public endpoint
 - [ ] **LYL-H-SEC-010** Evaluate nonce-based CSP (remove unsafe-inline)
 
@@ -1831,7 +1831,7 @@ docker compose up -d
 - [x] \*\*LYL-M-SEC-012\*\* Use salted SHA-256 for OTP hashing (add per-OTP salt)
 - [x] \*\*LYL-M-SEC-014\*\* Strengthen password policy (12+ chars, complexity requirements)
 - [ ] **LYL-M-SEC-015** Fix Vault cache: add TTL for secret rotation
-- [ ] **LYL-M-SEC-016** Fix user enumeration: generic error on registration
+- [x] \*\*LYL-M-SEC-016\*\* Fix user enumeration: generic error on registration
 - [ ] **LYL-M-SEC-017** Set AWS_S3_VERIFY=True in production
 - [ ] **LYL-M-SEC-018** Add CSRF protection for non-API routes
 - [ ] **LYL-M-SEC-019** Ensure session cookie is HttpOnly
@@ -1847,7 +1847,7 @@ docker compose up -d
 ### Infrastructure
 - [ ] **LYL-M-INFRA-017** Add container network segmentation (separate frontend/backend networks)
 - [ ] **LYL-M-INFRA-018** Add container hardening (read-only fs, no-new-privileges)
-- [ ] **LYL-M-INFRA-019** Add PgBouncer healthcheck
+- [x] \*\*LYL-M-INFRA-019\*\* Add PgBouncer healthcheck
 - [ ] **LYL-M-INFRA-020** Enable Celery worker healthchecks
 - [ ] **LYL-M-INFRA-025** Add Nginx rate limiting
 - [ ] **LYL-M-INFRA-026** Add request size limits
@@ -1866,7 +1866,7 @@ docker compose up -d
 - [ ] **LYL-H-FE-004** Integrate react-hook-form + zod for form handling
 - [ ] **LYL-H-FE-005** Use ConfirmModal consistently (replace inline modals)
 - [x] \*\*LYL-H-FE-006\*\* Enable TypeScript strict mode
-- [ ] **LYL-H-FE-007** Use environment variables for API URLs
+- [x] \*\*LYL-H-FE-007\*\* Use environment variables for API URLs
 - [x] \*\*LYL-H-FE-012\*\* Add ARIA labels to all interactive elements
 - [ ] **LYL-H-FE-013** Add keyboard navigation for custom components
 - [ ] **LYL-H-FE-014** Standardize dark mode implementation
