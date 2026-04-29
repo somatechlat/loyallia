@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { programsApi } from '@/lib/api';
 import { useAuth, User } from '@/lib/auth';
 import toast from 'react-hot-toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 
 const CARD_TYPE_LABELS: Record<string, string> = {
@@ -243,82 +244,34 @@ export default function ProgramsPage() {
         <ProgramSections programs={programs} user={user} openSuspendModal={openSuspendModal} openDeleteModal={openDeleteModal} />
       )}
 
-      {/* ── Suspend Confirmation Modal ── */}
-      {showSuspendModal && (
-        <div className="fixed inset-0 bg-surface-900/60 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-surface-900 rounded-3xl p-8 w-full max-w-md shadow-2xl border border-surface-200 dark:border-surface-700">
-            <div className="text-center">
-              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                targetProgram?.is_active ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-              }`}>
-                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-2">
-                {targetProgram?.is_active ? 'Suspender Programa' : 'Reactivar Programa'}
-              </h3>
-              <p className="text-surface-500 mb-6">
-                {targetProgram?.is_active 
-                  ? `¿Estás seguro de suspender "${targetProgram?.name}"? Los clientes no podrán usar sus tarjetas temporalmente.`
-                  : `¿Estás seguro de reactivar "${targetProgram?.name}"?`}
-              </p>
-              <div className="flex gap-3">
-                <button 
-                  onClick={closeModal}
-                  className="flex-1 px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-semibold hover:bg-surface-200 dark:hover:bg-surface-700 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleSuspend}
-                  disabled={processing}
-                  className={`flex-1 px-4 py-3 rounded-xl text-white font-semibold transition-all disabled:opacity-50 ${
-                    targetProgram?.is_active ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'
-                  }`}
-                >
-                  {processing ? 'Procesando...' : (targetProgram?.is_active ? 'Suspender' : 'Reactivar')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* LYL-H-FE-005: Standardized ConfirmModal for suspend/reactivate */}
+      {showSuspendModal && targetProgram && (
+        <ConfirmModal
+          title={targetProgram.is_active ? 'Suspender Programa' : 'Reactivar Programa'}
+          message={
+            targetProgram.is_active
+              ? `¿Estás seguro de suspender "${targetProgram.name}"? Los clientes no podrán usar sus tarjetas temporalmente.`
+              : `¿Estás seguro de reactivar "${targetProgram.name}"?`
+          }
+          confirmLabel={targetProgram.is_active ? 'Suspender' : 'Reactivar'}
+          variant={targetProgram.is_active ? 'warning' : 'default'}
+          onConfirm={handleSuspend}
+          onCancel={closeModal}
+          loading={processing}
+        />
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-surface-900/60 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-surface-900 rounded-3xl p-8 w-full max-w-md shadow-2xl border border-red-200 dark:border-red-900/30">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
-                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-2">Eliminar Programa</h3>
-              <div className="p-4 bg-red-50 rounded-2xl mb-6">
-                <p className="text-red-800 text-sm font-medium">
-                  Atención: Esta acción es permanente. Se eliminarán todas las tarjetas emitidas ({targetProgram?.enrollments_count}) y el historial de este programa.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={closeModal}
-                  className="flex-1 px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-semibold hover:bg-surface-200 dark:hover:bg-surface-700 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleDelete}
-                  disabled={processing}
-                  className="flex-1 px-4 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-all shadow-lg shadow-red-200 disabled:opacity-50"
-                >
-                  {processing ? 'Eliminando...' : 'Sí, eliminar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* LYL-H-FE-005: Standardized ConfirmModal for delete */}
+      {showDeleteModal && targetProgram && (
+        <ConfirmModal
+          title="Eliminar Programa"
+          message={`¿Estás seguro de eliminar "${targetProgram.name}"? Se eliminarán todas las tarjetas emitidas (${targetProgram.enrollments_count ?? 0}) y el historial de este programa. Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={handleDelete}
+          onCancel={closeModal}
+          loading={processing}
+        />
       )}
     </div>
   );

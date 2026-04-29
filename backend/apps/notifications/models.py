@@ -89,6 +89,9 @@ class PushDevice(models.Model):
         ordering = ["-registered_at"]
         unique_together = ["customer", "device_token"]
 
+    def __repr__(self) -> str:
+        return f"<PushDevice: {self.customer.full_name} - {self.device_type}>"
+
     def __str__(self) -> str:
         return f"{self.customer.full_name} - {self.device_type}"
 
@@ -169,6 +172,9 @@ class Notification(models.Model):
             models.Index(fields=["customer", "-created_at"]),
             models.Index(fields=["is_sent", "is_read"]),
         ]
+
+    def __repr__(self) -> str:
+        return f"<Notification: {self.title} - {self.customer.full_name}>"
 
     def __str__(self) -> str:
         return f"{self.title} - {self.customer.full_name}"
