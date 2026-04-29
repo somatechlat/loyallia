@@ -42,7 +42,7 @@ class TenantAdminOut(BaseModel):
             id=str(t.id),
             name=t.name,
             slug=t.slug,
-            plan=t.plan,
+            plan=t.effective_plan,  # LYL-H-ARCH-011: derive from Subscription
             is_active=t.is_active,
             trial_days_remaining=t.trial_days_remaining,
             country=t.country,
@@ -133,7 +133,7 @@ class TenantAdminUpdateIn(BaseModel):
     phone: str | None = None
     email: str | None = None
     website: str | None = None
-    plan: str | None = None
+    # LYL-H-ARCH-011: plan removed — use Subscription endpoints to change plan
     is_active: bool | None = None
 
 

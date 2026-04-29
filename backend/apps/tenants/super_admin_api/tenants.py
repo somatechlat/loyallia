@@ -75,8 +75,23 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
     """Lists all tenants on the platform. SUPER_ADMIN only."""
     _require_super_admin(request)
     qs = Tenant.objects.prefetch_related("users", "locations").order_by("-created_at")
+    # LYL-H-ARCH-011: Filter by Subscription status instead of denormalized Tenant.plan
     if plan:
-        qs = qs.filter(plan=plan)
+        from apps.billing.models import Subscription, SubscriptionStatus
+
+        plan_status_map = {
+            "trial": SubscriptionStatus.TRIALING,
+            "full": SubscriptionStatus.ACTIVE,
+            "suspended": SubscriptionStatus.SUSPENDED,
+        }
+        target_status = plan_status_map.get(plan)
+        if target_status:
+            tenant_ids = Subscription.objects.filter(
+                status=target_status
+            ).values_list("tenant_id", flat=True)
+            qs = qs.filter(id__in=tenant_ids)
+        else:
+            qs = qs.filter(plan=plan)
     if is_active is not None:
         qs = qs.filter(is_active=is_active)
     return [TenantAdminOut.from_tenant(t) for t in qs]
@@ -116,7 +131,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 email=payload.email,
                 website=payload.website,
                 country="EC",
-                plan="full",
+                plan="trial",  # LYL-H-ARCH-011: denormalized; Subscription is authoritative
                 is_active=True,
             )
             temp_password = secrets.token_urlsafe(8)
@@ -200,6 +215,8 @@ def update_tenant_admin(request, tenant_id: str):
         )
 
     update_fields = ["updated_at"]
+    # LYL-H-ARCH-011: "plan" removed — use Subscription endpoints to change plan.
+    # Tenant.plan is a denormalized cache; Subscription is authoritative.
     for field in [
         "name",
         "legal_name",
@@ -211,7 +228,6 @@ def update_tenant_admin(request, tenant_id: str):
         "phone",
         "email",
         "website",
-        "plan",
         "is_active",
     ]:
         value = getattr(payload, field, None)
