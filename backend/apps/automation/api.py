@@ -18,6 +18,7 @@ from apps.automation.models import (
 from apps.cards.models import Card
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
+from common.role_check import require_role
 
 router = Router()
 
@@ -129,10 +130,9 @@ def list_automations(request, active_only: bool = False):
 
 
 @router.post("/", auth=jwt_auth, summary="Create automation")
+@require_role("OWNER")
 def create_automation(request, data: CreateAutomationSchema):
     """Create a new automation. OWNER only."""
-    if not is_owner(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     # Validate trigger and action
     if data.trigger not in [choice[0] for choice in AutomationTrigger.choices]:
         raise HttpError(
@@ -179,10 +179,9 @@ def create_automation(request, data: CreateAutomationSchema):
 
 
 @router.put("/{automation_id}/", auth=jwt_auth, summary="Update automation")
+@require_role("OWNER")
 def update_automation(request, automation_id: str, data: UpdateAutomationSchema):
     """Update an automation. OWNER only."""
-    if not is_owner(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     # Update fields
@@ -238,10 +237,9 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
 
 
 @router.delete("/{automation_id}/", auth=jwt_auth, summary="Delete automation")
+@require_role("OWNER")
 def delete_automation(request, automation_id: str):
     """Delete an automation. OWNER only."""
-    if not is_owner(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     automation.delete()
@@ -252,10 +250,9 @@ def delete_automation(request, automation_id: str):
 @router.post(
     "/{automation_id}/toggle/", auth=jwt_auth, summary="Toggle automation active status"
 )
+@require_role("OWNER")
 def toggle_automation(request, automation_id: str):
     """Enable or disable an automation. OWNER only."""
-    if not is_owner(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     automation.is_active = not automation.is_active
@@ -269,10 +266,9 @@ def toggle_automation(request, automation_id: str):
 @router.post(
     "/{automation_id}/execute/", auth=jwt_auth, summary="Execute automation manually"
 )
+@require_role("OWNER")
 def execute_automation_manually(request, automation_id: str, customer_id: str):
     """Manually execute an automation for a specific customer. OWNER only."""
-    if not is_owner(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
 
     from apps.customers.models import Customer

@@ -78,7 +78,7 @@ export default function BillingPage() {
     );
   }
 
-  const statusInfo = STATUS_COLORS[sub?.status ?? ''] ?? STATUS_COLORS.active;
+  const statusInfo = STATUS_COLORS[sub?.status ?? ''] ?? STATUS_COLORS['active'] ?? { bg: 'bg-gray-100', text: 'text-gray-700', label: sub?.status ?? 'Desconocido' };
   const planIcon = PLAN_ICONS[sub?.plan ?? ''] ?? '📦';
   const planLabel = PLAN_LABELS[sub?.plan ?? ''] ?? sub?.plan ?? 'Plan';
 
