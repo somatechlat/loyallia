@@ -23,7 +23,13 @@ SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True  # LYL-M-SEC-019: Prevent JS access to session cookie
+SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection complement
 CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True  # Prevent JS access to CSRF cookie
+
+# LYL-M-SEC-017: Verify TLS certificate for S3/MinIO connections in production
+AWS_S3_VERIFY = True
 
 # Trust the Nginx proxy for host validation
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="rewards.loyallia.com", cast=Csv())

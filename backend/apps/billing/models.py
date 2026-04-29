@@ -13,6 +13,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.tenants.models import Tenant
+from common.models import TimestampedModel
 
 
 # =============================================================================
@@ -52,14 +53,13 @@ class PlanFeature:
 # =============================================================================
 
 
-class SubscriptionPlan(models.Model):
+class SubscriptionPlan(TimestampedModel):
     """
     Configurable SaaS pricing plan. Managed by SUPER_ADMIN.
     Supports Starter, Professional, Enterprise, and custom tiers.
     Plans are created via the Super Admin wizard with selectable features.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, verbose_name="Nombre del plan")
     slug = models.SlugField(max_length=50, unique=True)
     description = models.TextField(blank=True, default="", verbose_name="Descripción")
@@ -113,17 +113,25 @@ class SubscriptionPlan(models.Model):
     )
     sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Orden")
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_subscription_plans"
         verbose_name = "Plan de Suscripción"
         verbose_name_plural = "Planes de Suscripción"
         ordering = ["sort_order", "price_monthly"]
 
+    def __repr__(self) -> str:
+        return f"<SubscriptionPlan: {self.name} ${self.price_monthly}/mes>"
+
     def __str__(self) -> str:
         return f"{self.name} — ${self.price_monthly}/mes"
+
+    def clean(self) -> None:
+        """Validate subscription plan data."""
+        super().clean()
+        if self.price_monthly < 0:
+            raise ValueError("price_monthly must be non-negative")
+        if self.price_annual < 0:
+            raise ValueError("price_annual must be non-negative")
 
     @property
     def price_monthly_with_tax(self) -> Decimal:
@@ -160,14 +168,13 @@ class SubscriptionStatus(models.TextChoices):
 # =============================================================================
 
 
-class Subscription(models.Model):
+class Subscription(TimestampedModel):
     """
     Tenant subscription to the Loyallia platform.
     Linked to a SubscriptionPlan for dynamic limits and pricing.
     Payment processing via pluggable gateway (settings.PAYMENT_GATEWAY_PROVIDER).
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.OneToOneField(
         Tenant,
         on_delete=models.CASCADE,

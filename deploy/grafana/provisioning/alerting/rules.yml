@@ -1,0 +1,232 @@
+# =============================================================================
+# Grafana Alerting Rules — LYL-H-INFRA-013
+# Alerts for: backup failures, error rates, disk space, service health
+# =============================================================================
+apiVersion: 1
+
+groups:
+  # ---------------------------------------------------------------------------
+  # Service Health Alerts
+  # ---------------------------------------------------------------------------
+  - orgId: 1
+    name: service-health
+    folder: loyallia
+    interval: 1m
+    rules:
+      - uid: svc-down-api
+        title: "API Service Down"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'up{job="api"} == 0'
+              instant: true
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "Django API service is down"
+          description: "The API healthcheck has been failing for >2 minutes."
+
+      - uid: svc-down-postgres
+        title: "PostgreSQL Down"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'up{job="postgres"} == 0'
+              instant: true
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        labels:
+          severity: critical
+          service: postgres
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL exporter has been unreachable for >2 minutes."
+
+      - uid: svc-down-redis
+        title: "Redis Down"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'up{job="redis"} == 0'
+              instant: true
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+
+  # ---------------------------------------------------------------------------
+  # Error Rate Alerts
+  # ---------------------------------------------------------------------------
+  - orgId: 1
+    name: error-rates
+    folder: loyallia
+    interval: 1m
+    rules:
+      - uid: err-high-5xx
+        title: "High 5xx Error Rate"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05'
+              instant: true
+        noDataState: OK
+        execErrState: Alerting
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "5xx error rate exceeds 5%"
+          description: "More than 5% of API requests are returning 5xx errors."
+
+      - uid: err-high-celery-failures
+        title: "High Celery Task Failure Rate"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'sum(rate(celery_task_failed_total[10m])) / sum(rate(celery_task_succeeded_total[10m]) + rate(celery_task_failed_total[10m])) > 0.1'
+              instant: true
+        noDataState: OK
+        execErrState: Alerting
+        for: 5m
+        labels:
+          severity: warning
+          service: celery
+        annotations:
+          summary: "Celery task failure rate exceeds 10%"
+
+  # ---------------------------------------------------------------------------
+  # Disk Space Alerts
+  # ---------------------------------------------------------------------------
+  - orgId: 1
+    name: disk-space
+    folder: loyallia
+    interval: 5m
+    rules:
+      - uid: disk-postgres-low
+        title: "PostgreSQL Disk Space Low"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: '(node_filesystem_avail_bytes{mountpoint="/var/lib/postgresql/data"} / node_filesystem_size_bytes{mountpoint="/var/lib/postgresql/data"}) < 0.15'
+              instant: true
+        noDataState: OK
+        execErrState: Alerting
+        for: 10m
+        labels:
+          severity: warning
+          service: postgres
+        annotations:
+          summary: "PostgreSQL disk space below 15%"
+          description: "Database storage is running low. Consider archiving or expanding."
+
+      - uid: disk-root-low
+        title: "Root Disk Space Low"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: '(node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.10'
+              instant: true
+        noDataState: OK
+        execErrState: Alerting
+        for: 10m
+        labels:
+          severity: critical
+          service: host
+        annotations:
+          summary: "Root disk space below 10%"
+
+  # ---------------------------------------------------------------------------
+  # Backup Health Alerts
+  # ---------------------------------------------------------------------------
+  - orgId: 1
+    name: backup-health
+    folder: loyallia
+    interval: 5m
+    rules:
+      - uid: backup-pg-stale
+        title: "PostgreSQL Backup Stale"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'time() - loyallia_backup_last_success_timestamp{type="pg_dump"} > 86400'
+              instant: true
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 30m
+        labels:
+          severity: critical
+          service: backup
+        annotations:
+          summary: "PostgreSQL backup has not run in 24 hours"
+          description: "Check backup cron job and deploy/backups/pg_dump_backup.sh"
+
+      - uid: backup-redis-stale
+        title: "Redis Backup Stale"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'time() - loyallia_backup_last_success_timestamp{type="redis"} > 86400'
+              instant: true
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 30m
+        labels:
+          severity: warning
+          service: backup
+        annotations:
+          summary: "Redis backup has not run in 24 hours"
