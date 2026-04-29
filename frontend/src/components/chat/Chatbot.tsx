@@ -112,11 +112,11 @@ function processInline(text: string) {
     let firstMatch: { index: number; length: number; type: 'bold' | 'code'; content: string } | null = null;
 
     if (boldMatch?.index !== undefined) {
-      firstMatch = { index: boldMatch.index, length: boldMatch[0].length, type: 'bold', content: boldMatch[1] };
+      firstMatch = { index: boldMatch.index, length: boldMatch[0]!.length, type: 'bold', content: boldMatch[1]! };
     }
     if (codeMatch?.index !== undefined) {
       if (!firstMatch || codeMatch.index < firstMatch.index) {
-        firstMatch = { index: codeMatch.index, length: codeMatch[0].length, type: 'code', content: codeMatch[1] };
+        firstMatch = { index: codeMatch.index, length: codeMatch[0]!.length, type: 'code', content: codeMatch[1]! };
       }
     }
 

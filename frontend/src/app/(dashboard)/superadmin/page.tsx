@@ -23,7 +23,7 @@ import dynamic from 'next/dynamic';
 const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), { ssr: false });
 
 export default function SuperAdminDashboard() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [locations, setLocations] = useState<LocationPin[]>([]);
   const [loading, setLoading] = useState(true);

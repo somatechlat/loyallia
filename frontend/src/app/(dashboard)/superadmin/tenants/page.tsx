@@ -372,7 +372,7 @@ export default function SuperAdminTenants() {
                     <DRow l="Teléfono" v={dt.phone||'—'} /><DRow l="País" v="Ecuador" />
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <StatBox v={dt.user_count} l="Usuarios" /><StatBox v={dt.location_count} l="Sucursales" /><StatBox v={dt.trial_days_remaining} l="Días Trial" />
+                    <StatBox v={dt.user_count ?? 0} l="Usuarios" /><StatBox v={dt.location_count ?? 0} l="Sucursales" /><StatBox v={dt.trial_days_remaining ?? 0} l="Días Trial" />
                   </div>
                   <div className="bg-surface-50/80 rounded-xl p-3"><p className="text-[10px] font-semibold text-surface-400 uppercase">Registrado</p><p className="text-sm text-surface-700">{new Date(dt.created_at).toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
                   <button onClick={() => setDtEdit(true)} className="w-full bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200 flex items-center justify-center gap-2">{IC.edit} Editar Información</button>
@@ -405,7 +405,7 @@ export default function SuperAdminTenants() {
                   </div>
                   {dtLocs.filter(l => l.latitude && l.longitude).length > 0 && (
                     <div className="h-[200px] rounded-xl overflow-hidden border border-surface-200/50">
-                      <LocationMap locations={dtLocs.filter(l => l.latitude && l.longitude).map(l => ({ id: l.id, name: l.name, lat: l.latitude, lng: l.longitude, city: l.city, address: l.address, phone: l.phone, is_active: l.is_active, is_primary: l.is_primary, tenant_name: dt.name }))} />
+                      <LocationMap locations={dtLocs.filter(l => l.latitude && l.longitude).map(l => ({ id: l.id, name: l.name, lat: l.latitude!, lng: l.longitude!, city: l.city, address: l.address, phone: l.phone, is_active: l.is_active, is_primary: l.is_primary, tenant_name: dt.name }))} />
                     </div>
                   )}
                   {dtLocsLoading ? <div className="flex justify-center py-8"><div className="spinner w-6 h-6" /></div> : (
@@ -438,8 +438,8 @@ export default function SuperAdminTenants() {
                       <div>
                         <label className="text-xs font-semibold text-surface-500 mb-1 block">Ubicación en el Mapa</label>
                         <LocationPicker
-                          lat={locForm.latitude}
-                          lng={locForm.longitude}
+                          lat={locForm.latitude ?? null}
+                          lng={locForm.longitude ?? null}
                           onChange={(lat, lng, address) => {
                             setLocForm(f => ({ ...f, latitude: lat, longitude: lng, ...(address && !f.address ? { address: address.split(',').slice(0, 3).join(',') } : {}) }));
                           }}

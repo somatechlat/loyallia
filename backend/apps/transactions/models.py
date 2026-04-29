@@ -42,9 +42,12 @@ class Transaction(models.Model):
         related_name="transactions",
         verbose_name="Negocio",
     )
+    # LYL-H-ARCH-012: SET_NULL instead of CASCADE to preserve transaction history
     customer_pass = models.ForeignKey(
         CustomerPass,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="transactions",
         verbose_name="Pase del cliente",
     )

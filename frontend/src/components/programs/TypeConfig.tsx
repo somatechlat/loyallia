@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import Tooltip from '@/components/ui/Tooltip';
 
-type ConfigProps = { meta: Record<string, unknown>; setMeta: (m: Record<string, unknown>) => void };
+type ConfigProps = { meta: Record<string, unknown>; setMeta: (m: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => void };
 
 /* ─── Memoized per-type config components (PERF-009) ──────────────────── */
 

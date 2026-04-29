@@ -164,6 +164,12 @@ services:
     networks:
       - loyallia-net
     restart: unless-stopped
+    # LYL-M-INFRA-019: PgBouncer healthcheck
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U loyallia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
