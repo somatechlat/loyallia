@@ -35,24 +35,16 @@ logger = logging.getLogger(__name__)
 
 
 def _get_apple_config() -> dict:
-    """Return Apple certificate configuration from Django settings."""
+    """Return Apple configuration from Django settings."""
     return {
         "pass_type_id": getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", ""),
         "team_id": getattr(settings, "APPLE_TEAM_IDENTIFIER", ""),
-        "cert_path": Path(getattr(settings, "APPLE_CERT_PATH", "")),
-        "key_path": Path(getattr(settings, "APPLE_CERT_KEY_PATH", "")),
-        "wwdr_path": Path(getattr(settings, "APPLE_WWDR_CERT_PATH", "")),
     }
 
 
-def _check_certs_exist() -> bool:
-    """Check that all required Apple certificate files exist."""
+def _check_config_ready() -> bool:
+    """Check that all required Apple configuration is set."""
     config = _get_apple_config()
-    for key in ("cert_path", "key_path", "wwdr_path"):
-        path = config[key]
-        if not path.exists():
-            logger.warning("Apple cert file not found: %s -> %s", key, path)
-            return False
     if not config["pass_type_id"] or not config["team_id"]:
         logger.warning("APPLE_PASS_TYPE_IDENTIFIER or APPLE_TEAM_IDENTIFIER not set")
         return False
@@ -129,17 +121,26 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     return pass_json
 
 
-def _sign_manifest(manifest_json: bytes, config: dict) -> bytes | None:
-    """Sign the manifest.json using PKCS#7 detached signature."""
+def _sign_manifest(manifest_json: bytes) -> bytes | None:
+    """Sign the manifest.json using PKCS#7 detached signature.
+    Fetches certificates directly from Vault to avoid filesystem storage.
+    """
+    from common.vault import get_secret
+
+    cert_pem = get_secret("APPLE_CERT_PEM", strict=True)
+    key_pem = get_secret("APPLE_CERT_KEY_PEM", strict=True)
+    wwdr_pem = get_secret("APPLE_WWDR_CERT_PEM", strict=True)
+
+    if not all([cert_pem, key_pem, wwdr_pem]):
+        logger.error("Missing Apple certificates in Vault")
+        return None
+
     try:
         from OpenSSL import crypto
 
-        with open(config["cert_path"], "rb") as f:
-            cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
-        with open(config["key_path"], "rb") as f:
-            key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
-        with open(config["wwdr_path"], "rb") as f:
-            wwdr = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
+        cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem.encode("utf-8"))
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key_pem.encode("utf-8"))
+        wwdr = crypto.load_certificate(crypto.FILETYPE_PEM, wwdr_pem.encode("utf-8"))
 
         bio_in = crypto._new_mem_buf(manifest_json)
         pkcs7 = crypto._lib.PKCS7_sign(
@@ -165,11 +166,10 @@ def generate_pkpass(customer_pass) -> bytes | None:
     """Generate a real .pkpass file (signed ZIP) for Apple Wallet."""
     config = _get_apple_config()
 
-    if not _check_certs_exist():
+    if not _check_config_ready():
         logger.warning(
-            "Apple Wallet certificates not configured. "
-            "Provide: APPLE_CERT_PATH, APPLE_CERT_KEY_PATH, APPLE_WWDR_CERT_PATH, "
-            "APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER"
+            "Apple Wallet configuration missing. "
+            "Provide: APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER"
         )
         return None
 
@@ -257,7 +257,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
         manifest[filename] = hashlib.sha1(data).hexdigest()
 
     manifest_bytes = json.dumps(manifest).encode("utf-8")
-    signature = _sign_manifest(manifest_bytes, config)
+    signature = _sign_manifest(manifest_bytes)
     if signature is None:
         logger.error("Failed to produce Apple pass signature")
         return None
@@ -280,5 +280,5 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
 
 def is_apple_wallet_configured() -> bool:
-    """Check if Apple Wallet certificates are properly configured."""
-    return _check_certs_exist()
+    """Check if Apple Wallet is properly configured."""
+    return _check_config_ready()

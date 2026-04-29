@@ -84,6 +84,7 @@ def readiness_check(request: HttpRequest):
 from apps.analytics.api import router as analytics_router
 from apps.api.upload_api import router as upload_router
 from apps.authentication.api import router as auth_router
+from apps.authentication.users_api import router as users_router
 from apps.automation.api import router as automation_router
 from apps.billing.api import router as billing_router
 from apps.billing.payment_api import router as billing_payment_router
@@ -100,6 +101,7 @@ from apps.transactions.api import router as transactions_router
 from apps.transactions.api import scanner_router
 
 api.add_router("/auth/", auth_router, tags=["Authentication"])
+api.add_router("/auth/", users_router, tags=["Authentication"])
 api.add_router("/tenants/", tenants_router, tags=["Tenants"])
 api.add_router("/programs/", cards_router, tags=["Loyalty Programs"])
 api.add_router("/customers/", customers_router, tags=["Customers"])
