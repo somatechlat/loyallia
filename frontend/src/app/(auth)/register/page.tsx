@@ -1,11 +1,19 @@
 'use client';
+/**
+ * LYL-H-FE-004: Register form using react-hook-form + zod.
+ * LYL-M-FE-020: Client-side validation with zod schemas.
+ * LYL-M-FE-032: Form validation feedback (inline error messages).
+ */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useGoogleScript } from '@/lib/useGoogleScript';
+import { registerSchema, type RegisterFormData } from '@/lib/validations';
 
 const COUNTRY_CODES = [
   { code: '+593', country: 'Ecuador', flag: '🇪🇨' },
@@ -35,6 +43,34 @@ const COUNTRY_CODES = [
   { code: '+81',  country: 'Japón', flag: '🇯🇵' },
 ];
 
+/** Field wrapper with label and error message — LYL-M-FE-032 */
+function FormField({
+  label,
+  htmlFor,
+  error,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="label" htmlFor={htmlFor}>{label}</label>
+      {children}
+      {error && (
+        <p id={`${htmlFor}-error`} role="alert" className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+          <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   const { loginWithGoogle } = useAuth();
   const router = useRouter();
@@ -50,8 +86,21 @@ export default function RegisterPage() {
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [form, setForm] = useState({
-    business_name: '', email: '', password: '', first_name: '', last_name: '', phone_number: '',
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      business_name: '',
+      first_name: '',
+      last_name: '',
+      email: '',
+      password: '',
+      phone_number: '',
+    },
   });
 
   useEffect(() => {
@@ -65,9 +114,6 @@ export default function RegisterPage() {
   const filteredCountries = COUNTRY_CODES.filter(c =>
     phoneSearch === '' || c.country.toLowerCase().includes(phoneSearch.toLowerCase()) || c.code.includes(phoneSearch)
   );
-
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(f => ({ ...f, [k]: e.target.value }));
 
   useEffect(() => {
     authApi.googleConfig()
@@ -85,7 +131,6 @@ export default function RegisterPage() {
     setShowGoogleBizName(true);
   }, []);
 
-  // Load Google Identity Services script and render button
   useGoogleScript({
     enabled: googleEnabled,
     clientId: googleClientId,
@@ -113,32 +158,22 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.business_name.trim() || !form.email.trim() || !form.password.trim()
-      || !form.first_name.trim() || !form.last_name.trim()) {
-      toast.error('Todos los campos son obligatorios');
-      return;
-    }
-    if (form.password.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres');
-      return;
-    }
+  const onSubmit = async (data: RegisterFormData) => {
     setLoading(true);
     try {
       const submitData = {
-        ...form,
-        phone_number: form.phone_number ? `${countryCode}${form.phone_number.replace(/^0+/, '')}` : '',
+        ...data,
+        phone_number: data.phone_number ? `${countryCode}${data.phone_number.replace(/^0+/, '')}` : '',
       };
       await authApi.register(submitData);
       toast.success('¡Cuenta creada! Redirigiendo al inicio de sesión...');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: unknown) {
-      const data = (err as { response?: { data?: Record<string, string | string[]> } })?.response?.data;
-      if (data) {
-        const msg = typeof data.error === 'string'
-          ? data.error
-          : Object.values(data).flat().join(' ');
+      const errData = (err as { response?: { data?: Record<string, string | string[]> } })?.response?.data;
+      if (errData) {
+        const msg = typeof errData.error === 'string'
+          ? errData.error
+          : Object.values(errData).flat().join(' ');
         toast.error(msg);
       } else {
         toast.error('Error al registrarse. Inténtalo de nuevo.');
@@ -148,7 +183,7 @@ export default function RegisterPage() {
     }
   };
 
-  // Google Business Name step (shown after Google sign-in for new users)
+  // Google Business Name step
   if (showGoogleBizName) {
     return (
       <div className="space-y-5">
@@ -198,7 +233,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div>
         <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">Crear cuenta gratuita</h2>
         <p className="text-surface-500 text-sm mt-1">5 días de prueba sin tarjeta de crédito</p>
@@ -226,20 +261,66 @@ export default function RegisterPage() {
         </>
       )}
 
-      {[
-        { id: 'business_name', label: 'Nombre del negocio', placeholder: 'Mi Negocio S.A.', type: 'text', autoComplete: 'organization' },
-        { id: 'first_name',    label: 'Nombre',             placeholder: 'Juan',             type: 'text', autoComplete: 'given-name' },
-        { id: 'last_name',     label: 'Apellido',           placeholder: 'Pérez',            type: 'text', autoComplete: 'family-name' },
-        { id: 'email',         label: 'Correo electrónico', placeholder: 'tu@negocio.com',   type: 'email', autoComplete: 'email' },
-        { id: 'password',      label: 'Contraseña',         placeholder: '••••••••',         type: 'password', autoComplete: 'new-password' },
-      ].map(({ id, label, placeholder, type, autoComplete }) => (
-        <div key={id}>
-          <label className="label" htmlFor={`register-${id}`}>{label}</label>
-          <input id={`register-${id}`} name={id} type={type} className="input" placeholder={placeholder}
-            autoComplete={autoComplete}
-            value={form[id as keyof typeof form]} onChange={set(id)} required />
-        </div>
-      ))}
+      <FormField label="Nombre del negocio" htmlFor="register-business_name" error={errors.business_name?.message}>
+        <input
+          id="register-business_name"
+          type="text"
+          className={`input ${errors.business_name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+          placeholder="Mi Negocio S.A."
+          autoComplete="organization"
+          aria-invalid={!!errors.business_name}
+          {...register('business_name')}
+        />
+      </FormField>
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="Nombre" htmlFor="register-first_name" error={errors.first_name?.message}>
+          <input
+            id="register-first_name"
+            type="text"
+            className={`input ${errors.first_name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+            placeholder="Juan"
+            autoComplete="given-name"
+            aria-invalid={!!errors.first_name}
+            {...register('first_name')}
+          />
+        </FormField>
+        <FormField label="Apellido" htmlFor="register-last_name" error={errors.last_name?.message}>
+          <input
+            id="register-last_name"
+            type="text"
+            className={`input ${errors.last_name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+            placeholder="Pérez"
+            autoComplete="family-name"
+            aria-invalid={!!errors.last_name}
+            {...register('last_name')}
+          />
+        </FormField>
+      </div>
+
+      <FormField label="Correo electrónico" htmlFor="register-email" error={errors.email?.message}>
+        <input
+          id="register-email"
+          type="email"
+          className={`input ${errors.email ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+          placeholder="tu@negocio.com"
+          autoComplete="email"
+          aria-invalid={!!errors.email}
+          {...register('email')}
+        />
+      </FormField>
+
+      <FormField label="Contraseña" htmlFor="register-password" error={errors.password?.message}>
+        <input
+          id="register-password"
+          type="password"
+          className={`input ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+          placeholder="••••••••"
+          autoComplete="new-password"
+          aria-invalid={!!errors.password}
+          {...register('password')}
+        />
+      </FormField>
 
       {/* Phone with country prefix selector */}
       <div>
@@ -307,17 +388,16 @@ export default function RegisterPage() {
           </div>
           <input
             id="register-phone_number"
-            name="phone_number"
             type="tel"
             className="input flex-1"
             placeholder="991234567"
             autoComplete="tel"
-            value={form.phone_number}
-            onChange={set('phone_number')}
+            {...register('phone_number')}
           />
         </div>
         <p className="text-[10px] text-surface-400 mt-1">Se enviará {countryCode} + número al registrar</p>
       </div>
+
       <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading} id="register-btn">
         {loading ? <span className="spinner w-4 h-4" /> : 'Crear cuenta gratis'}
       </button>

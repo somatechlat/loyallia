@@ -5,11 +5,20 @@ Evaluates automation triggers and executes configured actions.
 Entry points:
   fire_trigger(trigger_name, customer, context)  → called from API on events
   evaluate_scheduled_automations()               → called by Celery Beat daily
+
+LYL-M-API-021: Self-trigger loop guard — prevents automations from triggering
+  themselves in an infinite loop (e.g. transaction_completed → issue_reward →
+  transaction_completed → ...).
+LYL-M-API-025: Tenant is always resolved from customer, never from a parameter
+  override to prevent cross-tenant data access.
 """
 
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Maximum depth for nested automation triggers to prevent infinite loops
+_MAX_TRIGGER_DEPTH = 3
 
 
 def fire_trigger(
@@ -17,33 +26,62 @@ def fire_trigger(
     customer,
     tenant=None,
     context: dict | None = None,
+    _depth: int = 0,
 ) -> int:
-    """
-    Fire all active automations matching a trigger event for a customer.
-    Called synchronously from API endpoints after business events.
+    """Fire all active automations matching a trigger event for a customer.
+
+    LYL-M-API-021: Includes a depth guard to prevent self-trigger loops.
+    LYL-M-API-025: Tenant is always resolved from customer.tenant to prevent
+    cross-tenant override.
 
     Args:
         trigger:  AutomationTrigger value (e.g. "customer_enrolled")
         customer: Customer model instance
-        tenant:   Tenant (defaults to customer.tenant if omitted)
+        tenant:   Ignored — kept for backward compat. Always uses customer.tenant.
         context:  Optional dict of event context (e.g. {"card_id": "...", "amount": 10})
+        _depth:   Internal recursion depth counter (do not pass manually)
 
     Returns:
         Number of automations successfully executed
     """
     from apps.automation.models import Automation, AutomationExecution
 
-    if tenant is None:
-        tenant = customer.tenant
+    # LYL-M-API-025: Always use customer's tenant, ignore tenant parameter
+    resolved_tenant = customer.tenant
+
+    # LYL-M-API-021: Self-trigger loop guard
+    if _depth >= _MAX_TRIGGER_DEPTH:
+        logger.warning(
+            "fire_trigger: max recursion depth (%d) reached for trigger=%s "
+            "customer=%s — possible self-trigger loop. Aborting.",
+            _MAX_TRIGGER_DEPTH,
+            trigger,
+            customer.id,
+        )
+        return 0
+
+    # LYL-M-API-021: Check if context indicates a self-trigger
+    trigger_chain = (context or {}).get("_trigger_chain", [])
+    if trigger in trigger_chain:
+        logger.warning(
+            "fire_trigger: self-trigger loop detected — trigger=%s already in "
+            "chain %s for customer=%s. Skipping.",
+            trigger,
+            trigger_chain,
+            customer.id,
+        )
+        return 0
 
     matching = Automation.objects.filter(
-        tenant=tenant,
+        tenant=resolved_tenant,
         trigger=trigger,
         is_active=True,
     ).prefetch_related("target_programs")
 
     executed = 0
-    ctx = context or {}
+    ctx = dict(context or {})
+    # Track trigger chain for loop detection
+    ctx["_trigger_chain"] = [*trigger_chain, trigger]
 
     for automation in matching:
         if not automation.can_execute_for_customer(customer):
@@ -56,7 +94,7 @@ def fire_trigger(
             automation=automation,
             customer=customer,
             trigger_event=trigger,
-            execution_context=ctx,
+            execution_context={k: v for k, v in ctx.items() if not k.startswith("_")},
             success=success,
         )
 
@@ -64,10 +102,11 @@ def fire_trigger(
             executed += 1
 
     logger.debug(
-        "fire_trigger: trigger=%s customer=%s tenant=%s → %d/%d executed",
+        "fire_trigger: trigger=%s customer=%s tenant=%s depth=%d → %d/%d executed",
         trigger,
         customer.id,
-        tenant.id,
+        resolved_tenant.id,
+        _depth,
         executed,
         matching.count(),
     )

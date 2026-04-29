@@ -1,23 +1,38 @@
 'use client';
+/**
+ * LYL-H-FE-004: Login form using react-hook-form + zod.
+ * LYL-M-FE-020: Client-side validation with zod schemas.
+ * LYL-M-FE-032: Form validation feedback (inline error messages).
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth';
 import { authApi } from '@/lib/api';
 import { useGoogleScript } from '@/lib/useGoogleScript';
+import { loginSchema, type LoginFormData } from '@/lib/validations';
 
 export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
 
   useEffect(() => {
     authApi.googleConfig()
@@ -47,7 +62,6 @@ export default function LoginPage() {
     }
   }, [loginWithGoogle, router]);
 
-  // Load Google Identity Services script and render button
   useGoogleScript({
     enabled: googleEnabled,
     clientId: googleClientId,
@@ -57,16 +71,10 @@ export default function LoginPage() {
     onCallback: handleGoogleCallback,
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors: { email?: string; password?: string; general?: string } = {};
-    if (!email) newErrors.email = 'El correo electrónico es obligatorio';
-    if (!password) newErrors.password = 'La contraseña es obligatoria';
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
-    setErrors({});
+  const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const user = await login(data.email, data.password);
       if (user.role === 'STAFF') {
         router.replace('/scanner/scan');
       } else {
@@ -74,15 +82,16 @@ export default function LoginPage() {
       }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setErrors({ general: msg || 'Credenciales incorrectas' });
-      toast.error(msg || 'Credenciales incorrectas');
+      const errorMsg = msg || 'Credenciales incorrectas';
+      setError('root', { message: errorMsg });
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
       <div>
         <h2 className="text-xl font-bold text-surface-900 dark:text-white">Iniciar sesión</h2>
         <p className="text-surface-500 text-sm mt-1">Accede a tu panel de administración</p>
@@ -110,24 +119,45 @@ export default function LoginPage() {
         </>
       )}
 
+      {/* LYL-M-FE-032: Inline validation feedback */}
       <div>
         <label className="label" htmlFor="email">Correo electrónico</label>
-        <input id="email" type="email" className="input" placeholder="tu@negocio.com"
-          value={email} onChange={e => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
-          aria-invalid={!!errors.email} aria-describedby={errors.email ? 'email-error' : undefined}
-          required />
-        {errors.email && <p id="email-error" role="alert" className="text-xs text-red-500 mt-1">{errors.email}</p>}
+        <input
+          id="email"
+          type="email"
+          className={`input ${errors.email ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+          placeholder="tu@negocio.com"
+          autoComplete="email"
+          aria-invalid={!!errors.email}
+          aria-describedby={errors.email ? 'email-error' : undefined}
+          {...register('email')}
+        />
+        {errors.email && (
+          <p id="email-error" role="alert" className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {errors.email.message}
+          </p>
+        )}
       </div>
+
       <div>
         <label className="label" htmlFor="password">Contraseña</label>
         <div className="relative">
-          <input id="password" type={showPassword ? 'text' : 'password'} className="input pr-10" placeholder="••••••••"
-            value={password} onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })); }}
-            aria-invalid={!!errors.password} aria-describedby={errors.password ? 'password-error' : undefined}
-            required />
+          <input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            className={`input pr-10 ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+            {...register('password')}
+          />
           <button type="button" onClick={() => setShowPassword(!showPassword)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}>
+            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
             {showPassword ? (
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
             ) : (
@@ -135,14 +165,27 @@ export default function LoginPage() {
             )}
           </button>
         </div>
-        {errors.password && <p id="password-error" role="alert" className="text-xs text-red-500 mt-1">{errors.password}</p>}
+        {errors.password && (
+          <p id="password-error" role="alert" className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {errors.password.message}
+          </p>
+        )}
         <div className="text-right mt-1">
           <Link href="/forgot-password" className="text-xs text-brand-500 hover:underline">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
       </div>
-      {errors.general && <p role="alert" className="text-sm text-red-500 text-center">{errors.general}</p>}
+
+      {errors.root && (
+        <p role="alert" className="text-sm text-red-500 text-center bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+          {errors.root.message}
+        </p>
+      )}
+
       <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading} id="login-btn">
         {loading ? <span className="spinner w-4 h-4" /> : 'Iniciar sesión'}
       </button>

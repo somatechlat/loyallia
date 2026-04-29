@@ -112,26 +112,34 @@ def _count_monthly(
 
 
 def check_plan_limit(tenant, resource: str) -> None:
+    """Check if the tenant has exceeded their plan limit for a resource.
+
+    LYL-M-API-024: Uses select_for_update on the subscription to prevent
+    TOCTOU race conditions where two concurrent requests both pass the limit
+    check and create resources beyond the plan limit.
+
+    Raises HttpError 402 if no subscription, 403 if over limit.
     """
-    Check if the tenant has exceeded their plan limit for a resource.
-    Raises HttpError 403 if over limit.
-    """
+    from django.db import transaction
     from apps.billing.models import Subscription
 
-    subscription = Subscription.objects.filter(tenant=tenant).first()
-    if not subscription:
-        raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
-
-    limit = subscription.get_limit(resource)
-    if limit <= 0:
-        raise HttpError(403, get_message("PLAN_FEATURE_UNAVAILABLE"))
-
-    current = get_current_usage(tenant, resource)
-    if current >= limit:
-        raise HttpError(
-            403,
-            get_message("PLAN_LIMIT_EXCEEDED", resource=resource, limit=limit),
+    with transaction.atomic():
+        subscription = (
+            Subscription.objects.select_for_update().filter(tenant=tenant).first()
         )
+        if not subscription:
+            raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
+
+        limit = subscription.get_limit(resource)
+        if limit <= 0:
+            raise HttpError(403, get_message("PLAN_FEATURE_UNAVAILABLE"))
+
+        current = get_current_usage(tenant, resource)
+        if current >= limit:
+            raise HttpError(
+                403,
+                get_message("PLAN_LIMIT_EXCEEDED", resource=resource, limit=limit),
+            )
 
 
 def check_feature_access(tenant, feature: str) -> None:

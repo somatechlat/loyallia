@@ -306,11 +306,18 @@ def list_tenant_invoices(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/suspend/", auth=jwt_auth, response=MessageOut)
 def suspend_tenant(request, tenant_id: str):
+    """LYL-H-ARCH-011: Suspend tenant — Subscription is authoritative source."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
-    tenant.plan = Plan.SUSPENDED
     tenant.is_active = False
-    tenant.save(update_fields=["plan", "is_active", "updated_at"])
+    tenant.save(update_fields=["is_active", "updated_at"])
+
+    # Update Subscription as authoritative plan state
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+    if subscription:
+        subscription.status = SubscriptionStatus.SUSPENDED
+        subscription.save(update_fields=["status", "updated_at"])
+
     logger.warning(
         "SUPER_ADMIN %s suspended tenant %s (%s)",
         request.user.email,
@@ -322,11 +329,18 @@ def suspend_tenant(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/reactivate/", auth=jwt_auth, response=MessageOut)
 def reactivate_tenant(request, tenant_id: str):
+    """LYL-H-ARCH-011: Reactivate tenant — Subscription is authoritative source."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
-    tenant.plan = Plan.FULL
     tenant.is_active = True
-    tenant.save(update_fields=["plan", "is_active", "updated_at"])
+    tenant.save(update_fields=["is_active", "updated_at"])
+
+    # Update Subscription as authoritative plan state
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+    if subscription:
+        subscription.status = SubscriptionStatus.ACTIVE
+        subscription.save(update_fields=["status", "updated_at"])
+
     logger.info(
         "SUPER_ADMIN %s reactivated tenant %s (%s)",
         request.user.email,
@@ -338,6 +352,9 @@ def reactivate_tenant(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/extend-trial/", auth=jwt_auth, response=MessageOut)
 def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
+    """LYL-H-ARCH-011: Extend trial — Subscription is authoritative source.
+    LYL-H-API-013: Limit total trial extensions to prevent unlimited trials.
+    """
     _require_super_admin(request)
     if payload.days < 1 or payload.days > 365:
         raise HttpError(
@@ -345,12 +362,35 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
             get_message("VALIDATION_ERROR", detail="days must be between 1 and 365"),
         )
     tenant = _get_tenant_or_404(tenant_id)
+
+    # LYL-H-API-013: Prevent unlimited trial extensions
+    # Cap total trial period at 90 days from first trial start
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+    if subscription and subscription.trial_start:
+        max_trial_end = subscription.trial_start + timedelta(days=90)
+        proposed_end = max(
+            subscription.trial_end or dj_timezone.now(), dj_timezone.now()
+        ) + timedelta(days=payload.days)
+        if proposed_end > max_trial_end:
+            raise HttpError(
+                400,
+                get_message(
+                    "VALIDATION_ERROR",
+                    detail="Trial period cannot exceed 90 days from initial trial start",
+                ),
+            )
+
     base = max(tenant.trial_end or dj_timezone.now(), dj_timezone.now())
     tenant.trial_end = base + timedelta(days=payload.days)
-    if tenant.plan == Plan.SUSPENDED:
-        tenant.plan = Plan.TRIAL
-        tenant.is_active = True
-    tenant.save(update_fields=["trial_end", "plan", "is_active", "updated_at"])
+    tenant.is_active = True
+    tenant.save(update_fields=["trial_end", "is_active", "updated_at"])
+
+    # Update Subscription trial_end
+    if subscription:
+        subscription.trial_end = tenant.trial_end
+        subscription.status = SubscriptionStatus.TRIALING
+        subscription.save(update_fields=["trial_end", "status", "updated_at"])
+
     return MessageOut(
         success=True,
         message=get_message("TENANT_TRIAL_EXPIRING", days=tenant.trial_days_remaining),

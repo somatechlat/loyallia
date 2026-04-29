@@ -285,6 +285,69 @@ def send_wallet_notification_campaign(
 
 
 @shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=300,
+    queue="push_delivery",
+    name="apps.notifications.tasks.send_whatsapp_campaign",
+    soft_time_limit=600,
+    time_limit=660,
+)
+def send_whatsapp_campaign(
+    self,
+    tenant_id: str,
+    title: str,
+    message: str,
+    segment_id: str = "all",
+    image_url: str = "",
+) -> dict:
+    """LYL-M-API-019: Async WhatsApp mock campaign — creates in-app notifications.
+
+    Moved from synchronous loop in API endpoint to Celery task.
+    Ready for future integration with WhatsApp Business API.
+    """
+    import uuid
+
+    from apps.customers.models import Customer
+    from apps.notifications.models import (
+        Notification,
+        NotificationChannel,
+        NotificationType,
+    )
+    from apps.tenants.models import Tenant
+
+    try:
+        tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))
+    except Tenant.DoesNotExist:
+        return {"success": False, "error": "Tenant not found"}
+
+    from apps.customers.api import _apply_segment_filter
+
+    base_qs = Customer.objects.filter(tenant=tenant, is_active=True)
+    audience = _apply_segment_filter(base_qs, segment_id)
+    total = audience.count()
+
+    succeeded = 0
+    for customer in audience.iterator(chunk_size=50):
+        try:
+            Notification.objects.create(
+                tenant=tenant,
+                customer=customer,
+                notification_type=NotificationType.MARKETING,
+                channel=NotificationChannel.IN_APP,
+                title=f"[WhatsApp] {title}",
+                message=message[:500],
+                action_url=image_url,
+            )
+            succeeded += 1
+        except Exception as exc:
+            logger.error("WhatsApp campaign failed for %s: %s", customer.id, exc)
+
+    logger.info("WhatsApp campaign complete: %d/%d", succeeded, total)
+    return {"success": True, "attempted": total, "succeeded": succeeded}
+
+
+@shared_task(
     queue="push_delivery", name="apps.notifications.tasks.send_birthday_notifications"
 )
 def send_birthday_notifications() -> dict:

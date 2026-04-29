@@ -258,14 +258,15 @@ class Subscription(TimestampedModel):
         null=True, blank=True, verbose_name="Último pago exitoso"
     )
 
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_subscriptions"
         verbose_name = "Suscripción"
         verbose_name_plural = "Suscripciones"
+        ordering = ["-created_at"]
+
+    def __repr__(self) -> str:
+        plan_name = self.subscription_plan.name if self.subscription_plan else self.plan
+        return f"<Subscription: {self.tenant.name} — {plan_name} ({self.status})>"
 
     def __str__(self) -> str:
         plan_name = self.subscription_plan.name if self.subscription_plan else self.plan
