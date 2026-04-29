@@ -410,6 +410,18 @@ EOF
           cpus: "2.0"
         reservations:
           memory: 768M
+      # LYL-H-INFRA-014: Rolling deployment
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+        monitor: 60s
+        max_failure_ratio: 0.2
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
       interval: 30s
@@ -462,6 +474,17 @@ EOF
           cpus: "1.5"
         reservations:
           memory: 512M
+      # LYL-H-INFRA-014: Rolling deployment
+      update_config:
+        parallelism: 1
+        delay: 15s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
 
   # ---------------------------------------------------------------------------
   # CELERY WORKERS — Async Task Processing                         [1.2GB total]
@@ -508,6 +531,17 @@ EOF
           cpus: "0.5"
         reservations:
           memory: 128M
+      # LYL-H-INFRA-014: Rolling deployment
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+        monitor: 60s
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
 
   # Worker 2: Push notification delivery                           [384M]
   celery-push:
@@ -549,6 +583,17 @@ EOF
           cpus: "0.5"
         reservations:
           memory: 128M
+      # LYL-H-INFRA-014: Rolling deployment
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+        monitor: 60s
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
 
   # Worker 3: Default queue (email, billing, automation)           [384M]
   celery-default:
@@ -590,6 +635,17 @@ EOF
           cpus: "0.5"
         reservations:
           memory: 128M
+      # LYL-H-INFRA-014: Rolling deployment
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+        monitor: 60s
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
 
   # ---------------------------------------------------------------------------
   # CELERY BEAT — Scheduled Jobs Scheduler                         [128M]
@@ -747,6 +803,16 @@ EOF
       - ALL
     cap_add:
       - NET_BIND_SERVICE  # Required for port 80/443
+    deploy:
+      # LYL-H-INFRA-014: Rolling deployment
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: start-first
 
   # ---------------------------------------------------------------------------
   # PROMETHEUS — Metrics Collection       → localhost:33909          [512M]
