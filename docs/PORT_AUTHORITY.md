@@ -42,14 +42,12 @@ All Loyallia services use the **33900** port range to avoid collisions with othe
 
 ## Test Credentials (Development Only)
 
-After running `seed_test_data` (runs automatically on startup):
+After running `seed_test_data` (runs automatically on startup), test accounts are
+created for each role. See the seed command source for email/password values:
+`backend/apps/tenants/management/commands/seed_test_data.py`
 
-| Email                      | Password | Role        |
-|----------------------------|----------|-------------|
-| admin@loyallia.com         | 123456   | SUPER_ADMIN |
-| carlos@cafeelritmo.ec      | 123456   | OWNER       |
-| gabriela@cafeelritmo.ec    | 123456   | MANAGER     |
-| sebastian@cafeelritmo.ec   | 123456   | STAFF       |
+> **Never commit credentials to version control.** All passwords are set via
+> environment variables or the seed command. See `.env.example` for configuration.
 
 ## Docker Commands
 

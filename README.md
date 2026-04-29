@@ -1,6 +1,6 @@
 # Loyallia — Digital Loyalty Platform
 
-> **Plataforma inteligente de fidelización digital.**  
+> **Plataforma inteligente de fidelización digital.**
 > Powered by SomaTech LAT.
 
 ---
@@ -11,7 +11,9 @@
 |----------|------|-------------|
 | **SRS (Complete)** | `docs/SRS_Loyallia_COMPLETE.md` | Full ISO/IEC 29148:2018 Software Requirements Specification |
 | **Architecture & Diagrams** | `docs/ARCHITECTURE.md` | System architecture, sequence diagrams, flowcharts, ERD (Mermaid) |
-| **Port Authority** | `docs/PORT_AUTHORITY.md` | Development port map and test credentials |
+| **Port Authority** | `docs/PORT_AUTHORITY.md` | Development port map |
+| **Audit Report** | `docs/audit/2026-04-29_FULL_AUDIT.md` | Full codebase audit — 241 findings |
+| **Handoff** | `HANDOFF.md` | Current project status and remaining work |
 | **Docker Compose** | `docker-compose.yml` | Full local/staging stack — all open source |
 
 ---
@@ -58,12 +60,12 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 
 ## Scanner App — Important Architecture Note
 
-> **The normal phone camera IS used for customer enrollment.**  
-> Customers scan the business QR poster → browser opens → fill form → Wallet pass saved.  
+> **The normal phone camera IS used for customer enrollment.**
+> Customers scan the business QR poster → browser opens → fill form → Wallet pass saved.
 > No app download required for customers.
 
-> **Business staff use the Loyallia Scanner PWA** (a web app opened in the phone browser at `loyallia.com/scanner`).  
-> The PWA uses the browser camera API to scan customer Wallet pass QR codes and record transactions via the API.  
+> **Business staff use the Loyallia Scanner PWA** (a web app opened in the phone browser at `loyallia.com/scanner`).
+> The PWA uses the browser camera API to scan customer Wallet pass QR codes and record transactions via the API.
 > **No app store required for staff either.**
 
 ---
@@ -71,7 +73,7 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 ## Technology Stack (All Open Source)
 
 | Layer | Technology |
-|-------|-----------| 
+|-------|-----------|
 | Backend API | Django 5 + Django Ninja |
 | ORM | Django ORM + PostgreSQL 16 |
 | Dashboard | Next.js 14 (React 18) |
@@ -85,6 +87,7 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 | Secret Management | HashiCorp Vault |
 | Payment Gateway | Bendo / PlacetoPay (pluggable) |
 | Containers | Docker + Docker Compose |
+| Monitoring | Prometheus + Grafana + Loki |
 
 ---
 
@@ -94,9 +97,9 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 # 1. Clone and enter repo
 git clone <repo> loyallia && cd loyallia
 
-# 2. Copy environment template
+# 2. Copy environment template and fill in your credentials
 cp .env.example .env
-# Edit .env with your credentials (payment gateway, email, etc.)
+# Edit .env with real values — see .env.example for all required variables
 
 # 3. Place certificates
 mkdir -p certs
@@ -107,13 +110,6 @@ mkdir -p certs
 # 4. Start all services (builds images + migrates + seeds data)
 docker compose up -d --build
 
-# The API service automatically runs:
-#   - migrate --noinput
-#   - collectstatic --noinput
-#   - seed_subscription_plans
-#   - seed_test_data
-#   - runserver 0.0.0.0:8000
-
 # 5. Access points
 # Dashboard:       http://localhost:33906
 # API Docs:        http://localhost:33905/api/v1/docs/
@@ -121,6 +117,8 @@ docker compose up -d --build
 # MinIO Console:   http://localhost:33904
 # Flower:          http://localhost:33907
 # Vault UI:        http://localhost:33908
+# Grafana:         http://localhost:33910
+# Prometheus:      http://localhost:33909
 ```
 
 ---
@@ -138,6 +136,8 @@ docker compose up -d --build
 | 33906 | Next.js Dashboard | 3000          | Frontend           |
 | 33907 | Flower            | 5555          | Celery monitor     |
 | 33908 | HashiCorp Vault   | 8200          | Secrets            |
+| 33909 | Prometheus        | 9090          | Metrics            |
+| 33910 | Grafana           | 3000          | Dashboards         |
 
 > **Memory Budget**: 10GB total cluster limit. See `docker-compose.yml` header for per-service allocation.
 
@@ -154,18 +154,30 @@ docker compose up -d --build
 
 ---
 
-## Test Credentials (Development Only)
+## Development
 
-After `seed_test_data` runs automatically:
+### Running Tests
 
-| Email                   | Password | Role        |
-|-------------------------|----------|-------------|
-| admin@loyallia.com      | 123456   | SUPER_ADMIN |
-| carlos@cafeelritmo.ec   | 123456   | OWNER       |
-| gabriela@cafeelritmo.ec | 123456   | MANAGER     |
-| sebastian@cafeelritmo.ec| 123456   | STAFF       |
+```bash
+docker compose up -d
+docker compose exec api python manage.py test
+```
+
+### Code Quality
+
+```bash
+cd backend
+ruff check .              # Linting
+black --check .           # Formatting
+find . -name '*.py' | xargs wc -l | awk '$1>500'  # File size check
+```
+
+### Environment Variables
+
+All configuration is via environment variables. See `.env.example` for the full list.
+Never commit `.env` files. Secrets are managed through HashiCorp Vault in production.
 
 ---
 
-*SRS Standard: ISO/IEC 29148:2018 — Requirements Engineering*  
+*SRS Standard: ISO/IEC/IEEE 29148:2018 — Requirements Engineering*
 *Platform: Loyallia by SomaTech LAT*
