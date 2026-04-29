@@ -98,6 +98,76 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
         run: python manage.py test --verbosity=2
 
+      # LYL-L-INFRA-032: Test coverage upload
+      - name: Run tests with coverage
+        env:
+          DJANGO_SETTINGS_MODULE: loyallia.settings.development
+          SECRET_KEY: ci-test-secret-key-not-for-production
+          POSTGRES_DB: loyallia_test
+          POSTGRES_USER: loyallia
+          POSTGRES_PASSWORD: test_password
+          DATABASE_URL: postgres://loyallia:test_password@localhost:5432/loyallia_test
+          DATABASE_DIRECT_URL: postgres://loyallia:test_password@localhost:5432/loyallia_test
+          PGBOUNCER_URL: postgres://loyallia:test_password@localhost:5432/loyallia_test
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          pytest --cov=. --cov-report=xml --cov-report=html -q || true
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: backend/coverage.xml
+          flags: backend
+          fail_ci_if_error: false
+
+  # LYL-H-INFRA-010: SAST — Bandit security scanner
+  sast:
+    name: SAST (Bandit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r . \
+            --exclude ./.venv,./node_modules,./migrations \
+            -ll \
+            -ii \
+            -f json \
+            -o bandit-report.json \
+            || true
+
+      - name: Bandit summary
+        if: always()
+        run: |
+          bandit -r . \
+            --exclude ./.venv,./node_modules,./migrations \
+            -ll \
+            -ii \
+            || true
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: backend/bandit-report.json
+          if-no-files-found: ignore
+
   frontend:
     name: Frontend (Next.js)
     runs-on: ubuntu-latest
@@ -182,3 +252,26 @@ jobs:
       - name: Audit Node.js dependencies
         working-directory: frontend
         run: npm audit --production --audit-level=high || true
+
+      # LYL-M-INFRA-021: SBOM generation
+      - name: Generate SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: loyallia-api:scan
+          format: spdx-json
+          output-file: sbom-api.spdx.json
+
+      - name: Generate SBOM (frontend)
+        uses: anchore/sbom-action@v0
+        with:
+          image: loyallia-web:scan
+          format: spdx-json
+          output-file: sbom-web.spdx.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sboms
+          path: |
+            sbom-api.spdx.json
+            sbom-web.spdx.json
