@@ -10,6 +10,8 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
+from common.vault import get_secret
+
 logger = logging.getLogger(__name__)
 
 
@@ -129,7 +131,8 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
         vars_to_check.extend(PRODUCTION_EXTRA_VARS)
 
     for var in vars_to_check:
-        value = os.environ.get(var.name)
+        # LYL-M-SEC-015: Check Vault with env fallback
+        value = get_secret(var.name.lower(), env_fallback=var.name)
 
         if value is None:
             if var.default is not None:
