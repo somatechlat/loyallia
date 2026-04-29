@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from decouple import Csv, config
+from common.vault import get_secret
 
 # Base directory of the Django project (backend/)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -15,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # =============================================================================
 # SECURITY
 # =============================================================================
-SECRET_KEY = config("SECRET_KEY")
+SECRET_KEY = get_secret("secret_key", env_fallback="SECRET_KEY", strict=True)
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
@@ -193,7 +194,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": config("REDIS_URL", default="redis://localhost:6379/0"),
+        "LOCATION": get_secret("redis_url", env_fallback="REDIS_URL", default="redis://localhost:6379/0"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -205,9 +206,9 @@ CACHES = {
 # =============================================================================
 # CELERY CONFIGURATION
 # =============================================================================
-CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
-CELERY_RESULT_BACKEND = config(
-    "CELERY_RESULT_BACKEND", default="redis://localhost:6379/2"
+CELERY_BROKER_URL = get_secret("celery_broker_url", env_fallback="CELERY_BROKER_URL", default="redis://localhost:6379/1")
+CELERY_RESULT_BACKEND = get_secret(
+    "celery_result_backend", env_fallback="CELERY_RESULT_BACKEND", default="redis://localhost:6379/2"
 )
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -277,8 +278,8 @@ CELERY_BEAT_SCHEDULE = {
 # FILE STORAGE — MinIO (S3-compatible)
 # =============================================================================
 MINIO_ENDPOINT = config("MINIO_ENDPOINT", default="http://localhost:9000")
-MINIO_ACCESS_KEY = config("MINIO_ACCESS_KEY", default="minioadmin")
-MINIO_SECRET_KEY = config("MINIO_SECRET_KEY", default="minioadmin")
+MINIO_ACCESS_KEY = get_secret("minio_access_key", env_fallback="MINIO_ACCESS_KEY", default="minioadmin")
+MINIO_SECRET_KEY = get_secret("minio_secret_key", env_fallback="MINIO_SECRET_KEY", default="minioadmin")
 MINIO_BUCKET_PASSES = config("MINIO_BUCKET_PASSES", default="passes")
 MINIO_BUCKET_ASSETS = config("MINIO_BUCKET_ASSETS", default="assets")
 MINIO_USE_SSL = config("MINIO_USE_SSL", default=False, cast=bool)
@@ -315,7 +316,7 @@ JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 # LYL-H-SEC-005: Algorithm selection. HS256 (default) or RS256 (asymmetric).
 # For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
-JWT_SECRET_KEY = config("JWT_SECRET_KEY", default=config("SECRET_KEY"))  # B-001: Separate from Django SECRET_KEY
+JWT_SECRET_KEY = get_secret("jwt_secret_key", env_fallback="JWT_SECRET_KEY", default=SECRET_KEY)  # B-001: Separate from Django SECRET_KEY
 JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 private key file
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
@@ -331,7 +332,7 @@ APPLE_CERT_KEY_PATH = config("APPLE_CERT_KEY_PATH", default="/app/certs/apple_pa
 APPLE_WWDR_CERT_PATH = config(
     "APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem"
 )
-PASS_HMAC_SECRET = config("PASS_HMAC_SECRET", default="change-me-hmac-secret")
+PASS_HMAC_SECRET = get_secret("pass_hmac_secret", env_fallback="PASS_HMAC_SECRET", default="change-me-hmac-secret")
 
 # APNs token-based auth (JWT) — for push notifications to iOS
 # Separate from the PassKit signing certificates above
@@ -360,9 +361,9 @@ PAYMENT_GATEWAY_PROVIDER = config("PAYMENT_GATEWAY_PROVIDER", default="bendo")
 PAYMENT_GATEWAY_BASE_URL = config(
     "PAYMENT_GATEWAY_BASE_URL", default="https://checkout.placetopay.com"
 )
-PAYMENT_GATEWAY_LOGIN = config("PAYMENT_GATEWAY_LOGIN", default="")
-PAYMENT_GATEWAY_TRAN_KEY = config("PAYMENT_GATEWAY_TRAN_KEY", default="")
-PAYMENT_GATEWAY_WEBHOOK_SECRET = config("PAYMENT_GATEWAY_WEBHOOK_SECRET", default="")
+PAYMENT_GATEWAY_LOGIN = get_secret("payment_gateway_login", env_fallback="PAYMENT_GATEWAY_LOGIN", default="")
+PAYMENT_GATEWAY_TRAN_KEY = get_secret("payment_gateway_tran_key", env_fallback="PAYMENT_GATEWAY_TRAN_KEY", default="")
+PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret("payment_gateway_webhook_secret", env_fallback="PAYMENT_GATEWAY_WEBHOOK_SECRET", default="")
 
 
 # =============================================================================
@@ -372,8 +373,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = config("EMAIL_HOST", default="localhost")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
-EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_HOST_USER = get_secret("email_host_user", env_fallback="EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = get_secret("email_host_password", env_fallback="EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("EMAIL_FROM", default="noreply@loyallia.com")
 
 # =============================================================================
@@ -426,7 +427,7 @@ TAX_RATE_ECUADOR = config(
 # Get credentials from: https://console.cloud.google.com/apis/credentials
 # =============================================================================
 GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
-GOOGLE_OAUTH_CLIENT_SECRET = config("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+GOOGLE_OAUTH_CLIENT_SECRET = get_secret("google_oauth_client_secret", env_fallback="GOOGLE_OAUTH_CLIENT_SECRET", default="")
 GOOGLE_OAUTH_REDIRECT_URI = config(
     "GOOGLE_OAUTH_REDIRECT_URI",
     default="http://localhost:33905/api/v1/auth/google/callback/",
