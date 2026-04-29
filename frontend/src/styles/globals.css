@@ -273,6 +273,43 @@
 /* ── Focus visible ring ──────────────────────────────────────────────── */
 .dark *:focus-visible { outline-color: #6366f1 !important; }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   LYL-M-FE-030: Reduced motion support
+   Respects prefers-reduced-motion: reduce by disabling animations.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+  .card-hover:hover,
+  [class*="hover:-translate"]:hover {
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LYL-M-FE-034: Offline notification banner
+   ═══════════════════════════════════════════════════════════════════════ */
+.offline-banner {
+  @apply fixed top-0 left-0 right-0 z-[9999] bg-amber-500 text-white text-center py-2 text-sm font-semibold shadow-lg;
+  animation: slideDown 0.3s ease-out;
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
 /* ── Dark Mode Fixes: indigo family (used in campaigns, programs modals) ─ */
 .dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.12) !important; }
 .dark .bg-indigo-100 { background-color: rgba(99, 102, 241, 0.18) !important; }

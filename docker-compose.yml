@@ -120,8 +120,19 @@ services:
     ports:
       - "127.0.0.1:33900:5432"
     networks:
-      - loyallia-net
+      - backend-net
     restart: unless-stopped
+    # LYL-M-INFRA-018: Container hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_READ_SEARCH
     deploy:
       resources:
         limits:
@@ -196,7 +207,7 @@ services:
       --save 300 10
       --save 60 10000
       --tcp-keepalive 300
-      --timeout 0
+      --timeout 300
     volumes:
       - redis_data:/data
     ports:

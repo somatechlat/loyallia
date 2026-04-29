@@ -1,11 +1,43 @@
-import axios from 'axios';
+import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { tokenManager } from './token-manager';
+
+/* ── LYL-M-FE-033: Retry with exponential backoff ────────────────────── */
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+
+function getRetryDelay(attempt: number, retryAfter?: string | number): number {
+  if (retryAfter) {
+    const seconds = typeof retryAfter === 'number' ? retryAfter : parseInt(String(retryAfter), 10);
+    if (!isNaN(seconds) && seconds > 0) return seconds * 1000;
+  }
+  return BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
+}
+
+/* ── LYL-M-FE-034: Offline detection ─────────────────────────────────── */
+let _isOffline = false;
+export function isOffline(): boolean {
+  return _isOffline;
+}
+
+if (typeof window !== 'undefined') {
+  _isOffline = !navigator.onLine;
+  window.addEventListener('online', () => {
+    _isOffline = false;
+    window.dispatchEvent(new CustomEvent('loyallia-online'));
+  });
+  window.addEventListener('offline', () => {
+    _isOffline = true;
+    window.dispatchEvent(new CustomEvent('loyallia-offline'));
+  });
+}
 
 const api = axios.create({
   // LYL-H-FE-007: Use environment variable, no hardcoded fallback
   baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30_000,
 });
 
 // Attach JWT access token to every request
@@ -16,10 +48,13 @@ api.interceptors.request.use((config) => {
 });
 
 // On 401, attempt refresh — if refresh fails, clear tokens and redirect to login
+// LYL-M-FE-033: On retryable errors, retry with exponential backoff
 api.interceptors.response.use(
   (res) => res,
-  async (error) => {
+  async (error: AxiosError & { config: AxiosRequestConfig & { _retryCount?: number; _retry?: boolean } }) => {
     const original = error.config;
+
+    // 401 → try token refresh (existing logic)
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
       try {
@@ -31,6 +66,17 @@ api.interceptors.response.use(
         window.location.replace('/login'); // SEC-004 fix: use replace to avoid referrer leak
       }
     }
+
+    // LYL-M-FE-033: Retry on retryable errors
+    const retryCount = original._retryCount ?? 0;
+    const status = error.response?.status;
+    if (status && RETRYABLE_STATUS.has(status) && retryCount < MAX_RETRIES) {
+      original._retryCount = retryCount + 1;
+      const delay = getRetryDelay(retryCount, error.response?.headers?.['retry-after']);
+      await new Promise(r => setTimeout(r, delay));
+      return api(original);
+    }
+
     return Promise.reject(error);
   }
 );
