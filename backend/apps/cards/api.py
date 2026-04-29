@@ -326,10 +326,10 @@ def delete_program(request, program_id: str):
 
     card.delete()
 
-    return MessageOut(
-        success=True,
-        message=get_message("PROGRAM_DELETED"),
-    )
+    # LYL-M-API-023: Return 204 No Content on successful delete
+    from django.http import HttpResponse
+
+    return HttpResponse(status=204)
 
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")

@@ -30,6 +30,8 @@ export default function RootLayout({
         <link rel="icon" href={LOYALLIA_LOGO} type="image/png" />
         <link rel="apple-touch-icon" href={LOYALLIA_LOGO} />
         <meta name="theme-color" content="#5660ff" />
+        {/* LYL-L-FE-042: PWA manifest for scanner app */}
+        <link rel="manifest" href="/manifest.json" />
         {/* Google Fonts — preconnect + non-blocking load (replaces render-blocking CSS @import) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

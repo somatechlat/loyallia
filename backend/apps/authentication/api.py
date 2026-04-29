@@ -545,8 +545,21 @@ def google_login(request, payload: GoogleTokenIn):
     3. Backend verifies the token with Google's tokeninfo endpoint
     4. If user exists → login
     5. If user doesn't exist → create tenant + OWNER user (auto-verified email)
+
+    LYL-L-SEC-023: Rate limited to 20 attempts per hour per IP to prevent abuse.
     """
     import httpx
+    from django.core.cache import cache
+
+    # LYL-L-SEC-023: Rate limit Google OAuth login (20/hour per IP)
+    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.META.get("REMOTE_ADDR", "unknown")
+    cache_key = f"gauth_rate:{client_ip}"
+    attempt_count = cache.get(cache_key, 0)
+    if attempt_count >= 20:
+        raise HttpError(429, "Too many login attempts. Please try again later.")
+    cache.set(cache_key, attempt_count + 1, 3600)
 
     client_id = settings.GOOGLE_OAUTH_CLIENT_ID
     if not client_id:

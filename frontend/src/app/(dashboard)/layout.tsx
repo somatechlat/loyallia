@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import toast from 'react-hot-toast';
-import Chatbot from '@/components/chat/Chatbot';
+import dynamic from 'next/dynamic';
+
+// LYL-M-FE-026: Lazy load Chatbot — not needed on initial render
+const Chatbot = dynamic(() => import('@/components/chat/Chatbot'), { ssr: false });
 import ProfileModal from '@/components/dashboard/ProfileModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LOYALLIA_LOGO, LOYALLIA_LOGO_DARK } from '@/lib/loyalliaLogo';
