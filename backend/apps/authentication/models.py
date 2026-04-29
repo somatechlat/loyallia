@@ -22,7 +22,8 @@ class UserRole(models.TextChoices):
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email: str, password: str, **extra_fields):
+    def create_user(self, email: str, password: str, **extra_fields) -> "User":
+        """Create and save a regular user with the given email and password."""
         if not email:
             raise ValueError("El correo electrónico es obligatorio.")
         email = self.normalize_email(email)
@@ -31,7 +32,8 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email: str, password: str, **extra_fields):
+    def create_superuser(self, email: str, password: str, **extra_fields) -> "User":
+        """Create and save a superuser with the given email and password."""
         extra_fields.setdefault("role", UserRole.SUPER_ADMIN)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -122,10 +124,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def full_name(self) -> str:
+        """Return the user's full name, falling back to email if empty."""
         return f"{self.first_name} {self.last_name}".strip() or self.email
 
     @property
     def is_locked(self) -> bool:
+        """Check if the user account is temporarily locked due to failed logins."""
         from django.utils import timezone
 
         if self.locked_until is None:
@@ -169,6 +173,7 @@ class RefreshToken(models.Model):
 
     @property
     def is_valid(self) -> bool:
+        """Check if this refresh token is still valid (not revoked and not expired)."""
         from django.utils import timezone
 
         return self.revoked_at is None and timezone.now() < self.expires_at

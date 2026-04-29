@@ -135,11 +135,13 @@ class SubscriptionPlan(TimestampedModel):
 
     @property
     def price_monthly_with_tax(self) -> Decimal:
+        """Monthly price including Ecuador IVA tax."""
         tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
         return (self.price_monthly * (1 + tax_rate)).quantize(Decimal("0.01"))
 
     @property
     def price_annual_with_tax(self) -> Decimal:
+        """Annual price including Ecuador IVA tax."""
         tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
         return (self.price_annual * (1 + tax_rate)).quantize(Decimal("0.01"))
 
@@ -274,6 +276,7 @@ class Subscription(TimestampedModel):
 
     @property
     def is_trial_active(self) -> bool:
+        """Check if the subscription is in an active trial period."""
         if self.status != SubscriptionStatus.TRIALING:
             return False
         if not self.trial_end:
@@ -282,6 +285,7 @@ class Subscription(TimestampedModel):
 
     @property
     def days_until_trial_end(self) -> int:
+        """Number of days remaining in the trial period. Returns 0 if expired."""
         if not self.trial_end:
             return 0
         delta = self.trial_end - timezone.now()

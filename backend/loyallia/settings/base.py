@@ -312,8 +312,12 @@ STORAGES = {
 # =============================================================================
 JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 60  # FR-008: 60 minutes per spec
 JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
-JWT_ALGORITHM = "HS256"
+# LYL-H-SEC-005: Algorithm selection. HS256 (default) or RS256 (asymmetric).
+# For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
+JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
 JWT_SECRET_KEY = config("JWT_SECRET_KEY", default=config("SECRET_KEY"))  # B-001: Separate from Django SECRET_KEY
+JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 private key file
+JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
 # =============================================================================
 # PASS SIGNING
