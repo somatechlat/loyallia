@@ -1708,80 +1708,80 @@ docker compose up -d
 ## PHASE 1 — CRITICAL (P0) — Weeks 1-2
 
 ### Security & Data Protection
-- [ ] **LYL-C-DR-001** Enable PostgreSQL WAL archiving (`wal_level=replica`, `archive_mode=on`)
-- [ ] **LYL-C-DR-002** Deploy automated pg_dump daily backup script (cron: 0 2 * * *)
-- [ ] **LYL-C-DR-002** Deploy pg_baseweekly weekly physical backup script (cron: 0 3 * * 0)
-- [ ] **LYL-C-DR-002** Deploy Redis BGSAVE backup script (cron: 0 */6 * * *)
-- [ ] **LYL-C-DR-002** Deploy MinIO mc mirror backup script (cron: 0 4 * * *)
-- [ ] **LYL-C-DR-002** Deploy Vault snapshot backup script (cron: 0 5 * * *)
-- [ ] **LYL-C-DR-002** Create backup verification script and schedule daily
+- [x] \*\*LYL-C-DR-001\*\* Enable PostgreSQL WAL archiving (`wal_level=replica`, `archive_mode=on`)
+- [x] \*\*LYL-C-DR-002\*\* Deploy automated pg_dump daily backup script (cron: 0 2 * * *)
+- [x] \*\*LYL-C-DR-002\*\* Deploy pg_baseweekly weekly physical backup script (cron: 0 3 * * 0)
+- [x] \*\*LYL-C-DR-002\*\* Deploy Redis BGSAVE backup script (cron: 0 */6 * * *)
+- [x] \*\*LYL-C-DR-002\*\* Deploy MinIO mc mirror backup script (cron: 0 4 * * *)
+- [x] \*\*LYL-C-DR-002\*\* Deploy Vault snapshot backup script (cron: 0 5 * * *)
+- [x] \*\*LYL-C-DR-002\*\* Create backup verification script and schedule daily
 - [ ] **LYL-C-DR-003** Implement all procedures from AUDIT_6_BACKUP_DR.md (currently docs only)
-- [ ] **LYL-C-INFRA-001** Add `--requirepass ${REDIS_PASSWORD}` to Redis command
-- [ ] **LYL-C-INFRA-001** Update all REDIS_URL and CELERY_BROKER_URL with password
-- [ ] **LYL-C-INFRA-001** Update .env.example with REDIS_PASSWORD placeholder
-- [ ] **LYL-C-INFRA-002** Switch Vault from dev mode to production mode
-- [ ] **LYL-C-INFRA-002** Enable Vault audit logging
-- [ ] **LYL-C-INFRA-002** Configure Vault auto-unseal (AWS KMS or Shamir)
-- [ ] **LYL-C-INFRA-003** Change MinIO default credentials in .env
-- [ ] **LYL-C-INFRA-004** Remove functional SECRET_KEY default from docker-compose.yml
-- [ ] **LYL-C-SEC-001** Increase OTP entropy: `secrets.token_urlsafe(8)` (was `token_hex(3)`)
-- [ ] **LYL-C-SEC-002** Fix rate limiter: fail CLOSED for auth endpoints when Redis down
-- [ ] **LYL-H-SEC-004** Fix X-Forwarded-For spoofing: use REMOTE_ADDR for rate limiting
-- [ ] **LYL-H-SEC-009** Add SSRF protection to image fetcher (block private IPs)
-- [ ] **LYL-H-SEC-009** Create common/url_validator.py with IP blocklist
-- [ ] **LYL-H-SEC-009** Apply URL validation to all user-supplied URL fields
+- [x] \*\*LYL-C-INFRA-001\*\* Add `--requirepass ${REDIS_PASSWORD}` to Redis command
+- [x] \*\*LYL-C-INFRA-001\*\* Update all REDIS_URL and CELERY_BROKER_URL with password
+- [x] \*\*LYL-C-INFRA-001\*\* Update .env.example with REDIS_PASSWORD placeholder
+- [x] \*\*LYL-C-INFRA-002\*\* Switch Vault from dev mode to production mode
+- [x] \*\*LYL-C-INFRA-002\*\* Enable Vault audit logging
+- [x] \*\*LYL-C-INFRA-002\*\* Configure Vault auto-unseal (AWS KMS or Shamir)
+- [x] \*\*LYL-C-INFRA-003\*\* Change MinIO default credentials in .env
+- [x] \*\*LYL-C-INFRA-004\*\* Remove functional SECRET_KEY default from docker-compose.yml
+- [x] \*\*LYL-C-SEC-001\*\* Increase OTP entropy: `secrets.token_urlsafe(8)` (was `token_hex(3)`)
+- [x] \*\*LYL-C-SEC-002\*\* Fix rate limiter: fail CLOSED for auth endpoints when Redis down
+- [x] \*\*LYL-H-SEC-004\*\* Fix X-Forwarded-For spoofing: use REMOTE_ADDR for rate limiting
+- [x] \*\*LYL-H-SEC-009\*\* Add SSRF protection to image fetcher (block private IPs)
+- [x] \*\*LYL-H-SEC-009\*\* Create common/url_validator.py with IP blocklist
+- [x] \*\*LYL-H-SEC-009\*\* Apply URL validation to all user-supplied URL fields
 
 ### Business Logic Critical Fixes
-- [ ] **LYL-C-API-001** Fix coupon double-redemption race condition (move check inside select_for_update)
-- [ ] **LYL-C-API-001** Add concurrent scan test to verify no double-redemption
-- [ ] **LYL-C-API-002** Apply `@require_active_subscription` to all data endpoints
-- [ ] **LYL-C-API-002** Apply `@enforce_limit("customers")` to customers API
-- [ ] **LYL-C-API-002** Apply `@enforce_limit("programs")` to cards API
-- [ ] **LYL-C-API-002** Apply `@enforce_limit("notifications_month")` to notifications API
-- [ ] **LYL-C-API-002** Apply `@enforce_limit("locations")` to locations API
-- [ ] **LYL-C-API-003** Fix enrollment endpoint: add rate limit (10/hour/IP)
-- [ ] **LYL-C-API-003** Fix enrollment endpoint: don't overwrite existing customer profiles
-- [ ] **LYL-C-API-004** Enforce max_referrals_per_customer limit in referral processing
-- [ ] **LYL-H-API-014** Validate quantity parameter (must be positive integer)
-- [ ] **LYL-H-SEC-003** Add webhook timestamp validation (reject if > 5 min old)
-- [ ] **LYL-H-SEC-003** Add webhook idempotency key store (WebhookEvent model)
-- [ ] **LYL-H-SEC-003** Add webhook HMAC signature verification
-- [ ] **LYL-H-ARCH-003** Fix Agent API crash: txn.metadata field doesn't exist
-- [ ] **LYL-H-ARCH-004** Remove hardcoded passwords from seed_sweet_coffee.py, adrian_passes.py
+- [x] \*\*LYL-C-API-001\*\* Fix coupon double-redemption race condition (move check inside select_for_update)
+- [x] \*\*LYL-C-API-001\*\* Add concurrent scan test to verify no double-redemption
+- [x] \*\*LYL-C-API-002\*\* Apply `@require_active_subscription` to all data endpoints
+- [x] \*\*LYL-C-API-002\*\* Apply `@enforce_limit("customers")` to customers API
+- [x] \*\*LYL-C-API-002\*\* Apply `@enforce_limit("programs")` to cards API
+- [x] \*\*LYL-C-API-002\*\* Apply `@enforce_limit("notifications_month")` to notifications API
+- [x] \*\*LYL-C-API-002\*\* Apply `@enforce_limit("locations")` to locations API
+- [x] \*\*LYL-C-API-003\*\* Fix enrollment endpoint: add rate limit (10/hour/IP)
+- [x] \*\*LYL-C-API-003\*\* Fix enrollment endpoint: don't overwrite existing customer profiles
+- [x] \*\*LYL-C-API-004\*\* Enforce max_referrals_per_customer limit in referral processing
+- [x] \*\*LYL-H-API-014\*\* Validate quantity parameter (must be positive integer)
+- [x] \*\*LYL-H-SEC-003\*\* Add webhook timestamp validation (reject if > 5 min old)
+- [x] \*\*LYL-H-SEC-003\*\* Add webhook idempotency key store (WebhookEvent model)
+- [x] \*\*LYL-H-SEC-003\*\* Add webhook HMAC signature verification
+- [x] \*\*LYL-H-ARCH-003\*\* Fix Agent API crash: txn.metadata field doesn't exist
+- [x] \*\*LYL-H-ARCH-004\*\* Remove hardcoded passwords from seed_sweet_coffee.py, adrian_passes.py
 
 ### Infrastructure
-- [ ] **LYL-H-INFRA-008** Pin postgres to `postgres:16.2-alpine`
-- [ ] **LYL-H-INFRA-008** Pin redis to `redis:7.2.4-alpine`
-- [ ] **LYL-H-INFRA-008** Pin minio to specific release tag
-- [ ] **LYL-H-INFRA-008** Pin vault to `hashicorp/vault:1.15.6`
-- [ ] **LYL-H-INFRA-008** Pin pgbouncer to specific version
-- [ ] **LYL-H-INFRA-009** Change Flower default credentials
+- [x] \*\*LYL-H-INFRA-008\*\* Pin postgres to `postgres:16.2-alpine`
+- [x] \*\*LYL-H-INFRA-008\*\* Pin redis to `redis:7.2.4-alpine`
+- [x] \*\*LYL-H-INFRA-008\*\* Pin minio to specific release tag
+- [x] \*\*LYL-H-INFRA-008\*\* Pin vault to `hashicorp/vault:1.15.6`
+- [x] \*\*LYL-H-INFRA-008\*\* Pin pgbouncer to specific version
+- [x] \*\*LYL-H-INFRA-009\*\* Change Flower default credentials
 
 ---
 
 ## PHASE 2 — HIGH (P1) — Weeks 3-4
 
 ### Architecture Refactor
-- [ ] **LYL-H-ARCH-005** Create apps/transactions/service.py (TransactionService)
-- [ ] **LYL-H-ARCH-005** Create apps/billing/service.py (BillingService)
-- [ ] **LYL-H-ARCH-005** Create apps/automation/service.py (AutomationService)
-- [ ] **LYL-H-ARCH-005** Create apps/customers/service.py (CustomerService)
-- [ ] **LYL-H-ARCH-005** Move business logic from API views to service classes
-- [ ] **LYL-H-ARCH-006** Deduplicate update-field pattern (create BaseModel with update_fields helper)
-- [ ] **LYL-H-ARCH-007** Create shared role-check decorator (replace 20+ inline checks)
-- [ ] **LYL-H-ARCH-008** Create common/schemas.py with shared MessageOut, UserOut, etc.
+- [x] \*\*LYL-H-ARCH-005\*\* Create apps/transactions/service.py (TransactionService)
+- [x] \*\*LYL-H-ARCH-005\*\* Create apps/billing/service.py (BillingService)
+- [x] \*\*LYL-H-ARCH-005\*\* Create apps/automation/service.py (AutomationService)
+- [x] \*\*LYL-H-ARCH-005\*\* Create apps/customers/service.py (CustomerService)
+- [x] \*\*LYL-H-ARCH-005\*\* Move business logic from API views to service classes
+- [x] \*\*LYL-H-ARCH-006\*\* Deduplicate update-field pattern (create BaseModel with update_fields helper)
+- [x] \*\*LYL-H-ARCH-007\*\* Create shared role-check decorator (replace 20+ inline checks)
+- [x] \*\*LYL-H-ARCH-008\*\* Create common/schemas.py with shared MessageOut, UserOut, etc.
 - [ ] **LYL-H-ARCH-011** Resolve duplicate plan state: Tenant.plan vs Subscription.plan
 - [ ] **LYL-H-ARCH-012** Change on_delete=CASCADE to SET_NULL on Transaction→CustomerPass
 - [ ] **LYL-H-ARCH-015** Remove dead code: seed_sweet_coffee.py, adrian_passes.py
 
 ### Database Optimization
-- [ ] **LYL-H-ARCH-009** Add select_related() to hot-path queries
-- [ ] **LYL-H-ARCH-010** Add prefetch_related() to list endpoints
-- [ ] **LYL-M-ARCH-017** Add index: (tenant_id, is_active) on loyallia_cards
-- [ ] **LYL-M-ARCH-017** Add index: (tenant_id, notification_type) on loyallia_notifications
-- [ ] **LYL-M-ARCH-017** Add index: (card_id, is_active) on loyallia_customer_passes
-- [ ] **LYL-M-ARCH-017** Add index: (tenant_id, transaction_type, created_at) on loyallia_transactions
-- [ ] **LYL-H-API-008** Add cursor-based pagination to all list endpoints (default 25, max 100)
+- [x] \*\*LYL-H-ARCH-009\*\* Add select_related() to hot-path queries
+- [x] \*\*LYL-H-ARCH-010\*\* Add prefetch_related() to list endpoints
+- [x] \*\*LYL-M-ARCH-017\*\* Add index: (tenant_id, is_active) on loyallia_cards
+- [x] \*\*LYL-M-ARCH-017\*\* Add index: (tenant_id, notification_type) on loyallia_notifications
+- [x] \*\*LYL-M-ARCH-017\*\* Add index: (card_id, is_active) on loyallia_customer_passes
+- [x] \*\*LYL-M-ARCH-017\*\* Add index: (tenant_id, transaction_type, created_at) on loyallia_transactions
+- [x] \*\*LYL-H-API-008\*\* Add cursor-based pagination to all list endpoints (default 25, max 100)
 - [ ] **LYL-M-API-019** Move campaign send to async Celery task
 
 ### Testing
@@ -1794,33 +1794,33 @@ docker compose up -d
 - [ ] **LYL-H-ARCH-013** Add CI coverage reporting
 
 ### Monitoring
-- [ ] **LYL-H-INFRA-011** Add Prometheus to docker-compose.yml
-- [ ] **LYL-H-INFRA-011** Add Grafana to docker-compose.yml
-- [ ] **LYL-H-INFRA-011** Add Postgres Exporter
-- [ ] **LYL-H-INFRA-011** Add Redis Exporter
-- [ ] **LYL-H-INFRA-011** Create API response time dashboard
-- [ ] **LYL-H-INFRA-011** Create database metrics dashboard
-- [ ] **LYL-H-INFRA-011** Create Celery task dashboard
+- [x] \*\*LYL-H-INFRA-011\*\* Add Prometheus to docker-compose.yml
+- [x] \*\*LYL-H-INFRA-011\*\* Add Grafana to docker-compose.yml
+- [x] \*\*LYL-H-INFRA-011\*\* Add Postgres Exporter
+- [x] \*\*LYL-H-INFRA-011\*\* Add Redis Exporter
+- [x] \*\*LYL-H-INFRA-011\*\* Create API response time dashboard
+- [x] \*\*LYL-H-INFRA-011\*\* Create database metrics dashboard
+- [x] \*\*LYL-H-INFRA-011\*\* Create Celery task dashboard
 - [ ] **LYL-H-INFRA-012** Add Loki for log aggregation
 - [ ] **LYL-H-INFRA-013** Configure alerting rules (backup failures, high error rates, disk space)
 
 ### Frontend Architecture
-- [ ] **LYL-C-FE-001** Consolidate token refresh into single TokenManager class
-- [ ] **LYL-C-FE-001** Remove duplicate refresh logic from auth.tsx
-- [ ] **LYL-H-FE-008** Add React Error Boundaries at route level
-- [ ] **LYL-H-FE-010** Extract cookie config to shared constants
-- [ ] **LYL-H-FE-011** Add AbortController for request cancellation
-- [ ] **LYL-H-SEC-007** Hash invitation tokens in database (SHA-256)
-- [ ] **LYL-H-SEC-007** Add invitation token expiry (7 days)
+- [x] \*\*LYL-C-FE-001\*\* Consolidate token refresh into single TokenManager class
+- [x] \*\*LYL-C-FE-001\*\* Remove duplicate refresh logic from auth.tsx
+- [x] \*\*LYL-H-FE-008\*\* Add React Error Boundaries at route level
+- [x] \*\*LYL-H-FE-010\*\* Extract cookie config to shared constants
+- [x] \*\*LYL-H-FE-011\*\* Add AbortController for request cancellation
+- [x] \*\*LYL-H-SEC-007\*\* Hash invitation tokens in database (SHA-256)
+- [x] \*\*LYL-H-SEC-007\*\* Add invitation token expiry (7 days)
 - [ ] **LYL-H-SEC-011** Remove OTP from API response even in DEBUG mode
 
 ### Security Hardening
 - [ ] **LYL-H-INFRA-006** Add TLS between internal services
-- [ ] **LYL-H-INFRA-007** Bind API/web to 127.0.0.1, front with Nginx
+- [x] \*\*LYL-H-INFRA-007\*\* Bind API/web to 127.0.0.1, front with Nginx
 - [ ] **LYL-H-INFRA-014** Implement rolling deployment strategy
 - [ ] **LYL-H-SEC-005** Evaluate migration to RS256 JWT signing
 - [ ] **LYL-H-SEC-006** Remove functional default credentials from .env.example
-- [ ] **LYL-H-SEC-008** Remove Google OAuth client ID from public endpoint
+- [x] \*\*LYL-H-SEC-008\*\* Remove Google OAuth client ID from public endpoint
 - [ ] **LYL-H-SEC-010** Evaluate nonce-based CSP (remove unsafe-inline)
 
 ---
@@ -1828,8 +1828,8 @@ docker compose up -d
 ## PHASE 3 — MEDIUM (P2) — Weeks 5-6
 
 ### Security Hardening
-- [ ] **LYL-M-SEC-012** Use salted SHA-256 for OTP hashing (add per-OTP salt)
-- [ ] **LYL-M-SEC-014** Strengthen password policy (12+ chars, complexity requirements)
+- [x] \*\*LYL-M-SEC-012\*\* Use salted SHA-256 for OTP hashing (add per-OTP salt)
+- [x] \*\*LYL-M-SEC-014\*\* Strengthen password policy (12+ chars, complexity requirements)
 - [ ] **LYL-M-SEC-015** Fix Vault cache: add TTL for secret rotation
 - [ ] **LYL-M-SEC-016** Fix user enumeration: generic error on registration
 - [ ] **LYL-M-SEC-017** Set AWS_S3_VERIFY=True in production
@@ -1862,12 +1862,12 @@ docker compose up -d
 - [ ] **LYL-L-ARCH-036** Mask PII in logs (email addresses)
 
 ### Frontend Improvements
-- [ ] **LYL-H-FE-003** Create shared TypeScript types (eliminate 15+ duplicates)
+- [x] \*\*LYL-H-FE-003\*\* Create shared TypeScript types (eliminate 15+ duplicates)
 - [ ] **LYL-H-FE-004** Integrate react-hook-form + zod for form handling
 - [ ] **LYL-H-FE-005** Use ConfirmModal consistently (replace inline modals)
-- [ ] **LYL-H-FE-006** Enable TypeScript strict mode
+- [x] \*\*LYL-H-FE-006\*\* Enable TypeScript strict mode
 - [ ] **LYL-H-FE-007** Use environment variables for API URLs
-- [ ] **LYL-H-FE-012** Add ARIA labels to all interactive elements
+- [x] \*\*LYL-H-FE-012\*\* Add ARIA labels to all interactive elements
 - [ ] **LYL-H-FE-013** Add keyboard navigation for custom components
 - [ ] **LYL-H-FE-014** Standardize dark mode implementation
 - [ ] **LYL-H-SEC-010** Implement CSP without unsafe-inline (nonce-based)
@@ -1932,10 +1932,10 @@ docker compose up -d
 - [ ] **LYL-M-ARCH-032** Fix task serialization with UUID fields
 - [ ] **LYL-M-ARCH-033** Add health check endpoint for Celery workers
 - [ ] **LYL-M-ARCH-034** Add database connection pooling monitoring
-- [ ] **LYL-H-API-005** Fix stamp multi-cycle loss (handle quantity > 2× stamps_required)
-- [ ] **LYL-H-API-006** Fix discount float precision (use Decimal throughout)
+- [x] \*\*LYL-H-API-005\*\* Fix stamp multi-cycle loss (handle quantity > 2× stamps_required)
+- [x] \*\*LYL-H-API-006\*\* Fix discount float precision (use Decimal throughout)
 - [ ] **LYL-H-API-007** Implement proper membership validation
-- [ ] **LYL-H-API-010** Enforce automation max_executions_per_day
+- [x] \*\*LYL-H-API-010\*\* Enforce automation max_executions_per_day
 - [ ] **LYL-H-API-011** Fix global cooldown → per-customer cooldown
 - [ ] **LYL-H-API-012** Add tenant scope to device queries
 - [ ] **LYL-H-API-013** Prevent unlimited trial extensions
