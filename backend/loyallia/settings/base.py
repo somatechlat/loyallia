@@ -290,7 +290,7 @@ AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
 AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_ASSETS
 AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 AWS_DEFAULT_ACL = None
-AWS_S3_VERIFY = False  # Set True in production with valid TLS
+AWS_S3_VERIFY = False  # LYL-M-SEC-017: Overridden to True in production.py
 
 STORAGES = {
     "default": {

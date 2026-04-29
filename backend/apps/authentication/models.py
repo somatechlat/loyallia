@@ -137,15 +137,48 @@ class User(AbstractBaseUser, PermissionsMixin):
         return timezone.now() < self.locked_until
 
     def record_failed_login(self) -> None:
-        """Increment failed login counter. Lock after 5 failures."""
+        """Increment failed login counter. Lock after 5 failures.
+
+        LYL-L-SEC-021: Sends an email notification when account is locked.
+        """
+        import logging
         from datetime import timedelta
 
         from django.utils import timezone
+
+        logger = logging.getLogger(__name__)
+        was_locked = self.is_locked
 
         self.failed_login_count += 1
         if self.failed_login_count >= 5:
             self.locked_until = timezone.now() + timedelta(minutes=15)
         self.save(update_fields=["failed_login_count", "locked_until", "updated_at"])
+
+        # LYL-L-SEC-021: Notify user on first lockout (not repeated lockouts)
+        if self.is_locked and not was_locked:
+            try:
+                from django.core.mail import send_mail
+
+                send_mail(
+                    subject="Cuenta temporalmente bloqueada — Loyallia",
+                    message=(
+                        f"Hola {self.first_name},\n\n"
+                        f"Tu cuenta ha sido temporalmente bloqueada debido a "
+                        f"múltiples intentos de inicio de sesión fallidos.\n\n"
+                        f"Se desbloqueará automáticamente en 15 minutos.\n\n"
+                        f"Si no fuiste tú, te recomendamos cambiar tu contraseña.\n\n"
+                        f"— Equipo de Loyallia"
+                    ),
+                    from_email=None,
+                    recipient_list=[self.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                logger.warning(
+                    "Failed to send lockout notification to %s",
+                    self.email,
+                    exc_info=True,
+                )
 
     def reset_failed_login(self) -> None:
         """Reset on successful login."""

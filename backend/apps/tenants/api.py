@@ -229,7 +229,11 @@ def delete_location(request, location_id: str):
         raise HttpError(404, get_message("LOCATION_NOT_FOUND"))
 
     loc.delete()
-    return MessageOut(success=True, message=get_message("LOCATION_DELETED"))
+
+    # LYL-M-API-023: Return 204 No Content on successful delete
+    from django.http import HttpResponse
+
+    return HttpResponse(status=204)
 
 
 # =============================================================================
