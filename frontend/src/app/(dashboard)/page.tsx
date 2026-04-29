@@ -17,7 +17,7 @@ interface OverviewResponse {
   notifications: { sent: number };
 }
 
-interface TrendPoint {
+interface TrendPoint { [key: string]: string | number;
   date: string;
   transactions: number;
   revenue: number;
@@ -230,7 +230,6 @@ export default function DashboardPage() {
     },
   ];
 
-  const formatCurrency = (v: number) => `$${v.toLocaleString()}`;
 
   const dateRanges: { days: DateRange; label: string }[] = [
     { days: 1, label: 'Hoy' },

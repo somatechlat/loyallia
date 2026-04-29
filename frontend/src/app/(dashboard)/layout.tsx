@@ -254,7 +254,7 @@ function SidebarLogo({ logoSrc, title }: { logoSrc: string; title: string }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout, refreshUser } = useAuth();
-  const { theme, mode, setMode } = useTheme();
+  const { theme, setMode } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const [showProfile, setShowProfile] = useState(false);
@@ -333,7 +333,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen flex bg-surface-50 dark:bg-surface-950">
       {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-white/[0.06] flex flex-col fixed h-full z-30">
-        <SidebarLogo logoSrc={logoSrc} title={sidebarTitle} />
+        <SidebarLogo logoSrc={tenantLogo || logoSrc} title={sidebarTitle} />
         <NavigationMenu nav={nav} pathname={pathname} />
         <ThemeToggle theme={theme} setMode={setMode} />
         <UserProfile user={user} onProfileClick={() => setShowProfile(true)} onLogout={handleLogout} />
