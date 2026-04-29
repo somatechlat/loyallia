@@ -240,7 +240,7 @@ def list_transactions(request, limit: int = 50, offset: int = 0):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     transactions = (
         Transaction.objects.filter(tenant=request.tenant)
-        .select_related("customer_pass__customer", "customer_pass__card", "staff")
+        .select_related("customer_pass__customer", "customer_pass__card", "customer_pass__card__tenant", "staff")
         .order_by("-created_at")[offset : offset + limit]
     )
 
