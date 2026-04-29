@@ -423,19 +423,19 @@ const DiscountConfig = React.memo(function DiscountConfig({ meta, setMeta }: Con
           <input type="text" className="input flex-1" placeholder="Nombre del nivel" value={tier.tier_name}
             onChange={e => {
               const tiers = [...(meta.tiers as Array<{tier_name: string; threshold: number; discount_percentage: number}>)];
-              tiers[i] = { ...tiers[i], tier_name: e.target.value };
+              tiers[i] = { ...tiers[i]!, tier_name: e.target.value };
               set('tiers', tiers);
             }} />
           <input type="number" className="input w-28" placeholder="Mín $" value={tier.threshold}
             onChange={e => {
               const tiers = [...(meta.tiers as Array<{tier_name: string; threshold: number; discount_percentage: number}>)];
-              tiers[i] = { ...tiers[i], threshold: parseFloat(e.target.value) || 0 };
+              tiers[i] = { ...tiers[i]!, threshold: parseFloat(e.target.value) || 0 };
               set('tiers', tiers);
             }} />
           <input type="number" className="input w-20" placeholder="%" value={tier.discount_percentage}
             onChange={e => {
               const tiers = [...(meta.tiers as Array<{tier_name: string; threshold: number; discount_percentage: number}>)];
-              tiers[i] = { ...tiers[i], discount_percentage: parseFloat(e.target.value) || 0 };
+              tiers[i] = { ...tiers[i]!, discount_percentage: parseFloat(e.target.value) || 0 };
               set('tiers', tiers);
             }} />
           <button type="button" className="btn-ghost text-red-500 px-2" onClick={() => {
