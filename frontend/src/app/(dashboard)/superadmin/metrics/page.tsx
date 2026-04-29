@@ -110,7 +110,7 @@ export default function SuperAdminMetrics() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Negocios', value: metrics?.total_tenants || tenants.length, delta: '+' + tenants.filter(t => t.plan === 'trial').length + ' en trial', color: 'brand', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+          { label: 'Negocios', value: (metrics?.total_tenants as number) || tenants.length, delta: '+' + tenants.filter(t => t.plan === 'trial').length + ' en trial', color: 'brand', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
           { label: 'Usuarios', value: totalUsers, delta: Math.round(totalUsers / Math.max(tenants.length, 1)) + ' promedio/negocio', color: 'blue', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
           { label: 'Sucursales', value: totalLocations, delta: cityData.length + ' ciudades', color: 'purple', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' },
           { label: 'MRR (USD)', value: '$' + ((metrics?.mrr as number) || 0).toFixed(0), delta: 'Recurrente mensual', color: 'emerald', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
@@ -243,7 +243,7 @@ export default function SuperAdminMetrics() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 text-sm">
-              {tenants.map((t: Record<string, unknown>) => (
+              {tenants.map((t) => (
                 <tr key={t.id} className="hover:bg-surface-50/50 transition-colors">
                   <td className="px-5 py-3">
                     <p className="font-semibold text-surface-900">{t.name}</p>
