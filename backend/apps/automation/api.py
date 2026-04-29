@@ -181,8 +181,10 @@ def create_automation(request, data: CreateAutomationSchema):
 @router.put("/{automation_id}/", auth=jwt_auth, summary="Update automation")
 @require_role("OWNER")
 def update_automation(request, automation_id: str, data: UpdateAutomationSchema):
-    """Update an automation. OWNER only."""
-    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
+    """Update an automation. OWNER only.
+    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+    """
+    automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
     # Update fields
     update_fields = []
@@ -239,12 +241,25 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
 @router.delete("/{automation_id}/", auth=jwt_auth, summary="Delete automation")
 @require_role("OWNER")
 def delete_automation(request, automation_id: str):
-    """Delete an automation. OWNER only."""
-    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
+    """Delete an automation. OWNER only.
+    LYL-M-API-023: Return 204 No Content on successful delete.
+    LYL-M-API-022: Accept both slug and UUID for automation_id.
+    """
+    import uuid
+
+    # LYL-M-API-022: Try UUID first, then slug
+    try:
+        uuid.UUID(automation_id)
+        automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
+    except ValueError:
+        automation = get_object_or_404(Automation, name=automation_id, tenant=request.tenant)
 
     automation.delete()
 
-    return {"message": get_message("AUTOMATION_DELETED")}
+    # LYL-M-API-023: Return 204 No Content
+    from django.http import HttpResponse
+
+    return HttpResponse(status=204)
 
 
 @router.post(
@@ -252,8 +267,10 @@ def delete_automation(request, automation_id: str):
 )
 @require_role("OWNER")
 def toggle_automation(request, automation_id: str):
-    """Enable or disable an automation. OWNER only."""
-    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
+    """Enable or disable an automation. OWNER only.
+    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+    """
+    automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
     automation.is_active = not automation.is_active
     automation.save(update_fields=["is_active"])
@@ -268,8 +285,10 @@ def toggle_automation(request, automation_id: str):
 )
 @require_role("OWNER")
 def execute_automation_manually(request, automation_id: str, customer_id: str):
-    """Manually execute an automation for a specific customer. OWNER only."""
-    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
+    """Manually execute an automation for a specific customer. OWNER only.
+    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+    """
+    automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
     from apps.customers.models import Customer
 
@@ -297,10 +316,23 @@ def execute_automation_manually(request, automation_id: str, customer_id: str):
     }
 
 
+def _get_automation_by_id_or_slug(automation_id: str, tenant) -> Automation:
+    """LYL-M-API-022: Resolve automation by UUID or name (slug-like) identifier."""
+    import uuid
+
+    try:
+        uuid.UUID(automation_id)
+        return get_object_or_404(Automation, id=automation_id, tenant=tenant)
+    except ValueError:
+        return get_object_or_404(Automation, name=automation_id, tenant=tenant)
+
+
 @router.get("/{automation_id}/", auth=jwt_auth, summary="Get automation details")
 def get_automation(request, automation_id: str):
-    """Get detailed information about an automation."""
-    automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
+    """Get detailed information about an automation.
+    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+    """
+    automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
     return {
         "id": str(automation.id),

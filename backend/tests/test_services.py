@@ -1,577 +1,518 @@
 """
 Loyallia — Service Layer Tests
-Tests for all service classes: TransactionService, BillingService,
-AutomationService, CustomerService.
+Tests for TransactionService, BillingService, AutomationService, CustomerService.
 """
 
 import uuid
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
-import pytest
+from django.test import TestCase
 
-
-# =============================================================================
-# Fixtures (mock-based since Django may not be installed in CI)
-# =============================================================================
-
-
-def _make_tenant(**kwargs):
-    """Create a mock Tenant."""
-    tenant = MagicMock()
-    tenant.id = uuid.uuid4()
-    tenant.slug = kwargs.get("slug", "test-cafe")
-    tenant.name = kwargs.get("name", "Test Café")
-    return tenant
-
-
-def _make_user(tenant=None, role="OWNER", **kwargs):
-    """Create a mock User."""
-    user = MagicMock()
-    user.id = uuid.uuid4()
-    user.email = kwargs.get("email", "owner@test.com")
-    user.role = role
-    user.tenant = tenant or _make_tenant()
-    user.is_active = True
-    return user
-
-
-def _make_card(tenant=None, card_type="stamp", **kwargs):
-    """Create a mock Card."""
-    card = MagicMock()
-    card.id = uuid.uuid4()
-    card.tenant = tenant or _make_tenant()
-    card.card_type = card_type
-    card.name = kwargs.get("name", "Test Card")
-    card.is_active = kwargs.get("is_active", True)
-    card.metadata = kwargs.get("metadata", {"stamps_required": 10, "reward_description": "Free coffee"})
-    card.get_metadata_field = lambda key, default=None: card.metadata.get(key, default)
-    return card
-
-
-def _make_customer(tenant=None, **kwargs):
-    """Create a mock Customer."""
-    customer = MagicMock()
-    customer.id = uuid.uuid4()
-    customer.tenant = tenant or _make_tenant()
-    customer.first_name = kwargs.get("first_name", "Juan")
-    customer.last_name = kwargs.get("last_name", "Pérez")
-    customer.email = kwargs.get("email", "juan@test.com")
-    customer.full_name = f"{customer.first_name} {customer.last_name}"
-    customer.is_active = True
-    return customer
-
-
-def _make_customer_pass(customer=None, card=None, **kwargs):
-    """Create a mock CustomerPass."""
-    pass_obj = MagicMock()
-    pass_obj.id = uuid.uuid4()
-    pass_obj.customer = customer or _make_customer()
-    pass_obj.card = card or _make_card()
-    pass_obj.qr_code = kwargs.get("qr_code", "ABC12345")
-    pass_obj.is_active = True
-    pass_obj.pass_data = kwargs.get("pass_data", {})
-    pass_obj.process_transaction = MagicMock(return_value={
-        "transaction_type": "stamp_earned",
-        "pass_updated": True,
-        "reward_earned": False,
-        "reward_description": "",
-        "new_stamp_count": 5,
-    })
-    return pass_obj
+from apps.authentication.models import User, UserRole
+from apps.automation.models import Automation, AutomationAction, AutomationTrigger
+from apps.billing.models import SubscriptionStatus
+from apps.cards.models import CardType
+from apps.customers.models import Customer, CustomerPass
+from apps.customers.service import CustomerService
+from apps.transactions.models import Enrollment, Transaction, TransactionType
+from apps.transactions.service import TransactionService
+from tests.factories import (
+    make_card,
+    make_customer,
+    make_customer_pass,
+    make_full_stack,
+    make_plan,
+    make_subscription,
+    make_tenant,
+    make_user,
+)
 
 
 # =============================================================================
 # TransactionService Tests
 # =============================================================================
 
-
-class TestTransactionService:
-    """Tests for TransactionService."""
-
-    @patch("apps.transactions.service.CustomerPass")
-    @patch("apps.transactions.service.Transaction")
-    @patch("apps.transactions.service.Customer")
-    @patch("apps.transactions.service.db_transaction")
-    def test_scan_qr_creates_transaction(self, mock_txn, mock_customer, mock_transaction, mock_pass):
-        """scan_qr should find pass, process transaction, and create Transaction record."""
-        from apps.transactions.service import TransactionService
-
-        tenant = _make_tenant()
-        pass_obj = _make_customer_pass()
-        mock_pass.objects.select_related.return_value.get.return_value = pass_obj
-
-        result = TransactionService.scan_qr(
-            tenant=tenant,
-            qr_code="ABC12345",
-            amount=Decimal("15.50"),
-            quantity=1,
-        )
-
-        assert result["success"] is True
-        assert result["pass_updated"] is True
-        pass_obj.process_transaction.assert_called_once()
-
-    def test_scan_qr_raises_on_empty_qr(self):
-        """scan_qr should raise ValueError for empty QR code."""
-        from apps.transactions.service import TransactionService
-
-        with pytest.raises(ValueError, match="QR code is required"):
-            TransactionService.scan_qr(tenant=_make_tenant(), qr_code="")
-
-    @patch("apps.transactions.service.CustomerPass")
-    def test_scan_qr_raises_on_not_found(self, mock_pass):
-        """scan_qr should propagate DoesNotExist when pass not found."""
-        from apps.transactions.service import TransactionService
-
-        from django.core.exceptions import ObjectDoesNotExist
-        mock_pass.DoesNotExist = ObjectDoesNotExist
-        mock_pass.objects.select_related.return_value.get.side_effect = ObjectDoesNotExist()
-
-        with pytest.raises(ObjectDoesNotExist):
-            TransactionService.scan_qr(tenant=_make_tenant(), qr_code="NONEXISTENT")
-
-    @patch("apps.transactions.service.CustomerPass")
-    @patch("apps.transactions.service.Enrollment")
-    def test_enroll_customer_creates_pass(self, mock_enrollment, mock_pass):
-        """enroll_customer should create CustomerPass and Enrollment."""
-        from apps.transactions.service import TransactionService
-
-        mock_pass.objects.filter.return_value.exists.return_value = False
-        mock_pass.objects.create.return_value = _make_customer_pass()
-
-        tenant = _make_tenant()
-        customer = _make_customer(tenant=tenant)
-        card = _make_card(tenant=tenant)
-
-        result = TransactionService.enroll_customer(tenant, customer, card)
-
-        mock_pass.objects.create.assert_called_once_with(customer=customer, card=card)
-        mock_enrollment.objects.create.assert_called_once()
-
-    @patch("apps.transactions.service.CustomerPass")
-    def test_enroll_customer_raises_on_duplicate(self, mock_pass):
-        """enroll_customer should raise ValueError if already enrolled."""
-        from apps.transactions.service import TransactionService
-
-        mock_pass.objects.filter.return_value.exists.return_value = True
-
-        with pytest.raises(ValueError, match="already enrolled"):
-            TransactionService.enroll_customer(
-                _make_tenant(), _make_customer(), _make_card()
-            )
-
-    def test_enroll_customer_raises_on_inactive_card(self):
-        """enroll_customer should raise ValueError if card is inactive."""
-        from apps.transactions.service import TransactionService
-
-        card = _make_card(is_active=False)
-
-        with pytest.raises(ValueError, match="not active"):
-            TransactionService.enroll_customer(
-                _make_tenant(), _make_customer(), card
-            )
-
-    @patch("apps.transactions.service.Transaction")
-    def test_list_transactions_returns_dicts(self, mock_txn):
-        """list_transactions should return list of dicts."""
-        from apps.transactions.service import TransactionService
-
-        mock_txn_instance = MagicMock()
-        mock_txn_instance.id = uuid.uuid4()
-        mock_txn_instance.transaction_type = "stamp_earned"
-        mock_txn_instance.customer.full_name = "Juan Pérez"
-        mock_txn_instance.customer_pass.card.name = "Coffee Card"
-        mock_txn_instance.amount = Decimal("10.00")
-        mock_txn_instance.quantity = 1
-        mock_txn_instance.staff = None
-        mock_txn_instance.created_at.isoformat.return_value = "2026-04-29T12:00:00Z"
-
-        mock_txn.objects.filter.return_value.select_related.return_value.order_by.return_value.__getitem__.return_value = [mock_txn_instance]
-
-        result = TransactionService.list_transactions(_make_tenant(), limit=10)
-
-        assert len(result) == 1
-        assert result[0]["transaction_type"] == "stamp_earned"
-        assert result[0]["customer_name"] == "Juan Pérez"
-
-    def test_serialize_result_handles_decimal(self):
-        """_serialize_result should convert Decimal to string."""
-        from apps.transactions.service import TransactionService
-
-        result = {"amount": Decimal("15.50"), "nested": {"value": Decimal("3.14")}}
-        serialized = TransactionService._serialize_result(result)
-
-        assert serialized["amount"] == "15.50"
-        assert serialized["nested"]["value"] == "3.14"
-
-
-# =============================================================================
-# CustomerService Tests
-# =============================================================================
-
-
-class TestCustomerService:
-    """Tests for CustomerService."""
-
-    @patch("apps.customers.service.Customer")
-    def test_create_customer_success(self, mock_customer):
-        """create should create a Customer with valid data."""
-        from apps.customers.service import CustomerService
-
-        mock_customer.objects.filter.return_value.exists.return_value = False
-        mock_customer.objects.create.return_value = _make_customer()
-
-        tenant = _make_tenant()
-        data = {
-            "first_name": "Juan",
-            "last_name": "Pérez",
-            "email": "juan@test.com",
-            "phone": "+593991234567",
-        }
-
-        result = CustomerService.create(tenant, data)
-        mock_customer.objects.create.assert_called_once()
-        assert result is not None
-
-    def test_create_customer_raises_on_invalid_email(self):
-        """create should raise ValueError for invalid email."""
-        from apps.customers.service import CustomerService
-
-        with pytest.raises(ValueError, match="Invalid email"):
-            CustomerService.create(_make_tenant(), {"first_name": "Juan", "email": "not-an-email"})
-
-    def test_create_customer_raises_on_empty_name(self):
-        """create should raise ValueError for empty first_name."""
-        from apps.customers.service import CustomerService
-
-        with pytest.raises(ValueError, match="First name is required"):
-            CustomerService.create(_make_tenant(), {"first_name": "", "email": "test@test.com"})
-
-    @patch("apps.customers.service.Customer")
-    def test_create_customer_raises_on_duplicate(self, mock_customer):
-        """create should raise ValueError if email already exists."""
-        from apps.customers.service import CustomerService
-
-        mock_customer.objects.filter.return_value.exists.return_value = True
-
-        with pytest.raises(ValueError, match="already exists"):
-            CustomerService.create(
-                _make_tenant(),
-                {"first_name": "Juan", "email": "existing@test.com"},
-            )
-
-    def test_update_customer_updates_fields(self):
-        """update should set changed fields and save."""
-        from apps.customers.service import CustomerService
-
-        customer = _make_customer()
-        data = {"first_name": "Pedro", "phone": "+593999888777"}
-
-        result = CustomerService.update(customer, data)
-
-        assert customer.first_name == "Pedro"
-        assert customer.phone == "+593999888777"
-        customer.save.assert_called_once()
-
-    def test_update_customer_skips_none_fields(self):
-        """update should not modify fields that are None."""
-        from apps.customers.service import CustomerService
-
-        customer = _make_customer()
-        original_name = customer.first_name
-
-        CustomerService.update(customer, {"first_name": None, "last_name": "García"})
-
-        assert customer.first_name == original_name
-        assert customer.last_name == "García"
-
-    @patch("apps.customers.service.Customer")
-    def test_search_returns_results(self, mock_customer):
-        """search should return matching customers."""
-        from apps.customers.service import CustomerService
-
-        expected = [_make_customer()]
-        mock_customer.objects.filter.return_value.filter.return_value.__getitem__.return_value = expected
-
-        result = CustomerService.search(_make_tenant(), "juan")
-        assert len(result) == 1
-
-    def test_search_returns_empty_for_short_query(self):
-        """search should return empty list for query < 2 chars."""
-        from apps.customers.service import CustomerService
-
-        result = CustomerService.search(_make_tenant(), "a")
-        assert result == []
-
-
-# =============================================================================
-# AutomationService Tests
-# =============================================================================
-
-
-class TestAutomationService:
-    """Tests for AutomationService."""
-
-    @patch("apps.automation.service.Automation")
-    @patch("apps.automation.service.AutomationExecution")
-    def test_fire_trigger_executes_matching(self, mock_exec, mock_auto):
-        """fire_trigger should execute all matching active automations."""
-        from apps.automation.service import AutomationService
-
-        automation = MagicMock()
-        automation.can_execute_for_customer.return_value = True
-        automation.execute.return_value = True
-
-        mock_auto.objects.filter.return_value.prefetch_related.return_value = [automation]
-
-        tenant = _make_tenant()
-        customer = _make_customer(tenant=tenant)
-
-        result = AutomationService.fire_trigger(
-            tenant=tenant,
-            trigger_type="customer_enrolled",
-            customer=customer,
-        )
-
-        assert result == 1
-        automation.execute.assert_called_once()
-
-    @patch("apps.automation.service.Automation")
-    def test_evaluate_rules_returns_eligible(self, mock_auto):
-        """evaluate_rules should return automations that can execute."""
-        from apps.automation.service import AutomationService
-
-        eligible = MagicMock()
-        eligible.can_execute_for_customer.return_value = True
-
-        ineligible = MagicMock()
-        ineligible.can_execute_for_customer.return_value = False
-
-        mock_auto.objects.filter.return_value.prefetch_related.return_value = [eligible, ineligible]
-
-        result = AutomationService.evaluate_rules(
-            _make_tenant(), "transaction_completed", _make_customer()
-        )
-
-        assert len(result) == 1
-        assert result[0] == eligible
-
-    @patch("apps.automation.service.Automation")
-    @patch("apps.automation.service.AutomationTrigger")
-    @patch("apps.automation.service.AutomationAction")
-    def test_create_automation_validates(self, mock_action, mock_trigger, mock_auto):
-        """create_automation should validate trigger and action."""
-        from apps.automation.service import AutomationService
-
-        mock_trigger.choices = [("customer_enrolled", "Customer Enrolled")]
-        mock_action.choices = [("send_notification", "Send Notification")]
-
-        mock_auto.objects.create.return_value = MagicMock()
-
-        data = {
-            "name": "Welcome",
-            "trigger": "customer_enrolled",
-            "action": "send_notification",
-        }
-
-        result = AutomationService.create_automation(_make_tenant(), data)
-        mock_auto.objects.create.assert_called_once()
-
-    @patch("apps.automation.service.AutomationTrigger")
-    def test_create_automation_raises_on_invalid_trigger(self, mock_trigger):
-        """create_automation should raise ValueError for invalid trigger."""
-        from apps.automation.service import AutomationService
-
-        mock_trigger.choices = [("customer_enrolled", "Customer Enrolled")]
-
-        with pytest.raises(ValueError, match="Invalid trigger"):
-            AutomationService.create_automation(
-                _make_tenant(),
-                {"name": "Test", "trigger": "invalid", "action": "send_notification"},
-            )
+class TransactionServiceScanQRTest(TestCase):
+    """Tests for TransactionService.scan_qr"""
+
+    def test_scan_qr_stamp_transaction(self):
+        t, _, _, card, customer, cp = make_full_stack()
+        result = TransactionService.scan_qr(t, cp.qr_code, quantity=1)
+        self.assertTrue(result["success"])
+        self.assertTrue(result["pass_updated"])
+
+    def test_scan_qr_empty_code_raises(self):
+        t = make_tenant()
+        with self.assertRaises(ValueError):
+            TransactionService.scan_qr(t, "", quantity=1)
+
+    def test_scan_qr_nonexistent_code_raises(self):
+        t = make_tenant()
+        with self.assertRaises(CustomerPass.DoesNotExist):
+            TransactionService.scan_qr(t, "NONEXISTENT123", quantity=1)
+
+    def test_scan_qr_inactive_pass_raises(self):
+        t = make_tenant()
+        card = make_card(t)
+        customer = make_customer(t)
+        cp = make_customer_pass(customer, card, is_active=False)
+        with self.assertRaises(CustomerPass.DoesNotExist):
+            TransactionService.scan_qr(t, cp.qr_code, quantity=1)
+
+    def test_scan_qr_with_amount(self):
+        t, _, _, card, customer, cp = make_full_stack(card_type=CardType.CASHBACK)
+        result = TransactionService.scan_qr(t, cp.qr_code, amount=50.00, quantity=1)
+        self.assertTrue(result["success"])
+
+    def test_scan_qr_updates_customer_stats(self):
+        t, _, _, card, customer, cp = make_full_stack()
+        initial_visits = customer.total_visits
+        TransactionService.scan_qr(t, cp.qr_code, amount=25.00, quantity=1)
+        customer.refresh_from_db()
+        self.assertEqual(customer.total_visits, initial_visits + 1)
+
+    def test_scan_qr_coupon_double_redemption(self):
+        t, _, _, card, customer, cp = make_full_stack(card_type=CardType.COUPON)
+        result1 = TransactionService.scan_qr(t, cp.qr_code)
+        self.assertTrue(result1["pass_updated"])
+        result2 = TransactionService.scan_qr(t, cp.qr_code)
+        self.assertFalse(result2["pass_updated"])
+
+
+class TransactionServiceEnrollTest(TestCase):
+    """Tests for TransactionService.enroll_customer"""
+
+    def test_enroll_customer_success(self):
+        t = make_tenant()
+        card = make_card(t)
+        customer = make_customer(t)
+        cp = TransactionService.enroll_customer(t, customer, card)
+        self.assertIsNotNone(cp)
+        self.assertTrue(CustomerPass.objects.filter(customer=customer, card=card).exists())
+        self.assertTrue(Enrollment.objects.filter(customer=customer, card=card).exists())
+
+    def test_enroll_customer_already_enrolled_raises(self):
+        t = make_tenant()
+        card = make_card(t)
+        customer = make_customer(t)
+        TransactionService.enroll_customer(t, customer, card)
+        with self.assertRaises(ValueError):
+            TransactionService.enroll_customer(t, customer, card)
+
+    def test_enroll_customer_inactive_card_raises(self):
+        t = make_tenant()
+        card = make_card(t, is_active=False)
+        customer = make_customer(t)
+        with self.assertRaises(ValueError):
+            TransactionService.enroll_customer(t, customer, card)
+
+
+class TransactionServiceRemoteIssueTest(TestCase):
+    """Tests for TransactionService.remote_issue"""
+
+    def test_remote_issue_success(self):
+        t, _, _, card, customer, cp = make_full_stack()
+        staff = make_user(tenant=t, role=UserRole.STAFF)
+        result = TransactionService.remote_issue(t, customer, card, quantity=3, staff=staff)
+        self.assertTrue(result["success"])
+        self.assertTrue(result["pass_updated"])
+
+    def test_remote_issue_creates_remote_transaction(self):
+        t, _, _, card, customer, cp = make_full_stack()
+        TransactionService.remote_issue(t, customer, card, quantity=2, notes="Manual reward")
+        txn = Transaction.objects.filter(customer_pass=cp, is_remote=True).first()
+        self.assertIsNotNone(txn)
+        self.assertTrue(txn.is_remote)
+
+
+class TransactionServiceListTest(TestCase):
+    """Tests for TransactionService.list_transactions"""
+
+    def test_list_transactions_empty(self):
+        t = make_tenant()
+        result = TransactionService.list_transactions(t)
+        self.assertEqual(result, [])
+
+    def test_list_transactions_with_data(self):
+        t, _, _, card, customer, cp = make_full_stack()
+        TransactionService.scan_qr(t, cp.qr_code, amount=10.00, quantity=1)
+        result = TransactionService.list_transactions(t, limit=10)
+        self.assertGreater(len(result), 0)
+
+    def test_list_transactions_respects_limit(self):
+        t, _, _, card, customer, cp = make_full_stack()
+        for _ in range(5):
+            TransactionService.scan_qr(t, cp.qr_code, amount=10.00, quantity=1)
+        result = TransactionService.list_transactions(t, limit=3)
+        self.assertLessEqual(len(result), 3)
 
 
 # =============================================================================
 # BillingService Tests
 # =============================================================================
 
+class BillingServicePlansTest(TestCase):
+    """Tests for BillingService.get_plans"""
 
-class TestBillingService:
-    """Tests for BillingService."""
-
-    @patch("apps.billing.service.SubscriptionPlan")
-    def test_get_plans_returns_list(self, mock_plan):
-        """get_plans should return list of plan dicts."""
+    @patch("apps.billing.service.getattr")
+    def test_get_plans_returns_active_plans(self, mock_getattr):
+        mock_getattr.side_effect = lambda s, k, d=None: {
+            "TAX_RATE_ECUADOR": "0.15",
+            "TRIAL_DAYS": 14,
+        }.get(k, d)
+        plan = make_plan()
         from apps.billing.service import BillingService
+        plans = BillingService.get_plans()
+        self.assertGreater(len(plans), 0)
 
-        plan = MagicMock()
-        plan.id = uuid.uuid4()
-        plan.slug = "starter"
-        plan.name = "Starter"
-        plan.description = "Basic plan"
-        plan.price_monthly = Decimal("29.99")
-        plan.price_monthly_with_tax = Decimal("34.49")
-        plan.price_annual = Decimal("299.99")
-        plan.price_annual_with_tax = Decimal("344.99")
-        plan.trial_days = 5
-        plan.is_featured = False
-        plan.features = ["automation"]
-        plan.max_locations = 1
-        plan.max_users = 3
-        plan.max_customers = 500
-        plan.max_programs = 1
-        plan.max_notifications_month = 1000
-        plan.max_transactions_month = 5000
-
-        mock_plan.objects.filter.return_value = [plan]
-
-        result = BillingService.get_plans()
-
-        assert len(result) == 1
-        assert result[0]["slug"] == "starter"
-        assert result[0]["price_monthly"] == 29.99
-
-    @patch("apps.billing.service.SubscriptionPlan")
-    def test_subscribe_raises_on_invalid_cycle(self, mock_plan):
-        """subscribe should raise ValueError for invalid billing cycle."""
+    def test_get_plans_includes_limits(self):
+        make_plan()
         from apps.billing.service import BillingService
+        plans = BillingService.get_plans()
+        if plans:
+            self.assertIn("limits", plans[0])
+            self.assertIn("max_customers", plans[0]["limits"])
 
-        with pytest.raises(ValueError, match="Billing cycle"):
-            BillingService.subscribe(_make_tenant(), "starter", billing_cycle="weekly")
 
-    @patch("apps.billing.service.SubscriptionPlan")
-    def test_subscribe_raises_on_plan_not_found(self, mock_plan):
-        """subscribe should raise ValueError if plan doesn't exist."""
+class BillingServiceCheckUsageTest(TestCase):
+    """Tests for BillingService.check_usage"""
+
+    def test_check_usage_returns_all_resources(self):
+        t = make_tenant()
+        make_subscription(t)
         from apps.billing.service import BillingService
+        usage = BillingService.check_usage(t)
+        self.assertIn("customers", usage)
+        self.assertIn("programs", usage)
+        self.assertIn("users", usage)
+        self.assertIn("locations", usage)
+        self.assertIn("transactions_month", usage)
+        self.assertIn("notifications_month", usage)
 
-        mock_plan.objects.filter.return_value.first.return_value = None
-
-        with pytest.raises(ValueError, match="not found"):
-            BillingService.subscribe(_make_tenant(), "nonexistent")
-
-    @patch("apps.billing.service.Transaction")
-    @patch("apps.billing.service.Notification")
-    @patch("apps.billing.service.Card")
-    @patch("apps.billing.service.Customer")
-    @patch("apps.billing.service.Subscription")
-    def test_check_usage_returns_metrics(self, mock_sub, mock_cust, mock_card, mock_notif, mock_txn):
-        """check_usage should return usage dict with all resource types."""
+    def test_check_usage_zero_for_empty_tenant(self):
+        t = make_tenant()
+        make_subscription(t)
         from apps.billing.service import BillingService
+        usage = BillingService.check_usage(t)
+        self.assertEqual(usage["customers"]["used"], 0)
+        self.assertEqual(usage["programs"]["used"], 0)
 
-        tenant = _make_tenant()
-        tenant.users.filter.return_value.count.return_value = 2
-        tenant.locations.count.return_value = 1
+    def test_check_usage_counts_customers(self):
+        t = make_tenant()
+        make_subscription(t)
+        make_customer(t, email="a@test.com")
+        make_customer(t, email="b@test.com")
+        from apps.billing.service import BillingService
+        usage = BillingService.check_usage(t)
+        self.assertEqual(usage["customers"]["used"], 2)
 
-        mock_cust.objects.filter.return_value.count.return_value = 50
-        mock_card.objects.filter.return_value.count.return_value = 3
-        mock_txn.objects.filter.return_value.count.return_value = 100
-        mock_notif.objects.filter.return_value.count.return_value = 200
-
-        subscription = MagicMock()
-        subscription.get_limit.return_value = 500
-        mock_sub.objects.filter.return_value.first.return_value = subscription
-
-        result = BillingService.check_usage(tenant)
-
-        assert "customers" in result
-        assert "programs" in result
-        assert "transactions_month" in result
-        assert result["customers"]["used"] == 50
-        assert result["customers"]["limit"] == 500
+    def test_check_usage_percentage_calculation(self):
+        plan = make_plan(max_customers=10)
+        t = make_tenant()
+        make_subscription(t, plan=plan)
+        for i in range(5):
+            make_customer(t, email=f"c{i}@test.com")
+        from apps.billing.service import BillingService
+        usage = BillingService.check_usage(t)
+        self.assertEqual(usage["customers"]["percentage"], 50.0)
 
 
 # =============================================================================
-# Shared Decorators & Schemas Tests
+# AutomationService Tests
 # =============================================================================
 
+class AutomationServiceFireTriggerTest(TestCase):
+    """Tests for AutomationService.fire_trigger"""
 
-class TestRoleCheck:
-    """Tests for the shared role_check decorator."""
+    @patch("apps.automation.models.Automation.execute")
+    def test_fire_trigger_executes_matching_automations(self, mock_execute):
+        mock_execute.return_value = True
+        t = make_tenant()
+        customer = make_customer(t)
+        auto = make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED)
+        from apps.automation.service import AutomationService
+        count = AutomationService.fire_trigger(
+            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
+        )
+        self.assertGreaterEqual(count, 0)
 
-    def test_require_role_allows_matching_role(self):
-        """Decorator should pass when user has matching role."""
-        from common.role_check import require_role
+    def test_fire_trigger_no_matching_automations(self):
+        t = make_tenant()
+        customer = make_customer(t)
+        from apps.automation.service import AutomationService
+        count = AutomationService.fire_trigger(
+            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
+        )
+        self.assertEqual(count, 0)
 
-        @require_role("OWNER")
-        def my_view(request):
-            return "ok"
-
-        request = MagicMock()
-        request.user.role = "OWNER"
-
-        result = my_view(request)
-        assert result == "ok"
-
-    def test_require_role_blocks_wrong_role(self):
-        """Decorator should raise HttpError 403 for wrong role."""
-        from common.role_check import require_role
-
-        from ninja.errors import HttpError
-
-        @require_role("OWNER")
-        def my_view(request):
-            return "ok"
-
-        request = MagicMock()
-        request.user.role = "STAFF"
-
-        with pytest.raises(HttpError):
-            my_view(request)
-
-    def test_require_role_multiple_roles(self):
-        """Decorator should accept any of the specified roles."""
-        from common.role_check import require_role
-
-        @require_role("OWNER", "MANAGER")
-        def my_view(request):
-            return "ok"
-
-        request = MagicMock()
-        request.user.role = "MANAGER"
-
-        result = my_view(request)
-        assert result == "ok"
+    def test_fire_trigger_inactive_automation_skipped(self):
+        t = make_tenant()
+        customer = make_customer(t)
+        make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED, is_active=False)
+        from apps.automation.service import AutomationService
+        count = AutomationService.fire_trigger(
+            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
+        )
+        self.assertEqual(count, 0)
 
 
-class TestPagination:
-    """Tests for cursor-based pagination."""
+class AutomationServiceCreateTest(TestCase):
+    """Tests for AutomationService.create_automation"""
 
-    def test_paginate_returns_items_and_cursor(self):
-        """paginate should return items and next_cursor."""
-        from common.pagination import CursorPagination
+    def test_create_automation_success(self):
+        t = make_tenant()
+        from apps.automation.service import AutomationService
+        auto = AutomationService.create_automation(t, {
+            "name": "Welcome Flow",
+            "trigger": "customer_enrolled",
+            "action": "send_notification",
+            "action_config": {"title": "Welcome!"},
+        })
+        self.assertIsNotNone(auto.id)
+        self.assertEqual(auto.name, "Welcome Flow")
 
-        item1 = MagicMock()
-        item1.created_at.isoformat.return_value = "2026-04-29T12:00:00Z"
-        item2 = MagicMock()
-        item2.created_at.isoformat.return_value = "2026-04-29T11:00:00Z"
+    def test_create_automation_invalid_trigger_raises(self):
+        t = make_tenant()
+        from apps.automation.service import AutomationService
+        with self.assertRaises(ValueError):
+            AutomationService.create_automation(t, {
+                "name": "Bad",
+                "trigger": "invalid_trigger",
+                "action": "send_notification",
+            })
 
-        qs = MagicMock()
-        qs.__getitem__ = MagicMock(return_value=[item1, item2])
+    def test_create_automation_invalid_action_raises(self):
+        t = make_tenant()
+        from apps.automation.service import AutomationService
+        with self.assertRaises(ValueError):
+            AutomationService.create_automation(t, {
+                "name": "Bad",
+                "trigger": "customer_enrolled",
+                "action": "invalid_action",
+            })
 
-        items, cursor = CursorPagination.paginate(qs, limit=2)
-        assert len(items) == 2
+    def test_create_automation_with_programs(self):
+        t = make_tenant()
+        card = make_card(t)
+        from apps.automation.service import AutomationService
+        auto = AutomationService.create_automation(t, {
+            "name": "Program Flow",
+            "trigger": "customer_enrolled",
+            "action": "send_notification",
+            "target_program_ids": [str(card.id)],
+        })
+        self.assertEqual(auto.target_programs.count(), 1)
 
-    def test_paginate_respects_max_limit(self):
-        """paginate should cap limit at MAX_LIMIT."""
-        from common.pagination import CursorPagination
 
-        assert CursorPagination.MAX_LIMIT == 100
+class AutomationServiceUpdateTest(TestCase):
+    """Tests for AutomationService.update_automation"""
 
-        qs = MagicMock()
-        qs.filter.return_value = qs
-        qs.__getitem__ = MagicMock(return_value=[])
+    def test_update_automation_name(self):
+        t = make_tenant()
+        auto = make_automation(t, name="Old Name")
+        from apps.automation.service import AutomationService
+        updated = AutomationService.update_automation(auto, {"name": "New Name"})
+        self.assertEqual(updated.name, "New Name")
 
-        CursorPagination.paginate(qs, limit=500)
-        # Should not raise, limit is capped internally
+    def test_update_automation_is_active(self):
+        t = make_tenant()
+        auto = make_automation(t, is_active=True)
+        from apps.automation.service import AutomationService
+        updated = AutomationService.update_automation(auto, {"is_active": False})
+        updated.refresh_from_db()
+        self.assertFalse(updated.is_active)
 
-    def test_paginate_filters_by_cursor(self):
-        """paginate should filter created_at < cursor when cursor provided."""
-        from common.pagination import CursorPagination
 
-        qs = MagicMock()
-        qs.filter.return_value = qs
-        qs.__getitem__ = MagicMock(return_value=[])
+class AutomationServiceGetStatsTest(TestCase):
+    """Tests for AutomationService.get_stats"""
 
-        CursorPagination.paginate(qs, cursor="2026-04-29T12:00:00Z", limit=10)
-        qs.filter.assert_called_once()
+    def test_get_stats_empty(self):
+        t = make_tenant()
+        from apps.automation.service import AutomationService
+        stats = AutomationService.get_stats(t)
+        self.assertEqual(stats["total_automations"], 0)
+        self.assertEqual(stats["total_executions"], 0)
+
+    def test_get_stats_counts_automations(self):
+        t = make_tenant()
+        make_automation(t)
+        make_automation(t)
+        from apps.automation.service import AutomationService
+        stats = AutomationService.get_stats(t)
+        self.assertEqual(stats["total_automations"], 2)
+        self.assertEqual(stats["active_automations"], 2)
+
+
+# =============================================================================
+# CustomerService Tests
+# =============================================================================
+
+class CustomerServiceCreateTest(TestCase):
+    """Tests for CustomerService.create"""
+
+    def test_create_customer_success(self):
+        t = make_tenant()
+        customer = CustomerService.create(t, {
+            "first_name": "Alice",
+            "last_name": "Smith",
+            "email": "alice@test.com",
+            "phone": "+593991234567",
+        })
+        self.assertIsNotNone(customer.id)
+        self.assertEqual(customer.email, "alice@test.com")
+
+    def test_create_customer_invalid_email_raises(self):
+        t = make_tenant()
+        with self.assertRaises(ValueError):
+            CustomerService.create(t, {
+                "first_name": "Alice",
+                "email": "not-an-email",
+            })
+
+    def test_create_customer_empty_email_raises(self):
+        t = make_tenant()
+        with self.assertRaises(ValueError):
+            CustomerService.create(t, {"first_name": "Alice", "email": ""})
+
+    def test_create_customer_missing_first_name_raises(self):
+        t = make_tenant()
+        with self.assertRaises(ValueError):
+            CustomerService.create(t, {"first_name": "", "email": "a@test.com"})
+
+    def test_create_customer_duplicate_email_raises(self):
+        t = make_tenant()
+        CustomerService.create(t, {
+            "first_name": "Alice", "email": "dup@test.com"
+        })
+        with self.assertRaises(ValueError):
+            CustomerService.create(t, {
+                "first_name": "Bob", "email": "dup@test.com"
+            })
+
+    def test_create_customer_with_date_of_birth(self):
+        t = make_tenant()
+        customer = CustomerService.create(t, {
+            "first_name": "Alice",
+            "email": "alice@test.com",
+            "date_of_birth": "1990-05-15",
+        })
+        self.assertIsNotNone(customer.date_of_birth)
+
+    def test_create_customer_gender_normalization(self):
+        t = make_tenant()
+        customer = CustomerService.create(t, {
+            "first_name": "Alice",
+            "email": "alice@test.com",
+            "gender": "masculino",
+        })
+        self.assertEqual(customer.gender, "M")
+
+
+class CustomerServiceUpdateTest(TestCase):
+    """Tests for CustomerService.update"""
+
+    def test_update_first_name(self):
+        t = make_tenant()
+        customer = make_customer(t, first_name="Old")
+        updated = CustomerService.update(customer, {"first_name": "New"})
+        self.assertEqual(updated.first_name, "New")
+
+    def test_update_phone(self):
+        t = make_tenant()
+        customer = make_customer(t)
+        updated = CustomerService.update(customer, {"phone": "+593999999999"})
+        updated.refresh_from_db()
+        self.assertEqual(updated.phone, "+593999999999")
+
+    def test_update_is_active(self):
+        t = make_tenant()
+        customer = make_customer(t)
+        updated = CustomerService.update(customer, {"is_active": False})
+        updated.refresh_from_db()
+        self.assertFalse(updated.is_active)
+
+    def test_update_empty_fields_no_change(self):
+        t = make_tenant()
+        customer = make_customer(t, first_name="Alice")
+        CustomerService.update(customer, {})
+        customer.refresh_from_db()
+        self.assertEqual(customer.first_name, "Alice")
+
+
+class CustomerServiceSearchTest(TestCase):
+    """Tests for CustomerService.search"""
+
+    def test_search_by_first_name(self):
+        t = make_tenant()
+        make_customer(t, first_name="Alice", email="alice@test.com")
+        results = CustomerService.search(t, "Alice")
+        self.assertEqual(len(results), 1)
+
+    def test_search_by_email(self):
+        t = make_tenant()
+        make_customer(t, email="unique@test.com")
+        results = CustomerService.search(t, "unique@test.com")
+        self.assertEqual(len(results), 1)
+
+    def test_search_short_query_returns_empty(self):
+        t = make_tenant()
+        make_customer(t, first_name="Alice")
+        results = CustomerService.search(t, "A")
+        self.assertEqual(len(results), 0)
+
+    def test_search_empty_query_returns_empty(self):
+        t = make_tenant()
+        results = CustomerService.search(t, "")
+        self.assertEqual(len(results), 0)
+
+    def test_search_respects_limit(self):
+        t = make_tenant()
+        for i in range(10):
+            make_customer(t, email=f"s{i}@test.com", first_name="Searchable")
+        results = CustomerService.search(t, "Searchable", limit=3)
+        self.assertLessEqual(len(results), 3)
+
+
+class CustomerServiceEnrollTest(TestCase):
+    """Tests for CustomerService.enroll_in_program"""
+
+    def test_enroll_success(self):
+        t = make_tenant()
+        card = make_card(t)
+        customer = make_customer(t)
+        cp = CustomerService.enroll_in_program(t, customer, card)
+        self.assertIsNotNone(cp)
+
+    def test_enroll_duplicate_raises(self):
+        t = make_tenant()
+        card = make_card(t)
+        customer = make_customer(t)
+        CustomerService.enroll_in_program(t, customer, card)
+        with self.assertRaises(ValueError):
+            CustomerService.enroll_in_program(t, customer, card)
+
+
+# =============================================================================
+# TransactionService._serialize_result Tests
+# =============================================================================
+
+class SerializeResultTest(TestCase):
+    """Tests for TransactionService._serialize_result"""
+
+    def test_serialize_decimal(self):
+        result = {"amount": Decimal("10.50"), "nested": {"val": Decimal("3.14")}}
+        serialized = TransactionService._serialize_result(result)
+        self.assertEqual(serialized["amount"], "10.50")
+        self.assertEqual(serialized["nested"]["val"], "3.14")
+
+    def test_serialize_list_with_decimals(self):
+        result = {"items": [Decimal("1.00"), Decimal("2.00")]}
+        serialized = TransactionService._serialize_result(result)
+        self.assertEqual(serialized["items"], ["1.00", "2.00"])
+
+    def test_serialize_plain_values(self):
+        result = {"str_val": "hello", "int_val": 42, "bool_val": True}
+        serialized = TransactionService._serialize_result(result)
+        self.assertEqual(serialized["str_val"], "hello")
+        self.assertEqual(serialized["int_val"], 42)

@@ -9,6 +9,7 @@ from decimal import Decimal
 from django.db import models
 
 from apps.tenants.models import Tenant
+from common.models import TimestampedModel
 
 
 class CardType(models.TextChoices):
@@ -36,13 +37,12 @@ class BarcodeType(models.TextChoices):
     DATA_MATRIX = "data_matrix", "Data Matrix"
 
 
-class Card(models.Model):
+class Card(TimestampedModel):
     """
     Base loyalty program configuration.
     Every card type shares these properties.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant, on_delete=models.CASCADE, related_name="cards", verbose_name="Negocio"
     )
@@ -82,10 +82,6 @@ class Card(models.Model):
         default=list, blank=True, verbose_name="Ubicaciones (Geofencing)"
     )
 
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_cards"
         verbose_name = "Programa de fidelización"
@@ -95,6 +91,9 @@ class Card(models.Model):
             "tenant",
             "name",
         ]  # Prevent duplicate program names per tenant
+
+    def __repr__(self) -> str:
+        return f"<Card: {self.name} ({self.get_card_type_display()}) - {self.tenant.name}>"
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_card_type_display()}) - {self.tenant.name}"

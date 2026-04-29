@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { customersApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import toast from "react-hot-toast";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Customer {
   id: string;
@@ -429,53 +430,17 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" ref={deleteModalRef}>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 w-full max-w-md shadow-2xl">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-red-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                </svg>
-              </div>
-              <h3 id="delete-modal-title" className="text-xl font-bold text-white mb-2">
-                Eliminar Cliente
-              </h3>
-              <p className="text-white/70 mb-6">
-                ¿Estás seguro de eliminar a{" "}
-                <span className="font-semibold text-white">
-                  {customerToDelete?.name}
-                </span>
-                ? Esta acción no se puede deshacer.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setCustomerToDelete(null);
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/20 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex-1 px-4 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-all disabled:opacity-50"
-                >
-                  {deleting ? "Eliminando..." : "Eliminar"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* LYL-H-FE-005: Standardized ConfirmModal for delete */}
+      {showDeleteModal && customerToDelete && (
+        <ConfirmModal
+          title="Eliminar Cliente"
+          message={`¿Estás seguro de eliminar a ${customerToDelete.name}? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={handleDelete}
+          onCancel={() => { setShowDeleteModal(false); setCustomerToDelete(null); }}
+          loading={deleting}
+        />
       )}
     </div>
   );
