@@ -34,30 +34,25 @@ logger = logging.getLogger(__name__)
 
 def _load_service_account() -> dict | None:
     """
-    Load Google Service Account JSON from the configured path.
-    Returns None if file is not found or is empty.
+    Load Google Service Account JSON from Vault.
+    Returns None if secret is not found or is invalid.
     """
-    sa_path_str = getattr(settings, "GOOGLE_SERVICE_ACCOUNT_FILE", "")
-    if not sa_path_str:
-        logger.debug("GOOGLE_SERVICE_ACCOUNT_FILE not configured in settings.")
-        return None
-
-    sa_path = Path(sa_path_str)
-    if not sa_path.exists():
-        logger.warning("Service Account file not found at %s", sa_path)
-        return None
+    from common.vault import get_secret
 
     try:
-        content = sa_path.read_text()
-        sa_data = json.loads(content) if content.strip() else None
+        # Fetching directly from Vault as a JSON string
+        sa_json_str = get_secret("GOOGLE_SERVICE_ACCOUNT_JSON", strict=True)
+        if not sa_json_str:
+            return None
+
+        sa_data = json.loads(sa_json_str)
         if sa_data and "private_key" in sa_data and "client_email" in sa_data:
             return sa_data
-        logger.warning("Service Account JSON at %s is missing required fields", sa_path)
+
+        logger.warning("Google Service Account JSON in Vault is missing required fields")
         return None
-    except (OSError, json.JSONDecodeError) as exc:
-        logger.error(
-            "Failed to load or parse Service Account JSON at %s: %s", sa_path, exc
-        )
+    except Exception as exc:
+        logger.error("Failed to load Google Service Account from Vault: %s", exc)
         return None
 
 
@@ -83,8 +78,8 @@ def generate_google_wallet_url(customer_pass) -> str | None:
 
     if not sa_data or not issuer_id:
         logger.warning(
-            "Google Wallet credentials not configured. "
-            "Set GOOGLE_SERVICE_ACCOUNT_FILE and GOOGLE_WALLET_ISSUER_ID in settings."
+            "Google Wallet credentials not configured in Vault or settings. "
+            "Ensure GOOGLE_SERVICE_ACCOUNT_JSON is in Vault and GOOGLE_WALLET_ISSUER_ID is set."
         )
         return None
 
