@@ -12,15 +12,15 @@ from django.db import models
 
 from apps.cards.models import Card
 from apps.tenants.models import Tenant
+from common.models import TimestampedModel
 
 
-class Customer(models.Model):
+class Customer(TimestampedModel):
     """
     Customer profile with contact information.
     Customers can enroll in multiple programs (passes).
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,

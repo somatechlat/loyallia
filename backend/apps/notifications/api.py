@@ -95,13 +95,12 @@ def register_device(request, data: PushDeviceSchema):
 
 @router.delete("/devices/{device_id}/", auth=jwt_auth, summary="Unregister device")
 def unregister_device(request, device_id: str):
-    """Unregister a device from push notifications."""
+    """Unregister a device from push notifications.
+    LYL-H-API-012: Device queries are tenant-scoped via customer relationship.
+    """
     customer = _get_customer_or_403(request)
-    device = get_object_or_404(PushDevice, id=device_id)
-
-    # Verify ownership
-    if device.customer.id != customer.id:
-        raise HttpError(403, get_message("DEVICE_NOT_FOUND"))
+    # LYL-H-API-012: Scope device query to customer's devices (tenant isolation)
+    device = get_object_or_404(PushDevice, id=device_id, customer=customer)
 
     device.is_active = False
     device.save()
@@ -380,33 +379,19 @@ def create_campaign(request, data: CampaignCreateIn):
             "message": f"Campaña de WALLET iniciada para segmento '{data.segment_id}'. Los clientes recibirán una notificación en sus tarjetas.",
         }
     elif data.channel == "whatsapp":
-        # WhatsApp Mock — creates in_app notifications with a WhatsApp tag
-        # Ready for future integration with WhatsApp Business API
-        from apps.customers.api import _apply_segment_filter
+        # LYL-M-API-019: Move synchronous campaign send to async Celery task
+        from apps.notifications.tasks import send_whatsapp_campaign
 
-        base_qs = Customer.objects.filter(tenant=request.tenant, is_active=True)
-        audience = _apply_segment_filter(base_qs, data.segment_id)
-        total = audience.count()
-        succeeded = 0
-
-        for customer in audience.iterator(chunk_size=50):
-            try:
-                Notification.objects.create(
-                    tenant=request.tenant,
-                    customer=customer,
-                    notification_type=NotificationType.MARKETING,
-                    channel=NotificationChannel.IN_APP,
-                    title=f"[WhatsApp] {data.title}",
-                    message=data.message[:500],
-                    action_url=data.image_url or "",
-                )
-                succeeded += 1
-            except Exception:
-                pass
-
+        send_whatsapp_campaign.delay(
+            tenant_id=str(request.tenant.id),
+            title=data.title,
+            message=data.message,
+            segment_id=data.segment_id,
+            image_url=data.image_url or "",
+        )
         return {
             "success": True,
-            "message": f"Campaña de WhatsApp (Mock) completada: {succeeded}/{total} notificaciones creadas. "
+            "message": f"Campaña de WhatsApp (Mock) iniciada para segmento '{data.segment_id}'. "
             f"En producción, estas se enviarían via WhatsApp Business API.",
         }
     else:

@@ -117,7 +117,12 @@ class Automation(models.Model):
         return f"{self.name} - {self.trigger} → {self.action}"
 
     def can_execute_for_customer(self, customer) -> bool:
-        """Check if this automation can execute for a given customer."""
+        """Check if this automation can execute for a given customer.
+
+        LYL-H-API-011: Uses per-customer cooldown instead of global cooldown.
+        The cooldown is checked against the last execution for THIS customer,
+        not the global last_executed timestamp.
+        """
         from apps.analytics.models import CustomerAnalytics
 
         # Check if customer is in target segments
@@ -137,33 +142,45 @@ class Automation(models.Model):
             if not customer_programs.exists():
                 return False
 
-        # Check cooldown
-        if self.last_executed and self.cooldown_hours > 0:
+        # LYL-H-API-011: Per-customer cooldown (not global)
+        if self.cooldown_hours > 0:
             from datetime import timedelta
-
             from django.utils import timezone
 
-            cooldown_end = self.last_executed + timedelta(hours=self.cooldown_hours)
-            if timezone.now() < cooldown_end:
-                return False
+            last_for_customer = (
+                AutomationExecution.objects.filter(
+                    automation=self, customer=customer, success=True
+                )
+                .order_by("-executed_at")
+                .first()
+            )
+            if last_for_customer:
+                cooldown_end = last_for_customer.executed_at + timedelta(
+                    hours=self.cooldown_hours
+                )
+                if timezone.now() < cooldown_end:
+                    return False
 
         return True
 
     def execute(self, customer, context=None) -> bool:
-        """
-        Execute the automation for a customer.
+        """Execute the automation for a customer.
+
         Returns True if successful.
-        Enforces max_executions_per_day limit if configured.
+        LYL-H-API-016: Enforces max_executions_per_day limit.
+        LYL-M-API-020: Uses F() expression to prevent lost updates on counter.
         """
         if not self.can_execute_for_customer(customer):
             return False
 
-        # Enforce max_executions_per_day limit
+        # LYL-H-API-016: Enforce max_executions_per_day limit
         if self.max_executions_per_day is not None and self.max_executions_per_day > 0:
             from datetime import timedelta
             from django.utils import timezone
 
-            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_start = timezone.now().replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             executions_today = self.executions.filter(
                 executed_at__gte=today_start
             ).count()
@@ -185,11 +202,15 @@ class Automation(models.Model):
                 success = self._execute_update_segment(customer, context)
 
             if success:
-                self.total_executions += 1
+                # LYL-M-API-020: Use F() to prevent lost updates under concurrency
+                from django.db.models import F
                 from django.utils import timezone
 
-                self.last_executed = timezone.now()
-                self.save(update_fields=["total_executions", "last_executed"])
+                Automation.objects.filter(pk=self.pk).update(
+                    total_executions=F("total_executions") + 1,
+                    last_executed=timezone.now(),
+                )
+                self.refresh_from_db(fields=["total_executions", "last_executed"])
 
             return success
         except Exception as e:

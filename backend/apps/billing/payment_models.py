@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from apps.billing.models import Subscription
 from apps.tenants.models import Tenant
+from common.models import TimestampedModel
 
 
 # =============================================================================
@@ -20,13 +21,12 @@ from apps.tenants.models import Tenant
 # =============================================================================
 
 
-class PaymentMethod(models.Model):
+class PaymentMethod(TimestampedModel):
     """
     Stored payment method for a tenant.
     Tokenized card data stored by payment gateway — we only keep last4 and brand.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -62,14 +62,14 @@ class PaymentMethod(models.Model):
     )
     is_active = models.BooleanField(default=True, verbose_name="Activo")
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_payment_methods"
         verbose_name = "Método de pago"
         verbose_name_plural = "Métodos de pago"
         ordering = ["-is_default", "-created_at"]
+
+    def __repr__(self) -> str:
+        return f"<PaymentMethod: {self.card_brand} ****{self.card_last_four} — {self.tenant.name}>"
 
     def __str__(self) -> str:
         return f"{self.card_brand} ****{self.card_last_four} — {self.tenant.name}"
@@ -84,7 +84,7 @@ class PaymentMethod(models.Model):
 # =============================================================================
 
 
-class Invoice(models.Model):
+class Invoice(TimestampedModel):
     """
     Billing invoice for subscription payments.
     Includes IVA breakdown for Ecuador SRI compliance.
@@ -97,7 +97,6 @@ class Invoice(models.Model):
         VOID = "void", "Anulada"
         UNCOLLECTIBLE = "uncollectible", "Incobrable"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -178,10 +177,6 @@ class Invoice(models.Model):
     )
     pdf_url = models.URLField(blank=True, default="", verbose_name="URL del PDF")
 
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_invoices"
         verbose_name = "Factura"
@@ -192,8 +187,21 @@ class Invoice(models.Model):
             models.Index(fields=["status"]),
         ]
 
+    def __repr__(self) -> str:
+        return f"<Invoice: {self.invoice_number} — {self.tenant.name} ${self.total}>"
+
     def __str__(self) -> str:
         return f"Factura {self.invoice_number} — {self.tenant.name} — ${self.total}"
+
+    def clean(self) -> None:
+        """Validate invoice data."""
+        super().clean()
+        if self.subtotal < 0:
+            raise ValueError("subtotal must be non-negative")
+        if self.tax_amount < 0:
+            raise ValueError("tax_amount must be non-negative")
+        if self.total < 0:
+            raise ValueError("total must be non-negative")
 
     @classmethod
     def generate_invoice_number(cls, tenant: Tenant) -> str:
@@ -255,6 +263,9 @@ class WebhookEvent(models.Model):
             models.Index(fields=["event_id"]),
             models.Index(fields=["processed_at"]),
         ]
+
+    def __repr__(self) -> str:
+        return f"<WebhookEvent: {self.event_type} — {self.event_id}>"
 
     def __str__(self) -> str:
         return f"{self.event_type} — {self.event_id}"
