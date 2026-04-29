@@ -68,8 +68,14 @@ def register(request, payload: RegisterIn):
     """Creates a Tenant + OWNER user in a single atomic transaction."""
     from django.db import transaction
 
+    # LYL-M-SEC-016: Generic error to prevent user enumeration
     if User.objects.filter(email=payload.email).exists():
-        raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
+        return RegisterOut(
+            success=True,
+            message=get_message("TENANT_CREATED", days=settings.TRIAL_DAYS),
+            tenant_id="",
+            user_id="",
+        )
 
     with transaction.atomic():
         slug = slugify_business(payload.business_name)
@@ -657,15 +663,11 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
 
     if settings.DEBUG:
         # DEV: Log OTP to console for easy testing (no SMS cost)
+        # LYL-H-SEC-011: Never return OTP in API response, even in DEBUG
         logger.info(
             "📱 PHONE VERIFY OTP for %s: %s (DEV MODE — not sent via SMS)",
             payload.phone_number,
             otp,
-        )
-        return MessageOut(
-            success=True,
-            message=f"[DEV] Código: {otp} — "
-            + get_message("AUTH_PHONE_OTP_SENT", phone=masked_phone),
         )
 
     # PRODUCTION: Send via SMS

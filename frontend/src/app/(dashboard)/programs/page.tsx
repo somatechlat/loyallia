@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { programsApi } from '@/lib/api';
 import { useAuth, User } from '@/lib/auth';
 import toast from 'react-hot-toast';
-import Tooltip from '@/components/ui/Tooltip';
+
 
 const CARD_TYPE_LABELS: Record<string, string> = {
   stamp: 'Sellos', cashback: 'Cashback', coupon: 'Cupón',

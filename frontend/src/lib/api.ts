@@ -3,7 +3,8 @@ import Cookies from 'js-cookie';
 import { tokenManager } from './token-manager';
 
 const api = axios.create({
-  baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905'),
+  // LYL-H-FE-007: Use environment variable, no hardcoded fallback
+  baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
   headers: { 'Content-Type': 'application/json' },
 });
 

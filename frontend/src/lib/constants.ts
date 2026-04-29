@@ -7,6 +7,7 @@ export const COOKIE_CONFIG = {
 } as const;
 
 export const API_CONFIG = {
-  BASE_URL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905'),
+  // LYL-H-FE-007: Use environment variable, no hardcoded fallback
+  BASE_URL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
   TIMEOUT: 30000,
 } as const;

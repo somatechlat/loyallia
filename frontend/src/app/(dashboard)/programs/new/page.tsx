@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import Tooltip from '@/components/ui/Tooltip';
+
 import { uploadFile } from '@/lib/upload';
 import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, BARCODE_TYPES, defaultMeta } from '@/components/programs/constants';
 import TypeConfig from '@/components/programs/TypeConfig';
@@ -102,11 +102,11 @@ export default function NewProgramPage() {
   };
 
   const [stripPreview, setStripPreview] = useState<string | null>(null);
-  const [stripUploading, setStripUploading] = useState(false);
+  const [_stripUploading, setStripUploading] = useState(false);
   const stripInputRef = useRef<HTMLInputElement>(null);
 
   const [iconPreview, setIconPreview] = useState<string | null>(null);
-  const [iconUploading, setIconUploading] = useState(false);
+  const [_iconUploading, setIconUploading] = useState(false);
   const iconInputRef = useRef<HTMLInputElement>(null);
 
   const canNext = () => {
@@ -251,17 +251,17 @@ export default function NewProgramPage() {
                   <div key={i} className="flex gap-2 items-center bg-surface-50 p-2 rounded-lg border border-surface-200">
                     <input type="text" className="input flex-1 text-sm py-1" placeholder="Ej: Sucursal Centro" value={loc.name} onChange={e => {
                       const newLocs = [...form.locations];
-                      newLocs[i].name = e.target.value;
+                      newLocs[i]!.name = e.target.value;
                       setForm({...form, locations: newLocs});
                     }} />
                     <input type="number" step="any" className="input w-24 text-sm py-1" placeholder="Lat (-0.18)" value={loc.lat || ''} onChange={e => {
                       const newLocs = [...form.locations];
-                      newLocs[i].lat = parseFloat(e.target.value) || 0;
+                      newLocs[i]!.lat = parseFloat(e.target.value) || 0;
                       setForm({...form, locations: newLocs});
                     }} />
                     <input type="number" step="any" className="input w-24 text-sm py-1" placeholder="Lng (-78.48)" value={loc.lng || ''} onChange={e => {
                       const newLocs = [...form.locations];
-                      newLocs[i].lng = parseFloat(e.target.value) || 0;
+                      newLocs[i]!.lng = parseFloat(e.target.value) || 0;
                       setForm({...form, locations: newLocs});
                     }} />
                     <button type="button" className="text-red-400 hover:text-red-600 px-1" title="Eliminar" onClick={() => {
