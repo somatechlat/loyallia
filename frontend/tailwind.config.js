@@ -52,6 +52,49 @@ module.exports = {
         glow: '0 0 24px rgb(86 96 255 / 0.45)',
         'inner-light': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.8)',
       },
+      /* LYL-M-FE-031: Semantic color tokens for consistent theming */
+      textColor: {
+        success: {
+          DEFAULT: '#059669',
+          dark: '#34d399',
+        },
+        warning: {
+          DEFAULT: '#d97706',
+          dark: '#fbbf24',
+        },
+        danger: {
+          DEFAULT: '#dc2626',
+          dark: '#f87171',
+        },
+        info: {
+          DEFAULT: '#2563eb',
+          dark: '#60a5fa',
+        },
+      },
+      backgroundColor: {
+        success: {
+          light: '#ecfdf5',
+          DEFAULT: '#059669',
+        },
+        warning: {
+          light: '#fffbeb',
+          DEFAULT: '#d97706',
+        },
+        danger: {
+          light: '#fef2f2',
+          DEFAULT: '#dc2626',
+        },
+        info: {
+          light: '#eff6ff',
+          DEFAULT: '#2563eb',
+        },
+      },
+      borderColor: {
+        success: { DEFAULT: '#a7f3d0', dark: '#065f46' },
+        warning: { DEFAULT: '#fde68a', dark: '#92400e' },
+        danger: { DEFAULT: '#fecaca', dark: '#991b1b' },
+        info: { DEFAULT: '#bfdbfe', dark: '#1e40af' },
+      },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',

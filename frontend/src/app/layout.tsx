@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/lib/theme";
 import { Toaster } from "react-hot-toast";
 import { LOYALLIA_LOGO } from "@/lib/loyalliaLogo";
 import CookieConsent from "@/components/ui/CookieConsent";
+import OfflineBanner from "@/components/ui/OfflineBanner";
 
 export const metadata: Metadata = {
   title: {
@@ -24,8 +25,11 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* Inline favicon as data URI */}
+        {/* LYL-L-FE-041: Proper favicon with SVG fallback */}
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href={LOYALLIA_LOGO} type="image/png" />
+        <link rel="apple-touch-icon" href={LOYALLIA_LOGO} />
+        <meta name="theme-color" content="#5660ff" />
         {/* Google Fonts — preconnect + non-blocking load (replaces render-blocking CSS @import) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -53,6 +57,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors">
+        <OfflineBanner />
         <ThemeProvider>
           <AuthProvider>
             <I18nProvider>

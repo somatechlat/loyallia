@@ -62,9 +62,11 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "common.middleware.RequestIDMiddleware",  # B-011: Request tracing
+    "common.middleware.CSPNonceMiddleware",  # LYL-H-SEC-010: CSP nonce generation
     "common.rate_limit.RateLimitMiddleware",  # Rate limiting (Redis-backed, fails open)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # i18n language detection
+    "common.middleware.CSRFExemptAPIMiddleware",  # LYL-M-SEC-018: CSRF for non-API routes
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -392,13 +394,17 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
 # Content-Security-Policy — set via custom middleware or Nginx in production
 # Default CSP header (can be overridden in production settings)
+# LYL-H-SEC-010: CSP is now set via CSPNonceMiddleware with per-request nonces.
+# These settings are kept as documentation; the middleware generates the actual header.
 CSP_DEFAULT_SRC = "'self'"
-CSP_SCRIPT_SRC = "'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com"
-CSP_STYLE_SRC = "'self' 'unsafe-inline'"
 CSP_IMG_SRC = "'self' data: https:"
 CSP_FONT_SRC = "'self' https://fonts.gstatic.com"
 CSP_CONNECT_SRC = "'self' https://oauth2.googleapis.com"
 CSP_FRAME_SRC = "'self' https://accounts.google.com"
+
+# LYL-M-SEC-019: HttpOnly session cookie (set in base so all envs inherit)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
 
 # =============================================================================
 # BUSINESS RULES CONFIGURATION

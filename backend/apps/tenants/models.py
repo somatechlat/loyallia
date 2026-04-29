@@ -5,12 +5,13 @@ Ecuadorian business fields for SRI compliance.
 """
 
 import re
-import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+
+from common.models import TimestampedModel
 
 # =============================================================================
 # VALIDATORS — Ecuadorian Identity Documents
@@ -115,14 +116,12 @@ class EntityType(models.TextChoices):
 # =============================================================================
 
 
-class Tenant(models.Model):
+class Tenant(TimestampedModel):
     """
     Represents a registered business account on Loyallia.
     Root entity for all multi-tenant data isolation.
     Expanded with Ecuadorian business fields (RUC, legal name, etc.)
     """
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200, verbose_name="Nombre comercial")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
@@ -214,17 +213,29 @@ class Tenant(models.Model):
         help_text="ISO 639-1: es, en, fr, de. Set at tenant registration.",
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_tenants"
         verbose_name = "Negocio"
         verbose_name_plural = "Negocios"
         ordering = ["-created_at"]
 
+    def __repr__(self) -> str:
+        return f"<Tenant: {self.name} ({self.plan})>"
+
     def __str__(self) -> str:
         return f"{self.name} ({self.plan})"
+
+    def clean(self) -> None:
+        """Validate tenant data."""
+        super().clean()
+        if self.entity_type == EntityType.NATURAL and not self.cedula:
+            raise ValidationError(
+                {"cedula": "La cédula es obligatoria para persona natural."}
+            )
+        if self.entity_type == EntityType.JURIDICA and not self.ruc:
+            raise ValidationError(
+                {"ruc": "El RUC es obligatorio para persona jurídica."}
+            )
 
     @property
     def is_trial_active(self) -> bool:
@@ -257,10 +268,9 @@ class Tenant(models.Model):
         self.save(update_fields=["trial_end", "plan", "updated_at"])
 
 
-class Location(models.Model):
+class Location(TimestampedModel):
     """Physical business location. Each tenant can have multiple."""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -283,17 +293,29 @@ class Location(models.Model):
     is_active = models.BooleanField(default=True)
     is_primary = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "loyallia_locations"
         verbose_name = "Ubicación"
         verbose_name_plural = "Ubicaciones"
         ordering = ["-is_primary", "name"]
 
+    def __repr__(self) -> str:
+        return f"<Location: {self.tenant.name} — {self.name}>"
+
     def __str__(self) -> str:
         return f"{self.tenant.name} — {self.name}"
+
+    def clean(self) -> None:
+        """Validate location data."""
+        super().clean()
+        if self.latitude is not None and self.longitude is None:
+            raise ValidationError(
+                {"longitude": "La longitud es requerida si se proporciona latitud."}
+            )
+        if self.longitude is not None and self.latitude is None:
+            raise ValidationError(
+                {"latitude": "La latitud es requerida si se proporciona longitud."}
+            )
 
     @property
     def has_coordinates(self) -> bool:

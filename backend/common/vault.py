@@ -12,11 +12,14 @@ Behavior:
     1. If VAULT_ADDR and VAULT_TOKEN are set, fetches from Vault.
     2. Falls back to the env_fallback environment variable.
     3. Returns default if both fail.
+
+SECURITY (LYL-M-SEC-015): Cache has a configurable TTL (default 5 minutes)
+so that secret rotation takes effect without requiring a process restart.
 """
 
 import logging
 import os
-from functools import lru_cache
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +28,28 @@ VAULT_ADDR = os.environ.get("VAULT_ADDR", "")
 VAULT_TOKEN = os.environ.get("VAULT_TOKEN", "")
 VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia")
 
+# Cache TTL in seconds (default 300 = 5 minutes)
+VAULT_CACHE_TTL = int(os.environ.get("VAULT_CACHE_TTL", "300"))
 
-@lru_cache(maxsize=1)
+# Module-level cache state
+_secrets_cache: dict = {}
+_cache_fetched_at: float = 0.0
+
+
 def _fetch_vault_secrets() -> dict:
     """
     Fetch all secrets from Vault KV v2 endpoint.
     Returns the 'data' dict from the Vault response, or empty dict on failure.
-    Cached for the lifetime of the process (secrets reload on restart).
+    Cached with a TTL to allow secret rotation without process restart.
     """
+    global _secrets_cache, _cache_fetched_at
+
+    now = time.monotonic()
+
+    # Return cached secrets if still within TTL
+    if _secrets_cache and (now - _cache_fetched_at) < VAULT_CACHE_TTL:
+        return _secrets_cache
+
     if not VAULT_ADDR or not VAULT_TOKEN:
         logger.debug(
             "Vault not configured (VAULT_ADDR or VAULT_TOKEN missing). Using env fallback."
@@ -54,20 +71,22 @@ def _fetch_vault_secrets() -> dict:
             logger.info(
                 "Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH
             )
+            _secrets_cache = secrets
+            _cache_fetched_at = now
             return secrets
     except urllib.error.URLError as exc:
         logger.warning(
             "Vault: connection failed (%s). Falling back to env vars.", exc.reason
         )
-        return {}
+        return _secrets_cache  # Return stale cache on connection failure
     except (json.JSONDecodeError, KeyError) as exc:
         logger.warning(
             "Vault: invalid response format (%s). Falling back to env vars.", exc
         )
-        return {}
+        return _secrets_cache
     except Exception as exc:
         logger.warning("Vault: unexpected error (%s). Falling back to env vars.", exc)
-        return {}
+        return _secrets_cache
 
 
 def get_secret(vault_key: str, env_fallback: str = "", default: str = "") -> str:
@@ -103,5 +122,7 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "") -> str
 
 def clear_cache() -> None:
     """Clear the cached Vault secrets. Call this to force a re-fetch."""
-    _fetch_vault_secrets.cache_clear()
+    global _secrets_cache, _cache_fetched_at
+    _secrets_cache = {}
+    _cache_fetched_at = 0.0
     logger.info("Vault: secret cache cleared")
