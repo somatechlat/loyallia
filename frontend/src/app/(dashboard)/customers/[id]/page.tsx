@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { customersApi, programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { use } from 'react';
 
 interface Program {
   id: string;
