@@ -215,3 +215,46 @@ class Invoice(models.Model):
         self.save(
             update_fields=["status", "gateway_charge_id", "paid_at", "updated_at"]
         )
+
+
+# =============================================================================
+# WEBHOOK EVENT (LYL-H-SEC-003: Replay protection / idempotency)
+# =============================================================================
+
+
+class WebhookEvent(models.Model):
+    """
+    Records processed webhook events for idempotency and replay protection.
+    Prevents duplicate processing of the same webhook payload.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    event_id = models.CharField(
+        max_length=200,
+        unique=True,
+        verbose_name="Event ID",
+        help_text="Unique identifier from the payment gateway (or SHA-256 of payload)",
+    )
+    event_type = models.CharField(
+        max_length=100,
+        verbose_name="Event type",
+    )
+    processed_at = models.DateTimeField(auto_now_add=True)
+    payload_hash = models.CharField(
+        max_length=64,
+        verbose_name="Payload SHA-256",
+        help_text="SHA-256 hash of the raw webhook body for deduplication",
+    )
+
+    class Meta:
+        db_table = "lyl_webhook_events"
+        verbose_name = "Webhook Event"
+        verbose_name_plural = "Webhook Events"
+        ordering = ["-processed_at"]
+        indexes = [
+            models.Index(fields=["event_id"]),
+            models.Index(fields=["processed_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.event_type} — {self.event_id}"

@@ -45,10 +45,10 @@ export default function ConfirmModal({
         <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2">{title}</h3>
         <p className="text-surface-500 text-sm mb-6">{message}</p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="btn-ghost flex-1 text-sm">
+          <button onClick={onCancel} className="btn-ghost flex-1 text-sm" aria-label="Cancelar">
             Cancelar
           </button>
-          <button onClick={onConfirm} className={`flex-1 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${variantStyles[variant]}`}>
+          <button onClick={onConfirm} aria-label={confirmLabel} className={`flex-1 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${variantStyles[variant]}`}>
             {confirmLabel}
           </button>
         </div>

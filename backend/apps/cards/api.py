@@ -12,6 +12,7 @@ from pydantic import BaseModel, field_validator
 from apps.cards.models import Card, CardType
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
+from common.plan_enforcement import require_active_subscription, enforce_limit
 
 router = Router()
 
@@ -161,6 +162,8 @@ def list_programs(request):
 @router.post(
     "/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización"
 )
+@require_active_subscription
+@enforce_limit("programs")
 def create_program(request, data: CardCreateIn):
     """Create a new loyalty program. OWNER only."""
     from common.permissions import is_owner

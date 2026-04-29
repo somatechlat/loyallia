@@ -1,6 +1,5 @@
-import React from 'react';
 'use client';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
@@ -8,6 +7,7 @@ import { useTheme } from '@/lib/theme';
 import toast from 'react-hot-toast';
 import Chatbot from '@/components/chat/Chatbot';
 import ProfileModal from '@/components/dashboard/ProfileModal';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LOYALLIA_LOGO, LOYALLIA_LOGO_DARK } from '@/lib/loyalliaLogo';
 import Cookies from 'js-cookie';
 
@@ -349,7 +349,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main content */}
       <main className="flex-1 ml-64 p-8 min-h-screen animate-fade-in relative">
         <ImpersonationBanner />
-        {children}
+        <ErrorBoundary>{children}</ErrorBoundary>
         <Chatbot />
       </main>
 

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { tokenManager } from './token-manager';
 
 const api = axios.create({
   baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905'),
@@ -13,29 +14,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// SEC-001 fix: Shared refresh lock prevents concurrent refresh requests
-let refreshPromise: Promise<string> | null = null;
-
-function doRefresh(): Promise<string> {
-  if (!refreshPromise) {
-    const refresh = Cookies.get('refresh_token');
-    if (!refresh) {
-      return Promise.reject(new Error('No refresh token'));
-    }
-    refreshPromise = axios
-      .post('/api/v1/auth/refresh/', { refresh_token: refresh }, { withCredentials: true })
-      .then(({ data }) => {
-        const isProd = process.env.NODE_ENV === 'production';
-        Cookies.set('access_token', data.access_token, { expires: 1 / 24, secure: isProd, sameSite: 'strict' });
-        return data.access_token;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-  return refreshPromise;
-}
-
 // On 401, attempt refresh — if refresh fails, clear tokens and redirect to login
 api.interceptors.response.use(
   (res) => res,
@@ -44,18 +22,25 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
       try {
-        const token = await doRefresh();
+        const token = await tokenManager.refresh();
         original.headers.Authorization = `Bearer ${token}`;
         return api(original);
       } catch {
-        Cookies.remove('access_token');
-        Cookies.remove('refresh_token');
+        tokenManager.clearTokens();
         window.location.replace('/login'); // SEC-004 fix: use replace to avoid referrer leak
       }
     }
     return Promise.reject(error);
   }
 );
+
+// AbortController support for request cancellation
+const globalController = new AbortController();
+
+/** Abort all in-flight requests that used the global signal. */
+export const cancelAllRequests = () => {
+  globalController.abort();
+};
 
 export default api;
 
