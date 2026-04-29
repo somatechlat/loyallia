@@ -124,6 +124,9 @@ class Tenant(TimestampedModel):
     """
     name = models.CharField(max_length=200, verbose_name="Nombre comercial")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
+    # DEPRECATED (LYL-H-ARCH-011): plan is a denormalized cache of Subscription.status.
+    # Use effective_plan property or Subscription directly as the source of truth.
+    # This field will be removed in a future migration once all reads are migrated.
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
     is_active = models.BooleanField(default=True)
 
@@ -220,10 +223,10 @@ class Tenant(TimestampedModel):
         ordering = ["-created_at"]
 
     def __repr__(self) -> str:
-        return f"<Tenant: {self.name} ({self.plan})>"
+        return f"<Tenant: {self.name} ({self.effective_plan})>"
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.plan})"
+        return f"{self.name} ({self.effective_plan})"
 
     def clean(self) -> None:
         """Validate tenant data."""
@@ -238,8 +241,52 @@ class Tenant(TimestampedModel):
             )
 
     @property
+    def effective_plan(self) -> str:
+        """Canonical plan status derived from Subscription (LYL-H-ARCH-011).
+
+        Returns the Subscription status mapped to the legacy Plan choices.
+        Falls back to the denormalized Tenant.plan field if no Subscription exists.
+        """
+        from apps.billing.models import Subscription, SubscriptionStatus
+
+        subscription = getattr(self, "subscription", None)
+        if subscription is None:
+            try:
+                subscription = Subscription.objects.filter(tenant=self).first()
+            except Exception:
+                pass
+
+        if subscription is not None:
+            status_map = {
+                SubscriptionStatus.TRIALING: Plan.TRIAL,
+                SubscriptionStatus.ACTIVE: Plan.FULL,
+                SubscriptionStatus.PAST_DUE: Plan.FULL,
+                SubscriptionStatus.SUSPENDED: Plan.SUSPENDED,
+                SubscriptionStatus.CANCELED: Plan.SUSPENDED,
+            }
+            return status_map.get(subscription.status, self.plan)
+
+        return self.plan
+
+    @property
     def is_trial_active(self) -> bool:
-        """True if tenant is in active trial period."""
+        """True if tenant is in active trial period.
+
+        LYL-H-ARCH-011: Delegates to Subscription as source of truth.
+        """
+        from apps.billing.models import Subscription
+
+        subscription = getattr(self, "subscription", None)
+        if subscription is None:
+            try:
+                subscription = Subscription.objects.filter(tenant=self).first()
+            except Exception:
+                pass
+
+        if subscription is not None:
+            return subscription.is_trial_active
+
+        # Fallback to denormalized field
         if self.plan != Plan.TRIAL:
             return False
         if self.trial_end is None:
@@ -251,21 +298,72 @@ class Tenant(TimestampedModel):
         """Days remaining in trial. Returns 0 if expired."""
         if not self.is_trial_active:
             return 0
-        delta = self.trial_end - timezone.now()
-        return max(0, delta.days)
+
+        from apps.billing.models import Subscription
+
+        subscription = getattr(self, "subscription", None)
+        if subscription is None:
+            try:
+                subscription = Subscription.objects.filter(tenant=self).first()
+            except Exception:
+                pass
+
+        if subscription and subscription.trial_end:
+            delta = subscription.trial_end - timezone.now()
+            return max(0, delta.days)
+
+        if self.trial_end:
+            delta = self.trial_end - timezone.now()
+            return max(0, delta.days)
+        return 0
 
     @property
     def has_active_subscription(self) -> bool:
-        """True if tenant has paid subscription OR active trial."""
+        """True if tenant has paid subscription OR active trial.
+
+        LYL-H-ARCH-011: Delegates to Subscription as source of truth.
+        """
+        from apps.billing.models import Subscription
+
+        subscription = getattr(self, "subscription", None)
+        if subscription is None:
+            try:
+                subscription = Subscription.objects.filter(tenant=self).first()
+            except Exception:
+                pass
+
+        if subscription is not None:
+            return subscription.is_access_allowed
+
+        # Fallback
         return self.plan == Plan.FULL or self.is_trial_active
 
     def activate_trial(self) -> None:
-        """Set trial_end to now + TRIAL_DAYS. Called on registration."""
+        """Set trial_end to now + TRIAL_DAYS. Called on registration.
+
+        LYL-H-ARCH-011: Updates Subscription as the authoritative source.
+        Also syncs the denormalized Tenant.plan field for backward compatibility.
+        """
         from datetime import timedelta
 
-        self.trial_end = timezone.now() + timedelta(days=settings.TRIAL_DAYS)
+        from apps.billing.models import Subscription, SubscriptionStatus
+
+        trial_end = timezone.now() + timedelta(days=settings.TRIAL_DAYS)
+
+        # Sync denormalized field (backward compat)
+        self.trial_end = trial_end
         self.plan = Plan.TRIAL
         self.save(update_fields=["trial_end", "plan", "updated_at"])
+
+        # Update authoritative Subscription
+        subscription = Subscription.objects.filter(tenant=self).first()
+        if subscription:
+            subscription.trial_end = trial_end
+            subscription.status = SubscriptionStatus.TRIALING
+            subscription.plan = "trial"
+            subscription.save(
+                update_fields=["trial_end", "status", "plan", "updated_at"]
+            )
 
 
 class Location(TimestampedModel):
