@@ -22,6 +22,7 @@ from apps.notifications.models import (
 from apps.notifications.service import NotificationService
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
+from common.plan_enforcement import enforce_limit
 
 router = Router()
 
@@ -339,6 +340,7 @@ class CampaignCreateIn(BaseModel):
 
 
 @router.post("/campaigns/", auth=jwt_auth, response=dict, summary="Crear campaña")
+@enforce_limit("notifications_month")
 def create_campaign(request, data: CampaignCreateIn):
     """Send an email, wallet, or WhatsApp mock notification campaign to customers in a segment.
 

@@ -199,7 +199,7 @@ def get_recent_transactions(request: HttpRequest):
                 if txn.customer_pass and txn.customer_pass.card
                 else None
             ),
-            metadata=txn.metadata or {},
+            metadata=txn.transaction_data or {},
             created_at=txn.created_at.isoformat(),
         )
         for txn in txns

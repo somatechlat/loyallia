@@ -297,6 +297,9 @@ class CustomerPass(models.Model):
         Returns dict with transaction details and updated pass data.
         """
 
+        if quantity < 1:
+            raise ValueError("Quantity must be a positive integer")
+
         result = {
             "transaction_type": transaction_type,
             "amount": amount,
@@ -343,7 +346,12 @@ class CustomerPass(models.Model):
         return result
 
     def _process_stamp_transaction(self, amount: Decimal, quantity: int) -> dict:
-        """Process stamp card transaction."""
+        """Process stamp card transaction.
+
+        Correctly handles multiple reward cycles when quantity exceeds
+        stamps_required. Uses integer division and modulo to calculate
+        how many full reward cycles were completed and remaining stamps.
+        """
         from apps.transactions.models import TransactionType
         from django.db import transaction as db_transaction
 
@@ -356,12 +364,14 @@ class CustomerPass(models.Model):
             locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
             current_stamps = locked.pass_data.get("stamp_count", 0)
             new_stamps = current_stamps + quantity
-            reward_earned = new_stamps >= stamps_required
+
+            reward_count = new_stamps // stamps_required
+            remaining_stamps = new_stamps % stamps_required
+
             updates = {}
-            if reward_earned:
-                new_stamps = new_stamps - stamps_required
+            if reward_count > 0:
                 updates["reward_ready"] = True
-            updates["stamp_count"] = new_stamps
+            updates["stamp_count"] = remaining_stamps
             locked.pass_data.update(updates)
             locked.save(update_fields=["pass_data", "last_updated"])
 
@@ -369,9 +379,10 @@ class CustomerPass(models.Model):
         return {
             "transaction_type": TransactionType.STAMP_EARNED,
             "pass_updated": True,
-            "reward_earned": reward_earned,
-            "reward_description": reward_description if reward_earned else "",
-            "new_stamp_count": new_stamps,
+            "reward_earned": reward_count > 0,
+            "reward_description": reward_description if reward_count > 0 else "",
+            "new_stamp_count": remaining_stamps,
+            "reward_count": reward_count,
         }
 
     def _process_cashback_transaction(self, amount: Decimal) -> dict:
@@ -407,25 +418,34 @@ class CustomerPass(models.Model):
         }
 
     def _process_coupon_transaction(self) -> dict:
-        """Process coupon redemption."""
+        """Process coupon redemption.
+
+        Uses select_for_update to prevent double-redemption race conditions.
+        The coupon_used check is performed INSIDE the lock so two concurrent
+        scans cannot both see ``False`` and redeem the same coupon.
+        """
         from apps.transactions.models import TransactionType
+        from django.db import transaction as db_transaction
 
-        if not self.coupon_used:
-            self.set_pass_field("coupon_used", True)
-            reward_description = self.card.get_metadata_field(
-                "coupon_description", "Coupon redeemed"
-            )
+        with db_transaction.atomic():
+            locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
+            if locked.pass_data.get("coupon_used", False):
+                return {
+                    "transaction_type": TransactionType.COUPON_REDEEMED,
+                    "pass_updated": False,
+                }
+            locked.pass_data["coupon_used"] = True
+            locked.save(update_fields=["pass_data", "last_updated"])
 
-            return {
-                "transaction_type": TransactionType.COUPON_REDEEMED,
-                "pass_updated": True,
-                "reward_earned": True,
-                "reward_description": reward_description,
-            }
-
+        self.refresh_from_db(fields=["pass_data", "last_updated"])
+        reward_description = self.card.get_metadata_field(
+            "coupon_description", "Coupon redeemed"
+        )
         return {
             "transaction_type": TransactionType.COUPON_REDEEMED,
-            "pass_updated": False,
+            "pass_updated": True,
+            "reward_earned": True,
+            "reward_description": reward_description,
         }
 
     def _process_discount_transaction(self, amount: Decimal) -> dict:
@@ -441,23 +461,24 @@ class CustomerPass(models.Model):
 
         # Atomically read and update total_spent_at_business inside select_for_update
         # to prevent race conditions under concurrent scans.
+        # Uses Decimal to avoid floating-point precision errors with currency.
         from django.db import transaction as db_transaction
 
         with db_transaction.atomic():
             locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
             total_spent = locked.pass_data.get("total_spent_at_business", 0)
-            new_total = float(total_spent) + float(amount)
+            new_total = Decimal(str(total_spent)) + Decimal(str(amount))
 
             # Determine current discount tier
             applicable_tier = None
             for tier in sorted(tiers, key=lambda t: t.get("threshold", 0)):
-                if new_total >= tier.get("threshold", 0):
+                if new_total >= Decimal(str(tier.get("threshold", 0))):
                     applicable_tier = tier
 
             discount_pct = applicable_tier["discount_percentage"] if applicable_tier else 0
             tier_name = applicable_tier["tier_name"] if applicable_tier else ""
 
-            locked.pass_data["total_spent_at_business"] = new_total
+            locked.pass_data["total_spent_at_business"] = str(new_total)
             locked.pass_data["current_discount_percentage"] = discount_pct
             locked.pass_data["current_tier_name"] = tier_name
             locked.save(update_fields=["pass_data", "last_updated"])
@@ -472,13 +493,29 @@ class CustomerPass(models.Model):
         }
 
     def _process_referral_transaction(self) -> dict:
-        """Process referral_pass card — increment successful referral count."""
+        """Process referral_pass card — increment successful referral count.
+
+        Enforces max_referrals_per_customer from card metadata.
+        If the customer has already reached the maximum, the count is not incremented.
+        """
         from apps.transactions.models import TransactionType
         from django.db import transaction as db_transaction
+
+        max_referrals = self.card.get_metadata_field("max_referrals_per_customer", 0)
 
         with db_transaction.atomic():
             locked = CustomerPass.objects.select_for_update().get(pk=self.pk)
             current_count = locked.pass_data.get("referral_count", 0)
+
+            # If a max is set (>0) and already reached, don't increment
+            if max_referrals > 0 and current_count >= max_referrals:
+                return {
+                    "transaction_type": TransactionType.REFERRAL_REWARD,
+                    "pass_updated": False,
+                    "new_referral_count": current_count,
+                    "limit_reached": True,
+                }
+
             new_count = current_count + 1
             locked.pass_data["referral_count"] = new_count
             locked.save(update_fields=["pass_data", "last_updated"])

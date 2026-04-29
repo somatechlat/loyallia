@@ -23,6 +23,7 @@ from apps.customers.schemas import (
 )
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
+from common.plan_enforcement import require_active_subscription, enforce_limit
 from apps.audit.service import log_action, log_data_export
 from apps.audit.models import AuditAction
 
@@ -36,6 +37,7 @@ router = Router()
 
 
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
+@require_active_subscription
 def list_customers(
     request, search: str | None = None, limit: int = 50, offset: int = 0
 ):
@@ -68,6 +70,8 @@ def list_customers(
 @router.post(
     "/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)"
 )
+@require_active_subscription
+@enforce_limit("customers")
 def import_customers(request, file: UploadedFile = File(...)):
     """
     Import customers from an Excel or CSV file. OWNER only.
@@ -268,7 +272,23 @@ def import_customers(request, file: UploadedFile = File(...)):
     "/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente"
 )
 def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateIn):
-    """Public endpoint for customer self-enrollment via QR code scan."""
+    """Public endpoint for customer self-enrollment via QR code scan.
+
+    Rate limited to 10 enrollments per hour per IP address.
+    Does NOT overwrite existing customer profile data — only creates/updates the pass.
+    """
+    from django.core.cache import cache
+
+    # Rate limiting: 10 per hour per IP
+    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.META.get("REMOTE_ADDR", "unknown")
+    cache_key = f"enroll_rate:{client_ip}"
+    enroll_count = cache.get(cache_key, 0)
+    if enroll_count >= 10:
+        raise HttpError(429, "Too many enrollment attempts. Please try again later.")
+    cache.set(cache_key, enroll_count + 1, 3600)  # 1 hour TTL
+
     try:
         card = Card.objects.select_related("tenant").get(id=card_id, is_active=True)
     except Card.DoesNotExist:
@@ -293,20 +313,8 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
         },
     )
 
-    if not created:
-        if customer_data.first_name:
-            customer.first_name = customer_data.first_name
-        if customer_data.last_name:
-            customer.last_name = customer_data.last_name
-        if customer_data.phone:
-            customer.phone = customer_data.phone
-        if customer_data.date_of_birth:
-            customer.date_of_birth = date_of_birth
-        if customer_data.gender:
-            customer.gender = customer_data.gender
-        if customer_data.notes:
-            customer.notes = customer_data.notes
-        customer.save()
+    # SECURITY: Do NOT overwrite existing customer profile data on re-enrollment.
+    # Only the pass (CustomerPass) is created/updated — customer fields stay as-is.
 
     existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
     if existing_pass:
@@ -381,6 +389,7 @@ def get_customer(request, customer_id: str):
 @router.patch(
     "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
 )
+@require_active_subscription
 def update_customer(request, customer_id: str, data: CustomerUpdateIn):
     """Update customer information. OWNER only."""
     if not is_owner(request):
@@ -428,6 +437,7 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
 @router.delete(
     "/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente"
 )
+@require_active_subscription
 def delete_customer(request, customer_id: str):
     """Permanent delete of a customer and all associated data. OWNER only."""
     if not is_owner(request):

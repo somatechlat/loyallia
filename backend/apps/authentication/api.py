@@ -7,6 +7,7 @@ All strings via get_message() — Rule #11.
 All auth via JWTAuth — Rule #8.
 """
 
+import hashlib
 import logging
 import secrets
 
@@ -86,7 +87,7 @@ def register(request, payload: RegisterIn):
             is_email_verified=False,
         )
 
-    otp = secrets.token_hex(3).upper()
+    otp = secrets.token_urlsafe(8)
     store_otp(payload.email, otp, "verify_email")
     send_otp_email(
         email=payload.email,
@@ -194,7 +195,7 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
 
     try:
         user = User.objects.get(email=payload.email, is_active=True)
-        otp = secrets.token_hex(3).upper()
+        otp = secrets.token_urlsafe(8)
         store_otp(payload.email, otp, "password_reset")
         send_otp_email(
             email=payload.email,
@@ -339,7 +340,10 @@ def invite_user(request, payload: InviteIn):
     if User.objects.filter(email=payload.email, tenant=request.tenant).exists():
         raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
+    # SECURITY (LYL-H-SEC-007): Generate token, store SHA-256 hash in DB.
+    # Plaintext token is sent to the user; only the hash is persisted.
     invitation_token = secrets.token_urlsafe(32)
+    invitation_token_hash = hashlib.sha256(invitation_token.encode()).hexdigest()
     from django.db import transaction
 
     with transaction.atomic():
@@ -355,7 +359,7 @@ def invite_user(request, payload: InviteIn):
             role=payload.role,
             is_active=False,
             invited_by=request.user,
-            invitation_token=invitation_token,
+            invitation_token=invitation_token_hash,
         )
 
     invite_url = f"{settings.APP_URL}/invite/accept/?token={invitation_token}"
@@ -509,13 +513,14 @@ from apps.authentication.schemas import GoogleTokenIn  # noqa: E402
     summary="Obtener configuración de Google OAuth",
 )
 def google_oauth_config(request):
-    """Returns Google OAuth client ID and enabled status.
-    Used by the frontend to decide whether to render the Google login button.
+    """Returns Google OAuth enabled status only.
+
+    SECURITY (LYL-H-SEC-008): Do NOT expose client_id to the frontend.
+    The frontend only needs to know whether Google login is enabled.
     """
     client_id = settings.GOOGLE_OAUTH_CLIENT_ID
     return {
         "enabled": bool(client_id),
-        "client_id": client_id,
     }
 
 
@@ -639,7 +644,7 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
     DEV MODE:  OTP is logged to console and returned in the response.
     PROD MODE: OTP is sent via SMS (Firebase Phone Auth or SMS gateway).
     """
-    otp = secrets.token_hex(3).upper()[:6]  # 6-character alphanumeric
+    otp = secrets.token_urlsafe(8)
     store_otp(payload.phone_number, otp, "phone_verify")
 
     # Update user's phone number (unverified until confirmed)
