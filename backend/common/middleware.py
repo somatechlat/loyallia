@@ -64,16 +64,16 @@ class CSPNonceMiddleware:
 
         # Build CSP header with nonce
         csp_directives = [
-            f"default-src 'self'",
+            "default-src 'self'",
             f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com",
             f"style-src 'self' 'nonce-{nonce}'",
-            f"img-src 'self' data: https:",
-            f"font-src 'self' https://fonts.gstatic.com",
-            f"connect-src 'self' https://oauth2.googleapis.com",
-            f"frame-src 'self' https://accounts.google.com",
-            f"base-uri 'self'",
-            f"form-action 'self'",
-            f"frame-ancestors 'self'",
+            "img-src 'self' data: https:",
+            "font-src 'self' https://fonts.gstatic.com",
+            "connect-src 'self' https://oauth2.googleapis.com",
+            "frame-src 'self' https://accounts.google.com",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'self'",
         ]
         response["Content-Security-Policy"] = "; ".join(csp_directives)
         return response

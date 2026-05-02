@@ -15,11 +15,12 @@ const ICON_PATHS: Record<string, string> = {
 };
 
 export function CardTypeIcon({ icon, className = 'w-5 h-5' }: { icon: string; className?: string }) {
-  const d = ICON_PATHS[icon] || ICON_PATHS['stamp'];
+  const d = ICON_PATHS[icon] ?? ICON_PATHS.stamp ?? '';
+  const segments = d.split('z');
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       {d.split(/(?=[A-Z])/).length > 3 ?
-        d.split('z').map((seg, i) => seg.trim() ? <path key={i} d={seg.trim() + (i < d.split('z').length - 1 ? 'z' : '')} /> : null)
+        segments.map((seg, i) => seg.trim() ? <path key={i} d={seg.trim() + (i < segments.length - 1 ? 'z' : '')} /> : null)
         : <path d={d} />
       }
     </svg>

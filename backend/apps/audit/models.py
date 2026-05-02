@@ -43,15 +43,9 @@ class AuditLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # WHO
-    actor_id = models.UUIDField(
-        db_index=True, verbose_name="ID del actor"
-    )
-    actor_email = models.CharField(
-        max_length=255, verbose_name="Email del actor"
-    )
-    actor_role = models.CharField(
-        max_length=20, verbose_name="Rol del actor"
-    )
+    actor_id = models.UUIDField(db_index=True, verbose_name="ID del actor")
+    actor_email = models.CharField(max_length=255, verbose_name="Email del actor")
+    actor_role = models.CharField(max_length=20, verbose_name="Rol del actor")
 
     # WHAT
     action = models.CharField(
@@ -59,35 +53,34 @@ class AuditLog(models.Model):
         choices=AuditAction.choices,
         verbose_name="Acción",
     )
-    resource_type = models.CharField(
-        max_length=50, verbose_name="Tipo de recurso"
-    )
+    resource_type = models.CharField(max_length=50, verbose_name="Tipo de recurso")
     resource_id = models.CharField(
-        max_length=100, blank=True, default="",
+        max_length=100,
+        blank=True,
+        default="",
         verbose_name="ID del recurso",
     )
 
     # CONTEXT
     tenant_id = models.UUIDField(
-        null=True, blank=True, db_index=True,
+        null=True,
+        blank=True,
+        db_index=True,
         verbose_name="ID del negocio",
     )
     ip_address = models.GenericIPAddressField(
         null=True, blank=True, verbose_name="Dirección IP"
     )
-    user_agent = models.TextField(
-        blank=True, default="", verbose_name="User Agent"
-    )
+    user_agent = models.TextField(blank=True, default="", verbose_name="User Agent")
     justification = models.TextField(
-        blank=True, default="",
+        blank=True,
+        default="",
         verbose_name="Justificación",
         help_text="Required for impersonation actions",
     )
 
     # RESULT
-    details = models.JSONField(
-        default=dict, verbose_name="Detalles"
-    )
+    details = models.JSONField(default=dict, verbose_name="Detalles")
     status = models.CharField(
         max_length=20,
         choices=AuditStatus.choices,

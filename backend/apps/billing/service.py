@@ -13,9 +13,7 @@ from apps.billing.models import (
     PaymentMethod,
     Subscription,
     SubscriptionPlan,
-    SubscriptionStatus,
 )
-from apps.billing.payment_gateway import PaymentGatewayError, get_payment_gateway
 from apps.cards.models import Card
 from apps.customers.models import Customer
 from apps.notifications.models import Notification
@@ -97,13 +95,9 @@ class BillingService:
         if billing_cycle not in ("monthly", "annual"):
             raise ValueError("Billing cycle must be 'monthly' or 'annual'")
 
-        plan = SubscriptionPlan.objects.filter(
-            slug=plan_slug, is_active=True
-        ).first()
+        plan = SubscriptionPlan.objects.filter(slug=plan_slug, is_active=True).first()
         if not plan:
             raise ValueError(f"Plan '{plan_slug}' not found")
-
-        gateway = get_payment_gateway()
 
         subscription, _ = Subscription.objects.get_or_create(
             tenant=tenant,
@@ -114,9 +108,9 @@ class BillingService:
 
         # Store payment method if provided
         if card_data and card_data.get("card_token"):
-            PaymentMethod.objects.filter(
-                tenant=tenant, is_default=True
-            ).update(is_default=False)
+            PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(
+                is_default=False
+            )
             PaymentMethod.objects.create(
                 tenant=tenant,
                 gateway_token=card_data.get("card_token", ""),

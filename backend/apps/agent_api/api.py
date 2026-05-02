@@ -107,8 +107,9 @@ def get_customers_summary(request: HttpRequest):
 )
 def get_programs(request: HttpRequest):
     """Returns all programs with enrollment and transaction stats."""
-    from apps.cards.models import Card
     from django.db.models import Count, Q
+
+    from apps.cards.models import Card
 
     tenant = request.tenant
     cards = (
@@ -116,7 +117,9 @@ def get_programs(request: HttpRequest):
         .prefetch_related("enrollments", "passes", "passes__transactions")
         .annotate(
             enrollments_count=Count("enrollments", distinct=True),
-            active_passes_count=Count("passes", filter=Q(passes__is_active=True), distinct=True),
+            active_passes_count=Count(
+                "passes", filter=Q(passes__is_active=True), distinct=True
+            ),
             total_txn_count=Count("passes__transactions", distinct=True),
         )
     )

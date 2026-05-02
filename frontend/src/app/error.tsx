@@ -1,5 +1,5 @@
 'use client';
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950">
       <div className="text-center p-8">

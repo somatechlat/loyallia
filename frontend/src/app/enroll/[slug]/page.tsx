@@ -154,9 +154,6 @@ export default function EnrollPage() {
       .finally(() => setCardLoading(false));
   }, [cardId]);
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(f => ({ ...f, [k]: e.target.value }));
-
   const handleEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
     // SEC-011: Honeypot check — if filled, it's a bot. Silently "succeed" without actually enrolling.

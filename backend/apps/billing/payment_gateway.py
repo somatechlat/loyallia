@@ -123,9 +123,7 @@ class BendoGateway(BasePaymentGateway):
         )
         self.login = getattr(settings, "PAYMENT_GATEWAY_LOGIN", "")
         self.tran_key = getattr(settings, "PAYMENT_GATEWAY_TRAN_KEY", "")
-        self.webhook_secret = getattr(
-            settings, "PAYMENT_GATEWAY_WEBHOOK_SECRET", ""
-        )
+        self.webhook_secret = getattr(settings, "PAYMENT_GATEWAY_WEBHOOK_SECRET", "")
 
     def _check_credentials(self) -> None:
         """Verify gateway credentials are configured."""
@@ -175,9 +173,7 @@ class BendoGateway(BasePaymentGateway):
     def cancel_subscription(self, subscription_id: str) -> dict:
         """Cancel a PlacetoPay recurring subscription."""
         self._check_credentials()
-        logger.info(
-            "BendoGateway.cancel_subscription: sub=%s", subscription_id
-        )
+        logger.info("BendoGateway.cancel_subscription: sub=%s", subscription_id)
         raise PaymentGatewayError(
             message="Bendo/PlacetoPay integration pending API credentials.",
             code="GATEWAY_PENDING_CREDENTIALS",
@@ -281,7 +277,9 @@ def get_payment_gateway() -> BasePaymentGateway:
         )
 
     _gateway_instance = gateway_class()
-    logger.info("Payment gateway initialized: %s (%s)", provider, gateway_class.__name__)
+    logger.info(
+        "Payment gateway initialized: %s (%s)", provider, gateway_class.__name__
+    )
     return _gateway_instance
 
 

@@ -8,6 +8,7 @@ from ninja import Schema
 
 class AuditEntrySchema(Schema):
     """Single audit log entry."""
+
     id: str
     actor_email: str
     actor_role: str
@@ -24,12 +25,14 @@ class AuditEntrySchema(Schema):
 
 class AuditEntryDetailSchema(AuditEntrySchema):
     """Full audit entry with user agent."""
+
     actor_id: str
     user_agent: str = ""
 
 
 class AuditListResponseSchema(Schema):
     """Paginated audit log response."""
+
     total: int
     count: int
     entries: list[AuditEntrySchema]
@@ -37,18 +40,21 @@ class AuditListResponseSchema(Schema):
 
 class ActionBreakdownSchema(Schema):
     """Action type with count."""
+
     action: str
     count: int
 
 
 class ActorBreakdownSchema(Schema):
     """Actor email with activity count."""
+
     actor_email: str
     count: int
 
 
 class AuditStatsSchema(Schema):
     """Aggregated audit statistics."""
+
     total_entries: int
     today_entries: int
     actions: list[ActionBreakdownSchema]

@@ -34,7 +34,11 @@ class TenantMiddleware:
 
         # Resolve tenant from authenticated user
         user = getattr(request, "user", None)
-        if user is not None and hasattr(user, "is_authenticated") and user.is_authenticated:
+        if (
+            user is not None
+            and hasattr(user, "is_authenticated")
+            and user.is_authenticated
+        ):
             tenant = getattr(user, "tenant", None)
             if tenant is not None:
                 request.tenant = tenant

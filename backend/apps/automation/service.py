@@ -4,9 +4,6 @@ Extracted business logic from automation API views and engine.
 """
 
 import logging
-from datetime import timedelta
-
-from django.utils import timezone
 
 from apps.automation.models import (
     Automation,
@@ -231,9 +228,7 @@ class AutomationService:
         total_automations = automations.count()
         active_automations = automations.filter(is_active=True).count()
 
-        executions = AutomationExecution.objects.filter(
-            automation__tenant=tenant
-        )
+        executions = AutomationExecution.objects.filter(automation__tenant=tenant)
 
         total_executions = executions.count()
         successful_executions = executions.filter(success=True).count()
@@ -257,11 +252,9 @@ class AutomationService:
             "successful_executions": successful_executions,
             "success_rate": success_rate,
             "trigger_breakdown": {
-                item["automation__trigger"]: item["count"]
-                for item in trigger_stats
+                item["automation__trigger"]: item["count"] for item in trigger_stats
             },
             "action_breakdown": {
-                item["automation__action"]: item["count"]
-                for item in action_stats
+                item["automation__action"]: item["count"] for item in action_stats
             },
         }

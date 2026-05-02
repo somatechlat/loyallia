@@ -115,14 +115,10 @@ def get_subscription(request: HttpRequest):
         "status_display": subscription.get_status_display(),
         "is_access_allowed": subscription.is_access_allowed,
         "trial_start": (
-            subscription.trial_start.isoformat()
-            if subscription.trial_start
-            else None
+            subscription.trial_start.isoformat() if subscription.trial_start else None
         ),
         "trial_end": (
-            subscription.trial_end.isoformat()
-            if subscription.trial_end
-            else None
+            subscription.trial_end.isoformat() if subscription.trial_end else None
         ),
         "days_until_trial_end": subscription.days_until_trial_end,
         "current_period_start": (
@@ -258,68 +254,26 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
         raise HttpError(400, get_message("BILLING_INVALID_CYCLE"))
 
     # Resolve the target plan
-    plan = SubscriptionPlan.objects.filter(
-        slug=data.plan_slug, is_active=True
-    ).first()
+    plan = SubscriptionPlan.objects.filter(slug=data.plan_slug, is_active=True).first()
     if not plan:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    gateway = get_payment_gateway()
+    subscription, _ = Subscription.objects.get_or_create(
+        tenant=request.tenant,
+        defaults={"plan": plan.slug},
+    )
+    subscription.subscription_plan = plan
+    subscription.billing_cycle = data.billing_cycle
+    subscription.save(
+        update_fields=["subscription_plan", "billing_cycle", "updated_at"]
+    )
 
-    try:
-        subscription, _ = Subscription.objects.get_or_create(
-            tenant=request.tenant,
-            defaults={"plan": plan.slug},
-        )
-        subscription.subscription_plan = plan
-        subscription.billing_cycle = data.billing_cycle
-
-        # Store payment method
-        if data.card_token:
-            PaymentMethod.objects.filter(
-                tenant=request.tenant, is_default=True
-            ).update(is_default=False)
-            PaymentMethod.objects.create(
-                tenant=request.tenant,
-                gateway_token=data.card_token,
-                card_brand=data.card_brand,
-                card_last_four=data.card_last_four,
-                card_exp_month=data.card_exp_month,
-                card_exp_year=data.card_exp_year,
-                cardholder_name=data.cardholder_name,
-                is_default=True,
-            )
-
-        # Activate subscription
-        subscription.activate_paid()
-        logger.info(
-            "Tenant %s subscribed to plan %s (%s)",
-            request.tenant.slug,
-            plan.name,
-            data.billing_cycle,
-        )
-
-        return {
-            "success": True,
-            "message": get_message("BILLING_SUBSCRIPTION_CREATED"),
-            "subscription": {
-                "plan": plan.slug,
-                "plan_name": plan.name,
-                "status": subscription.status,
-                "billing_cycle": subscription.billing_cycle,
-                "current_period_end": (
-                    subscription.current_period_end.isoformat()
-                    if subscription.current_period_end
-                    else None
-                ),
-            },
-        }
-
-    except PaymentGatewayError as exc:
-        logger.error(
-            "Subscribe failed for %s: %s", request.tenant.slug, exc.message
-        )
-        raise HttpError(402, exc.message)
+    logger.warning(
+        "Payment confirmation required before activating tenant %s plan %s",
+        request.tenant.slug,
+        plan.slug,
+    )
+    raise HttpError(402, get_message("BILLING_PAYMENT_CONFIRMATION_REQUIRED"))
 
 
 # ============================================================================
@@ -349,9 +303,7 @@ def update_subscription(request: HttpRequest, data: UpdateSubscriptionSchema):
     }
 
 
-@router.post(
-    "/subscription/cancel/", auth=jwt_auth, summary="Cancelar suscripción"
-)
+@router.post("/subscription/cancel/", auth=jwt_auth, summary="Cancelar suscripción")
 @require_role("OWNER")
 def cancel_subscription(request: HttpRequest):
     """Cancel subscription at end of current period."""

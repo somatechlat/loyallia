@@ -78,6 +78,7 @@ docker-data/
 frontend/test-results/
 frontend/playwright-report/
 frontend/.auth/
+frontend/tsconfig.tsbuildinfo
 
 # Agents (credentials, deployment docs — NEVER commit)
 .agents/

@@ -272,16 +272,21 @@ def get_demographics(request):
     # Age distribution — single SQL query using ExtractYear + conditional Count
     # No Python iteration; computation is entirely database-side.
     today_year = date.today().year
-    age_dist = customers.exclude(date_of_birth=None).annotate(
-        birth_year=ExtractYear("date_of_birth"),
-    ).annotate(
-        age=Value(today_year) - F("birth_year"),
-    ).aggregate(
-        age_18_24=Count("id", filter=Q(age__gte=18, age__lt=25)),
-        age_25_34=Count("id", filter=Q(age__gte=25, age__lt=35)),
-        age_35_44=Count("id", filter=Q(age__gte=35, age__lt=45)),
-        age_45_54=Count("id", filter=Q(age__gte=45, age__lt=55)),
-        age_55_plus=Count("id", filter=Q(age__gte=55)),
+    age_dist = (
+        customers.exclude(date_of_birth=None)
+        .annotate(
+            birth_year=ExtractYear("date_of_birth"),
+        )
+        .annotate(
+            age=Value(today_year) - F("birth_year"),
+        )
+        .aggregate(
+            age_18_24=Count("id", filter=Q(age__gte=18, age__lt=25)),
+            age_25_34=Count("id", filter=Q(age__gte=25, age__lt=35)),
+            age_35_44=Count("id", filter=Q(age__gte=35, age__lt=45)),
+            age_45_54=Count("id", filter=Q(age__gte=45, age__lt=55)),
+            age_55_plus=Count("id", filter=Q(age__gte=55)),
+        )
     )
 
     known_count = sum(age_dist.values())
@@ -322,9 +327,7 @@ def get_demographics(request):
 
 
 # ============ By Program Type ============
-@router.get(
-    "/by-program-type/", auth=jwt_auth, summary="Get metrics by program type"
-)
+@router.get("/by-program-type/", auth=jwt_auth, summary="Get metrics by program type")
 def get_by_program_type(request, days: int = 30):
     """Visits and revenue grouped by card type. MANAGER+ only."""
     if not is_manager_or_owner(request):

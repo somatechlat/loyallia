@@ -142,6 +142,7 @@ _MESSAGES_ES: dict[str, str] = {
     "BILLING_DEFAULT_PM_SET": "Método de pago predeterminado actualizado exitosamente.",
     "BILLING_INVALID_SIGNATURE": "Firma inválida.",
     "BILLING_INVALID_PAYLOAD": "Payload JSON inválido.",
+    "BILLING_PAYMENT_CONFIRMATION_REQUIRED": "No se pudo confirmar el pago. La suscripción no fue activada.",
     # --- Generic ---
     "NOT_FOUND": "Recurso no encontrado.",
     "VALIDATION_ERROR": "Error de validación: {detail}",
@@ -293,6 +294,7 @@ _MESSAGES_EN: dict[str, str] = {
     "BILLING_DEFAULT_PM_SET": "Default payment method updated successfully.",
     "BILLING_INVALID_SIGNATURE": "Invalid signature.",
     "BILLING_INVALID_PAYLOAD": "Invalid JSON payload.",
+    "BILLING_PAYMENT_CONFIRMATION_REQUIRED": "Payment could not be confirmed. Subscription was not activated.",
     "NOT_FOUND": "Resource not found.",
     "VALIDATION_ERROR": "Validation error: {detail}",
     "SERVER_ERROR": "Internal server error. Please try again.",
@@ -379,6 +381,7 @@ _CATALOGS: dict[str, dict[str, str]] = {
 # PUBLIC API
 # =============================================================================
 
+
 def get_message(code: str, lang: str | None = None, **kwargs: Any) -> str:
     """
     Retrieve a user-facing message by code with i18n support.
@@ -433,7 +436,11 @@ def get_message_for_request(code: str, request=None, **kwargs: Any) -> str:
         # 2. Tenant default
         if not lang:
             tenant = getattr(request, "tenant", None)
-            if tenant and hasattr(tenant, "default_language") and tenant.default_language:
+            if (
+                tenant
+                and hasattr(tenant, "default_language")
+                and tenant.default_language
+            ):
                 lang = tenant.default_language
 
         # 3. Accept-Language header

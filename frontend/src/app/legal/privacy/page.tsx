@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
             En el contexto de la Ley Orgánica de Protección de Datos Personales
             (LOPDP), Loyallia actúa como{" "}
             <strong>Encargado del Tratamiento</strong> de los datos que usted
-            (el "Tenant" o "Responsable del Tratamiento") procesa mediante la
+	            (el &quot;Tenant&quot; o &quot;Responsable del Tratamiento&quot;) procesa mediante la
             plataforma para gestionar programas de fidelización para sus
             clientes finales.
           </p>
@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
             5. Uso de Cookies
           </h2>
           <p>
-            Utilizamos "Cookies" de sesión estrictamente necesarias para la
+	            Utilizamos &quot;Cookies&quot; de sesión estrictamente necesarias para la
             autenticación y la seguridad de su cuenta dentro del sistema. Al
             registrarse en Loyallia, consiente el uso de estas cookies de
             carácter técnico.

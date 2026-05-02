@@ -4,8 +4,9 @@ Provides efficient pagination for large datasets using created_at as cursor.
 Avoids OFFSET performance degradation on large tables.
 """
 
+from typing import Generic, TypeVar
+
 from ninja import Schema
-from typing import Generic, TypeVar, List, Optional
 
 T = TypeVar("T")
 
@@ -13,8 +14,8 @@ T = TypeVar("T")
 class CursorPage(Schema, Generic[T]):
     """Paginated response with cursor-based navigation."""
 
-    items: List[T]
-    next_cursor: Optional[str] = None
+    items: list[T]
+    next_cursor: str | None = None
     has_next: bool = False
 
 
@@ -59,8 +60,6 @@ class CursorPagination:
         if has_next:
             items = items[:limit]
 
-        next_cursor = (
-            items[-1].created_at.isoformat() if items and has_next else None
-        )
+        next_cursor = items[-1].created_at.isoformat() if items and has_next else None
 
         return items, next_cursor

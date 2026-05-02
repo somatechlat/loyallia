@@ -40,7 +40,7 @@ const TYPE_COMPONENTS: Record<string, React.ComponentType<ConfigProps>> = {
  * Renders the configuration form for a specific program type.
  * Falls back to a "no config needed" message for unknown types.
  */
-function TypeConfig({ type, meta, setMeta }: { type: string; meta: Record<string, unknown>; setMeta: (m: Record<string, unknown>) => void }) {
+function TypeConfig({ type, meta, setMeta }: { type: string } & ConfigProps) {
   const Component = TYPE_COMPONENTS[type];
   if (!Component) {
     return (

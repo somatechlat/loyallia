@@ -22,7 +22,7 @@ from apps.billing.models import (
     SubscriptionPlan,
     SubscriptionStatus,
 )
-from apps.tenants.models import Location, Plan, Tenant
+from apps.tenants.models import Location, Tenant
 from apps.tenants.super_admin_api.schemas import (
     CreateTenantOut,
     CreateTenantWizardIn,
@@ -86,9 +86,9 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         }
         target_status = plan_status_map.get(plan)
         if target_status:
-            tenant_ids = Subscription.objects.filter(
-                status=target_status
-            ).values_list("tenant_id", flat=True)
+            tenant_ids = Subscription.objects.filter(status=target_status).values_list(
+                "tenant_id", flat=True
+            )
             qs = qs.filter(id__in=tenant_ids)
         else:
             qs = qs.filter(plan=plan)
@@ -424,8 +424,9 @@ def impersonate_tenant(request, tenant_id: str):
     except User.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    import jwt as pyjwt
     from datetime import UTC, datetime, timedelta
+
+    import jwt as pyjwt
 
     # Short-lived impersonation token — no global settings mutation
     now = datetime.now(tz=UTC)
@@ -439,7 +440,9 @@ def impersonate_tenant(request, tenant_id: str):
         "impersonated_by": str(request.user.id),
         "impersonated": True,
     }
-    access = pyjwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    access = pyjwt.encode(
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
 
     logger.warning(
         "IMPERSONATION: SUPER_ADMIN %s impersonated OWNER %s of tenant %s (%s)",

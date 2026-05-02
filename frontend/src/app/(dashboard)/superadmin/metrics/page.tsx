@@ -17,6 +17,8 @@ interface TenantMetric {
   user_count: number;
   location_count: number;
   created_at: string;
+  legal_name?: string;
+  ruc?: string;
   industry?: string;
   city?: string;
 }

@@ -5,14 +5,34 @@
 import { test as setup, expect } from '@playwright/test';
 
 const USERS = [
-  { file: '.auth/owner.json',      email: 'owner@example.com',     password: '123456', expectedPath: '/' },
-  { file: '.auth/manager.json',    email: 'manager@example.com',   password: '123456', expectedPath: '/' },
-  { file: '.auth/staff.json',      email: 'staff@example.com',  password: '123456', expectedPath: '/scanner' },
-  { file: '.auth/superadmin.json', email: 'admin@example.com',        password: '[REDACTED]', expectedPath: '/superadmin' },
+  {
+    file: '.auth/owner.json',
+    email: process.env.PLAYWRIGHT_OWNER_EMAIL,
+    password: process.env.PLAYWRIGHT_OWNER_PASSWORD,
+  },
+  {
+    file: '.auth/manager.json',
+    email: process.env.PLAYWRIGHT_MANAGER_EMAIL,
+    password: process.env.PLAYWRIGHT_MANAGER_PASSWORD,
+  },
+  {
+    file: '.auth/staff.json',
+    email: process.env.PLAYWRIGHT_STAFF_EMAIL,
+    password: process.env.PLAYWRIGHT_STAFF_PASSWORD,
+  },
+  {
+    file: '.auth/superadmin.json',
+    email: process.env.PLAYWRIGHT_SUPERADMIN_EMAIL,
+    password: process.env.PLAYWRIGHT_SUPERADMIN_PASSWORD,
+  },
 ];
 
 for (const user of USERS) {
   setup(`authenticate as ${user.email}`, async ({ page, context }) => {
+    if (!user.email || !user.password) {
+      throw new Error(`Missing Playwright credentials for ${user.file}`);
+    }
+
     // Clear all cookies from previous tests
     await context.clearCookies();
 

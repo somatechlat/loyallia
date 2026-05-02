@@ -5,13 +5,14 @@ Phase 5 implementation of customer + pass management endpoints.
 
 import logging
 
-import pandas as pd
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from ninja import File, Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
+from apps.audit.models import AuditAction
+from apps.audit.service import log_action, log_data_export
 from apps.cards.models import Card
 from apps.customers.models import Customer, CustomerPass
 from apps.customers.schemas import (
@@ -23,9 +24,8 @@ from apps.customers.schemas import (
 )
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
-from common.plan_enforcement import require_active_subscription, enforce_limit
-from apps.audit.service import log_action, log_data_export
-from apps.audit.models import AuditAction
+from common.plan_enforcement import enforce_limit, require_active_subscription
+from common.rate_limit import get_client_ip
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -56,12 +56,17 @@ def list_customers(
 
     customers = queryset.order_by("-created_at")[offset : offset + limit]
     total = queryset.count()
-    
+
     log_action(
         request=request,
         action=AuditAction.READ,
         resource_type="customer_list",
-        details={"search": search, "limit": limit, "offset": offset, "returned_count": len(customers)}
+        details={
+            "search": search,
+            "limit": limit,
+            "offset": offset,
+            "returned_count": len(customers),
+        },
     )
 
     return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
@@ -75,197 +80,42 @@ def list_customers(
 def import_customers(request, file: UploadedFile = File(...)):
     """
     Import customers from an Excel or CSV file. OWNER only.
-    Processing: Parse → Normalize columns → Validate → Deduplicate → bulk_create
+    Delegates processing to CustomerImportService.
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    import re
+    from apps.customers.import_service import CustomerImportService
 
-    from django.utils.dateparse import parse_date
-
-    filename = file.name.lower()
-    
     # SECURITY HARDENING: Prevent OOM (Memory Exhaustion) Attacks
-    # Limit max upload size to 5MB before allowing pandas to load it into RAM.
-    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
-    if file.size > MAX_FILE_SIZE:
-        raise HttpError(413, "El archivo es demasiado grande. El límite máximo es 5MB para proteger la estabilidad del sistema.")
-
-    try:
-        if filename.endswith(".csv"):
-            df = pd.read_csv(file.file, dtype=str, keep_default_na=False)
-        elif filename.endswith((".xlsx", ".xls")):
-            df = pd.read_excel(file.file, dtype=str, keep_default_na=False)
-        else:
-            raise HttpError(400, get_message("CUSTOMER_IMPORT_INVALID_FORMAT"))
-    except HttpError:
-        raise
-    except Exception as exc:
-        logger.error("Error parsing import file: %s", exc)
-        raise HttpError(400, get_message("CUSTOMER_IMPORT_FILE_CORRUPT"))
-
-    if df.empty:
-        raise HttpError(400, get_message("CUSTOMER_IMPORT_FILE_EMPTY"))
-
-    df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
-
-    def _find_col(keywords: list) -> str | None:
-        for col in df.columns:
-            if any(kw in col for kw in keywords):
-                return col
-        return None
-
-    col_first = _find_col(["nombre", "first_name", "first", "name"])
-    col_last = _find_col(["apellido", "last_name", "last", "surname"])
-    col_email = _find_col(["email", "correo", "mail", "e-mail"])
-    col_phone = _find_col(["telefono", "teléfono", "phone", "cel", "movil", "móvil"])
-    col_dob = _find_col(
-        ["fecha_nac", "nacimiento", "birth", "dob", "fecha_de_nacimiento"]
-    )
-    col_gender = _find_col(["genero", "género", "gender", "sexo"])
-    col_notes = _find_col(["notas", "notes", "nota", "observaciones", "comentarios"])
-    col_total_spent = _find_col(["gasto", "spent", "total_spent", "compras", "monto"])
-    col_total_visits = _find_col(["visitas", "visits", "total_visits", "frecuencia", "scan"])
-
-    if not col_first or not col_email:
+    if file.size > CustomerImportService.MAX_FILE_SIZE:
+        max_mb = CustomerImportService.MAX_FILE_SIZE // (1024 * 1024)
         raise HttpError(
-            400,
-            f"El archivo debe tener al menos las columnas 'nombre' y 'email'. "
-            f"Columnas detectadas: {list(df.columns)}",
+            413,
+            get_message(
+                "VALIDATION_ERROR",
+                detail=f"El archivo es demasiado grande (máx {max_mb}MB).",
+            ),
         )
 
-    existing_emails: set[str] = set(
-        Customer.objects.filter(tenant=request.tenant).values_list("email", flat=True)
-    )
+    service = CustomerImportService(request.tenant)
+    result = service.process_import(file.file, file.name)
 
-    EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-    GENDER_MAP = {
-        "m": "M",
-        "masculino": "M",
-        "male": "M",
-        "hombre": "M",
-        "f": "F",
-        "femenino": "F",
-        "female": "F",
-        "mujer": "F",
-        "o": "O",
-        "otro": "O",
-        "other": "O",
-    }
+    if not result.get("success", False):
+        raise HttpError(400, result.get("error", get_message("SERVER_ERROR")))
 
-    seen_in_file: set[str] = set()
-    customers_to_create: list[Customer] = []
-    skipped_duplicate = 0
-    skipped_invalid = 0
-    errors: list[str] = []
-
-    for row_idx, row in df.iterrows():
-        lineno = int(row_idx) + 2
-        email_raw = str(row.get(col_email, "")).strip().lower()
-        if not email_raw or not EMAIL_RE.match(email_raw):
-            errors.append(f"Fila {lineno}: email invalido '{email_raw}' -- omitida.")
-            skipped_invalid += 1
-            continue
-        if email_raw in seen_in_file or email_raw in existing_emails:
-            skipped_duplicate += 1
-            continue
-
-        first_name = str(row.get(col_first, "")).strip().title()
-        if not first_name:
-            errors.append(f"Fila {lineno}: 'nombre' vacio -- omitida.")
-            skipped_invalid += 1
-            continue
-
-        last_name = str(row.get(col_last, "")).strip().title() if col_last else ""
-        phone = (
-            re.sub(r"[^\d\+\- ]", "", str(row.get(col_phone, "")).strip())
-            if col_phone
-            else ""
-        )
-        phone = phone[:20]
-
-        date_of_birth = None
-        if col_dob:
-            dob_raw = str(row.get(col_dob, "")).strip()
-            if dob_raw:
-                try:
-                    date_of_birth = parse_date(dob_raw)
-                except Exception:
-                    date_of_birth = None
-
-        gender = ""
-        if col_gender:
-            gender_raw = str(row.get(col_gender, "")).strip().lower()
-            gender = GENDER_MAP.get(gender_raw, "")
-
-        notes = str(row.get(col_notes, "")).strip()[:2000] if col_notes else ""
-
-        # KPI Metrics: Safely cast to float and int, fallback to 0
-        total_spent = 0.0
-        if col_total_spent:
-            try:
-                # Remove currency symbols and commas
-                spent_raw = re.sub(r"[^\d\.]", "", str(row.get(col_total_spent, "0")))
-                total_spent = float(spent_raw) if spent_raw else 0.0
-            except ValueError:
-                pass
-                
-        total_visits = 0
-        if col_total_visits:
-            try:
-                visits_raw = re.sub(r"[^\d]", "", str(row.get(col_total_visits, "0")))
-                total_visits = int(visits_raw) if visits_raw else 0
-            except ValueError:
-                pass
-
-        seen_in_file.add(email_raw)
-        customers_to_create.append(
-            Customer(
-                tenant=request.tenant,
-                first_name=first_name,
-                last_name=last_name,
-                email=email_raw,
-                phone=phone,
-                date_of_birth=date_of_birth,
-                gender=gender,
-                notes=notes,
-                total_spent=total_spent,
-                total_visits=total_visits,
-            )
-        )
-
-    if customers_to_create:
-        for customer in customers_to_create:
-            customer.referral_code = customer.generate_referral_code()
-        Customer.objects.bulk_create(customers_to_create, batch_size=500)
-
-    response_payload = {
-        "success": True,
-        "imported": len(customers_to_create),
-        "skipped_duplicate": skipped_duplicate,
-        "skipped_invalid": skipped_invalid,
-        "message": (
-            f"{len(customers_to_create)} clientes importados. "
-            f"Duplicados omitidos: {skipped_duplicate}. "
-            f"Filas invalidas: {skipped_invalid}."
-        ),
-    }
-    if errors:
-        response_payload["errors"] = errors[:20]
-        
     log_action(
         request=request,
         action=AuditAction.IMPORT,
         resource_type="customer_database",
         details={
-            "imported": len(customers_to_create),
-            "skipped_duplicate": skipped_duplicate,
-            "skipped_invalid": skipped_invalid
-        }
+            "imported": result["imported"],
+            "skipped_duplicate": result["skipped_duplicate"],
+            "skipped_invalid": result["skipped_invalid"],
+        },
     )
-    
-    return response_payload
+
+    return result
 
 
 @router.post(
@@ -280,13 +130,11 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
     from django.core.cache import cache
 
     # Rate limiting: 10 per hour per IP
-    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
-    if not client_ip:
-        client_ip = request.META.get("REMOTE_ADDR", "unknown")
+    client_ip = get_client_ip(request)
     cache_key = f"enroll_rate:{client_ip}"
     enroll_count = cache.get(cache_key, 0)
     if enroll_count >= 10:
-        raise HttpError(429, "Too many enrollment attempts. Please try again later.")
+        raise HttpError(429, get_message("RATE_LIMITED"))
     cache.set(cache_key, enroll_count + 1, 3600)  # 1 hour TTL
 
     try:
@@ -321,11 +169,21 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
         raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
 
     # Extract any dynamic extra fields from the Pydantic model
-    standard_fields = {"first_name", "last_name", "email", "phone", "date_of_birth", "gender", "notes"}
-    dynamic_fields = {k: v for k, v in customer_data.model_dump().items() if k not in standard_fields}
+    standard_fields = {
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "date_of_birth",
+        "gender",
+        "notes",
+    }
+    dynamic_fields = {
+        k: v for k, v in customer_data.model_dump().items() if k not in standard_fields
+    }
 
     pass_obj = CustomerPass.objects.create(customer=customer, card=card)
-    
+
     # Store custom enrollment metadata in pass_data
     if dynamic_fields:
         pass_obj.update_pass_data({"enrollment_data": dynamic_fields})
@@ -374,15 +232,15 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
 def get_customer(request, customer_id: str):
     """Customer profile with pass and transaction history."""
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
-    
+
     log_action(
         request=request,
         action=AuditAction.READ,
         resource_type="customer",
         resource_id=str(customer.id),
-        details={"email": customer.email}
+        details={"email": customer.email},
     )
-    
+
     return CustomerOut.from_model(customer)
 
 
@@ -422,15 +280,15 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
         update_fields.append("is_active")
     if update_fields:
         customer.save(update_fields=update_fields + ["updated_at"])
-        
+
         log_action(
             request=request,
             action=AuditAction.UPDATE,
             resource_type="customer",
             resource_id=str(customer.id),
-            details={"updated_fields": update_fields}
+            details={"updated_fields": update_fields},
         )
-        
+
     return CustomerOut.from_model(customer)
 
 
@@ -451,7 +309,7 @@ def delete_customer(request, customer_id: str):
         action=AuditAction.DELETE,
         resource_type="customer",
         resource_id=str(customer.id),
-        details={"email": customer.email}
+        details={"email": customer.email},
     )
 
     customer.delete()
@@ -525,7 +383,7 @@ def enroll_customer(request, customer_id: str, card_id: str):
 
 
 import csv
-import re as _re
+
 from django.http import HttpResponse
 
 
@@ -545,35 +403,51 @@ def export_customers(request):
     """Export all customer data to CSV. OWNER only. Forensic tracking enabled."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-        
+
     customers = Customer.objects.filter(tenant=request.tenant).order_by("created_at")
-    
+
     # LOPDP Forensic Audit Log
     log_data_export(
         request=request,
         resource_type="customer_database",
-        record_count=customers.count()
+        record_count=customers.count(),
     )
 
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="clientes_loyallia.csv"'
-    
+
     writer = csv.writer(response)
-    writer.writerow(["ID", "Email", "Nombre", "Apellido", "Telefono", "Genero", "Fecha Nacimiento", "Gasto Total", "Visitas Totales", "Notas", "Registrado El"])
-    
+    writer.writerow(
+        [
+            "ID",
+            "Email",
+            "Nombre",
+            "Apellido",
+            "Telefono",
+            "Genero",
+            "Fecha Nacimiento",
+            "Gasto Total",
+            "Visitas Totales",
+            "Notas",
+            "Registrado El",
+        ]
+    )
+
     for c in customers:
-        writer.writerow([
-            _sanitize_csv_cell(str(c.id)),
-            _sanitize_csv_cell(c.email),
-            _sanitize_csv_cell(c.first_name),
-            _sanitize_csv_cell(c.last_name),
-            _sanitize_csv_cell(c.phone),
-            _sanitize_csv_cell(c.gender),
-            _sanitize_csv_cell(str(c.date_of_birth) if c.date_of_birth else ""),
-            c.total_spent,
-            c.total_visits,
-            _sanitize_csv_cell(c.notes),
-            _sanitize_csv_cell(c.created_at.strftime("%Y-%m-%d %H:%M:%S")),
-        ])
-        
+        writer.writerow(
+            [
+                _sanitize_csv_cell(str(c.id)),
+                _sanitize_csv_cell(c.email),
+                _sanitize_csv_cell(c.first_name),
+                _sanitize_csv_cell(c.last_name),
+                _sanitize_csv_cell(c.phone),
+                _sanitize_csv_cell(c.gender),
+                _sanitize_csv_cell(str(c.date_of_birth) if c.date_of_birth else ""),
+                c.total_spent,
+                c.total_visits,
+                _sanitize_csv_cell(c.notes),
+                _sanitize_csv_cell(c.created_at.strftime("%Y-%m-%d %H:%M:%S")),
+            ]
+        )
+
     return response

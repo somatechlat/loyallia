@@ -25,6 +25,7 @@ def mask_pii(text: str) -> str:
     Emails: j***@example.com (keep first char + domain)
     Phones: +593***1234 (keep first 3 + last 4 digits)
     """
+
     # Mask emails: show first char + @domain
     def _mask_email(match: re.Match) -> str:
         addr = match.group(0)
@@ -65,9 +66,7 @@ class JsonFormatter(logging.Formatter):
         masked_message = mask_pii(raw_message)
 
         log_entry = {
-            "timestamp": datetime.fromtimestamp(
-                record.created, tz=timezone.utc
-            ).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": masked_message,

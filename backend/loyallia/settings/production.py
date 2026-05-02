@@ -6,10 +6,10 @@ All sensitive secrets are fetched via Vault (with env fallback).
 
 from decouple import Csv, config
 
-from .base import *  # noqa: F401, F403
-
 # Import Vault client — all production secrets go through Vault first
 from common.vault import get_secret
+
+from .base import *  # noqa: F401, F403
 
 DEBUG = False
 
@@ -22,6 +22,7 @@ SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+X_FRAME_OPTIONS = "DENY"
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True  # LYL-M-SEC-019: Prevent JS access to session cookie
 SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection complement
@@ -40,19 +41,25 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="rewards.loyallia.com", cast=Csv
 SECRET_KEY = get_secret("secret_key", env_fallback="SECRET_KEY", strict=True)
 
 # Database — override password from Vault (Strict)
-_pg_password = get_secret("postgres_password", env_fallback="POSTGRES_PASSWORD", strict=True)
+_pg_password = get_secret(
+    "postgres_password", env_fallback="POSTGRES_PASSWORD", strict=True
+)
 if _pg_password:
-    DATABASES["default"]["PASSWORD"] = _pg_password
-    if "direct" in DATABASES:
-        DATABASES["direct"]["PASSWORD"] = _pg_password
+    DATABASES["default"]["PASSWORD"] = _pg_password  # noqa: F405
+    if "direct" in DATABASES:  # noqa: F405
+        DATABASES["direct"]["PASSWORD"] = _pg_password  # noqa: F405
 
 # MinIO (S3-compatible storage)
-MINIO_SECRET_KEY = get_secret("minio_secret_key", env_fallback="MINIO_ROOT_PASSWORD", strict=True)
+MINIO_SECRET_KEY = get_secret(
+    "minio_secret_key", env_fallback="MINIO_ROOT_PASSWORD", strict=True
+)
 AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
-STORAGES["default"]["OPTIONS"]["secret_key"] = MINIO_SECRET_KEY
+STORAGES["default"]["OPTIONS"]["secret_key"] = MINIO_SECRET_KEY  # noqa: F405
 
 # JWT / Auth tokens — separate key from SECRET_KEY (Vault Only)
-JWT_SECRET_KEY = get_secret("jwt_secret_key", env_fallback="JWT_SECRET_KEY", strict=True)
+JWT_SECRET_KEY = get_secret(
+    "jwt_secret_key", env_fallback="JWT_SECRET_KEY", strict=True
+)
 if not JWT_SECRET_KEY:
     JWT_SECRET_KEY = SECRET_KEY
 
@@ -77,7 +84,9 @@ PAYMENT_GATEWAY_TRAN_KEY = get_secret(
     "payment_gateway_tran_key", env_fallback="PAYMENT_GATEWAY_TRAN_KEY", strict=True
 )
 PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
-    "payment_gateway_webhook_secret", env_fallback="PAYMENT_GATEWAY_WEBHOOK_SECRET", strict=True
+    "payment_gateway_webhook_secret",
+    env_fallback="PAYMENT_GATEWAY_WEBHOOK_SECRET",
+    strict=True,
 )
 
 # Email

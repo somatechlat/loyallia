@@ -4,25 +4,15 @@ Tests for API endpoints via Django test client.
 """
 
 import json
-import uuid
-from datetime import timedelta
-from decimal import Decimal
-from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.test.client import Client
-from django.utils import timezone
 
-from apps.authentication.models import RefreshToken, User, UserRole
-from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
-from apps.cards.models import Card, CardType
-from apps.customers.models import Customer, CustomerPass
-from apps.tenants.models import Tenant
+from apps.authentication.models import User, UserRole
+from apps.customers.models import Customer
 from tests.factories import (
     make_card,
     make_customer,
-    make_customer_pass,
-    make_full_stack,
     make_plan,
     make_subscription,
     make_tenant,
@@ -48,20 +38,23 @@ def _get_auth_header(user, password="[REDACTED]"):
 # Authentication API Tests
 # =============================================================================
 
+
 class AuthRegisterAPITest(TestCase):
     """Tests for POST /api/v1/auth/register/"""
 
     def test_register_success(self):
         resp = self.client.post(
             "/api/v1/auth/register/",
-            data=json.dumps({
-                "email": "new@test.com",
-                "password": "[REDACTED]",
-                "first_name": "Test",
-                "last_name": "User",
-                "business_name": "Test Business",
-                "phone_number": "+593991234567",
-            }),
+            data=json.dumps(
+                {
+                    "email": "new@test.com",
+                    "password": "[REDACTED]",
+                    "first_name": "Test",
+                    "last_name": "User",
+                    "business_name": "Test Business",
+                    "phone_number": "+593991234567",
+                }
+            ),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 200)
@@ -74,14 +67,16 @@ class AuthRegisterAPITest(TestCase):
         make_user(email="dup@test.com", password="[REDACTED]")
         resp = self.client.post(
             "/api/v1/auth/register/",
-            data=json.dumps({
-                "email": "dup@test.com",
-                "password": "[REDACTED]",
-                "first_name": "Dup",
-                "last_name": "User",
-                "business_name": "Dup Business",
-                "phone_number": "+593991234567",
-            }),
+            data=json.dumps(
+                {
+                    "email": "dup@test.com",
+                    "password": "[REDACTED]",
+                    "first_name": "Dup",
+                    "last_name": "User",
+                    "business_name": "Dup Business",
+                    "phone_number": "+593991234567",
+                }
+            ),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 200)
@@ -92,9 +87,7 @@ class AuthLoginAPITest(TestCase):
     """Tests for POST /api/v1/auth/login/"""
 
     def setUp(self):
-        self.user = make_user(
-            email="login@test.com", password="[REDACTED]"
-        )
+        self.user = make_user(email="login@test.com", password="[REDACTED]")
 
     def test_login_success(self):
         resp = self.client.post(
@@ -149,7 +142,6 @@ class AuthRefreshAPITest(TestCase):
 
     def test_refresh_valid_token(self):
         user = make_user(password="[REDACTED]")
-        header = _get_auth_header(user, "[REDACTED]")
         # Get a refresh token via login
         resp = self.client.post(
             "/api/v1/auth/login/",
@@ -199,7 +191,7 @@ class AuthPasswordResetAPITest(TestCase):
     """Tests for password reset flow."""
 
     def test_password_reset_request_returns_200(self):
-        user = make_user(email="reset@test.com", password="[REDACTED]")
+        make_user(email="reset@test.com", password="[REDACTED]")
         resp = self.client.post(
             "/api/v1/auth/password-reset/request/",
             data=json.dumps({"email": "reset@test.com"}),
@@ -222,7 +214,7 @@ class AuthForgotPasswordAPITest(TestCase):
     """Tests for POST /api/v1/auth/forgot-password/"""
 
     def test_forgot_password_returns_200(self):
-        user = make_user(email="forgot@test.com", password="[REDACTED]")
+        make_user(email="forgot@test.com", password="[REDACTED]")
         resp = self.client.post(
             "/api/v1/auth/forgot-password/",
             data=json.dumps({"email": "forgot@test.com"}),
@@ -256,10 +248,12 @@ class AuthChangePasswordAPITest(TestCase):
         header = _get_auth_header(user, "[REDACTED]")
         resp = self.client.post(
             "/api/v1/auth/change-password/",
-            data=json.dumps({
-                "current_password": "[REDACTED]",
-                "new_password": "[REDACTED]",
-            }),
+            data=json.dumps(
+                {
+                    "current_password": "[REDACTED]",
+                    "new_password": "[REDACTED]",
+                }
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION=header,
         )
@@ -270,10 +264,12 @@ class AuthChangePasswordAPITest(TestCase):
         header = _get_auth_header(user, "[REDACTED]")
         resp = self.client.post(
             "/api/v1/auth/change-password/",
-            data=json.dumps({
-                "current_password": "WrongPassword123!@",
-                "new_password": "[REDACTED]",
-            }),
+            data=json.dumps(
+                {
+                    "current_password": "WrongPassword123!@",
+                    "new_password": "[REDACTED]",
+                }
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION=header,
         )
@@ -295,7 +291,9 @@ class AuthUsersAPITest(TestCase):
 
     def test_list_users_owner_only(self):
         tenant = make_tenant()
-        owner = make_user(tenant=tenant, role=UserRole.OWNER, password="[REDACTED]")
+        owner = make_user(
+            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         make_user(tenant=tenant, role=UserRole.STAFF)
         header = _get_auth_header(owner, "[REDACTED]")
         resp = self.client.get("/api/v1/auth/users/", HTTP_AUTHORIZATION=header)
@@ -304,14 +302,18 @@ class AuthUsersAPITest(TestCase):
 
     def test_list_users_staff_forbidden(self):
         tenant = make_tenant()
-        staff = make_user(tenant=tenant, role=UserRole.STAFF, password="[REDACTED]")
+        staff = make_user(
+            tenant=tenant, role=UserRole.STAFF, password="[REDACTED]"
+        )
         header = _get_auth_header(staff, "[REDACTED]")
         resp = self.client.get("/api/v1/auth/users/", HTTP_AUTHORIZATION=header)
         self.assertEqual(resp.status_code, 403)
 
     def test_deactivate_user(self):
         tenant = make_tenant()
-        owner = make_user(tenant=tenant, role=UserRole.OWNER, password="[REDACTED]")
+        owner = make_user(
+            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         target = make_user(tenant=tenant, role=UserRole.STAFF)
         header = _get_auth_header(owner, "[REDACTED]")
         resp = self.client.delete(
@@ -324,7 +326,9 @@ class AuthUsersAPITest(TestCase):
 
     def test_deactivate_self_blocked(self):
         tenant = make_tenant()
-        owner = make_user(tenant=tenant, role=UserRole.OWNER, password="[REDACTED]")
+        owner = make_user(
+            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         header = _get_auth_header(owner, "[REDACTED]")
         resp = self.client.delete(
             f"/api/v1/auth/users/{owner.id}/",
@@ -337,12 +341,15 @@ class AuthUsersAPITest(TestCase):
 # Customers API Tests
 # =============================================================================
 
+
 class CustomersAPITest(TestCase):
     """Tests for customer CRUD endpoints."""
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]")
+        self.user = make_user(
+            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         self.header = _get_auth_header(self.user, "[REDACTED]")
         # Ensure subscription exists for plan enforcement
         make_subscription(self.tenant)
@@ -356,12 +363,14 @@ class CustomersAPITest(TestCase):
     def test_create_customer(self):
         resp = self.client.post(
             "/api/v1/customers/",
-            data=json.dumps({
-                "first_name": "New",
-                "last_name": "Customer",
-                "email": "new@customer.com",
-                "phone": "+593991234567",
-            }),
+            data=json.dumps(
+                {
+                    "first_name": "New",
+                    "last_name": "Customer",
+                    "email": "new@customer.com",
+                    "phone": "+593991234567",
+                }
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION=self.header,
         )
@@ -401,12 +410,15 @@ class CustomersAPITest(TestCase):
 # Cards API Tests
 # =============================================================================
 
+
 class CardsAPITest(TestCase):
     """Tests for card (program) CRUD endpoints."""
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]")
+        self.user = make_user(
+            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         self.header = _get_auth_header(self.user, "[REDACTED]")
         make_subscription(self.tenant)
 
@@ -419,12 +431,17 @@ class CardsAPITest(TestCase):
     def test_create_card(self):
         resp = self.client.post(
             "/api/v1/cards/",
-            data=json.dumps({
-                "name": "New Card",
-                "card_type": "stamp",
-                "description": "Test card",
-                "metadata": {"stamps_required": 10, "reward_description": "Free item"},
-            }),
+            data=json.dumps(
+                {
+                    "name": "New Card",
+                    "card_type": "stamp",
+                    "description": "Test card",
+                    "metadata": {
+                        "stamps_required": 10,
+                        "reward_description": "Free item",
+                    },
+                }
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION=self.header,
         )
@@ -443,12 +460,15 @@ class CardsAPITest(TestCase):
 # Transactions API Tests
 # =============================================================================
 
+
 class TransactionsAPITest(TestCase):
     """Tests for transaction endpoints."""
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]")
+        self.user = make_user(
+            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         self.header = _get_auth_header(self.user, "[REDACTED]")
         make_subscription(self.tenant)
 
@@ -461,12 +481,15 @@ class TransactionsAPITest(TestCase):
 # Billing API Tests
 # =============================================================================
 
+
 class BillingAPITest(TestCase):
     """Tests for billing endpoints."""
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]")
+        self.user = make_user(
+            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         self.header = _get_auth_header(self.user, "[REDACTED]")
 
     def test_list_plans(self):
@@ -484,16 +507,21 @@ class BillingAPITest(TestCase):
 # Tenants API Tests
 # =============================================================================
 
+
 class TenantsAPITest(TestCase):
     """Tests for tenant endpoints."""
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]")
+        self.user = make_user(
+            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         self.header = _get_auth_header(self.user, "[REDACTED]")
 
     def test_get_tenant_settings(self):
-        resp = self.client.get("/api/v1/tenants/settings/", HTTP_AUTHORIZATION=self.header)
+        resp = self.client.get(
+            "/api/v1/tenants/settings/", HTTP_AUTHORIZATION=self.header
+        )
         self.assertEqual(resp.status_code, 200)
 
     def test_update_tenant_settings(self):
@@ -510,12 +538,15 @@ class TenantsAPITest(TestCase):
 # Automation API Tests
 # =============================================================================
 
+
 class AutomationAPITest(TestCase):
     """Tests for automation endpoints."""
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]")
+        self.user = make_user(
+            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         self.header = _get_auth_header(self.user, "[REDACTED]")
         make_subscription(self.tenant)
 
@@ -528,12 +559,15 @@ class AutomationAPITest(TestCase):
 # Notifications API Tests
 # =============================================================================
 
+
 class NotificationsAPITest(TestCase):
     """Tests for notification endpoints."""
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]")
+        self.user = make_user(
+            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
         self.header = _get_auth_header(self.user, "[REDACTED]")
 
     def test_list_notifications(self):
@@ -544,6 +578,7 @@ class NotificationsAPITest(TestCase):
 # =============================================================================
 # Health Check Test
 # =============================================================================
+
 
 class HealthCheckTest(TestCase):
     """Tests for health endpoint."""

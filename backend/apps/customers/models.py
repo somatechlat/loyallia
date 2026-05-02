@@ -142,7 +142,7 @@ class Customer(TimestampedModel):
         logger = logging.getLogger(__name__)
         max_attempts = 20
 
-        for attempt in range(max_attempts):
+        for _attempt in range(max_attempts):
             code = "".join(
                 secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
             )
@@ -181,8 +181,31 @@ class CustomerPass(models.Model):
         Card, on_delete=models.CASCADE, related_name="passes", verbose_name="Programa"
     )
 
-    # Pass state stored as JSONB (balances, counters, etc.)
+    # Pass state stored as JSONB (Legacy/Dynamic)
     pass_data = models.JSONField(default=dict, verbose_name="Datos del pase")
+
+    # Core metrics (Typed columns for integrity and indexing)
+    stamp_count = models.PositiveIntegerField(
+        default=0, verbose_name="Contador de sellos"
+    )
+    cashback_balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Balance de cashback",
+    )
+    referral_count = models.PositiveIntegerField(
+        default=0, verbose_name="Contador de referidos"
+    )
+    multipass_remaining = models.PositiveIntegerField(
+        default=0, verbose_name="Usos restantes multipase"
+    )
+    gift_balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Balance de certificado de regalo",
+    )
 
     # Wallet pass identifiers
     apple_pass_id = models.CharField(
@@ -194,7 +217,11 @@ class CustomerPass(models.Model):
 
     # QR code for validation — indexed for O(log N) scan lookups
     qr_code = models.CharField(
-        max_length=100, unique=True, db_index=True, blank=True, default="",
+        max_length=100,
+        unique=True,
+        db_index=True,
+        blank=True,
+        default="",
         verbose_name="Código QR",
     )
 
@@ -262,16 +289,23 @@ class CustomerPass(models.Model):
             self.qr_code = self.generate_qr_code()
         super().save(*args, **kwargs)
 
-    # Card-type specific helpers
     @property
-    def stamp_count(self) -> int:
-        """Current stamp count for stamp cards."""
-        return self.get_pass_field("stamp_count", 0)
+    def stamp_count_val(self) -> int:
+        """Current stamp count for stamp cards (prefers typed column)."""
+        return (
+            self.stamp_count
+            if self.stamp_count > 0
+            else self.get_pass_field("stamp_count", 0)
+        )
 
     @property
-    def cashback_balance(self) -> Decimal:
-        """Current cashback balance."""
-        return Decimal(str(self.get_pass_field("cashback_balance", "0")))
+    def cashback_balance_val(self) -> Decimal:
+        """Current cashback balance (prefers typed column)."""
+        return (
+            self.cashback_balance
+            if self.cashback_balance > 0
+            else Decimal(str(self.get_pass_field("cashback_balance", "0")))
+        )
 
     @property
     def coupon_used(self) -> bool:
@@ -284,9 +318,13 @@ class CustomerPass(models.Model):
         return self.get_pass_field("discount_tier", "")
 
     @property
-    def gift_balance(self) -> Decimal:
-        """Current gift certificate balance."""
-        return Decimal(str(self.get_pass_field("gift_balance", "0")))
+    def gift_balance_val(self) -> Decimal:
+        """Current gift certificate balance (prefers typed column)."""
+        return (
+            self.gift_balance
+            if self.gift_balance > 0
+            else Decimal(str(self.get_pass_field("gift_balance", "0")))
+        )
 
     @property
     def membership_expiry(self) -> datetime:
@@ -302,14 +340,22 @@ class CustomerPass(models.Model):
         return Decimal(str(self.get_pass_field("corporate_discount", "0")))
 
     @property
-    def referral_count(self) -> int:
-        """Number of successful referrals."""
-        return self.get_pass_field("referral_count", 0)
+    def referral_count_val(self) -> int:
+        """Number of successful referrals (prefers typed column)."""
+        return (
+            self.referral_count
+            if self.referral_count > 0
+            else self.get_pass_field("referral_count", 0)
+        )
 
     @property
-    def multipass_remaining(self) -> int:
-        """Remaining prepaid stamps in multipass."""
-        return self.get_pass_field("multipass_remaining", 0)
+    def multipass_remaining_val(self) -> int:
+        """Remaining prepaid stamps in multipass (prefers typed column)."""
+        return (
+            self.multipass_remaining
+            if self.multipass_remaining > 0
+            else self.get_pass_field("multipass_remaining", 0)
+        )
 
     def process_transaction(
         self, transaction_type: str, amount: Decimal = 0, quantity: int = 1

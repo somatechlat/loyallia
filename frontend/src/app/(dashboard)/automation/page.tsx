@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { automationApi, programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import ConfirmModal from '@/components/ui/ConfirmModal';
 import toast from 'react-hot-toast';
 
 interface Automation {

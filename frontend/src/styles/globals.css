@@ -124,6 +124,19 @@
 
 /* ── Backgrounds ─────────────────────────────────────────────────────── */
 .dark [class*="bg-white"]  { background-color: #111827 !important; }
+.dark .bg-white\/5 { background-color: rgba(17, 24, 39, 0.05) !important; }
+.dark .bg-white\/10 { background-color: rgba(17, 24, 39, 0.1) !important; }
+.dark .bg-white\/15 { background-color: rgba(17, 24, 39, 0.15) !important; }
+.dark .bg-white\/20 { background-color: rgba(17, 24, 39, 0.2) !important; }
+.dark .bg-white\/30 { background-color: rgba(17, 24, 39, 0.3) !important; }
+.dark .bg-white\/40 { background-color: rgba(17, 24, 39, 0.4) !important; }
+.dark .bg-white\/50 { background-color: rgba(17, 24, 39, 0.5) !important; }
+.dark .bg-white\/60 { background-color: rgba(17, 24, 39, 0.6) !important; }
+.dark .bg-white\/70 { background-color: rgba(17, 24, 39, 0.7) !important; }
+.dark .bg-white\/80 { background-color: rgba(17, 24, 39, 0.8) !important; }
+.dark .bg-white\/85 { background-color: rgba(17, 24, 39, 0.85) !important; }
+.dark .bg-white\/90 { background-color: rgba(17, 24, 39, 0.9) !important; }
+.dark .bg-white\/95 { background-color: rgba(17, 24, 39, 0.95) !important; }
 .dark .bg-surface-50,
 .dark [class*="bg-surface-50"] { background-color: #0d1117 !important; }
 .dark .bg-surface-100,

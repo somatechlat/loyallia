@@ -6,17 +6,8 @@
  * (Requires: npm i -D vitest)
  */
 import { describe, it, expect } from 'vitest';
-
-/* ─── adjustColor (from components/programs/constants.tsx) ─────────── */
-function adjustColor(hex: string, amount: number): string {
-  hex = hex.replace('#', '');
-  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-  const num = parseInt(hex, 16);
-  const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
-  const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
+import { adjustColor } from '@/components/programs/constants';
+import { getNestedValue } from '@/lib/i18n';
 
 describe('adjustColor', () => {
   it('should darken a color with negative amount', () => {
@@ -50,18 +41,6 @@ describe('adjustColor', () => {
   });
 });
 
-/* ─── getNestedValue (from lib/i18n/index.tsx) ─────────────────────── */
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  const keys = path.split(".");
-  let current: unknown = obj;
-  for (const key of keys) {
-    if (current === null || current === undefined) return path;
-    if (typeof current !== "object") return path;
-    current = (current as Record<string, unknown>)[key];
-  }
-  return typeof current === "string" ? current : path;
-}
-
 describe('getNestedValue', () => {
   it('should return a top-level string value', () => {
     expect(getNestedValue({ name: 'test' }, 'name')).toBe('test');
@@ -85,35 +64,5 @@ describe('getNestedValue', () => {
 
   it('should handle deeply nested paths', () => {
     expect(getNestedValue({ a: { b: { c: 'deep' } } }, 'a.b.c')).toBe('deep');
-  });
-});
-
-/* ─── resolveDays (from dashboard page) ────────────────────────────── */
-type DateRange = 1 | 7 | 28 | 30 | 180 | 365 | 'mtd' | 'custom';
-
-function resolveDays(range: DateRange): number {
-  if (typeof range === 'number') return range;
-  if (range === 'mtd') {
-    const now = new Date();
-    return now.getDate();
-  }
-  return 30;
-}
-
-describe('resolveDays', () => {
-  it('should return numeric values directly', () => {
-    expect(resolveDays(7)).toBe(7);
-    expect(resolveDays(30)).toBe(30);
-    expect(resolveDays(365)).toBe(365);
-  });
-
-  it('should return day-of-month for mtd', () => {
-    const result = resolveDays('mtd');
-    expect(result).toBeGreaterThan(0);
-    expect(result).toBeLessThanOrEqual(31);
-  });
-
-  it('should return 30 for custom', () => {
-    expect(resolveDays('custom')).toBe(30);
   });
 });

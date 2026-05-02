@@ -50,9 +50,7 @@ class AgentAPIKey(models.Model):
     last_used_at = models.DateTimeField(
         null=True, blank=True, verbose_name="Último uso"
     )
-    expires_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Expira en"
-    )
+    expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Expira en")
 
     # Audit
     created_by_id = models.UUIDField(verbose_name="Creado por (user_id)")

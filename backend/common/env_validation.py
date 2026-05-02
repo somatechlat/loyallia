@@ -8,7 +8,6 @@ import logging
 import os
 import sys
 from dataclasses import dataclass
-from typing import Optional
 
 from common.vault import get_secret
 
@@ -22,7 +21,7 @@ class EnvVar:
     name: str
     required: bool = True
     description: str = ""
-    default: Optional[str] = None
+    default: str | None = None
     min_length: int = 0
     sensitive: bool = False  # Don't log the value
 
@@ -180,11 +179,17 @@ def check_or_die(is_production: bool = False) -> None:
     errors = validate_environment(is_production=is_production)
 
     if not errors:
-        logger.info("Environment validation passed (%d vars checked)", len(REQUIRED_VARS))
+        logger.info(
+            "Environment validation passed (%d vars checked)", len(REQUIRED_VARS)
+        )
         return
 
     # In DEBUG mode, just warn
-    if not is_production and os.environ.get("DEBUG", "").lower() in ("true", "1", "yes"):
+    if not is_production and os.environ.get("DEBUG", "").lower() in (
+        "true",
+        "1",
+        "yes",
+    ):
         for err in errors:
             logger.warning("ENV WARNING: %s", err.message)
         return

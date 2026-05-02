@@ -17,7 +17,7 @@ from apps.automation.models import (
 )
 from apps.cards.models import Card
 from common.messages import get_message
-from common.permissions import is_owner, jwt_auth
+from common.permissions import jwt_auth
 from common.role_check import require_role
 
 router = Router()
@@ -250,9 +250,13 @@ def delete_automation(request, automation_id: str):
     # LYL-M-API-022: Try UUID first, then slug
     try:
         uuid.UUID(automation_id)
-        automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
+        automation = get_object_or_404(
+            Automation, id=automation_id, tenant=request.tenant
+        )
     except ValueError:
-        automation = get_object_or_404(Automation, name=automation_id, tenant=request.tenant)
+        automation = get_object_or_404(
+            Automation, name=automation_id, tenant=request.tenant
+        )
 
     automation.delete()
 

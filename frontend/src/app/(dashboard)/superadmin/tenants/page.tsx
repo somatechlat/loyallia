@@ -153,7 +153,13 @@ export default function SuperAdminTenants() {
   };
   const addWLoc = () => setWLocs([...wLocs, { name: '', address: '', city: '', latitude: null, longitude: null, is_primary: false }]);
   const rmWLoc = (i: number) => setWLocs(wLocs.filter((_, j) => j !== i));
-  const upWLoc = (i: number, f: keyof LocEntry, v: LocEntry[keyof LocEntry]) => { const u = [...wLocs]; u[i] = { ...u[i], [f]: v }; setWLocs(u); };
+  const upWLoc = (i: number, f: keyof LocEntry, v: LocEntry[keyof LocEntry]) => {
+    const u = [...wLocs];
+    const current = u[i];
+    if (!current) return;
+    u[i] = { ...current, [f]: v };
+    setWLocs(u);
+  };
   const handleSubmit = async () => {
     const tid = toast.loading('Registrando negocio...');
     try {

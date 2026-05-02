@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenants', '0003_add_entity_type'),
+        ("tenants", "0003_add_entity_type"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tenant',
-            name='default_language',
-            field=models.CharField(default='es', help_text='ISO 639-1: es, en, fr, de. Set at tenant registration.', max_length=5, verbose_name='Idioma predeterminado'),
+            model_name="tenant",
+            name="default_language",
+            field=models.CharField(
+                default="es",
+                help_text="ISO 639-1: es, en, fr, de. Set at tenant registration.",
+                max_length=5,
+                verbose_name="Idioma predeterminado",
+            ),
         ),
     ]

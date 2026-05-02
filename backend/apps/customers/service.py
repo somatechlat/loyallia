@@ -190,9 +190,7 @@ class CustomerService:
             email_raw = str(row.get(col_email, "")).strip().lower()
 
             if not email_raw or not EMAIL_RE.match(email_raw):
-                errors.append(
-                    f"Row {lineno}: invalid email '{email_raw}' — skipped."
-                )
+                errors.append(f"Row {lineno}: invalid email '{email_raw}' — skipped.")
                 skipped_invalid += 1
                 continue
 
@@ -206,9 +204,7 @@ class CustomerService:
                 skipped_invalid += 1
                 continue
 
-            last_name = (
-                str(row.get(col_last, "")).strip().title() if col_last else ""
-            )
+            last_name = str(row.get(col_last, "")).strip().title() if col_last else ""
             phone = (
                 re.sub(r"[^\d\+\- ]", "", str(row.get(col_phone, "")).strip())
                 if col_phone
@@ -230,9 +226,7 @@ class CustomerService:
                 gender_raw = str(row.get(col_gender, "")).strip().lower()
                 gender = GENDER_MAP.get(gender_raw, "")
 
-            notes = (
-                str(row.get(col_notes, "")).strip()[:2000] if col_notes else ""
-            )
+            notes = str(row.get(col_notes, "")).strip()[:2000] if col_notes else ""
 
             total_spent = 0.0
             if col_total_spent:
@@ -299,10 +293,7 @@ class CustomerService:
             return []
 
         return list(
-            Customer.objects.filter(
-                tenant=tenant, is_active=True
-            )
-            .filter(
+            Customer.objects.filter(tenant=tenant, is_active=True).filter(
                 Q(email__icontains=query)
                 | Q(phone__icontains=query)
                 | Q(first_name__icontains=query)

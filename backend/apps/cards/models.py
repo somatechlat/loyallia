@@ -3,7 +3,6 @@ Loyallia — Card Models (Loyalty Programs)
 Core models for all 10 card types with shared base properties and type-specific metadata.
 """
 
-import uuid
 from decimal import Decimal
 
 from django.db import models
@@ -74,7 +73,30 @@ class Card(TimestampedModel):
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Programa activo")
 
-    # Type-specific configuration stored as JSONB
+    # Type-specific configuration (Typed columns for core metrics)
+    stamps_required = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name="Sellos requeridos"
+    )
+    cashback_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Porcentaje cashback",
+    )
+    minimum_purchase = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
+        verbose_name="Compra mínima",
+    )
+    credit_expiry_days = models.PositiveIntegerField(
+        default=365, null=True, blank=True, verbose_name="Días de expiración de crédito"
+    )
+
+    # Type-specific configuration stored as JSONB (Legacy/Dynamic)
     metadata = models.JSONField(default=dict, verbose_name="Configuración específica")
 
     # Geofencing Locations (Array of dicts: {"lat": float, "lng": float, "name": str})
@@ -93,7 +115,9 @@ class Card(TimestampedModel):
         ]  # Prevent duplicate program names per tenant
 
     def __repr__(self) -> str:
-        return f"<Card: {self.name} ({self.get_card_type_display()}) - {self.tenant.name}>"
+        return (
+            f"<Card: {self.name} ({self.get_card_type_display()}) - {self.tenant.name}>"
+        )
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_card_type_display()}) - {self.tenant.name}"
@@ -110,7 +134,9 @@ class Card(TimestampedModel):
     # Card-type specific validation and helpers
     def validate_stamp_config(self) -> None:
         """Validate stamp card configuration."""
-        stamps_required = self.get_metadata_field("stamps_required", 10)
+        stamps_required = self.stamps_required or self.get_metadata_field(
+            "stamps_required", 10
+        )
         if (
             not isinstance(stamps_required, int)
             or stamps_required < 1
@@ -124,7 +150,9 @@ class Card(TimestampedModel):
 
     def validate_cashback_config(self) -> None:
         """Validate cashback card configuration."""
-        percentage = self.get_metadata_field("cashback_percentage", 0)
+        percentage = self.cashback_percentage or self.get_metadata_field(
+            "cashback_percentage", 0
+        )
         if (
             not isinstance(percentage, (int, float, Decimal))
             or percentage <= 0
@@ -132,11 +160,17 @@ class Card(TimestampedModel):
         ):
             raise ValueError("cashback_percentage must be decimal 0.01-99.99")
 
-        min_purchase = self.get_metadata_field("minimum_purchase", 0)
+        min_purchase = (
+            self.minimum_purchase
+            if self.minimum_purchase is not None
+            else self.get_metadata_field("minimum_purchase", 0)
+        )
         if not isinstance(min_purchase, (int, float, Decimal)) or min_purchase < 0:
             raise ValueError("minimum_purchase must be non-negative decimal")
 
-        expiry_days = self.get_metadata_field("credit_expiry_days", 365)
+        expiry_days = self.credit_expiry_days or self.get_metadata_field(
+            "credit_expiry_days", 365
+        )
         if not isinstance(expiry_days, int) or expiry_days < 1:
             raise ValueError("credit_expiry_days must be positive integer")
 
@@ -172,11 +206,8 @@ class Card(TimestampedModel):
         # Date validation: end_date must be after start_date when provided
         coupon_start = self.get_metadata_field("coupon_start_date")
         coupon_end = self.get_metadata_field("coupon_end_date")
-        if coupon_start and coupon_end:
-            if str(coupon_end) <= str(coupon_start):
-                raise ValueError(
-                    "coupon_end_date must be after coupon_start_date"
-                )
+        if coupon_start and coupon_end and str(coupon_end) <= str(coupon_start):
+            raise ValueError("coupon_end_date must be after coupon_start_date")
 
     def validate_discount_config(self) -> None:
         """Validate discount card configuration."""

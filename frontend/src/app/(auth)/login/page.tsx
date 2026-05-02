@@ -102,7 +102,7 @@ export default function LoginPage() {
         <>
           <div className="relative">
             {googleLoading && (
-              <div className="absolute inset-0 bg-white/80 dark:bg-surface-900/80 flex items-center justify-center z-10 rounded-xl">
+              <div className="absolute inset-0 bg-white dark:bg-surface-900/80 flex items-center justify-center z-10 rounded-xl">
                 <span className="spinner w-5 h-5" />
               </div>
             )}

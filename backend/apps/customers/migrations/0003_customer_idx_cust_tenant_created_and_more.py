@@ -6,25 +6,35 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0002_alter_customerpass_qr_code'),
-        ('tenants', '0004_tenant_default_language'),
+        ("customers", "0002_alter_customerpass_qr_code"),
+        ("tenants", "0004_tenant_default_language"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='customer',
-            index=models.Index(fields=['tenant', 'created_at'], name='idx_cust_tenant_created'),
+            model_name="customer",
+            index=models.Index(
+                fields=["tenant", "created_at"], name="idx_cust_tenant_created"
+            ),
         ),
         migrations.AddIndex(
-            model_name='customer',
-            index=models.Index(fields=['tenant', 'is_active', 'created_at'], name='idx_cust_tenant_active_date'),
+            model_name="customer",
+            index=models.Index(
+                fields=["tenant", "is_active", "created_at"],
+                name="idx_cust_tenant_active_date",
+            ),
         ),
         migrations.AddIndex(
-            model_name='customer',
-            index=models.Index(fields=['tenant', 'date_of_birth'], name='idx_cust_tenant_dob'),
+            model_name="customer",
+            index=models.Index(
+                fields=["tenant", "date_of_birth"], name="idx_cust_tenant_dob"
+            ),
         ),
         migrations.AddIndex(
-            model_name='customer',
-            index=models.Index(fields=['tenant', 'last_name', 'first_name'], name='idx_cust_tenant_name'),
+            model_name="customer",
+            index=models.Index(
+                fields=["tenant", "last_name", "first_name"],
+                name="idx_cust_tenant_name",
+            ),
         ),
     ]

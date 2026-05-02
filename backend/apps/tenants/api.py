@@ -254,7 +254,11 @@ def list_team(request):
 
     from apps.authentication.models import User
 
-    users = User.objects.filter(tenant=request.tenant).exclude(role='SUPER_ADMIN').order_by("-date_joined")
+    users = (
+        User.objects.filter(tenant=request.tenant)
+        .exclude(role="SUPER_ADMIN")
+        .order_by("-date_joined")
+    )
     return [TeamMemberOut.from_user(u) for u in users]
 
 

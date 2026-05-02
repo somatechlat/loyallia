@@ -95,14 +95,14 @@ def get_secret(
     """
     Retrieve a secret value with the following priority:
     1. HashiCorp Vault KV v2 (if configured)
-    2. Environment variable (env_fallback) - SKIPPED IF strict=True
-    3. Default value
+    2. Environment variable (env_fallback)
+    3. Default value when strict=False
 
     Args:
         vault_key: Key name in the Vault secret path (e.g., "postgres_password")
         env_fallback: Environment variable name to check if Vault is unavailable
         default: Default value if both Vault and env are empty
-        strict: If True, skips env_fallback and returns default immediately on Vault miss.
+        strict: If True, raises when Vault and env_fallback are both empty.
 
     Returns:
         The secret value as a string.
@@ -113,13 +113,19 @@ def get_secret(
     if vault_value:
         return str(vault_value)
 
-    # 2. Try environment variable (only if not strict)
-    if env_fallback and not strict:
+    # 2. Try explicit environment fallback.
+    if env_fallback:
         env_value = os.environ.get(env_fallback, "")
         if env_value:
             return env_value
 
-    # 3. Default
+    if strict:
+        source = f"Vault key '{vault_key}'"
+        if env_fallback:
+            source = f"{source} or env var '{env_fallback}'"
+        raise RuntimeError(f"Required secret missing: {source}")
+
+    # 3. Default for non-strict callers.
     return default
 
 

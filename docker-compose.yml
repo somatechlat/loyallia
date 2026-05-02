@@ -19,17 +19,21 @@ x-common-env: &common-env
   DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
   # PgBouncer available at pgbouncer:6432 for connection pooling in production
   PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-loyallia}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
   REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
   CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
   CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
   MINIO_ENDPOINT: http://minio:9000
   MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
   MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+  MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+  MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
   MINIO_BUCKET_PASSES: passes
   MINIO_BUCKET_ASSETS: assets
   SECRET_KEY: ${SECRET_KEY}
   DJANGO_SETTINGS_MODULE: loyallia.settings.development
-  DEBUG: "${DEBUG:-False}"
+  DEBUG: "False"
   ALLOWED_HOSTS: "${ALLOWED_HOSTS:-rewards.loyallia.com,localhost,127.0.0.1}"
   CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:33906,http://localhost:33905}"
   # Vault
@@ -113,10 +117,10 @@ services:
       - "-c"
       - "archive_mode=on"
       - "-c"
-      - "archive_command=cp %p /var/lib/postgresql/data/wal_archive/%f"
+      - "archive_command=cp %p /var/lib/postgresql/wal_archive/%f"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - postgres_wal_archive:/var/lib/postgresql/data/wal_archive
+      - postgres_wal_archive:/var/lib/postgresql/wal_archive
     ports:
       - "127.0.0.1:33900:5432"
     networks:
@@ -165,9 +169,9 @@ services:
         done &&
         chmod 0700 /var/lib/postgresql/data &&
         cat > /var/lib/postgresql/data/postgresql.auto.conf <<EOF
-primary_conninfo = 'host=postgres port=5432 user=${POSTGRES_USER:-loyallia} password=${POSTGRES_PASSWORD}'
-hot_standby = on
-EOF
+        primary_conninfo = 'host=postgres port=5432 user=${POSTGRES_USER:-loyallia} password=${POSTGRES_PASSWORD}'
+        hot_standby = on
+        EOF
         touch /var/lib/postgresql/data/standby.signal
       fi &&
       exec postgres -c hot_standby=on -c max_connections=100 -c shared_buffers=256MB -c work_mem=8MB
@@ -210,7 +214,7 @@ EOF
   # Transaction pooling for millions of concurrent connections
   # ---------------------------------------------------------------------------
   pgbouncer:
-    image: edoburu/pgbouncer:1.23.1
+    image: edoburu/pgbouncer:v1.23.1-p3
     container_name: loyallia-pgbouncer
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
@@ -262,6 +266,7 @@ EOF
     container_name: loyallia-redis
     command: >
       redis-server
+      --dir /data
       --requirepass ${REDIS_PASSWORD}
       --appendonly yes
       --appendfsync everysec
@@ -282,8 +287,6 @@ EOF
     # LYL-M-INFRA-018: Container hardening
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     deploy:
       resources:
         limits:
@@ -302,7 +305,7 @@ EOF
   # Persistent volume for passes, assets (Apple/Google Wallet PKPasses)
   # ---------------------------------------------------------------------------
   minio:
-    image: minio/minio:RELEASE.2024-03-05T04-48-36Z
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
     container_name: loyallia-minio
     command: server /data --console-address ":9001"
     environment:
@@ -336,7 +339,7 @@ EOF
 
   # MinIO bucket initialization
   minio-init:
-    image: minio/mc:RELEASE.2024-03-05T04-48-36Z
+    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
     container_name: loyallia-minio-init
     depends_on:
       minio:
@@ -720,6 +723,7 @@ EOF
   vault:
     image: hashicorp/vault:1.15.6
     container_name: loyallia-vault
+    user: "0:0"
     command: vault server -config=/vault/config/vault.hcl
     cap_add:
       - IPC_LOCK
@@ -727,7 +731,7 @@ EOF
       VAULT_ADDR: http://0.0.0.0:8200
     volumes:
       - ./deploy/vault.hcl:/vault/config/vault.hcl:ro
-      - vault_data:/vault/data
+      - vault_data:/vault/file
     ports:
       - "127.0.0.1:33908:8200"
     networks:
@@ -739,7 +743,7 @@ EOF
           memory: 256M
           cpus: "0.25"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8200/v1/sys/health"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8200/v1/sys/health?standbyok=true&perfstandbyok=true&sealedcode=200&uninitcode=200"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -749,12 +753,12 @@ EOF
   vault-init:
     image: hashicorp/vault:1.15.6
     container_name: loyallia-vault-init
+    user: "0:0"
     depends_on:
       vault:
         condition: service_healthy
     environment:
       VAULT_ADDR: http://vault:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-loyallia-vault-root-token}
       # Pass secrets from .env into the container so they can be seeded into Vault
       _SECRET_KEY: ${SECRET_KEY}
       _POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -767,10 +771,25 @@ EOF
       _PAYMENT_GATEWAY_TRAN_KEY: ${PAYMENT_GATEWAY_TRAN_KEY:-}
       _PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-}
       _EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    volumes:
+      - vault_data:/vault/file
     entrypoint: >-
-      /bin/sh -c "vault secrets enable -path=secret kv-v2 2>/dev/null || true &&
-      vault kv put -mount=secret loyallia secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" &&
-      echo 'Vault: all secrets seeded successfully'"
+      /bin/sh -c "set -eu; i=0;
+      until wget --spider --quiet $$VAULT_ADDR/v1/sys/seal-status; do
+        i=$$((i+1));
+        [ $$i -lt 60 ] || { echo 'vault-init timeout waiting for vault api'; exit 1; };
+        sleep 1;
+      done;
+      [ -f /vault/file/init.json ] || vault operator init -key-shares=1 -key-threshold=1 -format=json >/vault/file/init.json;
+      UNSEAL_KEY=$$(awk -F '\"' '/unseal_keys_b64/ {getline; print $$2}' /vault/file/init.json);
+      ROOT_TOKEN=$$(awk -F '\"' '/root_token/ {print $$4}' /vault/file/init.json);
+      [ -n \"$$UNSEAL_KEY\" ] || { echo 'missing unseal key'; exit 1; };
+      [ -n \"$$ROOT_TOKEN\" ] || { echo 'missing root token'; exit 1; };
+      vault operator unseal $$UNSEAL_KEY >/dev/null 2>&1 || true;
+      export VAULT_TOKEN=$$ROOT_TOKEN;
+      vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true;
+      vault kv put -mount=secret loyallia secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" >/dev/null;
+      echo 'Vault initialized, unsealed, and secrets seeded successfully';"
     networks:
       - backend-net
     deploy:

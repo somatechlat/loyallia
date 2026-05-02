@@ -1,0 +1,568 @@
+{
+  "plans": [
+    {
+      "name": "Starter",
+      "slug": "starter",
+      "description": "Ideal para negocios pequeños que inician su programa de fidelización.",
+      "price_monthly": "49.00",
+      "price_annual": "470.00",
+      "max_locations": 3,
+      "max_users": 5,
+      "max_customers": 1000,
+      "max_programs": 1,
+      "features": [
+        "Google Wallet",
+        "1 Programa de Lealtad",
+        "Dashboard básico",
+        "Soporte por email"
+      ],
+      "sort_order": 1,
+      "trial_days": 14
+    },
+    {
+      "name": "Professional",
+      "slug": "professional",
+      "description": "Para negocios en crecimiento con múltiples sucursales.",
+      "price_monthly": "75.00",
+      "price_annual": "720.00",
+      "max_locations": 15,
+      "max_users": 20,
+      "max_customers": 10000,
+      "max_programs": 5,
+      "features": [
+        "Google Wallet + Apple Wallet",
+        "5 Programas de Lealtad",
+        "Analytics avanzado",
+        "Push Notifications",
+        "Automatizaciones",
+        "Soporte prioritario"
+      ],
+      "is_featured": true,
+      "sort_order": 2,
+      "trial_days": 14
+    },
+    {
+      "name": "Enterprise",
+      "slug": "enterprise",
+      "description": "Solución completa para cadenas y franquicias nacionales.",
+      "price_monthly": "149.00",
+      "price_annual": "1430.00",
+      "max_locations": 999,
+      "max_users": 999,
+      "max_customers": 999999,
+      "max_programs": 999,
+      "features": [
+        "Google Wallet + Apple Wallet",
+        "Programas ilimitados",
+        "Analytics + BI Dashboard",
+        "Push Notifications + Geo-fencing",
+        "Automatizaciones avanzadas",
+        "API access",
+        "Account Manager dedicado",
+        "SLA 99.9%"
+      ],
+      "sort_order": 3,
+      "trial_days": 30
+    }
+  ],
+  "businesses": [
+    {
+      "name": "Sweet & Coffee",
+      "legal_name": "DULCAFE S.A.",
+      "ruc": "0992106891001",
+      "slug": "sweet-and-coffee",
+      "industry": "food_beverage",
+      "province": "guayas",
+      "city": "Guayaquil",
+      "phone": "+593 4 268 8000",
+      "email": "info@sweetandcoffee.com.ec",
+      "website": "https://www.sweetandcoffee.com.ec",
+      "address": "Av. 9 de Octubre 424 y Chile, Guayaquil, Ecuador",
+      "plan_slug": "enterprise",
+      "legal_rep_name": "Richard Wright Wray",
+      "legal_rep_cedula": "0901234567",
+      "owner": {
+        "email": "gerencia@sweetandcoffee.com.ec",
+        "first_name": "Richard",
+        "last_name": "Wright Wray"
+      },
+      "manager": {
+        "email": "operaciones@sweetandcoffee.com.ec",
+        "first_name": "María José",
+        "last_name": "Vásquez"
+      },
+      "staff": [
+        {
+          "email": "sucursal.mallsol@sweetandcoffee.com.ec",
+          "first_name": "Andrés",
+          "last_name": "Mora"
+        },
+        {
+          "email": "sucursal.urdesa@sweetandcoffee.com.ec",
+          "first_name": "Gabriela",
+          "last_name": "Flores"
+        },
+        {
+          "email": "sucursal.cci@sweetandcoffee.com.ec",
+          "first_name": "Patricio",
+          "last_name": "Herrera"
+        }
+      ],
+      "locations": [
+        {
+          "name": "Mall del Sol",
+          "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol, Planta Alta",
+          "city": "Guayaquil",
+          "lat": -2.1543,
+          "lng": -79.8963
+        },
+        {
+          "name": "San Marino Shopping",
+          "address": "Av. Francisco de Orellana y Miguel H. Alcívar, C.C. San Marino",
+          "city": "Guayaquil",
+          "lat": -2.1636,
+          "lng": -79.9102
+        },
+        {
+          "name": "Urdesa Central",
+          "address": "V.E. Estrada y Todos los Santos, Urdesa Central",
+          "city": "Guayaquil",
+          "lat": -2.1731,
+          "lng": -79.907
+        },
+        {
+          "name": "C.C. Policentro",
+          "address": "Av. del Periodista, C.C. Policentro Shopping",
+          "city": "Guayaquil",
+          "lat": -2.1593,
+          "lng": -79.9026
+        },
+        {
+          "name": "Riocentro Los Ceibos",
+          "address": "Av. del Bombero, C.C. Riocentro Los Ceibos",
+          "city": "Guayaquil",
+          "lat": -2.1854,
+          "lng": -79.9301
+        },
+        {
+          "name": "Plaza Lagos — Samborondón",
+          "address": "Km 5.5 Vía Samborondón, Plaza Lagos Town Center",
+          "city": "Samborondón",
+          "lat": -1.961,
+          "lng": -79.8743
+        },
+        {
+          "name": "Quicentro Shopping",
+          "address": "Av. Naciones Unidas y 6 de Diciembre, C.C. Quicentro, PB Isla PB-K05",
+          "city": "Quito",
+          "lat": -0.1712,
+          "lng": -78.4749
+        },
+        {
+          "name": "Mall El Jardín",
+          "address": "Av. de la República y Amazonas, C.C. Mall El Jardín, PB Local 14",
+          "city": "Quito",
+          "lat": -0.1815,
+          "lng": -78.4852
+        },
+        {
+          "name": "C.C. Iñaquito (CCI)",
+          "address": "Av. Amazonas y Naciones Unidas, C.C. Iñaquito, Planta Alta",
+          "city": "Quito",
+          "lat": -0.1703,
+          "lng": -78.4812
+        },
+        {
+          "name": "Scala Shopping Cumbayá",
+          "address": "Av. Interoceánica km 13, C.C. Scala Shopping",
+          "city": "Cumbayá",
+          "lat": -0.1925,
+          "lng": -78.4365
+        },
+        {
+          "name": "C.C. El Condado",
+          "address": "Av. de la Prensa y Mariscal Sucre, C.C. El Condado Shopping",
+          "city": "Quito",
+          "lat": -0.1096,
+          "lng": -78.4987
+        },
+        {
+          "name": "Mall del Río — Cuenca",
+          "address": "Av. Felipe II s/n, C.C. Mall del Río",
+          "city": "Cuenca",
+          "lat": -2.9085,
+          "lng": -79.0115
+        },
+        {
+          "name": "Plaza Wayra — Cuenca",
+          "address": "Av. Ordóñez Lasso, C.C. Plaza Wayra",
+          "city": "Cuenca",
+          "lat": -2.8875,
+          "lng": -79.0155
+        },
+        {
+          "name": "Plaza Europea — Cuenca",
+          "address": "Roberto Crespo Toral, frente al Estadio Alejandro Serrano Aguilar",
+          "city": "Cuenca",
+          "lat": -2.9005,
+          "lng": -79.007
+        }
+      ]
+    },
+    {
+      "name": "Los Cebiches de la Rumiñahui",
+      "legal_name": "LCR PRODUCTOS Y SERVICIOS CIA. LTDA.",
+      "ruc": "1791408756001",
+      "slug": "cebiches-ruminahui",
+      "industry": "food_beverage",
+      "province": "pichincha",
+      "city": "Quito",
+      "phone": "+593 2 254 6000",
+      "email": "info@cebichesdelaruminahui.com",
+      "website": "https://www.loscebichesdelaruminahui.com",
+      "address": "Av. de los Shyris N36-152 y Portugal, Quito",
+      "plan_slug": "professional",
+      "owner": {
+        "email": "gerencia@cebichesruminahui.ec",
+        "first_name": "Santiago",
+        "last_name": "Calderón"
+      },
+      "manager": {
+        "email": "operaciones@cebichesruminahui.ec",
+        "first_name": "Daniela",
+        "last_name": "Paredes"
+      },
+      "staff": [
+        {
+          "email": "sucursal.cci@cebichesruminahui.ec",
+          "first_name": "Roberto",
+          "last_name": "Moreno"
+        }
+      ],
+      "locations": [
+        {
+          "name": "C.C. Iñaquito (CCI)",
+          "address": "Av. Amazonas y Naciones Unidas, C.C. Iñaquito",
+          "city": "Quito",
+          "lat": -0.1703,
+          "lng": -78.481
+        },
+        {
+          "name": "Plaza de las Américas",
+          "address": "Av. de las Américas y Gonzalo Gallo, C.C. Plaza de las Américas",
+          "city": "Quito",
+          "lat": -0.2195,
+          "lng": -78.5193
+        },
+        {
+          "name": "Scala Shopping Cumbayá",
+          "address": "Av. Interoceánica, C.C. Scala Shopping",
+          "city": "Cumbayá",
+          "lat": -0.1925,
+          "lng": -78.4365
+        },
+        {
+          "name": "Quicentro Sur",
+          "address": "Av. Morán Valverde, C.C. Quicentro Sur",
+          "city": "Quito",
+          "lat": -0.282,
+          "lng": -78.5484
+        },
+        {
+          "name": "El Recreo",
+          "address": "Av. Pedro Vicente Maldonado, C.C. El Recreo",
+          "city": "Quito",
+          "lat": -0.2513,
+          "lng": -78.5218
+        },
+        {
+          "name": "Mall del Sol — Guayaquil",
+          "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol",
+          "city": "Guayaquil",
+          "lat": -2.1543,
+          "lng": -79.8963
+        },
+        {
+          "name": "Riocentro Norte — Guayaquil",
+          "address": "Av. Fco. de Orellana, C.C. Riocentro Norte",
+          "city": "Guayaquil",
+          "lat": -2.1562,
+          "lng": -79.9092
+        }
+      ]
+    },
+    {
+      "name": "Farmacias Fybeca",
+      "legal_name": "CORPORACION GRUPO FYBECA S.A. GPF",
+      "ruc": "1792287413001",
+      "slug": "farmacias-fybeca",
+      "industry": "health_beauty",
+      "province": "pichincha",
+      "city": "Quito",
+      "phone": "+593 2 396 0000",
+      "email": "clientes@fybeca.com",
+      "website": "https://www.fybeca.com",
+      "address": "Av. de los Shyris, km 5½ Vía a Amaguaña, Sangolquí, Pichincha",
+      "plan_slug": "enterprise",
+      "owner": {
+        "email": "fidelizacion@fybeca.com",
+        "first_name": "Catalina",
+        "last_name": "Romo Vallejo"
+      },
+      "manager": {
+        "email": "marketing@fybeca.com",
+        "first_name": "Fernando",
+        "last_name": "Andrade"
+      },
+      "staff": [
+        {
+          "email": "farmacia.cci@fybeca.com",
+          "first_name": "Carolina",
+          "last_name": "Rivadeneira"
+        },
+        {
+          "email": "farmacia.condado@fybeca.com",
+          "first_name": "Diego",
+          "last_name": "Salinas"
+        }
+      ],
+      "locations": [
+        {
+          "name": "Fybeca CCI",
+          "address": "Av. Amazonas y NNUU, C.C. Iñaquito",
+          "city": "Quito",
+          "lat": -0.171,
+          "lng": -78.4815
+        },
+        {
+          "name": "Fybeca El Bosque",
+          "address": "Av. Al Parque s/n, C.C. El Bosque",
+          "city": "Quito",
+          "lat": -0.158,
+          "lng": -78.4774
+        },
+        {
+          "name": "Fybeca Condado Shopping",
+          "address": "Av. de la Prensa y John F. Kennedy, C.C. Condado",
+          "city": "Quito",
+          "lat": -0.1096,
+          "lng": -78.4987
+        },
+        {
+          "name": "Fybeca Quicentro Sur",
+          "address": "Av. Morán Valverde, C.C. Quicentro Sur",
+          "city": "Quito",
+          "lat": -0.282,
+          "lng": -78.5484
+        },
+        {
+          "name": "Fybeca La Floresta",
+          "address": "Av. 12 de Octubre y Madrid, Barrio La Floresta",
+          "city": "Quito",
+          "lat": -0.2027,
+          "lng": -78.4886
+        },
+        {
+          "name": "Fybeca Mall del Sur",
+          "address": "Av. 25 de Julio vía Puerto Marítimo, C.C. Mall del Sur",
+          "city": "Guayaquil",
+          "lat": -2.229,
+          "lng": -79.8906
+        },
+        {
+          "name": "Fybeca Mall del Sol",
+          "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol",
+          "city": "Guayaquil",
+          "lat": -2.1543,
+          "lng": -79.8963
+        },
+        {
+          "name": "Fybeca Riocentro Ceibos",
+          "address": "Av. del Bombero, C.C. Riocentro Los Ceibos",
+          "city": "Guayaquil",
+          "lat": -2.1854,
+          "lng": -79.9301
+        },
+        {
+          "name": "Fybeca Mall del Río",
+          "address": "Av. Felipe II s/n, C.C. Mall del Río",
+          "city": "Cuenca",
+          "lat": -2.9085,
+          "lng": -79.0115
+        },
+        {
+          "name": "Fybeca Monay Shopping",
+          "address": "Av. González Suárez s/n, C.C. Monay Shopping",
+          "city": "Cuenca",
+          "lat": -2.9072,
+          "lng": -78.988
+        }
+      ]
+    },
+    {
+      "name": "Hornado de la Mariscal",
+      "legal_name": "HORNADOS DON PANCHO CIA. LTDA.",
+      "ruc": "1792145678001",
+      "slug": "hornado-mariscal",
+      "industry": "food_beverage",
+      "province": "pichincha",
+      "city": "Quito",
+      "phone": "+593 2 252 3440",
+      "email": "contacto@hornadodonpancho.ec",
+      "website": "",
+      "address": "Av. Colón E5-23 y Reina Victoria, La Mariscal, Quito",
+      "plan_slug": "starter",
+      "owner": {
+        "email": "pancho@hornadodonpancho.ec",
+        "first_name": "Francisco",
+        "last_name": "Villacís Andrade"
+      },
+      "locations": [
+        {
+          "name": "La Mariscal",
+          "address": "Av. Colón E5-23 y Reina Victoria",
+          "city": "Quito",
+          "lat": -0.2006,
+          "lng": -78.4936
+        },
+        {
+          "name": "El Batán",
+          "address": "Av. Eloy Alfaro N33-21 y Portugal",
+          "city": "Quito",
+          "lat": -0.1842,
+          "lng": -78.4765
+        }
+      ]
+    },
+    {
+      "name": "Tropiburguer",
+      "legal_name": "SERVICIO DE COMIDAS RAPIDAS TROPIBURGUER S.A.",
+      "ruc": "0992788812001",
+      "slug": "tropiburguer",
+      "industry": "food_beverage",
+      "province": "guayas",
+      "city": "Guayaquil",
+      "phone": "+593 4 268 3200",
+      "email": "mercadeo@tropiburguer.com",
+      "website": "https://www.tropiburguer.com",
+      "address": "Av. Francisco de Orellana, Kennedy Norte, Guayaquil",
+      "plan_slug": "professional",
+      "owner": {
+        "email": "admin@tropiburguer.com",
+        "first_name": "Luis Fernando",
+        "last_name": "Salazar Rendón"
+      },
+      "staff": [
+        {
+          "email": "caja.mallsol@tropiburguer.com",
+          "first_name": "Esteban",
+          "last_name": "García"
+        }
+      ],
+      "locations": [
+        {
+          "name": "Mall del Sol",
+          "address": "Av. Joaquín José Olmedo, C.C. Mall del Sol, Patio de Comidas",
+          "city": "Guayaquil",
+          "lat": -2.1543,
+          "lng": -79.8963
+        },
+        {
+          "name": "Terminal Terrestre",
+          "address": "Terminal Terrestre Jaime Roldós Aguilera, Piso 2",
+          "city": "Guayaquil",
+          "lat": -2.1772,
+          "lng": -79.8595
+        },
+        {
+          "name": "Riocentro Sur",
+          "address": "Av. 25 de Julio, C.C. Riocentro Sur, Patio de Comidas",
+          "city": "Guayaquil",
+          "lat": -2.2285,
+          "lng": -79.8895
+        },
+        {
+          "name": "Samborondón",
+          "address": "Av. Principal de Samborondón, Plaza Batan",
+          "city": "Samborondón",
+          "lat": -1.9621,
+          "lng": -79.8763
+        }
+      ]
+    },
+    {
+      "name": "Panadería & Café Cuencanía",
+      "legal_name": "CUENCANIA ALIMENTOS CIA. LTDA.",
+      "ruc": "0190456789001",
+      "slug": "panaderia-cuencania",
+      "industry": "food_beverage",
+      "province": "azuay",
+      "city": "Cuenca",
+      "phone": "+593 7 282 4500",
+      "email": "info@cuencania.ec",
+      "website": "",
+      "address": "Calle Larga 7-89 y Borrero, Centro Histórico, Cuenca",
+      "plan_slug": "starter",
+      "owner": {
+        "email": "andrea@cuencania.ec",
+        "first_name": "Andrea",
+        "last_name": "Crespo Ordóñez"
+      },
+      "locations": [
+        {
+          "name": "Centro Histórico",
+          "address": "Calle Larga 7-89 y Borrero, Centro Histórico",
+          "city": "Cuenca",
+          "lat": -2.8972,
+          "lng": -79.0042
+        },
+        {
+          "name": "Av. Ordóñez Lasso",
+          "address": "Av. Ordóñez Lasso 6-22 y Remigio Tamariz",
+          "city": "Cuenca",
+          "lat": -2.892,
+          "lng": -79.0185
+        },
+        {
+          "name": "Totoracocha",
+          "address": "Av. González Suárez y Max Uhle, sector Totoracocha",
+          "city": "Cuenca",
+          "lat": -2.898,
+          "lng": -78.985
+        }
+      ]
+    }
+  ],
+  "update_cafe_el_ritmo": {
+    "slug": "cafe-el-ritmo",
+    "legal_name": "CAFÉ EL RITMO SABOR ARTESANAL S.A.",
+    "ruc": "1792876543001",
+    "industry": "food_beverage",
+    "province": "pichincha",
+    "city": "Quito",
+    "email": "info@cafeelritmo.ec",
+    "locations": [
+      {
+        "name": "Sede Principal — La Floresta",
+        "address": "Av. 12 de Octubre N24-551 y Cordero, La Floresta",
+        "city": "Quito",
+        "lat": -0.2034,
+        "lng": -78.4894
+      },
+      {
+        "name": "La Mariscal",
+        "address": "Lugo E5-23 y Vizcaya, La Mariscal",
+        "city": "Quito",
+        "lat": -0.2012,
+        "lng": -78.4843
+      },
+      {
+        "name": "La Carolina",
+        "address": "Av. Eloy Alfaro N34-182 y Portugal",
+        "city": "Quito",
+        "lat": -0.1842,
+        "lng": -78.4765
+      }
+    ]
+  }
+}

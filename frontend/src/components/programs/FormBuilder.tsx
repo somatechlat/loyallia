@@ -76,7 +76,11 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
     const target = direction === 'up' ? idx - 1 : idx + 1;
     if (target < 0 || target >= currentFields.length) return;
     const copy = [...currentFields];
-    [copy[idx]!, copy[target]!] = [copy[target]!, copy[idx]!];
+    const current = copy[idx];
+    const next = copy[target];
+    if (!current || !next) return;
+    copy[idx] = next;
+    copy[target] = current;
     onChange(copy);
   };
 

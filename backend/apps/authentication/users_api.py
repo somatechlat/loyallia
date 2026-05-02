@@ -18,7 +18,7 @@ from apps.authentication.helpers import (
     store_otp,
     verify_otp,
 )
-from apps.authentication.models import RefreshToken, User, UserRole
+from apps.authentication.models import RefreshToken, User
 from apps.authentication.schemas import (
     ChangePasswordIn,
     InviteIn,
@@ -176,8 +176,9 @@ def deactivate_user(request, user_id: str):
         raise HttpError(404, get_message("NOT_FOUND"))
     target.is_active = False
     target.save(update_fields=["is_active", "updated_at"])
-    
+
     from django.utils import timezone as dj_timezone
+
     RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
         revoked_at=dj_timezone.now()
     )
