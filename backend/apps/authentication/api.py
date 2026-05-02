@@ -7,12 +7,12 @@ All strings via get_message() — Rule #11.
 All auth via JWTAuth — Rule #8.
 """
 
-import hashlib
 import logging
 import secrets
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction
 from django.utils import timezone as dj_timezone
 from ninja import Router
 from ninja.errors import HttpError
@@ -26,31 +26,27 @@ from apps.authentication.helpers import (
 )
 from apps.authentication.models import RefreshToken, User, UserRole
 from apps.authentication.schemas import (
-    ChangePasswordIn,
     ForgotPasswordIn,
-    InviteIn,
     LoginIn,
     LogoutIn,
     MessageOut,
     PasswordResetConfirmIn,
     PasswordResetRequestIn,
-    ProfileUpdateIn,
     RefreshIn,
     RefreshOut,
     RegisterIn,
     RegisterOut,
     ResetPasswordIn,
     TokenOut,
-    UserOut,
     VerifyEmailIn,
 )
 from apps.authentication.tokens import (
-    create_access_token,
     hash_token,
 )
 from apps.tenants.models import Tenant
 from common.messages import get_message
-from common.permissions import is_owner, jwt_auth
+from common.permissions import jwt_auth
+from common.rate_limit import get_client_ip
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -143,24 +139,24 @@ def refresh_token(request, payload: RefreshIn):
     """
     token_hash = hash_token(payload.refresh_token)
     try:
-        db_token = RefreshToken.objects.select_related("user__tenant").get(
-            token_hash=token_hash
-        )
+        with transaction.atomic():
+            db_token = (
+                RefreshToken.objects.select_for_update()
+                .select_related("user__tenant")
+                .get(token_hash=token_hash)
+            )
+
+            if not db_token.is_valid:
+                raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
+            user = db_token.user
+            if not user.is_active:
+                raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
+
+            # B-002: Revoke the old refresh token (one-time use)
+            db_token.revoked_at = dj_timezone.now()
+            db_token.save(update_fields=["revoked_at"])
     except RefreshToken.DoesNotExist:
         raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
-
-    if not db_token.is_valid:
-        raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
-    user = db_token.user
-    if not user.is_active:
-        raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
-
-    # B-002: Revoke the old refresh token (one-time use)
-    db_token.revoked_at = dj_timezone.now()
-    db_token.save(update_fields=["revoked_at"])
-
-    # Issue new tokens (access + refresh rotation)
-    from apps.authentication.helpers import issue_tokens
 
     return issue_tokens(user)
 
@@ -412,13 +408,11 @@ def google_login(request, payload: GoogleTokenIn):
     from django.core.cache import cache
 
     # LYL-L-SEC-023: Rate limit Google OAuth login (20/hour per IP)
-    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
-    if not client_ip:
-        client_ip = request.META.get("REMOTE_ADDR", "unknown")
+    client_ip = get_client_ip(request)
     cache_key = f"gauth_rate:{client_ip}"
     attempt_count = cache.get(cache_key, 0)
     if attempt_count >= 20:
-        raise HttpError(429, "Too many login attempts. Please try again later.")
+        raise HttpError(429, get_message("RATE_LIMITED"))
     cache.set(cache_key, attempt_count + 1, 3600)
 
     client_id = settings.GOOGLE_OAUTH_CLIENT_ID
@@ -491,7 +485,9 @@ def google_login(request, payload: GoogleTokenIn):
         tenant.activate_trial()
         user = User.objects.create_user(
             email=email,
-            password=secrets.token_urlsafe(32),  # Random password (user logs in via Google)
+            password=secrets.token_urlsafe(
+                32
+            ),  # Random password (user logs in via Google)
             first_name=first_name,
             last_name=last_name,
             tenant=tenant,

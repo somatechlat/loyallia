@@ -115,9 +115,7 @@ def audit_stats(request: HttpRequest):
     today = AuditLog.objects.filter(created_at__gte=today_start).count()
 
     actions_breakdown = list(
-        AuditLog.objects.values("action")
-        .annotate(count=Count("id"))
-        .order_by("-count")
+        AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count")
     )
 
     thirty_days_ago = now - timedelta(days=30)

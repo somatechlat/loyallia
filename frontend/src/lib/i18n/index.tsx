@@ -42,7 +42,7 @@ const STORAGE_KEY = "loyallia_lang";
 const DEFAULT_LOCALE: SupportedLocale = "es";
 
 // ---- Nested key lookup ----
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
+export function getNestedValue(obj: Record<string, unknown>, path: string): string {
   const keys = path.split(".");
   let current: unknown = obj;
 

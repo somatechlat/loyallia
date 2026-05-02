@@ -13,15 +13,15 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from apps.authentication.models import User, UserRole
+from apps.tenants.models import validate_cedula, validate_ruc
 from common.role_check import require_role
 from common.validators import ComplexityValidator
-from apps.tenants.models import validate_cedula, validate_ruc
-from tests.factories import make_tenant, make_user
-
+from tests.factories import make_user
 
 # =============================================================================
 # Role-Based Access Control Tests
 # =============================================================================
+
 
 class RequireRoleDecoratorTest(TestCase):
     """Tests for @require_role decorator."""
@@ -47,6 +47,7 @@ class RequireRoleDecoratorTest(TestCase):
             return "ok"
 
         from ninja.errors import HttpError
+
         with self.assertRaises(HttpError) as ctx:
             view(request)
         self.assertEqual(ctx.exception.status_code, 403)
@@ -71,6 +72,7 @@ class RequireRoleDecoratorTest(TestCase):
             return "ok"
 
         from ninja.errors import HttpError
+
         with self.assertRaises(HttpError) as ctx:
             view(request)
         self.assertEqual(ctx.exception.status_code, 401)
@@ -86,6 +88,7 @@ class RequireRoleDecoratorTest(TestCase):
             return "ok"
 
         from ninja.errors import HttpError
+
         with self.assertRaises(HttpError) as ctx:
             view(request)
         self.assertEqual(ctx.exception.status_code, 403)
@@ -107,6 +110,7 @@ class RequireRoleDecoratorTest(TestCase):
             return "ok"
 
         from ninja.errors import HttpError
+
         with self.assertRaises(HttpError) as ctx:
             view(request)
         self.assertEqual(ctx.exception.status_code, 401)
@@ -115,6 +119,7 @@ class RequireRoleDecoratorTest(TestCase):
 # =============================================================================
 # Ecuadorian Document Validation Tests
 # =============================================================================
+
 
 class CedulaValidationTest(TestCase):
     """Tests for cédula de identidad validation."""
@@ -183,6 +188,7 @@ class RucValidationTest(TestCase):
 # Input Validation Edge Cases
 # =============================================================================
 
+
 class PasswordComplexityEdgeCasesTest(TestCase):
     """Additional password complexity edge cases."""
 
@@ -198,17 +204,20 @@ class PasswordComplexityEdgeCasesTest(TestCase):
 
     def test_only_special_chars_rejected(self):
         from django.core.exceptions import ValidationError
+
         with self.assertRaises(ValidationError):
             self.validator.validate("!@#$%^&*()_+")
 
     def test_unicode_uppercase_rejected(self):
         # Non-ASCII uppercase should not count
         from django.core.exceptions import ValidationError
+
         with self.assertRaises(ValidationError):
             self.validator.validate("Äbcdefgh1!@")
 
     def test_multiple_errors_reported(self):
         from django.core.exceptions import ValidationError
+
         with self.assertRaises(ValidationError) as ctx:
             self.validator.validate("abcdefgh")  # no upper, no digit, no special
         errors = ctx.exception.messages
@@ -218,6 +227,7 @@ class PasswordComplexityEdgeCasesTest(TestCase):
         """Verify the SPECIAL_CHARS regex covers common special characters."""
         specials = self.validator.SPECIAL_CHARS
         import re
+
         for char in "!@#$%^&*()_+-=[]{}|;':\",./<>?`~\\":
             self.assertIsNotNone(
                 re.search(re.escape(char), specials),
@@ -228,6 +238,7 @@ class PasswordComplexityEdgeCasesTest(TestCase):
 # =============================================================================
 # User Role Tests
 # =============================================================================
+
 
 class UserRoleTest(TestCase):
     """Tests for User role assignment and validation."""
@@ -261,12 +272,13 @@ class UserRoleTest(TestCase):
 # User Account Lock Tests
 # =============================================================================
 
+
 class AccountLockTest(TestCase):
     """Tests for account lockout after failed login attempts."""
 
     def test_lock_after_5_failures(self):
         user = make_user()
-        for i in range(5):
+        for _i in range(5):
             user.record_failed_login()
         user.refresh_from_db()
         self.assertTrue(user.is_locked)
@@ -274,7 +286,9 @@ class AccountLockTest(TestCase):
 
     def test_lock_duration_15_minutes(self):
         from datetime import timedelta
+
         from django.utils import timezone
+
         user = make_user()
         for _ in range(5):
             user.record_failed_login()
@@ -296,7 +310,7 @@ class AccountLockTest(TestCase):
 
     def test_incremental_failures_below_threshold(self):
         user = make_user()
-        for i in range(4):
+        for _i in range(4):
             user.record_failed_login()
         user.refresh_from_db()
         self.assertFalse(user.is_locked)

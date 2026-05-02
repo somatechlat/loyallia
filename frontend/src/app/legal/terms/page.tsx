@@ -15,8 +15,8 @@ export default function TermsOfService() {
             1. Aceptación de los Términos
           </h2>
           <p>
-            Al acceder y utilizar la plataforma Loyallia, usted (el "Usuario" o
-            "Tenant") acepta someterse a estos Términos de Servicio y a nuestra
+	            Al acceder y utilizar la plataforma Loyallia, usted (el &quot;Usuario&quot; o
+	            &quot;Tenant&quot;) acepta someterse a estos Términos de Servicio y a nuestra
             Política de Privacidad. Estos términos rigen su acceso a la
             plataforma SaaS multi-tenancy para la gestión de programas de
             fidelización.

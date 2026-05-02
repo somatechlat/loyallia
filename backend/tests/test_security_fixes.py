@@ -20,11 +20,10 @@ import secrets
 import time
 from unittest.mock import MagicMock, patch
 
-from django.test import RequestFactory, TestCase, override_settings
+from django.test import RequestFactory, TestCase
 
-from common.validators import ComplexityValidator
 from common.url_validator import BLOCKED_NETWORKS, SSRFError, validate_external_url
-
+from common.validators import ComplexityValidator
 
 # =============================================================================
 # LYL-C-SEC-001: OTP Entropy Tests
@@ -39,7 +38,7 @@ class TestOTPEntropy(TestCase):
         for _ in range(100):
             otp = secrets.token_urlsafe(8)
             # token_urlsafe uses base64url encoding: [A-Za-z0-9_-]
-            self.assertRegex(otp, r'^[A-Za-z0-9_-]+$')
+            self.assertRegex(otp, r"^[A-Za-z0-9_-]+$")
 
     def test_otp_length_sufficient(self):
         """token_urlsafe(8) produces at least 11 characters (8 bytes = ~11 chars base64)."""
@@ -54,9 +53,10 @@ class TestOTPEntropy(TestCase):
         otp = secrets.token_urlsafe(8)
         # Decode from base64url to get raw bytes
         import base64
-        padded = otp.replace('-', '+').replace('_', '/')
+
+        padded = otp.replace("-", "+").replace("_", "/")
         # Add padding if needed
-        padded += '=' * (-len(padded) % 4)
+        padded += "=" * (-len(padded) % 4)
         raw = base64.b64decode(padded)
         self.assertGreaterEqual(len(raw), 8)
 
@@ -77,81 +77,89 @@ class TestRateLimiterFailClosed(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_auth_login_returns_503_without_redis(self, mock_redis):
         """Auth login endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
+
         middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post('/api/v1/auth/login/')
+        request = self.factory.post("/api/v1/auth/login/")
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_auth_register_returns_503_without_redis(self, mock_redis):
         """Auth register endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
+
         middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post('/api/v1/auth/register/')
+        request = self.factory.post("/api/v1/auth/register/")
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_auth_phone_returns_503_without_redis(self, mock_redis):
         """Auth phone endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
+
         middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post('/api/v1/auth/phone/verify/request/')
+        request = self.factory.post("/api/v1/auth/phone/verify/request/")
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_auth_password_reset_returns_503_without_redis(self, mock_redis):
         """Auth password-reset endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
+
         middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post('/api/v1/auth/password-reset/request/')
+        request = self.factory.post("/api/v1/auth/password-reset/request/")
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_auth_forgot_password_returns_503_without_redis(self, mock_redis):
         """Auth forgot-password endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
+
         middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post('/api/v1/auth/forgot-password/')
+        request = self.factory.post("/api/v1/auth/forgot-password/")
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_auth_verify_email_returns_503_without_redis(self, mock_redis):
         """Auth verify-email endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
+
         middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post('/api/v1/auth/verify-email/')
+        request = self.factory.post("/api/v1/auth/verify-email/")
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_non_auth_endpoint_passes_through_without_redis(self, mock_redis):
         """Non-auth endpoints should still pass through (fail open) when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
+
         mock_response = MagicMock(status_code=200)
         middleware = RateLimitMiddleware(lambda r: mock_response)
-        request = self.factory.get('/api/v1/scanner/scan/')
+        request = self.factory.get("/api/v1/scanner/scan/")
         response = middleware(request)
         # Non-auth endpoints pass through
         self.assertEqual(response, mock_response)
 
-    @patch('common.rate_limit.RateLimitMiddleware._get_redis', return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
     def test_503_response_body_format(self, mock_redis):
         """503 response should have proper JSON body."""
         from common.rate_limit import RateLimitMiddleware
+
         middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post('/api/v1/auth/login/')
+        request = self.factory.post("/api/v1/auth/login/")
         response = middleware(request)
         body = json.loads(response.content)
-        self.assertIn('error', body)
-        self.assertEqual(body['error'], 'Service temporarily unavailable')
+        self.assertIn("error", body)
+        self.assertEqual(body["error"], "Service temporarily unavailable")
 
 
 # =============================================================================
@@ -168,29 +176,32 @@ class TestClientIPExtraction(TestCase):
     def test_uses_remote_addr(self):
         """Should use REMOTE_ADDR as the client IP."""
         from common.rate_limit import _get_client_ip
-        request = self.factory.get('/api/v1/auth/login/')
-        request.META['REMOTE_ADDR'] = '203.0.113.50'
+
+        request = self.factory.get("/api/v1/auth/login/")
+        request.META["REMOTE_ADDR"] = "203.0.113.50"
         ip = _get_client_ip(request)
-        self.assertEqual(ip, '203.0.113.50')
+        self.assertEqual(ip, "203.0.113.50")
 
     def test_ignores_x_forwarded_for(self):
         """Should NOT trust X-Forwarded-For header (spoofable by client)."""
         from common.rate_limit import _get_client_ip
-        request = self.factory.get('/api/v1/auth/login/')
-        request.META['REMOTE_ADDR'] = '203.0.113.50'
-        request.META['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 10.0.0.1'
+
+        request = self.factory.get("/api/v1/auth/login/")
+        request.META["REMOTE_ADDR"] = "203.0.113.50"
+        request.META["HTTP_X_FORWARDED_FOR"] = "1.2.3.4, 10.0.0.1"
         ip = _get_client_ip(request)
         # Must use REMOTE_ADDR, not the spoofed XFF
-        self.assertEqual(ip, '203.0.113.50')
+        self.assertEqual(ip, "203.0.113.50")
 
     def test_defaults_to_unknown(self):
         """Should return 'unknown' if REMOTE_ADDR is missing."""
         from common.rate_limit import _get_client_ip
-        request = self.factory.get('/api/v1/auth/login/')
-        if 'REMOTE_ADDR' in request.META:
-            del request.META['REMOTE_ADDR']
+
+        request = self.factory.get("/api/v1/auth/login/")
+        if "REMOTE_ADDR" in request.META:
+            del request.META["REMOTE_ADDR"]
         ip = _get_client_ip(request)
-        self.assertEqual(ip, 'unknown')
+        self.assertEqual(ip, "unknown")
 
 
 # =============================================================================
@@ -225,11 +236,12 @@ class TestWebhookReplayProtection(TestCase):
     def test_webhook_event_model_fields(self):
         """WebhookEvent model should have required fields."""
         from apps.billing.payment_models import WebhookEvent
+
         field_names = [f.name for f in WebhookEvent._meta.get_fields()]
-        self.assertIn('event_id', field_names)
-        self.assertIn('event_type', field_names)
-        self.assertIn('payload_hash', field_names)
-        self.assertIn('processed_at', field_names)
+        self.assertIn("event_id", field_names)
+        self.assertIn("event_type", field_names)
+        self.assertIn("payload_hash", field_names)
+        self.assertIn("processed_at", field_names)
 
 
 # =============================================================================
@@ -245,7 +257,7 @@ class TestInvitationTokenHashing(TestCase):
         token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         self.assertEqual(len(token_hash), 64)
-        self.assertRegex(token_hash, r'^[0-9a-f]+$')
+        self.assertRegex(token_hash, r"^[0-9a-f]+$")
 
     def test_hash_is_not_reversible(self):
         """The hash should not equal the original token."""
@@ -280,20 +292,20 @@ class TestGoogleOAuthConfig(TestCase):
         # We can test the logic directly
         client_id = "test-client-id-12345"
         result = {"enabled": bool(client_id)}
-        self.assertIn('enabled', result)
-        self.assertNotIn('client_id', result)
+        self.assertIn("enabled", result)
+        self.assertNotIn("client_id", result)
 
     def test_config_enabled_when_client_id_set(self):
         """enabled should be True when client_id is configured."""
         client_id = "some-client-id"
         result = {"enabled": bool(client_id)}
-        self.assertTrue(result['enabled'])
+        self.assertTrue(result["enabled"])
 
     def test_config_disabled_when_no_client_id(self):
         """enabled should be False when client_id is empty."""
         client_id = ""
         result = {"enabled": bool(client_id)}
-        self.assertFalse(result['enabled'])
+        self.assertFalse(result["enabled"])
 
 
 # =============================================================================
@@ -358,11 +370,11 @@ class TestSSRFProtection(TestCase):
     def test_blocked_networks_list_completeness(self):
         """BLOCKED_NETWORKS should cover all critical ranges."""
         network_strs = [str(n) for n in BLOCKED_NETWORKS]
-        self.assertIn('10.0.0.0/8', network_strs)
-        self.assertIn('172.16.0.0/12', network_strs)
-        self.assertIn('192.168.0.0/16', network_strs)
-        self.assertIn('127.0.0.0/8', network_strs)
-        self.assertIn('169.254.0.0/16', network_strs)
+        self.assertIn("10.0.0.0/8", network_strs)
+        self.assertIn("172.16.0.0/12", network_strs)
+        self.assertIn("192.168.0.0/16", network_strs)
+        self.assertIn("127.0.0.0/8", network_strs)
+        self.assertIn("169.254.0.0/16", network_strs)
 
     def test_ssrf_error_is_value_error(self):
         """SSRFError should be a subclass of ValueError."""
@@ -380,12 +392,14 @@ class TestSaltedOTPHashing(TestCase):
     def test_hash_otp_requires_salt(self):
         """_hash_otp should require both otp and salt parameters."""
         from apps.authentication.helpers import _hash_otp
+
         result = _hash_otp("123456", "salt123")
         self.assertEqual(len(result), 64)  # SHA-256 hex = 64 chars
 
     def test_same_otp_different_salt_produces_different_hash(self):
         """Same OTP with different salts should produce different hashes."""
         from apps.authentication.helpers import _hash_otp
+
         hash1 = _hash_otp("123456", "salt_a")
         hash2 = _hash_otp("123456", "salt_b")
         self.assertNotEqual(hash1, hash2)
@@ -398,6 +412,7 @@ class TestSaltedOTPHashing(TestCase):
     def test_hash_deterministic_with_same_salt(self):
         """Same OTP + same salt should always produce same hash."""
         from apps.authentication.helpers import _hash_otp
+
         hash1 = _hash_otp("123456", "fixed_salt")
         hash2 = _hash_otp("123456", "fixed_salt")
         self.assertEqual(hash1, hash2)
@@ -421,24 +436,28 @@ class TestPasswordComplexity(TestCase):
     def test_missing_uppercase_rejected(self):
         """Password without uppercase should be rejected."""
         from django.core.exceptions import ValidationError
+
         with self.assertRaises(ValidationError):
             self.validator.validate("mystr0ng!pass")
 
     def test_missing_lowercase_rejected(self):
         """Password without lowercase should be rejected."""
         from django.core.exceptions import ValidationError
+
         with self.assertRaises(ValidationError):
             self.validator.validate("MYSTR0NG!PASS")
 
     def test_missing_digit_rejected(self):
         """Password without digit should be rejected."""
         from django.core.exceptions import ValidationError
+
         with self.assertRaises(ValidationError):
             self.validator.validate("MyStrong!Pass")
 
     def test_missing_special_char_rejected(self):
         """Password without special character should be rejected."""
         from django.core.exceptions import ValidationError
+
         with self.assertRaises(ValidationError):
             self.validator.validate("MyStr0ngPass")
 
@@ -455,11 +474,11 @@ class TestPasswordComplexity(TestCase):
     def test_help_text_mentions_requirements(self):
         """Help text should describe all requirements."""
         help_text = self.validator.get_help_text()
-        self.assertIn('12', help_text)
-        self.assertIn('mayúscula', help_text)
-        self.assertIn('minúscula', help_text)
-        self.assertIn('dígito', help_text)
-        self.assertIn('especial', help_text)
+        self.assertIn("12", help_text)
+        self.assertIn("mayúscula", help_text)
+        self.assertIn("minúscula", help_text)
+        self.assertIn("dígito", help_text)
+        self.assertIn("especial", help_text)
 
 
 # =============================================================================
@@ -473,30 +492,33 @@ class TestAPICodeChanges(TestCase):
     def test_no_token_hex_in_api(self):
         """api.py should not use secrets.token_hex(3).upper() for OTP."""
         import os
+
         api_path = os.path.join(
-            os.path.dirname(__file__), '..', 'apps', 'authentication', 'api.py'
+            os.path.dirname(__file__), "..", "apps", "authentication", "api.py"
         )
-        with open(api_path, 'r') as f:
+        with open(api_path) as f:
             content = f.read()
-        self.assertNotIn('token_hex(3)', content)
+        self.assertNotIn("token_hex(3)", content)
 
     def test_api_uses_token_urlsafe(self):
         """api.py should use secrets.token_urlsafe(8) for OTP."""
         import os
+
         api_path = os.path.join(
-            os.path.dirname(__file__), '..', 'apps', 'authentication', 'api.py'
+            os.path.dirname(__file__), "..", "apps", "authentication", "api.py"
         )
-        with open(api_path, 'r') as f:
+        with open(api_path) as f:
             content = f.read()
-        self.assertIn('token_urlsafe(8)', content)
+        self.assertIn("token_urlsafe(8)", content)
 
     def test_google_config_no_client_id(self):
         """google_oauth_config should not return client_id."""
         import os
+
         api_path = os.path.join(
-            os.path.dirname(__file__), '..', 'apps', 'authentication', 'api.py'
+            os.path.dirname(__file__), "..", "apps", "authentication", "api.py"
         )
-        with open(api_path, 'r') as f:
+        with open(api_path) as f:
             content = f.read()
         # Check that the config function doesn't include 'client_id' in return
         self.assertNotIn('"client_id": client_id', content)
@@ -504,12 +526,13 @@ class TestAPICodeChanges(TestCase):
     def test_invitation_uses_hashlib(self):
         """api.py should use hashlib for invitation token hashing."""
         import os
+
         api_path = os.path.join(
-            os.path.dirname(__file__), '..', 'apps', 'authentication', 'api.py'
+            os.path.dirname(__file__), "..", "apps", "authentication", "api.py"
         )
-        with open(api_path, 'r') as f:
+        with open(api_path) as f:
             content = f.read()
-        self.assertIn('hashlib.sha256(invitation_token', content)
+        self.assertIn("hashlib.sha256(invitation_token", content)
 
 
 class TestHelpersCodeChanges(TestCase):
@@ -518,22 +541,24 @@ class TestHelpersCodeChanges(TestCase):
     def test_hash_otp_uses_salt(self):
         """_hash_otp should accept a salt parameter."""
         import os
+
         helpers_path = os.path.join(
-            os.path.dirname(__file__), '..', 'apps', 'authentication', 'helpers.py'
+            os.path.dirname(__file__), "..", "apps", "authentication", "helpers.py"
         )
-        with open(helpers_path, 'r') as f:
+        with open(helpers_path) as f:
             content = f.read()
-        self.assertIn('def _hash_otp(otp: str, salt: str)', content)
+        self.assertIn("def _hash_otp(otp: str, salt: str)", content)
 
     def test_store_otp_generates_salt(self):
         """store_otp should generate and store a salt."""
         import os
+
         helpers_path = os.path.join(
-            os.path.dirname(__file__), '..', 'apps', 'authentication', 'helpers.py'
+            os.path.dirname(__file__), "..", "apps", "authentication", "helpers.py"
         )
-        with open(helpers_path, 'r') as f:
+        with open(helpers_path) as f:
             content = f.read()
-        self.assertIn('otp_salt:', content)
+        self.assertIn("otp_salt:", content)
 
 
 class TestRateLimiterCodeChanges(TestCase):
@@ -542,36 +567,39 @@ class TestRateLimiterCodeChanges(TestCase):
     def test_auth_paths_defined(self):
         """AUTH_PATHS list should be defined in rate_limit.py."""
         import os
+
         rate_limit_path = os.path.join(
-            os.path.dirname(__file__), '..', 'common', 'rate_limit.py'
+            os.path.dirname(__file__), "..", "common", "rate_limit.py"
         )
-        with open(rate_limit_path, 'r') as f:
+        with open(rate_limit_path) as f:
             content = f.read()
-        self.assertIn('AUTH_PATHS', content)
-        self.assertIn('/api/v1/auth/login', content)
+        self.assertIn("AUTH_PATHS", content)
+        self.assertIn("/api/v1/auth/login", content)
 
     def test_fail_closed_logic_present(self):
         """Rate limiter should have fail-closed logic for auth endpoints."""
         import os
+
         rate_limit_path = os.path.join(
-            os.path.dirname(__file__), '..', 'common', 'rate_limit.py'
+            os.path.dirname(__file__), "..", "common", "rate_limit.py"
         )
-        with open(rate_limit_path, 'r') as f:
+        with open(rate_limit_path) as f:
             content = f.read()
-        self.assertIn('Service temporarily unavailable', content)
-        self.assertIn('status=503', content)
+        self.assertIn("Service temporarily unavailable", content)
+        self.assertIn("status=503", content)
 
     def test_uses_remote_addr_only(self):
         """_get_client_ip should use REMOTE_ADDR, not X-Forwarded-For."""
         import os
+
         rate_limit_path = os.path.join(
-            os.path.dirname(__file__), '..', 'common', 'rate_limit.py'
+            os.path.dirname(__file__), "..", "common", "rate_limit.py"
         )
-        with open(rate_limit_path, 'r') as f:
+        with open(rate_limit_path) as f:
             content = f.read()
         # Should NOT have X-Forwarded-For extraction logic
-        self.assertNotIn('HTTP_X_FORWARDED_FOR', content)
-        self.assertIn('REMOTE_ADDR', content)
+        self.assertNotIn("HTTP_X_FORWARDED_FOR", content)
+        self.assertIn("REMOTE_ADDR", content)
 
 
 class TestPasswordPolicyCodeChanges(TestCase):
@@ -580,20 +608,22 @@ class TestPasswordPolicyCodeChanges(TestCase):
     def test_min_length_12(self):
         """AUTH_PASSWORD_VALIDATORS should require 12+ chars."""
         from django.conf import settings
+
         validators = settings.AUTH_PASSWORD_VALIDATORS
         min_length_validator = next(
-            (v for v in validators if 'MinimumLength' in v['NAME']),
+            (v for v in validators if "MinimumLength" in v["NAME"]),
             None,
         )
         self.assertIsNotNone(min_length_validator)
-        self.assertEqual(min_length_validator['OPTIONS']['min_length'], 12)
+        self.assertEqual(min_length_validator["OPTIONS"]["min_length"], 12)
 
     def test_complexity_validator_configured(self):
         """ComplexityValidator should be in AUTH_PASSWORD_VALIDATORS."""
         from django.conf import settings
+
         validators = settings.AUTH_PASSWORD_VALIDATORS
         complexity_validator = next(
-            (v for v in validators if 'Complexity' in v['NAME']),
+            (v for v in validators if "Complexity" in v["NAME"]),
             None,
         )
         self.assertIsNotNone(complexity_validator)

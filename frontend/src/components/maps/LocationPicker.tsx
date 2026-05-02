@@ -85,7 +85,7 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
     const rLat = parseFloat(r.lat);
     const rLng = parseFloat(r.lon);
     onChange(rLat, rLng, r.display_name ?? "");
-    setSearch((r.display_name ?? "").split(',')[0]);
+    setSearch((r.display_name ?? '').split(',')[0] ?? '');
     setShowResults(false);
   };
 

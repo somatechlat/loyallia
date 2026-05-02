@@ -6,13 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0001_initial'),
+        ("customers", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='customerpass',
-            name='qr_code',
-            field=models.CharField(blank=True, db_index=True, default='', max_length=100, unique=True, verbose_name='Código QR'),
+            model_name="customerpass",
+            name="qr_code",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                default="",
+                max_length=100,
+                unique=True,
+                verbose_name="Código QR",
+            ),
         ),
     ]

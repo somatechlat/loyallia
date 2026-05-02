@@ -3,21 +3,20 @@ Loyallia — Service Layer Tests
 Tests for TransactionService, BillingService, AutomationService, CustomerService.
 """
 
-import uuid
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
 
-from apps.authentication.models import User, UserRole
-from apps.automation.models import Automation, AutomationAction, AutomationTrigger
-from apps.billing.models import SubscriptionStatus
+from apps.authentication.models import UserRole
+from apps.automation.models import AutomationTrigger
 from apps.cards.models import CardType
-from apps.customers.models import Customer, CustomerPass
+from apps.customers.models import CustomerPass
 from apps.customers.service import CustomerService
-from apps.transactions.models import Enrollment, Transaction, TransactionType
+from apps.transactions.models import Enrollment, Transaction
 from apps.transactions.service import TransactionService
 from tests.factories import (
+    make_automation,
     make_card,
     make_customer,
     make_customer_pass,
@@ -28,10 +27,10 @@ from tests.factories import (
     make_user,
 )
 
-
 # =============================================================================
 # TransactionService Tests
 # =============================================================================
+
 
 class TransactionServiceScanQRTest(TestCase):
     """Tests for TransactionService.scan_qr"""
@@ -89,8 +88,12 @@ class TransactionServiceEnrollTest(TestCase):
         customer = make_customer(t)
         cp = TransactionService.enroll_customer(t, customer, card)
         self.assertIsNotNone(cp)
-        self.assertTrue(CustomerPass.objects.filter(customer=customer, card=card).exists())
-        self.assertTrue(Enrollment.objects.filter(customer=customer, card=card).exists())
+        self.assertTrue(
+            CustomerPass.objects.filter(customer=customer, card=card).exists()
+        )
+        self.assertTrue(
+            Enrollment.objects.filter(customer=customer, card=card).exists()
+        )
 
     def test_enroll_customer_already_enrolled_raises(self):
         t = make_tenant()
@@ -114,13 +117,17 @@ class TransactionServiceRemoteIssueTest(TestCase):
     def test_remote_issue_success(self):
         t, _, _, card, customer, cp = make_full_stack()
         staff = make_user(tenant=t, role=UserRole.STAFF)
-        result = TransactionService.remote_issue(t, customer, card, quantity=3, staff=staff)
+        result = TransactionService.remote_issue(
+            t, customer, card, quantity=3, staff=staff
+        )
         self.assertTrue(result["success"])
         self.assertTrue(result["pass_updated"])
 
     def test_remote_issue_creates_remote_transaction(self):
         t, _, _, card, customer, cp = make_full_stack()
-        TransactionService.remote_issue(t, customer, card, quantity=2, notes="Manual reward")
+        TransactionService.remote_issue(
+            t, customer, card, quantity=2, notes="Manual reward"
+        )
         txn = Transaction.objects.filter(customer_pass=cp, is_remote=True).first()
         self.assertIsNotNone(txn)
         self.assertTrue(txn.is_remote)
@@ -152,6 +159,7 @@ class TransactionServiceListTest(TestCase):
 # BillingService Tests
 # =============================================================================
 
+
 class BillingServicePlansTest(TestCase):
     """Tests for BillingService.get_plans"""
 
@@ -161,14 +169,16 @@ class BillingServicePlansTest(TestCase):
             "TAX_RATE_ECUADOR": "0.15",
             "TRIAL_DAYS": 14,
         }.get(k, d)
-        plan = make_plan()
+        make_plan()
         from apps.billing.service import BillingService
+
         plans = BillingService.get_plans()
         self.assertGreater(len(plans), 0)
 
     def test_get_plans_includes_limits(self):
         make_plan()
         from apps.billing.service import BillingService
+
         plans = BillingService.get_plans()
         if plans:
             self.assertIn("limits", plans[0])
@@ -182,6 +192,7 @@ class BillingServiceCheckUsageTest(TestCase):
         t = make_tenant()
         make_subscription(t)
         from apps.billing.service import BillingService
+
         usage = BillingService.check_usage(t)
         self.assertIn("customers", usage)
         self.assertIn("programs", usage)
@@ -194,6 +205,7 @@ class BillingServiceCheckUsageTest(TestCase):
         t = make_tenant()
         make_subscription(t)
         from apps.billing.service import BillingService
+
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["used"], 0)
         self.assertEqual(usage["programs"]["used"], 0)
@@ -204,6 +216,7 @@ class BillingServiceCheckUsageTest(TestCase):
         make_customer(t, email="a@test.com")
         make_customer(t, email="b@test.com")
         from apps.billing.service import BillingService
+
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["used"], 2)
 
@@ -214,6 +227,7 @@ class BillingServiceCheckUsageTest(TestCase):
         for i in range(5):
             make_customer(t, email=f"c{i}@test.com")
         from apps.billing.service import BillingService
+
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["percentage"], 50.0)
 
@@ -221,6 +235,7 @@ class BillingServiceCheckUsageTest(TestCase):
 # =============================================================================
 # AutomationService Tests
 # =============================================================================
+
 
 class AutomationServiceFireTriggerTest(TestCase):
     """Tests for AutomationService.fire_trigger"""
@@ -230,8 +245,9 @@ class AutomationServiceFireTriggerTest(TestCase):
         mock_execute.return_value = True
         t = make_tenant()
         customer = make_customer(t)
-        auto = make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED)
+        make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED)
         from apps.automation.service import AutomationService
+
         count = AutomationService.fire_trigger(
             t, AutomationTrigger.CUSTOMER_ENROLLED, customer
         )
@@ -241,6 +257,7 @@ class AutomationServiceFireTriggerTest(TestCase):
         t = make_tenant()
         customer = make_customer(t)
         from apps.automation.service import AutomationService
+
         count = AutomationService.fire_trigger(
             t, AutomationTrigger.CUSTOMER_ENROLLED, customer
         )
@@ -251,6 +268,7 @@ class AutomationServiceFireTriggerTest(TestCase):
         customer = make_customer(t)
         make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED, is_active=False)
         from apps.automation.service import AutomationService
+
         count = AutomationService.fire_trigger(
             t, AutomationTrigger.CUSTOMER_ENROLLED, customer
         )
@@ -263,45 +281,61 @@ class AutomationServiceCreateTest(TestCase):
     def test_create_automation_success(self):
         t = make_tenant()
         from apps.automation.service import AutomationService
-        auto = AutomationService.create_automation(t, {
-            "name": "Welcome Flow",
-            "trigger": "customer_enrolled",
-            "action": "send_notification",
-            "action_config": {"title": "Welcome!"},
-        })
+
+        auto = AutomationService.create_automation(
+            t,
+            {
+                "name": "Welcome Flow",
+                "trigger": "customer_enrolled",
+                "action": "send_notification",
+                "action_config": {"title": "Welcome!"},
+            },
+        )
         self.assertIsNotNone(auto.id)
         self.assertEqual(auto.name, "Welcome Flow")
 
     def test_create_automation_invalid_trigger_raises(self):
         t = make_tenant()
         from apps.automation.service import AutomationService
+
         with self.assertRaises(ValueError):
-            AutomationService.create_automation(t, {
-                "name": "Bad",
-                "trigger": "invalid_trigger",
-                "action": "send_notification",
-            })
+            AutomationService.create_automation(
+                t,
+                {
+                    "name": "Bad",
+                    "trigger": "invalid_trigger",
+                    "action": "send_notification",
+                },
+            )
 
     def test_create_automation_invalid_action_raises(self):
         t = make_tenant()
         from apps.automation.service import AutomationService
+
         with self.assertRaises(ValueError):
-            AutomationService.create_automation(t, {
-                "name": "Bad",
-                "trigger": "customer_enrolled",
-                "action": "invalid_action",
-            })
+            AutomationService.create_automation(
+                t,
+                {
+                    "name": "Bad",
+                    "trigger": "customer_enrolled",
+                    "action": "invalid_action",
+                },
+            )
 
     def test_create_automation_with_programs(self):
         t = make_tenant()
         card = make_card(t)
         from apps.automation.service import AutomationService
-        auto = AutomationService.create_automation(t, {
-            "name": "Program Flow",
-            "trigger": "customer_enrolled",
-            "action": "send_notification",
-            "target_program_ids": [str(card.id)],
-        })
+
+        auto = AutomationService.create_automation(
+            t,
+            {
+                "name": "Program Flow",
+                "trigger": "customer_enrolled",
+                "action": "send_notification",
+                "target_program_ids": [str(card.id)],
+            },
+        )
         self.assertEqual(auto.target_programs.count(), 1)
 
 
@@ -312,6 +346,7 @@ class AutomationServiceUpdateTest(TestCase):
         t = make_tenant()
         auto = make_automation(t, name="Old Name")
         from apps.automation.service import AutomationService
+
         updated = AutomationService.update_automation(auto, {"name": "New Name"})
         self.assertEqual(updated.name, "New Name")
 
@@ -319,6 +354,7 @@ class AutomationServiceUpdateTest(TestCase):
         t = make_tenant()
         auto = make_automation(t, is_active=True)
         from apps.automation.service import AutomationService
+
         updated = AutomationService.update_automation(auto, {"is_active": False})
         updated.refresh_from_db()
         self.assertFalse(updated.is_active)
@@ -330,6 +366,7 @@ class AutomationServiceGetStatsTest(TestCase):
     def test_get_stats_empty(self):
         t = make_tenant()
         from apps.automation.service import AutomationService
+
         stats = AutomationService.get_stats(t)
         self.assertEqual(stats["total_automations"], 0)
         self.assertEqual(stats["total_executions"], 0)
@@ -339,6 +376,7 @@ class AutomationServiceGetStatsTest(TestCase):
         make_automation(t)
         make_automation(t)
         from apps.automation.service import AutomationService
+
         stats = AutomationService.get_stats(t)
         self.assertEqual(stats["total_automations"], 2)
         self.assertEqual(stats["active_automations"], 2)
@@ -348,27 +386,34 @@ class AutomationServiceGetStatsTest(TestCase):
 # CustomerService Tests
 # =============================================================================
 
+
 class CustomerServiceCreateTest(TestCase):
     """Tests for CustomerService.create"""
 
     def test_create_customer_success(self):
         t = make_tenant()
-        customer = CustomerService.create(t, {
-            "first_name": "Alice",
-            "last_name": "Smith",
-            "email": "alice@test.com",
-            "phone": "+593991234567",
-        })
+        customer = CustomerService.create(
+            t,
+            {
+                "first_name": "Alice",
+                "last_name": "Smith",
+                "email": "alice@test.com",
+                "phone": "+593991234567",
+            },
+        )
         self.assertIsNotNone(customer.id)
         self.assertEqual(customer.email, "alice@test.com")
 
     def test_create_customer_invalid_email_raises(self):
         t = make_tenant()
         with self.assertRaises(ValueError):
-            CustomerService.create(t, {
-                "first_name": "Alice",
-                "email": "not-an-email",
-            })
+            CustomerService.create(
+                t,
+                {
+                    "first_name": "Alice",
+                    "email": "not-an-email",
+                },
+            )
 
     def test_create_customer_empty_email_raises(self):
         t = make_tenant()
@@ -382,30 +427,32 @@ class CustomerServiceCreateTest(TestCase):
 
     def test_create_customer_duplicate_email_raises(self):
         t = make_tenant()
-        CustomerService.create(t, {
-            "first_name": "Alice", "email": "dup@test.com"
-        })
+        CustomerService.create(t, {"first_name": "Alice", "email": "dup@test.com"})
         with self.assertRaises(ValueError):
-            CustomerService.create(t, {
-                "first_name": "Bob", "email": "dup@test.com"
-            })
+            CustomerService.create(t, {"first_name": "Bob", "email": "dup@test.com"})
 
     def test_create_customer_with_date_of_birth(self):
         t = make_tenant()
-        customer = CustomerService.create(t, {
-            "first_name": "Alice",
-            "email": "alice@test.com",
-            "date_of_birth": "1990-05-15",
-        })
+        customer = CustomerService.create(
+            t,
+            {
+                "first_name": "Alice",
+                "email": "alice@test.com",
+                "date_of_birth": "1990-05-15",
+            },
+        )
         self.assertIsNotNone(customer.date_of_birth)
 
     def test_create_customer_gender_normalization(self):
         t = make_tenant()
-        customer = CustomerService.create(t, {
-            "first_name": "Alice",
-            "email": "alice@test.com",
-            "gender": "masculino",
-        })
+        customer = CustomerService.create(
+            t,
+            {
+                "first_name": "Alice",
+                "email": "alice@test.com",
+                "gender": "masculino",
+            },
+        )
         self.assertEqual(customer.gender, "M")
 
 
@@ -496,6 +543,7 @@ class CustomerServiceEnrollTest(TestCase):
 # =============================================================================
 # TransactionService._serialize_result Tests
 # =============================================================================
+
 
 class SerializeResultTest(TestCase):
     """Tests for TransactionService._serialize_result"""

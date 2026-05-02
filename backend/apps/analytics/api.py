@@ -403,9 +403,7 @@ def get_segmentation_analytics(request):
                 "segment": s["segment"],
                 "count": s["count"],
                 "percentage": (
-                    (s["count"] / total_customers * 100)
-                    if total_customers > 0
-                    else 0
+                    (s["count"] / total_customers * 100) if total_customers > 0 else 0
                 ),
                 "total_spent": float(s["sum_spent"] or 0),
                 "avg_spent": float(s["avg_spent"] or 0),
@@ -421,4 +419,3 @@ def get_segmentation_analytics(request):
 from apps.analytics.advanced_api import router as advanced_router  # noqa: E402
 
 router.add_router("/", advanced_router)
-

@@ -4,9 +4,11 @@ Asynchronous calculation of business intelligence metrics.
 """
 
 import logging
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
+
 
 @shared_task(
     bind=True,
@@ -19,18 +21,20 @@ def update_tenant_analytics(self, tenant_id: str) -> dict:
     """
     Recalculate and store program and daily analytics for a tenant.
     This prevents the O(N) database lockups that used to happen on dashboard load.
-    
+
     Args:
         tenant_id: UUID string of Tenant
-        
+
     Returns:
         dict with success status
     """
     import uuid
+
     from django.utils import timezone
-    from apps.tenants.models import Tenant
+
+    from apps.analytics.models import DailyAnalytics, ProgramAnalytics
     from apps.cards.models import Card
-    from apps.analytics.models import ProgramAnalytics, DailyAnalytics
+    from apps.tenants.models import Tenant
 
     try:
         tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))

@@ -4,17 +4,16 @@ Tests for Invoice, PaymentMethod, BillingService, Subscription lifecycle,
 plan limits, and trial period behavior.
 """
 
-import uuid
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
+from apps.billing.models import SubscriptionStatus
 from apps.billing.payment_models import Invoice, PaymentMethod, WebhookEvent
 from apps.billing.service import BillingService
-from apps.tenants.models import Tenant
 from tests.factories import (
     make_card,
     make_customer,
@@ -24,10 +23,10 @@ from tests.factories import (
     make_user,
 )
 
-
 # =============================================================================
 # Invoice Model Tests
 # =============================================================================
+
 
 class InvoiceModelTest(TestCase):
     """Tests for Invoice model."""
@@ -148,6 +147,7 @@ class InvoiceModelTest(TestCase):
 # PaymentMethod Model Tests
 # =============================================================================
 
+
 class PaymentMethodModelTest(TestCase):
     """Tests for PaymentMethod model."""
 
@@ -199,6 +199,7 @@ class PaymentMethodModelTest(TestCase):
 # WebhookEvent Model Tests
 # =============================================================================
 
+
 class WebhookEventModelTest(TestCase):
     """Tests for WebhookEvent idempotency model."""
 
@@ -216,7 +217,7 @@ class WebhookEventModelTest(TestCase):
             event_type="invoice.paid",
             payload_hash="hash1",
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             WebhookEvent.objects.create(
                 event_id="evt_dup",
                 event_type="invoice.paid",
@@ -235,6 +236,7 @@ class WebhookEventModelTest(TestCase):
 # =============================================================================
 # BillingService Tests
 # =============================================================================
+
 
 class BillingServiceGetPlansTest(TestCase):
     """Tests for BillingService.get_plans."""
@@ -278,8 +280,11 @@ class BillingServiceCheckUsageTest(TestCase):
 
     def setUp(self):
         self.plan = make_plan(
-            max_customers=100, max_programs=10, max_users=5,
-            max_locations=20, max_notifications_month=1000,
+            max_customers=100,
+            max_programs=10,
+            max_users=5,
+            max_locations=20,
+            max_notifications_month=1000,
             max_transactions_month=5000,
         )
         self.tenant = make_tenant()
@@ -320,8 +325,12 @@ class BillingServiceCheckUsageTest(TestCase):
     def test_all_resource_keys_present(self):
         usage = BillingService.check_usage(self.tenant)
         expected = [
-            "customers", "programs", "users", "locations",
-            "transactions_month", "notifications_month",
+            "customers",
+            "programs",
+            "users",
+            "locations",
+            "transactions_month",
+            "notifications_month",
         ]
         for key in expected:
             self.assertIn(key, usage)
@@ -330,6 +339,7 @@ class BillingServiceCheckUsageTest(TestCase):
 # =============================================================================
 # Subscription Lifecycle Tests
 # =============================================================================
+
 
 class SubscriptionLifecycleTest(TestCase):
     """Tests for subscription status transitions."""
@@ -340,7 +350,9 @@ class SubscriptionLifecycleTest(TestCase):
 
     def test_trial_to_active(self):
         sub = make_subscription(
-            self.tenant, plan=self.plan, status=SubscriptionStatus.TRIALING,
+            self.tenant,
+            plan=self.plan,
+            status=SubscriptionStatus.TRIALING,
             trial_end=timezone.now() + timedelta(days=10),
         )
         sub.activate_paid()
@@ -376,8 +388,10 @@ class SubscriptionLifecycleTest(TestCase):
 
     def test_annual_billing_cycle_period(self):
         sub = make_subscription(
-            self.tenant, plan=self.plan,
-            status=SubscriptionStatus.TRIALING, billing_cycle="annual",
+            self.tenant,
+            plan=self.plan,
+            status=SubscriptionStatus.TRIALING,
+            billing_cycle="annual",
         )
         sub.activate_paid()
         self.assertEqual(sub.status, SubscriptionStatus.ACTIVE)
@@ -388,6 +402,7 @@ class SubscriptionLifecycleTest(TestCase):
 # =============================================================================
 # Plan Limit Tests
 # =============================================================================
+
 
 class PlanLimitTest(TestCase):
     """Tests for plan limit enforcement per resource."""
@@ -414,7 +429,7 @@ class PlanLimitTest(TestCase):
         plan = make_plan(max_users=3)
         t = make_tenant()
         make_subscription(t, plan=plan)
-        for i in range(3):
+        for _i in range(3):
             make_user(tenant=t, role="STAFF")
         usage = BillingService.check_usage(t)
         self.assertTrue(usage["users"]["is_over_limit"])
@@ -423,6 +438,7 @@ class PlanLimitTest(TestCase):
 # =============================================================================
 # Trial Period Tests
 # =============================================================================
+
 
 class TrialPeriodTest(TestCase):
     """Tests for trial period behavior."""
@@ -450,7 +466,8 @@ class TrialPeriodTest(TestCase):
     def test_trial_is_access_allowed(self):
         t = make_tenant()
         sub = make_subscription(
-            t, status=SubscriptionStatus.TRIALING,
+            t,
+            status=SubscriptionStatus.TRIALING,
             trial_end=timezone.now() + timedelta(days=5),
         )
         self.assertTrue(sub.is_access_allowed)

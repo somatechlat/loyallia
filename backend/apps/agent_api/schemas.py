@@ -8,6 +8,7 @@ from ninja import Schema
 
 class TenantContextSchema(Schema):
     """Tenant identification."""
+
     id: str
     name: str
     slug: str
@@ -17,6 +18,7 @@ class TenantContextSchema(Schema):
 
 class PlanContextSchema(Schema):
     """Active plan details."""
+
     name: str
     slug: str
     features: list[str]
@@ -25,6 +27,7 @@ class PlanContextSchema(Schema):
 
 class CapabilitiesSchema(Schema):
     """Agent capabilities."""
+
     can_read_customers_summary: bool = True
     can_read_programs: bool = True
     can_read_analytics: bool = True
@@ -34,6 +37,7 @@ class CapabilitiesSchema(Schema):
 
 class ContextResponseSchema(Schema):
     """Full agent context response."""
+
     tenant: TenantContextSchema
     plan: PlanContextSchema
     capabilities: CapabilitiesSchema
@@ -41,6 +45,7 @@ class ContextResponseSchema(Schema):
 
 class CustomersSummarySchema(Schema):
     """Aggregated customer summary — no PII."""
+
     total_customers: int
     active_customers: int
     inactive_customers: int
@@ -50,6 +55,7 @@ class CustomersSummarySchema(Schema):
 
 class ProgramSchema(Schema):
     """Single program with stats."""
+
     id: str
     name: str
     card_type: str
@@ -62,12 +68,14 @@ class ProgramSchema(Schema):
 
 class ProgramsResponseSchema(Schema):
     """All programs response."""
+
     total_programs: int
     programs: list[ProgramSchema]
 
 
 class AnalyticsOverviewSchema(Schema):
     """Revenue and retention metrics."""
+
     total_customers: int
     monthly_transactions: int
     returning_customers: int
@@ -77,6 +85,7 @@ class AnalyticsOverviewSchema(Schema):
 
 class TransactionSchema(Schema):
     """Single anonymized transaction."""
+
     id: str
     type: str
     program: str | None = None
@@ -86,6 +95,7 @@ class TransactionSchema(Schema):
 
 class TransactionsResponseSchema(Schema):
     """Recent transactions response."""
+
     count: int
     transactions: list[TransactionSchema]
     data_privacy: str = "Customer PII redacted — transaction metadata only."

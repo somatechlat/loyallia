@@ -8,6 +8,7 @@ import json
 import logging
 import time
 
+from django.db import IntegrityError, transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -241,14 +242,29 @@ def payment_webhook(request: HttpRequest):
 
     # SECURITY (LYL-H-SEC-003): Timestamp validation — reject stale webhooks (replay protection)
     timestamp = payload.get("timestamp")
-    if timestamp:
-        try:
-            ts = float(timestamp)
-            if abs(time.time() - ts) > 300:  # 5 minutes
-                logger.warning("Webhook timestamp expired: ts=%.1f, now=%.1f, delta=%.1fs", ts, time.time(), abs(time.time() - ts))
-                raise HttpError(400, "Webhook timestamp expired")
-        except (ValueError, TypeError):
-            pass
+    if timestamp is None:
+        raise HttpError(
+            400,
+            get_message("VALIDATION_ERROR", detail="Webhook timestamp is required."),
+        )
+    try:
+        ts = float(timestamp)
+    except (ValueError, TypeError):
+        raise HttpError(
+            400,
+            get_message("VALIDATION_ERROR", detail="Webhook timestamp is invalid."),
+        )
+    if abs(time.time() - ts) > 300:  # 5 minutes
+        logger.warning(
+            "Webhook timestamp expired: ts=%.1f now=%.1f delta=%.1fs",
+            ts,
+            time.time(),
+            abs(time.time() - ts),
+        )
+        raise HttpError(
+            400,
+            get_message("VALIDATION_ERROR", detail="Webhook timestamp expired."),
+        )
 
     # SECURITY (LYL-H-SEC-003): Idempotency — prevent duplicate event processing
     event_id = payload.get("id") or payload.get("event_id") or ""
@@ -259,25 +275,25 @@ def payment_webhook(request: HttpRequest):
         # Fallback: use payload hash as event ID for deduplication
         event_id = payload_hash
 
-    # Check if this event was already processed
-    if WebhookEvent.objects.filter(event_id=event_id).exists():
-        logger.info("Webhook event already processed (idempotent): event_id=%s", event_id)
-        return {"received": True, "duplicate": True}
-
     logger.info("Payment webhook: event=%s event_id=%s", event_type, event_id)
 
-    # Record the event BEFORE processing to prevent race-condition duplicates
     try:
-        WebhookEvent.objects.create(
-            event_id=event_id,
-            event_type=event_type,
-            payload_hash=payload_hash,
-        )
-    except Exception:
-        # If insert fails (duplicate), another request processed it first
+        with transaction.atomic():
+            _, created = WebhookEvent.objects.get_or_create(
+                event_id=event_id,
+                defaults={"event_type": event_type, "payload_hash": payload_hash},
+            )
+            if not created:
+                logger.info("Webhook event already processed: event_id=%s", event_id)
+                return {"received": True, "duplicate": True}
+
+            try:
+                gateway.process_webhook(event_type, payload.get("data", {}))
+            except Exception:
+                WebhookEvent.objects.filter(event_id=event_id).delete()
+                raise
+    except IntegrityError:
         logger.info("Webhook event race-condition caught: event_id=%s", event_id)
         return {"received": True, "duplicate": True}
-
-    gateway.process_webhook(event_type, payload.get("data", {}))
 
     return {"received": True}

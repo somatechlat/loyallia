@@ -12,7 +12,7 @@ from pydantic import BaseModel, field_validator
 from apps.cards.models import Card, CardType
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
-from common.plan_enforcement import require_active_subscription, enforce_limit
+from common.plan_enforcement import enforce_limit, require_active_subscription
 
 router = Router()
 
@@ -127,7 +127,11 @@ class CardOut(BaseModel):
             locations=card.locations,
             created_at=card.created_at.isoformat(),
             updated_at=card.updated_at.isoformat(),
-            enrollments_count=enrollments_count if enrollments_count is not None else card.passes.count(),
+            enrollments_count=(
+                enrollments_count
+                if enrollments_count is not None
+                else card.passes.count()
+            ),
         )
 
 
@@ -153,10 +157,18 @@ def list_programs(request):
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    cards = list(Card.objects.filter(tenant=request.tenant).annotate(
-        _enrollments_count=Count("passes", distinct=True)
-    ).order_by("-created_at"))
-    return {"programs": [CardOut.from_model(c, getattr(c, '_enrollments_count', c.passes.count())) for c in cards], "total": len(cards)}
+    cards = list(
+        Card.objects.filter(tenant=request.tenant)
+        .annotate(_enrollments_count=Count("passes", distinct=True))
+        .order_by("-created_at")
+    )
+    return {
+        "programs": [
+            CardOut.from_model(c, getattr(c, "_enrollments_count", c.passes.count()))
+            for c in cards
+        ],
+        "total": len(cards),
+    }
 
 
 @router.post(

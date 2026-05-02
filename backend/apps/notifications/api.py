@@ -15,7 +15,6 @@ from pydantic import BaseModel
 from apps.customers.models import Customer
 from apps.notifications.models import (
     Notification,
-    NotificationChannel,
     NotificationType,
     PushDevice,
 )

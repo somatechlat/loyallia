@@ -6,13 +6,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('authentication', '0001_initial'),
+        ("authentication", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='preferred_language',
-            field=models.CharField(blank=True, default='', help_text='ISO 639-1 code (es, en, fr, de). Empty = tenant default.', max_length=5, verbose_name='Idioma preferido'),
+            model_name="user",
+            name="preferred_language",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="ISO 639-1 code (es, en, fr, de). Empty = tenant default.",
+                max_length=5,
+                verbose_name="Idioma preferido",
+            ),
         ),
     ]

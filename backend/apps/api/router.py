@@ -81,8 +81,10 @@ def readiness_check(request: HttpRequest):
 
 
 # --- Mount all app routers ---
+from apps.agent_api.api import router as agent_api_router
 from apps.analytics.api import router as analytics_router
 from apps.api.upload_api import router as upload_router
+from apps.audit.api import router as audit_router
 from apps.authentication.api import router as auth_router
 from apps.authentication.users_api import router as users_router
 from apps.automation.api import router as automation_router
@@ -95,8 +97,6 @@ from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
 from apps.tenants.api import router as tenants_router
 from apps.tenants.super_admin_api import router as super_admin_router
-from apps.audit.api import router as audit_router
-from apps.agent_api.api import router as agent_api_router
 from apps.transactions.api import router as transactions_router
 from apps.transactions.api import scanner_router
 

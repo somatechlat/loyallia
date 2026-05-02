@@ -33,7 +33,15 @@ def make_tenant(**kwargs):
     return Tenant.objects.create(**defaults)
 
 
-def make_user(tenant=None, role=UserRole.OWNER, password="[REDACTED]", **kwargs):
+import os
+
+
+def make_user(
+    tenant=None,
+    role=UserRole.OWNER,
+    password=os.environ.get("TEST_USER_PASSWORD", "TestOnlyPass123!"),
+    **kwargs,
+):
     """Create a User with sensible defaults."""
     defaults = {
         "email": f"user-{uuid.uuid4().hex[:6]}@test.com",
@@ -184,8 +192,12 @@ def make_location(tenant, **kwargs):
     return Location.objects.create(tenant=tenant, **defaults)
 
 
-def make_automation(tenant, trigger=AutomationTrigger.CUSTOMER_ENROLLED,
-                    action=AutomationAction.SEND_NOTIFICATION, **kwargs):
+def make_automation(
+    tenant,
+    trigger=AutomationTrigger.CUSTOMER_ENROLLED,
+    action=AutomationAction.SEND_NOTIFICATION,
+    **kwargs,
+):
     """Create an Automation with sensible defaults."""
     defaults = {
         "name": f"Test Automation {uuid.uuid4().hex[:6]}",
@@ -203,11 +215,18 @@ def make_enrollment(tenant, customer, card, **kwargs):
     """Create an Enrollment record."""
     defaults = {"enrollment_method": "manual"}
     defaults.update(kwargs)
-    return Enrollment.objects.create(tenant=tenant, customer=customer, card=card, **defaults)
+    return Enrollment.objects.create(
+        tenant=tenant, customer=customer, card=card, **defaults
+    )
 
 
-def make_transaction(tenant, customer_pass, transaction_type=TransactionType.STAMP_EARNED,
-                     amount=None, **kwargs):
+def make_transaction(
+    tenant,
+    customer_pass,
+    transaction_type=TransactionType.STAMP_EARNED,
+    amount=None,
+    **kwargs,
+):
     """Create a Transaction record."""
     defaults = {
         "transaction_type": transaction_type,
@@ -215,11 +234,18 @@ def make_transaction(tenant, customer_pass, transaction_type=TransactionType.STA
         "quantity": 1,
     }
     defaults.update(kwargs)
-    return Transaction.objects.create(tenant=tenant, customer_pass=customer_pass, **defaults)
+    return Transaction.objects.create(
+        tenant=tenant, customer_pass=customer_pass, **defaults
+    )
 
 
-def make_full_stack(tenant=None, plan_kwargs=None, card_type=CardType.STAMP,
-                    card_kwargs=None, pass_data=None):
+def make_full_stack(
+    tenant=None,
+    plan_kwargs=None,
+    card_type=CardType.STAMP,
+    card_kwargs=None,
+    pass_data=None,
+):
     """Create a full tenant → user → subscription → card → customer → pass stack.
     Returns (tenant, user, subscription, card, customer, customer_pass).
     """

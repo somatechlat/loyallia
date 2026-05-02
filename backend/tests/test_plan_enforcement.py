@@ -4,14 +4,12 @@ Tests for check_plan_limit, check_feature_access, get_tenant_limits,
 get_current_usage, and all enforcement decorators.
 """
 
-import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from django.test import TestCase
 from ninja.errors import HttpError
 
 from apps.billing.models import SubscriptionStatus
-from apps.cards.models import CardType
 from common.plan_enforcement import (
     check_feature_access,
     check_plan_limit,
@@ -24,26 +22,28 @@ from common.plan_enforcement import (
 from tests.factories import (
     make_card,
     make_customer,
-    make_customer_pass,
-    make_full_stack,
     make_plan,
     make_subscription,
     make_tenant,
     make_user,
 )
 
-
 # =============================================================================
 # get_tenant_limits Tests
 # =============================================================================
+
 
 class GetTenantLimitsTest(TestCase):
     """Tests for get_tenant_limits helper."""
 
     def test_returns_limits_from_plan(self):
         plan = make_plan(
-            max_customers=500, max_programs=5, max_locations=20,
-            max_users=10, max_notifications_month=1000, max_transactions_month=5000,
+            max_customers=500,
+            max_programs=5,
+            max_locations=20,
+            max_users=10,
+            max_notifications_month=1000,
+            max_transactions_month=5000,
         )
         t = make_tenant()
         make_subscription(t, plan=plan)
@@ -82,6 +82,7 @@ class GetTenantLimitsTest(TestCase):
 # get_current_usage Tests
 # =============================================================================
 
+
 class GetCurrentUsageTest(TestCase):
     """Tests for get_current_usage helper."""
 
@@ -116,6 +117,7 @@ class GetCurrentUsageTest(TestCase):
 # =============================================================================
 # check_plan_limit Tests
 # =============================================================================
+
 
 class CheckPlanLimitTest(TestCase):
     """Tests for check_plan_limit function."""
@@ -175,6 +177,7 @@ class CheckPlanLimitTest(TestCase):
 # check_feature_access Tests
 # =============================================================================
 
+
 class CheckFeatureAccessTest(TestCase):
     """Tests for check_feature_access function."""
 
@@ -200,13 +203,14 @@ class CheckFeatureAccessTest(TestCase):
 
     def test_trial_grants_all_features(self):
         t = make_tenant()
-        sub = make_subscription(t, status=SubscriptionStatus.TRIALING)
+        make_subscription(t, status=SubscriptionStatus.TRIALING)
         check_feature_access(t, "any_feature")  # Should not raise
 
 
 # =============================================================================
 # Decorator Tests
 # =============================================================================
+
 
 class RequireActiveSubscriptionDecoratorTest(TestCase):
     """Tests for @require_active_subscription decorator."""
@@ -257,7 +261,8 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
     def test_passes_with_trial(self):
         t = make_tenant()
         make_subscription(
-            t, status=SubscriptionStatus.TRIALING,
+            t,
+            status=SubscriptionStatus.TRIALING,
             trial_end=None,
         )
         request = MagicMock()

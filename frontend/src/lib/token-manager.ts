@@ -56,7 +56,9 @@ class TokenManager {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) return;
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const payloadSegment = parts[1];
+      if (!payloadSegment) return;
+      const payload = JSON.parse(atob(payloadSegment.replace(/-/g, '+').replace(/_/g, '/')));
       if (typeof payload.exp !== 'number') return;
 
       const nowSec = Math.floor(Date.now() / 1000);

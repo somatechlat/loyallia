@@ -95,7 +95,8 @@ const TYPE_VISUALS: Record<string, { title: string; headerLabel: string; headerV
 
 /* ── Full Phone-Frame Hover Preview per Card Type ───────────────────── */
 function WalletPreviewContent({ type }: { type: string }) {
-  const cfg = TYPE_VISUALS[type] || TYPE_VISUALS.stamp;
+  const cfg = TYPE_VISUALS[type] ?? TYPE_VISUALS.stamp;
+  if (!cfg) return null;
   const passStyle = APPLE_PASS_STYLES[type] || 'generic';
   const bgColor = '#1a1a2e';
   const textColor = '#ffffff';

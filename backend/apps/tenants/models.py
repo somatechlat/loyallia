@@ -5,6 +5,7 @@ Ecuadorian business fields for SRI compliance.
 """
 
 import re
+from contextlib import suppress
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -122,6 +123,7 @@ class Tenant(TimestampedModel):
     Root entity for all multi-tenant data isolation.
     Expanded with Ecuadorian business fields (RUC, legal name, etc.)
     """
+
     name = models.CharField(max_length=200, verbose_name="Nombre comercial")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
     # DEPRECATED (LYL-H-ARCH-011): plan is a denormalized cache of Subscription.status.
@@ -251,10 +253,8 @@ class Tenant(TimestampedModel):
 
         subscription = getattr(self, "subscription", None)
         if subscription is None:
-            try:
+            with suppress(Exception):
                 subscription = Subscription.objects.filter(tenant=self).first()
-            except Exception:
-                pass
 
         if subscription is not None:
             status_map = {
@@ -278,10 +278,8 @@ class Tenant(TimestampedModel):
 
         subscription = getattr(self, "subscription", None)
         if subscription is None:
-            try:
+            with suppress(Exception):
                 subscription = Subscription.objects.filter(tenant=self).first()
-            except Exception:
-                pass
 
         if subscription is not None:
             return subscription.is_trial_active
@@ -303,10 +301,8 @@ class Tenant(TimestampedModel):
 
         subscription = getattr(self, "subscription", None)
         if subscription is None:
-            try:
+            with suppress(Exception):
                 subscription = Subscription.objects.filter(tenant=self).first()
-            except Exception:
-                pass
 
         if subscription and subscription.trial_end:
             delta = subscription.trial_end - timezone.now()
@@ -327,10 +323,8 @@ class Tenant(TimestampedModel):
 
         subscription = getattr(self, "subscription", None)
         if subscription is None:
-            try:
+            with suppress(Exception):
                 subscription = Subscription.objects.filter(tenant=self).first()
-            except Exception:
-                pass
 
         if subscription is not None:
             return subscription.is_access_allowed

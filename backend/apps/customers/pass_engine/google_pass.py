@@ -13,10 +13,8 @@ Reference: https://developers.google.com/wallet/loyalty
 import json
 import logging
 import time
-from pathlib import Path
 
 import jwt  # PyJWT
-from django.conf import settings
 
 from apps.customers.pass_engine.google_pass_builders import (
     _build_gift_card_class,
@@ -49,7 +47,9 @@ def _load_service_account() -> dict | None:
         if sa_data and "private_key" in sa_data and "client_email" in sa_data:
             return sa_data
 
-        logger.warning("Google Service Account JSON in Vault is missing required fields")
+        logger.warning(
+            "Google Service Account JSON in Vault is missing required fields"
+        )
         return None
     except Exception as exc:
         logger.error("Failed to load Google Service Account from Vault: %s", exc)
@@ -283,7 +283,9 @@ def update_loyalty_class(card) -> dict:
             return {"success": True, "action": "patch"}
         if patch_resp.status_code == 404:
             logger.info("Class %s not found — creating via POST", class_id)
-            post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
+            post_resp = httpx.post(
+                base_url, json=payload, headers=headers, timeout=10.0
+            )
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Class created: %s", class_id)
                 return {"success": True, "action": "create"}

@@ -12,7 +12,7 @@ Usage:
 
 import functools
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from django.http import HttpRequest
 from django.utils import timezone
@@ -66,7 +66,6 @@ def get_tenant_limits(tenant) -> dict:
 
 def get_current_usage(tenant, resource: str) -> int:
     """Get the current usage count for a specific resource."""
-    from apps.billing.models import Subscription
     from apps.cards.models import Card
     from apps.customers.models import Customer
 
@@ -93,9 +92,7 @@ def get_current_usage(tenant, resource: str) -> int:
     return counter()
 
 
-def _count_monthly(
-    module_path: str, model_name: str, tenant, month_start
-) -> int:
+def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> int:
     """Dynamic import and count for monthly resources."""
     import importlib
 
@@ -121,6 +118,7 @@ def check_plan_limit(tenant, resource: str) -> None:
     Raises HttpError 402 if no subscription, 403 if over limit.
     """
     from django.db import transaction
+
     from apps.billing.models import Subscription
 
     with transaction.atomic():
@@ -175,9 +173,7 @@ def require_active_subscription(func):
     def wrapper(request: HttpRequest, *args, **kwargs):
         from apps.billing.models import Subscription
 
-        subscription = Subscription.objects.filter(
-            tenant=request.tenant
-        ).first()
+        subscription = Subscription.objects.filter(tenant=request.tenant).first()
         if not subscription or not subscription.is_access_allowed:
             raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
         return func(request, *args, **kwargs)

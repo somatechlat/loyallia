@@ -4,35 +4,39 @@ Tests for all Django models across all apps.
 """
 
 import uuid
+from contextlib import suppress
 from datetime import timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
 from apps.authentication.models import RefreshToken, User, UserRole
-from apps.automation.models import Automation, AutomationAction, AutomationTrigger
-from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
-from apps.cards.models import Card, CardType
-from apps.customers.models import Customer, CustomerPass
-from apps.tenants.models import Location, Plan, Tenant, validate_cedula, validate_ruc
-from apps.transactions.models import Enrollment, Transaction, TransactionType
+from apps.automation.models import AutomationAction, AutomationTrigger
+from apps.billing.models import Subscription, SubscriptionStatus
+from apps.cards.models import CardType
+from apps.tenants.models import Location, Plan, validate_cedula, validate_ruc
+from apps.transactions.models import TransactionType
 from tests.factories import (
+    make_automation,
     make_card,
     make_customer,
     make_customer_pass,
+    make_enrollment,
     make_full_stack,
     make_plan,
     make_subscription,
     make_tenant,
+    make_transaction,
     make_user,
 )
-
 
 # =============================================================================
 # Tenant Model Tests
 # =============================================================================
+
 
 class TenantModelTest(TestCase):
     """Tests for Tenant model."""
@@ -108,10 +112,8 @@ class TenantModelTest(TestCase):
 
     def test_validate_cedula_valid_format(self):
         # Province 01, 10 digits — module-10 check may fail but format is valid
-        try:
+        with suppress(ValidationError):
             validate_cedula("0102030405")
-        except ValidationError:
-            pass  # Module-10 check failure is acceptable
 
     def test_validate_cedula_invalid_length(self):
         with self.assertRaises(ValidationError):
@@ -138,7 +140,10 @@ class LocationModelTest(TestCase):
     def test_has_coordinates_true(self):
         t = make_tenant()
         loc = Location.objects.create(
-            tenant=t, name="Geo Store", latitude=Decimal("-0.1807"), longitude=Decimal("-78.4678")
+            tenant=t,
+            name="Geo Store",
+            latitude=Decimal("-0.1807"),
+            longitude=Decimal("-78.4678"),
         )
         self.assertTrue(loc.has_coordinates)
 
@@ -151,6 +156,7 @@ class LocationModelTest(TestCase):
 # =============================================================================
 # Authentication Model Tests
 # =============================================================================
+
 
 class UserModelTest(TestCase):
     """Tests for User model."""
@@ -269,6 +275,7 @@ class RefreshTokenModelTest(TestCase):
 # Card Model Tests
 # =============================================================================
 
+
 class CardModelTest(TestCase):
     """Tests for Card model and card-type validations."""
 
@@ -284,7 +291,9 @@ class CardModelTest(TestCase):
 
     def test_get_metadata_field(self):
         t = make_tenant()
-        card = make_card(t, metadata={"stamps_required": 10, "reward_description": "Free"})
+        card = make_card(
+            t, metadata={"stamps_required": 10, "reward_description": "Free"}
+        )
         self.assertEqual(card.get_metadata_field("stamps_required"), 10)
         self.assertIsNone(card.get_metadata_field("nonexistent"))
         self.assertEqual(card.get_metadata_field("nonexistent", "default"), "default")
@@ -296,7 +305,11 @@ class CardModelTest(TestCase):
 
     def test_validate_stamp_config_invalid_count(self):
         t = make_tenant()
-        card = make_card(t, card_type=CardType.STAMP, metadata={"stamps_required": 0, "reward_description": "X"})
+        card = make_card(
+            t,
+            card_type=CardType.STAMP,
+            metadata={"stamps_required": 0, "reward_description": "X"},
+        )
         with self.assertRaises(ValueError):
             card.validate_stamp_config()
 
@@ -307,9 +320,15 @@ class CardModelTest(TestCase):
 
     def test_validate_cashback_config_invalid_percentage(self):
         t = make_tenant()
-        card = make_card(t, card_type=CardType.CASHBACK, metadata={
-            "cashback_percentage": 0, "minimum_purchase": 0, "credit_expiry_days": 365,
-        })
+        card = make_card(
+            t,
+            card_type=CardType.CASHBACK,
+            metadata={
+                "cashback_percentage": 0,
+                "minimum_purchase": 0,
+                "credit_expiry_days": 365,
+            },
+        )
         with self.assertRaises(ValueError):
             card.validate_cashback_config()
 
@@ -320,19 +339,25 @@ class CardModelTest(TestCase):
 
     def test_validate_coupon_config_invalid_type(self):
         t = make_tenant()
-        card = make_card(t, card_type=CardType.COUPON, metadata={"discount_type": "invalid"})
+        card = make_card(
+            t, card_type=CardType.COUPON, metadata={"discount_type": "invalid"}
+        )
         with self.assertRaises(ValueError):
             card.validate_coupon_config()
 
     def test_validate_coupon_date_ordering(self):
         t = make_tenant()
-        card = make_card(t, card_type=CardType.COUPON, metadata={
-            "discount_type": "percentage",
-            "discount_value": 10,
-            "usage_limit_per_customer": 1,
-            "coupon_start_date": "2026-05-01",
-            "coupon_end_date": "2026-04-01",
-        })
+        card = make_card(
+            t,
+            card_type=CardType.COUPON,
+            metadata={
+                "discount_type": "percentage",
+                "discount_value": 10,
+                "usage_limit_per_customer": 1,
+                "coupon_start_date": "2026-05-01",
+                "coupon_end_date": "2026-04-01",
+            },
+        )
         with self.assertRaises(ValueError):
             card.validate_coupon_config()
 
@@ -359,9 +384,15 @@ class CardModelTest(TestCase):
 
     def test_validate_vip_membership_missing_name(self):
         t = make_tenant()
-        card = make_card(t, card_type=CardType.VIP_MEMBERSHIP, metadata={
-            "membership_name": "", "monthly_fee": 10, "validity_period": "monthly",
-        })
+        card = make_card(
+            t,
+            card_type=CardType.VIP_MEMBERSHIP,
+            metadata={
+                "membership_name": "",
+                "monthly_fee": 10,
+                "validity_period": "monthly",
+            },
+        )
         with self.assertRaises(ValueError):
             card.validate_vip_membership_config()
 
@@ -378,13 +409,14 @@ class CardModelTest(TestCase):
     def test_card_unique_together_tenant_name(self):
         t = make_tenant()
         make_card(t, name="Unique Card")
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             make_card(t, name="Unique Card")
 
 
 # =============================================================================
 # Customer Model Tests
 # =============================================================================
+
 
 class CustomerModelTest(TestCase):
     """Tests for Customer model."""
@@ -420,7 +452,7 @@ class CustomerModelTest(TestCase):
     def test_unique_together_tenant_email(self):
         t = make_tenant()
         make_customer(t, email="same@test.com")
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             make_customer(t, email="same@test.com")
 
 
@@ -468,7 +500,7 @@ class CustomerPassModelTest(TestCase):
         card = make_card(t)
         customer = make_customer(t)
         make_customer_pass(customer, card)
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             make_customer_pass(customer, card)
 
     def test_process_stamp_transaction_basic(self):
@@ -482,9 +514,11 @@ class CustomerPassModelTest(TestCase):
 
     def test_process_stamp_transaction_reward_earned(self):
         t = make_tenant()
-        card = make_card(t, card_type=CardType.STAMP, metadata={
-            "stamps_required": 3, "reward_description": "Free coffee"
-        })
+        card = make_card(
+            t,
+            card_type=CardType.STAMP,
+            metadata={"stamps_required": 3, "reward_description": "Free coffee"},
+        )
         customer = make_customer(t)
         cp = make_customer_pass(customer, card, pass_data={"stamp_count": 2})
         result = cp.process_transaction("stamp", quantity=1)
@@ -572,6 +606,7 @@ class CustomerPassModelTest(TestCase):
 # Transaction & Enrollment Model Tests
 # =============================================================================
 
+
 class TransactionModelTest(TestCase):
     """Tests for Transaction model."""
 
@@ -614,6 +649,7 @@ class EnrollmentModelTest(TestCase):
 # =============================================================================
 # Billing Model Tests
 # =============================================================================
+
 
 class SubscriptionPlanModelTest(TestCase):
     """Tests for SubscriptionPlan model."""
@@ -661,8 +697,11 @@ class SubscriptionModelTest(TestCase):
 
     def test_is_trial_active_true(self):
         t = make_tenant()
-        sub = make_subscription(t, status=SubscriptionStatus.TRIALING,
-                                trial_end=timezone.now() + timedelta(days=5))
+        sub = make_subscription(
+            t,
+            status=SubscriptionStatus.TRIALING,
+            trial_end=timezone.now() + timedelta(days=5),
+        )
         self.assertTrue(sub.is_trial_active)
 
     def test_is_trial_active_false_when_active(self):
@@ -677,8 +716,11 @@ class SubscriptionModelTest(TestCase):
 
     def test_is_access_allowed_trial(self):
         t = make_tenant()
-        sub = make_subscription(t, status=SubscriptionStatus.TRIALING,
-                                trial_end=timezone.now() + timedelta(days=5))
+        sub = make_subscription(
+            t,
+            status=SubscriptionStatus.TRIALING,
+            trial_end=timezone.now() + timedelta(days=5),
+        )
         self.assertTrue(sub.is_access_allowed)
 
     def test_is_access_allowed_suspended(self):
@@ -688,8 +730,11 @@ class SubscriptionModelTest(TestCase):
 
     def test_get_limit_trial_unlimited(self):
         t = make_tenant()
-        sub = make_subscription(t, status=SubscriptionStatus.TRIALING,
-                                trial_end=timezone.now() + timedelta(days=5))
+        sub = make_subscription(
+            t,
+            status=SubscriptionStatus.TRIALING,
+            trial_end=timezone.now() + timedelta(days=5),
+        )
         self.assertEqual(sub.get_limit("customers"), 999999)
 
     def test_get_limit_active_plan(self):
@@ -705,8 +750,11 @@ class SubscriptionModelTest(TestCase):
 
     def test_has_feature_trial_all_features(self):
         t = make_tenant()
-        sub = make_subscription(t, status=SubscriptionStatus.TRIALING,
-                                trial_end=timezone.now() + timedelta(days=5))
+        sub = make_subscription(
+            t,
+            status=SubscriptionStatus.TRIALING,
+            trial_end=timezone.now() + timedelta(days=5),
+        )
         self.assertTrue(sub.has_feature("anything"))
 
     def test_has_feature_from_plan(self):
@@ -727,8 +775,9 @@ class SubscriptionModelTest(TestCase):
     def test_activate_paid_annual_cycle(self):
         t = make_tenant()
         plan = make_plan()
-        sub = make_subscription(t, plan=plan, status=SubscriptionStatus.TRIALING,
-                                billing_cycle="annual")
+        sub = make_subscription(
+            t, plan=plan, status=SubscriptionStatus.TRIALING, billing_cycle="annual"
+        )
         sub.activate_paid()
         self.assertEqual(sub.status, SubscriptionStatus.ACTIVE)
 
@@ -765,8 +814,11 @@ class SubscriptionModelTest(TestCase):
 
     def test_days_until_trial_end(self):
         t = make_tenant()
-        sub = make_subscription(t, status=SubscriptionStatus.TRIALING,
-                                trial_end=timezone.now() + timedelta(days=10))
+        sub = make_subscription(
+            t,
+            status=SubscriptionStatus.TRIALING,
+            trial_end=timezone.now() + timedelta(days=10),
+        )
         self.assertGreaterEqual(sub.days_until_trial_end, 9)
 
     def test_days_until_trial_end_zero_when_no_trial(self):
@@ -784,6 +836,7 @@ class SubscriptionModelTest(TestCase):
 # =============================================================================
 # Automation Model Tests
 # =============================================================================
+
 
 class AutomationModelTest(TestCase):
     """Tests for Automation model."""
@@ -812,11 +865,13 @@ class AutomationModelTest(TestCase):
 # Audit Model Tests
 # =============================================================================
 
+
 class AuditLogModelTest(TestCase):
     """Tests for AuditLog immutability."""
 
     def test_create_audit_log(self):
         from apps.audit.models import AuditAction, AuditLog
+
         log = AuditLog.objects.create(
             actor_id=uuid.uuid4(),
             actor_email="test@test.com",
@@ -828,6 +883,7 @@ class AuditLogModelTest(TestCase):
 
     def test_audit_log_immutable_update_blocked(self):
         from apps.audit.models import AuditAction, AuditLog
+
         log = AuditLog.objects.create(
             actor_id=uuid.uuid4(),
             actor_email="test@test.com",
@@ -841,6 +897,7 @@ class AuditLogModelTest(TestCase):
 
     def test_audit_log_immutable_delete_blocked(self):
         from apps.audit.models import AuditAction, AuditLog
+
         log = AuditLog.objects.create(
             actor_id=uuid.uuid4(),
             actor_email="test@test.com",
@@ -853,6 +910,7 @@ class AuditLogModelTest(TestCase):
 
     def test_audit_log_str(self):
         from apps.audit.models import AuditAction, AuditLog
+
         log = AuditLog.objects.create(
             actor_id=uuid.uuid4(),
             actor_email="test@test.com",

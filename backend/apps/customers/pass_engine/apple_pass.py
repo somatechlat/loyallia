@@ -18,7 +18,6 @@ import io
 import json
 import logging
 import zipfile
-from pathlib import Path
 
 from django.conf import settings
 
@@ -70,9 +69,7 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     pass_style = APPLE_PASS_STYLES.get(card.card_type, "generic")
     fields = _build_fields_for_type(card, customer_pass)
     barcode_value = customer_pass.qr_code or str(customer_pass.id)
-    barcode_format = APPLE_BARCODE_FORMATS.get(
-        card.barcode_type, "PKBarcodeFormatQR"
-    )
+    barcode_format = APPLE_BARCODE_FORMATS.get(card.barcode_type, "PKBarcodeFormatQR")
 
     pass_json = {
         "formatVersion": 1,
@@ -164,8 +161,6 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
 
 def generate_pkpass(customer_pass) -> bytes | None:
     """Generate a real .pkpass file (signed ZIP) for Apple Wallet."""
-    config = _get_apple_config()
-
     if not _check_config_ready():
         logger.warning(
             "Apple Wallet configuration missing. "
@@ -187,18 +182,23 @@ def generate_pkpass(customer_pass) -> bytes | None:
         if not url:
             return None
         try:
-            from common.url_validator import validate_external_url, SSRFError
+            from common.url_validator import SSRFError, validate_external_url
+
             validate_external_url(url, allow_http=False)
 
             import httpx
 
-            with httpx.Client(timeout=10.0, follow_redirects=False, max_redirects=0) as client:
+            with httpx.Client(
+                timeout=10.0, follow_redirects=False, max_redirects=0
+            ) as client:
                 resp = client.get(url)
                 if resp.status_code == 200:
                     # Enforce 5MB max size
                     content = resp.content
                     if len(content) > 5 * 1024 * 1024:
-                        logger.warning("Image too large (%d bytes): %s", len(content), url)
+                        logger.warning(
+                            "Image too large (%d bytes): %s", len(content), url
+                        )
                         return None
                     return content
         except SSRFError as exc:

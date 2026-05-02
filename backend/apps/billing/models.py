@@ -4,7 +4,6 @@ Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
 
-import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -14,7 +13,6 @@ from django.utils import timezone
 
 from apps.tenants.models import Tenant
 from common.models import TimestampedModel
-
 
 # =============================================================================
 # PLAN FEATURE FLAGS (REQ-PLAN-003)
@@ -88,9 +86,7 @@ class SubscriptionPlan(TimestampedModel):
     max_customers = models.PositiveIntegerField(
         default=500, verbose_name="Máx. clientes"
     )
-    max_programs = models.PositiveIntegerField(
-        default=1, verbose_name="Máx. programas"
-    )
+    max_programs = models.PositiveIntegerField(default=1, verbose_name="Máx. programas")
     max_notifications_month = models.PositiveIntegerField(
         default=1000, verbose_name="Máx. notificaciones/mes"
     )
@@ -108,9 +104,7 @@ class SubscriptionPlan(TimestampedModel):
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     is_featured = models.BooleanField(default=False, verbose_name="Plan recomendado")
-    trial_days = models.PositiveIntegerField(
-        default=5, verbose_name="Días de prueba"
-    )
+    trial_days = models.PositiveIntegerField(default=5, verbose_name="Días de prueba")
     sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Orden")
 
     class Meta:
@@ -248,6 +242,9 @@ class Subscription(TimestampedModel):
     canceled_at = models.DateTimeField(
         null=True, blank=True, verbose_name="Cancelado en"
     )
+    trial_extended_count = models.SmallIntegerField(
+        default=0, verbose_name="Extensiones de trial"
+    )
 
     # Payment failure tracking
     failed_payment_count = models.SmallIntegerField(
@@ -341,13 +338,38 @@ class Subscription(TimestampedModel):
         from datetime import timedelta
 
         trial_days = getattr(settings, "TRIAL_DAYS", 5)
+
+        # Enforce trial extension limits (LYL-H-API-013)
+        if self.trial_start is not None:
+            if self.trial_extended_count >= 1:
+                raise ValueError("Trial cannot be extended more than once.")
+            self.trial_extended_count += 1
+            
+            # Extend from current trial_end or from now if already expired
+            base_date = self.trial_end if (self.trial_end and self.trial_end > timezone.now()) else timezone.now()
+            self.trial_end = base_date + timedelta(days=trial_days)
+            self.status = SubscriptionStatus.TRIALING
+            self.save(
+                update_fields=[
+                    "status",
+                    "trial_end",
+                    "trial_extended_count",
+                    "updated_at",
+                ]
+            )
+            return
+
         self.plan = "trial"
         self.status = SubscriptionStatus.TRIALING
         self.trial_start = timezone.now()
         self.trial_end = timezone.now() + timedelta(days=trial_days)
         self.save(
             update_fields=[
-                "plan", "status", "trial_start", "trial_end", "updated_at",
+                "plan",
+                "status",
+                "trial_start",
+                "trial_end",
+                "updated_at",
             ]
         )
 
@@ -397,10 +419,12 @@ class Subscription(TimestampedModel):
         self.cancel_at_period_end = False
         self.save(
             update_fields=[
-                "status", "canceled_at", "cancel_at_period_end", "updated_at",
+                "status",
+                "canceled_at",
+                "cancel_at_period_end",
+                "updated_at",
             ]
         )
-
 
 
 # =============================================================================
@@ -408,4 +432,3 @@ class Subscription(TimestampedModel):
 # =============================================================================
 
 from apps.billing.payment_models import Invoice, PaymentMethod  # noqa: E402, F401
-

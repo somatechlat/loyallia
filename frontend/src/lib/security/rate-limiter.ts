@@ -55,12 +55,13 @@ export function createRateLimiter(config: RateLimitConfig) {
     // Remove timestamps outside the sliding window
     entry.timestamps = entry.timestamps.filter(t => now - t < windowMs);
 
-    const resetAt = entry.timestamps.length > 0
-      ? entry.timestamps[0] + windowMs
+    const oldestTimestamp = entry.timestamps[0];
+    const resetAt = oldestTimestamp !== undefined
+      ? oldestTimestamp + windowMs
       : now + windowMs;
 
-    if (entry.timestamps.length >= maxRequests) {
-      const retryAfterMs = entry.timestamps[0] + windowMs - now;
+    if (entry.timestamps.length >= maxRequests && oldestTimestamp !== undefined) {
+      const retryAfterMs = oldestTimestamp + windowMs - now;
       return {
         allowed: false,
         remaining: 0,

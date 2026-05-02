@@ -88,7 +88,7 @@ interface StampIconProps {
 
 /** Renders a stamp icon by name */
 export function StampIcon({ name, className = 'w-6 h-6', filled = false }: StampIconProps) {
-  const d = STAMP_ICON_PATHS[name] || STAMP_ICON_PATHS['stamp'];
+  const d = STAMP_ICON_PATHS[name] ?? STAMP_ICON_PATHS.stamp ?? '';
   return (
     <svg
       className={className}

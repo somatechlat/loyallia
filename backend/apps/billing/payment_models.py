@@ -15,7 +15,6 @@ from apps.billing.models import Subscription
 from apps.tenants.models import Tenant
 from common.models import TimestampedModel
 
-
 # =============================================================================
 # PAYMENT METHOD
 # =============================================================================
@@ -163,11 +162,15 @@ class Invoice(TimestampedModel):
 
     # SRI Ecuador electronic invoice fields
     sri_authorization_number = models.CharField(
-        max_length=49, blank=True, default="",
+        max_length=49,
+        blank=True,
+        default="",
         verbose_name="Número de autorización SRI",
     )
     sri_access_key = models.CharField(
-        max_length=49, blank=True, default="",
+        max_length=49,
+        blank=True,
+        default="",
         verbose_name="Clave de acceso SRI",
     )
 

@@ -50,16 +50,20 @@ def _load_keys() -> tuple[str, str]:
         # Load private key
         private_key_path = getattr(settings, "JWT_PRIVATE_KEY_PATH", "")
         if private_key_path and os.path.isfile(private_key_path):
-            with open(private_key_path, "r") as f:
+            with open(private_key_path) as f:
                 _signing_key = f.read()
         else:
             # Try Vault
             try:
                 from common.vault import get_secret
 
-                _signing_key = get_secret("jwt_private_key", env_fallback="JWT_PRIVATE_KEY")
+                _signing_key = get_secret(
+                    "jwt_private_key", env_fallback="JWT_PRIVATE_KEY"
+                )
             except Exception:
-                logger.warning("RS256 configured but private key not found. Falling back to HS256.")
+                logger.warning(
+                    "RS256 configured but private key not found. Falling back to HS256."
+                )
                 _signing_key = settings.JWT_SECRET_KEY
                 _verification_key = settings.JWT_SECRET_KEY
                 _keys_loaded = True
@@ -68,14 +72,16 @@ def _load_keys() -> tuple[str, str]:
         # Load public key
         public_key_path = getattr(settings, "JWT_PUBLIC_KEY_PATH", "")
         if public_key_path and os.path.isfile(public_key_path):
-            with open(public_key_path, "r") as f:
+            with open(public_key_path) as f:
                 _verification_key = f.read()
         else:
             # Try Vault
             try:
                 from common.vault import get_secret
 
-                _verification_key = get_secret("jwt_public_key", env_fallback="JWT_PUBLIC_KEY")
+                _verification_key = get_secret(
+                    "jwt_public_key", env_fallback="JWT_PUBLIC_KEY"
+                )
             except Exception:
                 _verification_key = _signing_key
 
@@ -131,9 +137,7 @@ def create_access_token(user_id: str, tenant_id: str | None, role: str) -> str:
         ),
         "type": "access",
     }
-    return jwt.encode(
-        payload, _get_signing_key(), algorithm=settings.JWT_ALGORITHM
-    )
+    return jwt.encode(payload, _get_signing_key(), algorithm=settings.JWT_ALGORITHM)
 
 
 def _utcnow() -> datetime:

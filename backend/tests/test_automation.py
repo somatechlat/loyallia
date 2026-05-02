@@ -6,7 +6,7 @@ cooldown enforcement, daily limits, and AutomationExecution log.
 
 import uuid
 from datetime import timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
@@ -18,24 +18,18 @@ from apps.automation.models import (
     AutomationExecution,
     AutomationTrigger,
 )
-from apps.cards.models import CardType
-from apps.customers.models import CustomerPass
 from tests.factories import (
+    make_automation,
     make_card,
     make_customer,
     make_customer_pass,
-    make_full_stack,
-    make_automation,
-    make_plan,
-    make_subscription,
     make_tenant,
-    make_user,
 )
-
 
 # =============================================================================
 # Automation Model Tests
 # =============================================================================
+
 
 class AutomationCreateTest(TestCase):
     """Tests for Automation creation and basic properties."""
@@ -88,6 +82,7 @@ class AutomationCreateTest(TestCase):
 # =============================================================================
 # can_execute_for_customer Tests
 # =============================================================================
+
 
 class CanExecuteForCustomerTest(TestCase):
     """Tests for Automation.can_execute_for_customer cooldown logic."""
@@ -168,6 +163,7 @@ class CanExecuteForCustomerTest(TestCase):
 # Automation Execution Tests
 # =============================================================================
 
+
 class AutomationExecuteTest(TestCase):
     """Tests for Automation.execute method."""
 
@@ -213,7 +209,7 @@ class AutomationExecuteTest(TestCase):
         self.assertIsNotNone(auto.last_executed)
 
     def test_execute_blocked_when_inactive(self):
-        auto = make_automation(self.tenant, is_active=False)
+        make_automation(self.tenant, is_active=False)
         # Inactive automation won't match in fire_trigger, but direct call
         # should still respect can_execute
         # Note: execute doesn't check is_active directly — fire_trigger does
@@ -234,6 +230,7 @@ class AutomationExecuteTest(TestCase):
 # =============================================================================
 # Daily Limits Tests
 # =============================================================================
+
 
 class AutomationDailyLimitsTest(TestCase):
     """Tests for max_executions_per_day enforcement."""
@@ -309,6 +306,7 @@ class AutomationDailyLimitsTest(TestCase):
 # Action Execution Tests
 # =============================================================================
 
+
 class AutomationActionTest(TestCase):
     """Tests for individual automation actions."""
 
@@ -379,6 +377,7 @@ class AutomationActionTest(TestCase):
 # =============================================================================
 # AutomationExecution Model Tests
 # =============================================================================
+
 
 class AutomationExecutionModelTest(TestCase):
     """Tests for AutomationExecution log model."""

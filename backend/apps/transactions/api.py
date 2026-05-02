@@ -144,6 +144,7 @@ def transact(request, data: ScanTransactIn):
 
     # Trigger async tenant analytics recalculation
     from apps.analytics.tasks import update_tenant_analytics
+
     update_tenant_analytics.apply_async(args=[str(request.tenant.id)], countdown=2)
 
     # Fire automation trigger asynchronously — do not block the scanner response
@@ -197,16 +198,16 @@ def search_customer(request, query: str):
     if not query or len(query.strip()) < 2:
         raise HttpError(400, get_message("TRANSACTION_SEARCH_MIN_CHARS"))
 
-    customers = Customer.objects.filter(tenant=request.tenant, is_active=True).filter(
-        Q(email__icontains=query)
-        | Q(phone__icontains=query)
-        | Q(first_name__icontains=query)
-        | Q(last_name__icontains=query)
-    ).prefetch_related(
-        "passes__card"
-    )[
-        :10
-    ]  # Limit results
+    customers = (
+        Customer.objects.filter(tenant=request.tenant, is_active=True)
+        .filter(
+            Q(email__icontains=query)
+            | Q(phone__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+        )
+        .prefetch_related("passes__card")[:10]
+    )  # Limit results
 
     results = []
     for customer in customers:
@@ -240,7 +241,12 @@ def list_transactions(request, limit: int = 50, offset: int = 0):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     transactions = (
         Transaction.objects.filter(tenant=request.tenant)
-        .select_related("customer_pass__customer", "customer_pass__card", "customer_pass__card__tenant", "staff")
+        .select_related(
+            "customer_pass__customer",
+            "customer_pass__card",
+            "customer_pass__card__tenant",
+            "staff",
+        )
         .order_by("-created_at")[offset : offset + limit]
     )
 

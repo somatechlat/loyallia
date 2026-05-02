@@ -13,7 +13,6 @@ Returns HTTP 429 Too Many Requests with Retry-After header on violation.
 """
 
 import logging
-import time
 
 from django.http import HttpRequest, JsonResponse
 
@@ -21,17 +20,37 @@ logger = logging.getLogger(__name__)
 
 # Rate limit rules: (path_prefix, key_type, max_requests, window_seconds)
 RATE_LIMIT_RULES = [
-    ("/api/v1/auth/login", "ip", 5, 60),         # 5 login attempts per minute per IP
-    ("/api/v1/auth/register", "ip", 10, 60),      # 10 registrations per minute per IP
-    ("/api/v1/auth/phone/", "ip", 3, 60),         # HARDENED: 3 OTP requests per min to prevent SMS spam cost
-    ("/api/v1/wallet/", "ip", 30, 60),            # HARDENED: 30 PKPass requests per min to prevent CPU exhaustion
-    ("/api/v1/auth/google/config", "ip", 200, 60),# 200 config requests per minute per IP
-    ("/api/v1/auth/me", "ip", 200, 60),           # 200 session checks per minute per IP
-    ("/api/v1/auth/", "ip", 20, 60),              # 20 general auth requests per minute per IP
-    ("/api/v1/scanner/", "user", 120, 60),         # 120 scans per minute per user
-    ("/api/v1/analytics/", "user", 20, 60),        # 20 analytics queries per minute per user
-    ("/api/v1/notifications/", "user", 30, 60),    # 30 notification ops per minute per user
-    ("/api/v1/", "ip", 200, 60),                   # 200 general API requests per minute per IP
+    ("/api/v1/auth/login", "ip", 5, 60),  # 5 login attempts per minute per IP
+    ("/api/v1/auth/register", "ip", 10, 60),  # 10 registrations per minute per IP
+    (
+        "/api/v1/auth/phone/",
+        "ip",
+        3,
+        60,
+    ),  # HARDENED: 3 OTP requests per min to prevent SMS spam cost
+    (
+        "/api/v1/wallet/",
+        "ip",
+        30,
+        60,
+    ),  # HARDENED: 30 PKPass requests per min to prevent CPU exhaustion
+    (
+        "/api/v1/auth/google/config",
+        "ip",
+        200,
+        60,
+    ),  # 200 config requests per minute per IP
+    ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP
+    ("/api/v1/auth/", "ip", 20, 60),  # 20 general auth requests per minute per IP
+    ("/api/v1/scanner/", "user", 120, 60),  # 120 scans per minute per user
+    ("/api/v1/analytics/", "user", 20, 60),  # 20 analytics queries per minute per user
+    (
+        "/api/v1/notifications/",
+        "user",
+        30,
+        60,
+    ),  # 30 notification ops per minute per user
+    ("/api/v1/", "ip", 200, 60),  # 200 general API requests per minute per IP
 ]
 
 # SECURITY (LYL-C-SEC-002): Auth endpoints MUST fail CLOSED when Redis is unavailable.
@@ -57,6 +76,11 @@ def _get_client_ip(request: HttpRequest) -> str:
     return request.META.get("REMOTE_ADDR", "unknown")
 
 
+def get_client_ip(request: HttpRequest) -> str:
+    """Public helper for endpoint-level rate limits."""
+    return _get_client_ip(request)
+
+
 class RateLimitMiddleware:
     """
     Redis-backed sliding window rate limiter.
@@ -75,6 +99,7 @@ class RateLimitMiddleware:
             return None
         try:
             from django_redis import get_redis_connection
+
             conn = get_redis_connection("default")
             self._redis_available = True
             return conn
@@ -123,7 +148,8 @@ class RateLimitMiddleware:
                 else:
                     # Use a hash of the token as the user key (avoids storing tokens)
                     import hashlib
-                    token_hash = hashlib.md5(auth_header.encode()).hexdigest()[:12]
+
+                    token_hash = hashlib.sha256(auth_header.encode()).hexdigest()[:16]
                     rate_key = f"rl:{rule_path}:user:{token_hash}"
             else:
                 rate_key = f"rl:{rule_path}:ip:{client_ip}"
@@ -135,7 +161,7 @@ class RateLimitMiddleware:
                 # Only set TTL on first request to prevent permanent lockouts
                 results = pipe.execute()
                 current_count = results[0]
-                
+
                 if current_count == 1:
                     redis.expire(rate_key, window)
             except Exception:
@@ -152,7 +178,11 @@ class RateLimitMiddleware:
 
                 logger.warning(
                     "Rate limit exceeded: path=%s ip=%s key=%s count=%d limit=%d",
-                    path, client_ip, rate_key, current_count, max_requests,
+                    path,
+                    client_ip,
+                    rate_key,
+                    current_count,
+                    max_requests,
                 )
                 return JsonResponse(
                     {

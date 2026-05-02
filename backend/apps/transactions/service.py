@@ -9,7 +9,7 @@ from decimal import Decimal
 from django.db import transaction as db_transaction
 
 from apps.customers.models import Customer, CustomerPass
-from apps.transactions.models import Enrollment, Transaction, TransactionType
+from apps.transactions.models import Enrollment, Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,9 @@ class TransactionService:
     """Service class encapsulating transaction business logic."""
 
     @staticmethod
-    def scan_qr(tenant, qr_code, amount=0, quantity=1, staff=None, notes="", location=None):
+    def scan_qr(
+        tenant, qr_code, amount=0, quantity=1, staff=None, notes="", location=None
+    ):
         """
         Process a QR scan transaction.
 
@@ -115,7 +117,9 @@ class TransactionService:
             raise ValueError("Card is not active")
 
         if CustomerPass.objects.filter(customer=customer, card=card).exists():
-            raise ValueError(f"Customer {customer.email} is already enrolled in {card.name}")
+            raise ValueError(
+                f"Customer {customer.email} is already enrolled in {card.name}"
+            )
 
         pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 

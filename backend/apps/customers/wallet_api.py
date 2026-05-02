@@ -133,6 +133,7 @@ def download_apple_pass(request, pass_id: str):
 
     # Cache the heavily CPU/Network bound .pkpass generation
     from django.core.cache import cache
+
     cache_key = f"pkpass:{pass_id}:{customer_pass.last_updated.timestamp()}"
     pkpass_bytes = cache.get(cache_key)
 

@@ -7,30 +7,24 @@ For actual multi-threaded tests, we use threading with select_for_update pattern
 """
 
 import threading
-import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from decimal import Decimal
 
-from django.test import TestCase, TransactionTestCase
+from django.db import IntegrityError
+from django.test import TestCase
 
-from apps.billing.models import SubscriptionStatus
 from apps.cards.models import CardType
 from apps.customers.models import CustomerPass
 from tests.factories import (
     make_card,
     make_customer,
     make_customer_pass,
-    make_full_stack,
-    make_plan,
-    make_subscription,
     make_tenant,
-    make_user,
 )
-
 
 # =============================================================================
 # Coupon Double-Redemption Tests
 # =============================================================================
+
 
 class CouponDoubleRedemptionTest(TestCase):
     """Test that coupon redemption is atomic — no double-redemption under concurrent access."""
@@ -93,6 +87,7 @@ class CouponDoubleRedemptionTest(TestCase):
 # Concurrent Enrollment Tests
 # =============================================================================
 
+
 class ConcurrentEnrollmentTest(TestCase):
     """Test that enrollment prevents duplicates under concurrent access."""
 
@@ -103,7 +98,7 @@ class ConcurrentEnrollmentTest(TestCase):
         customer = make_customer(t)
         make_customer_pass(customer, card)
         # Second enrollment should fail due to unique_together
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             make_customer_pass(customer, card)
 
     def test_enrollment_different_customers_succeed(self):
@@ -121,15 +116,18 @@ class ConcurrentEnrollmentTest(TestCase):
 # Stamp Counter Race Condition Tests
 # =============================================================================
 
+
 class StampRaceConditionTest(TestCase):
     """Test that stamp counter uses select_for_update to prevent lost updates."""
 
     def test_stamp_increment_is_atomic(self):
         """Concurrent stamp increments should not lose updates."""
         t = make_tenant()
-        card = make_card(t, card_type=CardType.STAMP, metadata={
-            "stamps_required": 100, "reward_description": "Free"
-        })
+        card = make_card(
+            t,
+            card_type=CardType.STAMP,
+            metadata={"stamps_required": 100, "reward_description": "Free"},
+        )
         customer = make_customer(t)
         cp = make_customer_pass(customer, card, pass_data={"stamp_count": 0})
 
@@ -160,6 +158,7 @@ class StampRaceConditionTest(TestCase):
 # =============================================================================
 # Cashback Race Condition Tests
 # =============================================================================
+
 
 class CashbackRaceConditionTest(TestCase):
     """Test that cashback balance updates are atomic."""
@@ -197,6 +196,7 @@ class CashbackRaceConditionTest(TestCase):
 # Gift Certificate Balance Tests
 # =============================================================================
 
+
 class GiftBalanceRaceConditionTest(TestCase):
     """Test that gift certificate balance prevents overdraft under concurrent access."""
 
@@ -212,7 +212,9 @@ class GiftBalanceRaceConditionTest(TestCase):
         def redeem(amount):
             try:
                 fresh_cp = CustomerPass.objects.get(pk=cp.pk)
-                result = fresh_cp.process_transaction("gift", amount=Decimal(str(amount)))
+                result = fresh_cp.process_transaction(
+                    "gift", amount=Decimal(str(amount))
+                )
                 results.append(result["pass_updated"])
             except Exception:
                 results.append(False)
@@ -238,6 +240,7 @@ class GiftBalanceRaceConditionTest(TestCase):
 # =============================================================================
 # Multipass Race Condition Tests
 # =============================================================================
+
 
 class MultipassRaceConditionTest(TestCase):
     """Test that multipass usage is atomic."""
@@ -278,17 +281,22 @@ class MultipassRaceConditionTest(TestCase):
 # Referral Limit Tests
 # =============================================================================
 
+
 class ReferralLimitRaceConditionTest(TestCase):
     """Test that referral count respects max_referrals_per_customer."""
 
     def test_referral_count_respects_max(self):
         """Cannot exceed max_referrals_per_customer."""
         t = make_tenant()
-        card = make_card(t, card_type=CardType.REFERRAL_PASS, metadata={
-            "referrer_reward": "Free item",
-            "referee_reward": "10% off",
-            "max_referrals_per_customer": 3,
-        })
+        card = make_card(
+            t,
+            card_type=CardType.REFERRAL_PASS,
+            metadata={
+                "referrer_reward": "Free item",
+                "referee_reward": "10% off",
+                "max_referrals_per_customer": 3,
+            },
+        )
         customer = make_customer(t)
         cp = make_customer_pass(customer, card, pass_data={"referral_count": 0})
 
@@ -304,6 +312,7 @@ class ReferralLimitRaceConditionTest(TestCase):
 # Discount Tier Race Condition Tests
 # =============================================================================
 
+
 class DiscountTierRaceConditionTest(TestCase):
     """Test that discount tier calculation is atomic under concurrent scans."""
 
@@ -312,9 +321,13 @@ class DiscountTierRaceConditionTest(TestCase):
         t = make_tenant()
         card = make_card(t, card_type=CardType.DISCOUNT)
         customer = make_customer(t)
-        cp = make_customer_pass(customer, card, pass_data={
-            "total_spent_at_business": "0",
-        })
+        cp = make_customer_pass(
+            customer,
+            card,
+            pass_data={
+                "total_spent_at_business": "0",
+            },
+        )
 
         errors = []
 

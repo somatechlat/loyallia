@@ -45,9 +45,7 @@ class AgentAPIKeyAuth(HttpBearer):
         # Check Enterprise plan (agent_api feature required)
         from apps.billing.models import Subscription
 
-        subscription = Subscription.objects.filter(
-            tenant=api_key.tenant
-        ).first()
+        subscription = Subscription.objects.filter(tenant=api_key.tenant).first()
         if not subscription or not subscription.has_feature("agent_api"):
             logger.warning(
                 "Agent API access denied — plan does not include agent_api: %s",

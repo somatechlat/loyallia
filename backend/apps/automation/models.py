@@ -144,6 +144,7 @@ class Automation(TimestampedModel):
         # LYL-H-API-011: Per-customer cooldown (not global)
         if self.cooldown_hours > 0:
             from datetime import timedelta
+
             from django.utils import timezone
 
             last_for_customer = (
@@ -174,7 +175,6 @@ class Automation(TimestampedModel):
 
         # LYL-H-API-016: Enforce max_executions_per_day limit
         if self.max_executions_per_day is not None and self.max_executions_per_day > 0:
-            from datetime import timedelta
             from django.utils import timezone
 
             today_start = timezone.now().replace(
@@ -222,7 +222,11 @@ class Automation(TimestampedModel):
 
     def _execute_send_notification(self, customer, context) -> bool:
         """Send notification to customer."""
-        from apps.notifications.models import Notification, NotificationChannel, NotificationType
+        from apps.notifications.models import (
+            Notification,
+            NotificationChannel,
+            NotificationType,
+        )
         from apps.notifications.service import NotificationService
 
         title = self.action_config.get("title", "Notificación automática")
@@ -323,7 +327,9 @@ class AutomationExecution(models.Model):
         ]
 
     def __repr__(self) -> str:
-        return f"<AutomationExecution: {self.automation.name} → {self.customer.full_name}>"
+        return (
+            f"<AutomationExecution: {self.automation.name} → {self.customer.full_name}>"
+        )
 
     def __str__(self) -> str:
         return f"{self.automation.name} → {self.customer.full_name}"
