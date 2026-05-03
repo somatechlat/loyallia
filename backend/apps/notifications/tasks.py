@@ -78,7 +78,7 @@ def send_email_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    from apps.customers.api import _apply_segment_filter
+    from apps.customers.segment_api import _apply_segment_filter
 
     base_qs = Customer.objects.filter(
         tenant=tenant, is_active=True, email__isnull=False, email__gt=""
@@ -199,7 +199,7 @@ def send_wallet_notification_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    from apps.customers.api import _apply_segment_filter
+    from apps.customers.segment_api import _apply_segment_filter
 
     base_qs = Customer.objects.filter(tenant=tenant, is_active=True)
     audience = _apply_segment_filter(base_qs, segment_id)
@@ -321,7 +321,7 @@ def send_whatsapp_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    from apps.customers.api import _apply_segment_filter
+    from apps.customers.segment_api import _apply_segment_filter
 
     base_qs = Customer.objects.filter(tenant=tenant, is_active=True)
     audience = _apply_segment_filter(base_qs, segment_id)

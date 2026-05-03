@@ -7,10 +7,11 @@ Each factory creates minimal valid objects with sensible defaults.
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from typing import cast
 
 from django.utils import timezone
 
-from apps.authentication.models import User, UserRole
+from apps.authentication.models import User, UserManager, UserRole
 from apps.automation.models import Automation, AutomationAction, AutomationTrigger
 from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
 from apps.cards.models import Card, CardType
@@ -38,22 +39,23 @@ import os
 
 def make_user(
     tenant=None,
-    role=UserRole.OWNER,
+    role: UserRole | str = UserRole.OWNER,
     password=os.environ.get("TEST_USER_PASSWORD", "TestOnlyPass123!"),
     **kwargs,
 ):
     """Create a User with sensible defaults."""
+    role_value = UserRole(role) if isinstance(role, str) else role
     defaults = {
         "email": f"user-{uuid.uuid4().hex[:6]}@test.com",
         "first_name": "Test",
         "last_name": "User",
-        "role": role,
+        "role": role_value,
         "is_active": True,
         "is_email_verified": True,
     }
     defaults.update(kwargs)
     pwd = defaults.pop("password", password)
-    user = User.objects.create_user(password=pwd, **defaults)
+    user = cast(UserManager, User.objects).create_user(password=pwd, **defaults)
     if tenant:
         user.tenant = tenant
         user.save(update_fields=["tenant"])

@@ -104,7 +104,7 @@ class Card(TimestampedModel):
         default=list, blank=True, verbose_name="Ubicaciones (Geofencing)"
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_cards"
         verbose_name = "Programa de fidelización"
         verbose_name_plural = "Programas de fidelización"
@@ -115,12 +115,12 @@ class Card(TimestampedModel):
         ]  # Prevent duplicate program names per tenant
 
     def __repr__(self) -> str:
-        return (
-            f"<Card: {self.name} ({self.get_card_type_display()}) - {self.tenant.name}>"
-        )
+        card_type_label = dict(CardType.choices).get(self.card_type, self.card_type)
+        return f"<Card: {self.name} ({card_type_label}) - {self.tenant.name}>"
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.get_card_type_display()}) - {self.tenant.name}"
+        card_type_label = dict(CardType.choices).get(self.card_type, self.card_type)
+        return f"{self.name} ({card_type_label}) - {self.tenant.name}"
 
     def get_metadata_field(self, key: str, default=None):
         """Helper to safely get metadata fields."""

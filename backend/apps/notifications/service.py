@@ -3,6 +3,8 @@ Loyallia — Notification Service
 Handles sending push notifications, emails, and SMS.
 """
 
+from __future__ import annotations
+
 import logging
 
 from django.core.mail import send_mail
@@ -74,11 +76,15 @@ class NotificationService:
         return notification
 
     @staticmethod
-    def send_reminder_notification(customer: Customer, tenant: Tenant) -> Notification:
+    def send_reminder_notification(
+        customer: Customer, tenant: Tenant
+    ) -> Notification | None:
         """Send reminder to visit a program."""
-        programs = customer.passes.filter(is_active=True)
+        programs = CustomerPass.objects.filter(customer=customer, is_active=True)
         if programs.exists():
             program = programs.first()
+            if program is None:
+                return None
             notification = Notification.objects.create(
                 tenant=tenant,
                 customer=customer,
@@ -103,11 +109,13 @@ class NotificationService:
         return None
 
     @staticmethod
-    def send_birthday_notification(customer, tenant) -> "Notification":
+    def send_birthday_notification(customer, tenant) -> Notification | None:
         """Send birthday push to customer for any active loyalty pass they hold."""
         # Use any active pass for the notification context
         active_pass = (
-            customer.passes.filter(is_active=True).select_related("card").first()
+            CustomerPass.objects.filter(customer=customer, is_active=True)
+            .select_related("card")
+            .first()
         )
         if not active_pass:
             logger.info(
@@ -115,6 +123,7 @@ class NotificationService:
                 customer.id,
             )
             return None
+        assert active_pass is not None
 
         notification = Notification.objects.create(
             tenant=tenant,

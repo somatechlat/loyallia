@@ -214,7 +214,7 @@ export default function SuperAdminTenants() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-surface-900 tracking-tight">Negocios</h1>
+          <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">Negocios</h1>
           <p className="text-surface-500 mt-1">{tenants.length} clientes corporativos registrados</p>
         </div>
         <button id="btn-wizard-open" onClick={openWizard} className="btn-primary flex items-center gap-2">
@@ -226,7 +226,7 @@ export default function SuperAdminTenants() {
       {creationResult && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-6 shadow-sm">
           <h3 className="text-lg font-bold text-brand-900 mb-2">Negocio creado correctamente</h3>
-          <div className="bg-white rounded-xl p-4 border border-brand-100 font-mono text-sm space-y-2">
+          <div className="bg-white dark:bg-surface-900 rounded-xl p-4 border border-brand-100 font-mono text-sm space-y-2">
             <p><span className="font-bold text-surface-500">Tenant ID:</span> {creationResult.tenant_id}</p>
             <p><span className="font-bold text-surface-500">Email Owner:</span> {creationResult.owner_email}</p>
             <p><span className="font-bold text-surface-500">Password Temporal:</span> <span className="bg-brand-100 text-brand-800 px-2 py-0.5 rounded">{creationResult.temp_password}</span></p>
@@ -243,7 +243,7 @@ export default function SuperAdminTenants() {
             <div className="h-1.5 bg-gradient-to-r from-brand-400 via-purple-400 to-brand-600" />
             <div className="p-6 border-b border-surface-100">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-black text-surface-900">Registrar Nuevo Negocio</h2>
+                <h2 className="text-xl font-black text-surface-900 dark:text-white">Registrar Nuevo Negocio</h2>
                 <button onClick={() => setWizardOpen(false)} className="w-8 h-8 rounded-xl bg-surface-100 hover:bg-surface-200 flex items-center justify-center">{IC.x}</button>
               </div>
               <div className="flex gap-2">{WIZARD_STEPS.map(s => (<div key={s.n} className="flex-1"><div className={`h-1.5 rounded-full transition-all ${step >= s.n ? 'bg-brand-500' : 'bg-surface-200'}`} /><p className={`text-xs mt-1 ${step >= s.n ? 'text-brand-600 font-semibold' : 'text-surface-400'}`}>{s.n}. {s.l}</p></div>))}</div>
@@ -252,19 +252,19 @@ export default function SuperAdminTenants() {
               {/* STEP 1: Entity Type + Company */}
               {step === 1 && (<div className="space-y-5">
                 <div>
-                  <h3 className="font-bold text-surface-800 text-lg mb-3">Tipo de Entidad</h3>
+                  <h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg mb-3">Tipo de Entidad</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <button id="entity-juridica" onClick={() => setEntityType('juridica')} className={`p-4 rounded-xl border-2 text-left transition-all ${entityType === 'juridica' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 hover:border-surface-300'}`}>
-                      <div className="flex items-center gap-2 mb-1">{IC.bldg}<span className="font-bold text-surface-900">Persona Jurídica</span></div>
+                    <button id="entity-juridica" onClick={() => setEntityType('juridica')} className={`p-4 rounded-xl border-2 text-left transition-all ${entityType === 'juridica' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
+                      <div className="flex items-center gap-2 mb-1">{IC.bldg}<span className="font-bold text-surface-900 dark:text-white">Persona Jurídica</span></div>
                       <p className="text-xs text-surface-500">Empresa, sociedad o compañía con RUC</p>
                     </button>
-                    <button id="entity-natural" onClick={() => setEntityType('natural')} className={`p-4 rounded-xl border-2 text-left transition-all ${entityType === 'natural' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 hover:border-surface-300'}`}>
-                      <div className="flex items-center gap-2 mb-1">{IC.user}<span className="font-bold text-surface-900">Persona Natural</span></div>
+                    <button id="entity-natural" onClick={() => setEntityType('natural')} className={`p-4 rounded-xl border-2 text-left transition-all ${entityType === 'natural' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
+                      <div className="flex items-center gap-2 mb-1">{IC.user}<span className="font-bold text-surface-900 dark:text-white">Persona Natural</span></div>
                       <p className="text-xs text-surface-500">Emprendedor individual con cédula</p>
                     </button>
                   </div>
                 </div>
-                <h3 className="font-bold text-surface-800 text-lg">Datos del Negocio</h3>
+                <h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">Datos del Negocio</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div><label className="label">Nombre Comercial *</label><input id="wiz-name" required className="input" placeholder={entityType === 'natural' ? 'María López — Pastelería' : 'Sweet & Coffee'} value={company.name} onChange={e => setCompany({...company, name: e.target.value})} /></div>
                   {entityType === 'juridica' ? (
@@ -286,15 +286,15 @@ export default function SuperAdminTenants() {
                 </div>
               </div>)}
               {/* STEP 2: Owner */}
-              {step === 2 && (<div className="space-y-4"><h3 className="font-bold text-surface-800 text-lg">Propietario / Administrador</h3><p className="text-sm text-surface-500">Esta persona será el administrador principal (OWNER) del negocio.</p><div className="grid grid-cols-2 gap-4">
+              {step === 2 && (<div className="space-y-4"><h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">Propietario / Administrador</h3><p className="text-sm text-surface-500">Esta persona será el administrador principal (OWNER) del negocio.</p><div className="grid grid-cols-2 gap-4">
                 <div><label className="label">Nombre *</label><input id="wiz-owner-fn" required className="input" placeholder="Juan" value={owner.owner_first_name} onChange={e => setOwner({...owner, owner_first_name: e.target.value})} /></div>
                 <div><label className="label">Apellido *</label><input id="wiz-owner-ln" required className="input" placeholder="Pérez" value={owner.owner_last_name} onChange={e => setOwner({...owner, owner_last_name: e.target.value})} /></div>
                 <div className="col-span-2"><label className="label">Email *</label><input id="wiz-owner-email" required type="email" className="input" placeholder="gerencia@empresa.com.ec" value={owner.owner_email} onChange={e => setOwner({...owner, owner_email: e.target.value})} /></div>
                 <div><label className="label">Cédula del propietario</label><input className="input font-mono" maxLength={10} placeholder="1712345678" value={owner.owner_cedula} onChange={e => setOwner({...owner, owner_cedula: e.target.value.replace(/\D/g, '')})} /></div>
               </div><div className="bg-surface-50 rounded-xl p-4 border border-surface-100 mt-4"><p className="text-xs text-surface-500">Se generará una contraseña temporal automáticamente.</p></div></div>)}
               {/* STEP 3: Locations */}
-              {step === 3 && (<div className="space-y-4"><div className="flex justify-between items-center"><div><h3 className="font-bold text-surface-800 text-lg">Sucursales</h3><p className="text-sm text-surface-500">Registra las tiendas/locales del negocio.</p></div><button onClick={addWLoc} className="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">{IC.plus} Agregar</button></div>
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">{wLocs.map((loc, idx) => (<div key={idx} className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-4 border border-surface-200/50 space-y-3"><div className="flex justify-between items-center"><span className="text-xs font-semibold text-surface-500">Sucursal {idx+1} {loc.is_primary && '(Principal)'}</span>{idx > 0 && <button onClick={() => rmWLoc(idx)} className="text-xs text-red-500 hover:text-red-700">Eliminar</button>}</div><div className="grid grid-cols-2 gap-3">
+              {step === 3 && (<div className="space-y-4"><div className="flex justify-between items-center"><div><h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">Sucursales</h3><p className="text-sm text-surface-500">Registra las tiendas/locales del negocio.</p></div><button onClick={addWLoc} className="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">{IC.plus} Agregar</button></div>
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">{wLocs.map((loc, idx) => (<div key={idx} className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-4 border border-surface-200 dark:border-surface-700/50 space-y-3"><div className="flex justify-between items-center"><span className="text-xs font-semibold text-surface-500">Sucursal {idx+1} {loc.is_primary && '(Principal)'}</span>{idx > 0 && <button onClick={() => rmWLoc(idx)} className="text-xs text-red-500 hover:text-red-700">Eliminar</button>}</div><div className="grid grid-cols-2 gap-3">
                   <div><label className="text-xs font-medium text-surface-600 mb-1 block">Nombre *</label><input className="input text-sm" placeholder="Mall del Sol" value={loc.name} onChange={e => upWLoc(idx, 'name', e.target.value)} /></div>
                   <div><label className="text-xs font-medium text-surface-600 mb-1 block">Ciudad</label><input className="input text-sm" placeholder="Guayaquil" value={loc.city} onChange={e => upWLoc(idx, 'city', e.target.value)} /></div>
                   <div className="col-span-2"><label className="text-xs font-medium text-surface-600 mb-1 block">Dirección</label><input className="input text-sm" value={loc.address} onChange={e => upWLoc(idx, 'address', e.target.value)} /></div>
@@ -302,14 +302,14 @@ export default function SuperAdminTenants() {
                   <div><label className="text-xs font-medium text-surface-600 mb-1 block">Longitud</label><input type="number" step="0.000001" className="input text-sm font-mono" placeholder="-79.8965" value={loc.longitude||''} onChange={e => upWLoc(idx, 'longitude', e.target.value ? +e.target.value : null)} /></div>
                 </div></div>))}</div></div>)}
               {/* STEP 4: Plan */}
-              {step === 4 && (<div className="space-y-6"><h3 className="font-bold text-surface-800 text-lg">Plan y Facturación</h3>
-                <div className="grid grid-cols-3 gap-3">{plans.filter((p) => p.is_active).map((plan) => (<button key={plan.slug} onClick={() => setPlanSlug(plan.slug)} className={`text-left p-4 rounded-xl border-2 transition-all ${planSlug === plan.slug ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 hover:border-surface-300'}`}><p className="font-bold text-surface-900 text-sm">{plan.name}</p><p className="text-2xl font-black text-surface-900 mt-1">${plan.price_monthly}<span className="text-xs text-surface-400">/mes</span></p><p className="text-xs text-surface-500 mt-1">{plan.trial_days} días gratis</p></button>))}</div>
-                <div><label className="label">Ciclo de Facturación</label><div className="flex gap-3"><button onClick={() => setBillingCycle('monthly')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'monthly' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200'}`}>Mensual</button><button onClick={() => setBillingCycle('annual')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'annual' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200'}`}>Anual (20% desc.)</button></div></div>
-                <div className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-5 border border-surface-200/50 space-y-2 text-sm"><h4 className="font-bold text-surface-900 mb-3">Resumen</h4><div className="grid grid-cols-2 gap-y-2"><span className="text-surface-500">Tipo:</span><span className="font-medium">{entityType === 'natural' ? 'Persona Natural' : 'Persona Jurídica'}</span><span className="text-surface-500">Empresa:</span><span className="font-medium">{company.name||'—'}</span><span className="text-surface-500">{entityType === 'juridica' ? 'RUC:' : 'Cédula:'}</span><span className="font-mono">{entityType === 'juridica' ? company.ruc||'—' : company.cedula||'—'}</span><span className="text-surface-500">Propietario:</span><span>{owner.owner_first_name} {owner.owner_last_name}</span><span className="text-surface-500">Email:</span><span>{owner.owner_email}</span><span className="text-surface-500">Sucursales:</span><span>{wLocs.filter(l => l.name.trim()).length}</span><span className="text-surface-500">Plan:</span><span className="font-semibold text-brand-600">{selPlan?.name || planSlug}</span></div></div>
+              {step === 4 && (<div className="space-y-6"><h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">Plan y Facturación</h3>
+                <div className="grid grid-cols-3 gap-3">{plans.filter((p) => p.is_active).map((plan) => (<button key={plan.slug} onClick={() => setPlanSlug(plan.slug)} className={`text-left p-4 rounded-xl border-2 transition-all ${planSlug === plan.slug ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}><p className="font-bold text-surface-900 dark:text-white text-sm">{plan.name}</p><p className="text-2xl font-black text-surface-900 dark:text-white mt-1">${plan.price_monthly}<span className="text-xs text-surface-400">/mes</span></p><p className="text-xs text-surface-500 mt-1">{plan.trial_days} días gratis</p></button>))}</div>
+                <div><label className="label">Ciclo de Facturación</label><div className="flex gap-3"><button onClick={() => setBillingCycle('monthly')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'monthly' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 dark:border-surface-700'}`}>Mensual</button><button onClick={() => setBillingCycle('annual')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'annual' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 dark:border-surface-700'}`}>Anual (20% desc.)</button></div></div>
+                <div className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-5 border border-surface-200 dark:border-surface-700/50 space-y-2 text-sm"><h4 className="font-bold text-surface-900 dark:text-white mb-3">Resumen</h4><div className="grid grid-cols-2 gap-y-2"><span className="text-surface-500">Tipo:</span><span className="font-medium">{entityType === 'natural' ? 'Persona Natural' : 'Persona Jurídica'}</span><span className="text-surface-500">Empresa:</span><span className="font-medium">{company.name||'—'}</span><span className="text-surface-500">{entityType === 'juridica' ? 'RUC:' : 'Cédula:'}</span><span className="font-mono">{entityType === 'juridica' ? company.ruc||'—' : company.cedula||'—'}</span><span className="text-surface-500">Propietario:</span><span>{owner.owner_first_name} {owner.owner_last_name}</span><span className="text-surface-500">Email:</span><span>{owner.owner_email}</span><span className="text-surface-500">Sucursales:</span><span>{wLocs.filter(l => l.name.trim()).length}</span><span className="text-surface-500">Plan:</span><span className="font-semibold text-brand-600">{selPlan?.name || planSlug}</span></div></div>
               </div>)}
             </div>
             <div className="px-6 py-4 border-t border-surface-100 flex justify-between">
-              <button onClick={() => step > 1 ? setStep(step-1) : setWizardOpen(false)} className="px-4 py-2 text-surface-600 hover:text-surface-900 font-medium">{step === 1 ? 'Cancelar' : 'Anterior'}</button>
+              <button onClick={() => step > 1 ? setStep(step-1) : setWizardOpen(false)} className="px-4 py-2 text-surface-600 hover:text-surface-900 dark:text-white font-medium">{step === 1 ? 'Cancelar' : 'Anterior'}</button>
               {step < 4 ? <button id="wiz-next" onClick={() => setStep(step+1)} className="btn-primary" disabled={step === 1 && !company.name.trim()}>Siguiente</button> : <button id="wiz-submit" onClick={handleSubmit} className="btn-primary">Registrar Negocio</button>}
             </div>
           </div>
@@ -317,13 +317,13 @@ export default function SuperAdminTenants() {
       )}
 
       {/* ═══ TABLE ═══ */}
-      <div className="bg-white shadow-sm border border-surface-200 rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-surface-900 shadow-sm border border-surface-200 dark:border-surface-700 rounded-2xl overflow-hidden">
         {loading ? <div className="p-12 flex justify-center"><div className="spinner w-8 h-8" /></div> : (
           <table className="w-full text-left border-collapse">
-            <thead><tr className="bg-surface-50 border-b border-surface-200 text-xs font-medium text-surface-500 uppercase tracking-wide">
+            <thead><tr className="bg-surface-50 border-b border-surface-200 dark:border-surface-700 text-xs font-medium text-surface-500 uppercase tracking-wide">
               <th className="px-5 py-3">Negocio</th><th className="px-5 py-3">RUC / Cédula</th><th className="px-5 py-3">Ciudad</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3 text-center">Usuarios</th><th className="px-5 py-3 text-center">Sucursales</th><th className="px-5 py-3">Estado</th><th className="px-5 py-3"></th>
             </tr></thead>
-            <tbody className="divide-y divide-surface-100 text-sm text-surface-900">
+            <tbody className="divide-y divide-surface-100 text-sm text-surface-900 dark:text-white">
               {tenants.map((t) => (
                 <tr key={t.id} className="hover:bg-surface-50 transition-colors cursor-pointer" onClick={() => openDetail(t)}>
                   <td className="px-5 py-3"><p className="font-semibold">{t.name}</p>{t.legal_name && <p className="text-xs text-surface-400 truncate max-w-[180px]">{t.legal_name}</p>}</td>
@@ -349,7 +349,7 @@ export default function SuperAdminTenants() {
             <div className="h-1.5 bg-gradient-to-r from-brand-400 via-emerald-400 to-purple-500 flex-shrink-0" />
             <div className="px-6 pt-5 pb-3 flex items-center justify-between flex-shrink-0">
               <div>
-                <h2 className="text-xl font-black text-surface-900">{dt.name}</h2>
+                <h2 className="text-xl font-black text-surface-900 dark:text-white">{dt.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`w-2 h-2 rounded-full ${dt.is_active?'bg-green-500':'bg-red-400'}`} />
                   <span className="text-xs text-surface-400">{dt.is_active?'Activo':'Suspendido'}</span>
@@ -360,7 +360,7 @@ export default function SuperAdminTenants() {
               <button onClick={closeDetail} className="w-8 h-8 rounded-xl bg-surface-100 hover:bg-surface-200 flex items-center justify-center">{IC.x}</button>
             </div>
             {/* Tabs */}
-            <div className="px-6 flex gap-1 border-b border-surface-200/50 flex-shrink-0">
+            <div className="px-6 flex gap-1 border-b border-surface-200 dark:border-surface-700/50 flex-shrink-0">
               {([['info', IC.info, 'Información'], ['locs', IC.pin, 'Sucursales'], ['actions', IC.bolt, 'Acciones']] as const).map(([key, icon, label]) => (
                 <button key={key} onClick={() => { setDtTab(key); setDtEdit(false); setEditLoc(null); }}
                   className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${dtTab===key?'border-brand-500 text-brand-600':'border-transparent text-surface-400 hover:text-surface-600'}`}>{icon}{label}</button>
@@ -390,7 +390,7 @@ export default function SuperAdminTenants() {
                     <EF l="Nombre Comercial" v={dtForm.name || ''} c={v => setDtForm(f => ({...f, name: v}))} />
                     <EF l="Razón Social" v={dtForm.legal_name || ''} c={v => setDtForm(f => ({...f, legal_name: v}))} />
                     <EF l="RUC" v={dtForm.ruc || ''} c={v => setDtForm(f => ({...f, ruc: v.replace(/\D/g,'')}))} />
-                    <div><label className="text-xs font-semibold text-surface-500 mb-1 block">Industria</label><select value={dtForm.industry || ''} onChange={e => setDtForm(f => ({...f, industry: e.target.value}))} className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white/60 backdrop-blur-sm text-sm">{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
+                    <div><label className="text-xs font-semibold text-surface-500 mb-1 block">Industria</label><select value={dtForm.industry || ''} onChange={e => setDtForm(f => ({...f, industry: e.target.value}))} className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm">{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
                     <EF l="Ciudad" v={dtForm.city || ''} c={v => setDtForm(f => ({...f, city: v}))} />
                     <EF l="Teléfono" v={dtForm.phone || ''} c={v => setDtForm(f => ({...f, phone: v}))} />
                   </div>
@@ -410,7 +410,7 @@ export default function SuperAdminTenants() {
                     <button onClick={openLocNew} className="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">{IC.plus} Agregar</button>
                   </div>
                   {dtLocs.filter(l => l.latitude && l.longitude).length > 0 && (
-                    <div className="h-[200px] rounded-xl overflow-hidden border border-surface-200/50">
+                    <div className="h-[200px] rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700/50">
                       <LocationMap locations={dtLocs.filter(l => l.latitude && l.longitude).map(l => ({ id: l.id, name: l.name, lat: l.latitude!, lng: l.longitude!, city: l.city, address: l.address, phone: l.phone, is_active: l.is_active, is_primary: l.is_primary, tenant_name: dt.name }))} />
                     </div>
                   )}
@@ -418,11 +418,11 @@ export default function SuperAdminTenants() {
                     <div className="space-y-2">
                       {dtLocs.map(loc => (
                         <div key={loc.id} onClick={() => openLocEdit(loc)}
-                          className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-3 border border-surface-200/50 flex items-center justify-between cursor-pointer hover:bg-surface-100/80 transition-all group">
+                          className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-3 border border-surface-200 dark:border-surface-700/50 flex items-center justify-between cursor-pointer hover:bg-surface-100/80 transition-all group">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${loc.is_active?'bg-green-500':'bg-red-400'}`} />
                             <div className="min-w-0">
-                              <p className="font-semibold text-sm text-surface-900 group-hover:text-brand-600 truncate">{loc.name}{loc.is_primary && <span className="ml-1.5 text-brand-500">{IC.star}</span>}</p>
+                              <p className="font-semibold text-sm text-surface-900 dark:text-white group-hover:text-brand-600 truncate">{loc.name}{loc.is_primary && <span className="ml-1.5 text-brand-500">{IC.star}</span>}</p>
                               <p className="text-xs text-surface-400 truncate">{loc.address||loc.city||'Sin dirección'}</p>
                             </div>
                           </div>
@@ -434,7 +434,7 @@ export default function SuperAdminTenants() {
                   )}
                   {editLoc && (
                     <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-brand-200 shadow-lg space-y-3">
-                      <h4 className="font-bold text-surface-900 text-sm">{editLoc === 'new' ? 'Nueva Sucursal' : `Editar: ${editLoc?.name}`}</h4>
+                      <h4 className="font-bold text-surface-900 dark:text-white text-sm">{editLoc === 'new' ? 'Nueva Sucursal' : `Editar: ${editLoc?.name}`}</h4>
                       <div className="grid grid-cols-2 gap-3">
                         <EF l="Nombre" v={locForm.name || ''} c={v => setLocForm(f => ({...f, name: v}))} />
                         <EF l="Ciudad" v={locForm.city || ''} c={v => setLocForm(f => ({...f, city: v}))} />
@@ -463,8 +463,8 @@ export default function SuperAdminTenants() {
               {/* ACTIONS TAB */}
               {dtTab === 'actions' && (
                 <div className="space-y-4">
-                  <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200/50">
-                    <h4 className="font-bold text-surface-900 text-sm mb-2">Estado del Negocio</h4>
+                  <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
+                    <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">Estado del Negocio</h4>
                     <p className="text-xs text-surface-500 mb-3">{dt.is_active ? 'El negocio está activo y operativo.' : 'El negocio está suspendido.'}</p>
                     {dt.is_active ? (
                       <button onClick={doSuspend} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.pause} Suspender Negocio</button>
@@ -472,8 +472,8 @@ export default function SuperAdminTenants() {
                       <button onClick={doReactivate} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.play} Reactivar Negocio</button>
                     )}
                   </div>
-                  <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200/50">
-                    <h4 className="font-bold text-surface-900 text-sm mb-2">Impersonar</h4>
+                  <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
+                    <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">Impersonar</h4>
                     <p className="text-xs text-surface-500 mb-3">Iniciar sesión como el propietario de este negocio para soporte.</p>
                     {/* SEC-009 fix: backup admin token before impersonation */}
                     <button onClick={async () => {
@@ -493,8 +493,8 @@ export default function SuperAdminTenants() {
                     }}
                       className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.key} Impersonar Propietario</button>
                   </div>
-                  <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200/50">
-                    <h4 className="font-bold text-surface-900 text-sm mb-1">Información Técnica</h4>
+                  <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
+                    <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-1">Información Técnica</h4>
                     <div className="text-xs font-mono text-surface-500 space-y-1 mt-2">
                       <p>ID: {dt.id}</p><p>Slug: {dt.slug || '—'}</p><p>Creado: {dt.created_at}</p>
                     </div>
@@ -510,11 +510,11 @@ export default function SuperAdminTenants() {
 }
 
 function DRow({ l, v, full, mono }: { l: string; v: string; full?: boolean; mono?: boolean }) {
-  return (<div className={full ? 'col-span-2' : ''}><p className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider mb-0.5">{l}</p><p className={`text-sm text-surface-800 font-medium ${mono?'font-mono':''}`}>{v}</p></div>);
+  return (<div className={full ? 'col-span-2' : ''}><p className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider mb-0.5">{l}</p><p className={`text-sm text-surface-800 dark:text-surface-100 font-medium ${mono?'font-mono':''}`}>{v}</p></div>);
 }
 function StatBox({ v, l }: { v: number; l: string }) {
-  return (<div className="bg-surface-50/80 rounded-xl p-3 text-center"><p className="text-2xl font-black text-surface-900">{v}</p><p className="text-[10px] text-surface-400 font-semibold uppercase">{l}</p></div>);
+  return (<div className="bg-surface-50/80 rounded-xl p-3 text-center"><p className="text-2xl font-black text-surface-900 dark:text-white">{v}</p><p className="text-[10px] text-surface-400 font-semibold uppercase">{l}</p></div>);
 }
 function EF({ l, v, c }: { l: string; v: string; c: (v: string) => void }) {
-  return (<div><label className="text-xs font-semibold text-surface-500 mb-1 block">{l}</label><input type="text" value={v} onChange={e => c(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white/60 backdrop-blur-sm text-sm text-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all" /></div>);
+  return (<div><label className="text-xs font-semibold text-surface-500 mb-1 block">{l}</label><input type="text" value={v} onChange={e => c(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all" /></div>);
 }

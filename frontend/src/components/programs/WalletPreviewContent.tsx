@@ -162,7 +162,7 @@ function WalletPreviewContent({ type }: { type: string }) {
             </div>
             {/* QR */}
             <div className="flex justify-center pb-2">
-              <div className="bg-white/90 rounded-lg p-1">
+              <div className="bg-[#ffffff]/90 rounded-lg p-1">
                 <svg width="24" height="24" viewBox="0 0 21 21">
                   <rect width="21" height="21" fill="white" rx={1} />
                   <rect x="1" y="1" width="7" height="7" fill="none" stroke="#111" strokeWidth="1.2" />

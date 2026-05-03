@@ -7,11 +7,11 @@ import django
 
 django.setup()
 from apps.notifications.models import PushDevice
-from apps.loyalty.models import LoyaltyPass
+from apps.customers.models import CustomerPass
 
 print(f"=== Firebase Push Verification ===")
 print(f"Total push devices: {PushDevice.objects.count()}")
-print(f"Total loyalty passes: {LoyaltyPass.objects.count()}")
+print(f"Total customer passes: {CustomerPass.objects.count()}")
 print()
 print("Push devices:")
 for d in PushDevice.objects.all()[:10]:
@@ -21,10 +21,10 @@ for d in PushDevice.objects.all()[:10]:
         f"  ID={d.id} user={d.user_id} type={d.device_type} active={active} fcm={fcm}..."
     )
 print()
-print("Loyalty passes with customers:")
-for p in LoyaltyPass.objects.select_related("customer", "program").all()[:10]:
+print("Customer passes with customers:")
+for p in CustomerPass.objects.select_related("customer", "card").all()[:10]:
     print(
-        f"  Pass ID={p.id} customer={p.customer_id} program={p.program_id} status={p.status}"
+        f"  Pass ID={p.id} customer={p.customer_id} card={p.card_id} active={p.is_active}"
     )
 
 # Test FCM auth

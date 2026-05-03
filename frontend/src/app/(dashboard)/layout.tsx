@@ -73,7 +73,7 @@ function ImpersonationBanner() {
           <span className="text-purple-200 text-xs ml-1">({mins}:{secs.toString().padStart(2, '0')} restante)</span>
         )}
       </span>
-      <button onClick={handleReturn} className="bg-white text-purple-700 hover:bg-purple-50 px-3 py-1 rounded-lg text-xs font-bold transition-colors">
+      <button onClick={handleReturn} className="bg-white dark:bg-surface-900 text-purple-700 hover:bg-purple-50 px-3 py-1 rounded-lg text-xs font-bold transition-colors">
         ← Volver al Admin
       </button>
     </div>
@@ -111,7 +111,7 @@ const NavIcon = React.memo(function NavIcon({ icon, className = 'w-5 h-5' }: { i
 
 /** Static className strings for nav links (PERF-004) */
 const NAV_LINK_ACTIVE = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 font-semibold';
-const NAV_LINK_INACTIVE = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-white';
+const NAV_LINK_INACTIVE = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-900 dark:text-white dark:hover:text-white';
 
 const OWNER_NAV = [
   { href: '/',             label: 'Resumen',       icon: 'home' },

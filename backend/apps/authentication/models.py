@@ -21,7 +21,7 @@ class UserRole(models.TextChoices):
     STAFF = "STAFF", "Personal"
 
 
-class UserManager(BaseUserManager):
+class UserManager(BaseUserManager["User"]):
     def create_user(self, email: str, password: str, **extra_fields) -> "User":
         """Create and save a regular user with the given email and password."""
         if not email:

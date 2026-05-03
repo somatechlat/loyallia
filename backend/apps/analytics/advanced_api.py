@@ -189,8 +189,8 @@ def get_top_buyers(request, limit: int = 15, days: int = 30):
                 "name": c.full_name,
                 "email": c.email,
                 "phone": c.phone,
-                "total_spent": float(c.period_spent or 0),
-                "visits": c.period_visits or 0,
+                "total_spent": float(getattr(c, "period_spent", 0) or 0),
+                "visits": int(getattr(c, "period_visits", 0) or 0),
                 "last_visit": c.last_visit.isoformat() if c.last_visit else None,
             }
             for c in top

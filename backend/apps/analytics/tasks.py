@@ -4,6 +4,7 @@ Asynchronous calculation of business intelligence metrics.
 """
 
 import logging
+from datetime import timedelta
 
 from celery import shared_task
 
@@ -53,13 +54,8 @@ def update_tenant_analytics(self, tenant_id: str) -> dict:
     # 2. Update Daily Analytics for the last 7 days to catch late syncs
     today = timezone.localdate()
     for days_ago in range(7):
-        target_date = today - timezone.timedelta(days=days_ago)
-        daily, _ = DailyAnalytics.objects.get_or_create(
-            tenant=tenant, analytics_date=target_date
-        )
-        # Assuming update_metrics exists on DailyAnalytics
-        if hasattr(daily, "update_metrics"):
-            daily.update_metrics()
+        target_date = today - timedelta(days=days_ago)
+        DailyAnalytics.objects.get_or_create(tenant=tenant, analytics_date=target_date)
 
     logger.debug("Tenant analytics updated for tenant %s", tenant_id)
     return {"success": True}

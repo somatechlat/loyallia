@@ -3,6 +3,8 @@ Loyallia — Audit API Response Schemas (Django Ninja / Pydantic)
 Typed response models for audit log endpoints.
 """
 
+from __future__ import annotations
+
 from ninja import Schema
 
 

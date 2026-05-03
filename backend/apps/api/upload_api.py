@@ -9,13 +9,14 @@ import uuid
 from io import BytesIO
 
 from django.core.files.storage import default_storage
-from ninja import File, Router
+from ninja import Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from PIL import Image, UnidentifiedImageError
 
 from common.messages import get_message
 from common.permissions import jwt_auth
+from common.request import as_tenant_request
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +28,14 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
 @router.post("/", auth=jwt_auth, summary="Subir imagen")
-def upload_file(request, file: UploadedFile = File(...)):
+def upload_file(request, file: UploadedFile):
     """
     Uploads an image (logo, strip) to cloud storage and returns the public URL.
     Only allows image files up to 5MB.
     """
-    ext = os.path.splitext(file.name)[1].lower()
+    request = as_tenant_request(request)
+    filename = file.name or ""
+    ext = os.path.splitext(filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HttpError(
             400,
@@ -42,7 +45,7 @@ def upload_file(request, file: UploadedFile = File(...)):
             ),
         )
 
-    if file.size > MAX_FILE_SIZE:
+    if file.size is None or file.size > MAX_FILE_SIZE:
         raise HttpError(
             400,
             get_message(
@@ -73,9 +76,7 @@ def upload_file(request, file: UploadedFile = File(...)):
 
     try:
         # Generate random unique filename to prevent collisions and path traversal
-        tenant_dirname = (
-            str(request.tenant.id) if getattr(request, "tenant", None) else "platform"
-        )
+        tenant_dirname = str(request.tenant.id) if request.tenant else "platform"
         filename = f"uploads/{tenant_dirname}/{uuid.uuid4().hex}{ext}"
 
         # Save to S3/MinIO

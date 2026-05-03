@@ -130,6 +130,7 @@ class TransactionServiceRemoteIssueTest(TestCase):
         )
         txn = Transaction.objects.filter(customer_pass=cp, is_remote=True).first()
         self.assertIsNotNone(txn)
+        assert txn is not None
         self.assertTrue(txn.is_remote)
 
 

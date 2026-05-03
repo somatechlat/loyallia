@@ -4,6 +4,8 @@ Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
 
+from __future__ import annotations
+
 from decimal import Decimal
 
 from django.conf import settings
@@ -107,7 +109,7 @@ class SubscriptionPlan(TimestampedModel):
     trial_days = models.PositiveIntegerField(default=5, verbose_name="Días de prueba")
     sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Orden")
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_subscription_plans"
         verbose_name = "Plan de Suscripción"
         verbose_name_plural = "Planes de Suscripción"
@@ -257,7 +259,7 @@ class Subscription(TimestampedModel):
         null=True, blank=True, verbose_name="Último pago exitoso"
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_subscriptions"
         verbose_name = "Suscripción"
         verbose_name_plural = "Suscripciones"
@@ -344,9 +346,13 @@ class Subscription(TimestampedModel):
             if self.trial_extended_count >= 1:
                 raise ValueError("Trial cannot be extended more than once.")
             self.trial_extended_count += 1
-            
+
             # Extend from current trial_end or from now if already expired
-            base_date = self.trial_end if (self.trial_end and self.trial_end > timezone.now()) else timezone.now()
+            base_date = (
+                self.trial_end
+                if (self.trial_end and self.trial_end > timezone.now())
+                else timezone.now()
+            )
             self.trial_end = base_date + timedelta(days=trial_days)
             self.status = SubscriptionStatus.TRIALING
             self.save(

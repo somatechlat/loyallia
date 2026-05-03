@@ -117,7 +117,7 @@ export default function SettingsPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Business info */}
           <div className="card p-6 space-y-4">
-            <h2 className="text-base font-semibold text-surface-900">Informacion del negocio</h2>
+            <h2 className="text-base font-semibold text-surface-900 dark:text-white">Informacion del negocio</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="biz-name">Nombre del negocio</label>
@@ -153,7 +153,7 @@ export default function SettingsPage() {
 
           {/* Branding */}
           <div className="card p-6 space-y-4">
-            <h2 className="text-base font-semibold text-surface-900">Identidad visual</h2>
+            <h2 className="text-base font-semibold text-surface-900 dark:text-white">Identidad visual</h2>
 
             {/* Logo Upload */}
             <div>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
               <div>
                 <label className="label">Color primario</label>
                 <div className="flex items-center gap-3">
-                  <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200"
+                  <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200 dark:border-surface-700"
                     value={form.primary_color} onChange={e => setForm(f => ({ ...f, primary_color: e.target.value }))} />
                   <span className="text-xs font-mono text-surface-500">{form.primary_color}</span>
                 </div>
@@ -220,20 +220,20 @@ export default function SettingsPage() {
               <div>
                 <label className="label">Color secundario</label>
                 <div className="flex items-center gap-3">
-                  <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200"
+                  <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200 dark:border-surface-700"
                     value={form.secondary_color} onChange={e => setForm(f => ({ ...f, secondary_color: e.target.value }))} />
                   <span className="text-xs font-mono text-surface-500">{form.secondary_color}</span>
                 </div>
               </div>
             </div>
             {/* Preview */}
-            <div className="p-4 rounded-xl border border-surface-200 flex items-center gap-4 bg-surface-50">
+            <div className="p-4 rounded-xl border border-surface-200 dark:border-surface-700 flex items-center gap-4 bg-surface-50">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg"
                 style={{ backgroundColor: form.primary_color }}>
                 {form.name?.[0] || 'L'}
               </div>
               <div>
-                <p className="font-semibold text-surface-900">{form.name || 'Tu Negocio'}</p>
+                <p className="font-semibold text-surface-900 dark:text-white">{form.name || 'Tu Negocio'}</p>
                 <p className="text-xs text-surface-500">Vista previa de tu marca</p>
               </div>
             </div>
@@ -248,7 +248,7 @@ export default function SettingsPage() {
         <div className="space-y-4">
           {/* Account info */}
           <div className="card p-5">
-            <h3 className="font-semibold text-surface-900 mb-3">Tu cuenta</h3>
+            <h3 className="font-semibold text-surface-900 dark:text-white mb-3">Tu cuenta</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-surface-500">Nombre</span><span className="font-medium">{user?.full_name}</span></div>
               <div className="flex justify-between"><span className="text-surface-500">Email</span><span className="font-medium text-xs">{user?.email}</span></div>
@@ -259,7 +259,7 @@ export default function SettingsPage() {
           {/* Plan info */}
           {tenant && (
             <div className="card p-5">
-              <h3 className="font-semibold text-surface-900 mb-3">Plan actual</h3>
+              <h3 className="font-semibold text-surface-900 dark:text-white mb-3">Plan actual</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-surface-500">Plan</span>
@@ -282,7 +282,7 @@ export default function SettingsPage() {
           {/* Password change */}
           <div className="card p-5">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-surface-900">Seguridad</h3>
+              <h3 className="font-semibold text-surface-900 dark:text-white">Seguridad</h3>
             </div>
             {!showPwSection ? (
               <button onClick={() => setShowPwSection(true)} className="btn-secondary text-sm w-full" id="show-password-btn">

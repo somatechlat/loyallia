@@ -109,9 +109,10 @@ def verify_otp(email: str, otp: str, purpose: str) -> bool:
 
 def issue_tokens(user: User) -> dict:
     """Create access + refresh token pair, persist refresh token hash in DB."""
+    tenant_id = str(user.tenant.id) if user.tenant else None
     access = create_access_token(
         user_id=str(user.id),
-        tenant_id=str(user.tenant_id) if user.tenant_id else None,
+        tenant_id=tenant_id,
         role=user.role,
     )
     refresh_str = create_refresh_token_string()
@@ -128,6 +129,6 @@ def issue_tokens(user: User) -> dict:
         "refresh_token": refresh_str,
         "token_type": "bearer",
         "user_id": str(user.id),
-        "tenant_id": str(user.tenant_id) if user.tenant_id else None,
+        "tenant_id": tenant_id,
         "role": user.role,
     }

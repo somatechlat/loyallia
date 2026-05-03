@@ -226,7 +226,7 @@ export default function CustomersPage() {
                 ].map((col) => (
                   <span
                     key={col}
-                    className="bg-surface-100 text-surface-600 text-xs px-2 py-1 rounded border border-surface-200 font-mono"
+                    className="bg-surface-100 text-surface-600 text-xs px-2 py-1 rounded border border-surface-200 dark:border-surface-700 font-mono"
                   >
                     {col}
                   </span>

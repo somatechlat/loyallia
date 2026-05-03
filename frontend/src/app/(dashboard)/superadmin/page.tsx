@@ -76,21 +76,21 @@ export default function SuperAdminDashboard() {
   return (
     <div className="space-y-6">
       <header className="mb-2">
-        <h1 className="text-3xl font-black text-surface-900 tracking-tight">SaaS Central Command</h1>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">SaaS Central Command</h1>
         <p className="text-surface-500 mt-1">Visión global de la plataforma Loyallia — Ecuador</p>
       </header>
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpis.map(({ label, value, color, icon }) => (
-          <div key={label} className="bg-white p-5 rounded-2xl border border-surface-200 shadow-sm flex flex-col gap-2 hover:shadow-md transition-shadow">
+          <div key={label} className="bg-white dark:bg-surface-900 p-5 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm flex flex-col gap-2 hover:shadow-md transition-shadow">
             <div className={`w-10 h-10 rounded-xl ${colorMap[color]} flex items-center justify-center`}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
               </svg>
             </div>
             <p className="text-xs font-medium text-surface-500 mt-1">{label}</p>
-            <p className="text-3xl font-black text-surface-900">{value}</p>
+            <p className="text-3xl font-black text-surface-900 dark:text-white">{value}</p>
           </div>
         ))}
       </div>
@@ -98,9 +98,9 @@ export default function SuperAdminDashboard() {
       {/* Map + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-surface-100">
-            <h2 className="font-bold text-surface-900">Mapa de Sucursales — Ecuador</h2>
+            <h2 className="font-bold text-surface-900 dark:text-white">Mapa de Sucursales — Ecuador</h2>
             <p className="text-xs text-surface-400">{locations.length} ubicaciones registradas</p>
           </div>
           <div className="h-[400px]">
@@ -109,16 +109,16 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-2xl border border-surface-200 shadow-sm">
+        <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm">
           <div className="p-4 border-b border-surface-100">
-            <h2 className="font-bold text-surface-900">Actividad Reciente</h2>
+            <h2 className="font-bold text-surface-900 dark:text-white">Actividad Reciente</h2>
           </div>
           <div className="divide-y divide-surface-100 max-h-[400px] overflow-y-auto">
             {(metrics?.recent_tenants || []).map((t) => (
               <div key={t.id} className="px-4 py-3 flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${t.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-surface-900 truncate">{t.name}</p>
+                  <p className="text-sm font-medium text-surface-900 dark:text-white truncate">{t.name}</p>
                   <p className="text-xs text-surface-400">{t.city || 'Ecuador'} — {t.plan.toUpperCase()}</p>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${

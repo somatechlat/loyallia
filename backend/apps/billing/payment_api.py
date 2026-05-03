@@ -25,10 +25,19 @@ from apps.billing.payment_models import WebhookEvent
 from apps.billing.schemas import AddPaymentMethodSchema
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
+from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.billing")
 
 router = Router()
+
+INVOICE_STATUS_LABELS = {
+    Invoice.InvoiceStatus.DRAFT: "Borrador",
+    Invoice.InvoiceStatus.OPEN: "Abierta",
+    Invoice.InvoiceStatus.PAID: "Pagada",
+    Invoice.InvoiceStatus.VOID: "Anulada",
+    Invoice.InvoiceStatus.UNCOLLECTIBLE: "Incobrable",
+}
 
 
 # ============================================================================
@@ -39,8 +48,9 @@ router = Router()
 @router.get("/payment-methods/", auth=jwt_auth, summary="Listar metodos de pago")
 def list_payment_methods(request: HttpRequest):
     """List all active payment methods for the tenant."""
+    tenant = require_tenant(request)
     methods = PaymentMethod.objects.filter(
-        tenant=request.tenant,
+        tenant=tenant,
         is_active=True,
     )
 
@@ -66,14 +76,15 @@ def list_payment_methods(request: HttpRequest):
 @require_role("OWNER")
 def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
     """Add a new tokenized payment method."""
+    tenant = require_tenant(request)
     if data.is_default:
         PaymentMethod.objects.filter(
-            tenant=request.tenant,
+            tenant=tenant,
             is_default=True,
         ).update(is_default=False)
 
     pm = PaymentMethod.objects.create(
-        tenant=request.tenant,
+        tenant=tenant,
         gateway_token=data.gateway_token,
         card_brand=data.card_brand,
         card_last_four=data.card_last_four,
@@ -98,19 +109,20 @@ def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
 @require_role("OWNER")
 def remove_payment_method(request: HttpRequest, payment_method_id: str):
     """Soft-delete a payment method."""
+    tenant = require_tenant(request)
     pm = get_object_or_404(
         PaymentMethod,
         id=payment_method_id,
-        tenant=request.tenant,
+        tenant=tenant,
         is_active=True,
     )
 
-    subscription = Subscription.objects.filter(tenant=request.tenant).first()
+    subscription = Subscription.objects.filter(tenant=tenant).first()
     if (
         subscription
         and subscription.status == SubscriptionStatus.ACTIVE
         and PaymentMethod.objects.filter(
-            tenant=request.tenant,
+            tenant=tenant,
             is_active=True,
         ).count()
         == 1
@@ -131,15 +143,16 @@ def remove_payment_method(request: HttpRequest, payment_method_id: str):
 @require_role("OWNER")
 def set_default_payment_method(request: HttpRequest, payment_method_id: str):
     """Set a payment method as the default."""
+    tenant = require_tenant(request)
     pm = get_object_or_404(
         PaymentMethod,
         id=payment_method_id,
-        tenant=request.tenant,
+        tenant=tenant,
         is_active=True,
     )
 
     PaymentMethod.objects.filter(
-        tenant=request.tenant,
+        tenant=tenant,
         is_default=True,
     ).update(is_default=False)
 
@@ -157,7 +170,8 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
 @router.get("/invoices/", auth=jwt_auth, summary="Listar facturas")
 def list_invoices(request: HttpRequest, limit: int = 20, offset: int = 0):
     """List invoices for the tenant."""
-    qs = Invoice.objects.filter(tenant=request.tenant)
+    tenant = require_tenant(request)
+    qs = Invoice.objects.filter(tenant=tenant)
     total = qs.count()
     invoices = qs[offset : offset + limit]
 
@@ -173,7 +187,7 @@ def list_invoices(request: HttpRequest, limit: int = 20, offset: int = 0):
                 "total": float(inv.total),
                 "currency": inv.currency,
                 "status": inv.status,
-                "status_display": inv.get_status_display(),
+                "status_display": INVOICE_STATUS_LABELS.get(inv.status, inv.status),
                 "period_start": inv.period_start.isoformat(),
                 "period_end": inv.period_end.isoformat(),
                 "paid_at": inv.paid_at.isoformat() if inv.paid_at else None,
@@ -189,7 +203,7 @@ def list_invoices(request: HttpRequest, limit: int = 20, offset: int = 0):
 @router.get("/invoices/{invoice_id}/", auth=jwt_auth, summary="Detalle de factura")
 def get_invoice(request: HttpRequest, invoice_id: str):
     """Get detailed invoice information."""
-    invoice = get_object_or_404(Invoice, id=invoice_id, tenant=request.tenant)
+    invoice = get_object_or_404(Invoice, id=invoice_id, tenant=require_tenant(request))
 
     return {
         "id": str(invoice.id),
@@ -200,7 +214,7 @@ def get_invoice(request: HttpRequest, invoice_id: str):
         "total": float(invoice.total),
         "currency": invoice.currency,
         "status": invoice.status,
-        "status_display": invoice.get_status_display(),
+        "status_display": INVOICE_STATUS_LABELS.get(invoice.status, invoice.status),
         "period_start": invoice.period_start.isoformat(),
         "period_end": invoice.period_end.isoformat(),
         "paid_at": invoice.paid_at.isoformat() if invoice.paid_at else None,

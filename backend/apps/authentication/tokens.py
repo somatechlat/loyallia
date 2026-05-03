@@ -13,16 +13,20 @@ multi-service architectures needing asymmetric key distribution. Key rotation
 invalidates existing tokens (acceptable given 60min access / 30d refresh TTLs).
 """
 
+from __future__ import annotations
+
 import hashlib
 import logging
 import os
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import cast
 
 import jwt
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+UTC = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
 
 # Cached key material (loaded once per process)
 _signing_key: str | None = None
@@ -41,7 +45,7 @@ def _load_keys() -> tuple[str, str]:
     """
     global _signing_key, _verification_key, _keys_loaded
 
-    if _keys_loaded:
+    if _keys_loaded and _signing_key is not None and _verification_key is not None:
         return _signing_key, _verification_key
 
     algorithm = getattr(settings, "JWT_ALGORITHM", "HS256")
@@ -67,7 +71,7 @@ def _load_keys() -> tuple[str, str]:
                 _signing_key = settings.JWT_SECRET_KEY
                 _verification_key = settings.JWT_SECRET_KEY
                 _keys_loaded = True
-                return _signing_key, _verification_key
+                return cast(str, _signing_key), cast(str, _verification_key)
 
         # Load public key
         public_key_path = getattr(settings, "JWT_PUBLIC_KEY_PATH", "")
@@ -96,6 +100,10 @@ def _load_keys() -> tuple[str, str]:
         _verification_key = settings.JWT_SECRET_KEY
 
     _keys_loaded = True
+    if _signing_key is None or _verification_key is None:
+        raise RuntimeError(
+            "JWT key loading failed: signing or verification key is missing."
+        )
     return _signing_key, _verification_key
 
 

@@ -128,6 +128,13 @@ DATABASES = {
     ),
 }
 
+_database_password = get_secret(
+    "postgres_password", env_fallback="POSTGRES_PASSWORD", default=""
+)
+if _database_password:
+    DATABASES["default"]["PASSWORD"] = _database_password
+    DATABASES["direct"]["PASSWORD"] = _database_password
+
 # Database router: send migrations to 'direct', everything else to 'default' (PgBouncer)
 DATABASE_ROUTERS = ["common.db_routers.PgBouncerRouter"]
 
@@ -262,27 +269,27 @@ from celery.schedules import crontab  # noqa: E402
 CELERY_BEAT_SCHEDULE = {
     "birthday-notifications-daily": {
         "task": "apps.notifications.tasks.send_birthday_notifications",
-        "schedule": crontab(hour=10, minute=0),
+        "schedule": crontab(hour="10", minute="0"),
         "options": {"queue": "push_delivery"},
     },
     "inactive-reminders-daily": {
         "task": "apps.notifications.tasks.send_inactive_reminders",
-        "schedule": crontab(hour=9, minute=0),
+        "schedule": crontab(hour="9", minute="0"),
         "kwargs": {"days_inactive": 30},
         "options": {"queue": "push_delivery"},
     },
     "scheduled-automations-daily": {
         "task": "apps.automation.tasks.evaluate_scheduled_automations",
-        "schedule": crontab(hour=8, minute=0),
+        "schedule": crontab(hour="8", minute="0"),
     },
     "inactive-automation-triggers-daily": {
         "task": "apps.automation.tasks.evaluate_inactive_triggers",
-        "schedule": crontab(hour=8, minute=30),
+        "schedule": crontab(hour="8", minute="30"),
         "kwargs": {"days_threshold": 30},
     },
     "cleanup-expired-refresh-tokens": {
         "task": "apps.authentication.tasks.cleanup_expired_tokens",
-        "schedule": crontab(hour=3, minute=0),  # Daily at 3 AM
+        "schedule": crontab(hour="3", minute="0"),  # Daily at 3 AM
         "options": {"queue": "default"},
     },
 }
@@ -484,7 +491,7 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
 # =============================================================================
 # SENTRY — Error Tracking (B-013)
 # =============================================================================
-SENTRY_DSN = config("SENTRY_DSN", default="")
+SENTRY_DSN = str(config("SENTRY_DSN", default=""))
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
@@ -494,7 +501,7 @@ if SENTRY_DSN:
         integrations=[DjangoIntegration()],
         traces_sample_rate=config("SENTRY_TRACES_SAMPLE_RATE", default=0.1, cast=float),
         send_default_pii=False,
-        environment=config("SENTRY_ENVIRONMENT", default="production"),
+        environment=str(config("SENTRY_ENVIRONMENT", default="production")),
     )
 
 # =============================================================================

@@ -40,6 +40,8 @@ class PublicCardOut(Schema):
     background_color: str
     text_color: str
     logo_url: str
+    strip_image_url: str
+    metadata: dict
 
 
 class WalletStatusOut(Schema):
@@ -56,6 +58,25 @@ class GoogleWalletOut(Schema):
     """Google Wallet save URL response."""
 
     save_url: str
+
+
+def _wallet_provider_mode(card) -> str:
+    """Return the card wallet provider mode from metadata.
+
+    Existing cards default to both providers to preserve current production behavior.
+    New cards created by the wizard store either "apple" or "google".
+    """
+    metadata = card.metadata if isinstance(card.metadata, dict) else {}
+    mode = metadata.get("wallet_provider") or metadata.get("wallet_platform") or "both"
+    if mode not in {"apple", "google", "both"}:
+        return "both"
+    return mode
+
+
+def _is_wallet_provider_enabled(card, provider: str) -> bool:
+    """Return whether the requested wallet provider is enabled for this card."""
+    mode = _wallet_provider_mode(card)
+    return mode == "both" or mode == provider
 
 
 # =============================================================================
@@ -93,6 +114,8 @@ def get_public_card(request, card_id: str):
         background_color=card.background_color or "#1A1A2E",
         text_color=card.text_color or "#FFFFFF",
         logo_url=card.logo_url or "",
+        strip_image_url=card.strip_image_url or "",
+        metadata=card.metadata if isinstance(card.metadata, dict) else {},
     )
 
 
@@ -118,18 +141,18 @@ def download_apple_pass(request, pass_id: str):
         is_apple_wallet_configured,
     )
 
-    if not is_apple_wallet_configured():
-        raise HttpError(
-            503,
-            "Apple Wallet no está configurado. Se requieren los certificados de Apple Developer.",
-        )
-
     try:
         customer_pass = CustomerPass.objects.select_related(
             "customer", "card", "card__tenant"
         ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
+
+    if not _is_wallet_provider_enabled(customer_pass.card, "apple"):
+        raise HttpError(404, get_message("PASS_WALLET_PROVIDER_DISABLED"))
+
+    if not is_apple_wallet_configured():
+        raise HttpError(503, get_message("PASS_APPLE_NOT_CONFIGURED"))
 
     # Cache the heavily CPU/Network bound .pkpass generation
     from django.core.cache import cache
@@ -179,18 +202,18 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
         is_google_wallet_configured,
     )
 
-    if not is_google_wallet_configured():
-        raise HttpError(
-            503,
-            "Google Wallet no está configurado. Se requiere una cuenta de servicio de Google Cloud.",
-        )
-
     try:
         customer_pass = CustomerPass.objects.select_related(
             "customer", "card", "card__tenant"
         ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
+
+    if not _is_wallet_provider_enabled(customer_pass.card, "google"):
+        raise HttpError(404, get_message("PASS_WALLET_PROVIDER_DISABLED"))
+
+    if not is_google_wallet_configured():
+        raise HttpError(503, get_message("PASS_GOOGLE_NOT_CONFIGURED"))
 
     save_url = generate_google_wallet_url(customer_pass)
     if save_url is None:
@@ -223,12 +246,20 @@ def get_wallet_status(request, pass_id: str):
     from apps.customers.pass_engine.google_pass import is_google_wallet_configured
 
     try:
-        customer_pass = CustomerPass.objects.get(id=uuid.UUID(pass_id))
+        customer_pass = CustomerPass.objects.select_related("card").get(
+            id=uuid.UUID(pass_id)
+        )
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
-    apple_available = is_apple_wallet_configured()
-    google_available = is_google_wallet_configured()
+    apple_available = (
+        _is_wallet_provider_enabled(customer_pass.card, "apple")
+        and is_apple_wallet_configured()
+    )
+    google_available = (
+        _is_wallet_provider_enabled(customer_pass.card, "google")
+        and is_google_wallet_configured()
+    )
 
     getattr(request, "build_absolute_uri", lambda p: p)
 

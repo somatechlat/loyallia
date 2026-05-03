@@ -116,18 +116,18 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
               onChange={e => doSearch(e.target.value)}
               onFocus={() => results.length > 0 && setShowResults(true)}
               placeholder="Buscar dirección en Ecuador..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-surface-200 bg-white/80 backdrop-blur-sm text-sm text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/80 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
             />
             {searching && <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="spinner w-4 h-4" /></div>}
           </div>
         </div>
         {/* Search Results Dropdown */}
         {showResults && (
-          <div className="absolute z-[1000] w-full mt-1 bg-white rounded-xl border border-surface-200 shadow-lg max-h-[200px] overflow-y-auto">
+          <div className="absolute z-[1000] w-full mt-1 bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 shadow-lg max-h-[200px] overflow-y-auto">
             {results.map((r, i) => (
               <button key={i} onClick={() => pickResult(r)}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-brand-50 transition-colors border-b border-surface-100 last:border-0">
-                <p className="font-medium text-surface-800 truncate">{r.display_name.split(',').slice(0, 2).join(',')}</p>
+                <p className="font-medium text-surface-800 dark:text-surface-100 truncate">{r.display_name.split(',').slice(0, 2).join(',')}</p>
                 <p className="text-xs text-surface-400 truncate">{r.display_name}</p>
               </button>
             ))}
@@ -136,7 +136,7 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
       </div>
 
       {/* Map */}
-      <div className="h-[220px] rounded-xl overflow-hidden border border-surface-200/50 relative">
+      <div className="h-[220px] rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700/50 relative">
         <MapContainer
           center={[markerLat, markerLng]}
           zoom={hasPin ? 15 : 7}
@@ -163,7 +163,7 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
         </MapContainer>
         {/* Coordinates overlay */}
         {hasPin && (
-          <div className="absolute bottom-2 left-2 z-[500] bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 text-[10px] font-mono text-surface-600 border border-surface-200/50">
+          <div className="absolute bottom-2 left-2 z-[500] bg-white/90 backdrop-blur-sm rounded-lg px-2 py-1 text-[10px] font-mono text-surface-600 border border-surface-200 dark:border-surface-700/50">
             {markerLat.toFixed(6)}, {markerLng.toFixed(6)}
           </div>
         )}

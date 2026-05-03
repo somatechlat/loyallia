@@ -4,6 +4,8 @@ Functions for writing audit log entries.
 All entries are immutable and comply with LOPDP/GDPR.
 """
 
+from __future__ import annotations
+
 import logging
 
 from django.http import HttpRequest

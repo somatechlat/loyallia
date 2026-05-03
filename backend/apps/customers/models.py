@@ -3,6 +3,8 @@ Loyallia — Customer Models
 Customer profiles, passes, and enrollment management.
 """
 
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -80,7 +82,7 @@ class Customer(TimestampedModel):
         null=True, blank=True, verbose_name="Última visita"
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_customers"
         verbose_name = "Cliente"
         verbose_name_plural = "Clientes"
@@ -327,7 +329,7 @@ class CustomerPass(models.Model):
         )
 
     @property
-    def membership_expiry(self) -> datetime:
+    def membership_expiry(self) -> datetime | None:
         """Membership expiry date."""
         from django.utils.dateparse import parse_datetime
 
@@ -358,7 +360,7 @@ class CustomerPass(models.Model):
         )
 
     def process_transaction(
-        self, transaction_type: str, amount: Decimal = 0, quantity: int = 1
+        self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1
     ) -> dict:
         """
         Process a transaction for this pass based on card type.

@@ -66,7 +66,7 @@ export function BarcodeTypeSelector({ value, onChange }: {
 }) {
   return (
     <div className="card p-6 space-y-4">
-      <h2 className="text-base font-bold text-surface-900">Tipo de código</h2>
+      <h2 className="text-base font-bold text-surface-900 dark:text-white">Tipo de código</h2>
       <p className="text-sm text-surface-500">Selecciona el tipo de código que se mostrará en la tarjeta digital del cliente.</p>
       <div className="grid grid-cols-5 gap-2">
         {BARCODE_TYPES.map(bt => (
@@ -130,6 +130,110 @@ function PlatformToggle({ platform, onChange }: {
           Google
         </button>
       </div>
+    </div>
+  );
+}
+
+export interface AppleWalletFeatureConfig {
+  nfc_enabled: boolean;
+  nfc_requires_authentication: boolean;
+}
+
+export function WalletProviderSelector({
+  value,
+  onChange,
+  appleConfig,
+  onAppleConfigChange,
+  cardType,
+}: {
+  value: 'apple' | 'google';
+  onChange: (provider: 'apple' | 'google') => void;
+  appleConfig: AppleWalletFeatureConfig;
+  onAppleConfigChange: (config: AppleWalletFeatureConfig) => void;
+  cardType: string;
+}) {
+  const applePassStyle = APPLE_PASS_STYLES[cardType] || 'generic';
+
+  return (
+    <div className="card p-6 space-y-4">
+      <div>
+        <h2 className="text-base font-bold text-surface-900 dark:text-white">Billetera digital</h2>
+        <p className="text-sm text-surface-500">
+          Selecciona la plataforma principal para esta tarjeta. La vista previa y la entrega publica seguiran esta seleccion.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => onChange('apple')}
+          className={`text-left rounded-xl border-2 p-4 transition-all ${
+            value === 'apple'
+              ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-glow'
+              : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+          }`}
+          id="wallet-provider-apple"
+        >
+          <span className="block text-sm font-bold text-surface-900 dark:text-white">Apple Wallet</span>
+          <span className="block text-xs text-surface-500 mt-1">PKPass firmado para iPhone y Apple Wallet.</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange('google')}
+          className={`text-left rounded-xl border-2 p-4 transition-all ${
+            value === 'google'
+              ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-glow'
+              : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+          }`}
+          id="wallet-provider-google"
+        >
+          <span className="block text-sm font-bold text-surface-900 dark:text-white">Google Wallet</span>
+          <span className="block text-xs text-surface-500 mt-1">Usa el flujo Google Wallet existente sin cambios.</span>
+        </button>
+      </div>
+
+      {value === 'apple' && (
+        <div className="rounded-xl border border-surface-200 dark:border-surface-700 p-4 space-y-3 bg-surface-50 dark:bg-surface-900/40">
+          <div className="flex justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-surface-900 dark:text-white">Estilo Apple Pass</p>
+              <p className="text-xs text-surface-500">Derivado del tipo de programa: {applePassStyle}</p>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 bg-brand-100 dark:bg-brand-900/30 rounded-full px-2 py-1 h-fit">
+              PKPass
+            </span>
+          </div>
+
+          <label className="flex items-start justify-between gap-4">
+            <span>
+              <span className="block text-xs font-semibold text-surface-800 dark:text-surface-100">Activar NFC Apple</span>
+              <span className="block text-xs text-surface-500">Solo funciona si Apple aprobo NFC y la clave publica NFC esta en Vault.</span>
+            </span>
+            <input
+              type="checkbox"
+              className="mt-1 w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
+              checked={appleConfig.nfc_enabled}
+              onChange={e => onAppleConfigChange({ ...appleConfig, nfc_enabled: e.target.checked })}
+              id="apple-nfc-enabled"
+            />
+          </label>
+
+          <label className={`flex items-start justify-between gap-4 ${!appleConfig.nfc_enabled ? 'opacity-50' : ''}`}>
+            <span>
+              <span className="block text-xs font-semibold text-surface-800 dark:text-surface-100">Requerir autenticacion para NFC</span>
+              <span className="block text-xs text-surface-500">Solicita Face ID, Touch ID o codigo antes de presentar NFC.</span>
+            </span>
+            <input
+              type="checkbox"
+              className="mt-1 w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
+              checked={appleConfig.nfc_requires_authentication}
+              disabled={!appleConfig.nfc_enabled}
+              onChange={e => onAppleConfigChange({ ...appleConfig, nfc_requires_authentication: e.target.checked })}
+              id="apple-nfc-auth-required"
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }
@@ -216,7 +320,7 @@ function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcod
             </div>
             {/* Barcode */}
             <div className="flex justify-center pb-3 pt-1">
-              <div className="bg-white/95 rounded-xl p-2 shadow-lg">
+              <div className="bg-[#ffffff]/95 rounded-xl p-2 shadow-lg">
                 <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 100 : 56} />
               </div>
             </div>
@@ -289,7 +393,7 @@ function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barco
             </div>
             {/* Barcode */}
             <div className="flex justify-center py-3">
-              <div className="bg-white rounded-2xl p-2.5 shadow">
+              <div className="bg-[#ffffff] rounded-2xl p-2.5 shadow">
                 <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 100 : 56} />
               </div>
             </div>
@@ -321,19 +425,35 @@ interface CardProps {
 }
 
 /* ─── Main Wallet Preview (exported) ──────────────────────────────── */
-export default function WalletCardPreview({ form, selectedType, logoPreview, stripPreview, barcodeType = 'qr_code', walletPlatform = 'apple' }: CardProps & { walletPlatform?: 'apple' | 'google' }) {
+export default function WalletCardPreview({
+  form,
+  selectedType,
+  logoPreview,
+  stripPreview,
+  barcodeType = 'qr_code',
+  walletPlatform = 'apple',
+  onWalletPlatformChange,
+}: CardProps & {
+  walletPlatform?: 'apple' | 'google';
+  onWalletPlatformChange?: (platform: 'apple' | 'google') => void;
+}) {
   const [platform, setPlatform] = useState(walletPlatform);
 
   // Sync external prop changes
   useEffect(() => {
-    if (walletPlatform !== platform && walletPlatform !== 'apple') {
+    if (walletPlatform !== platform) {
       setPlatform(walletPlatform);
     }
-  }, [walletPlatform]);
+  }, [walletPlatform, platform]);
+
+  const handlePlatformChange = (next: 'apple' | 'google') => {
+    setPlatform(next);
+    onWalletPlatformChange?.(next);
+  };
 
   return (
     <div className="relative w-full max-w-sm mx-auto">
-      <PlatformToggle platform={platform} onChange={setPlatform} />
+      <PlatformToggle platform={platform} onChange={handlePlatformChange} />
       {platform === 'apple' ? (
         <AppleWalletCard form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={barcodeType} />
       ) : (
@@ -345,4 +465,3 @@ export default function WalletCardPreview({ form, selectedType, logoPreview, str
     </div>
   );
 }
-

@@ -8,7 +8,11 @@ import { uploadFile } from '@/lib/upload';
 import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, BARCODE_TYPES, defaultMeta } from '@/components/programs/constants';
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
-import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
+import {
+  BarcodeTypeSelector,
+  WalletProviderSelector,
+  type AppleWalletFeatureConfig,
+} from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 
@@ -28,7 +32,7 @@ function StepBar({ step }: { step: number }) {
             {i < step ? '✓' : i + 1}
           </div>
           <span className={`text-xs font-semibold hidden sm:block
-            ${i <= step ? 'text-surface-900' : 'text-surface-400'}`}>{label}</span>
+            ${i <= step ? 'text-surface-900 dark:text-white' : 'text-surface-400'}`}>{label}</span>
           {i < steps.length - 1 && (
             <div className={`flex-1 h-0.5 rounded-full transition-all duration-300 mx-1
               ${i < step ? 'bg-brand-500' : 'bg-surface-200'}`} />
@@ -58,6 +62,11 @@ export default function NewProgramPage() {
     locations: [] as Array<{lat: number, lng: number, name: string}>,
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
+  const [walletProvider, setWalletProvider] = useState<'apple' | 'google'>('apple');
+  const [appleWalletConfig, setAppleWalletConfig] = useState<AppleWalletFeatureConfig>({
+    nfc_enabled: false,
+    nfc_requires_authentication: false,
+  });
   const [selectedTemplate, setSelectedTemplate] = useState('midnight');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -119,7 +128,16 @@ export default function NewProgramPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await programsApi.create({ ...form, metadata: meta });
+      const walletMetadata =
+        walletProvider === 'apple'
+          ? {
+              wallet_provider: 'apple',
+              apple_wallet: appleWalletConfig,
+            }
+          : {
+              wallet_provider: 'google',
+            };
+      await programsApi.create({ ...form, metadata: { ...meta, ...walletMetadata } });
       toast.success('¡Programa creado exitosamente!');
       window.location.href = '/programs';
     } catch {
@@ -197,7 +215,7 @@ export default function NewProgramPage() {
           <div className="flex items-center gap-3 mb-2">
             <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-brand-600" />
             <div>
-              <h2 className="text-lg font-bold text-surface-900">Configurar: {selectedType?.label}</h2>
+              <h2 className="text-lg font-bold text-surface-900 dark:text-white">Configurar: {selectedType?.label}</h2>
               <p className="text-xs text-surface-500">{selectedType?.desc}</p>
             </div>
           </div>
@@ -220,7 +238,7 @@ export default function NewProgramPage() {
           <div className="space-y-6">
             {/* Name + Description */}
             <div className="card p-6 space-y-4">
-              <h2 className="text-lg font-bold text-surface-900">Nombre y descripción</h2>
+              <h2 className="text-lg font-bold text-surface-900 dark:text-white">Nombre y descripción</h2>
               <div>
                 <label className="label" htmlFor="program-name">Nombre del programa</label>
                 <input id="program-name" type="text" required className="input" placeholder="Ej: Café Frecuente"
@@ -238,7 +256,7 @@ export default function NewProgramPage() {
             <div className="card p-6 space-y-4">
               <div className="flex justify-between items-center mb-2">
                 <div>
-                  <h2 className="text-base font-bold text-surface-900">Ubicaciones y Geocercas (Wallet GPS)</h2>
+                  <h2 className="text-base font-bold text-surface-900 dark:text-white">Ubicaciones y Geocercas (Wallet GPS)</h2>
                   <p className="text-xs text-surface-500 mt-1">La tarjeta aparecerá en la pantalla de bloqueo cuando el cliente esté cerca de tu tienda (para NFC y Alertas).</p>
                 </div>
                 <button type="button" onClick={() => setForm(f => ({...f, locations: [...f.locations, {lat: 0, lng: 0, name: ''}]}))} className="btn-secondary text-xs shrink-0 self-start mt-1">
@@ -248,7 +266,7 @@ export default function NewProgramPage() {
               
               <div className="space-y-3">
                 {form.locations.map((loc, i) => (
-                  <div key={i} className="flex gap-2 items-center bg-surface-50 p-2 rounded-lg border border-surface-200">
+                  <div key={i} className="flex gap-2 items-center bg-surface-50 p-2 rounded-lg border border-surface-200 dark:border-surface-700">
                     <input type="text" className="input flex-1 text-sm py-1" placeholder="Ej: Sucursal Centro" value={loc.name} onChange={e => {
                       const newLocs = [...form.locations];
                       newLocs[i]!.name = e.target.value;
@@ -281,7 +299,7 @@ export default function NewProgramPage() {
 
             {/* Logo Upload */}
             <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900">Logo del programa</h2>
+              <h2 className="text-base font-bold text-surface-900 dark:text-white">Logo del programa</h2>
               <p className="text-sm text-surface-500">Sube el logo de tu negocio. Aparecerá en la tarjeta del cliente.</p>
               <div className="flex items-center gap-4">
                 <button
@@ -335,7 +353,7 @@ export default function NewProgramPage() {
 
             {/* Strip Image Upload - Hero Image for Wallet */}
             <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900">Imagen de cabecera (Hero)</h2>
+              <h2 className="text-base font-bold text-surface-900 dark:text-white">Imagen de cabecera (Hero)</h2>
               <p className="text-sm text-surface-500">Imagen grande que aparece en la parte superior de la tarjeta del wallet.</p>
               <div className="flex items-center gap-4">
                 <button
@@ -383,7 +401,7 @@ export default function NewProgramPage() {
 
             {/* Icon Upload */}
             <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900">Ícono del programa</h2>
+              <h2 className="text-base font-bold text-surface-900 dark:text-white">Ícono del programa</h2>
               <p className="text-sm text-surface-500">Ícono pequeño para mostrar en la tarjeta.</p>
               <div className="flex items-center gap-4">
                 <button
@@ -430,6 +448,15 @@ export default function NewProgramPage() {
             </div>
 
             {/* Barcode Type Selector */}
+            <WalletProviderSelector
+              value={walletProvider}
+              onChange={setWalletProvider}
+              appleConfig={appleWalletConfig}
+              onAppleConfigChange={setAppleWalletConfig}
+              cardType={form.card_type}
+            />
+
+            {/* Barcode Type Selector */}
             <BarcodeTypeSelector
               value={form.barcode_type}
               onChange={(v) => setForm(f => ({ ...f, barcode_type: v }))}
@@ -437,7 +464,7 @@ export default function NewProgramPage() {
 
             {/* Design Templates */}
             <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900">Plantilla de diseño</h2>
+              <h2 className="text-base font-bold text-surface-900 dark:text-white">Plantilla de diseño</h2>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                 {DESIGN_TEMPLATES.map(t => (
                   <button
@@ -447,7 +474,7 @@ export default function NewProgramPage() {
                     className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all
                       ${selectedTemplate === t.id
                         ? 'border-brand-500 shadow-glow'
-                        : 'border-surface-200 hover:border-surface-300'
+                        : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
                       }`}
                     id={`template-${t.id}`}
                   >
@@ -467,7 +494,7 @@ export default function NewProgramPage() {
                   <div>
                     <label className="label text-xs">Color de fondo</label>
                     <div className="flex items-center gap-3">
-                      <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200"
+                      <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200 dark:border-surface-700"
                         value={form.background_color} onChange={e => setForm(f => ({ ...f, background_color: e.target.value }))} />
                       <span className="text-xs font-mono text-surface-500">{form.background_color}</span>
                     </div>
@@ -475,7 +502,7 @@ export default function NewProgramPage() {
                   <div>
                     <label className="label text-xs">Color de texto</label>
                     <div className="flex items-center gap-3">
-                      <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200"
+                      <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200 dark:border-surface-700"
                         value={form.text_color} onChange={e => setForm(f => ({ ...f, text_color: e.target.value }))} />
                       <span className="text-xs font-mono text-surface-500">{form.text_color}</span>
                     </div>
@@ -487,7 +514,15 @@ export default function NewProgramPage() {
 
           {/* Right: Live Wallet Preview */}
           <div className="sticky top-24">
-            <WalletCardPreview form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={form.barcode_type} />
+            <WalletCardPreview
+              form={form}
+              selectedType={selectedType}
+              logoPreview={logoPreview}
+              stripPreview={stripPreview}
+              barcodeType={form.barcode_type}
+              walletPlatform={walletProvider}
+              onWalletPlatformChange={setWalletProvider}
+            />
           </div>
         </div>
       )}
@@ -496,7 +531,7 @@ export default function NewProgramPage() {
       {step === 3 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
           <div className="card p-6 space-y-5">
-            <h2 className="text-lg font-bold text-surface-900">Revisa tu programa</h2>
+            <h2 className="text-lg font-bold text-surface-900 dark:text-white">Revisa tu programa</h2>
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-surface-100">
                 <span className="text-sm text-surface-500">Tipo</span>
@@ -510,6 +545,22 @@ export default function NewProgramPage() {
                 <span className="text-sm text-surface-500">Código</span>
                 <span className="text-sm font-semibold">{BARCODE_TYPES.find(b => b.value === form.barcode_type)?.label || 'QR Code'}</span>
               </div>
+              <div className="flex justify-between py-2 border-b border-surface-100">
+                <span className="text-sm text-surface-500">Billetera</span>
+                <span className="text-sm font-semibold">{walletProvider === 'apple' ? 'Apple Wallet' : 'Google Wallet'}</span>
+              </div>
+              {walletProvider === 'apple' && (
+                <div className="flex justify-between py-2 border-b border-surface-100">
+                  <span className="text-sm text-surface-500">NFC Apple</span>
+                  <span className="text-sm font-semibold">
+                    {appleWalletConfig.nfc_enabled
+                      ? appleWalletConfig.nfc_requires_authentication
+                        ? 'Activado con autenticación'
+                        : 'Activado'
+                      : 'Desactivado'}
+                  </span>
+                </div>
+              )}
               {form.description && (
                 <div className="flex justify-between py-2 border-b border-surface-100">
                   <span className="text-sm text-surface-500">Descripción</span>
@@ -528,17 +579,28 @@ export default function NewProgramPage() {
             <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 text-sm space-y-2">
               <p className="font-semibold text-brand-800">Funcionalidades de Wallet incluidas:</p>
               <ul className="text-brand-700 text-xs space-y-1 ml-4 list-disc">
-                <li>Tarjeta digital en Apple Wallet y Google Pay</li>
+                <li>Tarjeta digital en {walletProvider === 'apple' ? 'Apple Wallet' : 'Google Wallet'}</li>
                 <li>Código QR único por cliente</li>
                 <li>Notificaciones push por geolocalización</li>
                 <li>Actualización en tiempo real</li>
+                {walletProvider === 'apple' && appleWalletConfig.nfc_enabled && (
+                  <li>NFC Apple sujeto a aprobación Apple, Vault y lector VAS compatible</li>
+                )}
               </ul>
             </div>
           </div>
 
           {/* Preview */}
           <div>
-            <WalletCardPreview form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={form.barcode_type} />
+            <WalletCardPreview
+              form={form}
+              selectedType={selectedType}
+              logoPreview={logoPreview}
+              stripPreview={stripPreview}
+              barcodeType={form.barcode_type}
+              walletPlatform={walletProvider}
+              onWalletPlatformChange={setWalletProvider}
+            />
           </div>
         </div>
       )}

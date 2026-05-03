@@ -57,7 +57,7 @@ function ResetForm() {
             <circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-surface-900">Enlace inválido</h2>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white">Enlace inválido</h2>
         <p className="text-surface-500 text-sm">Este enlace de restablecimiento no es válido.</p>
         <Link href="/forgot-password" className="btn-primary inline-flex items-center gap-2 mt-2">
           Solicitar nuevo enlace
@@ -74,7 +74,7 @@ function ResetForm() {
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-surface-900">Contraseña actualizada</h2>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white">Contraseña actualizada</h2>
         <p className="text-surface-500 text-sm">Tu contraseña ha sido restablecida exitosamente.</p>
         <Link href="/login" className="btn-primary inline-flex items-center gap-2 mt-2">
           Iniciar sesión
@@ -86,7 +86,7 @@ function ResetForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       <div>
-        <h2 className="text-xl font-bold text-surface-900">Nueva contraseña</h2>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white">Nueva contraseña</h2>
         <p className="text-surface-500 text-sm mt-1">Ingresa tu nueva contraseña.</p>
       </div>
       <div>

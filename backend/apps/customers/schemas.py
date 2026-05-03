@@ -2,6 +2,8 @@
 Loyallia — Customer API Schemas (Pydantic models)
 """
 
+from __future__ import annotations
+
 from pydantic import BaseModel, EmailStr, field_validator
 
 from apps.customers.models import Customer, CustomerPass
@@ -68,7 +70,7 @@ class CustomerOut(BaseModel):
     updated_at: str
 
     @staticmethod
-    def from_model(customer: Customer) -> "CustomerOut":
+    def from_model(customer: Customer) -> CustomerOut:
         return CustomerOut(
             id=str(customer.id),
             first_name=customer.first_name,
@@ -102,7 +104,7 @@ class CustomerPassOut(BaseModel):
     wallet_urls: dict = {}
 
     @staticmethod
-    def from_model(pass_obj: CustomerPass) -> "CustomerPassOut":
+    def from_model(pass_obj: CustomerPass) -> CustomerPassOut:
         pass_id = str(pass_obj.id)
         return CustomerPassOut(
             id=pass_id,

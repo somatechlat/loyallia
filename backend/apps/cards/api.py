@@ -10,9 +10,12 @@ from ninja.errors import HttpError
 from pydantic import BaseModel, field_validator
 
 from apps.cards.models import Card, CardType
+from apps.customers.models import CustomerPass
+from apps.transactions.models import Enrollment
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import enforce_limit, require_active_subscription
+from common.request import require_tenant
 
 router = Router()
 
@@ -109,10 +112,10 @@ class CardOut(BaseModel):
     enrollments_count: int = 0
 
     @staticmethod
-    def from_model(card: Card, enrollments_count: int | None = None) -> "CardOut":
+    def from_model(card: Card, enrollments_count: int | None = None):
         return CardOut(
             id=str(card.id),
-            tenant_id=str(card.tenant_id),
+            tenant_id=str(card.tenant.id),
             card_type=card.card_type,
             barcode_type=card.barcode_type,
             name=card.name,
@@ -130,7 +133,7 @@ class CardOut(BaseModel):
             enrollments_count=(
                 enrollments_count
                 if enrollments_count is not None
-                else card.passes.count()
+                else CustomerPass.objects.filter(card=card).count()
             ),
         )
 
@@ -155,16 +158,22 @@ class CardListOut(BaseModel):
 )
 def list_programs(request):
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
+    tenant = require_tenant(request)
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     cards = list(
-        Card.objects.filter(tenant=request.tenant)
+        Card.objects.filter(tenant=tenant)
         .annotate(_enrollments_count=Count("passes", distinct=True))
         .order_by("-created_at")
     )
     return {
         "programs": [
-            CardOut.from_model(c, getattr(c, "_enrollments_count", c.passes.count()))
+            CardOut.from_model(
+                c,
+                getattr(
+                    c, "_enrollments_count", CustomerPass.objects.filter(card=c).count()
+                ),
+            )
             for c in cards
         ],
         "total": len(cards),
@@ -180,23 +189,24 @@ def create_program(request, data: CardCreateIn):
     """Create a new loyalty program. OWNER only."""
     from common.permissions import is_owner
 
+    tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     # Check tenant program limit (from subscription plan, not hardcoded)
     from apps.billing.models import Subscription
 
-    current_count = Card.objects.filter(tenant=request.tenant).count()
-    sub = Subscription.objects.filter(tenant=request.tenant).first()
+    current_count = Card.objects.filter(tenant=tenant).count()
+    sub = Subscription.objects.filter(tenant=tenant).first()
     max_programs = sub.get_limit("programs") if sub else 0
     if current_count >= max_programs:
         raise HttpError(400, get_message("TENANT_MAX_PROGRAMS", max=max_programs))
 
     # Check for duplicate name
-    if Card.objects.filter(tenant=request.tenant, name=data.name).exists():
+    if Card.objects.filter(tenant=tenant, name=data.name).exists():
         raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
 
     card = Card.objects.create(
-        tenant=request.tenant,
+        tenant=tenant,
         card_type=data.card_type,
         barcode_type=data.barcode_type,
         name=data.name,
@@ -334,7 +344,7 @@ def delete_program(request, program_id: str):
     """Delete a loyalty program PERMANENTLY. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
+    card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
 
     card.delete()
 
@@ -347,13 +357,13 @@ def delete_program(request, program_id: str):
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
 def program_stats(request, program_id: str):
     """Returns program statistics."""
-    card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
+    card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
 
     # Get enrollment count
-    enrollment_count = card.enrollments.count()
+    enrollment_count = Enrollment.objects.filter(card=card).count()
 
     # Get active passes count
-    active_passes = card.passes.filter(is_active=True).count()
+    active_passes = CustomerPass.objects.filter(card=card, is_active=True).count()
 
     # Get transaction count for this program
     from apps.transactions.models import Transaction
@@ -415,3 +425,4 @@ def public_program(request, slug: str):
             "secondary_color": tenant.secondary_color,
         },
     }
+    tenant = require_tenant(request)

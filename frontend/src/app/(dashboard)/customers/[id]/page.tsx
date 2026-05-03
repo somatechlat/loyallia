@@ -110,7 +110,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
         Volver a Clientes
       </a>
 
-      <div className="page-header flex justify-between items-center bg-surface-50 p-6 rounded-2xl border border-surface-200">
+      <div className="page-header flex justify-between items-center bg-surface-50 p-6 rounded-2xl border border-surface-200 dark:border-surface-700">
         <div>
           <h1 className="text-2xl font-bold">{customer.first_name} {customer.last_name}</h1>
           <p className="text-surface-500 mt-1">{customer.email} • {customer.phone}</p>
@@ -148,7 +148,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
       {/* Enroll Modal */}
       {showEnrollModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-surface-900 rounded-2xl p-6 w-full max-w-md">
             <h3 className="text-lg font-bold mb-4">Inscribir en Programa</h3>
             
             {programs.length === 0 ? (

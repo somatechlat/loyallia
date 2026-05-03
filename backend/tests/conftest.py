@@ -7,6 +7,7 @@ Django TestCase setUp methods are used for Django-native tests.
 import pytest
 from django.test import RequestFactory
 
+from apps.cards.models import CardType
 from tests.factories import (
     make_card,
     make_customer,
@@ -52,7 +53,7 @@ def subscription(tenant, plan, db):
 @pytest.fixture
 def stamp_card(tenant, db):
     """Create a stamp card."""
-    return make_card(tenant, card_type="stamp")
+    return make_card(tenant, card_type=CardType.STAMP)
 
 
 @pytest.fixture

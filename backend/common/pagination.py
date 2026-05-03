@@ -4,6 +4,8 @@ Provides efficient pagination for large datasets using created_at as cursor.
 Avoids OFFSET performance degradation on large tables.
 """
 
+from __future__ import annotations
+
 from typing import Generic, TypeVar
 
 from ninja import Schema

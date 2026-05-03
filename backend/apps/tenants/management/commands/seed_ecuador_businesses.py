@@ -7,6 +7,7 @@ import json
 import os
 from datetime import timedelta
 from decimal import Decimal
+from typing import cast
 
 from decouple import config
 from django.conf import settings
@@ -14,7 +15,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.authentication.models import User, UserRole
+from apps.authentication.models import User, UserManager, UserRole
 from apps.billing.models import (
     Invoice,
     Subscription,
@@ -24,7 +25,7 @@ from apps.billing.models import (
 from apps.tenants.models import Location, Tenant
 
 # Configurable default password for seeded users (Zero-Secret compliance)
-SEED_USER_PASSWORD = config("SEED_USER_PASSWORD", default="SeedPass123!@")
+SEED_USER_PASSWORD = str(config("SEED_USER_PASSWORD", default="SeedPass123!@"))
 
 
 class Command(BaseCommand):
@@ -101,7 +102,7 @@ class Command(BaseCommand):
                 tenant.address = biz["address"]
                 tenant.save()
                 self.stdout.write(f"  [UPDATED] {tenant.name} (RUC: {tenant.ruc})")
-                tenant.locations.all().update(is_active=False)
+                Location.objects.filter(tenant=tenant).update(is_active=False)
             else:
                 tenant = Tenant.objects.create(
                     name=biz["name"],
@@ -151,7 +152,7 @@ class Command(BaseCommand):
         # Owner
         owner_data = biz["owner"]
         if not User.objects.filter(email=owner_data["email"]).exists():
-            User.objects.create_user(
+            cast(UserManager, User.objects).create_user(
                 email=owner_data["email"],
                 password=SEED_USER_PASSWORD,
                 first_name=owner_data["first_name"],
@@ -164,7 +165,7 @@ class Command(BaseCommand):
         if "manager" in biz:
             mgr_data = biz["manager"]
             if not User.objects.filter(email=mgr_data["email"]).exists():
-                User.objects.create_user(
+                cast(UserManager, User.objects).create_user(
                     email=mgr_data["email"],
                     password=SEED_USER_PASSWORD,
                     first_name=mgr_data["first_name"],
@@ -176,7 +177,7 @@ class Command(BaseCommand):
         # Staff
         for staff_data in biz.get("staff", []):
             if not User.objects.filter(email=staff_data["email"]).exists():
-                User.objects.create_user(
+                cast(UserManager, User.objects).create_user(
                     email=staff_data["email"],
                     password=SEED_USER_PASSWORD,
                     first_name=staff_data["first_name"],
@@ -223,10 +224,12 @@ class Command(BaseCommand):
             tenant.email = update_data["email"]
             tenant.save()
 
-            if not tenant.locations.filter(
-                latitude__isnull=False, is_active=True
-            ).exists():
-                tenant.locations.all().update(is_active=False)
+            if (
+                not Location.objects.filter(tenant=tenant)
+                .filter(latitude__isnull=False, is_active=True)
+                .exists()
+            ):
+                Location.objects.filter(tenant=tenant).update(is_active=False)
                 for loc in update_data["locations"]:
                     Location.objects.create(
                         tenant=tenant,

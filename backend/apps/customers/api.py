@@ -4,10 +4,11 @@ Phase 5 implementation of customer + pass management endpoints.
 """
 
 import logging
+from typing import Any
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from ninja import File, Router
+from ninja import Router
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
@@ -26,6 +27,7 @@ from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import enforce_limit, require_active_subscription
 from common.rate_limit import get_client_ip
+from common.request import require_tenant
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -44,7 +46,8 @@ def list_customers(
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    queryset = Customer.objects.filter(tenant=request.tenant).select_related("tenant")
+    tenant = require_tenant(request)
+    queryset = Customer.objects.filter(tenant=tenant).select_related("tenant")
 
     if search:
         queryset = queryset.filter(
@@ -72,23 +75,63 @@ def list_customers(
     return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
 
 
+@router.post("/", auth=jwt_auth, response=CustomerOut, summary="Crear cliente")
+@require_active_subscription
+@enforce_limit("customers")
+def create_customer(request, data: CustomerCreateIn):
+    """Create a customer for the current tenant. OWNER only."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    tenant = require_tenant(request)
+
+    if Customer.objects.filter(tenant=tenant, email=data.email).exists():
+        raise HttpError(400, get_message("CUSTOMER_DUPLICATE_EMAIL"))
+
+    date_of_birth = None
+    if data.date_of_birth:
+        from django.utils.dateparse import parse_date
+
+        date_of_birth = parse_date(data.date_of_birth)
+
+    customer = Customer.objects.create(
+        tenant=tenant,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        email=data.email,
+        phone=data.phone or "",
+        date_of_birth=date_of_birth,
+        gender=data.gender or "",
+        notes=data.notes or "",
+    )
+
+    log_action(
+        request=request,
+        action=AuditAction.CREATE,
+        resource_type="customer",
+        resource_id=str(customer.id),
+        details={"email": customer.email},
+    )
+    return CustomerOut.from_model(customer)
+
+
 @router.post(
     "/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)"
 )
 @require_active_subscription
 @enforce_limit("customers")
-def import_customers(request, file: UploadedFile = File(...)):
+def import_customers(request, file: UploadedFile):
     """
     Import customers from an Excel or CSV file. OWNER only.
     Delegates processing to CustomerImportService.
     """
+    tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     from apps.customers.import_service import CustomerImportService
 
     # SECURITY HARDENING: Prevent OOM (Memory Exhaustion) Attacks
-    if file.size > CustomerImportService.MAX_FILE_SIZE:
+    if file.size is None or file.size > CustomerImportService.MAX_FILE_SIZE:
         max_mb = CustomerImportService.MAX_FILE_SIZE // (1024 * 1024)
         raise HttpError(
             413,
@@ -98,8 +141,8 @@ def import_customers(request, file: UploadedFile = File(...)):
             ),
         )
 
-    service = CustomerImportService(request.tenant)
-    result = service.process_import(file.file, file.name)
+    service = CustomerImportService(tenant)
+    result = service.process_import(file.file, file.name or "")
 
     if not result.get("success", False):
         raise HttpError(400, result.get("error", get_message("SERVER_ERROR")))
@@ -210,7 +253,8 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
     from apps.customers.tasks import generate_qr_for_pass
 
     try:
-        generate_qr_for_pass.delay(str(pass_obj.id))
+        task_fn: Any = generate_qr_for_pass
+        task_fn.delay(str(pass_obj.id))
     except Exception:
         logger.warning(
             "Could not queue QR generation task for pass %s",
@@ -231,7 +275,9 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
 )
 def get_customer(request, customer_id: str):
     """Customer profile with pass and transaction history."""
-    customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
 
     log_action(
         request=request,
@@ -252,7 +298,9 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
     """Update customer information. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
 
     update_fields = []
     if data.first_name is not None:
@@ -292,6 +340,15 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
     return CustomerOut.from_model(customer)
 
 
+@router.put(
+    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
+)
+@require_active_subscription
+def replace_customer(request, customer_id: str, data: CustomerUpdateIn):
+    """Compatibility alias for clients that send PUT for partial customer updates."""
+    return update_customer(request, customer_id, data)
+
+
 @router.delete(
     "/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente"
 )
@@ -302,7 +359,9 @@ def delete_customer(request, customer_id: str):
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
 
     log_action(
         request=request,
@@ -327,7 +386,9 @@ def delete_customer(request, customer_id: str):
 )
 def get_customer_passes(request, customer_id: str):
     """Get all passes for a customer."""
-    customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
     passes = CustomerPass.objects.filter(customer=customer).select_related("card")
     return [CustomerPassOut.from_model(pass_obj) for pass_obj in passes]
 
@@ -342,8 +403,9 @@ def enroll_customer(request, customer_id: str, card_id: str):
     """Enroll customer in a loyalty program. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
-    card = get_object_or_404(Card, id=card_id, tenant=request.tenant, is_active=True)
+    tenant = require_tenant(request)
+    customer = get_object_or_404(Customer, id=customer_id, tenant=tenant)
+    card = get_object_or_404(Card, id=card_id, tenant=tenant, is_active=True)
 
     if CustomerPass.objects.filter(customer=customer, card=card).exists():
         raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
@@ -353,7 +415,7 @@ def enroll_customer(request, customer_id: str, card_id: str):
     from apps.transactions.models import Enrollment
 
     Enrollment.objects.create(
-        tenant=request.tenant, customer=customer, card=card, enrollment_method="manual"
+        tenant=tenant, customer=customer, card=card, enrollment_method="manual"
     )
 
     from apps.automation.engine import fire_trigger_async
@@ -371,7 +433,8 @@ def enroll_customer(request, customer_id: str, card_id: str):
     from apps.customers.tasks import generate_qr_for_pass
 
     try:
-        generate_qr_for_pass.delay(str(pass_obj.id))
+        task_fn: Any = generate_qr_for_pass
+        task_fn.delay(str(pass_obj.id))
     except Exception:
         logger.warning(
             "Could not queue QR generation task for pass %s",
@@ -404,7 +467,9 @@ def export_customers(request):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    customers = Customer.objects.filter(tenant=request.tenant).order_by("created_at")
+    customers = Customer.objects.filter(tenant=require_tenant(request)).order_by(
+        "created_at"
+    )
 
     # LOPDP Forensic Audit Log
     log_data_export(

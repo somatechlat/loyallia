@@ -115,7 +115,7 @@ export default function TeamPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-surface-900 tracking-tight">Equipo</h1>
+          <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">Equipo</h1>
           <p className="text-surface-500 mt-1">Gestion de usuarios de {user?.tenant_name} -- {members.length} miembro(s)</p>
         </div>
         {isOwner && (
@@ -130,8 +130,8 @@ export default function TeamPage() {
 
       {/* Invite form */}
       {inviting && (
-        <div className="bg-white rounded-2xl border border-surface-200 shadow-sm p-6 animate-slide-up">
-          <h2 className="text-lg font-bold text-surface-900 mb-4">Invitar Miembro</h2>
+        <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm p-6 animate-slide-up">
+          <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-4">Invitar Miembro</h2>
           <form onSubmit={handleInvite} className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1">Nombre</label>
@@ -173,17 +173,17 @@ export default function TeamPage() {
       {/* Password created modal */}
       {createdPassword && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-slide-up">
+          <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-slide-up">
             <div className="text-center mb-4">
               <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-surface-900">Miembro creado exitosamente</h3>
+              <h3 className="text-lg font-bold text-surface-900 dark:text-white">Miembro creado exitosamente</h3>
               <p className="text-sm text-surface-500 mt-1">La contrase\u00f1a temporal generada es:</p>
             </div>
-            <div className="bg-surface-50 border border-surface-200 rounded-xl p-4 text-center mb-4">
+            <div className="bg-surface-50 border border-surface-200 dark:border-surface-700 rounded-xl p-4 text-center mb-4">
               <code className="text-xl font-mono font-bold text-indigo-600 tracking-widest select-all">{createdPassword}</code>
               <p className="text-[10px] text-surface-400 mt-2">Haz click para seleccionar y copiar</p>
             </div>
@@ -200,10 +200,10 @@ export default function TeamPage() {
       )}
 
       {/* Team table */}
-      <div className="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-surface-50 border-b border-surface-200 text-xs font-medium text-surface-500 uppercase tracking-wide">
+            <tr className="bg-surface-50 border-b border-surface-200 dark:border-surface-700 text-xs font-medium text-surface-500 uppercase tracking-wide">
               <th className="px-5 py-3">Nombre</th>
               <th className="px-5 py-3">Email</th>
               <th className="px-5 py-3">Rol</th>
@@ -220,7 +220,7 @@ export default function TeamPage() {
                     <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center">
                       <span className="text-brand-600 font-bold text-sm">{(m.first_name || '?')[0]}</span>
                     </div>
-                    <span className="font-medium text-surface-900">{m.first_name} {m.last_name}</span>
+                    <span className="font-medium text-surface-900 dark:text-white">{m.first_name} {m.last_name}</span>
                   </div>
                 </td>
                 <td className="px-5 py-3 text-surface-600">{m.email}</td>

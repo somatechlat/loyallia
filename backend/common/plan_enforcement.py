@@ -19,6 +19,7 @@ from django.utils import timezone
 from ninja.errors import HttpError
 
 from common.messages import get_message
+from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.plan_enforcement")
 
@@ -173,7 +174,8 @@ def require_active_subscription(func):
     def wrapper(request: HttpRequest, *args, **kwargs):
         from apps.billing.models import Subscription
 
-        subscription = Subscription.objects.filter(tenant=request.tenant).first()
+        tenant = require_tenant(request)
+        subscription = Subscription.objects.filter(tenant=tenant).first()
         if not subscription or not subscription.is_access_allowed:
             raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
         return func(request, *args, **kwargs)
@@ -190,7 +192,7 @@ def enforce_limit(resource: str):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs):
-            check_plan_limit(request.tenant, resource)
+            check_plan_limit(require_tenant(request), resource)
             return func(request, *args, **kwargs)
 
         return wrapper
@@ -207,7 +209,7 @@ def require_feature(feature: str):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs):
-            check_feature_access(request.tenant, feature)
+            check_feature_access(require_tenant(request), feature)
             return func(request, *args, **kwargs)
 
         return wrapper

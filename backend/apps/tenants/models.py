@@ -218,7 +218,7 @@ class Tenant(TimestampedModel):
         help_text="ISO 639-1: es, en, fr, de. Set at tenant registration.",
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_tenants"
         verbose_name = "Negocio"
         verbose_name_plural = "Negocios"
@@ -385,7 +385,7 @@ class Location(TimestampedModel):
     is_active = models.BooleanField(default=True)
     is_primary = models.BooleanField(default=False)
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_locations"
         verbose_name = "Ubicación"
         verbose_name_plural = "Ubicaciones"

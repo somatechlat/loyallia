@@ -10,28 +10,18 @@
 #   api=2G | web=2G | celery-pass/push/default=384Mx3 | celery-beat=192M
 #   flower=192M | vault=256M | init containers=64Mx2 (ephemeral)
 #
-# SECRETS: All credentials pulled from .env (gitignored).
-# See .env.example for the full list of required variables.
+# SECRETS: Local development may seed Vault from .env. Production app runtime
+# secrets must be read from Vault, not plaintext environment variables.
 # =============================================================================
 
 x-common-env: &common-env
-  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
-  DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-loyallia}
+  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@postgres:5432/${POSTGRES_DB:-loyallia}
+  DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@postgres:5432/${POSTGRES_DB:-loyallia}
   # PgBouncer available at pgbouncer:6432 for connection pooling in production
-  PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-loyallia}
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-  CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
-  CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
-  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@pgbouncer:6432/${POSTGRES_DB:-loyallia}
   MINIO_ENDPOINT: http://minio:9000
-  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
-  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-  MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-  MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
   MINIO_BUCKET_PASSES: passes
   MINIO_BUCKET_ASSETS: assets
-  SECRET_KEY: ${SECRET_KEY}
   DJANGO_SETTINGS_MODULE: loyallia.settings.development
   DEBUG: "False"
   ALLOWED_HOSTS: "${ALLOWED_HOSTS:-rewards.loyallia.com,localhost,127.0.0.1}"
@@ -41,34 +31,18 @@ x-common-env: &common-env
   VAULT_TOKEN: ${VAULT_TOKEN:-}
   VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia}
   # Apple Wallet
-  APPLE_PASS_TYPE_IDENTIFIER: ${APPLE_PASS_TYPE_IDENTIFIER:-pass.com.loyallia.cards}
-  APPLE_TEAM_IDENTIFIER: ${APPLE_TEAM_IDENTIFIER:-}
-  APPLE_CERT_PATH: /app/certs/apple_pass.pem
-  APPLE_CERT_KEY_PATH: /app/certs/apple_pass.key
-  APPLE_WWDR_CERT_PATH: /app/certs/apple_wwdr.pem
+  APPLE_VERIFY_MODE: vault
   # Google Wallet
-  GOOGLE_SERVICE_ACCOUNT_FILE: /app/certs/google_wallet_service_account.json
-  GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
-  # Payment Gateway (Bendo/PlacetoPay) — secrets from .env
+  GOOGLE_WALLET_MODE: vault
+  # Payment Gateway (Bendo/PlacetoPay)
   PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
   PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
-  PAYMENT_GATEWAY_LOGIN: ${PAYMENT_GATEWAY_LOGIN:-}
-  PAYMENT_GATEWAY_TRAN_KEY: ${PAYMENT_GATEWAY_TRAN_KEY:-}
-  PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-}
-  # Email — secrets from .env
+  # Email
   EMAIL_HOST: ${EMAIL_HOST:-smtp.mailjet.com}
   EMAIL_PORT: "${EMAIL_PORT:-587}"
-  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
   EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
-  # Firebase (Android push)
-  FIREBASE_CREDENTIAL_FILE: /app/certs/firebase_service_account.json
   # Google OAuth 2.0 (Social Login)
-  GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
-  GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
   GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:33905/api/v1/auth/google/callback/}
-  # JWT secret (separate from Django SECRET_KEY — B-001)
-  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
   # Sentry error tracking (B-013)
   SENTRY_DSN: ${SENTRY_DSN:-}
 
@@ -397,6 +371,8 @@ services:
         condition: service_healthy
       pgbouncer:
         condition: service_started
+      vault-init:
+        condition: service_completed_successfully
     networks:
       - frontend-net
       - backend-net
@@ -512,6 +488,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     networks:
       - backend-net
     restart: unless-stopped
@@ -564,6 +542,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     networks:
       - backend-net
     restart: unless-stopped
@@ -616,6 +596,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     networks:
       - backend-net
     restart: unless-stopped
@@ -668,6 +650,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
     networks:
       - backend-net
     restart: unless-stopped
@@ -764,13 +748,32 @@ services:
       _POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       _MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       _MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      _REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      _CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      _CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
+      _JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       _PASS_HMAC_SECRET: ${PASS_HMAC_SECRET}
       _GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
       _GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      _GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
+      _GOOGLE_SERVICE_ACCOUNT_JSON: ${GOOGLE_SERVICE_ACCOUNT_JSON:-}
       _PAYMENT_GATEWAY_LOGIN: ${PAYMENT_GATEWAY_LOGIN:-}
       _PAYMENT_GATEWAY_TRAN_KEY: ${PAYMENT_GATEWAY_TRAN_KEY:-}
       _PAYMENT_GATEWAY_WEBHOOK_SECRET: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:-}
+      _EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
       _EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      _APPLE_PASS_TYPE_IDENTIFIER: ${APPLE_PASS_TYPE_IDENTIFIER:-}
+      _APPLE_TEAM_IDENTIFIER: ${APPLE_TEAM_IDENTIFIER:-}
+      _APPLE_VERIFY_BUNDLE_ID: ${APPLE_VERIFY_BUNDLE_ID:-}
+      _APPLE_VERIFY_MERCHANT_ID: ${APPLE_VERIFY_MERCHANT_ID:-}
+      _APPLE_VERIFY_DOCUMENT_TYPES: ${APPLE_VERIFY_DOCUMENT_TYPES:-}
+      _APPLE_VERIFY_REQUESTED_ELEMENTS: ${APPLE_VERIFY_REQUESTED_ELEMENTS:-}
+      _APPLE_CERT_PEM: ${APPLE_CERT_PEM:-}
+      _APPLE_CERT_KEY_PEM: ${APPLE_CERT_KEY_PEM:-}
+      _APPLE_WWDR_CERT_PEM: ${APPLE_WWDR_CERT_PEM:-}
+      _APPLE_VERIFY_IDENTITY_CERT_PEM: ${APPLE_VERIFY_IDENTITY_CERT_PEM:-}
+      _APPLE_VERIFY_IDENTITY_PRIVATE_KEY_PEM: ${APPLE_VERIFY_IDENTITY_PRIVATE_KEY_PEM:-}
+      _APPLE_IACA_CERTIFICATES_PEM: ${APPLE_IACA_CERTIFICATES_PEM:-}
     volumes:
       - vault_data:/vault/file
     entrypoint: >-
@@ -788,7 +791,7 @@ services:
       vault operator unseal $$UNSEAL_KEY >/dev/null 2>&1 || true;
       export VAULT_TOKEN=$$ROOT_TOKEN;
       vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true;
-      vault kv put -mount=secret loyallia secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" >/dev/null;
+      vault kv put -mount=secret loyallia secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" redis_url=\"$${_REDIS_URL}\" celery_broker_url=\"$${_CELERY_BROKER_URL}\" celery_result_backend=\"$${_CELERY_RESULT_BACKEND}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" jwt_secret_key=\"$${_JWT_SECRET_KEY}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" google_wallet_issuer_id=\"$${_GOOGLE_WALLET_ISSUER_ID}\" google_service_account_json=\"$${_GOOGLE_SERVICE_ACCOUNT_JSON}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_user=\"$${_EMAIL_HOST_USER}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" apple_pass_type_identifier=\"$${_APPLE_PASS_TYPE_IDENTIFIER}\" apple_team_identifier=\"$${_APPLE_TEAM_IDENTIFIER}\" apple_verify_bundle_id=\"$${_APPLE_VERIFY_BUNDLE_ID}\" apple_verify_merchant_id=\"$${_APPLE_VERIFY_MERCHANT_ID}\" apple_verify_document_types=\"$${_APPLE_VERIFY_DOCUMENT_TYPES}\" apple_verify_requested_elements=\"$${_APPLE_VERIFY_REQUESTED_ELEMENTS}\" apple_cert_pem=\"$${_APPLE_CERT_PEM}\" apple_cert_key_pem=\"$${_APPLE_CERT_KEY_PEM}\" apple_wwdr_cert_pem=\"$${_APPLE_WWDR_CERT_PEM}\" apple_verify_identity_cert_pem=\"$${_APPLE_VERIFY_IDENTITY_CERT_PEM}\" apple_verify_identity_private_key_pem=\"$${_APPLE_VERIFY_IDENTITY_PRIVATE_KEY_PEM}\" apple_iaca_certificates_pem=\"$${_APPLE_IACA_CERTIFICATES_PEM}\" >/dev/null;
       echo 'Vault initialized, unsealed, and secrets seeded successfully';"
     networks:
       - backend-net

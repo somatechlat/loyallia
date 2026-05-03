@@ -11,10 +11,12 @@ from django.db.models import Count
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from ninja import Query, Router
+from ninja import Router
 
 from apps.audit.models import AuditAction, AuditLog
 from apps.audit.schemas import (
+    ActionBreakdownSchema,
+    ActorBreakdownSchema,
     AuditEntryDetailSchema,
     AuditEntrySchema,
     AuditListResponseSchema,
@@ -37,8 +39,8 @@ router = Router()
 @require_role("SUPER_ADMIN")
 def list_audit_logs(
     request: HttpRequest,
-    limit: int = Query(50, ge=1, le=500),
-    offset: int = Query(0, ge=0),
+    limit: int = 50,
+    offset: int = 0,
     action: str = "",
     resource_type: str = "",
     actor_email: str = "",
@@ -48,6 +50,8 @@ def list_audit_logs(
     date_to: str = "",
 ):
     """Paginated audit log with filters. Self-auditing."""
+    limit = max(1, min(limit, 500))
+    offset = max(0, offset)
     qs = AuditLog.objects.all()
 
     if action:
@@ -114,17 +118,25 @@ def audit_stats(request: HttpRequest):
     total = AuditLog.objects.count()
     today = AuditLog.objects.filter(created_at__gte=today_start).count()
 
-    actions_breakdown = list(
+    actions_breakdown_rows = list(
         AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count")
     )
+    actions_breakdown = [
+        ActionBreakdownSchema(action=row["action"], count=row["count"])
+        for row in actions_breakdown_rows
+    ]
 
     thirty_days_ago = now - timedelta(days=30)
-    top_actors = list(
+    top_actors_rows = list(
         AuditLog.objects.filter(created_at__gte=thirty_days_ago)
         .values("actor_email")
         .annotate(count=Count("id"))
         .order_by("-count")[:10]
     )
+    top_actors = [
+        ActorBreakdownSchema(actor_email=row["actor_email"], count=row["count"])
+        for row in top_actors_rows
+    ]
 
     return AuditStatsSchema(
         total_entries=total,

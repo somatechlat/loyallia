@@ -61,7 +61,7 @@ class PaymentMethod(TimestampedModel):
     )
     is_active = models.BooleanField(default=True, verbose_name="Activo")
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_payment_methods"
         verbose_name = "Método de pago"
         verbose_name_plural = "Métodos de pago"
@@ -180,7 +180,7 @@ class Invoice(TimestampedModel):
     )
     pdf_url = models.URLField(blank=True, default="", verbose_name="URL del PDF")
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_invoices"
         verbose_name = "Factura"
         verbose_name_plural = "Facturas"
@@ -257,7 +257,7 @@ class WebhookEvent(models.Model):
         help_text="SHA-256 hash of the raw webhook body for deduplication",
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "lyl_webhook_events"
         verbose_name = "Webhook Event"
         verbose_name_plural = "Webhook Events"

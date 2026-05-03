@@ -4,6 +4,8 @@ Handles parsing, normalization, and bulk ingestion of customer data from externa
 Decoupled from api.py per Rule 245.
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from contextlib import suppress
@@ -145,7 +147,7 @@ class CustomerImportService:
         errors = []
 
         for row_idx, row in df.iterrows():
-            lineno = int(row_idx) + 2
+            lineno = int(str(row_idx)) + 2
             email_raw = str(row.get(col_map["email"], "")).strip().lower()
 
             if not email_raw or not self.EMAIL_RE.match(email_raw):
