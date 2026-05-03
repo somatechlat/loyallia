@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Vault connection parameters from environment
 VAULT_ADDR = os.environ.get("VAULT_ADDR", "")
 VAULT_TOKEN = os.environ.get("VAULT_TOKEN", "")
+VAULT_TOKEN_FILE = os.environ.get("VAULT_TOKEN_FILE", "")
 VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia")
 
 # Cache TTL in seconds (default 300 = 5 minutes)
@@ -26,6 +27,19 @@ VAULT_CACHE_TTL = int(os.environ.get("VAULT_CACHE_TTL", "300"))
 # Module-level cache state
 _secrets_cache: dict = {}
 _cache_fetched_at: float = 0.0
+
+
+def _get_vault_token() -> str:
+    """Return the Vault token from a mounted secret file or explicit environment."""
+    if VAULT_TOKEN_FILE:
+        try:
+            with open(VAULT_TOKEN_FILE, encoding="utf-8") as token_file:
+                token = token_file.read().strip()
+                if token:
+                    return token
+        except OSError as exc:
+            logger.warning("Vault token file is not readable: %s", exc)
+    return VAULT_TOKEN
 
 
 def _fetch_vault_secrets() -> dict:
@@ -42,8 +56,9 @@ def _fetch_vault_secrets() -> dict:
     if _secrets_cache and (now - _cache_fetched_at) < VAULT_CACHE_TTL:
         return _secrets_cache
 
-    if not VAULT_ADDR or not VAULT_TOKEN:
-        logger.debug("Vault not configured (VAULT_ADDR or VAULT_TOKEN missing).")
+    vault_token = _get_vault_token()
+    if not VAULT_ADDR or not vault_token:
+        logger.debug("Vault not configured (address or token missing).")
         return {}
 
     import json
@@ -51,7 +66,7 @@ def _fetch_vault_secrets() -> dict:
     import urllib.request
 
     url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH}"
-    headers = {"X-Vault-Token": VAULT_TOKEN}
+    headers = {"X-Vault-Token": vault_token}
 
     try:
         req = urllib.request.Request(url, headers=headers, method="GET")

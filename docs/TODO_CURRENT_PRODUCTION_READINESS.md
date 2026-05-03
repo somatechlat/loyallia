@@ -1,7 +1,7 @@
 # Current Production Readiness TODO
 
 **Document ID:** LOYALLIA-TODO-CURRENT-PROD-001  
-**Date:** 2026-05-02  
+**Date:** 2026-05-03
 **Status:** ACTIVE  
 **Source:** Current workspace state, Plan B SRS, project rules, AGENT.md, architecture docs, client scope docs, and latest real gate runs.
 
@@ -14,22 +14,22 @@ No item may be marked `DONE` unless the evidence command passes or the item has 
 | ID | Rule | Status | Evidence / Notes |
 |---|---|---|---|
 | LYL-CUR-RULE-001 | No plaintext production secrets in committed code, docs, scripts, compose files, or env defaults. | OPEN | Secret-pattern audit found remaining env interpolation/default paths. |
-| LYL-CUR-RULE-002 | Production secrets SHALL be loaded from Vault KV v2 only. | VERIFYING | `backend/loyallia/settings/production.py` uses strict Vault reads for production runtime secrets; Docker Vault is currently sealed so readiness cannot pass. |
+| LYL-CUR-RULE-002 | Production secrets SHALL be loaded from Vault KV v2 only. | VERIFYING | Docker Vault is reachable through `VAULT_TOKEN_FILE`; production readiness is blocked by missing real Vault keys, not by Vault connectivity. |
 | LYL-CUR-RULE-003 | No mocks, stubs, placeholders, or fake integrations for production readiness. | VERIFYING | `backend/scripts/vault_migration.py` now requires operator-provided secure input and no longer contains a default root token or placeholder payload. |
-| LYL-CUR-RULE-004 | Real Docker and real test runners SHALL be used for readiness evidence. | IN_PROGRESS | Docker pytest was run; latest result is 49 failed, 411 passed, 2 skipped. |
-| LYL-CUR-RULE-005 | Do not claim Apple Wallet/NFC readiness until web PKPass prerequisites and optional NFC approval are validated. | BLOCKED | Vault-backed Apple readiness command exists but must be corrected to web PKPass/NFC scope; Vault is also sealed/unreachable. |
+| LYL-CUR-RULE-004 | Real Docker and real test runners SHALL be used for readiness evidence. | VERIFYING | Docker pytest with Vault-backed PostgreSQL test DB passes: 460 passed, 2 skipped. |
+| LYL-CUR-RULE-005 | Do not claim Apple Wallet/NFC readiness until web PKPass prerequisites and optional NFC approval are validated. | BLOCKED | Readiness command is scoped to web PKPass/NFC and fails because real Apple PKPass Vault keys are missing. |
 
 ## Vault And Secret Management
 
 | ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
 |---|---|---:|---|---|---|---|---|
-| LYL-CUR-VAULT-001 | Production Django settings SHALL fail if Vault is missing required secrets. | P0 | VERIFYING | `backend/loyallia/settings/production.py` | `DJANGO_SETTINGS_MODULE=loyallia.settings.production python manage.py check --deploy` | PENDING | Re-run after Vault config cleanup. |
-| LYL-CUR-VAULT-002 | Remove env fallback for production critical secrets. | P0 | IN_PROGRESS | `backend/loyallia/settings/production.py`, `backend/common/vault.py` | source inspection + deploy check | PENDING | Production settings patched; shared Vault client/docs still describe env fallback. |
-| LYL-CUR-VAULT-003 | Remove hardcoded/default Vault root token behavior. | P0 | VERIFYING | `backend/scripts/vault_migration.py`, `docker-compose.yml`, docs | source inspection | PASS for migration script; compose bootstrap still needs operator decision | Migration script requires `VAULT_ADDR`, `VAULT_TOKEN`, and `--input`; compose still has bootstrap/runtime Vault token plumbing. |
+| LYL-CUR-VAULT-001 | Production Django settings SHALL fail if Vault is missing required secrets. | P0 | VERIFYING | `backend/loyallia/settings/production.py` | `docker compose exec -T api python manage.py check_vault_config --include-apple` | FAIL: missing required Vault keys | Fails closed without printing secret values. |
+| LYL-CUR-VAULT-002 | Remove env fallback for production critical secrets. | P0 | VERIFYING | `backend/loyallia/settings/production.py`, `backend/common/vault.py` | source inspection + Docker startup | PARTIAL | Runtime uses Vault token file; bootstrap service credentials still require final production operator decision. |
+| LYL-CUR-VAULT-003 | Remove hardcoded/default Vault root token behavior. | P0 | VERIFYING | `backend/scripts/vault_migration.py`, `docker-compose.yml`, docs | source inspection | PASS for migration script; compose creates runtime token file | App no longer receives `VAULT_TOKEN` env; it reads `/run/loyallia-vault/app-token`. |
 | LYL-CUR-VAULT-004 | Remove placeholder secret payloads. | P0 | VERIFYING | `backend/scripts/vault_migration.py` | source inspection | PASS for migration script | Remaining placeholder-like strings exist in dev/test defaults and docs; production path still blocked by sealed Vault. |
-| LYL-CUR-VAULT-005 | Stop passing app runtime secrets through compose env where app can read Vault directly. | P0 | IN_PROGRESS | `docker-compose.yml`, `docker-compose.prod.yml` | compose source inspection | PARTIAL | App runtime now expects Vault for many secrets; bootstrap services and Vault token handling remain unresolved production decisions. |
+| LYL-CUR-VAULT-005 | Stop passing app runtime secrets through compose env where app can read Vault directly. | P0 | VERIFYING | `docker-compose.yml`, `docker-compose.prod.yml` | `docker compose exec -T api sh -c '[ -n "$VAULT_TOKEN" ] && echo present || echo empty'` | PASS for app Vault token env | Runtime token is file-mounted; required real secret values remain missing in Vault. |
 | LYL-CUR-VAULT-006 | Define exact Vault key names for all runtime secrets. | P0 | VERIFYING | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md`, production settings | source inspection | PASS for current listed keys | Includes Django, JWT, DB, Redis, MinIO, payment, email, Google, and Apple Wallet web PKPass/NFC keys. |
-| LYL-CUR-VAULT-007 | Add a non-secret Vault readiness command. | P1 | VERIFYING | `backend/apps/api/management/commands/check_vault_config.py` | `docker compose exec -T api python manage.py check_vault_config --include-apple` | FAIL: Vault sealed/unreachable | Command does not print secret values. |
+| LYL-CUR-VAULT-007 | Add a non-secret Vault readiness command. | P1 | VERIFYING | `backend/apps/api/management/commands/check_vault_config.py` | `docker compose exec -T api python manage.py check_vault_config --include-apple` | FAIL: missing required Vault keys | Vault is reachable through token file; command does not print secret values. |
 | LYL-CUR-VAULT-008 | Rotate any secret that appeared in `.env`, scripts, docs, or logs. | P0 | OPEN | Vault/operator task | rotation evidence | PENDING | Do not print secret values in evidence. |
 
 ## Apple Wallet Web PKPass And NFC
@@ -37,49 +37,50 @@ No item may be marked `DONE` unless the evidence command passes or the item has 
 | ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
 |---|---|---:|---|---|---|---|---|
 | LYL-CUR-APPLE-001 | Confirm Apple web PKPass product path: no native iOS app required for customer add-to-wallet flow. | P0 | DONE | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md` | source review | PASS | Verify with Wallet identity flow is out of current scope. |
-| LYL-CUR-APPLE-002 | Store Apple Team ID, Pass Type ID, PKPass cert/key, and WWDR cert in Vault. | P0 | VERIFYING | production settings, wallet docs | Vault readiness check | BLOCKED: Vault sealed | These are the required web PKPass keys. |
+| LYL-CUR-APPLE-002 | Store Apple Team ID, Pass Type ID, PKPass cert/key, and WWDR cert in Vault. | P0 | BLOCKED | production settings, wallet docs | Vault readiness check | FAIL: keys missing | Vault is reachable; required Apple PKPass keys are absent. |
 | LYL-CUR-APPLE-003 | Add NFC as an optional gated feature requiring Apple approval and real reader validation. | P0 | VERIFYING | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md`, pass engine | source review | CODE PARTIAL | NFC is now card-metadata gated in the pass engine; real Apple approval and reader validation remain required. |
-| LYL-CUR-APPLE-004 | Store Apple PKPass signing cert/key and WWDR certificate in Vault. | P0 | VERIFYING | `backend/apps/customers/pass_engine/apple_pass.py` | wallet cert parse check | BLOCKED: Vault sealed | Pass engine reads PEM material from Vault key names. |
-| LYL-CUR-APPLE-005 | Remove Verify with Wallet identity keys from current web Wallet readiness gate. | P0 | VERIFYING | readiness commands, production settings | `python manage.py check_apple_wallet_config` | CODE UPDATED | Command scope is now web PKPass/NFC only; production settings still contain Verify with Wallet strict keys and need cleanup. |
+| LYL-CUR-APPLE-004 | Store Apple PKPass signing cert/key and WWDR certificate in Vault. | P0 | BLOCKED | `backend/apps/customers/pass_engine/apple_pass.py` | wallet cert parse check | FAIL: keys missing | Pass engine reads PEM material from Vault key names. |
+| LYL-CUR-APPLE-005 | Remove Verify with Wallet identity keys from current web Wallet readiness gate. | P0 | DONE | readiness commands, production settings, compose | source inspection | PASS | Command, production settings, and compose seeding now use web PKPass/NFC scope. |
 | LYL-CUR-APPLE-006 | Document simple customer add-to-wallet flow. | P1 | DONE | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md` | source review | PASS | Customer uses public enrollment URL and browser Add to Apple Wallet flow. |
-| LYL-CUR-APPLE-007 | Add pre-Docker Apple Wallet readiness check for web PKPass/NFC only. | P0 | VERIFYING | `backend/apps/api/management/commands/check_apple_wallet_config.py` | `docker compose exec -T api python manage.py check_apple_wallet_config` | FAIL: Vault Service Unavailable | Command validates PKPass cert/key/WWDR and optional NFC only, and did not print secret values. |
+| LYL-CUR-APPLE-007 | Add pre-Docker Apple Wallet readiness check for web PKPass/NFC only. | P0 | VERIFYING | `backend/apps/api/management/commands/check_apple_wallet_config.py` | `docker compose exec -T api python manage.py check_apple_wallet_config` | FAIL: missing Apple PKPass Vault keys | Command validates PKPass cert/key/WWDR and optional NFC only, and did not print secret values. |
 | LYL-CUR-APPLE-008 | Add real Apple Wallet tests for configured, disabled, invalid pass, valid pass, and NFC-gated paths. | P1 | OPEN | backend tests | pytest wallet tests | PENDING | No mocks for production readiness; fixture payloads must be documented test fixtures. |
 
 ## Backend Runtime And Tests
 
 | ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
 |---|---|---:|---|---|---|---|---|
-| LYL-CUR-BE-001 | Re-run backend Ruff after latest patches. | P0 | DONE | backend | `cd backend && ./venv/bin/ruff check .` | PASS | 2026-05-02. |
-| LYL-CUR-BE-002 | Re-run backend Black after latest patches. | P0 | DONE | backend | `cd backend && ./venv/bin/black --check .` | PASS | 2026-05-02. |
-| LYL-CUR-BE-003 | Re-run backend Pyright after latest patches. | P0 | DONE | backend | `cd backend && pyright` | PASS | 2026-05-02. |
-| LYL-CUR-BE-004 | Backend Docker pytest SHALL reach zero failures. | P0 | IN_PROGRESS | backend tests/app code | `docker compose exec -T api env DJANGO_SETTINGS_MODULE=loyallia.settings.test pytest -q` | FAIL | Latest result: 49 failed, 411 passed, 2 skipped. |
+| LYL-CUR-BE-001 | Re-run backend Ruff after latest patches. | P0 | DONE | backend | `cd backend && ./venv/bin/ruff check .` | PASS | 2026-05-03. |
+| LYL-CUR-BE-002 | Re-run backend Black after latest patches. | P0 | DONE | backend | `cd backend && ./venv/bin/black --check .` | PASS | 2026-05-03. |
+| LYL-CUR-BE-003 | Re-run backend Pyright after latest patches. | P0 | DONE | backend | `cd backend && pyright` | PASS | 2026-05-03. |
+| LYL-CUR-BE-004 | Backend Docker pytest SHALL reach zero failures. | P0 | DONE | backend tests/app code | `docker compose exec -T api env DJANGO_SETTINGS_MODULE=loyallia.settings.test python -m pytest -q` | PASS: 460 passed, 2 skipped | Test settings now use Vault-backed PostgreSQL in Docker. |
 | LYL-CUR-BE-005 | Fix API route mismatches causing 404/405 in tests. | P0 | DONE | API router files, tests | `docker compose exec -T api env DJANGO_SETTINGS_MODULE=loyallia.settings.test pytest -q tests/test_api.py::CustomersAPITest tests/test_api.py::CardsAPITest tests/test_api.py::TenantsAPITest tests/test_api.py::AutomationAPITest tests/test_api.py::NotificationsAPITest` | PASS: 12 passed | Added real compatibility aliases and customer CRUD/tenant/notification routes. |
-| LYL-CUR-BE-006 | Align card factories/test setup with required metadata. | P0 | OPEN | `backend/tests/factories.py`, card tests | Docker pytest subset | FAIL | Card validation now requires reward, coupon, referral, and discount metadata. |
-| LYL-CUR-BE-007 | Fix scanner auth workflow returning 401 in scanner tests. | P0 | OPEN | scanner/card auth code and tests | scanner pytest subset | FAIL | Owner/staff scanner requests expected 200. |
-| LYL-CUR-BE-008 | Align trial and plan enforcement behavior with SRS/business rules. | P0 | OPEN | billing, tenants, plan enforcement | plan/billing pytest subset | FAIL | Trial-related tests still failing. |
-| LYL-CUR-BE-009 | Fix remaining source-inspection security test for invitation hashing. | P1 | OPEN | auth API/tests | security pytest subset | FAIL | Test expects hashing implementation evidence. |
-| LYL-CUR-BE-010 | Run migration drift check. | P0 | DONE | migrations | `docker compose exec -T api python manage.py makemigrations --check --dry-run` | PASS | No changes detected. |
-| LYL-CUR-BE-011 | Run deploy check under production settings with Vault available. | P0 | BLOCKED | settings/Vault/compose | `docker compose exec -T api python manage.py check --deploy` | WARN / not production settings | Current dev container reports six deployment warnings; production strict Vault check is blocked by sealed Vault. |
+| LYL-CUR-BE-006 | Align card factories/test setup with required metadata. | P0 | DONE | `backend/tests/factories.py`, card tests | Docker pytest full suite | PASS | Factories now merge valid defaults and preserve invalid-validation test cases. |
+| LYL-CUR-BE-007 | Fix scanner auth workflow returning 401 in scanner tests. | P0 | DONE | `backend/apps/cards/tests.py`, pass processing | Docker pytest full suite | PASS | Scanner tests now use correct auth header path; typed pass counters sync with JSON pass data. |
+| LYL-CUR-BE-008 | Align trial and plan enforcement behavior with SRS/business rules. | P0 | DONE | billing, tenants, plan enforcement | Docker pytest full suite | PASS | Trial tests use active trial dates; no indefinite trial assumption remains. |
+| LYL-CUR-BE-009 | Fix remaining source-inspection security test for invitation hashing. | P1 | DONE | auth tests | Docker pytest full suite | PASS | Test now verifies actual invitation implementation in `users_api.py`. |
+| LYL-CUR-BE-010 | Run migration drift check. | P0 | DONE | migrations | `docker compose exec -T api env DJANGO_SETTINGS_MODULE=loyallia.settings.test python manage.py makemigrations --check --dry-run` | PASS | No changes detected. |
+| LYL-CUR-BE-011 | Run deploy check under production settings with Vault available. | P0 | BLOCKED | settings/Vault/compose | `docker compose exec -T api python manage.py check_vault_config --include-apple` | FAIL: missing real Vault keys | Production deploy check remains blocked until real Google, payment, email, and Apple Vault keys are provided. |
 
 ## Frontend Runtime And Tests
 
 | ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
 |---|---|---:|---|---|---|---|---|
-| LYL-CUR-FE-001 | Re-run frontend typecheck after latest changes. | P0 | DONE | frontend | `cd frontend && npm run typecheck` | PASS | 2026-05-02. |
+| LYL-CUR-FE-001 | Re-run frontend typecheck after latest changes. | P0 | DONE | frontend | `cd frontend && npm run typecheck` | PASS | 2026-05-03; script clears stale TypeScript build-info before real typecheck. |
 | LYL-CUR-FE-002 | Re-run frontend lint and record warnings. | P1 | VERIFYING | frontend | `cd frontend && npm run lint` | PASS with warnings | Warnings remain for `<img>`, hook dependencies, and custom font. |
-| LYL-CUR-FE-003 | Re-run frontend build. | P0 | DONE | frontend | `cd frontend && npm run build` | PASS | 2026-05-02. |
-| LYL-CUR-FE-004 | Re-run frontend unit tests. | P0 | DONE | frontend tests | `cd frontend && npm run test:unit` | PASS: 1 file, 12 tests | 2026-05-02. |
+| LYL-CUR-FE-003 | Re-run frontend build. | P0 | DONE | frontend | `cd frontend && npm run build` | PASS | 2026-05-03. |
+| LYL-CUR-FE-004 | Re-run frontend unit tests. | P0 | DONE | frontend tests | `cd frontend && npm run test:unit` | PASS: 1 file, 12 tests | 2026-05-03. |
 | LYL-CUR-FE-005 | Resolve remaining lint warnings where production-relevant. | P2 | OPEN | dashboard/program/scanner components | lint output | PENDING | `img`, hook dependency, and custom font warnings. |
 
 ## Docker And Infrastructure
 
 | ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
 |---|---|---:|---|---|---|---|---|
-| LYL-CUR-INFRA-001 | Confirm Docker cluster health after Vault cleanup. | P0 | OPEN | compose | `docker compose ps` | PENDING | Previously healthy before latest changes. |
-| LYL-CUR-INFRA-002 | Ensure app runtime uses production-safe Vault access. | P0 | OPEN | compose/settings/Vault | startup logs + health | PENDING | No secret values in logs. |
+| LYL-CUR-INFRA-001 | Confirm Docker cluster health after Vault cleanup. | P0 | BLOCKED | compose | `docker compose ps` | PARTIAL | Vault, Postgres, Redis, PgBouncer run; API starts but fails runtime validation due missing real Vault keys. |
+| LYL-CUR-INFRA-002 | Ensure app runtime uses production-safe Vault access. | P0 | VERIFYING | compose/settings/Vault | startup logs + health | PARTIAL | API reads Vault through token file and logs missing key names only; real key values still absent. |
 | LYL-CUR-INFRA-003 | Reconcile development `.env` usage with Vault-only production rule. | P0 | OPEN | `.env`, docs, compose | source inspection | PENDING | `.env` exists locally; production must not depend on plaintext passwords. |
 | LYL-CUR-INFRA-004 | Ensure Redis auth is consistently sourced from Vault or controlled bootstrap path. | P0 | OPEN | compose/settings | Redis smoke | PENDING | Redis server still needs password at startup; app should not rely on plaintext env fallback. |
 | LYL-CUR-INFRA-005 | Add/verify CI gates for backend, frontend, Docker, audit, E2E, and migration drift. | P1 | OPEN | `.github/workflows` | workflow grep + CI run | PENDING | Existing Plan B doc says partial. |
+| LYL-CUR-INFRA-006 | Fix Postgres WAL archive permission errors in Docker. | P0 | DONE | `docker-compose.yml` | `docker compose logs --since=90s postgres | rg "archive command failed|wal_archive|Permission denied"` | PASS | No WAL archive permission errors after Postgres recreate. |
 
 ## Dependency And Security Audit
 
@@ -115,8 +116,8 @@ No item may be marked `DONE` unless the evidence command passes or the item has 
 
 | Date | Evidence | Result |
 |---|---|---|
-| 2026-05-02 | Docker pytest with test settings after API compatibility fixes | FAIL: 49 failed, 411 passed, 2 skipped |
-| 2026-05-02 | Backend ruff/black/pyright after latest patches | PASS |
-| 2026-05-02 | Frontend typecheck/lint/test/build after latest patches | PASS, lint/build with warnings |
-| 2026-05-02 | Docker Vault readiness checks | FAIL: Vault sealed/unreachable |
+| 2026-05-03 | Docker pytest with Vault-backed PostgreSQL test DB | PASS: 460 passed, 2 skipped |
+| 2026-05-03 | Backend ruff/black/pyright after latest patches | PASS |
+| 2026-05-03 | Frontend typecheck/lint/test/build after latest patches | PASS, lint/build with warnings |
+| 2026-05-03 | Docker Vault readiness checks | FAIL: missing real Google, payment, email, and Apple PKPass Vault keys |
 | 2026-05-02 | npm production audit | FAIL: Next.js high advisories and PostCSS moderate advisory |

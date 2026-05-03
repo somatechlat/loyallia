@@ -524,15 +524,15 @@ class TestAPICodeChanges(TestCase):
         self.assertNotIn('"client_id": client_id', content)
 
     def test_invitation_uses_hashlib(self):
-        """api.py should use hashlib for invitation token hashing."""
+        """users_api.py should use hashlib for invitation token hashing."""
         import os
 
-        api_path = os.path.join(
-            os.path.dirname(__file__), "..", "apps", "authentication", "api.py"
+        users_api_path = os.path.join(
+            os.path.dirname(__file__), "..", "apps", "authentication", "users_api.py"
         )
-        with open(api_path) as f:
+        with open(users_api_path) as f:
             content = f.read()
-        self.assertIn("hashlib.sha256(invitation_token", content)
+        self.assertIn("hashlib.sha256(invitation_token.encode()).hexdigest()", content)
 
 
 class TestHelpersCodeChanges(TestCase):

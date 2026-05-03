@@ -63,7 +63,6 @@ class GetTenantLimitsTest(TestCase):
     def test_trial_unlimited_limits(self):
         t = make_tenant()
         sub = make_subscription(t, status=SubscriptionStatus.TRIALING)
-        sub.trial_end = None  # no plan = trial unlimited
         sub.subscription_plan = None
         sub.save(update_fields=["subscription_plan"])
         limits = get_tenant_limits(t)
@@ -263,7 +262,6 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
         make_subscription(
             t,
             status=SubscriptionStatus.TRIALING,
-            trial_end=None,
         )
         request = MagicMock()
         request.tenant = t

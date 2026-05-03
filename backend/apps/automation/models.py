@@ -174,7 +174,7 @@ class Automation(TimestampedModel):
             return False
 
         # LYL-H-API-016: Enforce max_executions_per_day limit
-        if self.max_executions_per_day is not None and self.max_executions_per_day > 0:
+        if self.max_executions_per_day is not None:
             from django.utils import timezone
 
             today_start = timezone.now().replace(
@@ -186,6 +186,9 @@ class Automation(TimestampedModel):
             if executions_today >= self.max_executions_per_day:
                 return False
 
+        execution_context = {
+            k: v for k, v in (context or {}).items() if not str(k).startswith("_")
+        }
         try:
             success = False
 
@@ -211,6 +214,13 @@ class Automation(TimestampedModel):
                 )
                 self.refresh_from_db(fields=["total_executions", "last_executed"])
 
+            AutomationExecution.objects.create(
+                automation=self,
+                customer=customer,
+                trigger_event=self.trigger,
+                execution_context=execution_context,
+                success=success,
+            )
             return success
         except Exception as e:
             # Log error but don't crash
