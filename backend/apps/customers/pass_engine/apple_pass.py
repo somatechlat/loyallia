@@ -53,6 +53,7 @@ def _check_config_ready() -> bool:
 
     try:
         from OpenSSL import crypto
+
         from common.vault import get_secret
 
         cert_pem = get_secret("apple_cert_pem", strict=True)
@@ -93,13 +94,15 @@ def _build_nfc_payload(card, customer_pass, barcode_value: str) -> dict | None:
 
     nfc_public_key = get_secret("apple_nfc_encryption_public_key", default="")
     if not nfc_public_key:
-        raise ValueError("Apple NFC is enabled but apple_nfc_encryption_public_key is missing")
+        raise ValueError(
+            "Apple NFC is enabled but apple_nfc_encryption_public_key is missing"
+        )
 
     message = str(apple_config.get("nfc_message") or barcode_value)
     if len(message.encode("utf-8")) > 64:
         raise ValueError("Apple NFC message must be 64 bytes or less")
 
-    nfc_payload = {
+    nfc_payload: dict[str, Any] = {
         "message": message,
         "encryptionPublicKey": nfc_public_key,
     }
@@ -224,7 +227,9 @@ def generate_pkpass(customer_pass) -> bytes | None:
     try:
         pass_json = _build_pass_json(customer_pass, card, customer, tenant)
     except ValueError as exc:
-        logger.error("Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc)
+        logger.error(
+            "Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc
+        )
         return None
     pass_json_bytes = json.dumps(pass_json, ensure_ascii=False).encode("utf-8")
 

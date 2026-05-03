@@ -14,6 +14,30 @@ Loyallia SHALL use Apple Wallet passes (`.pkpass`) for loyalty cards, stamp card
 
 Loyallia SHALL NOT require Apple's Verify with Wallet identity API for the current web-app product. Verify with Wallet is for requesting identity data from a user's ID in Wallet and requires a native app entitlement flow. That is not the same as issuing loyalty cards to Apple Wallet.
 
+## Provider Selection UX
+
+The program creation screen SHALL present Apple Wallet and Google Wallet selection on the same design screen as the live card preview.
+
+- Apple Wallet SHALL use the web PKPass flow in this document.
+- Google Wallet SHALL continue to use the existing Google Wallet JWT flow.
+- Apple implementation work SHALL NOT rewrite the Google Wallet generator.
+
+The selected provider SHALL be stored on the card as `metadata.wallet_provider`. Accepted values are:
+
+| Value | Meaning |
+|---|---|
+| `apple` | Public enrollment exposes the Apple Wallet `.pkpass` path when Apple readiness passes. |
+| `google` | Public enrollment exposes the existing Google Wallet save URL path when Google readiness passes. |
+| missing / `both` | Legacy behavior for existing cards; both providers may be exposed when configured. |
+
+Apple-specific options SHALL be stored under `metadata.apple_wallet`. The current supported options are:
+
+| Key | Purpose |
+|---|---|
+| `nfc_enabled` | Enables Apple `pass.json.nfc` only for this card when Vault NFC material exists. |
+| `nfc_requires_authentication` | Adds Apple `requiresAuthentication` to the NFC dictionary. |
+| `nfc_message` | Optional NFC payload override; if absent, the customer pass QR/barcode value is used. |
+
 ## User Flow
 
 1. A business user creates a loyalty card/program in the Loyallia dashboard.
@@ -26,6 +50,63 @@ Loyallia SHALL NOT require Apple's Verify with Wallet identity API for the curre
 8. The customer taps "Add to Apple Wallet" and iOS opens the native Wallet add sheet.
 9. After the pass is installed, the customer can present it in-store by QR/barcode or NFC, depending on the card configuration and Apple approval.
 10. Loyallia updates the pass by regenerating the `.pkpass` with the same pass type identifier and serial number so Wallet treats it as the same pass instance.
+
+## Apple Creation Flow
+
+```mermaid
+flowchart TD
+  A[Business user opens New Program wizard] --> B[Select loyalty card type]
+  B --> C[Configure business rules and enrollment fields]
+  C --> D[Open Design step]
+  D --> E[Select Apple Wallet in provider selector]
+  E --> F[Configure Apple PKPass options]
+  F --> G[Render Apple Wallet live preview]
+  G --> H[Save card metadata and assets]
+  H --> I[Customer opens public enrollment URL]
+  I --> J[Customer submits enrollment form]
+  J --> K[Backend creates CustomerPass]
+  K --> L[Enrollment page checks wallet status]
+  L --> M{Apple readiness passes?}
+  M -->|No| N[Show QR fallback and readiness error state]
+  M -->|Yes| O[Expose Add to Apple Wallet button]
+  O --> P[Backend generates signed .pkpass]
+  P --> Q[iOS opens native Wallet add sheet]
+  Q --> R[Customer presents barcode or NFC at store]
+```
+
+## Apple Sequence
+
+```mermaid
+sequenceDiagram
+  participant Owner
+  participant Frontend
+  participant API
+  participant Vault
+  participant ApplePassEngine
+  participant Customer
+  participant AppleWallet
+
+  Owner->>Frontend: Select Apple Wallet in program wizard
+  Frontend->>Frontend: Render Apple preview and Apple-only options
+  Frontend->>API: POST /api/v1/programs with metadata.wallet_provider=apple
+  API-->>Frontend: Saved Card
+
+  Customer->>Frontend: Open public enrollment page
+  Frontend->>API: GET /api/v1/cards/public/{card_id}
+  API-->>Frontend: Card metadata and design
+  Customer->>Frontend: Submit enrollment form
+  Frontend->>API: POST /api/v1/customers/enroll/?card_id={card_id}
+  API-->>Frontend: CustomerPass wallet URLs
+  Frontend->>API: GET /api/v1/wallet/status/{pass_id}
+  API->>Vault: Validate Apple PKPass keys and cert parseability
+  Vault-->>API: Readiness result without secret values
+  API-->>Frontend: Apple URL available when ready
+  Customer->>API: GET /api/v1/wallet/apple/{pass_id}
+  API->>ApplePassEngine: Build pass.json, manifest, and signature
+  ApplePassEngine->>Vault: Load signing cert, private key, WWDR cert, optional NFC key
+  ApplePassEngine-->>API: Signed .pkpass bytes
+  API-->>AppleWallet: application/vnd.apple.pkpass
+```
 
 ## Apple Requirements For Standard Web Wallet Passes
 
@@ -117,7 +198,7 @@ docker compose exec -T api python manage.py check_vault_config
 docker compose exec -T api python manage.py check_apple_wallet_config
 ```
 
-The current implementation must be adjusted so `check_apple_wallet_config` no longer requires Verify with Wallet identity keys for the web-app path.
+The `check_apple_wallet_config` command SHALL validate the web PKPass scope only: Pass Type ID, Team ID, PKPass signing certificate, PKPass private key, WWDR certificate, and optional NFC public key.
 
 ## Acceptance Criteria
 
