@@ -1,8 +1,8 @@
-"""
-Validate Apple Wallet and Verify with Wallet Vault configuration.
-"""
+"""Validate Apple Wallet web PKPass and optional NFC Vault configuration."""
 
 from __future__ import annotations
+
+import base64
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -13,27 +13,19 @@ from common.vault import fetch_vault_secrets
 IDENTIFIER_KEYS = [
     "apple_pass_type_identifier",
     "apple_team_identifier",
-    "apple_verify_bundle_id",
-    "apple_verify_merchant_id",
-    "apple_verify_document_types",
-    "apple_verify_requested_elements",
 ]
 
 CERTIFICATE_KEYS = [
     "apple_cert_pem",
     "apple_wwdr_cert_pem",
-    "apple_verify_identity_cert_pem",
 ]
 
 PRIVATE_KEY_KEYS = [
     ("apple_cert_key_pem", "apple_cert_key_passphrase"),
-    (
-        "apple_verify_identity_private_key_pem",
-        "apple_verify_identity_private_key_passphrase",
-    ),
 ]
 
-BUNDLE_CERT_KEY = "apple_iaca_certificates_pem"
+NFC_ENABLED_KEY = "apple_nfc_enabled"
+NFC_PUBLIC_KEY = "apple_nfc_encryption_public_key"
 
 
 def _load_certificate(name: str, value: str) -> None:
@@ -55,18 +47,33 @@ def _load_private_key(name: str, value: str, passphrase: str = "") -> None:
         ) from exc
 
 
-def _split_pem_certificates(value: str) -> list[str]:
-    marker = "-----END CERTIFICATE-----"
-    certificates = []
-    for chunk in value.split(marker):
-        chunk = chunk.strip()
-        if chunk:
-            certificates.append(f"{chunk}\n{marker}\n")
-    return certificates
+def _is_truthy(value: object) -> bool:
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _load_nfc_public_key(name: str, value: str) -> None:
+    """Validate Apple NFC public key without printing the key material."""
+    raw_value = value.strip()
+    if raw_value.startswith("-----BEGIN"):
+        try:
+            serialization.load_pem_public_key(raw_value.encode("utf-8"))
+            return
+        except ValueError as exc:
+            raise CommandError(
+                f"Vault key '{name}' is not a valid PEM public key."
+            ) from exc
+
+    try:
+        der_bytes = base64.b64decode(raw_value, validate=True)
+        serialization.load_der_public_key(der_bytes)
+    except (ValueError, TypeError) as exc:
+        raise CommandError(
+            f"Vault key '{name}' is not a valid Base64 DER public key."
+        ) from exc
 
 
 class Command(BaseCommand):
-    help = "Validate Apple Wallet / Verify with Wallet Vault configuration without printing secrets."
+    help = "Validate Apple Wallet web PKPass/NFC Vault configuration without printing secrets."
 
     def handle(self, *args, **options) -> None:
         secrets = fetch_vault_secrets()
@@ -77,7 +84,6 @@ class Command(BaseCommand):
             IDENTIFIER_KEYS
             + CERTIFICATE_KEYS
             + [key for key, _passphrase_key in PRIVATE_KEY_KEYS]
-            + [BUNDLE_CERT_KEY]
         )
         missing = [
             key for key in required_keys if not str(secrets.get(key, "")).strip()
@@ -99,17 +105,19 @@ class Command(BaseCommand):
                 key, str(secrets[key]), str(secrets.get(passphrase_key, ""))
             )
 
-        iaca_certificates = _split_pem_certificates(str(secrets[BUNDLE_CERT_KEY]))
-        if not iaca_certificates:
+        nfc_enabled = _is_truthy(secrets.get(NFC_ENABLED_KEY, ""))
+        nfc_public_key = str(secrets.get(NFC_PUBLIC_KEY, "")).strip()
+        if nfc_enabled and not nfc_public_key:
             raise CommandError(
-                "Vault key 'apple_iaca_certificates_pem' has no PEM certificates."
+                f"Vault key '{NFC_PUBLIC_KEY}' is required when '{NFC_ENABLED_KEY}' is enabled."
             )
-        for index, certificate in enumerate(iaca_certificates, start=1):
-            _load_certificate(f"{BUNDLE_CERT_KEY}[{index}]", certificate)
+        if nfc_public_key:
+            _load_nfc_public_key(NFC_PUBLIC_KEY, nfc_public_key)
 
         self.stdout.write(
             self.style.SUCCESS(
-                "Apple Wallet readiness passed. Identifiers, certificates, private keys, "
-                f"and {len(iaca_certificates)} IACA certificate(s) are parseable. Values were not printed."
+                "Apple Wallet web PKPass readiness passed. Identifiers, signing "
+                "certificate, private key, WWDR certificate, and optional NFC public "
+                "key are parseable. Values were not printed."
             )
         )
