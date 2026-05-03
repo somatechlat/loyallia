@@ -67,16 +67,10 @@ JWT_SECRET_KEY = get_secret("jwt_secret_key", strict=True)
 # Pass HMAC signing
 PASS_HMAC_SECRET = get_secret("pass_hmac_secret", strict=True)
 
-# Apple Wallet / Verify with Wallet identifiers. Certificate material is
-# validated by readiness checks and read directly from Vault at signing time.
+# Apple Wallet web PKPass identifiers. Certificate material is validated by
+# readiness checks and read directly from Vault at signing time.
 APPLE_PASS_TYPE_IDENTIFIER = get_secret("apple_pass_type_identifier", strict=True)
 APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", strict=True)
-APPLE_VERIFY_BUNDLE_ID = get_secret("apple_verify_bundle_id", strict=True)
-APPLE_VERIFY_MERCHANT_ID = get_secret("apple_verify_merchant_id", strict=True)
-APPLE_VERIFY_DOCUMENT_TYPES = get_secret("apple_verify_document_types", strict=True)
-APPLE_VERIFY_REQUESTED_ELEMENTS = get_secret(
-    "apple_verify_requested_elements", strict=True
-)
 
 # Google OAuth
 GOOGLE_OAUTH_CLIENT_ID = get_secret("google_oauth_client_id", strict=True)

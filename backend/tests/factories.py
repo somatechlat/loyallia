@@ -100,7 +100,12 @@ def make_card(tenant, card_type=CardType.STAMP, metadata=None, **kwargs):
         },
         CardType.MULTIPASS: {"bundle_size": 10, "bundle_price": 50.00},
     }
-    meta = metadata or type_defaults.get(card_type, {})
+    base_meta = dict(type_defaults.get(card_type, {}))
+    if metadata is None:
+        meta = base_meta
+    else:
+        base_meta.update(metadata)
+        meta = base_meta
     defaults = {
         "name": f"Test Program {uuid.uuid4().hex[:6]}",
         "card_type": card_type,
@@ -108,7 +113,17 @@ def make_card(tenant, card_type=CardType.STAMP, metadata=None, **kwargs):
         "metadata": meta,
     }
     defaults.update(kwargs)
-    return Card.objects.create(tenant=tenant, **defaults)
+    try:
+        return Card.objects.create(tenant=tenant, **defaults)
+    except ValueError:
+        if metadata is None:
+            raise
+        invalid_meta = defaults.pop("metadata")
+        defaults["metadata"] = type_defaults.get(card_type, {})
+        card = Card.objects.create(tenant=tenant, **defaults)
+        Card.objects.filter(pk=card.pk).update(metadata=invalid_meta)
+        card.refresh_from_db()
+        return card
 
 
 def make_customer(tenant, **kwargs):
@@ -148,8 +163,15 @@ def make_subscription(tenant, plan=None, status=SubscriptionStatus.ACTIVE, **kwa
         "current_period_start": now,
         "current_period_end": now + timedelta(days=30),
     }
+    if status == SubscriptionStatus.TRIALING:
+        defaults["trial_start"] = now
+        defaults["trial_end"] = now + timedelta(days=14)
     defaults.update(kwargs)
-    sub, _ = Subscription.objects.get_or_create(tenant=tenant, defaults=defaults)
+    sub, created = Subscription.objects.get_or_create(tenant=tenant, defaults=defaults)
+    if not created:
+        for field, value in defaults.items():
+            setattr(sub, field, value)
+        sub.save(update_fields=[*defaults.keys(), "updated_at"])
     return sub
 
 

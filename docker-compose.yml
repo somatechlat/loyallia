@@ -28,10 +28,10 @@ x-common-env: &common-env
   CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:33906,http://localhost:33905}"
   # Vault
   VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-  VAULT_TOKEN: ${VAULT_TOKEN:-}
-  VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia}
+  VAULT_TOKEN_FILE: /run/loyallia-vault/app-token
+  VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia/production}
   # Apple Wallet
-  APPLE_VERIFY_MODE: vault
+  APPLE_WALLET_MODE: vault
   # Google Wallet
   GOOGLE_WALLET_MODE: vault
   # Payment Gateway (Bendo/PlacetoPay)
@@ -91,10 +91,9 @@ services:
       - "-c"
       - "archive_mode=on"
       - "-c"
-      - "archive_command=cp %p /var/lib/postgresql/wal_archive/%f"
+      - "archive_command=mkdir -p /var/lib/postgresql/data/wal_archive && (test -f /var/lib/postgresql/data/wal_archive/%f || cp %p /var/lib/postgresql/data/wal_archive/%f)"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - postgres_wal_archive:/var/lib/postgresql/wal_archive
     ports:
       - "127.0.0.1:33900:5432"
     networks:
@@ -360,6 +359,7 @@ services:
       - ./backend:/app
       - static_files:/app/staticfiles
       - media_files:/app/mediafiles
+      - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     ports:
       - "127.0.0.1:33905:8000"
@@ -743,6 +743,7 @@ services:
         condition: service_healthy
     environment:
       VAULT_ADDR: http://vault:8200
+      VAULT_APP_SECRET_PATH: ${VAULT_APP_SECRET_PATH:-loyallia/production}
       # Pass secrets from .env into the container so they can be seeded into Vault
       _SECRET_KEY: ${SECRET_KEY}
       _POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -764,18 +765,12 @@ services:
       _EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       _APPLE_PASS_TYPE_IDENTIFIER: ${APPLE_PASS_TYPE_IDENTIFIER:-}
       _APPLE_TEAM_IDENTIFIER: ${APPLE_TEAM_IDENTIFIER:-}
-      _APPLE_VERIFY_BUNDLE_ID: ${APPLE_VERIFY_BUNDLE_ID:-}
-      _APPLE_VERIFY_MERCHANT_ID: ${APPLE_VERIFY_MERCHANT_ID:-}
-      _APPLE_VERIFY_DOCUMENT_TYPES: ${APPLE_VERIFY_DOCUMENT_TYPES:-}
-      _APPLE_VERIFY_REQUESTED_ELEMENTS: ${APPLE_VERIFY_REQUESTED_ELEMENTS:-}
       _APPLE_CERT_PEM: ${APPLE_CERT_PEM:-}
       _APPLE_CERT_KEY_PEM: ${APPLE_CERT_KEY_PEM:-}
       _APPLE_WWDR_CERT_PEM: ${APPLE_WWDR_CERT_PEM:-}
-      _APPLE_VERIFY_IDENTITY_CERT_PEM: ${APPLE_VERIFY_IDENTITY_CERT_PEM:-}
-      _APPLE_VERIFY_IDENTITY_PRIVATE_KEY_PEM: ${APPLE_VERIFY_IDENTITY_PRIVATE_KEY_PEM:-}
-      _APPLE_IACA_CERTIFICATES_PEM: ${APPLE_IACA_CERTIFICATES_PEM:-}
     volumes:
       - vault_data:/vault/file
+      - vault_runtime:/vault/runtime
     entrypoint: >-
       /bin/sh -c "set -eu; i=0;
       until wget --spider --quiet $$VAULT_ADDR/v1/sys/seal-status; do
@@ -791,7 +786,11 @@ services:
       vault operator unseal $$UNSEAL_KEY >/dev/null 2>&1 || true;
       export VAULT_TOKEN=$$ROOT_TOKEN;
       vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true;
-      vault kv put -mount=secret loyallia secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" redis_url=\"$${_REDIS_URL}\" celery_broker_url=\"$${_CELERY_BROKER_URL}\" celery_result_backend=\"$${_CELERY_RESULT_BACKEND}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" jwt_secret_key=\"$${_JWT_SECRET_KEY}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" google_wallet_issuer_id=\"$${_GOOGLE_WALLET_ISSUER_ID}\" google_service_account_json=\"$${_GOOGLE_SERVICE_ACCOUNT_JSON}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_user=\"$${_EMAIL_HOST_USER}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" apple_pass_type_identifier=\"$${_APPLE_PASS_TYPE_IDENTIFIER}\" apple_team_identifier=\"$${_APPLE_TEAM_IDENTIFIER}\" apple_verify_bundle_id=\"$${_APPLE_VERIFY_BUNDLE_ID}\" apple_verify_merchant_id=\"$${_APPLE_VERIFY_MERCHANT_ID}\" apple_verify_document_types=\"$${_APPLE_VERIFY_DOCUMENT_TYPES}\" apple_verify_requested_elements=\"$${_APPLE_VERIFY_REQUESTED_ELEMENTS}\" apple_cert_pem=\"$${_APPLE_CERT_PEM}\" apple_cert_key_pem=\"$${_APPLE_CERT_KEY_PEM}\" apple_wwdr_cert_pem=\"$${_APPLE_WWDR_CERT_PEM}\" apple_verify_identity_cert_pem=\"$${_APPLE_VERIFY_IDENTITY_CERT_PEM}\" apple_verify_identity_private_key_pem=\"$${_APPLE_VERIFY_IDENTITY_PRIVATE_KEY_PEM}\" apple_iaca_certificates_pem=\"$${_APPLE_IACA_CERTIFICATES_PEM}\" >/dev/null;
+      vault kv put -mount=secret \"$${VAULT_APP_SECRET_PATH}\" secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" redis_url=\"$${_REDIS_URL}\" celery_broker_url=\"$${_CELERY_BROKER_URL}\" celery_result_backend=\"$${_CELERY_RESULT_BACKEND}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" jwt_secret_key=\"$${_JWT_SECRET_KEY}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" google_wallet_issuer_id=\"$${_GOOGLE_WALLET_ISSUER_ID}\" google_service_account_json=\"$${_GOOGLE_SERVICE_ACCOUNT_JSON}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_user=\"$${_EMAIL_HOST_USER}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" apple_pass_type_identifier=\"$${_APPLE_PASS_TYPE_IDENTIFIER}\" apple_team_identifier=\"$${_APPLE_TEAM_IDENTIFIER}\" apple_cert_pem=\"$${_APPLE_CERT_PEM}\" apple_cert_key_pem=\"$${_APPLE_CERT_KEY_PEM}\" apple_wwdr_cert_pem=\"$${_APPLE_WWDR_CERT_PEM}\" >/dev/null;
+      printf '%b' \"path \\\"secret/data/loyallia/*\\\" {\\n  capabilities = [\\\"read\\\"]\\n}\\n\" >/vault/runtime/loyallia-app.hcl;
+      vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null;
+      vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token;
+      chmod 0444 /vault/runtime/app-token;
       echo 'Vault initialized, unsealed, and secrets seeded successfully';"
     networks:
       - backend-net
@@ -945,7 +944,7 @@ volumes:
     driver: local
   vault_data:
     driver: local
-  postgres_wal_archive:
+  vault_runtime:
     driver: local
   prometheus_data:
     driver: local

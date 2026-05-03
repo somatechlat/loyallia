@@ -30,16 +30,9 @@ CORE_REQUIRED_KEYS = [
 APPLE_REQUIRED_KEYS = [
     "apple_pass_type_identifier",
     "apple_team_identifier",
-    "apple_verify_bundle_id",
-    "apple_verify_merchant_id",
-    "apple_verify_document_types",
-    "apple_verify_requested_elements",
     "apple_cert_pem",
     "apple_cert_key_pem",
     "apple_wwdr_cert_pem",
-    "apple_verify_identity_cert_pem",
-    "apple_verify_identity_private_key_pem",
-    "apple_iaca_certificates_pem",
 ]
 
 
@@ -50,7 +43,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--include-apple",
             action="store_true",
-            help="Also require Apple Wallet / Verify with Wallet keys.",
+            help="Also require Apple Wallet web PKPass keys.",
         )
 
     def handle(self, *args, **options) -> None:

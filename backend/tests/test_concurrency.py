@@ -10,7 +10,7 @@ import threading
 from decimal import Decimal
 
 from django.db import IntegrityError
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 
 from apps.cards.models import CardType
 from apps.customers.models import CustomerPass
@@ -26,7 +26,7 @@ from tests.factories import (
 # =============================================================================
 
 
-class CouponDoubleRedemptionTest(TestCase):
+class CouponDoubleRedemptionTest(TransactionTestCase):
     """Test that coupon redemption is atomic — no double-redemption under concurrent access."""
 
     def test_coupon_single_redemption(self):
@@ -117,7 +117,7 @@ class ConcurrentEnrollmentTest(TestCase):
 # =============================================================================
 
 
-class StampRaceConditionTest(TestCase):
+class StampRaceConditionTest(TransactionTestCase):
     """Test that stamp counter uses select_for_update to prevent lost updates."""
 
     def test_stamp_increment_is_atomic(self):
@@ -160,7 +160,7 @@ class StampRaceConditionTest(TestCase):
 # =============================================================================
 
 
-class CashbackRaceConditionTest(TestCase):
+class CashbackRaceConditionTest(TransactionTestCase):
     """Test that cashback balance updates are atomic."""
 
     def test_cashback_balance_consistency(self):
@@ -197,7 +197,7 @@ class CashbackRaceConditionTest(TestCase):
 # =============================================================================
 
 
-class GiftBalanceRaceConditionTest(TestCase):
+class GiftBalanceRaceConditionTest(TransactionTestCase):
     """Test that gift certificate balance prevents overdraft under concurrent access."""
 
     def test_gift_balance_no_overdraft(self):
@@ -242,7 +242,7 @@ class GiftBalanceRaceConditionTest(TestCase):
 # =============================================================================
 
 
-class MultipassRaceConditionTest(TestCase):
+class MultipassRaceConditionTest(TransactionTestCase):
     """Test that multipass usage is atomic."""
 
     def test_multipass_no_overdraft(self):
@@ -313,7 +313,7 @@ class ReferralLimitRaceConditionTest(TestCase):
 # =============================================================================
 
 
-class DiscountTierRaceConditionTest(TestCase):
+class DiscountTierRaceConditionTest(TransactionTestCase):
     """Test that discount tier calculation is atomic under concurrent scans."""
 
     def test_discount_tier_consistency(self):

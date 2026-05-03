@@ -145,7 +145,7 @@ def refresh_token(request, payload: RefreshIn):
     try:
         with transaction.atomic():
             db_token = (
-                RefreshToken.objects.select_for_update()
+                RefreshToken.objects.select_for_update(of=("self",))
                 .select_related("user__tenant")
                 .get(token_hash=token_hash)
             )

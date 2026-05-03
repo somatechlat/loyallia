@@ -36,10 +36,10 @@ services:
       PYTHONUNBUFFERED: "1"
       # Vault
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN:-}
-      VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia}
+      VAULT_TOKEN_FILE: /run/loyallia-vault/app-token
+      VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia/production}
       # Apple Wallet
-      APPLE_VERIFY_MODE: vault
+      APPLE_WALLET_MODE: vault
       # Google Wallet
       GOOGLE_WALLET_MODE: vault
       # Payment Gateway
@@ -53,6 +53,7 @@ services:
     volumes:
       - static_files:/app/staticfiles
       - media_files:/app/mediafiles
+      - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     # NO source code mount in production
 

@@ -47,11 +47,38 @@ def _make_user(tenant, **kwargs):
 def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     from apps.cards.models import Card
 
+    type_defaults = {
+        "stamp": {"stamps_required": 10, "reward_description": "Free coffee"},
+        "coupon": {
+            "discount_type": "special_promo",
+            "promo_text": "Free coffee",
+            "usage_limit_per_customer": 1,
+            "coupon_description": "Free coffee",
+        },
+        "referral_pass": {
+            "referrer_reward": "Free item",
+            "referee_reward": "10% off",
+            "max_referrals_per_customer": 0,
+        },
+        "cashback": {
+            "cashback_percentage": 5,
+            "minimum_purchase": 0,
+            "credit_expiry_days": 365,
+        },
+        "discount": {
+            "tiers": [
+                {"tier_name": "Silver", "threshold": 0, "discount_percentage": 5},
+                {"tier_name": "Gold", "threshold": 100, "discount_percentage": 10},
+            ],
+        },
+    }
+    merged_metadata = dict(type_defaults.get(card_type, {}))
+    merged_metadata.update(metadata or {})
     defaults = {
         "name": f"Test Card {uuid.uuid4().hex[:6]}",
         "card_type": card_type,
         "is_active": True,
-        "metadata": metadata or {},
+        "metadata": merged_metadata,
     }
     defaults.update(kwargs)
     return Card.objects.create(tenant=tenant, **defaults)
@@ -113,7 +140,9 @@ class CouponRedemptionRaceConditionTest(TestCase):
         """The check must be inside select_for_update to prevent races."""
         import inspect
 
-        source = inspect.getsource(cast(Any, self.pass_obj)._process_coupon_transaction)
+        from apps.customers.services import PassProcessor
+
+        source = inspect.getsource(PassProcessor._process_coupon)
         # Verify select_for_update is used
         self.assertIn("select_for_update", source)
         # Verify coupon_used check is after (inside) the lock acquisition
@@ -554,9 +583,9 @@ class DiscountFloatPrecisionTest(TestCase):
     def test_uses_decimal_in_source(self):
         import inspect
 
-        source = inspect.getsource(
-            cast(Any, self.pass_obj)._process_discount_transaction
-        )
+        from apps.customers.services import PassProcessor
+
+        source = inspect.getsource(PassProcessor._process_discount)
         self.assertIn("Decimal(str(", source, "Should use Decimal(str()) for precision")
 
 

@@ -366,6 +366,9 @@ class CustomerPass(models.Model):
         Process a transaction for this pass based on card type.
         Delegates to apps.customers.services.PassProcessor.
         """
+        if quantity < 1:
+            raise ValueError("Quantity must be a positive integer")
+
         from apps.customers.services import PassProcessor
 
         processor = PassProcessor(self)
@@ -375,3 +378,22 @@ class CustomerPass(models.Model):
             self.refresh_from_db(fields=["pass_data", "last_updated"])
 
         return result
+
+    def _processor(self):
+        from apps.customers.services import PassProcessor
+
+        return PassProcessor(self)
+
+    def _process_stamp_transaction(
+        self, amount: Decimal = Decimal("0"), quantity: int = 1
+    ) -> dict:
+        return self._processor()._process_stamp(amount, quantity)
+
+    def _process_coupon_transaction(self) -> dict:
+        return self._processor()._process_coupon()
+
+    def _process_referral_transaction(self) -> dict:
+        return self._processor()._process_referral()
+
+    def _process_discount_transaction(self, amount: Decimal) -> dict:
+        return self._processor()._process_discount(amount)

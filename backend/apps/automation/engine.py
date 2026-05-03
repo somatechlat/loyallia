@@ -46,7 +46,7 @@ def fire_trigger(
     Returns:
         Number of automations successfully executed
     """
-    from apps.automation.models import Automation, AutomationExecution
+    from apps.automation.models import Automation
 
     # LYL-M-API-025: Always use customer's tenant, ignore tenant parameter
     resolved_tenant = customer.tenant
@@ -90,15 +90,6 @@ def fire_trigger(
             continue
 
         success = automation.execute(customer, ctx)
-
-        # Log execution regardless of success
-        AutomationExecution.objects.create(
-            automation=automation,
-            customer=customer,
-            trigger_event=trigger,
-            execution_context={k: v for k, v in ctx.items() if not k.startswith("_")},
-            success=success,
-        )
 
         if success:
             executed += 1

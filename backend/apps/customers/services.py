@@ -96,7 +96,8 @@ class PassProcessor:
                 updates["reward_ready"] = True
             updates["stamp_count"] = remaining_stamps
             locked.pass_data.update(updates)
-            locked.save(update_fields=["pass_data", "last_updated"])
+            locked.stamp_count = remaining_stamps
+            locked.save(update_fields=["pass_data", "stamp_count", "last_updated"])
 
         return {
             "transaction_type": TransactionType.STAMP_EARNED,
@@ -127,7 +128,10 @@ class PassProcessor:
                 )
                 new_balance = current_balance + earned
                 locked.pass_data["cashback_balance"] = str(new_balance)
-                locked.save(update_fields=["pass_data", "last_updated"])
+                locked.cashback_balance = new_balance
+                locked.save(
+                    update_fields=["pass_data", "cashback_balance", "last_updated"]
+                )
 
             return {
                 "transaction_type": TransactionType.CASHBACK_EARNED,
@@ -237,7 +241,8 @@ class PassProcessor:
 
             new_count = current_count + 1
             locked.pass_data["referral_count"] = new_count
-            locked.save(update_fields=["pass_data", "last_updated"])
+            locked.referral_count = new_count
+            locked.save(update_fields=["pass_data", "referral_count", "last_updated"])
 
         return {
             "transaction_type": TransactionType.REFERRAL_REWARD,
@@ -288,7 +293,8 @@ class PassProcessor:
             if current_balance >= amount:
                 new_balance = current_balance - amount
                 locked.pass_data["gift_balance"] = str(new_balance)
-                locked.save(update_fields=["pass_data", "last_updated"])
+                locked.gift_balance = new_balance
+                locked.save(update_fields=["pass_data", "gift_balance", "last_updated"])
                 return {
                     "transaction_type": TransactionType.GIFT_REDEEMED,
                     "pass_updated": True,
@@ -311,7 +317,14 @@ class PassProcessor:
             if remaining > 0:
                 new_remaining = remaining - 1
                 locked.pass_data["multipass_remaining"] = new_remaining
-                locked.save(update_fields=["pass_data", "last_updated"])
+                locked.multipass_remaining = new_remaining
+                locked.save(
+                    update_fields=[
+                        "pass_data",
+                        "multipass_remaining",
+                        "last_updated",
+                    ]
+                )
                 return {
                     "transaction_type": TransactionType.MULTIPASS_USED,
                     "pass_updated": True,

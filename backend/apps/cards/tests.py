@@ -268,7 +268,7 @@ class ScannerAPITests(TestCase):
         )
 
     def _auth_headers(self):
-        return {"HTTP_AUTHORIZATION": f"Bearer {self.access_token}"}
+        return {"Authorization": f"Bearer {self.access_token}"}
 
     def test_scanner_validation(self):
         """Test QR code validation for staff/owner roles."""
