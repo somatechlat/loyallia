@@ -10,6 +10,8 @@ import logging
 
 from django.http import HttpRequest, HttpResponse
 
+from common.request import as_tenant_request
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,8 +31,9 @@ class TenantMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        tenant_request = as_tenant_request(request)
         # Default: no tenant
-        request.tenant = None
+        tenant_request.tenant = None
 
         # Resolve tenant from authenticated user
         user = getattr(request, "user", None)
@@ -41,7 +44,7 @@ class TenantMiddleware:
         ):
             tenant = getattr(user, "tenant", None)
             if tenant is not None:
-                request.tenant = tenant
+                tenant_request.tenant = tenant
             # SUPER_ADMIN users have tenant=None — that's expected
 
         response = self.get_response(request)

@@ -3,10 +3,13 @@ Loyallia — Super Admin API Schemas (Pydantic models)
 Used by all super_admin_api endpoint modules.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr
 
+from apps.authentication.models import User
 from apps.billing.models import SubscriptionPlan
 from apps.tenants.models import Location, Tenant
 
@@ -37,7 +40,7 @@ class TenantAdminOut(BaseModel):
     location_count: int
 
     @classmethod
-    def from_tenant(cls, t: Tenant) -> "TenantAdminOut":
+    def from_tenant(cls, t: Tenant) -> TenantAdminOut:
         return cls(
             id=str(t.id),
             name=t.name,
@@ -56,8 +59,8 @@ class TenantAdminOut(BaseModel):
             email=t.email,
             phone=t.phone,
             created_at=t.created_at,
-            user_count=t.users.count(),
-            location_count=t.locations.count(),
+            user_count=User.objects.filter(tenant=t).count(),
+            location_count=Location.objects.filter(tenant=t).count(),
         )
 
 
@@ -81,7 +84,7 @@ class LocationOut(BaseModel):
     is_active: bool
 
     @classmethod
-    def from_location(cls, loc: Location) -> "LocationOut":
+    def from_location(cls, loc: Location) -> LocationOut:
         return cls(
             id=str(loc.id),
             name=loc.name,
@@ -218,7 +221,7 @@ class PlanOut(BaseModel):
     sort_order: int
 
     @classmethod
-    def from_plan(cls, p: SubscriptionPlan) -> "PlanOut":
+    def from_plan(cls, p: SubscriptionPlan) -> PlanOut:
         return cls(
             id=str(p.id),
             name=p.name,

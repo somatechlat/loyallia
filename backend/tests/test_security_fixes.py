@@ -615,6 +615,7 @@ class TestPasswordPolicyCodeChanges(TestCase):
             None,
         )
         self.assertIsNotNone(min_length_validator)
+        assert min_length_validator is not None
         self.assertEqual(min_length_validator["OPTIONS"]["min_length"], 12)
 
     def test_complexity_validator_configured(self):

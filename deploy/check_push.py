@@ -6,14 +6,14 @@ import django
 
 django.setup()
 from apps.notifications.models import PushDevice
-from apps.loyalty.models import LoyaltyPass
+from apps.customers.models import CustomerPass
 
 print("Push devices:", PushDevice.objects.count())
-print("Loyalty passes:", LoyaltyPass.objects.count())
-for p in LoyaltyPass.objects.all()[:5]:
+print("Customer passes:", CustomerPass.objects.count())
+for p in CustomerPass.objects.all()[:5]:
     print(
-        "  Pass ID=%s customer=%s program=%s status=%s"
-        % (p.id, p.customer_id, p.program_id, p.status)
+        "  Pass ID=%s customer=%s card=%s active=%s"
+        % (p.id, p.customer_id, p.card_id, p.is_active)
     )
 for d in PushDevice.objects.all()[:5]:
     fcm = d.fcm_token[:25] if d.fcm_token else "NONE"

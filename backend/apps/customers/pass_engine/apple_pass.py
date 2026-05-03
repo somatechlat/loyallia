@@ -13,11 +13,14 @@ According to Apple PassKit docs:
 https://developer.apple.com/documentation/walletpasses
 """
 
+from __future__ import annotations
+
 import hashlib
 import io
 import json
 import logging
 import zipfile
+from typing import Any, cast
 
 from django.conf import settings
 
@@ -42,11 +45,27 @@ def _get_apple_config() -> dict:
 
 
 def _check_config_ready() -> bool:
-    """Check that all required Apple configuration is set."""
+    """Check that all required Apple PKPass configuration is set and parseable."""
     config = _get_apple_config()
     if not config["pass_type_id"] or not config["team_id"]:
         logger.warning("APPLE_PASS_TYPE_IDENTIFIER or APPLE_TEAM_IDENTIFIER not set")
         return False
+
+    try:
+        from OpenSSL import crypto
+        from common.vault import get_secret
+
+        cert_pem = get_secret("apple_cert_pem", strict=True)
+        key_pem = get_secret("apple_cert_key_pem", strict=True)
+        wwdr_pem = get_secret("apple_wwdr_cert_pem", strict=True)
+
+        crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem.encode("utf-8"))
+        crypto.load_privatekey(crypto.FILETYPE_PEM, key_pem.encode("utf-8"))
+        crypto.load_certificate(crypto.FILETYPE_PEM, wwdr_pem.encode("utf-8"))
+    except Exception as exc:
+        logger.warning("Apple Wallet PKPass signing material is not ready: %s", exc)
+        return False
+
     return True
 
 
@@ -61,6 +80,32 @@ APPLE_BARCODE_FORMATS = {
     "pdf417": "PKBarcodeFormatPDF417",
     "data_matrix": "PKBarcodeFormatQR",  # No Apple DataMatrix — fallback
 }
+
+
+def _build_nfc_payload(card, customer_pass, barcode_value: str) -> dict | None:
+    """Build the optional Apple NFC payload from card metadata and Vault config."""
+    metadata = card.metadata if isinstance(card.metadata, dict) else {}
+    apple_config = metadata.get("apple_wallet", {})
+    if not isinstance(apple_config, dict) or not apple_config.get("nfc_enabled"):
+        return None
+
+    from common.vault import get_secret
+
+    nfc_public_key = get_secret("apple_nfc_encryption_public_key", default="")
+    if not nfc_public_key:
+        raise ValueError("Apple NFC is enabled but apple_nfc_encryption_public_key is missing")
+
+    message = str(apple_config.get("nfc_message") or barcode_value)
+    if len(message.encode("utf-8")) > 64:
+        raise ValueError("Apple NFC message must be 64 bytes or less")
+
+    nfc_payload = {
+        "message": message,
+        "encryptionPublicKey": nfc_public_key,
+    }
+    if apple_config.get("nfc_requires_authentication"):
+        nfc_payload["requiresAuthentication"] = True
+    return nfc_payload
 
 
 def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
@@ -103,12 +148,9 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         pass_json["locations"] = locations
         pass_json["maxDistance"] = 100
 
-    nfc_public_key = getattr(settings, "APPLE_NFC_ENCRYPTION_PUBLIC_KEY", "")
-    if nfc_public_key:
-        pass_json["nfc"] = {
-            "message": barcode_value,
-            "encryptionPublicKey": nfc_public_key,
-        }
+    nfc_payload = _build_nfc_payload(card, customer_pass, barcode_value)
+    if nfc_payload:
+        pass_json["nfc"] = nfc_payload
 
     web_service_url = getattr(settings, "PASS_WEB_SERVICE_URL", "")
     if web_service_url:
@@ -124,9 +166,9 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
     """
     from common.vault import get_secret
 
-    cert_pem = get_secret("APPLE_CERT_PEM", strict=True)
-    key_pem = get_secret("APPLE_CERT_KEY_PEM", strict=True)
-    wwdr_pem = get_secret("APPLE_WWDR_CERT_PEM", strict=True)
+    cert_pem = get_secret("apple_cert_pem", strict=True)
+    key_pem = get_secret("apple_cert_key_pem", strict=True)
+    wwdr_pem = get_secret("apple_wwdr_cert_pem", strict=True)
 
     if not all([cert_pem, key_pem, wwdr_pem]):
         logger.error("Missing Apple certificates in Vault")
@@ -135,22 +177,29 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
     try:
         from OpenSSL import crypto
 
-        cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem.encode("utf-8"))
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key_pem.encode("utf-8"))
-        wwdr = crypto.load_certificate(crypto.FILETYPE_PEM, wwdr_pem.encode("utf-8"))
+        crypto_any = cast(Any, crypto)
+        cert = crypto_any.load_certificate(
+            crypto_any.FILETYPE_PEM, cert_pem.encode("utf-8")
+        )
+        key = crypto_any.load_privatekey(
+            crypto_any.FILETYPE_PEM, key_pem.encode("utf-8")
+        )
+        wwdr = crypto_any.load_certificate(
+            crypto_any.FILETYPE_PEM, wwdr_pem.encode("utf-8")
+        )
 
-        bio_in = crypto._new_mem_buf(manifest_json)
-        pkcs7 = crypto._lib.PKCS7_sign(
+        bio_in = crypto_any._new_mem_buf(manifest_json)
+        pkcs7 = crypto_any._lib.PKCS7_sign(
             cert._x509,
             key._pkey,
-            crypto._ffi.NULL,
+            crypto_any._ffi.NULL,
             bio_in,
-            crypto._lib.PKCS7_BINARY | crypto._lib.PKCS7_DETACHED,
+            crypto_any._lib.PKCS7_BINARY | crypto_any._lib.PKCS7_DETACHED,
         )
-        crypto._lib.PKCS7_add_certificate(pkcs7, wwdr._x509)
-        bio_out = crypto._new_mem_buf()
-        crypto._lib.i2d_PKCS7_bio(bio_out, pkcs7)
-        return crypto._read_mem_buf(bio_out)
+        crypto_any._lib.PKCS7_add_certificate(pkcs7, wwdr._x509)
+        bio_out = crypto_any._new_mem_buf()
+        crypto_any._lib.i2d_PKCS7_bio(bio_out, pkcs7)
+        return crypto_any._read_mem_buf(bio_out)
     except ImportError:
         logger.error("pyOpenSSL not installed -- cannot sign Apple passes")
         return None
@@ -172,7 +221,11 @@ def generate_pkpass(customer_pass) -> bytes | None:
     customer = customer_pass.customer
     tenant = card.tenant
 
-    pass_json = _build_pass_json(customer_pass, card, customer, tenant)
+    try:
+        pass_json = _build_pass_json(customer_pass, card, customer, tenant)
+    except ValueError as exc:
+        logger.error("Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc)
+        return None
     pass_json_bytes = json.dumps(pass_json, ensure_ascii=False).encode("utf-8")
 
     bg_color = card.background_color or "#5660ff"
@@ -181,6 +234,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
         """Fetch image bytes from a URL with SSRF protection (LYL-H-SEC-009)."""
         if not url:
             return None
+        SSRFError = Exception
         try:
             from common.url_validator import SSRFError, validate_external_url
 

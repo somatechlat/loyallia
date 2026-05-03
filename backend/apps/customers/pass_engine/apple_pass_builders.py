@@ -243,7 +243,8 @@ def _resize_image(img, width: int, height: int) -> bytes:
     from PIL import Image as PILImage
 
     buf = io.BytesIO()
-    img_resized = img.resize((width, height), PILImage.LANCZOS)
+    resample = getattr(PILImage, "LANCZOS", 3)
+    img_resized = img.resize((width, height), resample)
     img_resized.save(buf, format="PNG")
     return buf.getvalue()
 

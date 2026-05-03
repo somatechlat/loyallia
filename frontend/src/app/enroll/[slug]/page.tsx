@@ -243,11 +243,11 @@ export default function EnrollPage() {
   if (!card) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-50 p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-10 text-center max-w-sm border border-surface-200">
+        <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-xl p-10 text-center max-w-sm border border-surface-200 dark:border-surface-700">
           <div className="w-16 h-16 mx-auto mb-4 bg-surface-100 rounded-full flex items-center justify-center text-surface-400">
             <IconSearch className="w-8 h-8" />
           </div>
-          <h2 className="font-bold text-surface-900 mb-2">Programa no encontrado</h2>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-2">Programa no encontrado</h2>
           <p className="text-surface-500 text-sm">El enlace no es válido o el programa ha sido desactivado.</p>
         </div>
       </div>
@@ -273,11 +273,11 @@ export default function EnrollPage() {
           {card.description && <p className="text-white/40 text-xs mt-2 max-w-xs mx-auto">{card.description}</p>}
         </div>
 
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10 backdrop-blur-xl">
+        <div className="bg-white dark:bg-surface-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10 backdrop-blur-xl">
           {/* ═══ FORM STEP ═══ */}
           {step === 'form' && (
             <form onSubmit={handleEnroll} className="space-y-4" noValidate>
-              <h2 className="text-lg font-bold text-surface-900 text-center mb-1">Únete ahora</h2>
+              <h2 className="text-lg font-bold text-surface-900 dark:text-white text-center mb-1">Únete ahora</h2>
               <p className="text-center text-surface-400 text-xs mb-4">Completa tus datos para recibir tu tarjeta digital</p>
 
               {/* Dynamic or static form fields */}
@@ -308,7 +308,7 @@ export default function EnrollPage() {
                     </label>
                     {type === 'select' && options ? (
                       <select id={id}
-                        className="w-full px-4 py-2.5 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
+                        className="w-full px-4 py-2.5 bg-surface-50 border border-surface-200 dark:border-surface-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
                         value={form[id] || ''} onChange={e => { setForm(f => ({ ...f, [id]: e.target.value })); setFormErrors(prev => { const n = { ...prev }; delete n[id]; return n; }); }}
                         aria-invalid={!!formErrors[id]} aria-describedby={formErrors[id] ? `${id}-error` : undefined}
                         required={required}>
@@ -317,7 +317,7 @@ export default function EnrollPage() {
                       </select>
                     ) : type === 'tel' && country_code ? (
                       <div className="flex gap-2">
-                        <select className="w-24 px-2 py-2.5 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        <select className="w-24 px-2 py-2.5 bg-surface-50 border border-surface-200 dark:border-surface-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
                           value={form[`${id}_code`] || '+593'}
                           onChange={e => setForm(f => ({ ...f, [`${id}_code`]: e.target.value }))}>
                           {['+593','+1','+52','+57','+51','+56','+54','+34','+44'].map(c => (
@@ -325,7 +325,7 @@ export default function EnrollPage() {
                           ))}
                         </select>
                         <input id={id} type="tel"
-                          className="flex-1 px-4 py-2.5 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
+                          className="flex-1 px-4 py-2.5 bg-surface-50 border border-surface-200 dark:border-surface-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
                           placeholder={placeholder}
                           value={form[id] || ''} onChange={e => { setForm(f => ({ ...f, [id]: e.target.value })); setFormErrors(prev => { const n = { ...prev }; delete n[id]; return n; }); }}
                           aria-invalid={!!formErrors[id]} aria-describedby={formErrors[id] ? `${id}-error` : undefined}
@@ -333,7 +333,7 @@ export default function EnrollPage() {
                       </div>
                     ) : (
                       <input id={id} type={type}
-                        className="w-full px-4 py-2.5 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
+                        className="w-full px-4 py-2.5 bg-surface-50 border border-surface-200 dark:border-surface-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
                         placeholder={placeholder}
                         value={form[id] || ''} onChange={e => { setForm(f => ({ ...f, [id]: e.target.value })); setFormErrors(prev => { const n = { ...prev }; delete n[id]; return n; }); }}
                         aria-invalid={!!formErrors[id]} aria-describedby={formErrors[id] ? `${id}-error` : undefined}
@@ -382,7 +382,7 @@ export default function EnrollPage() {
               </div>
 
               <div>
-                <h2 className="text-xl font-bold text-surface-900 mb-1">Inscripción exitosa</h2>
+                <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Inscripción exitosa</h2>
                 <p className="text-surface-500 text-sm">
                   Ya eres miembro de <strong>{enrollResult.card_name}</strong>.
                 </p>
@@ -449,7 +449,7 @@ export default function EnrollPage() {
                     </div>
 
                     {/* QR Code — Real rendered SVG */}
-                    <div className="bg-white rounded-lg p-2 shadow-inner">
+                    <div className="bg-white dark:bg-surface-900 rounded-lg p-2 shadow-inner">
                       <QRCodeSVG
                         value={enrollResult.qr_code}
                         size={72}
@@ -486,7 +486,7 @@ export default function EnrollPage() {
                 {(walletStatus?.google_wallet_available || (isAndroid() && !walletStatus)) && (
                   <button
                     onClick={handleGoogleWallet}
-                    className="w-full bg-white hover:bg-surface-50 text-surface-800 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md border border-surface-200"
+                    className="w-full bg-white dark:bg-surface-900 hover:bg-surface-50 text-surface-800 dark:text-surface-100 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md border border-surface-200 dark:border-surface-700"
                     id="add-google-wallet-btn"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -523,7 +523,7 @@ export default function EnrollPage() {
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500">
                 <IconXCircle className="w-9 h-9" />
               </div>
-              <h2 className="text-xl font-bold text-surface-900">Error de inscripción</h2>
+              <h2 className="text-xl font-bold text-surface-900 dark:text-white">Error de inscripción</h2>
               <p className="text-surface-500 text-sm">No se pudo completar la inscripción.</p>
               <button onClick={() => setStep('form')}
                 className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all"

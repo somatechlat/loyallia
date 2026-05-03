@@ -22,7 +22,10 @@ class PassProcessor:
         self.card = customer_pass.card
 
     def process_transaction(
-        self, transaction_type: str, amount: Decimal = 0, quantity: int = 1
+        self,
+        transaction_type: str,
+        amount: Decimal = Decimal("0"),
+        quantity: int = 1,
     ) -> dict:
         """
         Main entry point for processing a transaction.

@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
 from apps.cards.models import Card
-from apps.customers.models import Customer
+from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, jwt_auth
@@ -188,7 +188,7 @@ def get_customer_detail_analytics(request, customer_id: str):
     ).order_by("-created_at")[:10]
 
     # Get program enrollments
-    enrollments = customer.passes.filter(is_active=True)
+    enrollments = CustomerPass.objects.filter(customer=customer, is_active=True)
 
     return {
         "customer": {

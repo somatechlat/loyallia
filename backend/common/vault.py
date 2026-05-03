@@ -1,20 +1,12 @@
 """
-Loyallia -- Vault Secret Client
+Loyallia -- Vault Secret Client.
 
-Retrieves secrets from HashiCorp Vault KV v2 with environment variable fallback.
-Used by Django settings and any service that needs runtime secrets.
+Production callers must use strict Vault reads without env fallbacks. Development
+and test callers may pass env_fallback/default explicitly when a local workbench
+requires it.
 
-Usage:
-    from common.vault import get_secret
-    db_password = get_secret("postgres_password", env_fallback="POSTGRES_PASSWORD")
-
-Behavior:
-    1. If VAULT_ADDR and VAULT_TOKEN are set, fetches from Vault.
-    2. Falls back to the env_fallback environment variable.
-    3. Returns default if both fail.
-
-SECURITY (LYL-M-SEC-015): Cache has a configurable TTL (default 5 minutes)
-so that secret rotation takes effect without requiring a process restart.
+SECURITY (LYL-M-SEC-015): Cache has a configurable TTL (default 5 minutes) so
+secret rotation takes effect without requiring a process restart.
 """
 
 import logging
@@ -51,9 +43,7 @@ def _fetch_vault_secrets() -> dict:
         return _secrets_cache
 
     if not VAULT_ADDR or not VAULT_TOKEN:
-        logger.debug(
-            "Vault not configured (VAULT_ADDR or VAULT_TOKEN missing). Using env fallback."
-        )
+        logger.debug("Vault not configured (VAULT_ADDR or VAULT_TOKEN missing).")
         return {}
 
     import json
@@ -75,34 +65,37 @@ def _fetch_vault_secrets() -> dict:
             _cache_fetched_at = now
             return secrets
     except urllib.error.URLError as exc:
-        logger.warning(
-            "Vault: connection failed (%s). Falling back to env vars.", exc.reason
-        )
+        logger.warning("Vault: connection failed (%s).", exc.reason)
         return _secrets_cache  # Return stale cache on connection failure
     except (json.JSONDecodeError, KeyError) as exc:
-        logger.warning(
-            "Vault: invalid response format (%s). Falling back to env vars.", exc
-        )
+        logger.warning("Vault: invalid response format (%s).", exc)
         return _secrets_cache
     except Exception as exc:
-        logger.warning("Vault: unexpected error (%s). Falling back to env vars.", exc)
+        logger.warning("Vault: unexpected error (%s).", exc)
         return _secrets_cache
+
+
+def fetch_vault_secrets() -> dict:
+    """Return the cached Vault secret mapping without exposing values."""
+    return _fetch_vault_secrets().copy()
 
 
 def get_secret(
     vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False
 ) -> str:
     """
-    Retrieve a secret value with the following priority:
-    1. HashiCorp Vault KV v2 (if configured)
-    2. Environment variable (env_fallback)
-    3. Default value when strict=False
+    Retrieve a secret value.
+
+    Priority:
+    1. HashiCorp Vault KV v2.
+    2. Optional env_fallback only when the caller explicitly provides one.
+    3. Default value only when strict=False.
 
     Args:
         vault_key: Key name in the Vault secret path (e.g., "postgres_password")
         env_fallback: Environment variable name to check if Vault is unavailable
         default: Default value if both Vault and env are empty
-        strict: If True, raises when Vault and env_fallback are both empty.
+        strict: If True, raises when the secret is unavailable.
 
     Returns:
         The secret value as a string.

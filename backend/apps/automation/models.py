@@ -103,7 +103,7 @@ class Automation(TimestampedModel):
         null=True, blank=True, verbose_name="Última ejecución"
     )
 
-    class Meta:
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_automations"
         verbose_name = "Automatización"
         verbose_name_plural = "Automatizaciones"
@@ -180,8 +180,8 @@ class Automation(TimestampedModel):
             today_start = timezone.now().replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            executions_today = self.executions.filter(
-                executed_at__gte=today_start
+            executions_today = AutomationExecution.objects.filter(
+                automation=self, executed_at__gte=today_start
             ).count()
             if executions_today >= self.max_executions_per_day:
                 return False

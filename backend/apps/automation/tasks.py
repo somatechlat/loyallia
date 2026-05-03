@@ -2,6 +2,8 @@
 Loyallia — Automation Celery Tasks
 """
 
+from __future__ import annotations
+
 import logging
 
 from celery import shared_task
@@ -20,8 +22,8 @@ def evaluate_trigger_for_customer(
     self,
     trigger: str,
     customer_id: str,
-    tenant_id: str = None,
-    context: dict = None,
+    tenant_id: str = "",
+    context: dict | None = None,
 ) -> dict:
     """
     Evaluate all automations for a trigger + customer combination.

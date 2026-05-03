@@ -4,12 +4,14 @@ Validates required environment variables on startup.
 Fails fast with clear error messages instead of cryptic runtime errors.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import sys
 from dataclasses import dataclass
 
-from common.vault import get_secret
+from common.vault import fetch_vault_secrets, get_secret
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +108,27 @@ OPTIONAL_VARS = [
     ),
 ]
 
+PRODUCTION_REQUIRED_VAULT_KEYS = [
+    "secret_key",
+    "postgres_password",
+    "redis_url",
+    "celery_broker_url",
+    "celery_result_backend",
+    "minio_access_key",
+    "minio_secret_key",
+    "jwt_secret_key",
+    "pass_hmac_secret",
+    "google_oauth_client_id",
+    "google_oauth_client_secret",
+    "google_wallet_issuer_id",
+    "google_service_account_json",
+    "payment_gateway_login",
+    "payment_gateway_tran_key",
+    "payment_gateway_webhook_secret",
+    "email_host_user",
+    "email_host_password",
+]
+
 
 @dataclass
 class ValidationError:
@@ -124,6 +147,26 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
         List of validation errors (empty if all valid).
     """
     errors: list[ValidationError] = []
+    if is_production:
+        secrets = fetch_vault_secrets()
+        if not secrets:
+            return [
+                ValidationError(
+                    var_name="VAULT",
+                    message="Production requires Vault to be reachable and populated.",
+                )
+            ]
+
+        for key in PRODUCTION_REQUIRED_VAULT_KEYS:
+            if not str(secrets.get(key, "")).strip():
+                errors.append(
+                    ValidationError(
+                        var_name=key,
+                        message=f"Missing required Vault key: {key}",
+                    )
+                )
+        return errors
+
     vars_to_check = REQUIRED_VARS.copy()
 
     if is_production:

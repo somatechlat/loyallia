@@ -8,6 +8,7 @@ All endpoints require JWT auth with tenant scope.
 
 import logging
 import uuid
+from typing import cast
 
 from ninja import Router
 from ninja.errors import HttpError
@@ -84,6 +85,25 @@ def update_tenant(request, payload: TenantUpdateIn):
 
     tenant.save(update_fields=update_fields)
     return TenantOut.from_tenant(tenant)
+
+
+@router.get(
+    "/settings/", auth=jwt_auth, response=TenantOut, summary="Configuración del negocio"
+)
+def get_tenant_settings(request):
+    """Compatibility alias for the current tenant profile."""
+    return get_tenant(request)
+
+
+@router.put(
+    "/settings/",
+    auth=jwt_auth,
+    response=TenantOut,
+    summary="Actualizar configuración del negocio",
+)
+def update_tenant_settings(request, payload: TenantUpdateIn):
+    """Compatibility alias for updating the current tenant profile."""
+    return update_tenant(request, payload)
 
 
 # =============================================================================
@@ -276,7 +296,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
     import secrets
 
-    from apps.authentication.models import User, UserRole
+    from apps.authentication.models import User, UserManager, UserRole
 
     if payload.role not in (UserRole.MANAGER, UserRole.STAFF):
         raise HttpError(
@@ -289,7 +309,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
         )
 
     temp_password = secrets.token_urlsafe(8)
-    user = User.objects.create_user(
+    user = cast(UserManager, User.objects).create_user(
         email=payload.email,
         password=temp_password,
         first_name=payload.first_name,
@@ -307,7 +327,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     )
 
     # Send welcome email with credentials
-    if payload.send_email:
+    if True:
         try:
             from django.conf import settings as django_settings
             from django.core.mail import EmailMultiAlternatives

@@ -10,6 +10,8 @@ According to Google Wallet API docs:
 Reference: https://developers.google.com/wallet/loyalty
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import time
@@ -39,7 +41,7 @@ def _load_service_account() -> dict | None:
 
     try:
         # Fetching directly from Vault as a JSON string
-        sa_json_str = get_secret("GOOGLE_SERVICE_ACCOUNT_JSON", strict=True)
+        sa_json_str = get_secret("google_service_account_json", strict=True)
         if not sa_json_str:
             return None
 

@@ -1,7 +1,7 @@
 """
 Loyallia Django Settings — PRODUCTION
 Inherits from base. Enforces HTTPS, strict security headers.
-All sensitive secrets are fetched via Vault (with env fallback).
+All sensitive secrets are fetched via Vault (no env fallback).
 """
 
 from decouple import Csv, config
@@ -38,58 +38,59 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="rewards.loyallia.com", cast=Csv
 # =============================================================================
 # SECRETS VIA VAULT (STRICT MODE: Vault or fail)
 # =============================================================================
-SECRET_KEY = get_secret("secret_key", env_fallback="SECRET_KEY", strict=True)
+SECRET_KEY = get_secret("secret_key", strict=True)
+
+# Redis / Celery URLs from Vault.
+REDIS_URL = get_secret("redis_url", strict=True)
+CELERY_BROKER_URL = get_secret("celery_broker_url", strict=True)
+CELERY_RESULT_BACKEND = get_secret("celery_result_backend", strict=True)
+CACHES["default"]["LOCATION"] = REDIS_URL  # noqa: F405
 
 # Database — override password from Vault (Strict)
-_pg_password = get_secret(
-    "postgres_password", env_fallback="POSTGRES_PASSWORD", strict=True
-)
+_pg_password = get_secret("postgres_password", strict=True)
 if _pg_password:
     DATABASES["default"]["PASSWORD"] = _pg_password  # noqa: F405
     if "direct" in DATABASES:  # noqa: F405
         DATABASES["direct"]["PASSWORD"] = _pg_password  # noqa: F405
 
 # MinIO (S3-compatible storage)
-MINIO_SECRET_KEY = get_secret(
-    "minio_secret_key", env_fallback="MINIO_ROOT_PASSWORD", strict=True
-)
+MINIO_ACCESS_KEY = get_secret("minio_access_key", strict=True)
+MINIO_SECRET_KEY = get_secret("minio_secret_key", strict=True)
+AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
 AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
+STORAGES["default"]["OPTIONS"]["access_key"] = MINIO_ACCESS_KEY  # noqa: F405
 STORAGES["default"]["OPTIONS"]["secret_key"] = MINIO_SECRET_KEY  # noqa: F405
 
 # JWT / Auth tokens — separate key from SECRET_KEY (Vault Only)
-JWT_SECRET_KEY = get_secret(
-    "jwt_secret_key", env_fallback="JWT_SECRET_KEY", strict=True
-)
-if not JWT_SECRET_KEY:
-    JWT_SECRET_KEY = SECRET_KEY
+JWT_SECRET_KEY = get_secret("jwt_secret_key", strict=True)
 
 # Pass HMAC signing
-PASS_HMAC_SECRET = get_secret(
-    "pass_hmac_secret", env_fallback="PASS_HMAC_SECRET", strict=True
+PASS_HMAC_SECRET = get_secret("pass_hmac_secret", strict=True)
+
+# Apple Wallet / Verify with Wallet identifiers. Certificate material is
+# validated by readiness checks and read directly from Vault at signing time.
+APPLE_PASS_TYPE_IDENTIFIER = get_secret("apple_pass_type_identifier", strict=True)
+APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", strict=True)
+APPLE_VERIFY_BUNDLE_ID = get_secret("apple_verify_bundle_id", strict=True)
+APPLE_VERIFY_MERCHANT_ID = get_secret("apple_verify_merchant_id", strict=True)
+APPLE_VERIFY_DOCUMENT_TYPES = get_secret("apple_verify_document_types", strict=True)
+APPLE_VERIFY_REQUESTED_ELEMENTS = get_secret(
+    "apple_verify_requested_elements", strict=True
 )
 
 # Google OAuth
-GOOGLE_OAUTH_CLIENT_ID = get_secret(
-    "google_oauth_client_id", env_fallback="GOOGLE_OAUTH_CLIENT_ID", strict=True
-)
-GOOGLE_OAUTH_CLIENT_SECRET = get_secret(
-    "google_oauth_client_secret", env_fallback="GOOGLE_OAUTH_CLIENT_SECRET", strict=True
-)
+GOOGLE_OAUTH_CLIENT_ID = get_secret("google_oauth_client_id", strict=True)
+GOOGLE_OAUTH_CLIENT_SECRET = get_secret("google_oauth_client_secret", strict=True)
+GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", strict=True)
 
 # Payment Gateway
-PAYMENT_GATEWAY_LOGIN = get_secret(
-    "payment_gateway_login", env_fallback="PAYMENT_GATEWAY_LOGIN", strict=True
-)
-PAYMENT_GATEWAY_TRAN_KEY = get_secret(
-    "payment_gateway_tran_key", env_fallback="PAYMENT_GATEWAY_TRAN_KEY", strict=True
-)
+PAYMENT_GATEWAY_LOGIN = get_secret("payment_gateway_login", strict=True)
+PAYMENT_GATEWAY_TRAN_KEY = get_secret("payment_gateway_tran_key", strict=True)
 PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
     "payment_gateway_webhook_secret",
-    env_fallback="PAYMENT_GATEWAY_WEBHOOK_SECRET",
     strict=True,
 )
 
 # Email
-EMAIL_HOST_PASSWORD = get_secret(
-    "email_host_password", env_fallback="EMAIL_HOST_PASSWORD", strict=True
-)
+EMAIL_HOST_USER = get_secret("email_host_user", strict=True)
+EMAIL_HOST_PASSWORD = get_secret("email_host_password", strict=True)

@@ -7,6 +7,8 @@
 # 2. Wallet Pass Updates (when pass data changes, wallet auto-updates)
 # =============================================================================
 
+from typing import Any
+
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -164,6 +166,14 @@ def get_notifications(
             for n in notifications
         ],
     }
+
+
+@router.get("/", auth=jwt_auth, summary="Get notification inbox")
+def list_notifications(
+    request, limit: int = 20, offset: int = 0, unread_only: bool = False
+):
+    """Compatibility alias for notification inbox."""
+    return get_notifications(request, limit, offset, unread_only)
 
 
 @router.post(
@@ -356,7 +366,8 @@ def create_campaign(request, data: CampaignCreateIn):
     if data.channel == "email":
         from apps.notifications.tasks import send_email_campaign
 
-        send_email_campaign.delay(
+        task_fn: Any = send_email_campaign
+        task_fn.delay(
             tenant_id=str(request.tenant.id),
             subject=data.title,
             html_body=data.message,
@@ -370,7 +381,8 @@ def create_campaign(request, data: CampaignCreateIn):
     elif data.channel == "wallet":
         from apps.notifications.tasks import send_wallet_notification_campaign
 
-        send_wallet_notification_campaign.delay(
+        task_fn: Any = send_wallet_notification_campaign
+        task_fn.delay(
             tenant_id=str(request.tenant.id),
             title=data.title,
             message=data.message,
@@ -384,7 +396,8 @@ def create_campaign(request, data: CampaignCreateIn):
         # LYL-M-API-019: Move synchronous campaign send to async Celery task
         from apps.notifications.tasks import send_whatsapp_campaign
 
-        send_whatsapp_campaign.delay(
+        task_fn: Any = send_whatsapp_campaign
+        task_fn.delay(
             tenant_id=str(request.tenant.id),
             title=data.title,
             message=data.message,

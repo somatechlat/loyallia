@@ -95,7 +95,7 @@ export default function SuperAdminPlans() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-surface-900 tracking-tight">Planes de Suscripción</h1>
+          <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">Planes de Suscripción</h1>
           <p className="text-surface-500 mt-1">{activePlans.length} activos · {inactivePlans.length} inactivos</p>
         </div>
         <button onClick={() => { setShowCreate(true); setForm({ ...emptyPlan }); }}
@@ -119,10 +119,10 @@ export default function SuperAdminPlans() {
                 RECOMENDADO
               </span>
             )}
-            <h3 className="text-xl font-black text-surface-900 group-hover:text-brand-600 transition-colors">{plan.name}</h3>
+            <h3 className="text-xl font-black text-surface-900 dark:text-white group-hover:text-brand-600 transition-colors">{plan.name}</h3>
             <p className="text-sm text-surface-500 mt-1 mb-4 line-clamp-2">{plan.description || 'Sin descripción'}</p>
             <div className="mb-4">
-              <span className="text-4xl font-black text-surface-900">${plan.price_monthly}</span>
+              <span className="text-4xl font-black text-surface-900 dark:text-white">${plan.price_monthly}</span>
               <span className="text-surface-500 text-sm">/mes</span>
               <p className="text-xs text-surface-400 mt-0.5">o ${plan.price_annual}/año</p>
             </div>
@@ -157,7 +157,7 @@ export default function SuperAdminPlans() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {inactivePlans.map(plan => (
               <div key={plan.id} onClick={() => openDetail(plan)}
-                className="bg-surface-50 p-4 rounded-2xl border border-surface-200 cursor-pointer hover:bg-surface-100 transition-all opacity-60">
+                className="bg-surface-50 p-4 rounded-2xl border border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-100 transition-all opacity-60">
                 <p className="font-bold text-surface-600">{plan.name}</p>
                 <p className="text-sm text-surface-400">${plan.price_monthly}/mes — Desactivado</p>
               </div>
@@ -180,7 +180,7 @@ export default function SuperAdminPlans() {
 
             <div className="px-6 pt-5 pb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-black text-surface-900">
+                <h2 className="text-xl font-black text-surface-900 dark:text-white">
                   {showCreate ? 'Nuevo Plan' : editMode ? `Editar: ${selected?.name}` : selected?.name}
                 </h2>
                 {selected && !editMode && !showCreate && (
@@ -203,11 +203,11 @@ export default function SuperAdminPlans() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-surface-50/80 rounded-xl p-3">
                     <p className="text-[10px] font-semibold text-surface-400 uppercase">Precio Mensual</p>
-                    <p className="text-2xl font-black text-surface-900">${selected.price_monthly}</p>
+                    <p className="text-2xl font-black text-surface-900 dark:text-white">${selected.price_monthly}</p>
                   </div>
                   <div className="bg-surface-50/80 rounded-xl p-3">
                     <p className="text-[10px] font-semibold text-surface-400 uppercase">Precio Anual</p>
-                    <p className="text-2xl font-black text-surface-900">${selected.price_annual}</p>
+                    <p className="text-2xl font-black text-surface-900 dark:text-white">${selected.price_annual}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -299,7 +299,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-[10px] font-semibold text-surface-400 uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-sm text-surface-800 font-medium">{value}</p>
+      <p className="text-sm text-surface-800 dark:text-surface-100 font-medium">{value}</p>
     </div>
   );
 }
@@ -312,7 +312,7 @@ function FormField({ label, value, onChange, placeholder, type = 'text', disable
       <label className="text-xs font-semibold text-surface-500 mb-1 block">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder} disabled={disabled}
-        className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white/60 backdrop-blur-sm text-sm text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
+        className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
     </div>
   );
 }
@@ -338,7 +338,7 @@ function FeatureTagInput({ features, onChange }: { features: string[]; onChange:
         <input type="text" value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder="Ej: Google Wallet, Push Notifications..."
-          className="flex-1 px-3 py-2 rounded-xl border border-surface-200 bg-white/60 backdrop-blur-sm text-sm text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all" />
+          className="flex-1 px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all" />
         <button type="button" onClick={add} disabled={!input.trim()}
           className="px-3 py-2 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-200 text-white disabled:text-surface-400 rounded-xl text-sm font-semibold transition-all">
           +

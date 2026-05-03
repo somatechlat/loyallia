@@ -87,9 +87,11 @@ from apps.api.upload_api import router as upload_router
 from apps.audit.api import router as audit_router
 from apps.authentication.api import router as auth_router
 from apps.authentication.users_api import router as users_router
+from apps.automation import api as automation_api
 from apps.automation.api import router as automation_router
 from apps.billing.api import router as billing_router
 from apps.billing.payment_api import router as billing_payment_router
+from apps.cards import api as cards_api
 from apps.cards.api import router as cards_router
 from apps.customers.api import router as customers_router
 from apps.customers.segment_api import router as segment_router
@@ -118,6 +120,32 @@ api.add_router("/", wallet_router, tags=["Wallet"])
 api.add_router("/upload/", upload_router, tags=["Uploads"])
 api.add_router("/agent/", agent_api_router, tags=["Agent API"])
 api.add_router("/admin/audit/", audit_router, tags=["Audit"])
+
+
+# Backward-compatible aliases for legacy clients and tests.
+api.get(
+    "/cards/",
+    auth=cards_api.jwt_auth,
+    response=cards_api.CardListOut,
+    tags=["Loyalty Programs"],
+)(cards_api.list_programs)
+api.post(
+    "/cards/",
+    auth=cards_api.jwt_auth,
+    response=cards_api.CardOut,
+    tags=["Loyalty Programs"],
+)(cards_api.create_program)
+api.get(
+    "/cards/{program_id}/",
+    auth=cards_api.jwt_auth,
+    response=cards_api.CardOut,
+    tags=["Loyalty Programs"],
+)(cards_api.get_program)
+api.get(
+    "/automations/",
+    auth=automation_api.jwt_auth,
+    tags=["Automation"],
+)(automation_api.list_automations)
 
 
 # --- Global error handlers ---

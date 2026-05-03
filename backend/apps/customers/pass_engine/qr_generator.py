@@ -11,6 +11,8 @@ The scanner validates: recomputes HMAC, checks timestamp age (≤ 24h by default
 The QR image itself is uploaded to MinIO under assets/qr/{pass_id}.png.
 """
 
+from __future__ import annotations
+
 import hashlib
 import hmac
 import io
@@ -100,11 +102,12 @@ def generate_qr_image(token: str) -> bytes:
         PNG image bytes
     """
     import qrcode
+    from qrcode import constants
     from qrcode.image.pure import PyPNGImage
 
     qr = qrcode.QRCode(
         version=None,  # Auto-size
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        error_correction=constants.ERROR_CORRECT_M,
         box_size=10,
         border=4,
     )

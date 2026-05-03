@@ -10,6 +10,7 @@ from django.utils import timezone
 from ninja.security import HttpBearer
 
 from apps.agent_api.models import AgentAPIKey
+from common.request import as_tenant_request
 
 logger = logging.getLogger("loyallia.agent_api")
 
@@ -23,6 +24,7 @@ class AgentAPIKeyAuth(HttpBearer):
 
     def authenticate(self, request, token: str):
         """Authenticate an agent request via API key."""
+        request = as_tenant_request(request)
         if not token:
             return None
 

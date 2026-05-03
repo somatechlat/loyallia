@@ -13,6 +13,7 @@ Endpoints:
 """
 
 import logging
+from typing import cast
 
 from django.db.models import Count
 from django.http import HttpRequest
@@ -32,6 +33,7 @@ from apps.agent_api.schemas import (
     TransactionSchema,
     TransactionsResponseSchema,
 )
+from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.agent_api")
 
@@ -48,7 +50,7 @@ def get_context(request: HttpRequest):
     """Returns tenant context for the AI agent."""
     from apps.billing.models import Subscription
 
-    tenant = request.tenant
+    tenant = require_tenant(request)
     subscription = Subscription.objects.filter(tenant=tenant).first()
     plan = subscription.subscription_plan if subscription else None
 
@@ -80,7 +82,7 @@ def get_customers_summary(request: HttpRequest):
     """Aggregated customer summary — no PII exposed."""
     from apps.customers.models import Customer
 
-    tenant = request.tenant
+    tenant = require_tenant(request)
     total = Customer.objects.filter(tenant=tenant).count()
     active = Customer.objects.filter(tenant=tenant, is_active=True).count()
 
@@ -111,7 +113,7 @@ def get_programs(request: HttpRequest):
 
     from apps.cards.models import Card
 
-    tenant = request.tenant
+    tenant = require_tenant(request)
     cards = (
         Card.objects.filter(tenant=tenant)
         .prefetch_related("enrollments", "passes", "passes__transactions")
@@ -130,9 +132,9 @@ def get_programs(request: HttpRequest):
             name=card.name,
             card_type=card.card_type,
             is_active=card.is_active,
-            enrollments=card.enrollments_count,
-            active_passes=card.active_passes_count,
-            total_transactions=card.total_txn_count,
+            enrollments=cast(int, getattr(card, "enrollments_count", 0)),
+            active_passes=cast(int, getattr(card, "active_passes_count", 0)),
+            total_transactions=cast(int, getattr(card, "total_txn_count", 0)),
             created_at=card.created_at.isoformat(),
         )
         for card in cards
@@ -152,7 +154,7 @@ def get_analytics_overview(request: HttpRequest):
     from apps.customers.models import Customer
     from apps.transactions.models import Transaction
 
-    tenant = request.tenant
+    tenant = require_tenant(request)
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -190,7 +192,7 @@ def get_recent_transactions(request: HttpRequest):
     """Last 50 transactions — anonymized (no customer PII)."""
     from apps.transactions.models import Transaction
 
-    tenant = request.tenant
+    tenant = require_tenant(request)
     txns = (
         Transaction.objects.filter(tenant=tenant)
         .select_related("customer_pass__card")

@@ -5,6 +5,7 @@ Also sub-router for /transactions/ list endpoints.
 """
 
 from decimal import Decimal
+from typing import Any
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -145,7 +146,8 @@ def transact(request, data: ScanTransactIn):
     # Trigger async tenant analytics recalculation
     from apps.analytics.tasks import update_tenant_analytics
 
-    update_tenant_analytics.apply_async(args=[str(request.tenant.id)], countdown=2)
+    analytics_task: Any = update_tenant_analytics
+    analytics_task.apply_async(args=[str(request.tenant.id)], countdown=2)
 
     # Fire automation trigger asynchronously — do not block the scanner response
     from apps.automation.engine import fire_trigger_async
@@ -224,7 +226,7 @@ def search_customer(request, query: str):
                         "card_type": pass_obj.card.card_type,
                         "qr_code": pass_obj.qr_code,
                     }
-                    for pass_obj in customer.passes.all()
+                    for pass_obj in CustomerPass.objects.filter(customer=customer)
                     if pass_obj.is_active
                 ],
             }

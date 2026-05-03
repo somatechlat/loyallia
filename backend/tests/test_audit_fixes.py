@@ -7,6 +7,7 @@ Run with: python manage.py test tests.test_audit_fixes
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from typing import Any, cast
 from unittest.mock import patch
 
 from django.test import RequestFactory, TestCase, override_settings
@@ -26,7 +27,7 @@ def _make_tenant(**kwargs):
 
 
 def _make_user(tenant, **kwargs):
-    from apps.authentication.models import User
+    from apps.authentication.models import User, UserManager
 
     defaults = {
         "email": f"user-{uuid.uuid4().hex[:6]}@test.com",
@@ -36,7 +37,7 @@ def _make_user(tenant, **kwargs):
     }
     defaults.update(kwargs)
     password = defaults.pop("password", "[REDACTED]")
-    user = User.objects.create_user(password=password, **defaults)
+    user = cast(UserManager, User.objects).create_user(password=password, **defaults)
     if tenant:
         user.tenant = tenant
         user.save(update_fields=["tenant"])
@@ -95,16 +96,16 @@ class CouponRedemptionRaceConditionTest(TestCase):
         self.pass_obj = _make_pass(self.customer, self.card)
 
     def test_first_redemption_succeeds(self):
-        result = self.pass_obj._process_coupon_transaction()
+        result = cast(Any, self.pass_obj)._process_coupon_transaction()
         self.assertTrue(result["pass_updated"])
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["reward_description"], "Free coffee")
 
     def test_second_redemption_blocked(self):
-        self.pass_obj._process_coupon_transaction()
+        cast(Any, self.pass_obj)._process_coupon_transaction()
         # Refresh from DB
         self.pass_obj.refresh_from_db()
-        result = self.pass_obj._process_coupon_transaction()
+        result = cast(Any, self.pass_obj)._process_coupon_transaction()
         self.assertFalse(result["pass_updated"])
         self.assertNotIn("reward_earned", result)
 
@@ -112,7 +113,7 @@ class CouponRedemptionRaceConditionTest(TestCase):
         """The check must be inside select_for_update to prevent races."""
         import inspect
 
-        source = inspect.getsource(self.pass_obj._process_coupon_transaction)
+        source = inspect.getsource(cast(Any, self.pass_obj)._process_coupon_transaction)
         # Verify select_for_update is used
         self.assertIn("select_for_update", source)
         # Verify coupon_used check is after (inside) the lock acquisition
@@ -165,7 +166,9 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         # At minimum, verify the function is wrapped (functools.wraps preserves __wrapped__)
         # We verify the decorator is applied by checking the source file
-        module_source = inspect.getsource(inspect.getmodule(list_customers))
+        module = inspect.getmodule(list_customers)
+        assert module is not None
+        module_source = inspect.getsource(module)
         self.assertIn("@require_active_subscription", module_source)
 
     def test_create_program_has_both_decorators(self):
@@ -173,7 +176,9 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         from apps.cards.api import create_program
 
-        module_source = inspect.getsource(inspect.getmodule(create_program))
+        module = inspect.getmodule(create_program)
+        assert module is not None
+        module_source = inspect.getsource(module)
         # Find the create_program definition context
         idx = module_source.find("def create_program")
         context = module_source[max(0, idx - 200) : idx]
@@ -185,7 +190,9 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         from apps.notifications.api import create_campaign
 
-        module_source = inspect.getsource(inspect.getmodule(create_campaign))
+        module = inspect.getmodule(create_campaign)
+        assert module is not None
+        module_source = inspect.getsource(module)
         idx = module_source.find("def create_campaign")
         context = module_source[max(0, idx - 200) : idx]
         self.assertIn('@enforce_limit("notifications_month")', context)
@@ -195,7 +202,9 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         from apps.tenants.api import create_location
 
-        module_source = inspect.getsource(inspect.getmodule(create_location))
+        module = inspect.getmodule(create_location)
+        assert module is not None
+        module_source = inspect.getsource(module)
         idx = module_source.find("def create_location")
         context = module_source[max(0, idx - 200) : idx]
         self.assertIn('@enforce_limit("locations")', context)
@@ -274,7 +283,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         self.pass_obj = _make_pass(self.customer, self.card)
 
     def test_referral_increments_normally(self):
-        result = self.pass_obj._process_referral_transaction()
+        result = cast(Any, self.pass_obj)._process_referral_transaction()
         self.assertTrue(result["pass_updated"])
         self.assertEqual(result["new_referral_count"], 1)
 
@@ -284,7 +293,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         self.pass_obj.save(update_fields=["pass_data"])
         self.pass_obj.refresh_from_db()
 
-        result = self.pass_obj._process_referral_transaction()
+        result = cast(Any, self.pass_obj)._process_referral_transaction()
         self.assertFalse(result["pass_updated"])
         self.assertTrue(result.get("limit_reached", False))
         self.assertEqual(result["new_referral_count"], 3)
@@ -295,7 +304,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         self.pass_obj.save(update_fields=["pass_data"])
         self.pass_obj.refresh_from_db()
 
-        result = self.pass_obj._process_referral_transaction()
+        result = cast(Any, self.pass_obj)._process_referral_transaction()
         self.assertTrue(result["pass_updated"])
         self.assertEqual(result["new_referral_count"], 3)
 
@@ -307,7 +316,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         pass2.save(update_fields=["pass_data"])
         pass2.refresh_from_db()
 
-        result = pass2._process_referral_transaction()
+        result = cast(Any, pass2)._process_referral_transaction()
         self.assertTrue(result["pass_updated"])
         self.assertEqual(result["new_referral_count"], 101)
 
@@ -450,14 +459,18 @@ class StampMultiCycleTest(TestCase):
 
     def test_single_cycle(self):
         # 0 + 10 = 1 cycle, 0 remaining
-        result = self.pass_obj._process_stamp_transaction(Decimal("10"), quantity=10)
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(
+            Decimal("10"), quantity=10
+        )
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 1)
 
     def test_multi_cycle(self):
         # 0 + 25 = 2 cycles, 5 remaining
-        result = self.pass_obj._process_stamp_transaction(Decimal("10"), quantity=25)
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(
+            Decimal("10"), quantity=25
+        )
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 5)
         self.assertEqual(result["reward_count"], 2)
@@ -468,7 +481,9 @@ class StampMultiCycleTest(TestCase):
         self.pass_obj.save(update_fields=["pass_data"])
         self.pass_obj.refresh_from_db()
 
-        result = self.pass_obj._process_stamp_transaction(Decimal("10"), quantity=17)
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(
+            Decimal("10"), quantity=17
+        )
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 2)
@@ -476,13 +491,17 @@ class StampMultiCycleTest(TestCase):
     def test_no_stamps_lost_large_quantity(self):
         """Previously, stamps beyond one cycle were lost."""
         # 0 + 100 = 10 cycles, 0 remaining
-        result = self.pass_obj._process_stamp_transaction(Decimal("10"), quantity=100)
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(
+            Decimal("10"), quantity=100
+        )
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 10)
 
     def test_partial_cycle(self):
         # 0 + 7 = 0 cycles, 7 remaining
-        result = self.pass_obj._process_stamp_transaction(Decimal("10"), quantity=7)
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(
+            Decimal("10"), quantity=7
+        )
         self.assertFalse(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 7)
 
@@ -512,7 +531,7 @@ class DiscountFloatPrecisionTest(TestCase):
 
     def test_decimal_precision_preserved(self):
         """Floating point errors like 0.1 + 0.2 = 0.30000000000000004 should not happen."""
-        self.pass_obj._process_discount_transaction(Decimal("0.1"))
+        cast(Any, self.pass_obj)._process_discount_transaction(Decimal("0.1"))
         self.pass_obj.refresh_from_db()
         total = self.pass_obj.pass_data["total_spent_at_business"]
         # Should be stored as string "0.1", not 0.10000000000000001
@@ -520,14 +539,14 @@ class DiscountFloatPrecisionTest(TestCase):
 
     def test_stored_as_string(self):
         """Total should be stored as string representation of Decimal for JSON safety."""
-        self.pass_obj._process_discount_transaction(Decimal("10.55"))
+        cast(Any, self.pass_obj)._process_discount_transaction(Decimal("10.55"))
         self.pass_obj.refresh_from_db()
         total = self.pass_obj.pass_data["total_spent_at_business"]
         self.assertEqual(str(total), "10.55")
 
     def test_tier_threshold_with_decimal(self):
         """Tier thresholds should be compared as Decimal."""
-        self.pass_obj._process_discount_transaction(Decimal("100"))
+        cast(Any, self.pass_obj)._process_discount_transaction(Decimal("100"))
         self.pass_obj.refresh_from_db()
         self.assertEqual(self.pass_obj.pass_data["current_tier_name"], "Gold")
         self.assertEqual(self.pass_obj.pass_data["current_discount_percentage"], 10)
@@ -535,7 +554,9 @@ class DiscountFloatPrecisionTest(TestCase):
     def test_uses_decimal_in_source(self):
         import inspect
 
-        source = inspect.getsource(self.pass_obj._process_discount_transaction)
+        source = inspect.getsource(
+            cast(Any, self.pass_obj)._process_discount_transaction
+        )
         self.assertIn("Decimal(str(", source, "Should use Decimal(str()) for precision")
 
 

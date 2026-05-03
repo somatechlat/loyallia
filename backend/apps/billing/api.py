@@ -25,10 +25,19 @@ from apps.billing.schemas import (
 )
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
+from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.billing")
 
 router = Router()
+
+SUBSCRIPTION_STATUS_LABELS = {
+    SubscriptionStatus.TRIALING: "Período de prueba",
+    SubscriptionStatus.ACTIVE: "Activo",
+    SubscriptionStatus.PAST_DUE: "Pago pendiente",
+    SubscriptionStatus.SUSPENDED: "Suspendido",
+    SubscriptionStatus.CANCELED: "Cancelado",
+}
 
 
 # ============================================================================
@@ -93,14 +102,15 @@ def list_plans(request: HttpRequest):
 @router.get("/subscription/", auth=jwt_auth, summary="Obtener suscripción actual")
 def get_subscription(request: HttpRequest):
     """Get the current tenant's subscription details."""
+    tenant = require_tenant(request)
     subscription, _ = Subscription.objects.get_or_create(
-        tenant=request.tenant,
+        tenant=tenant,
         defaults={"plan": "trial"},
     )
 
     plan = subscription.subscription_plan
     default_pm = PaymentMethod.objects.filter(
-        tenant=request.tenant,
+        tenant=tenant,
         is_default=True,
         is_active=True,
     ).first()
@@ -112,7 +122,9 @@ def get_subscription(request: HttpRequest):
         "plan_slug": plan.slug if plan else subscription.plan,
         "billing_cycle": subscription.billing_cycle,
         "status": subscription.status,
-        "status_display": subscription.get_status_display(),
+        "status_display": SUBSCRIPTION_STATUS_LABELS.get(
+            subscription.status, subscription.status
+        ),
         "is_access_allowed": subscription.is_access_allowed,
         "trial_start": (
             subscription.trial_start.isoformat() if subscription.trial_start else None
@@ -154,19 +166,21 @@ def get_subscription(request: HttpRequest):
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
 def get_usage(request: HttpRequest):
     """Return current plan usage metrics with real limits from SubscriptionPlan."""
+    from apps.authentication.models import User
     from apps.cards.models import Card
     from apps.customers.models import Customer
     from apps.notifications.models import Notification
+    from apps.tenants.models import Location
     from apps.transactions.models import Transaction
 
-    tenant = request.tenant
+    tenant = require_tenant(request)
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     total_customers = Customer.objects.filter(tenant=tenant).count()
     total_programs = Card.objects.filter(tenant=tenant).count()
-    total_users = tenant.users.filter(is_active=True).count()
-    total_locations = tenant.locations.count()
+    total_users = User.objects.filter(tenant=tenant, is_active=True).count()
+    total_locations = Location.objects.filter(tenant=tenant).count()
     monthly_txns = Transaction.objects.filter(
         tenant=tenant, created_at__gte=month_start
     ).count()
@@ -250,6 +264,7 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
     Subscribe tenant to a plan via the configured payment gateway.
     Frontend tokenizes the card via gateway JS SDK and sends the token.
     """
+    tenant = require_tenant(request)
     if data.billing_cycle not in ("monthly", "annual"):
         raise HttpError(400, get_message("BILLING_INVALID_CYCLE"))
 
@@ -259,7 +274,7 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
         raise HttpError(404, get_message("NOT_FOUND"))
 
     subscription, _ = Subscription.objects.get_or_create(
-        tenant=request.tenant,
+        tenant=tenant,
         defaults={"plan": plan.slug},
     )
     subscription.subscription_plan = plan
@@ -270,7 +285,7 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
 
     logger.warning(
         "Payment confirmation required before activating tenant %s plan %s",
-        request.tenant.slug,
+        tenant.slug,
         plan.slug,
     )
     raise HttpError(402, get_message("BILLING_PAYMENT_CONFIRMATION_REQUIRED"))
@@ -285,7 +300,7 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
 @require_role("OWNER")
 def update_subscription(request: HttpRequest, data: UpdateSubscriptionSchema):
     """Update billing cycle or schedule cancellation."""
-    subscription = get_object_or_404(Subscription, tenant=request.tenant)
+    subscription = get_object_or_404(Subscription, tenant=require_tenant(request))
 
     if data.billing_cycle is not None:
         if data.billing_cycle not in ("monthly", "annual"):
@@ -307,7 +322,7 @@ def update_subscription(request: HttpRequest, data: UpdateSubscriptionSchema):
 @require_role("OWNER")
 def cancel_subscription(request: HttpRequest):
     """Cancel subscription at end of current period."""
-    subscription = get_object_or_404(Subscription, tenant=request.tenant)
+    subscription = get_object_or_404(Subscription, tenant=require_tenant(request))
 
     if subscription.status == SubscriptionStatus.CANCELED:
         raise HttpError(400, get_message("BILLING_ALREADY_CANCELED"))
@@ -341,7 +356,7 @@ def cancel_subscription(request: HttpRequest):
 @require_role("OWNER")
 def reactivate_subscription(request: HttpRequest):
     """Reactivate a canceled-but-not-yet-expired subscription."""
-    subscription = get_object_or_404(Subscription, tenant=request.tenant)
+    subscription = get_object_or_404(Subscription, tenant=require_tenant(request))
 
     if not subscription.cancel_at_period_end:
         raise HttpError(400, get_message("BILLING_NOT_PENDING_CANCEL"))

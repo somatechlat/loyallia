@@ -9,6 +9,7 @@ All auth via JWTAuth — Rule #8.
 
 import logging
 import secrets
+from typing import cast
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -24,7 +25,7 @@ from apps.authentication.helpers import (
     store_otp,
     verify_otp,
 )
-from apps.authentication.models import RefreshToken, User, UserRole
+from apps.authentication.models import RefreshToken, User, UserManager, UserRole
 from apps.authentication.schemas import (
     ForgotPasswordIn,
     LoginIn,
@@ -77,7 +78,8 @@ def register(request, payload: RegisterIn):
         slug = slugify_business(payload.business_name)
         tenant = Tenant.objects.create(name=payload.business_name.strip(), slug=slug)
         tenant.activate_trial()
-        user = User.objects.create_user(
+        user_manager = cast(UserManager, User.objects)
+        user = user_manager.create_user(
             email=payload.email,
             password=payload.password,
             first_name=payload.first_name.strip(),
@@ -114,6 +116,8 @@ def login(request, payload: LoginIn):
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
 
     if user.is_locked:
+        if user.locked_until is None:
+            raise HttpError(423, get_message("AUTH_ACCOUNT_LOCKED", minutes=15))
         remaining = max(
             0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60)
         )
@@ -483,7 +487,8 @@ def google_login(request, payload: GoogleTokenIn):
         slug = slugify_business(business_name)
         tenant = Tenant.objects.create(name=business_name, slug=slug)
         tenant.activate_trial()
-        user = User.objects.create_user(
+        user_manager = cast(UserManager, User.objects)
+        user = user_manager.create_user(
             email=email,
             password=secrets.token_urlsafe(
                 32

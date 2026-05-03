@@ -87,7 +87,7 @@ export default function ScannerPage() {
           <div className="w-12 h-12 mx-auto mb-4 bg-surface-100 rounded-full flex items-center justify-center text-surface-400">
             <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
           </div>
-          <h2 className="font-bold text-surface-900 mb-2">Autenticación requerida</h2>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-2">Autenticación requerida</h2>
           <p className="text-surface-500 text-sm mb-4">Debes iniciar sesión para usar el scanner</p>
           <a href="/login" className="btn-primary w-full justify-center" id="login-redirect-btn">Iniciar sesión</a>
         </div>
@@ -167,7 +167,7 @@ export default function ScannerPage() {
             <div className="w-12 h-12 mx-auto mb-3 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500">
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
             </div>
-            <p className="font-bold text-surface-900 text-lg mb-1">QR escaneado</p>
+            <p className="font-bold text-surface-900 dark:text-white text-lg mb-1">QR escaneado</p>
             <p className="text-surface-500 text-sm mb-2 font-mono text-xs break-all">{pendingQr.slice(0, 32)}...</p>
             <div className="text-left mb-4 p-3 bg-surface-50 rounded-xl">
               <p className="text-sm"><span className="text-surface-500">Monto:</span> <strong>${parseFloat(amount).toFixed(2)}</strong></p>

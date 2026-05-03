@@ -105,7 +105,7 @@ export default function SuperAdminMetrics() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-black text-surface-900 tracking-tight">Métricas de Plataforma</h1>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">Métricas de Plataforma</h1>
         <p className="text-surface-500 mt-1">Panel de control — análisis en tiempo real</p>
       </header>
 
@@ -121,7 +121,7 @@ export default function SuperAdminMetrics() {
             <div className={`w-10 h-10 rounded-xl bg-${kpi.color}-50 text-${kpi.color}-600 flex items-center justify-center mb-3`}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={kpi.icon} /></svg>
             </div>
-            <p className="text-3xl font-black text-surface-900">{kpi.value}</p>
+            <p className="text-3xl font-black text-surface-900 dark:text-white">{kpi.value}</p>
             <p className="text-xs text-surface-500 font-medium mt-1">{kpi.label}</p>
             <p className="text-[10px] text-surface-400 mt-0.5">{kpi.delta}</p>
           </div>
@@ -132,7 +132,7 @@ export default function SuperAdminMetrics() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Growth Area Chart */}
         <div className={`lg:col-span-2 ${cardCls}`} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 mb-1">Crecimiento de Plataforma</h2>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Crecimiento de Plataforma</h2>
           <p className="text-xs text-surface-400 mb-4">Últimos 6 meses — negocios, usuarios y sucursales</p>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={monthlyGrowth}>
@@ -164,7 +164,7 @@ export default function SuperAdminMetrics() {
 
         {/* Plan Distribution Pie */}
         <div className={cardCls} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 mb-1">Distribución de Planes</h2>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Distribución de Planes</h2>
           <p className="text-xs text-surface-400 mb-4">Negocios por tipo de plan</p>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
@@ -191,7 +191,7 @@ export default function SuperAdminMetrics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Industry Bar Chart */}
         <div className={cardCls} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 mb-1">Negocios por Industria</h2>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Negocios por Industria</h2>
           <p className="text-xs text-surface-400 mb-4">Distribución por sector económico</p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={industryData} layout="vertical" margin={{ left: 20 }}>
@@ -208,7 +208,7 @@ export default function SuperAdminMetrics() {
 
         {/* Locations per Tenant */}
         <div className={cardCls} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 mb-1">Sucursales por Negocio</h2>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Sucursales por Negocio</h2>
           <p className="text-xs text-surface-400 mb-4">Top negocios por número de sucursales y usuarios</p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={locationsByTenant} margin={{ left: 10 }}>
@@ -227,13 +227,13 @@ export default function SuperAdminMetrics() {
       {/* Detailed Table */}
       <div className={`${cardCls} overflow-hidden`} style={cardShadow}>
         <div className="p-4 border-b border-surface-100">
-          <h2 className="font-bold text-surface-900">Detalle por Negocio</h2>
+          <h2 className="font-bold text-surface-900 dark:text-white">Detalle por Negocio</h2>
           <p className="text-xs text-surface-400">{tenants.length} negocios registrados</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-50/50 border-b border-surface-200 text-xs font-medium text-surface-500 uppercase tracking-wide">
+              <tr className="bg-surface-50/50 border-b border-surface-200 dark:border-surface-700 text-xs font-medium text-surface-500 uppercase tracking-wide">
                 <th className="px-5 py-3">Negocio</th>
                 <th className="px-5 py-3">RUC</th>
                 <th className="px-5 py-3">Ciudad</th>
@@ -248,7 +248,7 @@ export default function SuperAdminMetrics() {
               {tenants.map((t) => (
                 <tr key={t.id} className="hover:bg-surface-50/50 transition-colors">
                   <td className="px-5 py-3">
-                    <p className="font-semibold text-surface-900">{t.name}</p>
+                    <p className="font-semibold text-surface-900 dark:text-white">{t.name}</p>
                     {t.legal_name && <p className="text-xs text-surface-400 truncate max-w-[200px]">{t.legal_name}</p>}
                   </td>
                   <td className="px-5 py-3 font-mono text-xs text-surface-600">{t.ruc || '—'}</td>

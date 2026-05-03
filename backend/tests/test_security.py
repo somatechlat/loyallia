@@ -7,12 +7,13 @@ For SSRF, rate limiting, OTP entropy, and password policy see test_security_fixe
 """
 
 import uuid
+from typing import cast
 from unittest.mock import MagicMock
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from apps.authentication.models import User, UserRole
+from apps.authentication.models import User, UserManager, UserRole
 from apps.tenants.models import validate_cedula, validate_ruc
 from common.role_check import require_role
 from common.validators import ComplexityValidator
@@ -259,7 +260,7 @@ class UserRoleTest(TestCase):
         self.assertEqual(user.role, UserRole.MANAGER)
 
     def test_superuser_is_super_admin(self):
-        admin = User.objects.create_superuser(
+        admin = cast(UserManager, User.objects).create_superuser(
             email=f"admin-{uuid.uuid4().hex[:6]}@test.com",
             password="[REDACTED]",
         )
@@ -296,6 +297,8 @@ class AccountLockTest(TestCase):
         # locked_until should be ~15 minutes from now
         expected_min = timezone.now() + timedelta(minutes=14)
         expected_max = timezone.now() + timedelta(minutes=16)
+        self.assertIsNotNone(user.locked_until)
+        assert user.locked_until is not None
         self.assertGreaterEqual(user.locked_until, expected_min)
         self.assertLessEqual(user.locked_until, expected_max)
 

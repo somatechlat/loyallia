@@ -8,6 +8,7 @@ import hashlib
 import logging
 import secrets
 import uuid
+from typing import cast
 
 from django.conf import settings
 from ninja import Router
@@ -18,7 +19,7 @@ from apps.authentication.helpers import (
     store_otp,
     verify_otp,
 )
-from apps.authentication.models import RefreshToken, User
+from apps.authentication.models import RefreshToken, User, UserManager
 from apps.authentication.schemas import (
     ChangePasswordIn,
     InviteIn,
@@ -30,6 +31,7 @@ from apps.authentication.schemas import (
 )
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
+from common.request import require_tenant
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -105,9 +107,10 @@ def change_password(request, payload: ChangePasswordIn):
 )
 def invite_user(request, payload: InviteIn):
     """OWNER invites a MANAGER or STAFF user."""
+    tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    if User.objects.filter(email=payload.email, tenant=request.tenant).exists():
+    if User.objects.filter(email=payload.email, tenant=tenant).exists():
         raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
     # SECURITY (LYL-H-SEC-007): Generate token, store SHA-256 hash in DB.
@@ -119,12 +122,13 @@ def invite_user(request, payload: InviteIn):
         existing = User.objects.filter(email=payload.email).first()
         if existing:
             raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
-        User.objects.create_user(
+        user_manager = cast(UserManager, User.objects)
+        user_manager.create_user(
             email=payload.email,
             password=secrets.token_urlsafe(16),
             first_name=payload.first_name.strip(),
             last_name=payload.last_name.strip(),
-            tenant=request.tenant,
+            tenant=tenant,
             role=payload.role,
             is_active=False,
             invited_by=request.user,
@@ -135,8 +139,8 @@ def invite_user(request, payload: InviteIn):
     send_otp_email(
         email=payload.email,
         otp="",
-        subject=f"Invitacion a {request.tenant.name} -- Loyallia",
-        body=f"Has sido invitado a unirte a {request.tenant.name} en Loyallia como {payload.role}.\n\n"
+        subject=f"Invitacion a {tenant.name} -- Loyallia",
+        body=f"Has sido invitado a unirte a {tenant.name} en Loyallia como {payload.role}.\n\n"
         f"Haz clic en el siguiente enlace para aceptar la invitacion:\n{invite_url}\n\nEste enlace expirara en 7 dias.\n\n-- Loyallia",
     )
     return MessageOut(
@@ -152,9 +156,10 @@ def invite_user(request, payload: InviteIn):
 )
 def list_users(request):
     """Lists all users for the current tenant. OWNER only."""
+    tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    users = User.objects.filter(tenant=request.tenant).order_by("role", "email")
+    users = User.objects.filter(tenant=tenant).order_by("role", "email")
     return [UserOut.from_user(u) for u in users]
 
 
@@ -166,12 +171,13 @@ def list_users(request):
 )
 def deactivate_user(request, user_id: str):
     """Deactivates a user. OWNER only. Cannot deactivate self."""
+    tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     if str(request.user.id) == user_id:
         raise HttpError(400, get_message("AUTH_PERMISSION_DENIED"))
     try:
-        target = User.objects.get(id=uuid.UUID(user_id), tenant=request.tenant)
+        target = User.objects.get(id=uuid.UUID(user_id), tenant=tenant)
     except (User.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
     target.is_active = False

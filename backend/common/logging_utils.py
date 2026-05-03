@@ -14,6 +14,8 @@ import re
 import traceback
 from datetime import datetime, timezone
 
+UTC = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
+
 # Regex patterns for PII detection
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 _PHONE_RE = re.compile(r"\+?\d[\d\s\-]{7,}\d")
@@ -66,7 +68,7 @@ class JsonFormatter(logging.Formatter):
         masked_message = mask_pii(raw_message)
 
         log_entry = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": masked_message,

@@ -7,6 +7,7 @@ import logging
 import secrets
 import uuid
 from datetime import timedelta
+from typing import cast
 
 from django.conf import settings
 from django.db import transaction
@@ -15,7 +16,7 @@ from django.utils.text import slugify
 from ninja import Router
 from ninja.errors import HttpError
 
-from apps.authentication.models import User, UserRole
+from apps.authentication.models import User, UserManager, UserRole
 from apps.billing.models import (
     Invoice,
     Subscription,
@@ -135,7 +136,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 is_active=True,
             )
             temp_password = secrets.token_urlsafe(8)
-            owner = User.objects.create_user(
+            owner = cast(UserManager, User.objects).create_user(
                 email=payload.owner_email,
                 password=temp_password,
                 first_name=payload.owner_first_name,
@@ -258,7 +259,9 @@ def update_tenant_admin(request, tenant_id: str):
 def list_tenant_locations(request, tenant_id: str):
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
-    return [LocationOut.from_location(loc) for loc in tenant.locations.all()]
+    return [
+        LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)
+    ]
 
 
 @router.post(
@@ -424,12 +427,14 @@ def impersonate_tenant(request, tenant_id: str):
     except User.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    from datetime import UTC, datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     import jwt as pyjwt
 
+    utc = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
+
     # Short-lived impersonation token — no global settings mutation
-    now = datetime.now(tz=UTC)
+    now = datetime.now(tz=utc)
     payload = {
         "user_id": str(owner.id),
         "tenant_id": str(tenant.id),

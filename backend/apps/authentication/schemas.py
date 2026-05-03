@@ -2,6 +2,8 @@
 Loyallia — Authentication API Schemas (Pydantic models)
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, field_validator
@@ -120,7 +122,7 @@ class UserOut(BaseModel):
     date_joined: datetime
 
     @classmethod
-    def from_user(cls, user: User) -> "UserOut":
+    def from_user(cls, user: User) -> UserOut:
         return cls(
             id=str(user.id),
             email=user.email,

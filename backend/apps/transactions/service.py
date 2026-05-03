@@ -5,6 +5,7 @@ Extracted business logic from API views for testability and reuse.
 
 import logging
 from decimal import Decimal
+from typing import Any
 
 from django.db import transaction as db_transaction
 
@@ -19,7 +20,13 @@ class TransactionService:
 
     @staticmethod
     def scan_qr(
-        tenant, qr_code, amount=0, quantity=1, staff=None, notes="", location=None
+        tenant,
+        qr_code,
+        amount: Decimal | float | int = 0,
+        quantity=1,
+        staff=None,
+        notes="",
+        location=None,
     ):
         """
         Process a QR scan transaction.
@@ -220,7 +227,7 @@ class TransactionService:
         ]
 
     @staticmethod
-    def _serialize_result(result):
+    def _serialize_result(result: dict[str, Any]) -> Any:
         """Serialize transaction result for JSON storage, handling Decimal types."""
 
         def _serialize_value(value):

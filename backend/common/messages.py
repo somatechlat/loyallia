@@ -10,6 +10,8 @@ Language resolution order:
   4. Django LANGUAGE_CODE (settings)
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 from django.conf import settings
@@ -96,6 +98,9 @@ _MESSAGES_ES: dict[str, str] = {
     "PASS_UPDATED": "Tarjeta actualizada en tu Wallet.",
     "PASS_APPLE_GEN_ERROR": "Error al generar el pase de Apple Wallet.",
     "PASS_GOOGLE_GEN_ERROR": "Error al generar la URL de Google Wallet.",
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet no está configurado. Se requieren los identificadores y certificados de Apple Developer.",
+    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet no está configurado. Se requiere la cuenta de servicio de Google Wallet.",
+    "PASS_WALLET_PROVIDER_DISABLED": "Esta billetera no está habilitada para la tarjeta.",
     "PASS_QR_INVALID_SIGNATURE": "Firma del código QR inválida.",
     "PASS_QR_EXPIRED": "El código QR ha expirado. Abre tu tarjeta para actualizar el código.",
     # --- Transactions ---
@@ -252,6 +257,9 @@ _MESSAGES_EN: dict[str, str] = {
     "PASS_UPDATED": "Card updated in your Wallet.",
     "PASS_APPLE_GEN_ERROR": "Error generating Apple Wallet pass.",
     "PASS_GOOGLE_GEN_ERROR": "Error generating Google Wallet URL.",
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet is not configured. Apple Developer identifiers and certificates are required.",
+    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet is not configured. A Google Wallet service account is required.",
+    "PASS_WALLET_PROVIDER_DISABLED": "This wallet provider is not enabled for the card.",
     "PASS_QR_INVALID_SIGNATURE": "Invalid QR code signature.",
     "PASS_QR_EXPIRED": "QR code has expired. Open your card to refresh.",
     "TRANSACTION_STAMP_ADDED": "{count} stamp(s) added. Total: {current}/{required}.",
@@ -396,7 +404,8 @@ def get_message(code: str, lang: str | None = None, **kwargs: Any) -> str:
         Falls back to Spanish if translation is missing.
     """
     if lang is None:
-        lang = getattr(settings, "LANGUAGE_CODE", DEFAULT_LANGUAGE)
+        configured_lang = getattr(settings, "LANGUAGE_CODE", DEFAULT_LANGUAGE)
+        lang = str(configured_lang) if configured_lang is not None else DEFAULT_LANGUAGE
 
     # Normalize: "es-ec" → "es"
     lang = lang[:2].lower()

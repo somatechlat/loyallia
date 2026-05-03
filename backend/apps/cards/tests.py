@@ -5,10 +5,11 @@ Run with: python manage.py test
 
 import json
 from decimal import Decimal
+from typing import cast
 
 from django.test import TestCase
 
-from apps.authentication.models import User
+from apps.authentication.models import User, UserManager
 from apps.authentication.tokens import create_access_token
 from apps.cards.models import Card, CardType
 from apps.customers.models import Customer, CustomerPass
@@ -24,7 +25,7 @@ class ModelTests(TestCase):
         self.tenant = Tenant.objects.create(
             name="Test Business", slug="test-business", plan="trial"
         )
-        self.user = User.objects.create_user(
+        self.user = cast(UserManager, User.objects).create_user(
             email="owner@test.com",
             password="[REDACTED]",
             tenant=self.tenant,
@@ -239,7 +240,7 @@ class ScannerAPITests(TestCase):
         self.tenant = Tenant.objects.create(
             name="Test Business", slug="test-business", plan="trial"
         )
-        self.user = User.objects.create_user(
+        self.user = cast(UserManager, User.objects).create_user(
             email="owner@test.com",
             password="[REDACTED]",
             tenant=self.tenant,
@@ -309,7 +310,7 @@ class ScannerAPITests(TestCase):
 
     def test_scanner_access_requires_staff_or_above(self):
         """Test scanner endpoints reject users without staff-level roles."""
-        unauthorized_user = User.objects.create_user(
+        unauthorized_user = cast(UserManager, User.objects).create_user(
             email="superadmin@test.com", password="[REDACTED]", role="SUPER_ADMIN"
         )
         token = create_access_token(unauthorized_user.id, None, unauthorized_user.role)

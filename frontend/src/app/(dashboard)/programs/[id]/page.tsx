@@ -154,7 +154,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
             <div>
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Nombre del programa</label>
               <input
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm"
                 value={editForm.name}
                 onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Ej: Café Frecuente"
@@ -165,7 +165,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
             <div>
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Descripción</label>
               <textarea
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm"
                 rows={2}
                 value={editForm.description}
                 onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
@@ -179,7 +179,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-14 h-14 rounded-2xl border-2 border-dashed border-slate-200 hover:border-indigo-400 flex items-center justify-center transition-all bg-white hover:bg-indigo-50 group overflow-hidden shrink-0 shadow-sm"
+                className="w-14 h-14 rounded-2xl border-2 border-dashed border-slate-200 hover:border-indigo-400 flex items-center justify-center transition-all bg-white dark:bg-surface-900 hover:bg-indigo-50 group overflow-hidden shrink-0 shadow-sm"
                 id="edit-logo-btn"
               >
                 {logoPreview ? (
@@ -217,7 +217,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
               )}
               <div className="flex gap-2">
                 <input
-                  className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm"
+                  className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm"
                   placeholder="https://... URL de imagen"
                   value={editForm.strip_image_url}
                   onChange={e => setEditForm(f => ({ ...f, strip_image_url: e.target.value }))}
@@ -234,7 +234,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Ícono de recompensa</label>
               <div className="flex gap-2">
                 <input
-                  className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm"
+                  className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm"
                   placeholder="https://... URL del ícono"
                   value={editForm.icon_url}
                   onChange={e => setEditForm(f => ({ ...f, icon_url: e.target.value }))}
@@ -270,7 +270,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
                     className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl border transition-all
                       ${selectedTemplate === t.id
                         ? 'border-indigo-400 bg-indigo-50 shadow-sm ring-1 ring-indigo-200'
-                        : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'}`}
+                        : 'border-slate-200 hover:border-slate-300 bg-white dark:bg-surface-900 hover:bg-slate-50'}`}
                   >
                     {t.id === 'custom' ? (
                       <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400" />
@@ -284,7 +284,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
             </div>
 
             {/* Color pickers */}
-            <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-sm">
+            <div className="p-3 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 shadow-sm">
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
                 {selectedTemplate === 'custom' ? 'Colores personalizados' : 'Colores del tema'}
               </p>
@@ -367,7 +367,7 @@ function EditProgramModal({ id, program, onClose, onSaved }: { id: string; progr
                           <p className="text-[7px] uppercase tracking-wider opacity-40 font-semibold">Cliente</p>
                           <p className="text-xs font-bold opacity-90">Juan Pérez</p>
                         </div>
-                        <div className="bg-white/95 rounded-xl p-1 shadow-lg">
+                        <div className="bg-[#ffffff]/95 rounded-xl p-1 shadow-lg">
                           <PremiumQrSvg color={editForm.background_color || '#1a1a2e'} size={50} />
                         </div>
                       </div>
@@ -492,7 +492,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {/* Card Preview - Premium Wallet Design */}
-        <div className="card p-8 text-center bg-surface-50 border-2 border-dashed border-surface-200">
+        <div className="card p-8 text-center bg-surface-50 border-2 border-dashed border-surface-200 dark:border-surface-700">
           <div className="relative w-full max-w-sm mx-auto">
             <div className="bg-gray-900 rounded-[2rem] p-2 shadow-2xl border-2 border-gray-800">
               <div className="bg-gray-900 rounded-[1.5rem] overflow-hidden">
@@ -540,7 +540,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                       <p className="text-[8px] font-semibold uppercase tracking-wider opacity-40">Cliente</p>
                       <p className="text-xs font-bold opacity-80">Juan Pérez</p>
                     </div>
-                    <div className="bg-white rounded-xl p-1 shadow-lg">
+                    <div className="bg-[#ffffff] rounded-xl p-1 shadow-lg">
                       <PremiumQrSvg color={program.background_color || '#1a1a2e'} size={44} />
                     </div>
                   </div>
@@ -553,7 +553,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
         {/* Enrollment QR Code — Premium Styled */}
         <div className="card p-8 text-center">
-          <h3 className="text-base font-semibold text-surface-900 mb-2">Código QR de inscripción</h3>
+          <h3 className="text-base font-semibold text-surface-900 dark:text-white mb-2">Código QR de inscripción</h3>
           <p className="text-sm text-surface-500 mb-4">
             Imprime este código o compártelo para que tus clientes se inscriban directamente.
           </p>
@@ -561,7 +561,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             <img
               src={styledQrUrl(`${resolvedAppUrl}/enroll/${id}`, 280)}
               alt="QR de inscripción"
-              className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
+              className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-[#ffffff] shadow-lg"
               id="enrollment-qr-img"
             />
           </div>

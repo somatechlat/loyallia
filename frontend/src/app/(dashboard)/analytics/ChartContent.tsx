@@ -95,7 +95,7 @@ export default function ChartContent({ trends, segments, programs, days, isDark,
                 <button
                   key={k}
                   onClick={() => setChart(k)}
-                  className={`px-3 py-1 rounded-md font-medium transition-all ${chart === k ? 'bg-white shadow text-indigo-600' : 'text-surface-500 hover:text-surface-700'}`}
+                  className={`px-3 py-1 rounded-md font-medium transition-all ${chart === k ? 'bg-white dark:bg-surface-900 shadow text-indigo-600' : 'text-surface-500 hover:text-surface-700'}`}
                 >
                   {k === 'revenue' ? 'Ingresos' : k === 'transactions' ? 'Transacciones' : 'Clientes'}
                 </button>

@@ -7,13 +7,14 @@ import uuid
 from contextlib import suppress
 from datetime import timedelta
 from decimal import Decimal
+from typing import cast
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.authentication.models import RefreshToken, User, UserRole
+from apps.authentication.models import RefreshToken, User, UserManager, UserRole
 from apps.automation.models import AutomationAction, AutomationTrigger
 from apps.billing.models import Subscription, SubscriptionStatus
 from apps.cards.models import CardType
@@ -222,7 +223,7 @@ class UserModelTest(TestCase):
         self.assertIsNone(user.locked_until)
 
     def test_create_superuser(self):
-        admin = User.objects.create_superuser(
+        admin = cast(UserManager, User.objects).create_superuser(
             email="admin@test.com", password="[REDACTED]"
         )
         self.assertTrue(admin.is_staff)

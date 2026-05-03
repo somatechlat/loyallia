@@ -2,6 +2,8 @@
 Loyallia — Tenants API Schemas (Pydantic models)
 """
 
+from __future__ import annotations
+
 from pydantic import BaseModel, EmailStr
 
 from apps.tenants.models import Location, Tenant
@@ -24,7 +26,7 @@ class TenantOut(BaseModel):
     address: str
 
     @classmethod
-    def from_tenant(cls, t: Tenant) -> "TenantOut":
+    def from_tenant(cls, t: Tenant) -> TenantOut:
         return cls(
             id=str(t.id),
             name=t.name,
@@ -67,7 +69,7 @@ class LocationOut(BaseModel):
     is_primary: bool
 
     @classmethod
-    def from_location(cls, loc: Location) -> "LocationOut":
+    def from_location(cls, loc: Location) -> LocationOut:
         return cls(
             id=str(loc.id),
             name=loc.name,
@@ -119,7 +121,7 @@ class TeamMemberOut(BaseModel):
     date_joined: str
 
     @classmethod
-    def from_user(cls, u) -> "TeamMemberOut":
+    def from_user(cls, u) -> TeamMemberOut:
         return cls(
             id=str(u.id),
             email=u.email,

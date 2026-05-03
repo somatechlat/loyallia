@@ -8,6 +8,8 @@ Providers are selected via settings.PAYMENT_GATEWAY_PROVIDER:
   - "manual" → ManualGateway (admin-verified payments)
 """
 
+from __future__ import annotations
+
 import hashlib
 import hmac
 import logging
@@ -209,7 +211,18 @@ class ManualGateway(BasePaymentGateway):
     Used when no external payment provider is configured.
     """
 
-    def create_session(self, **kwargs) -> PaymentSessionResult:
+    def create_session(
+        self,
+        tenant_id: str,
+        amount: str,
+        currency: str,
+        description: str,
+        return_url: str,
+        cancel_url: str,
+        reference: str,
+        buyer_email: str = "",
+        buyer_name: str = "",
+    ) -> PaymentSessionResult:
         """Manual payments do not create external sessions."""
         return PaymentSessionResult(
             session_id="manual",

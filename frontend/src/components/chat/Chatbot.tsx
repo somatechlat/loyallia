@@ -90,7 +90,7 @@ function RichText({ text }: { text: string }) {
         // Headers (lines starting with #)
         if (/^#{1,3}\s/.test(line.trim())) {
           const text = line.replace(/^#{1,3}\s/, '');
-          return <p key={li} className="font-bold text-surface-900 mt-2">{text}</p>;
+          return <p key={li} className="font-bold text-surface-900 dark:text-white mt-2">{text}</p>;
         }
         return <p key={li}>{rendered}</p>;
       })}
@@ -132,7 +132,7 @@ function processInline(text: string) {
 
     // The match itself
     if (firstMatch.type === 'bold') {
-      parts.push(<strong key={key++} className="font-semibold text-surface-900">{firstMatch.content}</strong>);
+      parts.push(<strong key={key++} className="font-semibold text-surface-900 dark:text-white">{firstMatch.content}</strong>);
     } else {
       parts.push(
         <code key={key++} className="bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded text-[11px] font-mono">
@@ -290,7 +290,7 @@ export default function Chatbot() {
         role="dialog"
         aria-label="Asistente de chat"
         aria-modal="false"
-        className={`fixed bottom-4 right-4 w-[560px] h-[780px] bg-white dark:bg-surface-900 rounded-3xl shadow-2xl flex flex-col z-50 transition-all duration-300 origin-bottom-right border border-surface-200/80 dark:border-white/[0.06]
+        className={`fixed bottom-4 right-4 w-[560px] h-[780px] bg-white dark:bg-surface-900 rounded-3xl shadow-2xl flex flex-col z-50 transition-all duration-300 origin-bottom-right border border-surface-200 dark:border-surface-700/80 dark:border-white/[0.06]
         ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
         style={{ maxHeight: 'calc(100vh - 32px)' }}
       >
@@ -329,7 +329,7 @@ export default function Chatbot() {
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold mr-2 mt-1 flex-shrink-0">
                 AI
               </div>
-              <div className="bg-white text-surface-500 border border-surface-150 rounded-2xl rounded-tl-md px-5 py-4 shadow-sm flex gap-2 items-center">
+              <div className="bg-white dark:bg-surface-900 text-surface-500 border border-surface-150 rounded-2xl rounded-tl-md px-5 py-4 shadow-sm flex gap-2 items-center">
                 <span className="w-2.5 h-2.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2.5 h-2.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2.5 h-2.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -372,7 +372,7 @@ export default function Chatbot() {
               placeholder="Pregunta sobre lo que ves en pantalla..."
               disabled={isLoading}
               ref={chatInputRef}
-              className="flex-1 bg-surface-50 border border-surface-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all focus:bg-white"
+              className="flex-1 bg-surface-50 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all focus:bg-white dark:bg-surface-900"
               id="chatbot-input"
             />
             <button

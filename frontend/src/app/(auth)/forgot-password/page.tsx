@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-surface-900">Correo enviado</h2>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white">Correo enviado</h2>
         <p className="text-surface-500 text-sm">
           Si <strong>{email}</strong> está registrado, recibirás un enlace para restablecer tu contraseña.
         </p>
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       <div>
-        <h2 className="text-xl font-bold text-surface-900">¿Olvidaste tu contraseña?</h2>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white">¿Olvidaste tu contraseña?</h2>
         <p className="text-surface-500 text-sm mt-1">
           Ingresa tu correo y te enviaremos un enlace para restablecerla.
         </p>

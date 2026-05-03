@@ -13,6 +13,8 @@ LYL-M-API-025: Tenant is always resolved from customer, never from a parameter
   override to prevent cross-tenant data access.
 """
 
+from __future__ import annotations
+
 import logging
 
 logger = logging.getLogger(__name__)

@@ -3,6 +3,8 @@ Loyallia — Shared Pagination for Django Ninja endpoints.
 Standard cursor and page-based pagination used across all list endpoints.
 """
 
+from __future__ import annotations
+
 from typing import Any, Generic, TypeVar
 
 from django.db.models import QuerySet

@@ -380,7 +380,7 @@ export default function LocationsPage() {
 
                 {/* GPS */}
                 {selectedLoc.latitude && selectedLoc.longitude && (
-                  <div className="bg-surface-50/80 dark:bg-surface-700/50 backdrop-blur-sm rounded-2xl p-4 border border-surface-200/50 dark:border-surface-600/50">
+                  <div className="bg-surface-50/80 dark:bg-surface-700/50 backdrop-blur-sm rounded-2xl p-4 border border-surface-200 dark:border-surface-700/50 dark:border-surface-600/50">
                     <p className="text-xs font-semibold text-surface-500 dark:text-surface-400 mb-2">Coordenadas GPS</p>
                     <div className="flex items-center gap-4">
                       <span className="font-mono text-sm text-surface-700 dark:text-surface-300">{selectedLoc.latitude.toFixed(6)}</span>
@@ -399,7 +399,7 @@ export default function LocationsPage() {
 
                 {/* Mini map */}
                 {selectedLoc.latitude && selectedLoc.longitude && (
-                  <div className="rounded-2xl overflow-hidden border border-surface-200/50 dark:border-surface-600/50 h-[180px]">
+                  <div className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700/50 dark:border-surface-600/50 h-[180px]">
                     <LocationMap
                       locations={[{ id: selectedLoc.id, name: selectedLoc.name, lat: selectedLoc.latitude, lng: selectedLoc.longitude }]}
                       center={[selectedLoc.latitude, selectedLoc.longitude]}
