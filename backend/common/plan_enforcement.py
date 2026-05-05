@@ -75,6 +75,8 @@ def get_tenant_limits(tenant) -> dict:
             "users": 999999,
             "notifications_month": 999999,
             "transactions_month": 999999,
+            "whatsapp_day": 50,  # Trial: 50 WA/day (safe intro)
+            "emails_month": 500,  # Trial: 500 emails/month
         }
 
     if not plan:
@@ -87,6 +89,8 @@ def get_tenant_limits(tenant) -> dict:
         "users": plan.max_users,
         "notifications_month": plan.max_notifications_month,
         "transactions_month": plan.max_transactions_month,
+        "whatsapp_day": plan.max_whatsapp_day,
+        "emails_month": plan.max_emails_month,
     }
 
 
@@ -113,6 +117,8 @@ def get_current_usage(tenant, resource: str) -> int:
         "transactions_month": lambda: _count_monthly(
             "apps.transactions.models", "Transaction", tenant, month_start
         ),
+        "whatsapp_day": lambda: _get_whatsapp_today(tenant),
+        "emails_month": lambda: _count_emails_month(tenant, month_start),
     }
 
     counter = usage_map.get(resource)
@@ -134,6 +140,34 @@ def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> in
     model_class = getattr(module, model_name)
     return model_class.objects.filter(
         tenant=tenant, created_at__gte=month_start
+    ).count()
+
+
+def _get_whatsapp_today(tenant) -> int:
+    """Get today's WhatsApp message count from WhatsAppSession.
+
+    PERF: Single query on WhatsAppSession (OneToOne with Tenant).
+    Returns 0 if no session exists.
+    """
+    from apps.notifications.models import WhatsAppSession
+
+    session = WhatsAppSession.objects.filter(tenant=tenant).first()
+    if session:
+        return session.messages_sent_today
+    return 0
+
+
+def _count_emails_month(tenant, month_start) -> int:
+    """Count email campaign deliveries this month.
+
+    PERF: Single COUNT query on CampaignDeliveryLog filtered by channel + date.
+    """
+    from apps.notifications.models import CampaignDeliveryLog
+
+    return CampaignDeliveryLog.objects.filter(
+        campaign_run__tenant=tenant,
+        campaign_run__channel="email",
+        created_at__gte=month_start,
     ).count()
 
 

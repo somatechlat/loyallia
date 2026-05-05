@@ -27,11 +27,65 @@ from apps.tenants.schemas import (
 )
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
-from common.plan_enforcement import enforce_limit
+from common.plan_enforcement import enforce_limit, get_current_usage, get_tenant_limits
 
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+
+# =============================================================================
+# PLAN FEATURES ENDPOINT (LYL-SRS-008)
+# =============================================================================
+
+
+@router.get(
+    "/me/plan-features/",
+    auth=jwt_auth,
+    summary="Features y límites del plan actual",
+)
+def get_plan_features(request):
+    """Returns the tenant's plan features, limits, and current usage.
+
+    LYL-SRS-008: Used by the frontend to gate UI components
+    (WhatsApp wizard, Campaign channel selector, etc.)
+    """
+    tenant = request.tenant
+    from apps.billing.models import PlanFeature, Subscription
+
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+
+    plan_name = "Sin plan"
+    features: list[str] = []
+    limits: dict = {}
+    usage: dict = {}
+
+    if subscription:
+        plan = subscription.subscription_plan
+        plan_name = plan.name if plan else "Trial"
+
+        # Features: from plan or all if trial
+        if subscription.is_trial_active and not plan:
+            features = PlanFeature.ALL_FEATURES
+        elif plan:
+            features = plan.features or []
+
+        # Limits
+        limits = get_tenant_limits(tenant)
+
+        # Usage for messaging resources
+        usage = {
+            "whatsapp_today": get_current_usage(tenant, "whatsapp_day"),
+            "emails_this_month": get_current_usage(tenant, "emails_month"),
+            "customers": get_current_usage(tenant, "customers"),
+        }
+
+    return {
+        "plan_name": plan_name,
+        "features": features,
+        "limits": limits,
+        "usage": usage,
+    }
 
 
 # =============================================================================

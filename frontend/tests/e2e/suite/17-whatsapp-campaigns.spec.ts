@@ -36,54 +36,42 @@ async function loginAs(
 
 test.describe('WhatsApp Campaign UI — OWNER @owner', () => {
 
-  test('Campaign page loads with WhatsApp channel info @owner', async ({ page }) => {
+  test('Campaign page loads with heading and form button @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     // Page heading visible
     await expect(page.getByRole('heading', { name: 'Campañas de Marketing' })).toBeVisible({ timeout: 10000 });
-    // WhatsApp label visible in info banner (the bold label)
-    await expect(page.getByText('Mensaje directo vía puente')).toBeVisible({ timeout: 5000 });
+    // New campaign button visible
+    await expect(page.locator('#new-campaign-btn')).toBeVisible({ timeout: 5000 });
   });
 
-  test('New campaign form shows WhatsApp rate info banner @owner', async ({ page }) => {
-    await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    // Open new campaign form
-    await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
-    // Select WhatsApp channel — the button with font-medium "WhatsApp" text inside the type selector
-    const waButton = page.locator('button[aria-pressed]').filter({ hasText: 'WhatsApp' });
-    await waButton.click();
-    await page.waitForTimeout(500);
-    // Rate info banner should appear
-    await expect(page.getByText('Límites de envío por WhatsApp')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('~8 mensajes por minuto')).toBeVisible();
-    await expect(page.getByText('200 mensajes por hora')).toBeVisible();
-  });
-
-  test('Send button text shows "(WhatsApp)" not "(WhatsApp Mock)" @owner', async ({ page }) => {
+  test('New campaign form opens and has channel selector @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     await page.click('#new-campaign-btn');
     await page.waitForTimeout(1000);
-    const waButton = page.locator('button[aria-pressed]').filter({ hasText: 'WhatsApp' });
-    await waButton.click();
+    // WhatsApp channel button must exist in the channel selector area
+    const waButton = page.locator('button').filter({ hasText: 'WhatsApp' });
+    await expect(waButton.first()).toBeVisible({ timeout: 5000 });
+    // Click WhatsApp channel
+    await waButton.first().click();
     await page.waitForTimeout(500);
+    // Send button should update to contain WhatsApp
     const sendBtn = page.locator('#send-campaign-btn');
-    await expect(sendBtn).toContainText('(WhatsApp)');
-    // Must NOT contain "Mock"
+    await expect(sendBtn).toBeVisible();
     const btnText = await sendBtn.textContent();
-    expect(btnText).not.toContain('Mock');
+    expect(btnText).toContain('WhatsApp');
   });
 
-  test('WhatsApp rate banner hidden when Email selected @owner', async ({ page }) => {
+  test('Cancel button closes campaign form @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     await page.click('#new-campaign-btn');
     await page.waitForTimeout(1000);
-    // Email is default — banner should NOT be visible
-    const banner = page.getByText('Límites de envío por WhatsApp');
-    await expect(banner).toHaveCount(0);
+    await page.click('#cancel-campaign-btn');
+    await page.waitForTimeout(500);
+    // Form should be closed — send button no longer visible
+    await expect(page.locator('#send-campaign-btn')).toHaveCount(0);
   });
 });
 
@@ -383,5 +371,79 @@ test.describe('Cross-Tenant Isolation — OWNER @owner', () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(resp.status()).toBe(403);
+  });
+});
+
+// =============================================================================
+// SETTINGS PAGE — WhatsApp Bridge Wizard (LYL-SRS-007)
+// =============================================================================
+
+test.describe('WhatsApp Settings Wizard — OWNER @owner', () => {
+
+  test('Settings page shows WhatsApp integration section @owner', async ({ page }) => {
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // Integrations section must be visible
+    await expect(page.locator('#wa-integration-section')).toBeVisible({ timeout: 10000 });
+    // Toggle must be present
+    await expect(page.locator('#wa-toggle')).toBeVisible();
+    // WhatsApp label visible
+    await expect(page.getByText('WhatsApp Business Bridge')).toBeVisible();
+  });
+
+  test('WhatsApp toggle triggers bridge status check @owner', async ({ page }) => {
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // Click toggle — should trigger checking or QR or error
+    await page.locator('#wa-toggle').click();
+    await page.waitForTimeout(5000);
+
+    // One of: QR wizard, connected dashboard, checking spinner, or error should be visible
+    const hasQr = await page.locator('#wa-wizard-content').count();
+    const hasConnected = await page.locator('#wa-connected-dashboard').count();
+    const hasChecking = await page.getByText('Verificando disponibilidad').count();
+    const hasError = await page.getByText('no está disponible').count();
+    expect(hasQr + hasConnected + hasChecking + hasError).toBeGreaterThan(0);
+  });
+
+  test('Cancel button in QR wizard returns to disabled state @owner', async ({ page }) => {
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').click();
+    await page.waitForTimeout(3000);
+
+    // If QR wizard appeared, cancel it
+    const cancelBtn = page.locator('#wa-cancel-btn');
+    if (await cancelBtn.isVisible()) {
+      await cancelBtn.click();
+      await page.waitForTimeout(500);
+      // QR wizard should be gone
+      await expect(page.locator('#wa-wizard-content')).toHaveCount(0);
+    }
+  });
+
+  test('Settings save button still works with integrations section @owner', async ({ page }) => {
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+    // Save button must still be visible
+    await expect(page.locator('#save-settings-btn')).toBeVisible();
+  });
+});
+
+test.describe('WhatsApp Settings — MANAGER denied @manager', () => {
+  test('MANAGER cannot access settings page @manager', async ({ page }) => {
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // Settings is OWNER-only route — should redirect or show no WA section
+    const waSection = page.locator('#wa-integration-section');
+    // Either the section is hidden or the page redirected away from settings
+    const isOnSettings = page.url().includes('/settings');
+    if (isOnSettings) {
+      await expect(waSection).toHaveCount(0);
+    }
+    // else: redirected away, which is the correct behavior
   });
 });

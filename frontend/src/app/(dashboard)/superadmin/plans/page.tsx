@@ -7,6 +7,7 @@ interface PlanData {
   id: string; name: string; slug: string; description: string;
   price_monthly: number; price_annual: number;
   max_locations: number; max_users: number; max_customers: number; max_programs: number;
+  max_whatsapp_day: number; max_emails_month: number;
   features: string[]; is_active: boolean; is_featured: boolean; trial_days: number; sort_order: number;
 }
 
@@ -14,6 +15,7 @@ const emptyPlan = {
   name: '', slug: '', description: '',
   price_monthly: 0, price_annual: 0,
   max_locations: 1, max_users: 3, max_customers: 500, max_programs: 1,
+  max_whatsapp_day: 0, max_emails_month: 0,
   features: [] as string[], is_featured: false, trial_days: 14, sort_order: 0,
 };
 
@@ -44,6 +46,7 @@ export default function SuperAdminPlans() {
       price_monthly: p.price_monthly, price_annual: p.price_annual,
       max_locations: p.max_locations, max_users: p.max_users,
       max_customers: p.max_customers, max_programs: p.max_programs,
+      max_whatsapp_day: p.max_whatsapp_day || 0, max_emails_month: p.max_emails_month || 0,
       features: p.features || [],
       is_featured: p.is_featured, trial_days: p.trial_days, sort_order: p.sort_order,
     });
@@ -142,6 +145,8 @@ export default function SuperAdminPlans() {
               <p>{plan.max_users} usuarios</p>
               <p>{plan.max_customers.toLocaleString()} clientes</p>
               <p>{plan.trial_days}d prueba</p>
+              {plan.max_whatsapp_day > 0 && <p className="text-green-500">📱 {plan.max_whatsapp_day} WA/día</p>}
+              {plan.max_emails_month > 0 && <p className="text-blue-500">📧 {plan.max_emails_month.toLocaleString()} emails/mes</p>}
             </div>
             <div className="mt-3 pt-3 border-t border-surface-100 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
               <span className="text-xs text-brand-500 font-semibold">Editar plan →</span>
@@ -218,6 +223,20 @@ export default function SuperAdminPlans() {
                   <InfoRow label="Días de Prueba" value={String(selected.trial_days)} />
                   <InfoRow label="Orden" value={String(selected.sort_order)} />
                 </div>
+                {/* Messaging quotas */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-3 border border-green-200/50">
+                  <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">📡 Canales de Mensajería</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold text-green-600 uppercase">WhatsApp/día</p>
+                      <p className="text-lg font-black text-surface-900">{selected.max_whatsapp_day > 0 ? selected.max_whatsapp_day : <span className="text-surface-300">Deshabilitado</span>}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold text-blue-600 uppercase">Emails/mes</p>
+                      <p className="text-lg font-black text-surface-900">{selected.max_emails_month > 0 ? selected.max_emails_month.toLocaleString() : <span className="text-surface-300">Deshabilitado</span>}</p>
+                    </div>
+                  </div>
+                </div>
                 {(selected.features || []).length > 0 && (
                   <div className="bg-surface-50/80 rounded-xl p-3">
                     <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">Características</p>
@@ -276,6 +295,60 @@ export default function SuperAdminPlans() {
                     className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-400" />
                   <span className="text-sm text-surface-700 font-medium">Plan destacado</span>
                 </label>
+
+                {/* ═══ MESSAGING CHANNELS (LYL-SRS-008) ═══ */}
+                <div className="bg-gradient-to-r from-green-50/80 to-blue-50/80 rounded-xl p-4 border border-green-200/50 space-y-3">
+                  <p className="text-xs font-bold text-surface-600 uppercase tracking-wide">📡 Canales de Mensajería</p>
+
+                  {/* WhatsApp Toggle */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={form.features.includes('whatsapp_campaigns')}
+                        onChange={() => {
+                          const has = form.features.includes('whatsapp_campaigns');
+                          setForm(f => ({
+                            ...f,
+                            features: has ? f.features.filter(x => x !== 'whatsapp_campaigns') : [...f.features, 'whatsapp_campaigns'],
+                            max_whatsapp_day: has ? 0 : (f.max_whatsapp_day || 100),
+                          }));
+                        }}
+                        className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-400" />
+                      <span className="text-sm text-surface-700 font-semibold">📱 WhatsApp Campaigns</span>
+                    </label>
+                    {form.features.includes('whatsapp_campaigns') && (
+                      <div className="ml-6">
+                        <FormField label="Máx. WhatsApp/día (máx seguro: 200)" value={String(form.max_whatsapp_day)}
+                          onChange={v => setForm(f => ({ ...f, max_whatsapp_day: Math.min(+v || 0, 200) }))} type="number" />
+                        {form.max_whatsapp_day > 200 && (
+                          <p className="text-[10px] text-red-500 font-semibold mt-1">⚠️ {'>'} 200/día puede causar ban de WhatsApp</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Email Toggle */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={form.features.includes('email_campaigns')}
+                        onChange={() => {
+                          const has = form.features.includes('email_campaigns');
+                          setForm(f => ({
+                            ...f,
+                            features: has ? f.features.filter(x => x !== 'email_campaigns') : [...f.features, 'email_campaigns'],
+                            max_emails_month: has ? 0 : (f.max_emails_month || 5000),
+                          }));
+                        }}
+                        className="w-4 h-4 rounded border-blue-400 text-blue-600 focus:ring-blue-400" />
+                      <span className="text-sm text-surface-700 font-semibold">📧 Email Campaigns</span>
+                    </label>
+                    {form.features.includes('email_campaigns') && (
+                      <div className="ml-6">
+                        <FormField label="Máx. Emails/mes" value={String(form.max_emails_month)}
+                          onChange={v => setForm(f => ({ ...f, max_emails_month: +v || 0 }))} type="number" />
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="flex gap-2 pt-3">
                   <button onClick={handleSave} disabled={saving || !form.name.trim() || (!showCreate && !form.slug.trim())}
                     className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200">

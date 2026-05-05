@@ -14,6 +14,7 @@ const {
   DisconnectReason,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
+  initAuthCreds,
 } = require("@whiskeysockets/baileys");
 const pino = require("pino");
 const { Boom } = require("@hapi/boom");
@@ -56,7 +57,7 @@ async function useRedisAuthState(tenantId) {
     await r.del(`${prefix}${key}`);
   };
 
-  const creds = (await readData("creds")) || undefined;
+  const creds = (await readData("creds")) || initAuthCreds();
 
   return {
     state: {

@@ -27,7 +27,11 @@ from apps.notifications.models import (
 from apps.notifications.service import NotificationService
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
-from common.plan_enforcement import enforce_limit
+from common.plan_enforcement import (
+    check_feature_access,
+    check_plan_limit,
+    enforce_limit,
+)
 
 router = Router()
 
@@ -387,6 +391,10 @@ def create_campaign(request, data: CampaignCreateIn):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     if data.channel == "email":
+        # LYL-SRS-008: Gate email campaigns by plan feature + monthly quota
+        check_feature_access(request.tenant, "email_campaigns")
+        check_plan_limit(request.tenant, "emails_month")
+
         from apps.notifications.tasks import send_email_campaign
 
         task_fn: Any = send_email_campaign
@@ -416,6 +424,10 @@ def create_campaign(request, data: CampaignCreateIn):
             "message": f"Campaña de WALLET iniciada para segmento '{data.segment_id}'. Los clientes recibirán una notificación en sus tarjetas.",
         }
     elif data.channel == "whatsapp":
+        # LYL-SRS-008: Gate WhatsApp campaigns by plan feature + daily quota
+        check_feature_access(request.tenant, "whatsapp_campaigns")
+        check_plan_limit(request.tenant, "whatsapp_day")
+
         from apps.notifications.tasks import send_whatsapp_campaign
 
         task_fn: Any = send_whatsapp_campaign
