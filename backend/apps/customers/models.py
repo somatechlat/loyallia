@@ -397,3 +397,58 @@ class CustomerPass(models.Model):
 
     def _process_discount_transaction(self, amount: Decimal) -> dict:
         return self._processor()._process_discount(amount)
+
+
+class ApplePassRegistration(models.Model):
+    """
+    Device registration for Apple Wallet pass update push notifications.
+
+    Per Apple PassKit docs: when a user adds a pass to Wallet, the device calls
+    POST /v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}
+    providing a pushToken. We store this mapping to send empty APNs pushes
+    when pass data changes, triggering the device to re-download the updated .pkpass.
+
+    Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # The unique device identifier provided by the Apple device
+    device_library_id = models.CharField(
+        max_length=255,
+        db_index=True,
+        verbose_name="Device Library Identifier",
+    )
+
+    # APNs push token — used to send empty {} push to trigger pass re-download
+    push_token = models.CharField(
+        max_length=255,
+        verbose_name="APNs Push Token",
+    )
+
+    # The customer pass this device is registered to receive updates for
+    customer_pass = models.ForeignKey(
+        CustomerPass,
+        on_delete=models.CASCADE,
+        related_name="apple_registrations",
+        verbose_name="Customer Pass",
+    )
+
+    registered_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "loyallia_apple_pass_registrations"
+        verbose_name = "Apple Pass Registration"
+        verbose_name_plural = "Apple Pass Registrations"
+        # One registration per device per pass (Apple spec)
+        unique_together = ("device_library_id", "customer_pass")
+        indexes = [
+            models.Index(
+                fields=["customer_pass"],
+                name="idx_apple_reg_pass",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Apple Registration: device …{self.device_library_id[-8:]} → pass {self.customer_pass_id}"

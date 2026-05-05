@@ -132,3 +132,24 @@ export const APPLE_PASS_STYLES: Record<string, string> = {
   referral_pass: 'generic',
   multipass: 'storeCard',
 };
+
+/* ─── Google Wallet Type per Card Type (mirrors backend _resolve_gw_type) ── */
+export const GOOGLE_WALLET_TYPES: Record<string, { type: string; label: string }> = {
+  stamp:              { type: 'LoyaltyClass',  label: 'Programa de Lealtad' },
+  cashback:           { type: 'GiftCardClass', label: 'Tarjeta de Regalo' },
+  coupon:             { type: 'OfferClass',    label: 'Oferta' },
+  discount:           { type: 'OfferClass',    label: 'Oferta' },
+  affiliate:          { type: 'LoyaltyClass',  label: 'Programa de Lealtad' },
+  gift_certificate:   { type: 'GiftCardClass', label: 'Tarjeta de Regalo' },
+  vip_membership:     { type: 'LoyaltyClass',  label: 'Programa de Lealtad' },
+  corporate_discount: { type: 'OfferClass',    label: 'Oferta' },
+  referral_pass:      { type: 'OfferClass',    label: 'Oferta' },
+  multipass:          { type: 'GiftCardClass', label: 'Tarjeta de Regalo' },
+};
+
+/* ─── Apple Image Support per Pass Style (per official Apple docs) ── */
+export const APPLE_IMAGE_SUPPORT: Record<string, { strip: boolean; thumbnail: boolean }> = {
+  storeCard: { strip: true,  thumbnail: false },
+  coupon:    { strip: true,  thumbnail: false },
+  generic:   { strip: false, thumbnail: true },
+};

@@ -1,0 +1,259 @@
+"""
+Loyallia — Apple Wallet Pass Update Push (APNs)
+
+Sends empty APNs pushes to devices registered for pass updates.
+This is DIFFERENT from apps.notifications.push.apns_client which sends
+alert-type pushes for the Loyallia iOS app.
+
+Apple Wallet pass update pushes:
+  - Payload MUST be an empty JSON dictionary: {}
+  - apns-push-type MUST be "background" (not "alert")
+  - apns-topic MUST be the Pass Type Identifier (e.g., pass.com.loyallia.cards)
+  - Authentication uses the Pass Type Certificate (PEM from Vault), NOT the APNs Auth Key (.p8)
+  - Upon receiving this push, the device calls our web service to download the updated .pkpass
+
+Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
+"""
+
+from __future__ import annotations
+
+import logging
+
+import httpx
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+APNS_PRODUCTION_HOST = "https://api.push.apple.com"
+APNS_SANDBOX_HOST = "https://api.sandbox.push.apple.com"
+
+
+def _get_pass_apns_auth() -> tuple[str | None, str | None]:
+    """
+    Load the Pass Type Certificate and private key from Vault for APNs auth.
+
+    Apple Wallet pass update pushes use certificate-based authentication
+    (NOT the token-based JWT used for app pushes). The signing certificate
+    used for pass creation doubles as the APNs client certificate.
+
+    Returns:
+        (cert_pem, key_pem) or (None, None) if not configured.
+    """
+    try:
+        from common.vault import get_secret
+
+        cert_pem = get_secret("apple_cert_pem", strict=True)
+        key_pem = get_secret("apple_cert_key_pem", strict=True)
+
+        if not cert_pem or not key_pem:
+            logger.warning(
+                "Apple pass push: cert_pem or key_pem not found in Vault"
+            )
+            return None, None
+
+        return cert_pem, key_pem
+
+    except Exception as exc:
+        logger.error("Apple pass push: Failed to load certificates from Vault: %s", exc)
+        return None, None
+
+
+def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
+    """
+    Send an empty APNs push notification to trigger a pass update on the device.
+
+    Per Apple docs, the payload MUST be an empty JSON dict {} and the
+    push type MUST be "background". The device will then call our
+    web service endpoints to check for and download updated passes.
+
+    Args:
+        push_token: The APNs push token stored during device registration.
+        sandbox: Force sandbox mode. None = auto-detect from Django DEBUG.
+
+    Returns:
+        True if APNs accepted the push (HTTP 200), False otherwise.
+    """
+    cert_pem, key_pem = _get_pass_apns_auth()
+    if not cert_pem or not key_pem:
+        logger.warning("Apple pass push: Not configured — skipping push to …%s", push_token[-8:])
+        return False
+
+    topic = getattr(
+        settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards"
+    )
+
+    # Auto-detect sandbox from Django DEBUG setting
+    use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)
+    host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
+
+    url = f"{host}/3/device/{push_token}"
+
+    headers = {
+        "apns-topic": topic,
+        "apns-push-type": "background",
+        "apns-priority": "5",  # Background pushes require priority 5
+    }
+
+    # Write cert and key to temp files for httpx SSL context
+    import ssl
+    import tempfile
+
+    try:
+        # Create temporary PEM files for the SSL context
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".pem", delete=False
+        ) as cert_file:
+            cert_file.write(cert_pem)
+            cert_path = cert_file.name
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".pem", delete=False
+        ) as key_file:
+            key_file.write(key_pem)
+            key_path = key_file.name
+
+        # Build SSL context with client certificate
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ssl_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
+        ssl_context.load_default_certs()
+
+        # httpx HTTP/2 required for APNs
+        with httpx.Client(
+            http2=True,
+            verify=ssl_context,
+            timeout=10.0,
+        ) as client:
+            response = client.post(
+                url,
+                json={},  # MUST be empty dict per Apple spec
+                headers=headers,
+            )
+
+        if response.status_code == 200:
+            logger.debug(
+                "Apple pass push sent successfully to …%s", push_token[-8:]
+            )
+            return True
+
+        # Parse error reason
+        try:
+            reason = response.json().get("reason", "Unknown")
+        except Exception:
+            reason = response.text[:200]
+
+        if reason in ("BadDeviceToken", "Unregistered"):
+            logger.warning(
+                "Apple pass push: Token invalid/unregistered (…%s): %s",
+                push_token[-8:],
+                reason,
+            )
+        else:
+            logger.error(
+                "Apple pass push HTTP %s for …%s: %s",
+                response.status_code,
+                push_token[-8:],
+                reason,
+            )
+        return False
+
+    except httpx.TimeoutException:
+        logger.error("Apple pass push: Timed out for …%s", push_token[-8:])
+        return False
+    except Exception as exc:
+        logger.error("Apple pass push error for …%s: %s", push_token[-8:], exc)
+        return False
+    finally:
+        # Clean up temp files
+        import os
+
+        for path in (cert_path, key_path):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+
+def notify_pass_updated(customer_pass) -> int:
+    """
+    Send empty APNs pushes to ALL devices registered for a specific pass.
+    Call this whenever pass data changes (stamp added, balance updated, etc.).
+
+    Args:
+        customer_pass: CustomerPass instance whose data has changed.
+
+    Returns:
+        Number of devices successfully notified.
+    """
+    from apps.customers.models import ApplePassRegistration
+
+    registrations = ApplePassRegistration.objects.filter(
+        customer_pass=customer_pass,
+    )
+
+    if not registrations.exists():
+        logger.debug(
+            "Apple pass push: No registered devices for pass %s", customer_pass.id
+        )
+        return 0
+
+    notified = 0
+    for reg in registrations:
+        success = send_pass_update_push(reg.push_token)
+        if success:
+            notified += 1
+        else:
+            # Track failures — deactivate after repeated failures
+            # (Similar to apns_client.py stale token handling)
+            logger.debug(
+                "Apple pass push: Failed for device …%s", reg.device_library_id[-8:]
+            )
+
+    logger.info(
+        "Apple pass push: Notified %d/%d devices for pass %s",
+        notified,
+        registrations.count(),
+        customer_pass.id,
+    )
+    return notified
+
+
+def notify_card_updated(card) -> int:
+    """
+    Send empty APNs pushes to ALL devices holding passes for a specific card.
+    Call this when the card configuration changes (colors, images, etc.).
+
+    Args:
+        card: Card instance that has been updated.
+
+    Returns:
+        Total number of devices successfully notified.
+    """
+    from apps.customers.models import ApplePassRegistration, CustomerPass
+
+    pass_ids = CustomerPass.objects.filter(
+        card=card, is_active=True
+    ).values_list("id", flat=True)
+
+    registrations = ApplePassRegistration.objects.filter(
+        customer_pass_id__in=pass_ids,
+    )
+
+    if not registrations.exists():
+        logger.debug(
+            "Apple pass push: No registered devices for card %s", card.id
+        )
+        return 0
+
+    notified = 0
+    for reg in registrations:
+        if send_pass_update_push(reg.push_token):
+            notified += 1
+
+    logger.info(
+        "Apple pass push: Notified %d/%d devices for card %s (%s)",
+        notified,
+        registrations.count(),
+        card.name,
+        card.id,
+    )
+    return notified
