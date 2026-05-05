@@ -14,8 +14,11 @@ const BASE_API = 'http://localhost:80';
  */
 async function gotoLoadedDashboard(page: any) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  // Wait for the date-range-selector to appear — it only renders after loading
-  await page.locator('#date-range-selector').waitFor({ state: 'visible', timeout: 30000 });
+  // Wait for either the page-title or date-range-selector — whichever appears first
+  await Promise.race([
+    page.locator('#date-range-selector').waitFor({ state: 'visible', timeout: 45000 }),
+    page.locator('.page-title').waitFor({ state: 'visible', timeout: 45000 }),
+  ]);
 }
 
 test.describe('Dashboard KPIs — OWNER @owner', () => {

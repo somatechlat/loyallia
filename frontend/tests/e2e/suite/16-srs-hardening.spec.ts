@@ -19,7 +19,7 @@ test.describe('Programs Borradores — OWNER @owner', () => {
     // At minimum the page title should be visible
     await expect(page.getByRole('heading', { name: 'Programas de fidelización' })).toBeVisible({ timeout: 10000 });
     // Activas section should be visible (test data always has active programs)
-    await expect(page.getByText('Activas')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Activas', exact: true })).toBeVisible({ timeout: 5000 });
   });
 
   test('Borradores section renders only when drafts exist @owner', async ({ page }) => {
@@ -247,12 +247,13 @@ test.describe('Enrollment Page — Public Flow', () => {
 // BACKEND API — COUPON VALIDATION
 // ═══════════════════════════════════════════════════════════════════════════
 
-test.describe('Coupon Validation API', () => {
+test.describe('Coupon Validation API @owner', () => {
 
-  test('Card creation API accepts special_promo discount type', async ({ request }) => {
+  test('Card creation API accepts special_promo discount type @owner', async ({ request }) => {
     const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
       data: { email: 'owner@example.com', password: '123456' },
     });
+    expect(loginResp.status(), 'Login should succeed').toBe(200);
     const { access_token } = await loginResp.json();
 
     const cardData = {
@@ -274,10 +275,11 @@ test.describe('Coupon Validation API', () => {
     expect([200, 201, 403]).toContain(resp.status());
   });
 
-  test('Card creation API validates coupon dates', async ({ request }) => {
+  test('Card creation API validates coupon dates @owner', async ({ request }) => {
     const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
       data: { email: 'owner@example.com', password: '123456' },
     });
+    expect(loginResp.status(), 'Login should succeed').toBe(200);
     const { access_token } = await loginResp.json();
 
     const cardData = {

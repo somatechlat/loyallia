@@ -67,19 +67,22 @@ test.describe('Programs — OWNER CRUD @owner', () => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(5000);
     // Check that at least one program card is visible (seeded or created by wizard)
-    const programCards = page.locator('.card').filter({ hasText: /Café|E2E|Sellos|Cashback|VIP|Cupón|Refiere/ });
+    // Program cards use .card-hover class in the ProgramSections component
+    const programCards = page.locator('.card-hover').filter({ hasText: /Café|E2E|Sellos|Cashback|VIP|Cupón|Refiere/ });
     await expect(programCards.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('Program detail page loads with QR @owner', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(5000);
-    // Click the first program card to view details
-    const firstCard = page.locator('a[href*="/programs/"]').first();
-    await firstCard.click();
+    // Click the "Ver detalles" (eye icon) link inside a program card
+    // The link pattern is <a href="/programs/{uuid}" title="Ver detalles">
+    const detailLink = page.locator('#programs-view a[href*="/programs/"][title="Ver detalles"]').first();
+    await expect(detailLink).toBeVisible({ timeout: 10000 });
+    await detailLink.click();
     await page.waitForTimeout(3000);
     // Should be on /programs/{id}
-    await expect(page).toHaveURL(/.*programs\/.+/);
+    await expect(page).toHaveURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
     // QR code or program details should be visible
     const qrOrDetail = page.locator('#enrollment-qr-img').or(page.locator('img[alt*="QR"]')).or(page.locator('.page-title'));
     await expect(qrOrDetail.first()).toBeVisible({ timeout: 10000 });

@@ -63,13 +63,14 @@ test.describe('Program CRUD - Full Lifecycle @owner', () => {
     await gotoPrograms(page);
     await page.waitForTimeout(2000);
 
-    // Click first program card link to view details
-    const firstLink = page.locator('a[href*="/programs/"]').first();
+    // Click first program card detail link (eye icon) scoped to programs view
+    const firstLink = page.locator('#programs-view a[href*="/programs/"][title="Ver detalles"]').first();
+    await expect(firstLink).toBeVisible({ timeout: 10000 });
     await firstLink.click();
     await page.waitForTimeout(3000);
 
     // Should be on /programs/{id}
-    await expect(page).toHaveURL(/.*programs\/.+/);
+    await expect(page).toHaveURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
 
     // Look for edit button
     const editBtn = page.getByText('Editar').or(page.locator('#edit-program-btn'));
@@ -97,13 +98,14 @@ test.describe('Program CRUD - Full Lifecycle @owner', () => {
     await gotoPrograms(page);
     await page.waitForTimeout(2000);
 
-    // Click first program to view details
-    const firstLink = page.locator('a[href*="/programs/"]').first();
+    // Click first program detail link (eye icon) scoped to programs view
+    const firstLink = page.locator('#programs-view a[href*="/programs/"][title="Ver detalles"]').first();
+    await expect(firstLink).toBeVisible({ timeout: 10000 });
     await firstLink.click();
     await page.waitForTimeout(3000);
 
     // Should be on /programs/{id}
-    await expect(page).toHaveURL(/.*programs\/.+/);
+    await expect(page).toHaveURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
 
     // The detail page should show some content
     const pageContent = page.locator('main').or(page.locator('.page-title'));
