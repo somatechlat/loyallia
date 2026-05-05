@@ -58,6 +58,8 @@ CELERY_TASK_ROUTES = {
     "apps.automation.tasks.evaluate_trigger_for_customer": {"queue": "default"},
     "apps.automation.tasks.evaluate_scheduled_automations": {"queue": "default"},
     "apps.automation.tasks.evaluate_inactive_triggers": {"queue": "default"},
+    "apps.automation.tasks.evaluate_birthday_triggers": {"queue": "default"},
+    "apps.notifications.tasks.send_sms_campaign": {"queue": "sms_delivery"},
     "*": {"queue": "default"},
 }
 
@@ -91,5 +93,9 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.authentication.tasks.cleanup_expired_tokens",
         "schedule": crontab(hour="3", minute="0"),  # Daily at 3 AM
         "options": {"queue": "default"},
+    },
+    "birthday-automation-triggers-daily": {
+        "task": "apps.automation.tasks.evaluate_birthday_triggers",
+        "schedule": crontab(hour="6", minute="0"),  # Daily at 6 AM
     },
 }

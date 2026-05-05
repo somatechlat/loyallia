@@ -348,6 +348,22 @@ export default function SuperAdminPlans() {
                       </div>
                     )}
                   </div>
+
+                  {/* Wallet (Apple Wallet) Toggle */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={form.features.includes('wallet_campaigns')}
+                        onChange={() => {
+                          const has = form.features.includes('wallet_campaigns');
+                          setForm(f => ({
+                            ...f,
+                            features: has ? f.features.filter(x => x !== 'wallet_campaigns') : [...f.features, 'wallet_campaigns'],
+                          }));
+                        }}
+                        className="w-4 h-4 rounded border-purple-400 text-purple-600 focus:ring-purple-400" />
+                      <span className="text-sm text-surface-700 font-semibold">💳 Wallet Campaigns (Apple Wallet)</span>
+                    </label>
+                  </div>
                 </div>
                 <div className="flex gap-2 pt-3">
                   <button onClick={handleSave} disabled={saving || !form.name.trim() || (!showCreate && !form.slug.trim())}

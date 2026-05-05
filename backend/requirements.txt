@@ -53,6 +53,9 @@ httpx[http2]==0.27.2         # APNs HTTP/2 + general HTTP client
 # Email
 django-anymail==11.1
 
+# SMS (Twilio) — LYL-SRS-009
+twilio>=9.0.0
+
 # Configuration
 python-decouple==3.8
 

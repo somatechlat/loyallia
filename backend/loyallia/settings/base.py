@@ -395,6 +395,20 @@ WHATSAPP_MAX_PER_MINUTE = config("WHATSAPP_MAX_PER_MINUTE", default=8, cast=int)
 WHATSAPP_MAX_PER_HOUR = config("WHATSAPP_MAX_PER_HOUR", default=200, cast=int)
 
 # =============================================================================
+# TWILIO SMS (LYL-SRS-009)
+# =============================================================================
+TWILIO_ACCOUNT_SID = get_secret(
+    "twilio_account_sid", env_fallback="TWILIO_ACCOUNT_SID", default=""
+)
+TWILIO_AUTH_TOKEN = get_secret(
+    "twilio_auth_token", env_fallback="TWILIO_AUTH_TOKEN", default=""
+)
+TWILIO_FROM_NUMBER = get_secret(
+    "twilio_from_number", env_fallback="TWILIO_FROM_NUMBER", default=""
+)
+TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
+
+# =============================================================================
 # LISTMONK EMAIL ENGINE (LYL-SRS-006)
 # =============================================================================
 LISTMONK_URL = config("LISTMONK_URL", default="http://listmonk:9000")

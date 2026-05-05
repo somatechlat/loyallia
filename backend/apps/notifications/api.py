@@ -407,9 +407,12 @@ def create_campaign(request, data: CampaignCreateIn):
         )
         return {
             "success": True,
-            "message": f"Campaña de EMAIL iniciada para segmento '{data.segment_id}'. Los clientes recibirán un correo electrónico.",
+            "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=data.segment_id),
         }
     elif data.channel == "wallet":
+        # LYL-SRS-008: Gate wallet campaigns by plan feature
+        check_feature_access(request.tenant, "wallet_campaigns")
+
         from apps.notifications.tasks import send_wallet_notification_campaign
 
         task_fn: Any = send_wallet_notification_campaign
@@ -421,7 +424,7 @@ def create_campaign(request, data: CampaignCreateIn):
         )
         return {
             "success": True,
-            "message": f"Campaña de WALLET iniciada para segmento '{data.segment_id}'. Los clientes recibirán una notificación en sus tarjetas.",
+            "message": get_message("CAMPAIGN_WALLET_STARTED", segment=data.segment_id),
         }
     elif data.channel == "whatsapp":
         # LYL-SRS-008: Gate WhatsApp campaigns by plan feature + daily quota
@@ -440,8 +443,7 @@ def create_campaign(request, data: CampaignCreateIn):
         )
         return {
             "success": True,
-            "message": f"Campaña de WhatsApp iniciada para segmento '{data.segment_id}'. "
-            f"Los mensajes se enviarán de forma progresiva (~8 por minuto).",
+            "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id),
         }
     else:
         raise HttpError(

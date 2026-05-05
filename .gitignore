@@ -86,3 +86,4 @@ frontend/tsconfig.tsbuildinfo
 # Agents (credentials, deployment docs — NEVER commit)
 .agents/
 backend/auth.json
+frontend/.env.test
