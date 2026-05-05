@@ -362,7 +362,7 @@ def forgot_password(request, payload: ForgotPasswordIn):
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    app_url = getattr(settings, "FRONTEND_URL", "http://localhost:33906")
+    app_url = settings.FRONTEND_URL
     reset_link = f"{app_url}/reset-password?uid={uid}&token={token}"
 
     try:

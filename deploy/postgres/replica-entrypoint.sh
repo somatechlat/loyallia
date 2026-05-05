@@ -6,6 +6,8 @@ POSTGRES_USER="${POSTGRES_USER:-loyallia}"
 
 chown -R postgres:postgres "$DATA_DIR"
 
+export PGPASSWORD="$(cat /run/loyallia-vault/postgres_password)"
+
 if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
     until su-exec postgres pg_basebackup \
         --pgdata="$DATA_DIR" \

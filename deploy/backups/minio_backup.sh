@@ -10,8 +10,9 @@ RETENTION_DAYS=30
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 MINIO_ALIAS="local"
 MINIO_URL="${MINIO_ENDPOINT:-http://minio:9000}"
-MINIO_USER="${MINIO_ROOT_USER:-minioadmin}"
-MINIO_PASS="${MINIO_ROOT_PASSWORD:-minioadmin}"
+VAULT_RUNTIME="${VAULT_RUNTIME_DIR:-/run/loyallia-vault}"
+MINIO_USER="$(cat "$VAULT_RUNTIME/minio_root_user")"
+MINIO_PASS="$(cat "$VAULT_RUNTIME/minio_root_password")"
 
 mkdir -p "$BACKUP_DIR"
 
