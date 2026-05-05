@@ -55,7 +55,7 @@ DATABASES = {
         "CONN_MAX_AGE": 0,
         "CONN_HEALTH_CHECKS": False,
         "TEST": {
-            "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
+            "MIRROR": "direct",
         },
     },
     # Direct: used for test DB creation + migrations (PgBouncer can't CREATE DB)
@@ -72,7 +72,9 @@ DATABASES = {
     },
 }
 
-DATABASE_ROUTERS = []
+# DO NOT OVERRIDE DATABASE_ROUTERS. 
+# Keep common.db_routers.PgBouncerRouter from base.py
+# so tests perfectly mirror production routing.
 
 # ---------------------------------------------------------------------------
 # CACHES — In-memory for tests

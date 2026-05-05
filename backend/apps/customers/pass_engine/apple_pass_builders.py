@@ -301,21 +301,23 @@ def _build_fields_for_type(card, customer_pass) -> dict:
 
 
 def _build_locations(card) -> list:
-    """Build location array from card.locations for geo-push."""
+    """Build location array from tenant locations for geo-push."""
     locations = []
-    if not card.locations:
+    
+    # Locations belong to the Tenant, not the Card
+    tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
+    
+    if not tenant_locations:
         return locations
-    for loc in card.locations[:10]:  # Apple max: 10
+        
+    for loc in tenant_locations:  # Apple max: 10
         try:
-            lat = float(loc.get("lat", 0))
-            lng = float(loc.get("lng", 0))
-            text = loc.get("name", card.name)
-            if lat and lng:
+            if loc.latitude and loc.longitude:
                 locations.append(
                     {
-                        "latitude": lat,
-                        "longitude": lng,
-                        "relevantText": f"Estas cerca de {text}!",
+                        "latitude": float(loc.latitude),
+                        "longitude": float(loc.longitude),
+                        "relevantText": f"Estas cerca de {loc.name}!",
                     }
                 )
         except (ValueError, TypeError):
