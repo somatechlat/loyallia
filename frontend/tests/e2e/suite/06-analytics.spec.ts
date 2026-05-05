@@ -8,9 +8,8 @@ test.describe('Analytics — OWNER @owner', () => {
 
   test('OWNER sees analytics dashboard with metrics @owner', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    await expect(page.locator('h1').first()).toContainText('Analytics');
-    // Should have stat cards or charts
+    // Wait for the page-title heading to render (the page shows "Analíticas")
+    await expect(page.locator('h1.page-title')).toContainText('Analíticas', { timeout: 15000 });
     const mainContent = page.locator('main');
     await expect(mainContent).toBeVisible();
   });
@@ -21,8 +20,7 @@ test.describe('Analytics — MANAGER Read @manager', () => {
 
   test('MANAGER sees analytics dashboard @manager', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    await expect(page.locator('h1').first()).toContainText('Analytics');
+    await expect(page.locator('h1.page-title')).toContainText('Analíticas', { timeout: 15000 });
   });
 
 });

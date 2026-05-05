@@ -16,9 +16,9 @@ class TokenManager {
   }
 
   setTokens(accessToken: string, refreshToken: string): void {
-    const isProd = process.env.NODE_ENV === 'production';
-    Cookies.set('access_token', accessToken, { expires: 1/24, secure: isProd, sameSite: 'strict' });
-    Cookies.set('refresh_token', refreshToken, { expires: 7, secure: isProd, sameSite: 'strict' });
+    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    Cookies.set('access_token', accessToken, { expires: 1/24, secure: isSecure, sameSite: 'strict' });
+    Cookies.set('refresh_token', refreshToken, { expires: 7, secure: isSecure, sameSite: 'strict' });
     this.scheduleRefresh();
   }
 
@@ -36,8 +36,8 @@ class TokenManager {
       this.refreshPromise = axios
         .post('/api/v1/auth/refresh/', { refresh_token: refresh }, { withCredentials: true })
         .then(({ data }) => {
-          const isProd = process.env.NODE_ENV === 'production';
-          Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
+          const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isSecure, sameSite: 'strict' });
           this.scheduleRefresh();
           return data.access_token;
         })
