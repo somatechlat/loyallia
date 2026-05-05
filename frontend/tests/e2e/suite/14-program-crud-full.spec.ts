@@ -170,8 +170,9 @@ test.describe('Program Dashboard Stats @owner', () => {
   test('Programs page shows correct statistics @owner', async ({ page }) => {
     await gotoPrograms(page);
 
-    // Check that program cards are listed
-    const cards = page.locator('.card, [class*="card"]');
+    // Check that program cards are listed — cards use .card-hover class
+    const cards = page.locator('.card-hover');
+    await cards.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     const count = await cards.count();
     expect(count).toBeGreaterThan(0);
   });

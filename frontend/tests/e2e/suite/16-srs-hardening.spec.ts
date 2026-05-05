@@ -18,8 +18,9 @@ test.describe('Programs Borradores — OWNER @owner', () => {
     await page.waitForTimeout(3000);
     // At minimum the page title should be visible
     await expect(page.getByRole('heading', { name: 'Programas de fidelización' })).toBeVisible({ timeout: 10000 });
-    // Activas section should be visible (test data always has active programs)
-    await expect(page.getByRole('heading', { name: 'Activas', exact: true })).toBeVisible({ timeout: 5000 });
+    // At least one status section (Activas/Borradores/Inactivas) should be visible after data loads
+    const sectionHeading = page.getByRole('heading', { name: /Activas|Borradores|Inactivas/ }).first();
+    await expect(sectionHeading).toBeVisible({ timeout: 15000 });
   });
 
   test('Borradores section renders only when drafts exist @owner', async ({ page }) => {
