@@ -1,0 +1,25 @@
+# Listmonk configuration for Loyallia
+# Shares PostgreSQL with main app (separate schema)
+
+[app]
+address = "0.0.0.0:9000"
+admin_username = "loyallia"
+admin_password = ""  # Set via LISTMONK_ADMIN_PASSWORD env var
+
+[db]
+host = "postgres"
+port = 5432
+user = "loyallia"
+password = ""  # Set via DB_PASSWORD env var
+database = "loyallia"
+ssl_mode = "disable"
+max_open = 10
+max_idle = 5
+max_lifetime = "300s"
+
+# Rate limiting — conservative defaults to protect sender reputation
+[smtp]
+max_conns = 2
+idle_timeout = "15s"
+wait_timeout = "5s"
+max_msg_retries = 3
