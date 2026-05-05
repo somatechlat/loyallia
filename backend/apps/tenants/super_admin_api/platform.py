@@ -298,7 +298,9 @@ def broadcast_announcement(request, payload: BroadcastIn):
         )
     )
     if not owner_emails:
-        return MessageOut(success=True, message=get_message("ADMIN_BROADCAST_NO_RECIPIENTS"))
+        return MessageOut(
+            success=True, message=get_message("ADMIN_BROADCAST_NO_RECIPIENTS")
+        )
 
     messages = tuple(
         (payload.subject, payload.message, "noreply@loyallia.com", [email])

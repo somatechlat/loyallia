@@ -344,11 +344,10 @@ def add_team_member(request, payload: TeamMemberCreateIn):
         from_email = getattr(
             django_settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com"
         )
-        primary_color = (
-            getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
-        )
+        primary_color = getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
 
         from datetime import datetime as _dt
+
         current_year = _dt.now().year
 
         html_content = f"""<!DOCTYPE html>

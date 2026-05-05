@@ -80,6 +80,34 @@ def readiness_check(request: HttpRequest):
     return DjJsonResponse(response, status=status_code)
 
 
+@api.get("/health/celery/", auth=None, tags=["System"])
+def celery_health(request: HttpRequest):
+    """Celery worker health probe.
+    Returns HTTP 200 if at least one worker responds to ping, 503 otherwise.
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+    try:
+        from loyallia.celery import app as celery_app
+
+        inspector = celery_app.control.inspect(timeout=2.0)
+        ping_result = inspector.ping()
+        if ping_result:
+            workers = list(ping_result.keys())
+            return {"status": "ok", "workers": len(workers), "nodes": workers}
+        else:
+            logger.warning("Celery health: no workers responded to ping")
+            from django.http import JsonResponse as DjJsonResponse
+
+            return DjJsonResponse({"status": "no_workers", "workers": 0}, status=503)
+    except Exception as e:
+        logger.error("Celery health check failed: %s", e)
+        from django.http import JsonResponse as DjJsonResponse
+
+        return DjJsonResponse({"status": "error", "detail": str(e)}, status=503)
+
+
 # --- Mount all app routers ---
 from apps.agent_api.api import router as agent_api_router
 from apps.analytics.api import router as analytics_router
@@ -94,6 +122,7 @@ from apps.billing.payment_api import router as billing_payment_router
 from apps.cards import api as cards_api
 from apps.cards.api import router as cards_router
 from apps.customers.api import router as customers_router
+from apps.customers.export_api import router as customer_export_router
 from apps.customers.segment_api import router as segment_router
 from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
@@ -107,6 +136,7 @@ api.add_router("/auth/", users_router, tags=["Authentication"])
 api.add_router("/tenants/", tenants_router, tags=["Tenants"])
 api.add_router("/programs/", cards_router, tags=["Loyalty Programs"])
 api.add_router("/customers/", customers_router, tags=["Customers"])
+api.add_router("/customers/", customer_export_router, tags=["Customer Export"])
 api.add_router("/customers/", segment_router, tags=["Customer Segments"])
 api.add_router("/scanner/", scanner_router, tags=["Scanner"])
 api.add_router("/transactions/", transactions_router, tags=["Transactions"])
