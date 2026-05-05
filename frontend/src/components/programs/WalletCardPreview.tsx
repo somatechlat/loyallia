@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BARCODE_TYPES, CARD_TYPES, CardTypeIcon, APPLE_PASS_STYLES, adjustColor } from './constants';
+import { BARCODE_TYPES, CARD_TYPES, CardTypeIcon, APPLE_PASS_STYLES, GOOGLE_WALLET_TYPES, APPLE_IMAGE_SUPPORT, adjustColor } from './constants';
 
 /* ─── Barcode SVG Previews ────────────────────────────────────────── */
 function BarcodeSvg({ type, size = 48 }: { type: string; size?: number }) {
@@ -197,11 +197,21 @@ export function WalletProviderSelector({
           <div className="flex justify-between gap-3">
             <div>
               <p className="text-xs font-semibold text-surface-900 dark:text-white">Estilo Apple Pass</p>
-              <p className="text-xs text-surface-500">Derivado del tipo de programa: {applePassStyle}</p>
+              <p className="text-xs text-surface-500">Derivado del tipo de programa: <span className="font-mono text-brand-600">{applePassStyle}</span></p>
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 bg-brand-100 dark:bg-brand-900/30 rounded-full px-2 py-1 h-fit">
               PKPass
             </span>
+          </div>
+
+          {/* Image compatibility note — per Apple docs */}
+          <div className="text-xs text-surface-500 bg-surface-100 dark:bg-surface-800 rounded-lg p-2.5">
+            <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">Imagen:</p>
+            {APPLE_IMAGE_SUPPORT[applePassStyle]?.strip
+              ? <p>✅ <span className="font-medium">strip.png</span> — imagen panorámica (375×123pt). Visible en iPhone.</p>
+              : <p>✅ <span className="font-medium">thumbnail.png</span> — miniatura (90×90pt). Visible en iPhone.</p>
+            }
+            <p className="mt-1 opacity-70">⌚ Apple Watch: imágenes no se muestran.</p>
           </div>
 
           <label className="flex items-start justify-between gap-4">
@@ -232,6 +242,28 @@ export function WalletProviderSelector({
               id="apple-nfc-auth-required"
             />
           </label>
+        </div>
+      )}
+
+      {value === 'google' && (
+        <div className="rounded-xl border border-surface-200 dark:border-surface-700 p-4 space-y-3 bg-surface-50 dark:bg-surface-900/40">
+          <div className="flex justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-surface-900 dark:text-white">Tipo Google Wallet</p>
+              <p className="text-xs text-surface-500">
+                <span className="font-mono text-brand-600">{GOOGLE_WALLET_TYPES[cardType]?.type || 'LoyaltyClass'}</span>
+                {' — '}{GOOGLE_WALLET_TYPES[cardType]?.label || 'Programa'}
+              </p>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-green-600 bg-green-100 dark:bg-green-900/30 rounded-full px-2 py-1 h-fit">
+              JWT
+            </span>
+          </div>
+          <div className="text-xs text-surface-500 bg-surface-100 dark:bg-surface-800 rounded-lg p-2.5">
+            <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">Hero Image:</p>
+            <p>✅ Imagen de ancho completo soportada en todos los tipos Google.</p>
+            <p className="mt-1">📐 Layout: <span className="font-mono">cardTemplateOverride</span> con filas de 1-3 campos.</p>
+          </div>
         </div>
       )}
     </div>
@@ -277,11 +309,11 @@ function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcod
             {passStyle === 'coupon' && (
               <div className="w-full h-1.5" style={{ background: `repeating-linear-gradient(90deg, transparent 0px, transparent 4px, ${textColor}20 4px, ${textColor}20 8px)` }} />
             )}
-            {/* Strip/Hero image */}
+            {/* Strip image — only storeCard & coupon (per Apple docs) */}
             {heroImage && (passStyle === 'storeCard' || passStyle === 'coupon') && (
               <img src={heroImage} alt="Strip" className="w-full h-14 object-cover" />
             )}
-            {/* Header: Logo + Org Name */}
+            {/* Header: Logo + Org Name + Thumbnail (generic) */}
             <div className="px-4 pt-3 flex items-center gap-2.5">
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="w-10 h-10 rounded-xl object-cover border border-white/20 shadow" />
@@ -296,23 +328,37 @@ function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcod
                 </p>
                 <p className="text-sm font-bold truncate leading-tight">{form.name || 'Nombre del Programa'}</p>
               </div>
-              {/* Header field (visible when stacked) */}
+              {/* Header field (type-specific, visible when stacked) */}
               <div className="text-right shrink-0">
-                <p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PUNTOS</p>
-                <p className="text-sm font-black">150</p>
+                {form.card_type === 'stamp' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">SELLOS</p><p className="text-sm font-black">0/10</p></>}
+                {form.card_type === 'cashback' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">SALDO</p><p className="text-sm font-black">$0.00</p></>}
+                {form.card_type === 'coupon' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">OFERTA</p><p className="text-sm font-black">Cupón</p></>}
+                {form.card_type === 'vip_membership' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">NIVEL</p><p className="text-sm font-black">VIP</p></>}
+                {form.card_type === 'referral_pass' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">REFERIDOS</p><p className="text-sm font-black">0</p></>}
+                {form.card_type === 'discount' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">NIVEL</p><p className="text-sm font-black">Bronce</p></>}
+                {form.card_type === 'gift_certificate' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">SALDO</p><p className="text-sm font-black">$0</p></>}
+                {form.card_type === 'affiliate' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PROGRAMA</p><p className="text-sm font-black truncate max-w-[60px]">{form.name?.slice(0,6) || '—'}</p></>}
+                {form.card_type === 'corporate_discount' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESC.</p><p className="text-sm font-black">0%</p></>}
+                {form.card_type === 'multipass' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">USOS</p><p className="text-sm font-black">10/10</p></>}
               </div>
+              {/* Thumbnail image — generic passes only (per Apple docs) */}
+              {passStyle === 'generic' && heroImage && (
+                <img src={heroImage} alt="Thumbnail" className="w-10 h-10 rounded-lg object-cover border border-white/20" />
+              )}
             </div>
-            {/* Primary / Secondary Fields */}
+            {/* Primary / Secondary Fields — type-specific */}
             <div className="px-4 py-2.5 space-y-1.5">
               <div className="flex justify-between">
-                <div>
-                  <p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p>
-                  <p className="text-xs font-bold opacity-90">Juan Pérez</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO</p>
-                  <p className="text-xs font-bold opacity-90">2024</p>
-                </div>
+                {form.card_type === 'stamp' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PROGRESO</p><p className="text-xs font-bold opacity-90">⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'cashback' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CASHBACK</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'coupon' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">{form.description || 'Descuento especial'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'vip_membership' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PLAN</p><p className="text-xs font-bold opacity-90">Club VIP</p></div></>}
+                {form.card_type === 'referral_pass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">TU CÓDIGO</p><p className="text-xs font-bold opacity-90 font-mono">REF-XXXX</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMBAJADOR</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'gift_certificate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CERTIFICADO</p><p className="text-xs font-bold opacity-90">{form.name || 'Regalo'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">BENEFICIARIO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'affiliate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">AFILIADO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO DESDE</p><p className="text-xs font-bold opacity-90">—</p></div></>}
+                {form.card_type === 'corporate_discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPRESA</p><p className="text-xs font-bold opacity-90">{form.name || 'Empresa'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPLEADO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'multipass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MULTIPASE</p><p className="text-xs font-bold opacity-90">{form.name || 'Paquete'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
               </div>
               {form.description && (
                 <p className="text-[9px] opacity-50 line-clamp-1">{form.description}</p>
@@ -377,15 +423,33 @@ function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barco
               <p className="text-base font-bold text-center leading-tight">{form.name || 'Nombre del Programa'}</p>
               <p className="text-[10px] opacity-50 mt-0.5">{selectedType?.label || 'Programa de Fidelidad'}</p>
             </div>
-            {/* Info rows — Material You style */}
+            {/* Info rows — type-specific, Material You style */}
             <div className="px-4 py-2 space-y-2 border-t border-white/10 mx-3">
               <div className="flex justify-between">
                 <span className="text-[9px] opacity-40 font-medium">Miembro</span>
                 <span className="text-[10px] font-semibold">Juan Pérez</span>
               </div>
+              {(form.card_type === 'stamp' || form.card_type === 'vip_membership' || form.card_type === 'affiliate') && (
+                <div className="flex justify-between">
+                  <span className="text-[9px] opacity-40 font-medium">Puntos</span>
+                  <span className="text-[10px] font-semibold">0</span>
+                </div>
+              )}
+              {(form.card_type === 'cashback' || form.card_type === 'gift_certificate' || form.card_type === 'multipass') && (
+                <div className="flex justify-between">
+                  <span className="text-[9px] opacity-40 font-medium">{form.card_type === 'multipass' ? 'Usos restantes' : 'Saldo'}</span>
+                  <span className="text-[10px] font-semibold">{form.card_type === 'multipass' ? '10' : '$0.00'}</span>
+                </div>
+              )}
+              {(form.card_type === 'coupon' || form.card_type === 'discount' || form.card_type === 'corporate_discount' || form.card_type === 'referral_pass') && (
+                <div className="flex justify-between">
+                  <span className="text-[9px] opacity-40 font-medium">{form.card_type === 'referral_pass' ? 'Referidos' : 'Descuento'}</span>
+                  <span className="text-[10px] font-semibold">{form.card_type === 'referral_pass' ? '0' : '—'}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="text-[9px] opacity-40 font-medium">Puntos</span>
-                <span className="text-[10px] font-semibold">150</span>
+                <span className="text-[9px] opacity-40 font-medium">Tipo</span>
+                <span className="text-[10px] font-semibold">{GOOGLE_WALLET_TYPES[form.card_type]?.label || 'Programa'}</span>
               </div>
               {form.description && (
                 <p className="text-[9px] opacity-40 line-clamp-1 pt-1">{form.description}</p>
