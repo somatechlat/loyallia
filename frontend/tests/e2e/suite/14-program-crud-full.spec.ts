@@ -164,8 +164,8 @@ test.describe('Program CRUD - Full Lifecycle @owner', () => {
   });
 });
 
-test.describe('Program Dashboard Stats', () => {
-  test('Programs page shows correct statistics', async ({ page }) => {
+test.describe('Program Dashboard Stats @owner', () => {
+  test('Programs page shows correct statistics @owner', async ({ page }) => {
     await gotoPrograms(page);
 
     // Check that program cards are listed
