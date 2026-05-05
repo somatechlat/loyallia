@@ -520,9 +520,9 @@ def set_whatsapp_override(request, tenant_id: str):
     )
 
     if payload.daily_limit_override == 0:
-        msg = "Override removido — usando límite del plan"
+        msg = get_message("ADMIN_WA_OVERRIDE_REMOVED")
     else:
-        msg = f"Override WA establecido: {payload.daily_limit_override} msgs/día"
+        msg = get_message("ADMIN_WA_OVERRIDE_SET", limit=payload.daily_limit_override)
 
     return MessageOut(success=True, message=msg)
 

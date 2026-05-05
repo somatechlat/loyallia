@@ -37,6 +37,8 @@ class PlanFeature:
     DATA_EXPORT = "data_export"
     WHATSAPP_CAMPAIGNS = "whatsapp_campaigns"
     EMAIL_CAMPAIGNS = "email_campaigns"
+    WALLET_CAMPAIGNS = "wallet_campaigns"
+    SMS_CAMPAIGNS = "sms_campaigns"
 
     ALL_FEATURES = [
         GEO_FENCING,
@@ -49,6 +51,8 @@ class PlanFeature:
         DATA_EXPORT,
         WHATSAPP_CAMPAIGNS,
         EMAIL_CAMPAIGNS,
+        WALLET_CAMPAIGNS,
+        SMS_CAMPAIGNS,
     ]
 
 
@@ -111,6 +115,11 @@ class SubscriptionPlan(TimestampedModel):
         default=0,
         verbose_name="Máx. emails/mes",
         help_text="Monthly email campaign quota via Listmonk. 0=disabled.",
+    )
+    max_sms_day = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. SMS/día",
+        help_text="Daily SMS quota via Twilio. 0=disabled.",
     )
 
     # Feature Flags (selectable in admin — REQ-PLAN-003)
@@ -341,6 +350,7 @@ class Subscription(TimestampedModel):
             "transactions_month": plan.max_transactions_month,
             "whatsapp_day": plan.max_whatsapp_day,
             "emails_month": plan.max_emails_month,
+            "sms_day": plan.max_sms_day,
         }
         return limit_map.get(resource, 0)
 

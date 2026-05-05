@@ -614,3 +614,11 @@ def send_inactive_reminders(days_inactive: int = 30) -> dict:
             logger.error("Reminder failed for %s: %s", customer.id, exc)
 
     return {"sent": sent, "days_inactive": days_inactive}
+
+
+# =============================================================================
+# RE-EXPORTS (split per Rule 245 — 650-line limit)
+# =============================================================================
+from apps.notifications.sms.tasks import send_sms_campaign  # noqa: E402, F401
+
+

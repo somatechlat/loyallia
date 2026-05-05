@@ -28,14 +28,18 @@ class AutomationTrigger(models.TextChoices):
 
 
 class AutomationAction(models.TextChoices):
-    """Actions that can be automated."""
+    """Actions that can be automated.
 
-    SEND_NOTIFICATION = "send_notification", "Send Notification"
+    LYL-SRS-009: All actions have REAL implementations — no stubs.
+    """
+
+    SEND_NOTIFICATION = "send_notification", "Send Push Notification"
     SEND_EMAIL = "send_email", "Send Email"
-    SEND_SMS = "send_sms", "Send SMS"
+    SEND_SMS = "send_sms", "Send SMS (Twilio)"
+    SEND_WHATSAPP = "send_whatsapp", "Send WhatsApp"
     ISSUE_REWARD = "issue_reward", "Issue Reward"
     UPDATE_SEGMENT = "update_segment", "Update Segment"
-    CREATE_CAMPAIGN = "create_campaign", "Create Campaign"
+    SEND_WALLET = "send_wallet", "Send Wallet Push"
 
 
 class Automation(TimestampedModel):
@@ -198,10 +202,14 @@ class Automation(TimestampedModel):
                 success = self._execute_send_email(customer, context)
             elif self.action == AutomationAction.SEND_SMS:
                 success = self._execute_send_sms(customer, context)
+            elif self.action == AutomationAction.SEND_WHATSAPP:
+                success = self._execute_send_whatsapp(customer, context)
             elif self.action == AutomationAction.ISSUE_REWARD:
                 success = self._execute_issue_reward(customer, context)
             elif self.action == AutomationAction.UPDATE_SEGMENT:
                 success = self._execute_update_segment(customer, context)
+            elif self.action == AutomationAction.SEND_WALLET:
+                success = self._execute_send_wallet(customer, context)
 
             if success:
                 # LYL-M-API-020: Use F() to prevent lost updates under concurrency
@@ -257,14 +265,183 @@ class Automation(TimestampedModel):
         return NotificationService.send_notification(notification)
 
     def _execute_send_email(self, customer, context) -> bool:
-        """Send email to customer."""
-        # Implementation would use email service
-        return True
+        """Send branded HTML email to customer via Django SMTP.
+
+        LYL-SRS-009: Real implementation using EmailMultiAlternatives.
+        Uses tenant branding (name, primary_color) for professional templates.
+        """
+        if not customer.email:
+            return False
+
+        from django.conf import settings
+        from django.core.mail import EmailMultiAlternatives
+
+        from apps.notifications.models import (
+            Notification,
+            NotificationChannel,
+            NotificationType,
+        )
+
+        subject = self.action_config.get("title", "Notificación")
+        body_text = self.action_config.get("message", "")
+        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
+        primary_color = getattr(self.tenant, "primary_color", "#6366f1")
+
+        # Create notification record for audit trail
+        Notification.objects.create(
+            tenant=self.tenant,
+            customer=customer,
+            notification_type=NotificationType.SYSTEM,
+            channel=NotificationChannel.EMAIL,
+            title=subject,
+            message=body_text[:500],
+        )
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f4f8; color:#1e293b; }}
+.container {{ max-width:560px; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }}
+.header {{ background: linear-gradient(135deg, {primary_color} 0%, #312e81 100%); padding:32px 24px; text-align:center; color:#fff; }}
+.header h1 {{ margin:0 0 4px; font-size:22px; font-weight:700; }}
+.content {{ padding:28px 24px; }}
+.content p {{ margin:0 0 16px; font-size:14px; line-height:1.65; color:#475569; }}
+.footer {{ padding:20px 24px; text-align:center; background:#f8fafc; border-top:1px solid #f1f5f9; }}
+.footer p {{ margin:0; font-size:11px; color:#94a3b8; }}
+</style></head>
+<body>
+<div class="container">
+<div class="header"><h1>{self.tenant.name}</h1></div>
+<div class="content"><p>{body_text}</p></div>
+<div class="footer"><p>Powered by Loyallia — Intelligent Rewards</p></div>
+</div>
+</body></html>"""
+
+        try:
+            msg = EmailMultiAlternatives(
+                subject=subject, body=body_text, from_email=from_email, to=[customer.email]
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send(fail_silently=False)
+            return True
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error(
+                "Automation email failed for %s: %s", customer.id, exc
+            )
+            return False
 
     def _execute_send_sms(self, customer, context) -> bool:
-        """Send SMS to customer."""
-        # Implementation would use SMS service
-        return True
+        """Send SMS via Twilio to customer.
+
+        LYL-SRS-009: Real implementation using apps.notifications.sms.client.
+        """
+        if not customer.phone:
+            return False
+
+        from apps.notifications.sms.client import is_sms_available, send_sms
+
+        if not is_sms_available():
+            import logging
+            logging.getLogger(__name__).warning(
+                "Twilio SMS not configured — cannot send automation SMS"
+            )
+            return False
+
+        title = self.action_config.get("title", "")
+        message = self.action_config.get("message", "")
+        full_msg = f"{title}: {message}" if title else message
+
+        result = send_sms(phone=customer.phone, message=full_msg)
+        return result.get("success", False)
+
+    def _execute_send_whatsapp(self, customer, context) -> bool:
+        """Send WhatsApp message via Baileys bridge.
+
+        LYL-SRS-009: Real implementation using the WhatsApp bridge client.
+        """
+        if not customer.phone:
+            return False
+
+        from apps.notifications.whatsapp.client import is_bridge_available, send_message
+
+        if not is_bridge_available():
+            import logging
+            logging.getLogger(__name__).warning(
+                "WhatsApp bridge not available — cannot send automation message"
+            )
+            return False
+
+        title = self.action_config.get("title", "")
+        message = self.action_config.get("message", "")
+        full_msg = f"*{title}*\n{message}" if title else message
+
+        try:
+            result = send_message(
+                tenant_id=str(self.tenant.id),
+                phone=customer.phone,
+                message=full_msg,
+            )
+            return result.get("success", False)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error(
+                "Automation WhatsApp failed for %s: %s", customer.id, exc
+            )
+            return False
+
+    def _execute_send_wallet(self, customer, context) -> bool:
+        """Send wallet push notification to customer's active passes.
+
+        LYL-SRS-009: Sends push via Google Wallet API + Apple APNs.
+        """
+        from apps.customers.models import CustomerPass
+
+        passes = CustomerPass.objects.filter(
+            customer=customer, is_active=True
+        ).select_related("card", "card__tenant")
+
+        if not passes.exists():
+            return False
+
+        title = self.action_config.get("title", "Notificación")
+        message = self.action_config.get("message", "")
+        push_sent = False
+
+        for pass_obj in passes:
+            try:
+                # Google Wallet push
+                from apps.customers.pass_engine.google_pass import send_push_notification
+
+                from django.conf import settings
+
+                action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
+                result = send_push_notification(
+                    pass_obj, header=title, body=message, action_url=action_url
+                )
+                if result.get("success"):
+                    push_sent = True
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Google wallet push failed for pass %s: %s", pass_obj.id, exc
+                )
+
+            try:
+                # Apple Wallet push — trigger pass re-download
+                from apps.customers.pass_engine.apple_push import notify_pass_updated
+
+                apple_count = notify_pass_updated(pass_obj)
+                if apple_count > 0:
+                    push_sent = True
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Apple wallet push failed for pass %s: %s", pass_obj.id, exc
+                )
+
+        return push_sent
 
     def _execute_issue_reward(self, customer, context) -> bool:
         """Issue a reward to customer."""

@@ -3,6 +3,8 @@ Loyallia — Notifications Models
 Push notifications, in-app notifications, and notification history.
 """
 
+from __future__ import annotations
+
 import uuid
 
 from django.db import models

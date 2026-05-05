@@ -143,3 +143,48 @@ def evaluate_inactive_triggers(days_threshold: int = 30) -> dict:
 
     logger.info("evaluate_inactive_triggers: %d automation triggers fired", triggered)
     return {"triggered": triggered, "days_threshold": days_threshold}
+
+
+@shared_task(
+    queue="default",
+    name="apps.automation.tasks.evaluate_birthday_triggers",
+)
+def evaluate_birthday_triggers() -> dict:
+    """Daily task: fire BIRTHDAY_COMING trigger for customers with birthdays
+    in the next 0-3 days.
+
+    LYL-SRS-009: Bridges the existing birthday notification system with the
+    automation engine so tenant owners can configure custom birthday actions
+    (email, SMS, WhatsApp, wallet push) beyond the default push notification.
+    """
+    from datetime import date, timedelta
+
+    from apps.automation.engine import fire_trigger
+    from apps.customers.models import Customer
+
+    today = date.today()
+    triggered = 0
+
+    # Check today + next 3 days for upcoming birthdays
+    for offset in range(4):
+        check_date = today + timedelta(days=offset)
+        customers = Customer.objects.filter(
+            date_of_birth__month=check_date.month,
+            date_of_birth__day=check_date.day,
+            is_active=True,
+        ).select_related("tenant")
+
+        for customer in customers.iterator(chunk_size=100):
+            count = fire_trigger(
+                trigger="birthday_coming",
+                customer=customer,
+                context={
+                    "days_until_birthday": offset,
+                    "birthday_date": str(check_date),
+                },
+            )
+            triggered += count
+
+    logger.info("evaluate_birthday_triggers: %d automation triggers fired", triggered)
+    return {"triggered": triggered}
+

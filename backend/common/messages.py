@@ -137,6 +137,9 @@ _MESSAGES_ES: dict[str, str] = {
     "CAMPAIGN_SENT": "Campaña enviada a {count} clientes.",
     "CAMPAIGN_SCHEDULED": "Campaña programada para {datetime}.",
     "CAMPAIGN_NOT_FOUND": "Campaña no encontrada.",
+    "CAMPAIGN_EMAIL_STARTED": "Campaña de EMAIL iniciada para segmento '{segment}'. Los clientes recibirán un correo electrónico.",
+    "CAMPAIGN_WALLET_STARTED": "Campaña de WALLET iniciada para segmento '{segment}'. Los clientes recibirán una notificación en sus tarjetas.",
+    "CAMPAIGN_WHATSAPP_STARTED": "Campaña de WhatsApp iniciada para segmento '{segment}'. Los mensajes se enviarán de forma progresiva (~8 por minuto).",
     # --- Automation ---
     "RULE_CREATED": "Regla de automatización '{name}' creada.",
     "RULE_UPDATED": "Regla actualizada.",
@@ -221,6 +224,8 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_PLAN_DEACTIVATED": "Plan desactivado exitosamente.",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No hay propietarios activos para enviar el anuncio.",
     "ADMIN_TENANT_CREATION_FAILED": "Error al crear el negocio: {detail}",
+    "ADMIN_WA_OVERRIDE_REMOVED": "Override removido — usando límite del plan.",
+    "ADMIN_WA_OVERRIDE_SET": "Override WA establecido: {limit} msgs/día.",
     # --- Agent API ---
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
@@ -229,6 +234,20 @@ _MESSAGES_ES: dict[str, str] = {
     "WHATSAPP_BRIDGE_UNAVAILABLE": "El servicio de WhatsApp no está disponible en este momento. Intente más tarde.",
     "WHATSAPP_SESSION_NOT_CONNECTED": "La sesión de WhatsApp no está conectada. Escanea el código QR primero.",
     "WHATSAPP_BRIDGE_ERROR": "Error al enviar mensaje de WhatsApp: {detail}",
+    # --- SMS / Twilio (LYL-SRS-009) ---
+    "SMS_CAMPAIGN_STARTED": "Campaña de SMS iniciada para segmento '{segment}'. Los mensajes se enviarán via Twilio.",
+    "SMS_SEND_FAILED": "Error al enviar SMS a {phone}: {detail}",
+    "SMS_NOT_CONFIGURED": "El servicio de SMS (Twilio) no está configurado. Configure las credenciales en Vault.",
+    "TWILIO_TEST_SENT": "SMS de prueba enviado exitosamente a {phone}.",
+    "TWILIO_TEST_FAILED": "Error al enviar SMS de prueba: {detail}",
+    # --- Data Export (LYL-SRS-009 / LOPDP Art.17) ---
+    "DATA_EXPORT_STARTED": "Exportación de datos iniciada. Se descargará un archivo ZIP con toda la información del negocio.",
+    "DATA_EXPORT_FAILED": "Error al exportar datos: {detail}",
+    "DATA_EXPORT_EMPTY": "No hay datos para exportar.",
+    # --- AI Assistant (LYL-SRS-009) ---
+    "AI_ASSISTANT_UNAVAILABLE": "El asistente de IA no está disponible en este momento. Intente más tarde.",
+    "AI_ASSISTANT_NOT_CONFIGURED": "El asistente de IA no está configurado. Configure la clave API en Vault.",
+    "AI_CHAT_ERROR": "Error al procesar mensaje de IA: {detail}",
 }
 
 
@@ -309,6 +328,9 @@ _MESSAGES_EN: dict[str, str] = {
     "CAMPAIGN_SENT": "Campaign sent to {count} customers.",
     "CAMPAIGN_SCHEDULED": "Campaign scheduled for {datetime}.",
     "CAMPAIGN_NOT_FOUND": "Campaign not found.",
+    "CAMPAIGN_EMAIL_STARTED": "Email campaign started for segment '{segment}'. Customers will receive an email.",
+    "CAMPAIGN_WALLET_STARTED": "Wallet campaign started for segment '{segment}'. Customers will receive a card notification.",
+    "CAMPAIGN_WHATSAPP_STARTED": "WhatsApp campaign started for segment '{segment}'. Messages will be sent progressively (~8 per minute).",
     "RULE_CREATED": "Automation rule '{name}' created.",
     "RULE_UPDATED": "Rule updated.",
     "RULE_ACTIVATED": "Rule '{name}' activated.",
@@ -380,9 +402,29 @@ _MESSAGES_EN: dict[str, str] = {
     "ADMIN_PLAN_DEACTIVATED": "Plan deactivated successfully.",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No active owners to broadcast to.",
     "ADMIN_TENANT_CREATION_FAILED": "Error creating tenant: {detail}",
+    "ADMIN_WA_OVERRIDE_REMOVED": "Override removed — using plan default.",
+    "ADMIN_WA_OVERRIDE_SET": "WA override set: {limit} msgs/day.",
     "AGENT_KEY_INVALID": "Agent API key is invalid or has expired.",
     "AGENT_KEY_CREATED": "Agent API key created successfully.",
     "AGENT_KEY_REVOKED": "Agent API key revoked.",
+    # --- WhatsApp Bridge (LYL-SRS-006) ---
+    "WHATSAPP_BRIDGE_UNAVAILABLE": "WhatsApp service is not available at this time. Please try later.",
+    "WHATSAPP_SESSION_NOT_CONNECTED": "WhatsApp session is not connected. Scan the QR code first.",
+    "WHATSAPP_BRIDGE_ERROR": "Error sending WhatsApp message: {detail}",
+    # --- SMS / Twilio (LYL-SRS-009) ---
+    "SMS_CAMPAIGN_STARTED": "SMS campaign started for segment '{segment}'. Messages will be sent via Twilio.",
+    "SMS_SEND_FAILED": "Error sending SMS to {phone}: {detail}",
+    "SMS_NOT_CONFIGURED": "SMS service (Twilio) is not configured. Set credentials in Vault.",
+    "TWILIO_TEST_SENT": "Test SMS sent successfully to {phone}.",
+    "TWILIO_TEST_FAILED": "Error sending test SMS: {detail}",
+    # --- Data Export (LYL-SRS-009 / LOPDP Art.17) ---
+    "DATA_EXPORT_STARTED": "Data export started. A ZIP file with all business data will be downloaded.",
+    "DATA_EXPORT_FAILED": "Error exporting data: {detail}",
+    "DATA_EXPORT_EMPTY": "No data to export.",
+    # --- AI Assistant (LYL-SRS-009) ---
+    "AI_ASSISTANT_UNAVAILABLE": "AI assistant is not available at this time. Please try later.",
+    "AI_ASSISTANT_NOT_CONFIGURED": "AI assistant is not configured. Set the API key in Vault.",
+    "AI_CHAT_ERROR": "Error processing AI message: {detail}",
 }
 
 

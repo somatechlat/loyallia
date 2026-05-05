@@ -29,6 +29,7 @@ export default function CampaignsPage() {
 
   const hasEmail = planFeatures.includes('email_campaigns');
   const hasWhatsApp = planFeatures.includes('whatsapp_campaigns');
+  const hasWallet = planFeatures.includes('wallet_campaigns');
 
   const load = () => {
     Promise.all([notificationsApi.campaigns(), customersApi.segments()])
@@ -55,11 +56,15 @@ export default function CampaignsPage() {
         setPlanFeatures(data.features || []);
         setPlanLimits(data.limits || {});
         setPlanUsage(data.usage || {});
-        // Default to first available channel
-        if (data.features?.includes('email_campaigns')) {
+        // Default to first available channel (LYL-SRS-008)
+        if (data.features?.includes('wallet_campaigns')) {
+          setCampaignType('wallet');
+        } else if (data.features?.includes('email_campaigns')) {
           setCampaignType('email');
+        } else if (data.features?.includes('whatsapp_campaigns')) {
+          setCampaignType('whatsapp');
         }
-      } catch { /* no plan info — default to wallet only */ }
+      } catch { /* no plan info — keep current default */ }
     })();
   }, []);
 
@@ -142,8 +147,10 @@ export default function CampaignsPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                <span><b>Wallet:</b> Notificación en tarjetas</span>
+                <span className={`w-2 h-2 rounded-full ${hasWallet ? 'bg-purple-500' : 'bg-surface-300'}`}></span>
+                <span className={hasWallet ? '' : 'opacity-50'}>
+                  <b>Wallet:</b> {hasWallet ? 'Notificación en tarjetas' : '🔒 No disponible'}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${hasWhatsApp ? 'bg-emerald-500' : 'bg-surface-300'}`}></span>
@@ -193,19 +200,29 @@ export default function CampaignsPage() {
                 </p>
               </button>
               
-              {/* Wallet — always available (core feature) */}
+              {/* Wallet — dynamically gated by wallet_campaigns (LYL-SRS-008) */}
               <button
                 type="button"
-                onClick={() => setCampaignType('wallet')} aria-pressed={campaignType === 'wallet'}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all ${campaignType === 'wallet' ? 'border-purple-500 bg-purple-50' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}
+                disabled={!hasWallet}
+                onClick={() => hasWallet && setCampaignType('wallet')} aria-pressed={campaignType === 'wallet'}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
+                  !hasWallet
+                    ? 'border-surface-200 dark:border-surface-700 opacity-50 cursor-not-allowed'
+                    : campaignType === 'wallet'
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                }`}
               >
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                   <span className="font-medium">Wallet</span>
+                  {!hasWallet && <span className="ml-auto text-xs">🔒</span>}
                 </div>
-                <p className="text-xs text-surface-500 mt-1">Notificación en tarjetas</p>
+                <p className="text-xs text-surface-500 mt-1">
+                  {hasWallet ? 'Notificación en tarjetas' : 'Actualizar plan →'}
+                </p>
               </button>
 
               {/* WhatsApp — locked if plan lacks whatsapp_campaigns */}

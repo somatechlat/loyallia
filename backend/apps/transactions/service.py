@@ -3,6 +3,8 @@ Loyallia — Transaction Service Layer
 Extracted business logic from API views for testability and reuse.
 """
 
+from __future__ import annotations
+
 import logging
 from decimal import Decimal
 from typing import Any
