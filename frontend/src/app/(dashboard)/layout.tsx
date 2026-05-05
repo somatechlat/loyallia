@@ -286,24 +286,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     // STAFF → scanner only
     if (user.role === 'STAFF' && !pathname.startsWith('/scanner')) {
-      window.location.replace('/scanner/scan');
+      router.replace('/scanner/scan');
       return;
     }
     // SUPER_ADMIN → superadmin only
     if (user.role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) {
-      window.location.replace('/superadmin');
+      router.replace('/superadmin');
       return;
     }
     // Non-superadmin → block superadmin routes
     if (user.role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) {
-      window.location.replace('/');
+      router.replace('/');
       return;
     }
     // RBAC: block non-owner routes
     if (isRestrictedRoute) {
-      window.location.replace('/');
+      router.replace('/');
     }
-  }, [loading, user, pathname, isRestrictedRoute]);
+  }, [loading, user, pathname, isRestrictedRoute, router]);
 
   if (loading) {
     return (

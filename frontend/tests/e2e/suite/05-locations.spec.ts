@@ -36,8 +36,10 @@ test.describe('Locations — MANAGER Read-Only @manager', () => {
 
   test('MANAGER sees locations page @manager', async ({ page }) => {
     await page.goto('/locations', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    await expect(page.locator('h1').first()).toContainText('Sucursales');
+    // Wait for the heading with extended timeout — map data can be slow
+    const heading = page.locator('h1').first();
+    await heading.waitFor({ state: 'visible', timeout: 20000 });
+    await expect(heading).toContainText('Sucursales');
   });
 
 });
