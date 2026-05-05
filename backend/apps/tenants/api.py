@@ -327,29 +327,31 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     )
 
     # Send welcome email with credentials
-    if True:
-        try:
-            from django.conf import settings as django_settings
-            from django.core.mail import EmailMultiAlternatives
+    try:
+        from django.conf import settings as django_settings
+        from django.core.mail import EmailMultiAlternatives
 
-            role_labels = {
-                "MANAGER": "Gerente",
-                "STAFF": "Personal / Cajero",
-            }
-            role_label = role_labels.get(payload.role, payload.role)
-            tenant_name = request.tenant.name
-            login_url = (
-                getattr(django_settings, "FRONTEND_URL", "https://rewards.loyallia.com")
-                + "/login"
-            )
-            from_email = getattr(
-                django_settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com"
-            )
-            primary_color = (
-                getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
-            )
+        role_labels = {
+            "MANAGER": "Gerente",
+            "STAFF": "Personal / Cajero",
+        }
+        role_label = role_labels.get(payload.role, payload.role)
+        tenant_name = request.tenant.name
+        login_url = (
+            getattr(django_settings, "FRONTEND_URL", "https://rewards.loyallia.com")
+            + "/login"
+        )
+        from_email = getattr(
+            django_settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com"
+        )
+        primary_color = (
+            getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
+        )
 
-            html_content = f"""<!DOCTYPE html>
+        from datetime import datetime as _dt
+        current_year = _dt.now().year
+
+        html_content = f"""<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
@@ -402,21 +404,21 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 </div>
 <div class="footer">
   <p>Powered by <a href="https://loyallia.com">Loyallia</a> — Intelligent Rewards</p>
-  <p style="margin-top:4px;">© 2024 {tenant_name}. Todos los derechos reservados.</p>
+  <p style="margin-top:4px;">© {current_year} {tenant_name}. Todos los derechos reservados.</p>
 </div>
 </div>
 </body></html>"""
 
-            msg = EmailMultiAlternatives(
-                subject=f"Bienvenido al equipo de {tenant_name}",
-                from_email=from_email,
-                to=[payload.email],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=True)
-            logger.info("Welcome email sent to %s", payload.email)
-        except Exception as exc:
-            logger.error("Failed to send welcome email to %s: %s", payload.email, exc)
+        msg = EmailMultiAlternatives(
+            subject=f"Bienvenido al equipo de {tenant_name}",
+            from_email=from_email,
+            to=[payload.email],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=True)
+        logger.info("Welcome email sent to %s", payload.email)
+    except Exception as exc:
+        logger.error("Failed to send welcome email to %s: %s", payload.email, exc)
 
     return {
         "success": True,
@@ -445,7 +447,7 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
 
     # Cannot edit self
     if member.id == request.user.id:
-        raise HttpError(400, "No puedes modificar tu propia cuenta desde esta pantalla")
+        raise HttpError(400, get_message("TEAM_CANNOT_EDIT_SELF"))
 
     update_fields = ["updated_at"]
 
@@ -473,7 +475,7 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
         request.tenant.name,
     )
 
-    return {"success": True, "message": "Miembro actualizado"}
+    return {"success": True, "message": get_message("TEAM_MEMBER_UPDATED")}
 
 
 @router.delete(
@@ -496,7 +498,7 @@ def delete_team_member(request, user_id: str):
 
     # Cannot delete self
     if member.id == request.user.id:
-        raise HttpError(400, "No puedes eliminar tu propia cuenta")
+        raise HttpError(400, get_message("TEAM_CANNOT_DELETE_SELF"))
 
     email = member.email
     member.delete()
@@ -508,4 +510,4 @@ def delete_team_member(request, user_id: str):
         request.tenant.name,
     )
 
-    return {"success": True, "message": "Miembro eliminado"}
+    return {"success": True, "message": get_message("TEAM_MEMBER_REMOVED")}

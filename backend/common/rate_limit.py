@@ -16,6 +16,8 @@ import logging
 
 from django.http import HttpRequest, JsonResponse
 
+from common.messages import get_message
+
 logger = logging.getLogger(__name__)
 
 # Rate limit rules: (path_prefix, key_type, max_requests, window_seconds)
@@ -188,7 +190,7 @@ class RateLimitMiddleware:
                     {
                         "success": False,
                         "error": "RATE_LIMIT_EXCEEDED",
-                        "message": "Demasiadas solicitudes. Intente de nuevo en un momento.",
+                        "message": get_message("RATE_LIMIT_EXCEEDED"),
                         "retry_after": ttl,
                     },
                     status=429,

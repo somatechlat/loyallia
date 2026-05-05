@@ -379,7 +379,7 @@ APPLE_WWDR_CERT_PATH = config(
     "APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem"
 )
 PASS_HMAC_SECRET = get_secret(
-    "pass_hmac_secret", env_fallback="PASS_HMAC_SECRET", default="change-me-hmac-secret"
+    "pass_hmac_secret", env_fallback="PASS_HMAC_SECRET", default=""
 )
 
 # APNs token-based auth (JWT) — for push notifications to iOS

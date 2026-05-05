@@ -134,7 +134,7 @@ def generate_and_store_qr(pass_obj) -> str:
     """
     from django.conf import settings
 
-    secret = getattr(settings, "PASS_HMAC_SECRET", "change-me-hmac-secret")
+    secret = settings.PASS_HMAC_SECRET
     token = generate_qr_token(serial=pass_obj.qr_code, secret=secret)
 
     # Render PNG

@@ -185,7 +185,14 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTOMATION_NOT_FOUND": "Automatización no encontrada.",
     # --- Team ---
     "TEAM_MEMBER_ADDED": "Miembro del equipo agregado exitosamente.",
+    "TEAM_MEMBER_UPDATED": "Miembro del equipo actualizado exitosamente.",
     "TEAM_MEMBER_REMOVED": "Miembro del equipo eliminado exitosamente.",
+    "TEAM_CANNOT_EDIT_SELF": "No puedes modificar tu propia cuenta desde esta pantalla.",
+    "TEAM_CANNOT_DELETE_SELF": "No puedes eliminar tu propia cuenta.",
+    # --- Users ---
+    "USER_NOT_FOUND": "Usuario no encontrado.",
+    # --- Rate Limiting ---
+    "RATE_LIMIT_EXCEEDED": "Demasiadas solicitudes. Intente de nuevo en un momento.",
     # --- Plan Enforcement ---
     "PLAN_LIMIT_EXCEEDED": "Has alcanzado el límite de tu plan para {resource} ({limit}). Actualiza tu plan para continuar.",
     "PLAN_FEATURE_UNAVAILABLE": "Esta función no está disponible en tu plan actual. Actualiza para acceder.",
@@ -334,7 +341,12 @@ _MESSAGES_EN: dict[str, str] = {
     "AUTOMATION_INVALID_ACTION": "Invalid action: {action}",
     "AUTOMATION_NOT_FOUND": "Automation not found.",
     "TEAM_MEMBER_ADDED": "Team member added successfully.",
+    "TEAM_MEMBER_UPDATED": "Team member updated successfully.",
     "TEAM_MEMBER_REMOVED": "Team member removed successfully.",
+    "TEAM_CANNOT_EDIT_SELF": "You cannot modify your own account from this screen.",
+    "TEAM_CANNOT_DELETE_SELF": "You cannot delete your own account.",
+    "USER_NOT_FOUND": "User not found.",
+    "RATE_LIMIT_EXCEEDED": "Too many requests. Please try again in a moment.",
     "PLAN_LIMIT_EXCEEDED": "You have reached the limit for {resource} ({limit}). Upgrade your plan to continue.",
     "PLAN_FEATURE_UNAVAILABLE": "This feature is not available in your current plan. Upgrade to access.",
     "PLAN_TRIAL_EXPIRED": "Your trial period has ended. Subscribe to continue using Loyallia.",
