@@ -23,7 +23,8 @@ fi
 
 chmod 0700 "$DATA_DIR"
 
-PRIMARY_CONNINFO="host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD:?}"
+POSTGRES_PASSWORD="$(cat /run/loyallia-vault/postgres_password)"
+PRIMARY_CONNINFO="host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD}"
 export PRIMARY_CONNINFO
 
 su-exec postgres sh -c '
