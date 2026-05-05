@@ -325,7 +325,12 @@ class AutomationActionTest(TestCase):
         result = auto._execute_send_email(self.customer, {})
         self.assertTrue(result)
 
-    def test_send_sms_action_returns_true(self):
+    @patch("apps.notifications.sms.client.is_sms_available", return_value=True)
+    @patch(
+        "apps.notifications.sms.client.send_sms",
+        return_value={"success": True, "sid": "SM_TEST"},
+    )
+    def test_send_sms_action_returns_true(self, mock_send, mock_avail):
         auto = make_automation(
             self.tenant,
             action=AutomationAction.SEND_SMS,
@@ -333,6 +338,7 @@ class AutomationActionTest(TestCase):
         )
         result = auto._execute_send_sms(self.customer, {})
         self.assertTrue(result)
+        mock_send.assert_called_once()
 
     def test_issue_reward_with_valid_program(self):
         auto = make_automation(

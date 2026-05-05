@@ -511,8 +511,13 @@ class TestAPICodeChanges(TestCase):
             content = f.read()
         self.assertIn("token_urlsafe(8)", content)
 
-    def test_google_config_no_client_id(self):
-        """google_oauth_config should not return client_id."""
+    def test_google_config_no_client_secret(self):
+        """google_oauth_config should NOT return client_secret (the actual secret).
+
+        NOTE: client_id IS a public identifier per Google OAuth2 documentation.
+        The frontend needs it for google.accounts.id.initialize().
+        Only client_SECRET must never be exposed via API.
+        """
         import os
 
         api_path = os.path.join(
@@ -520,8 +525,8 @@ class TestAPICodeChanges(TestCase):
         )
         with open(api_path) as f:
             content = f.read()
-        # Check that the config function doesn't include 'client_id' in return
-        self.assertNotIn('"client_id": client_id', content)
+        # SEC: client_secret must NEVER appear in the response
+        self.assertNotIn("client_secret", content)
 
     def test_invitation_uses_hashlib(self):
         """users_api.py should use hashlib for invitation token hashing."""

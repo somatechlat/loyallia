@@ -2,8 +2,11 @@
 Loyallia Django Settings -- Test Workbench
 
 Production-identical database path:
-  - Test DB creation → direct PostgreSQL (same as production migrations)
+  - Test DB creation + migrations → direct PostgreSQL (PgBouncer can't do DDL)
   - All test queries → PgBouncer (same as production runtime)
+
+SEC: Tests run through the same connection pooler as production to catch
+     real-world session/connection issues.
 
 Run `docker compose up -d` before running tests.
 """
@@ -44,25 +47,45 @@ if os.environ.get("VAULT_TOKEN_FILE") or os.environ.get("VAULT_ADDR"):
         pass
 
 DATABASES = {
-    # Direct PostgreSQL for tests — PgBouncer's transaction mode can't handle
-    # CREATE/DROP DATABASE or other DDL needed by the test framework.
-    # Production uses PgBouncer; tests don't need connection pooling.
+    # Default: PgBouncer — production-identical query path
     "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _db_name,
+        "USER": _db_user,
+        "PASSWORD": _db_password,
+        "HOST": _pgbouncer_host,
+        "PORT": _pgbouncer_port,
+        "CONN_MAX_AGE": 0,
+        "CONN_HEALTH_CHECKS": False,
+        "TEST": {
+            "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
+            # CREATE_DB: use the 'direct' alias (bypass PgBouncer for DDL)
+            "CREATE_DB": False,
+        },
+    },
+    # Direct: used for DDL (CREATE/DROP DATABASE, migrations)
+    # PgBouncer's transaction mode can't handle these operations
+    "direct": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": _db_name,
         "USER": _db_user,
         "PASSWORD": _db_password,
         "HOST": _pg_direct_host,
         "PORT": _pg_direct_port,
-        "CONN_MAX_AGE": 0,
-        "CONN_HEALTH_CHECKS": False,
         "TEST": {
             "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
         },
     },
 }
 
-DATABASE_ROUTERS = []
+# Route migrations to 'direct' — same router as production
+DATABASE_ROUTERS = ["common.db_routers.PgBouncerRouter"]
+
+# ---------------------------------------------------------------------------
+# CUSTOM TEST RUNNER — Handles PgBouncer DDL limitations
+# Creates/migrates test DB via 'direct', routes queries via PgBouncer
+# ---------------------------------------------------------------------------
+TEST_RUNNER = "common.test_runner.PgBouncerTestRunner"
 
 # ---------------------------------------------------------------------------
 # CACHES — In-memory for tests
