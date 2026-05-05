@@ -157,6 +157,18 @@ export const notificationsApi = {
   campaigns: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/campaigns/', { params }),
   createCampaign: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
   stats: () => api.get('/api/v1/notifications/stats/'),
+  // Campaign Analytics (LYL-SRS-006)
+  campaignRuns: () => api.get('/api/v1/notifications/campaigns/runs/'),
+  campaignResults: (runId: string) => api.get(`/api/v1/notifications/campaigns/${runId}/results/`),
+  campaignRecipients: (runId: string, params?: { status?: string; page?: number }) =>
+    api.get(`/api/v1/notifications/campaigns/${runId}/recipients/`, { params }),
+  campaignExportUrl: (runId: string) => `/api/v1/notifications/campaigns/${runId}/export/`,
+};
+
+export const whatsappApi = {
+  qr: (tenantId: string) => api.get(`/api/v1/whatsapp/qr/${tenantId}/`),
+  status: (tenantId: string) => api.get(`/api/v1/whatsapp/status/${tenantId}/`),
+  disconnect: (tenantId: string) => api.post(`/api/v1/whatsapp/disconnect/${tenantId}/`),
 };
 
 export const automationApi = {

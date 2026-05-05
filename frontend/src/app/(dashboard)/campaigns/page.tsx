@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { notificationsApi, customersApi } from '@/lib/api';
+import { notificationsApi, customersApi, whatsappApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
 import { uploadFile } from '@/lib/upload';
@@ -122,7 +122,7 @@ export default function CampaignsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                <span><b>WhatsApp:</b> Mensaje directo (Mock)</span>
+                <span><b>WhatsApp:</b> Mensaje directo vía puente</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
@@ -181,9 +181,32 @@ export default function CampaignsPage() {
                   </svg>
                   <span className="font-medium">WhatsApp</span>
                 </div>
-                <p className="text-xs text-surface-500 mt-1">Mensaje directo (Mock)</p>
+                <p className="text-xs text-surface-500 mt-1">Mensaje directo vía WhatsApp</p>
               </button>
             </div>
+
+            {/* WhatsApp Rate Info Banner (LYL-SRS-006) */}
+            {campaignType === 'whatsapp' && (
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">Límites de envío por WhatsApp</p>
+                    <ul className="mt-1 text-xs text-emerald-700 dark:text-emerald-300 space-y-1">
+                      <li>• Velocidad: ~8 mensajes por minuto (anti-bloqueo)</li>
+                      <li>• Máximo: 200 mensajes por hora</li>
+                      <li>• Los mensajes se envían de forma progresiva con pausas naturales</li>
+                      <li>• Debes escanear tu código QR de WhatsApp antes de enviar</li>
+                    </ul>
+                    <p className="text-[10px] text-emerald-500 dark:text-emerald-400 mt-2">Estos límites protegen tu número de ser bloqueado por WhatsApp.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <form onSubmit={sendCampaign} className="space-y-4">
@@ -311,7 +334,7 @@ export default function CampaignsPage() {
                 Cancelar
               </button>
               <button type="submit" className="btn-primary flex-1" disabled={sending} id="send-campaign-btn">
-                {sending ? <span className="spinner w-4 h-4" /> : `Enviar campaña ${campaignType === 'email' ? '(Email)' : campaignType === 'wallet' ? '(Wallet)' : '(WhatsApp Mock)'}`}
+                {sending ? <span className="spinner w-4 h-4" /> : `Enviar campaña ${campaignType === 'email' ? '(Email)' : campaignType === 'wallet' ? '(Wallet)' : '(WhatsApp)'}`}
               </button>
             </div>
           </form>

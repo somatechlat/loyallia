@@ -225,6 +225,10 @@ _MESSAGES_ES: dict[str, str] = {
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
     "AGENT_KEY_REVOKED": "Clave de API del agente revocada.",
+    # --- WhatsApp Bridge (LYL-SRS-006) ---
+    "WHATSAPP_BRIDGE_UNAVAILABLE": "El servicio de WhatsApp no está disponible en este momento. Intente más tarde.",
+    "WHATSAPP_SESSION_NOT_CONNECTED": "La sesión de WhatsApp no está conectada. Escanea el código QR primero.",
+    "WHATSAPP_BRIDGE_ERROR": "Error al enviar mensaje de WhatsApp: {detail}",
 }
 
 
