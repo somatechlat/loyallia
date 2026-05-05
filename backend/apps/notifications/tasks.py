@@ -2,7 +2,7 @@
 Loyallia — Notifications Celery Tasks (apps/notifications/tasks.py)
 
 Async delivery of email campaigns, wallet push notifications, WhatsApp
-mock campaigns, birthday notifications, and inactive customer reminders.
+campaigns via Baileys bridge, birthday notifications, and inactive customer reminders.
 
 Architecture:
     All tasks are idempotent and use Celery retry with exponential backoff.
@@ -361,10 +361,10 @@ def send_wallet_notification_campaign(
     bind=True,
     max_retries=1,
     default_retry_delay=300,
-    queue="push_delivery",
+    queue="whatsapp_delivery",
     name="apps.notifications.tasks.send_whatsapp_campaign",
-    soft_time_limit=600,
-    time_limit=660,
+    soft_time_limit=3600,  # 1 hour for large campaigns
+    time_limit=3660,
 )
 def send_whatsapp_campaign(
     self,
@@ -374,19 +374,29 @@ def send_whatsapp_campaign(
     segment_id: str = "all",
     image_url: str = "",
 ) -> dict:
-    """LYL-M-API-019: Async WhatsApp mock campaign — creates in-app notifications.
+    """LYL-SRS-006: WhatsApp campaign via Baileys bridge with per-message tracking.
 
-    Moved from synchronous loop in API endpoint to Celery task.
-    Ready for future integration with WhatsApp Business API.
+    Creates a CampaignRun and CampaignDeliveryLog rows, then sends messages
+    through the WhatsApp bridge. The bridge handles rate limiting and jitter
+    internally, so this task simply enqueues messages and tracks results.
+
+    If the bridge is unavailable, falls back to creating in-app notifications.
     """
     import uuid
 
+    from django.utils import timezone
+
     from apps.customers.models import Customer
     from apps.notifications.models import (
+        CampaignDeliveryLog,
+        CampaignRun,
+        CampaignStatus,
+        DeliveryStatus,
         Notification,
         NotificationChannel,
         NotificationType,
     )
+    from apps.notifications.whatsapp import client as wa_client
     from apps.tenants.models import Tenant
 
     try:
@@ -400,24 +410,138 @@ def send_whatsapp_campaign(
     audience = _apply_segment_filter(base_qs, segment_id)
     total = audience.count()
 
-    succeeded = 0
-    for customer in audience.iterator(chunk_size=50):
-        try:
-            Notification.objects.create(
-                tenant=tenant,
-                customer=customer,
-                notification_type=NotificationType.MARKETING,
-                channel=NotificationChannel.IN_APP,
-                title=f"[WhatsApp] {title}",
-                message=message[:500],
-                action_url=image_url,
-            )
-            succeeded += 1
-        except Exception as exc:
-            logger.error("WhatsApp campaign failed for %s: %s", customer.id, exc)
+    # Create CampaignRun record
+    campaign_run = CampaignRun.objects.create(
+        tenant=tenant,
+        channel=NotificationChannel.WHATSAPP,
+        title=title,
+        message_preview=message[:500],
+        segment_id=segment_id,
+        status=CampaignStatus.IN_PROGRESS,
+        total_recipients=total,
+        started_at=timezone.now(),
+    )
 
-    logger.info("WhatsApp campaign complete: %d/%d", succeeded, total)
-    return {"success": True, "attempted": total, "succeeded": succeeded}
+    # Check bridge availability
+    bridge_available = wa_client.is_bridge_available()
+    if not bridge_available:
+        logger.warning(
+            "WhatsApp bridge unavailable for tenant %s — falling back to in-app",
+            tenant_id,
+        )
+
+    succeeded = 0
+    failed = 0
+
+    for customer in audience.iterator(chunk_size=50):
+        # Create delivery log row (status=QUEUED)
+        delivery_log = CampaignDeliveryLog.objects.create(
+            campaign_run=campaign_run,
+            customer=customer,
+            recipient_phone=customer.phone or "",
+            recipient_email=customer.email or "",
+            recipient_name=f"{customer.first_name} {customer.last_name}".strip(),
+            status=DeliveryStatus.QUEUED,
+        )
+
+        if bridge_available and customer.phone:
+            try:
+                result = wa_client.send_message(
+                    tenant_id=tenant_id,
+                    phone=customer.phone,
+                    message=message[:500],
+                    media_url=image_url or None,
+                    metadata={
+                        "delivery_log_id": str(delivery_log.id),
+                        "campaign_run_id": str(campaign_run.id),
+                    },
+                )
+                # Bridge accepted the message into its queue
+                delivery_log.status = DeliveryStatus.SENT
+                delivery_log.sent_at = timezone.now()
+                delivery_log.external_message_id = result.get("job_id", "")
+                delivery_log.save(
+                    update_fields=[
+                        "status", "sent_at", "external_message_id",
+                    ]
+                )
+                succeeded += 1
+            except Exception as exc:
+                error_msg = str(exc)[:500]
+                logger.error(
+                    "WhatsApp send failed for customer %s: %s",
+                    customer.id,
+                    error_msg,
+                )
+                delivery_log.status = DeliveryStatus.FAILED
+                delivery_log.failed_at = timezone.now()
+                delivery_log.error_code = "BRIDGE_ERROR"
+                delivery_log.error_message = error_msg
+                delivery_log.save(
+                    update_fields=[
+                        "status", "failed_at", "error_code", "error_message",
+                    ]
+                )
+                failed += 1
+        else:
+            # No phone or bridge down — create in-app fallback
+            if not customer.phone:
+                delivery_log.status = DeliveryStatus.FAILED
+                delivery_log.failed_at = timezone.now()
+                delivery_log.error_code = "NO_PHONE"
+                delivery_log.error_message = "Cliente sin número de teléfono"
+                delivery_log.save(
+                    update_fields=[
+                        "status", "failed_at", "error_code", "error_message",
+                    ]
+                )
+                failed += 1
+            else:
+                # Bridge unavailable — queue as in-app notification
+                Notification.objects.create(
+                    tenant=tenant,
+                    customer=customer,
+                    notification_type=NotificationType.MARKETING,
+                    channel=NotificationChannel.IN_APP,
+                    title=f"[WhatsApp] {title}",
+                    message=message[:500],
+                    action_url=image_url,
+                )
+                delivery_log.status = DeliveryStatus.FAILED
+                delivery_log.failed_at = timezone.now()
+                delivery_log.error_code = "BRIDGE_UNAVAILABLE"
+                delivery_log.error_message = "Puente WhatsApp no disponible — creada notificación in-app"
+                delivery_log.save(
+                    update_fields=[
+                        "status", "failed_at", "error_code", "error_message",
+                    ]
+                )
+                failed += 1
+
+    # Finalize campaign run
+    campaign_run.sent_count = succeeded
+    campaign_run.failed_count = failed
+    campaign_run.status = CampaignStatus.COMPLETED
+    campaign_run.completed_at = timezone.now()
+    if not bridge_available:
+        campaign_run.error_summary = "Bridge unavailable — messages created as in-app notifications"
+    campaign_run.save(
+        update_fields=[
+            "sent_count", "failed_count", "status", "completed_at", "error_summary",
+        ]
+    )
+
+    logger.info(
+        "WhatsApp campaign %s complete: %d/%d sent, %d failed",
+        campaign_run.id, succeeded, total, failed,
+    )
+    return {
+        "success": True,
+        "campaign_run_id": str(campaign_run.id),
+        "attempted": total,
+        "succeeded": succeeded,
+        "failed": failed,
+    }
 
 
 @shared_task(

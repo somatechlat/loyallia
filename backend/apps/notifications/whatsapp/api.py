@@ -81,7 +81,16 @@ class SessionWebhookIn(Schema):
 
 
 def _require_tenant(request):
-    """Get the tenant from the authenticated user."""
+    """Get the tenant from the authenticated user. OWNER only.
+
+    SEC: WhatsApp session management is restricted to OWNER role.
+    MANAGER and STAFF must not be able to pair/disconnect sessions.
+    """
+    from common.permissions import is_owner
+
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
     user = request.user
     if not hasattr(user, "tenant") or not user.tenant:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
