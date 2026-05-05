@@ -141,7 +141,151 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             ],
         }
 
+    elif card.card_type == "discount":
+        # Discount cards use tiered progression from card.metadata["tiers"]
+        # pass_data stores "discount_tier" (current tier name) and "total_spent"
+        tiers = metadata.get("tiers", [])
+        current_tier = pass_data.get("discount_tier", "")
+        current_discount = 0
+        for tier in tiers:
+            if tier.get("tier_name") == current_tier:
+                current_discount = tier.get("discount_percentage", 0)
+                break
+        if not current_tier and tiers:
+            current_tier = tiers[0].get("tier_name", "Básico")
+            current_discount = tiers[0].get("discount_percentage", 0)
+
+        return {
+            "headerFields": [
+                {"key": "tier", "label": "NIVEL", "value": current_tier.upper() or "BÁSICO"}
+            ],
+            "primaryFields": [
+                {"key": "discount", "label": "DESCUENTO", "value": f"{current_discount}%"}
+            ],
+            "secondaryFields": [
+                {"key": "customer", "label": "CLIENTE", "value": customer_name},
+                {"key": "program", "label": "PROGRAMA", "value": card.name},
+            ],
+            "backFields": [
+                {
+                    "key": "tiers_info",
+                    "label": "Niveles de descuento",
+                    "value": "\n".join(
+                        f"{t.get('tier_name', '?')}: {t.get('discount_percentage', 0)}% "
+                        f"(umbral: ${t.get('threshold', 0)})"
+                        for t in tiers
+                    )
+                    or "Sin niveles configurados",
+                },
+                {"key": "desc", "label": "Descripcion", "value": card.description or ""},
+            ],
+        }
+
+    elif card.card_type == "affiliate":
+        # Affiliate/membership card — generic Apple style with member info
+        member_since = pass_data.get("enrolled_date", "")
+        affiliate_code = pass_data.get("affiliate_code", "N/A")
+        return {
+            "headerFields": [
+                {"key": "program", "label": "PROGRAMA", "value": card.name}
+            ],
+            "primaryFields": [
+                {"key": "member", "label": "AFILIADO", "value": customer_name}
+            ],
+            "secondaryFields": [
+                {"key": "code", "label": "CÓDIGO", "value": affiliate_code},
+                {"key": "since", "label": "MIEMBRO DESDE", "value": member_since or "—"},
+            ],
+            "backFields": [
+                {
+                    "key": "benefits",
+                    "label": "Beneficios",
+                    "value": ", ".join(metadata.get("benefits", [])) or card.description or "",
+                },
+            ],
+        }
+
+    elif card.card_type == "gift_certificate":
+        # Gift certificate — storeCard style showing balance
+        # Prefers typed column gift_balance, falls back to pass_data
+        balance = pass_data.get("gift_balance", "0")
+        currency = metadata.get("currency", "USD")
+        return {
+            "headerFields": [
+                {
+                    "key": "balance",
+                    "label": "SALDO",
+                    "value": f"${balance}",
+                    "currencyCode": currency,
+                }
+            ],
+            "primaryFields": [
+                {"key": "program", "label": "CERTIFICADO", "value": card.name}
+            ],
+            "secondaryFields": [
+                {"key": "recipient", "label": "BENEFICIARIO", "value": customer_name},
+            ],
+            "backFields": [
+                {
+                    "key": "expiry",
+                    "label": "Expira en",
+                    "value": f"{metadata.get('expiry_days', 365)} días desde la emisión",
+                },
+                {"key": "desc", "label": "Descripcion", "value": card.description or ""},
+            ],
+        }
+
+    elif card.card_type == "corporate_discount":
+        # Corporate discount — generic Apple style
+        # pass_data stores "corporate_discount" percentage and "company_name"
+        discount_pct = pass_data.get("corporate_discount", "0")
+        company = pass_data.get("company_name", metadata.get("company_name", card.name))
+        return {
+            "headerFields": [
+                {"key": "discount", "label": "DESCUENTO", "value": f"{discount_pct}%"}
+            ],
+            "primaryFields": [
+                {"key": "company", "label": "EMPRESA", "value": company}
+            ],
+            "secondaryFields": [
+                {"key": "employee", "label": "EMPLEADO", "value": customer_name},
+            ],
+            "backFields": [
+                {"key": "desc", "label": "Condiciones", "value": card.description or ""},
+            ],
+        }
+
+    elif card.card_type == "multipass":
+        # Multipass — storeCard style showing remaining uses
+        # Prefers typed column multipass_remaining, falls back to pass_data
+        bundle_size = metadata.get("bundle_size", 10)
+        remaining = pass_data.get("multipass_remaining", bundle_size)
+        return {
+            "headerFields": [
+                {
+                    "key": "remaining",
+                    "label": "USOS RESTANTES",
+                    "value": f"{remaining}/{bundle_size}",
+                }
+            ],
+            "primaryFields": [
+                {"key": "bundle", "label": "MULTIPASE", "value": card.name}
+            ],
+            "secondaryFields": [
+                {"key": "customer", "label": "CLIENTE", "value": customer_name},
+            ],
+            "backFields": [
+                {
+                    "key": "price",
+                    "label": "Precio del paquete",
+                    "value": f"${metadata.get('bundle_price', '—')}",
+                },
+                {"key": "desc", "label": "Descripcion", "value": card.description or ""},
+            ],
+        }
+
     else:
+        # Fallback for any future/unknown card types
         return {
             "headerFields": [
                 {"key": "program", "label": "PROGRAMA", "value": card.name}

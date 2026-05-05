@@ -232,6 +232,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
     card = customer_pass.card
     customer = customer_pass.customer
     tenant = card.tenant
+    pass_style = APPLE_PASS_STYLES.get(card.card_type, "generic")
 
     try:
         pass_json = _build_pass_json(customer_pass, card, customer, tenant)
@@ -314,11 +315,18 @@ def generate_pkpass(customer_pass) -> bytes | None:
     if strip_bytes:
         try:
             img = Image.open(io.BytesIO(strip_bytes)).convert("RGBA")
-            # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
-            files["strip.png"] = _resize_image(img, 375, 123)
-            files["strip@2x.png"] = _resize_image(img, 750, 246)
+            # Per Apple docs: strip.png is only valid for storeCard and coupon.
+            # generic passes use thumbnail.png instead (90×90pt, up to 3:2 aspect).
+            if pass_style in ("storeCard", "coupon"):
+                # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
+                files["strip.png"] = _resize_image(img, 375, 123)
+                files["strip@2x.png"] = _resize_image(img, 750, 246)
+            elif pass_style == "generic":
+                # Apple Wallet thumbnail: 90x90 (@1x), 180x180 (@2x)
+                files["thumbnail.png"] = _resize_image(img, 90, 90)
+                files["thumbnail@2x.png"] = _resize_image(img, 180, 180)
         except Exception as exc:
-            logger.warning("Failed to process strip image: %s", exc)
+            logger.warning("Failed to process strip/thumbnail image: %s", exc)
 
     manifest = {}
     for filename, data in files.items():
