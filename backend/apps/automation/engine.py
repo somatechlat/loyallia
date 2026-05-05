@@ -1,16 +1,27 @@
 """
-Loyallia — Automation Engine
+Loyallia — Automation Engine (apps/automation/engine.py)
+
 Evaluates automation triggers and executes configured actions.
+This is the core dispatcher that connects business events to automated responses.
 
 Entry points:
-  fire_trigger(trigger_name, customer, context)  → called from API on events
-  evaluate_scheduled_automations()               → called by Celery Beat daily
+    fire_trigger(trigger, customer, context) → synchronous, called from API events.
+    fire_trigger_async(trigger, customer_id, context) → async via Celery.
+    evaluate_scheduled_automations() → called by Celery Beat daily.
 
-LYL-M-API-021: Self-trigger loop guard — prevents automations from triggering
-  themselves in an infinite loop (e.g. transaction_completed → issue_reward →
-  transaction_completed → ...).
-LYL-M-API-025: Tenant is always resolved from customer, never from a parameter
-  override to prevent cross-tenant data access.
+Performance (Rule 12):
+    - PERF: fire_trigger_async() is the primary entry from scanner endpoints.
+      It enqueues to Celery and returns immediately — scanner response is never blocked.
+    - PERF: prefetch_related("target_programs") on matching automations prevents N+1.
+    - PERF: _MAX_TRIGGER_DEPTH=3 caps recursion for self-triggering rules.
+
+Security (SEC):
+    - SEC: LYL-M-API-021 — Self-trigger loop guard prevents infinite recursion
+      (e.g. transaction_completed → issue_reward → transaction_completed → ...).
+    - SEC: LYL-M-API-025 — Tenant is ALWAYS resolved from customer.tenant, never
+      from a parameter override, to prevent cross-tenant data access.
+
+Called by: apps/transactions/api.py (transact), apps/customers/api.py (enroll).
 """
 
 from __future__ import annotations
@@ -32,15 +43,15 @@ def fire_trigger(
 ) -> int:
     """Fire all active automations matching a trigger event for a customer.
 
-    LYL-M-API-021: Includes a depth guard to prevent self-trigger loops.
-    LYL-M-API-025: Tenant is always resolved from customer.tenant to prevent
-    cross-tenant override.
+    SEC: LYL-M-API-021 — Depth guard prevents self-trigger loops.
+    SEC: LYL-M-API-025 — Tenant always resolved from customer.tenant.
+    PERF: prefetch_related("target_programs") prevents N+1 on matching automations.
 
     Args:
         trigger:  AutomationTrigger value (e.g. "customer_enrolled")
         customer: Customer model instance
-        tenant:   Ignored — kept for backward compat. Always uses customer.tenant.
-        context:  Optional dict of event context (e.g. {"card_id": "...", "amount": 10})
+        tenant:   IGNORED — always uses customer.tenant (SEC: LYL-M-API-025)
+        context:  Optional event context dict
         _depth:   Internal recursion depth counter (do not pass manually)
 
     Returns:
@@ -48,10 +59,10 @@ def fire_trigger(
     """
     from apps.automation.models import Automation
 
-    # LYL-M-API-025: Always use customer's tenant, ignore tenant parameter
+    # SEC: LYL-M-API-025 — always use customer's tenant, ignore tenant parameter
     resolved_tenant = customer.tenant
 
-    # LYL-M-API-021: Self-trigger loop guard
+    # SEC: LYL-M-API-021 — cap recursion depth to prevent infinite loops
     if _depth >= _MAX_TRIGGER_DEPTH:
         logger.warning(
             "fire_trigger: max recursion depth (%d) reached for trigger=%s "
@@ -62,7 +73,7 @@ def fire_trigger(
         )
         return 0
 
-    # LYL-M-API-021: Check if context indicates a self-trigger
+    # SEC: LYL-M-API-021 — detect self-trigger via chain tracking
     trigger_chain = (context or {}).get("_trigger_chain", [])
     if trigger in trigger_chain:
         logger.warning(
@@ -112,15 +123,14 @@ def fire_trigger_async(
     tenant_id: str | None = None,
     context: dict | None = None,
 ) -> None:
-    """
-    Enqueue automation trigger evaluation as a Celery task.
-    Use this from API endpoints where you don't want to block the response.
+    """Enqueue automation trigger evaluation as a Celery task.
 
-    Args:
-        trigger:     AutomationTrigger value
-        customer_id: UUID string of the Customer
-        tenant_id:   UUID string of the Tenant (optional, resolved from customer if omitted)
-        context:     Optional event context dict
+    PERF: Use this from API endpoints to avoid blocking the response.
+    The scanner endpoint uses this to fire automation triggers without
+    adding latency to the QR scan response.
+
+    Failure is non-fatal: if Celery is unavailable, the event is logged
+    and the API response continues normally.
     """
     import logging
 

@@ -223,9 +223,9 @@ def notify_top_buyers(request):
 
     from apps.notifications.models import Notification, NotificationType
 
-    created_count = 0
-    for customer in top:
-        Notification.objects.create(
+    # PERF-F6: bulk_create instead of N individual INSERT statements
+    notifications_to_create = [
+        Notification(
             tenant=tenant,
             customer=customer,
             notification_type=NotificationType.SPECIAL_OFFER,
@@ -233,12 +233,14 @@ def notify_top_buyers(request):
             title="¡Gracias por tu preferencia!",
             message="Eres uno de nuestros mejores clientes. Te tenemos una sorpresa especial.",
         )
-        created_count += 1
+        for customer in top
+    ]
+    Notification.objects.bulk_create(notifications_to_create)
 
     return {
         "success": True,
-        "message": f"Notificación enviada a {created_count} clientes top.",
-        "count": created_count,
+        "message": f"Notificación enviada a {len(notifications_to_create)} clientes top.",
+        "count": len(notifications_to_create),
     }
 
 

@@ -1,6 +1,26 @@
 """
-Loyallia — Notifications Celery Tasks
-Email and Wallet campaign delivery.
+Loyallia — Notifications Celery Tasks (apps/notifications/tasks.py)
+
+Async delivery of email campaigns, wallet push notifications, WhatsApp
+mock campaigns, birthday notifications, and inactive customer reminders.
+
+Architecture:
+    All tasks are idempotent and use Celery retry with exponential backoff.
+    Campaign tasks iterate over audience using iterator(chunk_size=50)
+    to avoid loading the entire customer base into memory.
+
+Performance (Rule 12):
+    - PERF: iterator(chunk_size=50) streams customers from DB in batches.
+    - PERF: Broadcast mode for wallet campaigns sends one push per card
+      class instead of N individual pushes (Google Wallet optimization).
+    - PERF: Email sending is sequential per-customer to avoid SMTP overload.
+      For production scale, replace with batched SES API calls.
+
+Security (SEC):
+    - SEC: All audience queries scoped by tenant_id parameter.
+    - SEC: Notification content truncated to 500 chars to prevent payload abuse.
+
+Called by: Notification API (schedule_campaign), Celery Beat (birthday/reminders).
 """
 
 import logging
@@ -18,7 +38,11 @@ logger = logging.getLogger(__name__)
     name="apps.notifications.tasks.send_single_notification",
 )
 def send_single_notification(self, notification_id: str) -> dict:
-    """Dispatch a single notification record."""
+    """Dispatch a single notification via its configured channel.
+
+    PERF: select_related loads customer+tenant in one JOIN.
+    Idempotent: checks is_sent flag before dispatching.
+    """
     import uuid
 
     from apps.notifications.models import Notification
@@ -59,7 +83,15 @@ def send_email_campaign(
     segment_id: str = "all",
     image_url: str = "",
 ) -> dict:
-    """Send a rich HTML email campaign to customers in a segment."""
+    """Send a rich HTML email campaign to customers in a segment.
+
+    PERF: iterator(chunk_size=50) streams customers without loading all into memory.
+    Note: Notification.objects.create() is called per-customer inside the loop
+    because each notification needs the customer FK for tracking. bulk_create
+    is not used here because we need the Notification record BEFORE sending
+    the email (for audit trail if the email send fails).
+    SEC: Audience scoped by tenant_id. Content truncated to 500 chars.
+    """
     import uuid
 
     from django.conf import settings
@@ -180,7 +212,13 @@ def send_wallet_notification_campaign(
     message: str,
     segment_id: str = "all",
 ) -> dict:
-    """Send wallet notification campaign to customers with active passes using Google Wallet Push API."""
+    """Send wallet push notifications to customers with active passes.
+
+    PERF: For 'all' segment, uses broadcast mode (send_push_notification_to_class)
+    which sends one push per card class instead of N individual pushes.
+    For targeted segments, sends individual pushes per pass.
+    PERF: iterator(chunk_size=50) streams customers in batches.
+    """
     import uuid
 
     from django.conf import settings
@@ -351,7 +389,11 @@ def send_whatsapp_campaign(
     queue="push_delivery", name="apps.notifications.tasks.send_birthday_notifications"
 )
 def send_birthday_notifications() -> dict:
-    """Daily task: send birthday notifications."""
+    """Daily scheduled task: send birthday greetings to customers.
+
+    PERF: Single query with date_of_birth__month/day filter (indexed).
+    select_related("tenant") prevents N+1 when accessing tenant for notification.
+    """
     from datetime import date
 
     from apps.customers.models import Customer
@@ -382,7 +424,11 @@ def send_birthday_notifications() -> dict:
     queue="push_delivery", name="apps.notifications.tasks.send_inactive_reminders"
 )
 def send_inactive_reminders(days_inactive: int = 30) -> dict:
-    """Daily task: send reminders to inactive customers."""
+    """Daily scheduled task: re-engage customers who haven't visited recently.
+
+    PERF: Single query with last_visit__lt filter.
+    select_related("tenant") prevents N+1 when creating notifications.
+    """
     from datetime import timedelta
 
     from django.utils import timezone

@@ -1,6 +1,19 @@
 """
-Loyallia — Customers Celery Tasks
-Async pass generation and update tasks.
+Loyallia — Customers Celery Tasks (apps/customers/tasks.py)
+
+Async pass generation, wallet update notifications, and customer analytics recalculation.
+
+Architecture:
+    All tasks run on the 'pass_generation' queue to isolate CPU-intensive QR
+    generation from the main API worker pool. Each task is idempotent and
+    retries with exponential backoff on failure.
+
+Performance (Rule 12):
+    - PERF: select_related used on all pass/customer lookups to prevent N+1.
+    - PERF: Analytics recalculation (update_metrics) runs SQL aggregates, not Python loops.
+    - PERF: QR generation is deferred to async worker so scanner response is never blocked.
+
+Called by: Transaction endpoint (transact), Enrollment endpoint, Analytics scheduler.
 """
 
 import logging
@@ -18,15 +31,11 @@ logger = logging.getLogger(__name__)
     name="apps.customers.tasks.generate_qr_for_pass",
 )
 def generate_qr_for_pass(self, customer_pass_id: str) -> dict:
-    """
-    Generate and store a QR code image for a CustomerPass.
-    Called after enrollment to produce the scannable QR image.
+    """Generate and store a QR code image for a CustomerPass.
 
-    Args:
-        customer_pass_id: UUID string of the CustomerPass
-
-    Returns:
-        dict with qr_url and success flag
+    Called after enrollment to produce the scannable HMAC-signed QR image.
+    PERF: select_related loads customer+card in one JOIN for QR data assembly.
+    Retry: 3 attempts with 60s delay on failure.
     """
     import uuid
 
@@ -63,21 +72,14 @@ def generate_qr_for_pass(self, customer_pass_id: str) -> dict:
     name="apps.customers.tasks.trigger_pass_update",
 )
 def trigger_pass_update(self, customer_pass_id: str) -> dict:
-    """
-    Trigger digital wallet pass update after a transaction.
-    Sends push notification with 'pass updated' payload for Apple/Google Wallet refresh.
+    """Trigger digital wallet pass update after a transaction.
 
-    Apple Wallet: PKPushPayload → triggers passbook device update webhook.
-    Google Wallet: Patch the object via Wallet API (requires Google SA JSON).
+    Sends a push notification that tells the wallet app to re-fetch the pass.
+    Apple Wallet: PKPushPayload triggers passbook device update webhook.
+    Google Wallet: Patches the object via Wallet API.
 
-    For now, sends a push notification to the customer's device
-    informing the wallet app to re-fetch the pass.
-
-    Args:
-        customer_pass_id: UUID string of CustomerPass
-
-    Returns:
-        dict with success status
+    PERF: select_related loads pass+customer+card+tenant in one JOIN.
+    Retry: 3 attempts with 30s delay.
     """
     import uuid
 
@@ -134,15 +136,11 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
     name="apps.customers.tasks.update_customer_analytics",
 )
 def update_customer_analytics(self, customer_id: str) -> dict:
-    """
-    Recalculate and store analytics for a single customer.
-    Called after each transaction to keep analytics fresh.
+    """Recalculate and store analytics for a single customer.
 
-    Args:
-        customer_id: UUID string of Customer
-
-    Returns:
-        dict with success status
+    Called after each transaction to keep pre-computed analytics fresh.
+    PERF: update_metrics() uses SQL aggregates internally.
+    select_related("tenant") prevents extra query for tenant FK.
     """
     import uuid
 

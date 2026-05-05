@@ -1,13 +1,28 @@
 """
-Loyallia — Centralized i18n Message Registry (REQ-I18N-001)
+Loyallia — Centralized i18n Message Registry (common/messages.py)
+
 All user-facing text is defined here with translations for ES, EN, FR, DE.
 Messages are retrieved via get_message(code, lang=None, **kwargs).
 
-Language resolution order:
-  1. Explicit lang parameter
-  2. User.preferred_language
-  3. Tenant.default_language
-  4. Django LANGUAGE_CODE (settings)
+Architecture:
+    - Spanish (ES) is the canonical/primary language with full coverage.
+    - English (EN) has full coverage. FR and DE have partial coverage.
+    - Fallback chain: requested lang → ES canonical catalog → KeyError.
+    - Module-level dicts are loaded once at import time (no per-request cost).
+
+Language resolution order (get_message_for_request):
+    1. User.preferred_language (explicit per-user preference)
+    2. Tenant.default_language (business-wide setting)
+    3. Accept-Language HTTP header
+    4. Django LANGUAGE_CODE (settings)
+
+Performance (Rule 12):
+    - PERF: All catalogs are module-level dicts — O(1) lookup by code.
+    - PERF: No database queries. No file I/O. No Django translation machinery.
+    - PERF: str.format(**kwargs) used for interpolation (fastest Python option).
+
+Called by: Every API endpoint, every error handler, every notification template.
+Rule #11: All user-facing strings MUST go through get_message().
 """
 
 from __future__ import annotations

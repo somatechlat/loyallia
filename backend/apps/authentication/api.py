@@ -1,10 +1,31 @@
 """
-Loyallia — Authentication API (Django Ninja Router)
-Handles: registration, login, refresh, logout, password reset, email verification,
-         user invitation, user listing, user deactivation.
+Loyallia — Authentication API Router (apps/authentication/api.py)
 
-All strings via get_message() — Rule #11.
-All auth via JWTAuth — Rule #8.
+Handles the complete auth lifecycle: registration, login, token refresh,
+logout, password reset, email verification, and Google OAuth 2.0.
+
+Architecture:
+    - Registration creates Tenant + OWNER User atomically (REQ-AUTH-001).
+    - Login issues JWT access + refresh token pair.
+    - Refresh implements token rotation: old token revoked after use (B-002).
+    - Password reset uses time-limited OTP with rate limiting (B-003).
+    - Google OAuth verifies ID tokens server-side against Google tokeninfo API.
+
+Performance (Rule 12):
+    - Login: single query via select_related("tenant") for User+Tenant JOIN.
+    - Refresh: select_for_update(of=("self",)) with select_related for atomic rotation.
+    - Logout: bulk update via filter().update() -- no object instantiation.
+    - save(update_fields=[...]) used everywhere to avoid full-row writes.
+
+Security (SEC):
+    - All public endpoints rate-limited via Redis cache counters.
+    - OTP verification capped at 5 attempts per 15 min per email.
+    - Google OAuth capped at 20 attempts per hour per IP.
+    - Registration returns success for existing emails (prevents enumeration).
+    - Password reset revokes all existing refresh tokens (B-002).
+
+Called by: Frontend auth pages (login, register, forgot-password, Google button).
+All strings via get_message() -- Rule #11.
 """
 
 import logging
@@ -62,10 +83,16 @@ router = Router()
     "/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio"
 )
 def register(request, payload: RegisterIn):
-    """Creates a Tenant + OWNER user in a single atomic transaction."""
+    """Create a new tenant (business) with its OWNER user atomically.
+
+    SEC: Returns success even for existing emails to prevent user enumeration
+    (LYL-M-SEC-016). An attacker cannot determine if an email is registered.
+    PERF: Single atomic transaction wraps Tenant + User creation to avoid
+    orphaned records on partial failure.
+    """
     from django.db import transaction
 
-    # LYL-M-SEC-016: Generic error to prevent user enumeration
+    # SEC: LYL-M-SEC-016 -- fake success for existing emails (prevents enumeration)
     if User.objects.filter(email=payload.email).exists():
         return RegisterOut(
             success=True,
@@ -109,7 +136,12 @@ def register(request, payload: RegisterIn):
 
 @router.post("/login/", auth=None, response=TokenOut, summary="Iniciar sesion")
 def login(request, payload: LoginIn):
-    """Authenticates email+password. Returns JWT access + refresh tokens."""
+    """Authenticate via email+password, return JWT access + refresh tokens.
+
+    SEC: Failed login attempts tracked per-user. After 5 consecutive failures,
+    account is locked for 15 minutes (brute-force protection).
+    PERF: select_related("tenant") loads User+Tenant in a single JOIN query.
+    """
     try:
         user = User.objects.select_related("tenant").get(email=payload.email)
     except User.DoesNotExist:
@@ -136,10 +168,12 @@ def login(request, payload: LoginIn):
     "/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso"
 )
 def refresh_token(request, payload: RefreshIn):
-    """Validates a refresh token and issues a new access token.
+    """Validate refresh token and issue a new access+refresh pair.
 
-    B-002: Implements refresh token rotation — old token is revoked after use
-    and a new refresh token is issued. Stolen tokens become single-use.
+    SEC: B-002 -- Refresh token rotation. The used token is revoked atomically
+    (select_for_update) and a new pair is issued. Stolen tokens become single-use.
+    PERF: select_for_update(of=("self",)) locks only the RefreshToken row,
+    not the joined User row, minimizing lock contention.
     """
     token_hash = hash_token(payload.refresh_token)
     try:
@@ -167,7 +201,11 @@ def refresh_token(request, payload: RefreshIn):
 
 @router.post("/logout/", auth=jwt_auth, response=MessageOut, summary="Cerrar sesion")
 def logout(request, payload: LogoutIn):
-    """Revokes the given refresh token."""
+    """Revoke the given refresh token.
+
+    PERF: filter().update() revokes in a single UPDATE query without loading
+    the RefreshToken object into Python memory.
+    """
     token_hash = hash_token(payload.refresh_token)
     RefreshToken.objects.filter(
         token_hash=token_hash, user=request.user, revoked_at__isnull=True
@@ -224,7 +262,12 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
     summary="Confirmar restablecimiento de contrasena",
 )
 def password_reset_confirm(request, payload: PasswordResetConfirmIn):
-    """Validates OTP and sets new password."""
+    """Validate OTP and set new password, then revoke all refresh tokens.
+
+    SEC: OTP verification capped at 5 attempts per 15 min per email.
+    After password change, all refresh tokens are bulk-revoked to force
+    re-authentication on all devices.
+    """
     from django.core.cache import cache
 
     # Rate limit OTP verification attempts — 5 per 15 min per email
@@ -260,7 +303,11 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     summary="Verificar correo electronico",
 )
 def verify_email(request, payload: VerifyEmailIn):
-    """Validates email verification OTP and marks user as verified."""
+    """Validate email verification OTP and mark user as email-verified.
+
+    SEC: OTP verification capped at 5 attempts per 15 min per email.
+    PERF: save(update_fields=[...]) updates only the changed column.
+    """
     from django.core.cache import cache
 
     # Rate limit OTP verification attempts — 5 per 15 min per email

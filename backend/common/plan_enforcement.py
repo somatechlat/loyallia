@@ -1,6 +1,28 @@
 """
-Loyallia — Plan Enforcement Module (REQ-PLAN-002)
+Loyallia — Plan Enforcement Module (common/plan_enforcement.py)
+
 Decorators and utilities for enforcing subscription plan limits and features.
+Prevents tenants from exceeding their plan quotas (customers, programs, etc.).
+
+Architecture:
+    Three decorator patterns:
+    - @require_active_subscription: blocks if no subscription or expired.
+    - @enforce_limit("customers"): blocks if resource count >= plan max.
+    - @require_feature("ai_assistant"): blocks if feature not in plan.
+
+    check_plan_limit() uses select_for_update() to prevent TOCTOU race
+    conditions (LYL-M-API-024) where concurrent requests both pass the
+    limit check and create resources beyond the plan limit.
+
+Performance (Rule 12):
+    - get_tenant_limits(): 1 query (Subscription with plan FK).
+    - get_current_usage(): 1 query per resource type.
+    - check_plan_limit(): 2 queries total (1 select_for_update + 1 count).
+    - Decorators add 1-2 queries per decorated endpoint call.
+
+Security (SEC):
+    - SEC: select_for_update prevents race condition on limit checks.
+    - SEC: Trial tenants get high-but-finite limits (999999), not infinity.
 
 Usage:
     @require_active_subscription
@@ -8,6 +30,8 @@ Usage:
     @require_feature("ai_assistant")
     def my_endpoint(request):
         ...
+
+Called by: Customer CRUD, Program CRUD, Notification endpoints, Location endpoints.
 """
 
 import functools
@@ -30,9 +54,10 @@ logger = logging.getLogger("loyallia.plan_enforcement")
 
 
 def get_tenant_limits(tenant) -> dict:
-    """
-    Get the effective limits for a tenant based on their subscription plan.
+    """Get the effective resource limits for a tenant based on their subscription plan.
+
     Returns a dict of resource_name → max_count.
+    PERF: Single query with FK follow to SubscriptionPlan.
     """
     from apps.billing.models import Subscription
 
@@ -66,7 +91,11 @@ def get_tenant_limits(tenant) -> dict:
 
 
 def get_current_usage(tenant, resource: str) -> int:
-    """Get the current usage count for a specific resource."""
+    """Get current usage count for a specific resource.
+
+    PERF: Uses lazy lambda dispatch to avoid importing/counting unused models.
+    Each resource type executes a single COUNT query.
+    """
     from apps.cards.models import Card
     from apps.customers.models import Customer
 
@@ -94,7 +123,11 @@ def get_current_usage(tenant, resource: str) -> int:
 
 
 def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> int:
-    """Dynamic import and count for monthly resources."""
+    """Dynamic import and COUNT for monthly-capped resources (notifications, transactions).
+
+    Uses importlib to avoid circular imports between common/ and apps/.
+    PERF: Single COUNT query with tenant + date filter.
+    """
     import importlib
 
     module = importlib.import_module(module_path)
@@ -110,13 +143,15 @@ def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> in
 
 
 def check_plan_limit(tenant, resource: str) -> None:
-    """Check if the tenant has exceeded their plan limit for a resource.
+    """Check if tenant has exceeded their plan limit for a resource.
 
-    LYL-M-API-024: Uses select_for_update on the subscription to prevent
+    SEC: LYL-M-API-024 — Uses select_for_update on Subscription to prevent
     TOCTOU race conditions where two concurrent requests both pass the limit
-    check and create resources beyond the plan limit.
+    check and create resources beyond the plan maximum.
 
-    Raises HttpError 402 if no subscription, 403 if over limit.
+    Raises:
+        HttpError 402: No subscription found (payment required).
+        HttpError 403: Resource count >= plan limit (upgrade required).
     """
     from django.db import transaction
 
@@ -142,9 +177,14 @@ def check_plan_limit(tenant, resource: str) -> None:
 
 
 def check_feature_access(tenant, feature: str) -> None:
-    """
-    Check if the tenant's plan includes a specific feature.
-    Raises HttpError 403 if feature is not included.
+    """Check if the tenant's plan includes a specific feature.
+
+    SEC: Feature gating prevents tenants from accessing premium features
+    without an appropriate subscription tier.
+
+    Raises:
+        HttpError 402: No subscription found.
+        HttpError 403: Feature not included in current plan.
     """
     from apps.billing.models import Subscription
 
@@ -165,9 +205,10 @@ def check_feature_access(tenant, feature: str) -> None:
 
 
 def require_active_subscription(func):
-    """
-    Decorator: blocks request if tenant has no active subscription.
-    Returns HTTP 402 (Payment Required) if expired/suspended.
+    """Decorator: block request if tenant has no active subscription.
+
+    Returns HTTP 402 (Payment Required) if subscription is expired, suspended,
+    or non-existent. PERF: Single query to check subscription status.
     """
 
     @functools.wraps(func)
@@ -184,9 +225,10 @@ def require_active_subscription(func):
 
 
 def enforce_limit(resource: str):
-    """
-    Decorator factory: checks plan limit for a specific resource.
+    """Decorator factory: check plan limit for a specific resource before execution.
+
     Usage: @enforce_limit("customers")
+    SEC: Uses select_for_update internally to prevent TOCTOU races.
     """
 
     def decorator(func):
@@ -201,9 +243,10 @@ def enforce_limit(resource: str):
 
 
 def require_feature(feature: str):
-    """
-    Decorator factory: checks if plan includes a specific feature.
+    """Decorator factory: check if plan includes a specific feature.
+
     Usage: @require_feature("ai_assistant")
+    SEC: Prevents unauthorized access to premium features.
     """
 
     def decorator(func):
