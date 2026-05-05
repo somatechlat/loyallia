@@ -12,6 +12,9 @@ certs/*.pem
 certs/*.key
 certs/*.p12
 certs/*.json
+certs/*.csr
+certs/*.cer
+certs/*.p8
 backend/certs/
 
 # Python

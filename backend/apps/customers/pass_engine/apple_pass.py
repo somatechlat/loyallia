@@ -165,7 +165,12 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
 
 def _sign_manifest(manifest_json: bytes) -> bytes | None:
     """Sign the manifest.json using PKCS#7 detached signature.
-    Fetches certificates directly from Vault to avoid filesystem storage.
+
+    Uses the `cryptography` library's PKCS7SignatureBuilder (stable API).
+    The old pyOpenSSL _lib.PKCS7_sign was removed in pyOpenSSL 23.0+.
+
+    PERF: Certificates are loaded from Vault (cached 5min) — no filesystem I/O.
+    SEC: Private key never touches disk; loaded from Vault PEM string directly.
     """
     from common.vault import get_secret
 
@@ -178,33 +183,37 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         return None
 
     try:
-        from OpenSSL import crypto
+        from cryptography.hazmat.primitives.serialization import pkcs7 as pkcs7_module
+        from cryptography.hazmat.primitives.serialization import Encoding
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography import x509
 
-        crypto_any = cast(Any, crypto)
-        cert = crypto_any.load_certificate(
-            crypto_any.FILETYPE_PEM, cert_pem.encode("utf-8")
-        )
-        key = crypto_any.load_privatekey(
-            crypto_any.FILETYPE_PEM, key_pem.encode("utf-8")
-        )
-        wwdr = crypto_any.load_certificate(
-            crypto_any.FILETYPE_PEM, wwdr_pem.encode("utf-8")
+        # Load the signing certificate
+        cert = x509.load_pem_x509_certificate(cert_pem.encode("utf-8"))
+
+        # Load the private key (no passphrase)
+        key = serialization.load_pem_private_key(
+            key_pem.encode("utf-8"), password=None
         )
 
-        bio_in = crypto_any._new_mem_buf(manifest_json)
-        pkcs7 = crypto_any._lib.PKCS7_sign(
-            cert._x509,
-            key._pkey,
-            crypto_any._ffi.NULL,
-            bio_in,
-            crypto_any._lib.PKCS7_BINARY | crypto_any._lib.PKCS7_DETACHED,
+        # Load the WWDR intermediate certificate
+        wwdr = x509.load_pem_x509_certificate(wwdr_pem.encode("utf-8"))
+
+        # Build the PKCS#7 detached signature using the stable API
+        # Apple requires: SHA256 hash, DER encoding, detached + binary flags
+        signature = (
+            pkcs7_module.PKCS7SignatureBuilder()
+            .set_data(manifest_json)
+            .add_signer(cert, key, hashes.SHA256())
+            .add_certificate(wwdr)
+            .sign(Encoding.DER, [
+                pkcs7_module.PKCS7Options.DetachedSignature,
+                pkcs7_module.PKCS7Options.Binary,
+            ])
         )
-        crypto_any._lib.PKCS7_add_certificate(pkcs7, wwdr._x509)
-        bio_out = crypto_any._new_mem_buf()
-        crypto_any._lib.i2d_PKCS7_bio(bio_out, pkcs7)
-        return crypto_any._read_mem_buf(bio_out)
+        return signature
     except ImportError:
-        logger.error("pyOpenSSL not installed -- cannot sign Apple passes")
+        logger.error("cryptography library not installed — cannot sign Apple passes")
         return None
     except Exception as exc:
         logger.error("Failed to sign Apple pass manifest: %s", exc)
