@@ -381,6 +381,31 @@ EMAIL_HOST_PASSWORD = get_secret(
 DEFAULT_FROM_EMAIL = config("EMAIL_FROM", default="noreply@loyallia.com")
 
 # =============================================================================
+# WHATSAPP BRIDGE (LYL-SRS-006)
+# =============================================================================
+WHATSAPP_BRIDGE_URL = config(
+    "WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001"
+)
+WHATSAPP_BRIDGE_API_KEY = get_secret(
+    "whatsapp_bridge_api_key",
+    env_fallback="WHATSAPP_BRIDGE_API_KEY",
+    default="",
+)
+WHATSAPP_MAX_PER_MINUTE = config("WHATSAPP_MAX_PER_MINUTE", default=8, cast=int)
+WHATSAPP_MAX_PER_HOUR = config("WHATSAPP_MAX_PER_HOUR", default=200, cast=int)
+
+# =============================================================================
+# LISTMONK EMAIL ENGINE (LYL-SRS-006)
+# =============================================================================
+LISTMONK_URL = config("LISTMONK_URL", default="http://listmonk:9000")
+LISTMONK_API_USER = get_secret(
+    "listmonk_api_user", env_fallback="LISTMONK_API_USER", default=""
+)
+LISTMONK_API_TOKEN = get_secret(
+    "listmonk_api_token", env_fallback="LISTMONK_API_TOKEN", default=""
+)
+
+# =============================================================================
 # CORS
 # =============================================================================
 CORS_ALLOWED_ORIGINS = config(
