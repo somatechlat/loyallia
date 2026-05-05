@@ -223,6 +223,8 @@ class PlanOut(BaseModel):
     max_users: int
     max_customers: int
     max_programs: int
+    max_whatsapp_day: int
+    max_emails_month: int
     features: list
     is_active: bool
     is_featured: bool
@@ -242,6 +244,8 @@ class PlanOut(BaseModel):
             max_users=p.max_users,
             max_customers=p.max_customers,
             max_programs=p.max_programs,
+            max_whatsapp_day=p.max_whatsapp_day,
+            max_emails_month=p.max_emails_month,
             features=p.features,
             is_active=p.is_active,
             is_featured=p.is_featured,
@@ -260,6 +264,8 @@ class PlanCreateIn(BaseModel):
     max_users: int = 3
     max_customers: int = 500
     max_programs: int = 1
+    max_whatsapp_day: int = 0
+    max_emails_month: int = 0
     features: list = []
     is_featured: bool = False
     trial_days: int = 14
@@ -275,8 +281,22 @@ class PlanUpdateIn(BaseModel):
     max_users: int | None = None
     max_customers: int | None = None
     max_programs: int | None = None
+    max_whatsapp_day: int | None = None
+    max_emails_month: int | None = None
     features: list | None = None
     is_featured: bool | None = None
     is_active: bool | None = None
     trial_days: int | None = None
     sort_order: int | None = None
+
+
+# =============================================================================
+# WHATSAPP OVERRIDE (LYL-SRS-008)
+# =============================================================================
+
+
+class WhatsAppOverrideIn(BaseModel):
+    """Per-tenant WA daily limit override. 0 = use plan default."""
+
+    daily_limit_override: int = 0
+

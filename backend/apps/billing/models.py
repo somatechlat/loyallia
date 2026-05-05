@@ -35,6 +35,8 @@ class PlanFeature:
     PRIORITY_SUPPORT = "priority_support"
     CUSTOM_BRANDING = "custom_branding"
     DATA_EXPORT = "data_export"
+    WHATSAPP_CAMPAIGNS = "whatsapp_campaigns"
+    EMAIL_CAMPAIGNS = "email_campaigns"
 
     ALL_FEATURES = [
         GEO_FENCING,
@@ -45,6 +47,8 @@ class PlanFeature:
         PRIORITY_SUPPORT,
         CUSTOM_BRANDING,
         DATA_EXPORT,
+        WHATSAPP_CAMPAIGNS,
+        EMAIL_CAMPAIGNS,
     ]
 
 
@@ -94,6 +98,19 @@ class SubscriptionPlan(TimestampedModel):
     )
     max_transactions_month = models.PositiveIntegerField(
         default=5000, verbose_name="Máx. transacciones/mes"
+    )
+
+    # Messaging channel quotas (LYL-SRS-008)
+    # 0 = disabled (channel not available for this plan)
+    max_whatsapp_day = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. WhatsApp/día",
+        help_text="Daily WhatsApp message limit. 0=disabled. Safe ceiling: 200 (Baileys anti-ban).",
+    )
+    max_emails_month = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. emails/mes",
+        help_text="Monthly email campaign quota via Listmonk. 0=disabled.",
     )
 
     # Feature Flags (selectable in admin — REQ-PLAN-003)
@@ -322,6 +339,8 @@ class Subscription(TimestampedModel):
             "users": plan.max_users,
             "notifications_month": plan.max_notifications_month,
             "transactions_month": plan.max_transactions_month,
+            "whatsapp_day": plan.max_whatsapp_day,
+            "emails_month": plan.max_emails_month,
         }
         return limit_map.get(resource, 0)
 

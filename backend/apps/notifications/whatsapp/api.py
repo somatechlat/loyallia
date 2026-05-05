@@ -27,6 +27,7 @@ from apps.notifications.models import (
 from apps.notifications.whatsapp import client as wa_client
 from common.messages import get_message
 from common.permissions import jwt_auth
+from common.plan_enforcement import require_feature
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,7 @@ def _require_tenant(request):
 
 
 @router.get("/qr/{tenant_id}/", auth=jwt_auth, response=QROut)
+@require_feature("whatsapp_campaigns")
 def get_qr_code(request, tenant_id: str):
     """Generate or retrieve QR code for WhatsApp pairing.
 
@@ -127,6 +129,7 @@ def get_qr_code(request, tenant_id: str):
 
 
 @router.get("/status/{tenant_id}/", auth=jwt_auth, response=StatusOut)
+@require_feature("whatsapp_campaigns")
 def get_session_status(request, tenant_id: str):
     """Get current WhatsApp connection status for the tenant."""
     tenant = _require_tenant(request)
@@ -158,6 +161,7 @@ def get_session_status(request, tenant_id: str):
 
 
 @router.post("/disconnect/{tenant_id}/", auth=jwt_auth, response=MessageOut)
+@require_feature("whatsapp_campaigns")
 def disconnect_session(request, tenant_id: str):
     """Disconnect the tenant's WhatsApp session."""
     tenant = _require_tenant(request)

@@ -3,8 +3,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install dependencies
-COPY package.json ./
-RUN npm install --production && npm cache clean --force
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy source
 COPY src/ ./src/

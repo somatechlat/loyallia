@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { notificationsApi, customersApi, whatsappApi } from '@/lib/api';
+import api, { notificationsApi, customersApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
 import { uploadFile } from '@/lib/upload';
@@ -16,12 +16,19 @@ export default function CampaignsPage() {
   const [segments, setSegments] = useState<{id: string; name: string; member_count: number}[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [campaignType, setCampaignType] = useState<'email' | 'wallet' | 'whatsapp'>('email');
+  const [campaignType, setCampaignType] = useState<'email' | 'wallet' | 'whatsapp'>('wallet');
   const [form, setForm] = useState({ title: '', message: '', segment_id: 'all', image_url: '' });
   const [sending, setSending] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
 
+  // --- Plan Features (LYL-SRS-008) ---
+  const [planFeatures, setPlanFeatures] = useState<string[]>([]);
+  const [planLimits, setPlanLimits] = useState<Record<string, number>>({});
+  const [planUsage, setPlanUsage] = useState<Record<string, number>>({});
+
+  const hasEmail = planFeatures.includes('email_campaigns');
+  const hasWhatsApp = planFeatures.includes('whatsapp_campaigns');
 
   const load = () => {
     Promise.all([notificationsApi.campaigns(), customersApi.segments()])
@@ -39,6 +46,22 @@ export default function CampaignsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // --- Plan Features: Fetch on mount (LYL-SRS-008) ---
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get('/api/v1/tenants/me/plan-features/');
+        setPlanFeatures(data.features || []);
+        setPlanLimits(data.limits || {});
+        setPlanUsage(data.usage || {});
+        // Default to first available channel
+        if (data.features?.includes('email_campaigns')) {
+          setCampaignType('email');
+        }
+      } catch { /* no plan info — default to wallet only */ }
+    })();
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -101,7 +124,7 @@ export default function CampaignsPage() {
         </button>
       </div>
 
-      {/* Info Banner */}
+      {/* Info Banner (LYL-SRS-008: dynamic per plan) */}
       <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-4">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
@@ -110,19 +133,23 @@ export default function CampaignsPage() {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-medium text-indigo-900">Canales de campaña disponibles:</p>
+            <p className="text-sm font-medium text-indigo-900">Canales de campaña:</p>
             <div className="mt-2 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs text-indigo-700">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span><b>Email:</b> Correo electrónico masivo</span>
+                <span className={`w-2 h-2 rounded-full ${hasEmail ? 'bg-blue-500' : 'bg-surface-300'}`}></span>
+                <span className={hasEmail ? '' : 'opacity-50'}>
+                  <b>Email:</b> {hasEmail ? `${(planUsage.emails_this_month ?? 0).toLocaleString()} / ${(planLimits.emails_month ?? 0).toLocaleString()} este mes` : '🔒 No disponible'}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                 <span><b>Wallet:</b> Notificación en tarjetas</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                <span><b>WhatsApp:</b> Mensaje directo vía puente</span>
+                <span className={`w-2 h-2 rounded-full ${hasWhatsApp ? 'bg-emerald-500' : 'bg-surface-300'}`}></span>
+                <span className={hasWhatsApp ? '' : 'opacity-50'}>
+                  <b>WhatsApp:</b> {hasWhatsApp ? `${planUsage.whatsapp_today ?? 0} / ${planLimits.whatsapp_day ?? 0} hoy` : '🔒 No disponible'}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
@@ -137,24 +164,36 @@ export default function CampaignsPage() {
         <div className="card p-6 animate-slide-up">
           <h2 className="text-base font-semibold mb-4">Nueva campaña de marketing</h2>
           
-          {/* Campaign Type Selector */}
+          {/* Campaign Type Selector (LYL-SRS-008: plan-gated) */}
           <div className="mb-4">
             <label className="label">Tipo de campaña</label>
             <div className="flex gap-3 mt-2">
+              {/* Email — locked if plan lacks email_campaigns */}
               <button
                 type="button"
-                onClick={() => setCampaignType('email')} aria-pressed={campaignType === 'email'}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all ${campaignType === 'email' ? 'border-blue-500 bg-blue-50' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}
+                disabled={!hasEmail}
+                onClick={() => hasEmail && setCampaignType('email')} aria-pressed={campaignType === 'email'}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
+                  !hasEmail
+                    ? 'border-surface-200 dark:border-surface-700 opacity-50 cursor-not-allowed'
+                    : campaignType === 'email'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                }`}
               >
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                   <span className="font-medium">Email</span>
+                  {!hasEmail && <span className="ml-auto text-xs">🔒</span>}
                 </div>
-                <p className="text-xs text-surface-500 mt-1">Correo electrónico masivo</p>
+                <p className="text-xs text-surface-500 mt-1">
+                  {hasEmail ? 'Correo electrónico masivo' : 'Actualizar plan →'}
+                </p>
               </button>
               
+              {/* Wallet — always available (core feature) */}
               <button
                 type="button"
                 onClick={() => setCampaignType('wallet')} aria-pressed={campaignType === 'wallet'}
@@ -169,10 +208,18 @@ export default function CampaignsPage() {
                 <p className="text-xs text-surface-500 mt-1">Notificación en tarjetas</p>
               </button>
 
+              {/* WhatsApp — locked if plan lacks whatsapp_campaigns */}
               <button
                 type="button"
-                onClick={() => setCampaignType('whatsapp')} aria-pressed={campaignType === 'whatsapp'}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all ${campaignType === 'whatsapp' ? 'border-emerald-500 bg-emerald-50' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}
+                disabled={!hasWhatsApp}
+                onClick={() => hasWhatsApp && setCampaignType('whatsapp')} aria-pressed={campaignType === 'whatsapp'}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
+                  !hasWhatsApp
+                    ? 'border-surface-200 dark:border-surface-700 opacity-50 cursor-not-allowed'
+                    : campaignType === 'whatsapp'
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                }`}
               >
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
@@ -180,8 +227,11 @@ export default function CampaignsPage() {
                     <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.29-1.24l-.31-.18-2.87.85.85-2.87-.2-.31A8 8 0 1112 20z"/>
                   </svg>
                   <span className="font-medium">WhatsApp</span>
+                  {!hasWhatsApp && <span className="ml-auto text-xs">🔒</span>}
                 </div>
-                <p className="text-xs text-surface-500 mt-1">Mensaje directo vía WhatsApp</p>
+                <p className="text-xs text-surface-500 mt-1">
+                  {hasWhatsApp ? 'Mensaje directo vía WhatsApp' : 'Actualizar plan →'}
+                </p>
               </button>
             </div>
 

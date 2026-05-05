@@ -463,12 +463,20 @@ class WhatsAppSession(models.Model):
         default=0, verbose_name="Mensajes enviados hoy"
     )
     daily_limit = models.IntegerField(
-        default=200, verbose_name="Límite diario"
+        default=200, verbose_name="Límite diario (legacy)"
     )
     warmup_day = models.IntegerField(
         default=0,
         verbose_name="Día de calentamiento",
         help_text="0=new number, 7=fully warmed up. Limit scales linearly.",
+    )
+
+    # LYL-SRS-008: Tenant override — set by SuperAdmin per-tenant
+    # When set (> 0), overrides the plan's max_whatsapp_day for this tenant.
+    daily_limit_override = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Override límite diario",
+        help_text="SuperAdmin override. 0=use plan limit. Max safe value: 200.",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -484,17 +492,45 @@ class WhatsAppSession(models.Model):
         return f"{status} {self.tenant.name} — {self.phone_number or 'sin vincular'}"
 
     @property
-    def effective_daily_limit(self) -> int:
-        """Effective daily limit based on warm-up progress.
+    def plan_daily_limit(self) -> int:
+        """Plan-based daily limit from SubscriptionPlan.max_whatsapp_day.
 
-        New numbers start at 20/day and scale linearly over 7 days
-        to the configured daily_limit.
+        LYL-SRS-008: Resolves the ceiling in this priority:
+        1. Tenant override (SuperAdmin set) if > 0
+        2. SubscriptionPlan.max_whatsapp_day if plan exists
+        3. Legacy self.daily_limit as fallback
         """
+        if self.daily_limit_override > 0:
+            return self.daily_limit_override
+
+        from apps.billing.models import Subscription
+
+        subscription = Subscription.objects.filter(tenant=self.tenant).first()
+        if subscription:
+            plan = subscription.subscription_plan
+            if plan and plan.max_whatsapp_day > 0:
+                return plan.max_whatsapp_day
+            # Trial users: use legacy daily_limit (200)
+            if subscription.is_trial_active:
+                return self.daily_limit
+
+        return self.daily_limit
+
+    @property
+    def effective_daily_limit(self) -> int:
+        """Effective daily limit = min(plan_ceiling, warmup_limit).
+
+        LYL-SRS-008: The plan (or tenant override) sets the ceiling.
+        The warm-up progression sets the floor to prevent WhatsApp bans.
+        New numbers start at 20/day and scale linearly over 7 days.
+        """
+        ceiling = self.plan_daily_limit
         if self.warmup_day >= 7:
-            return self.daily_limit
+            return ceiling
         base = 20
-        increment = (self.daily_limit - base) / 7
-        return int(base + (increment * self.warmup_day))
+        increment = (ceiling - base) / 7
+        warmup_limit = int(base + (increment * self.warmup_day))
+        return min(ceiling, warmup_limit)
 
     @property
     def messages_remaining_today(self) -> int:

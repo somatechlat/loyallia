@@ -461,3 +461,68 @@ def impersonate_tenant(request, tenant_id: str):
         impersonated_tenant_id=str(tenant.id),
         impersonated_user_id=str(owner.id),
     )
+
+
+# =============================================================================
+# WHATSAPP OVERRIDE (LYL-SRS-008)
+# =============================================================================
+
+
+@router.patch(
+    "/tenants/{tenant_id}/whatsapp-override/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="[SuperAdmin] Override WA daily limit para un negocio",
+)
+def set_whatsapp_override(request, tenant_id: str):
+    """Set per-tenant WhatsApp daily limit override.
+
+    LYL-SRS-008: Allows SuperAdmin to raise/lower the WA quota for a
+    specific tenant independently of their subscription plan.
+    Set to 0 to revert to the plan default.
+
+    SEC: Hard cap at 200 to prevent WhatsApp bans (Baileys anti-ban).
+    """
+    _require_super_admin(request)
+    tenant = _get_tenant_or_404(tenant_id)
+
+    try:
+        body = json.loads(request.body)
+        from apps.tenants.super_admin_api.schemas import WhatsAppOverrideIn
+
+        payload = WhatsAppOverrideIn(**body)
+    except Exception:
+        raise HttpError(
+            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
+        )
+
+    if payload.daily_limit_override < 0 or payload.daily_limit_override > 200:
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR",
+                detail="daily_limit_override debe estar entre 0 y 200",
+            ),
+        )
+
+    from apps.notifications.models import WhatsAppSession
+
+    session, created = WhatsAppSession.objects.get_or_create(tenant=tenant)
+    session.daily_limit_override = payload.daily_limit_override
+    session.save(update_fields=["daily_limit_override", "updated_at"])
+
+    logger.info(
+        "SUPER_ADMIN %s set WA override for tenant %s (%s) to %d",
+        request.user.email,
+        tenant.id,
+        tenant.name,
+        payload.daily_limit_override,
+    )
+
+    if payload.daily_limit_override == 0:
+        msg = "Override removido — usando límite del plan"
+    else:
+        msg = f"Override WA establecido: {payload.daily_limit_override} msgs/día"
+
+    return MessageOut(success=True, message=msg)
+
