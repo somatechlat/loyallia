@@ -115,6 +115,19 @@ vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" \
     email_host_user="$(env_or_existing email_host_user "${_EMAIL_HOST_USER:-}")" \
     email_host_password="$(env_or_existing email_host_password "${_EMAIL_HOST_PASSWORD:-}")" >/dev/null
 
+# ---------------------------------------------------------------------------
+# Export infrastructure secrets to files so containers read from Vault volume
+# instead of plaintext environment variables. Zero-Secret compliance.
+# ---------------------------------------------------------------------------
+mkdir -p /vault/runtime
+printf "%s" "$postgres_password" >/vault/runtime/postgres_password
+# Extract Redis password from the redis_url (format: redis://:PASSWORD@host:port/db)
+printf "%s" "$redis_url" | sed -n 's|redis://:\([^@]*\)@.*|\1|p' >/vault/runtime/redis_password
+printf "%s" "$minio_access_key" >/vault/runtime/minio_root_user
+printf "%s" "$minio_secret_key" >/vault/runtime/minio_root_password
+chmod 0444 /vault/runtime/postgres_password /vault/runtime/redis_password \
+    /vault/runtime/minio_root_user /vault/runtime/minio_root_password
+
 printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\"]\n}\n" >/vault/runtime/loyallia-app.hcl
 vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null
 vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token
