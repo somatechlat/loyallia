@@ -8,6 +8,7 @@ import uuid
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.mail import send_mass_mail
 from django.db.models import Sum
 from django.utils import timezone as dj_timezone
@@ -23,6 +24,7 @@ from apps.tenants.super_admin_api.schemas import (
     PlanCreateIn,
     PlanOut,
     PlanUpdateIn,
+    PlatformIntegrationOut,
     PlatformMetricsOut,
 )
 from common.messages import get_message
@@ -119,6 +121,68 @@ def all_platform_locations(request):
             "is_active": loc.is_active,
         }
         for loc in locations
+    ]
+
+
+@router.get(
+    "/platform/integrations/",
+    auth=jwt_auth,
+    response=list[PlatformIntegrationOut],
+)
+def platform_integrations(request):
+    """Return platform integration status without exposing secret values."""
+    _require_super_admin(request)
+
+    from apps.customers.pass_engine.apple_pass import is_apple_wallet_configured
+    from apps.customers.pass_engine.google_pass import is_google_wallet_configured
+
+    google_configured = is_google_wallet_configured()
+    apple_enabled = bool(getattr(settings, "APPLE_WALLET_ENABLED", False))
+    apple_configured = apple_enabled and is_apple_wallet_configured()
+    payment_enabled = bool(getattr(settings, "PAYMENT_GATEWAY_ENABLED", False))
+    payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
+    email_configured = bool(
+        getattr(settings, "EMAIL_HOST_USER", "")
+        and getattr(settings, "EMAIL_HOST_PASSWORD", "")
+    )
+
+    return [
+        PlatformIntegrationOut(
+            key="google_wallet",
+            name="Google Wallet",
+            enabled=bool(getattr(settings, "GOOGLE_WALLET_ENABLED", True)),
+            configured=google_configured,
+            status="configured" if google_configured else "missing_credentials",
+            detail=f"Issuer ID: {getattr(settings, 'GOOGLE_WALLET_ISSUER_ID', '')}",
+        ),
+        PlatformIntegrationOut(
+            key="apple_wallet",
+            name="Apple Wallet",
+            enabled=apple_enabled,
+            configured=apple_configured,
+            status=(
+                "configured"
+                if apple_configured
+                else "disabled" if not apple_enabled else "missing_credentials"
+            ),
+            detail="Disabled until Apple Developer certificates are available.",
+        ),
+        PlatformIntegrationOut(
+            key="payment_gateway",
+            name="Payments",
+            enabled=payment_enabled,
+            configured=payment_enabled,
+            status="active" if payment_enabled else "disabled",
+            detail=f"Provider: {payment_provider}",
+        ),
+        PlatformIntegrationOut(
+            key="email",
+            name="Email SMTP",
+            enabled=True,
+            configured=email_configured,
+            status="configured" if email_configured else "missing_credentials",
+            detail=f"Host: {getattr(settings, 'EMAIL_HOST', '')}",
+        ),
     ]
 
 

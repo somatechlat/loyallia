@@ -169,6 +169,15 @@ class MessageOut(BaseModel):
     message: str
 
 
+class PlatformIntegrationOut(BaseModel):
+    key: str
+    name: str
+    enabled: bool
+    configured: bool
+    status: str
+    detail: str
+
+
 class ExtendTrialIn(BaseModel):
     days: int
 

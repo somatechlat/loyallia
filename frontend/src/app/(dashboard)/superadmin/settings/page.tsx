@@ -1,11 +1,27 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+
+type Integration = {
+  key: string;
+  name: string;
+  enabled: boolean;
+  configured: boolean;
+  status: string;
+  detail: string;
+};
 
 export default function SuperAdminSettings() {
   const [broadcastForm, setBroadcastForm] = useState({ subject: '', message: '' });
   const [sending, setSending] = useState(false);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+
+  useEffect(() => {
+    api.get('/api/v1/admin/platform/integrations/')
+      .then(({ data }) => setIntegrations(data))
+      .catch(() => setIntegrations([]));
+  }, []);
 
   const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,19 +76,14 @@ export default function SuperAdminSettings() {
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm p-6 space-y-4">
         <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3">Integraciones</h2>
         <div className="grid grid-cols-2 gap-4">
-          {[
-            { name: 'Google Wallet', status: 'Configurado', ok: true, detail: 'Issuer ID: 3388000000023113505' },
-            { name: 'Apple Wallet', status: 'Pendiente', ok: false, detail: 'Requiere certificado Apple Developer' },
-            { name: 'Bendo / PlacetoPay', status: 'UAT', ok: true, detail: 'Pasarela de pagos — entorno de prueba activo' },
-            { name: 'Firebase FCM', status: 'Pendiente', ok: false, detail: 'Requiere credenciales Firebase' },
-          ].map(int => (
+          {integrations.map(int => (
             <div key={int.name} className="flex items-center gap-3 p-3 rounded-xl border border-surface-100">
-              <span className={`w-3 h-3 rounded-full ${int.ok ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              <span className={`w-3 h-3 rounded-full ${int.enabled && int.configured ? 'bg-green-500' : int.enabled ? 'bg-yellow-500' : 'bg-surface-400'}`} />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-surface-900 dark:text-white">{int.name}</p>
                 <p className="text-xs text-surface-400">{int.detail}</p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${int.ok ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${int.enabled && int.configured ? 'bg-green-100 text-green-700' : int.enabled ? 'bg-yellow-100 text-yellow-700' : 'bg-surface-100 text-surface-600'}`}>
                 {int.status}
               </span>
             </div>

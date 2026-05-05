@@ -16,6 +16,10 @@ from common.vault import fetch_vault_secrets, get_secret
 logger = logging.getLogger(__name__)
 
 
+def _truthy(value: object) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
 @dataclass
 class EnvVar:
     """Definition of a required/optional environment variable."""
@@ -98,7 +102,7 @@ OPTIONAL_VARS = [
     EnvVar(
         name="EMAIL_HOST",
         required=False,
-        default="smtp.mailjet.com",
+        default="smtp.gmail.com",
         description="SMTP server hostname",
     ),
     EnvVar(
@@ -122,11 +126,26 @@ PRODUCTION_REQUIRED_VAULT_KEYS = [
     "google_oauth_client_secret",
     "google_wallet_issuer_id",
     "google_service_account_json",
+    "google_wallet_enabled",
+    "apple_wallet_enabled",
+    "payment_gateway_enabled",
+    "payment_gateway_provider",
+    "email_host_user",
+    "email_host_password",
+]
+
+APPLE_REQUIRED_VAULT_KEYS = [
+    "apple_pass_type_identifier",
+    "apple_team_identifier",
+    "apple_cert_pem",
+    "apple_cert_key_pem",
+    "apple_wwdr_cert_pem",
+]
+
+PAYMENT_REQUIRED_VAULT_KEYS = [
     "payment_gateway_login",
     "payment_gateway_tran_key",
     "payment_gateway_webhook_secret",
-    "email_host_user",
-    "email_host_password",
 ]
 
 
@@ -157,7 +176,13 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
                 )
             ]
 
-        for key in PRODUCTION_REQUIRED_VAULT_KEYS:
+        required_keys = list(PRODUCTION_REQUIRED_VAULT_KEYS)
+        if _truthy(secrets.get("apple_wallet_enabled")):
+            required_keys.extend(APPLE_REQUIRED_VAULT_KEYS)
+        if _truthy(secrets.get("payment_gateway_enabled")):
+            required_keys.extend(PAYMENT_REQUIRED_VAULT_KEYS)
+
+        for key in required_keys:
             if not str(secrets.get(key, "")).strip():
                 errors.append(
                     ValidationError(

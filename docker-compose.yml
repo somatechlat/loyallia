@@ -38,7 +38,7 @@ x-common-env: &common-env
   PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
   PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
   # Email
-  EMAIL_HOST: ${EMAIL_HOST:-smtp.mailjet.com}
+  EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
   EMAIL_PORT: "${EMAIL_PORT:-587}"
   EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
   # Google OAuth 2.0 (Social Login)
@@ -92,8 +92,11 @@ services:
       - "archive_mode=on"
       - "-c"
       - "archive_command=mkdir -p /var/lib/postgresql/data/wal_archive && (test -f /var/lib/postgresql/data/wal_archive/%f || cp %p /var/lib/postgresql/data/wal_archive/%f)"
+      - "-c"
+      - "hba_file=/etc/postgresql/pg_hba.conf"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     ports:
       - "127.0.0.1:33900:5432"
     networks:
@@ -131,26 +134,14 @@ services:
     image: postgres:16.2-alpine
     container_name: loyallia-postgres-replica
     environment:
+      POSTGRES_USER: ${POSTGRES_USER:-loyallia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGUSER: ${POSTGRES_USER:-loyallia}
       PGPASSWORD: ${POSTGRES_PASSWORD}
-    command: >
-      bash -c "
-      if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
-        until pg_basebackup --pgdata=/var/lib/postgresql/data --host=postgres --port=5432 --username=${POSTGRES_USER:-loyallia} --wal-method=stream --checkpoint=fast --progress --verbose 2>&1; do
-          echo 'Waiting for primary to accept connections...'
-          sleep 5
-        done &&
-        chmod 0700 /var/lib/postgresql/data &&
-        cat > /var/lib/postgresql/data/postgresql.auto.conf <<EOF
-        primary_conninfo = 'host=postgres port=5432 user=${POSTGRES_USER:-loyallia} password=${POSTGRES_PASSWORD}'
-        hot_standby = on
-        EOF
-        touch /var/lib/postgresql/data/standby.signal
-      fi &&
-      exec postgres -c hot_standby=on -c max_connections=100 -c shared_buffers=256MB -c work_mem=8MB
-      "
+    command: sh /usr/local/bin/replica-entrypoint.sh
     volumes:
       - postgres_replica_data:/var/lib/postgresql/data
+      - ./deploy/postgres/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint.sh:ro
     ports:
       - "127.0.0.1:33911:5432"
     depends_on:
@@ -334,6 +325,9 @@ services:
       resources:
         limits:
           memory: 64M
+          cpus: "0.10"
+        reservations:
+          memory: 32M
 
   # ---------------------------------------------------------------------------
   # DJANGO API — Django 5 + Django Ninja → localhost:33905           [2GB]
@@ -481,6 +475,7 @@ services:
       <<: *common-env
     volumes:
       - ./backend:/app
+      - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     stop_grace_period: 30s  # B-012: Graceful shutdown for in-flight tasks
     depends_on:
@@ -535,6 +530,7 @@ services:
       <<: *common-env
     volumes:
       - ./backend:/app
+      - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     stop_grace_period: 30s  # B-012: Graceful shutdown
     depends_on:
@@ -589,6 +585,7 @@ services:
       <<: *common-env
     volumes:
       - ./backend:/app
+      - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     stop_grace_period: 30s  # B-012: Graceful shutdown
     depends_on:
@@ -645,6 +642,7 @@ services:
       <<: *common-env
     volumes:
       - ./backend:/app
+      - vault_runtime:/run/loyallia-vault:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -678,9 +676,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: loyallia-flower
-    command: celery -A loyallia flower --port=5555 --basic_auth=${FLOWER_BASIC_AUTH}
+    command: >
+      sh -c "FLOWER_BASIC_AUTH=$$(python -c 'from common.vault import get_secret; print(get_secret(\"flower_basic_auth\", strict=True), end=\"\")') || exit 1; [ -n \"$$FLOWER_BASIC_AUTH\" ] || exit 1; export FLOWER_BASIC_AUTH; exec celery -A loyallia flower --port=5555"
     environment:
       <<: *common-env
+    volumes:
+      - ./backend:/app
+      - vault_runtime:/run/loyallia-vault:ro
+      - ./certs:/app/certs:ro
     ports:
       - "127.0.0.1:33907:5555"
     depends_on:
@@ -726,6 +729,8 @@ services:
         limits:
           memory: 256M
           cpus: "0.25"
+        reservations:
+          memory: 128M
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8200/v1/sys/health?standbyok=true&perfstandbyok=true&sealedcode=200&uninitcode=200"]
       interval: 10s
@@ -771,33 +776,17 @@ services:
     volumes:
       - vault_data:/vault/file
       - vault_runtime:/vault/runtime
-    entrypoint: >-
-      /bin/sh -c "set -eu; i=0;
-      until wget --spider --quiet $$VAULT_ADDR/v1/sys/seal-status; do
-        i=$$((i+1));
-        [ $$i -lt 60 ] || { echo 'vault-init timeout waiting for vault api'; exit 1; };
-        sleep 1;
-      done;
-      [ -f /vault/file/init.json ] || vault operator init -key-shares=1 -key-threshold=1 -format=json >/vault/file/init.json;
-      UNSEAL_KEY=$$(awk -F '\"' '/unseal_keys_b64/ {getline; print $$2}' /vault/file/init.json);
-      ROOT_TOKEN=$$(awk -F '\"' '/root_token/ {print $$4}' /vault/file/init.json);
-      [ -n \"$$UNSEAL_KEY\" ] || { echo 'missing unseal key'; exit 1; };
-      [ -n \"$$ROOT_TOKEN\" ] || { echo 'missing root token'; exit 1; };
-      vault operator unseal $$UNSEAL_KEY >/dev/null 2>&1 || true;
-      export VAULT_TOKEN=$$ROOT_TOKEN;
-      vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true;
-      vault kv put -mount=secret \"$${VAULT_APP_SECRET_PATH}\" secret_key=\"$${_SECRET_KEY}\" postgres_password=\"$${_POSTGRES_PASSWORD}\" redis_url=\"$${_REDIS_URL}\" celery_broker_url=\"$${_CELERY_BROKER_URL}\" celery_result_backend=\"$${_CELERY_RESULT_BACKEND}\" minio_access_key=\"$${_MINIO_ROOT_USER}\" minio_secret_key=\"$${_MINIO_ROOT_PASSWORD}\" jwt_secret_key=\"$${_JWT_SECRET_KEY}\" pass_hmac_secret=\"$${_PASS_HMAC_SECRET}\" google_oauth_client_id=\"$${_GOOGLE_OAUTH_CLIENT_ID}\" google_oauth_client_secret=\"$${_GOOGLE_OAUTH_CLIENT_SECRET}\" google_wallet_issuer_id=\"$${_GOOGLE_WALLET_ISSUER_ID}\" google_service_account_json=\"$${_GOOGLE_SERVICE_ACCOUNT_JSON}\" payment_gateway_login=\"$${_PAYMENT_GATEWAY_LOGIN}\" payment_gateway_tran_key=\"$${_PAYMENT_GATEWAY_TRAN_KEY}\" payment_gateway_webhook_secret=\"$${_PAYMENT_GATEWAY_WEBHOOK_SECRET}\" email_host_user=\"$${_EMAIL_HOST_USER}\" email_host_password=\"$${_EMAIL_HOST_PASSWORD}\" apple_pass_type_identifier=\"$${_APPLE_PASS_TYPE_IDENTIFIER}\" apple_team_identifier=\"$${_APPLE_TEAM_IDENTIFIER}\" apple_cert_pem=\"$${_APPLE_CERT_PEM}\" apple_cert_key_pem=\"$${_APPLE_CERT_KEY_PEM}\" apple_wwdr_cert_pem=\"$${_APPLE_WWDR_CERT_PEM}\" >/dev/null;
-      printf '%b' \"path \\\"secret/data/loyallia/*\\\" {\\n  capabilities = [\\\"read\\\"]\\n}\\n\" >/vault/runtime/loyallia-app.hcl;
-      vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null;
-      vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token;
-      chmod 0444 /vault/runtime/app-token;
-      echo 'Vault initialized, unsealed, and secrets seeded successfully';"
+      - ./deploy/vault/init.sh:/vault/bootstrap/init.sh:ro
+    entrypoint: /bin/sh /vault/bootstrap/init.sh
     networks:
       - backend-net
     deploy:
       resources:
         limits:
           memory: 64M
+          cpus: "0.10"
+        reservations:
+          memory: 32M
 
   # ---------------------------------------------------------------------------
   # NGINX — Reverse Proxy + Security Headers
@@ -806,10 +795,10 @@ services:
     image: nginx:1.25.4-alpine
     container_name: loyallia-nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
     volumes:
-      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
       - web
@@ -823,8 +812,17 @@ services:
     cap_drop:
       - ALL
     cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
       - NET_BIND_SERVICE  # Required for port 80/443
     deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+        reservations:
+          memory: 64M
       # LYL-H-INFRA-014: Rolling deployment
       update_config:
         parallelism: 1
@@ -859,6 +857,9 @@ services:
       resources:
         limits:
           memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 128M
 
   # ---------------------------------------------------------------------------
   # GRAFANA — Metrics Dashboard           → localhost:33910          [512M]
@@ -889,6 +890,9 @@ services:
       resources:
         limits:
           memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 128M
 
   # ---------------------------------------------------------------------------
   # LOKI — Log Aggregation              → localhost:33912            [256M]

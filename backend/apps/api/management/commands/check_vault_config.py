@@ -20,11 +20,18 @@ CORE_REQUIRED_KEYS = [
     "google_oauth_client_secret",
     "google_wallet_issuer_id",
     "google_service_account_json",
+    "google_wallet_enabled",
+    "apple_wallet_enabled",
+    "payment_gateway_enabled",
+    "payment_gateway_provider",
+    "email_host_user",
+    "email_host_password",
+]
+
+PAYMENT_REQUIRED_KEYS = [
     "payment_gateway_login",
     "payment_gateway_tran_key",
     "payment_gateway_webhook_secret",
-    "email_host_user",
-    "email_host_password",
 ]
 
 APPLE_REQUIRED_KEYS = [
@@ -36,6 +43,10 @@ APPLE_REQUIRED_KEYS = [
 ]
 
 
+def _truthy(value: object) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
 class Command(BaseCommand):
     help = "Validate required Vault keys without printing secret values."
 
@@ -43,7 +54,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--include-apple",
             action="store_true",
-            help="Also require Apple Wallet web PKPass keys.",
+            help="Validate Apple Wallet keys when Apple Wallet is enabled.",
         )
 
     def handle(self, *args, **options) -> None:
@@ -52,8 +63,10 @@ class Command(BaseCommand):
             raise CommandError("Vault returned no secrets or is unreachable.")
 
         required = list(CORE_REQUIRED_KEYS)
-        if options["include_apple"]:
+        if _truthy(secrets.get("apple_wallet_enabled")):
             required.extend(APPLE_REQUIRED_KEYS)
+        if _truthy(secrets.get("payment_gateway_enabled")):
+            required.extend(PAYMENT_REQUIRED_KEYS)
 
         missing = [key for key in required if not str(secrets.get(key, "")).strip()]
         if missing:

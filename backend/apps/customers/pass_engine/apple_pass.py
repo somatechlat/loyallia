@@ -340,4 +340,6 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
 def is_apple_wallet_configured() -> bool:
     """Check if Apple Wallet is properly configured."""
+    if not getattr(settings, "APPLE_WALLET_ENABLED", False):
+        return False
     return _check_config_ready()
