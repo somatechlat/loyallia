@@ -525,4 +525,3 @@ def set_whatsapp_override(request, tenant_id: str):
         msg = get_message("ADMIN_WA_OVERRIDE_SET", limit=payload.daily_limit_override)
 
     return MessageOut(success=True, message=msg)
-

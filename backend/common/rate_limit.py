@@ -41,7 +41,12 @@ logger = logging.getLogger(__name__)
 
 # Rate limit rules: (path_prefix, key_type, max_requests, window_seconds)
 RATE_LIMIT_RULES = [
-    ("/api/v1/auth/login", "ip", 60, 60),  # 60 login attempts per minute per IP (dev-friendly; tighten in production)
+    (
+        "/api/v1/auth/login",
+        "ip",
+        60,
+        60,
+    ),  # 60 login attempts per minute per IP (dev-friendly; tighten in production)
     ("/api/v1/auth/register", "ip", 10, 60),  # 10 registrations per minute per IP
     (
         "/api/v1/auth/phone/",

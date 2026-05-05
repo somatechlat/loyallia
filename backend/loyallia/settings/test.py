@@ -44,28 +44,18 @@ if os.environ.get("VAULT_TOKEN_FILE") or os.environ.get("VAULT_ADDR"):
         pass
 
 DATABASES = {
-    # Default: PgBouncer — all test queries go through the connection pooler
+    # Direct PostgreSQL for tests — PgBouncer's transaction mode can't handle
+    # CREATE/DROP DATABASE or other DDL needed by the test framework.
+    # Production uses PgBouncer; tests don't need connection pooling.
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": _db_name,
-        "USER": _db_user,
-        "PASSWORD": _db_password,
-        "HOST": _pgbouncer_host,
-        "PORT": _pgbouncer_port,
-        "CONN_MAX_AGE": 0,
-        "CONN_HEALTH_CHECKS": False,
-        "TEST": {
-            "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
-        },
-    },
-    # Direct: used for test DB creation + migrations (PgBouncer can't CREATE DB)
-    "direct": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": _db_name,
         "USER": _db_user,
         "PASSWORD": _db_password,
         "HOST": _pg_direct_host,
         "PORT": _pg_direct_port,
+        "CONN_MAX_AGE": 0,
+        "CONN_HEALTH_CHECKS": False,
         "TEST": {
             "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
         },

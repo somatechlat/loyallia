@@ -46,9 +46,7 @@ def _get_pass_apns_auth() -> tuple[str | None, str | None]:
         key_pem = get_secret("apple_cert_key_pem", strict=True)
 
         if not cert_pem or not key_pem:
-            logger.warning(
-                "Apple pass push: cert_pem or key_pem not found in Vault"
-            )
+            logger.warning("Apple pass push: cert_pem or key_pem not found in Vault")
             return None, None
 
         return cert_pem, key_pem
@@ -75,12 +73,12 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
     cert_pem, key_pem = _get_pass_apns_auth()
     if not cert_pem or not key_pem:
-        logger.warning("Apple pass push: Not configured — skipping push to …%s", push_token[-8:])
+        logger.warning(
+            "Apple pass push: Not configured — skipping push to …%s", push_token[-8:]
+        )
         return False
 
-    topic = getattr(
-        settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards"
-    )
+    topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards")
 
     # Auto-detect sandbox from Django DEBUG setting
     use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)
@@ -130,9 +128,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
             )
 
         if response.status_code == 200:
-            logger.debug(
-                "Apple pass push sent successfully to …%s", push_token[-8:]
-            )
+            logger.debug("Apple pass push sent successfully to …%s", push_token[-8:])
             return True
 
         # Parse error reason
@@ -230,18 +226,16 @@ def notify_card_updated(card) -> int:
     """
     from apps.customers.models import ApplePassRegistration, CustomerPass
 
-    pass_ids = CustomerPass.objects.filter(
-        card=card, is_active=True
-    ).values_list("id", flat=True)
+    pass_ids = CustomerPass.objects.filter(card=card, is_active=True).values_list(
+        "id", flat=True
+    )
 
     registrations = ApplePassRegistration.objects.filter(
         customer_pass_id__in=pass_ids,
     )
 
     if not registrations.exists():
-        logger.debug(
-            "Apple pass push: No registered devices for card %s", card.id
-        )
+        logger.debug("Apple pass push: No registered devices for card %s", card.id)
         return 0
 
     notified = 0

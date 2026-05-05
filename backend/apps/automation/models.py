@@ -320,13 +320,17 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
         try:
             msg = EmailMultiAlternatives(
-                subject=subject, body=body_text, from_email=from_email, to=[customer.email]
+                subject=subject,
+                body=body_text,
+                from_email=from_email,
+                to=[customer.email],
             )
             msg.attach_alternative(html_content, "text/html")
             msg.send(fail_silently=False)
             return True
         except Exception as exc:
             import logging
+
             logging.getLogger(__name__).error(
                 "Automation email failed for %s: %s", customer.id, exc
             )
@@ -344,6 +348,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
         if not is_sms_available():
             import logging
+
             logging.getLogger(__name__).warning(
                 "Twilio SMS not configured — cannot send automation SMS"
             )
@@ -368,6 +373,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
         if not is_bridge_available():
             import logging
+
             logging.getLogger(__name__).warning(
                 "WhatsApp bridge not available — cannot send automation message"
             )
@@ -386,6 +392,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
             return result.get("success", False)
         except Exception as exc:
             import logging
+
             logging.getLogger(__name__).error(
                 "Automation WhatsApp failed for %s: %s", customer.id, exc
             )
@@ -412,9 +419,11 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         for pass_obj in passes:
             try:
                 # Google Wallet push
-                from apps.customers.pass_engine.google_pass import send_push_notification
-
                 from django.conf import settings
+
+                from apps.customers.pass_engine.google_pass import (
+                    send_push_notification,
+                )
 
                 action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
                 result = send_push_notification(
@@ -424,6 +433,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                     push_sent = True
             except Exception as exc:
                 import logging
+
                 logging.getLogger(__name__).warning(
                     "Google wallet push failed for pass %s: %s", pass_obj.id, exc
                 )
@@ -437,6 +447,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                     push_sent = True
             except Exception as exc:
                 import logging
+
                 logging.getLogger(__name__).warning(
                     "Apple wallet push failed for pass %s: %s", pass_obj.id, exc
                 )

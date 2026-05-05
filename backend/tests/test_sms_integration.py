@@ -11,19 +11,17 @@ Tests for:
 """
 
 import uuid
-from datetime import date, timedelta
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
-from django.utils import timezone
 
 from apps.automation.models import (
     Automation,
     AutomationAction,
-    AutomationExecution,
     AutomationTrigger,
 )
-from apps.billing.models import PlanFeature, SubscriptionStatus
+from apps.billing.models import PlanFeature
 from common.messages import get_message
 from tests.factories import (
     make_automation,
@@ -35,7 +33,6 @@ from tests.factories import (
     make_tenant,
 )
 
-
 # =============================================================================
 # SMS Client Tests
 # =============================================================================
@@ -44,7 +41,9 @@ from tests.factories import (
 class SMSClientAvailabilityTest(TestCase):
     """Tests for is_sms_available() configuration checking."""
 
-    @override_settings(TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER="")
+    @override_settings(
+        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
+    )
     def test_not_available_when_no_credentials(self):
         from apps.notifications.sms.client import is_sms_available
 
@@ -126,7 +125,9 @@ class SMSClientSendTest(TestCase):
         self.assertFalse(result["success"])
         self.assertIn("No recipient", result["error"])
 
-    @override_settings(TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER="")
+    @override_settings(
+        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
+    )
     def test_send_sms_raises_when_not_configured(self):
         from apps.notifications.sms.client import send_sms
 
@@ -230,7 +231,10 @@ class AutomationSendEmailTest(TestCase):
         result = auto._execute_send_email(customer_no_email, {})
         self.assertFalse(result)
 
-    @patch("django.core.mail.EmailMultiAlternatives.send", side_effect=Exception("SMTP error"))
+    @patch(
+        "django.core.mail.EmailMultiAlternatives.send",
+        side_effect=Exception("SMTP error"),
+    )
     def test_send_email_smtp_failure_returns_false(self, mock_send):
         auto = make_automation(
             self.tenant,
@@ -251,7 +255,9 @@ class AutomationSendSMSTest(TestCase):
         make_customer_pass(self.customer, self.card)
 
     @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest", TWILIO_AUTH_TOKEN="tok", TWILIO_FROM_NUMBER="+15005550006"
+        TWILIO_ACCOUNT_SID="ACtest",
+        TWILIO_AUTH_TOKEN="tok",
+        TWILIO_FROM_NUMBER="+15005550006",
     )
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_send_sms_action_success(self, mock_get_client):
@@ -280,7 +286,9 @@ class AutomationSendSMSTest(TestCase):
         result = auto._execute_send_sms(customer_no_phone, {})
         self.assertFalse(result)
 
-    @override_settings(TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER="")
+    @override_settings(
+        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
+    )
     def test_send_sms_not_configured_returns_false(self):
         auto = make_automation(
             self.tenant,
@@ -449,7 +457,9 @@ class BirthdayTriggerTaskTest(TestCase):
 class SMSCampaignTaskTest(TestCase):
     """Tests for send_sms_campaign Celery task."""
 
-    @override_settings(TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER="")
+    @override_settings(
+        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
+    )
     def test_returns_error_when_twilio_not_configured(self):
         from apps.notifications.sms.tasks import send_sms_campaign
 
@@ -474,7 +484,9 @@ class SMSCampaignTaskTest(TestCase):
         self.assertIn("not found", result["error"])
 
     @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest", TWILIO_AUTH_TOKEN="tok", TWILIO_FROM_NUMBER="+15005550006"
+        TWILIO_ACCOUNT_SID="ACtest",
+        TWILIO_AUTH_TOKEN="tok",
+        TWILIO_FROM_NUMBER="+15005550006",
     )
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_campaign_sends_to_customers(self, mock_get_client):
@@ -500,11 +512,15 @@ class SMSCampaignTaskTest(TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["succeeded"], 2)
-        self.assertEqual(result["failed"], 0)  # Empty-phone customer filtered by queryset
+        self.assertEqual(
+            result["failed"], 0
+        )  # Empty-phone customer filtered by queryset
         self.assertEqual(result["attempted"], 2)  # Only customers with phone
 
     @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest", TWILIO_AUTH_TOKEN="tok", TWILIO_FROM_NUMBER="+15005550006"
+        TWILIO_ACCOUNT_SID="ACtest",
+        TWILIO_AUTH_TOKEN="tok",
+        TWILIO_FROM_NUMBER="+15005550006",
     )
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_campaign_creates_campaign_run(self, mock_get_client):
@@ -528,9 +544,7 @@ class SMSCampaignTaskTest(TestCase):
         )
 
         self.assertTrue(result["success"])
-        campaign_run = CampaignRun.objects.get(
-            id=uuid.UUID(result["campaign_run_id"])
-        )
+        campaign_run = CampaignRun.objects.get(id=uuid.UUID(result["campaign_run_id"]))
         self.assertEqual(campaign_run.status, CampaignStatus.COMPLETED)
         self.assertEqual(campaign_run.sent_count, 1)
 

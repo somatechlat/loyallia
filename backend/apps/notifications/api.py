@@ -18,7 +18,6 @@ from apps.customers.models import Customer
 from apps.notifications.models import (
     CampaignDeliveryLog,
     CampaignRun,
-    CampaignStatus,
     DeliveryStatus,
     Notification,
     NotificationType,
@@ -302,7 +301,9 @@ def get_notification_stats(request):
         .filter(count__gt=0)
     )
     by_type = {
-        type_labels.get(row["notification_type"], row["notification_type"]): row["count"]
+        type_labels.get(row["notification_type"], row["notification_type"]): row[
+            "count"
+        ]
         for row in by_type_qs
     }
 
@@ -443,7 +444,9 @@ def create_campaign(request, data: CampaignCreateIn):
         )
         return {
             "success": True,
-            "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id),
+            "message": get_message(
+                "CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id
+            ),
         }
     else:
         raise HttpError(
@@ -527,7 +530,9 @@ def list_campaign_runs(request):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[:50]
+    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[
+        :50
+    ]
     return [
         CampaignRunListOut(
             id=str(run.id),
@@ -557,9 +562,7 @@ def get_campaign_results(request, campaign_run_id: str):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    run = get_object_or_404(
-        CampaignRun, id=campaign_run_id, tenant=request.tenant
-    )
+    run = get_object_or_404(CampaignRun, id=campaign_run_id, tenant=request.tenant)
 
     # Aggregate errors by type
     from django.db.models import Count
@@ -603,14 +606,14 @@ def get_campaign_results(request, campaign_run_id: str):
     response=RecipientListOut,
     summary="Detalle de destinatarios",
 )
-def get_campaign_recipients(request, campaign_run_id: str, status: str | None = None, page: int = 1):
+def get_campaign_recipients(
+    request, campaign_run_id: str, status: str | None = None, page: int = 1
+):
     """Get per-recipient delivery status for a campaign (paginated, filterable)."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    run = get_object_or_404(
-        CampaignRun, id=campaign_run_id, tenant=request.tenant
-    )
+    run = get_object_or_404(CampaignRun, id=campaign_run_id, tenant=request.tenant)
 
     per_page = 50
     qs = CampaignDeliveryLog.objects.filter(campaign_run=run)
@@ -658,31 +661,40 @@ def export_campaign_results(request, campaign_run_id: str):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    run = get_object_or_404(
-        CampaignRun, id=campaign_run_id, tenant=request.tenant
-    )
+    run = get_object_or_404(CampaignRun, id=campaign_run_id, tenant=request.tenant)
 
     logs = CampaignDeliveryLog.objects.filter(campaign_run=run).order_by("created_at")
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "Nombre", "Teléfono", "Email", "Estado", "Error",
-        "Enviado", "Entregado", "Leído", "Fallido",
-    ])
+    writer.writerow(
+        [
+            "Nombre",
+            "Teléfono",
+            "Email",
+            "Estado",
+            "Error",
+            "Enviado",
+            "Entregado",
+            "Leído",
+            "Fallido",
+        ]
+    )
 
     for log in logs:
-        writer.writerow([
-            log.recipient_name,
-            log.recipient_phone,
-            log.recipient_email,
-            log.get_status_display(),
-            log.error_code,
-            log.sent_at.isoformat() if log.sent_at else "",
-            log.delivered_at.isoformat() if log.delivered_at else "",
-            log.read_at.isoformat() if log.read_at else "",
-            log.failed_at.isoformat() if log.failed_at else "",
-        ])
+        writer.writerow(
+            [
+                log.recipient_name,
+                log.recipient_phone,
+                log.recipient_email,
+                log.get_status_display(),
+                log.error_code,
+                log.sent_at.isoformat() if log.sent_at else "",
+                log.delivered_at.isoformat() if log.delivered_at else "",
+                log.read_at.isoformat() if log.read_at else "",
+                log.failed_at.isoformat() if log.failed_at else "",
+            ]
+        )
 
     response = HttpResponse(output.getvalue(), content_type="text/csv")
     safe_title = run.title.replace(" ", "_")[:30]

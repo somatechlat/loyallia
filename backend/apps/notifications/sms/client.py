@@ -139,7 +139,9 @@ def send_sms_bulk(recipients: list[dict]) -> dict:
             results.append({"phone": phone[-4:], "success": True, "sid": msg.sid})
             succeeded += 1
         except Exception as exc:
-            results.append({"phone": phone[-4:], "success": False, "error": str(exc)[:200]})
+            results.append(
+                {"phone": phone[-4:], "success": False, "error": str(exc)[:200]}
+            )
             failed += 1
 
     logger.info("SMS bulk send: %d/%d succeeded", succeeded, len(recipients))

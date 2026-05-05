@@ -299,4 +299,3 @@ class WhatsAppOverrideIn(BaseModel):
     """Per-tenant WA daily limit override. 0 = use plan default."""
 
     daily_limit_override: int = 0
-

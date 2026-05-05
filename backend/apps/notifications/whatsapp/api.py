@@ -11,7 +11,6 @@ Endpoints:
 """
 
 import logging
-from datetime import datetime
 
 from django.db import models
 from django.utils import timezone
@@ -284,9 +283,11 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
         ).update(
             status=payload.status,
             **{
-                f"{payload.status}_at": timezone.now()
-                if payload.status in ("delivered", "read", "failed")
-                else None
+                f"{payload.status}_at": (
+                    timezone.now()
+                    if payload.status in ("delivered", "read", "failed")
+                    else None
+                )
             },
         )
         if updated and payload.status in ("delivered", "read", "failed"):
@@ -315,9 +316,7 @@ def session_webhook(request, payload: SessionWebhookIn):
         if payload.event == "connected":
             session.is_connected = True
             session.phone_number = payload.phone or ""
-            session.save(
-                update_fields=["is_connected", "phone_number", "updated_at"]
-            )
+            session.save(update_fields=["is_connected", "phone_number", "updated_at"])
             logger.info(
                 "WhatsApp connected for tenant %s (phone: %s)",
                 payload.tenant_id,
@@ -327,13 +326,9 @@ def session_webhook(request, payload: SessionWebhookIn):
         elif payload.event == "disconnected":
             session.is_connected = False
             session.save(update_fields=["is_connected", "updated_at"])
-            logger.info(
-                "WhatsApp disconnected for tenant %s", payload.tenant_id
-            )
+            logger.info("WhatsApp disconnected for tenant %s", payload.tenant_id)
 
     except Tenant.DoesNotExist:
-        logger.warning(
-            "Session webhook for unknown tenant: %s", payload.tenant_id
-        )
+        logger.warning("Session webhook for unknown tenant: %s", payload.tenant_id)
 
     return {"ok": True}

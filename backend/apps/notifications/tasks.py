@@ -285,7 +285,9 @@ def send_wallet_notification_campaign(
                         card.name,
                     )
             except Exception as exc:
-                logger.warning("Apple broadcast push failed for card %s: %s", card.name, exc)
+                logger.warning(
+                    "Apple broadcast push failed for card %s: %s", card.name, exc
+                )
 
     for customer in audience.iterator(chunk_size=50):
         try:
@@ -324,7 +326,9 @@ def send_wallet_notification_campaign(
 
                     # Apple Wallet individual push — trigger pass re-download
                     try:
-                        from apps.customers.pass_engine.apple_push import notify_pass_updated
+                        from apps.customers.pass_engine.apple_push import (
+                            notify_pass_updated,
+                        )
 
                         apple_count = notify_pass_updated(pass_obj)
                         apple_push_sent += apple_count
@@ -462,7 +466,9 @@ def send_whatsapp_campaign(
                 delivery_log.external_message_id = result.get("job_id", "")
                 delivery_log.save(
                     update_fields=[
-                        "status", "sent_at", "external_message_id",
+                        "status",
+                        "sent_at",
+                        "external_message_id",
                     ]
                 )
                 succeeded += 1
@@ -479,7 +485,10 @@ def send_whatsapp_campaign(
                 delivery_log.error_message = error_msg
                 delivery_log.save(
                     update_fields=[
-                        "status", "failed_at", "error_code", "error_message",
+                        "status",
+                        "failed_at",
+                        "error_code",
+                        "error_message",
                     ]
                 )
                 failed += 1
@@ -492,7 +501,10 @@ def send_whatsapp_campaign(
                 delivery_log.error_message = "Cliente sin número de teléfono"
                 delivery_log.save(
                     update_fields=[
-                        "status", "failed_at", "error_code", "error_message",
+                        "status",
+                        "failed_at",
+                        "error_code",
+                        "error_message",
                     ]
                 )
                 failed += 1
@@ -510,10 +522,15 @@ def send_whatsapp_campaign(
                 delivery_log.status = DeliveryStatus.FAILED
                 delivery_log.failed_at = timezone.now()
                 delivery_log.error_code = "BRIDGE_UNAVAILABLE"
-                delivery_log.error_message = "Puente WhatsApp no disponible — creada notificación in-app"
+                delivery_log.error_message = (
+                    "Puente WhatsApp no disponible — creada notificación in-app"
+                )
                 delivery_log.save(
                     update_fields=[
-                        "status", "failed_at", "error_code", "error_message",
+                        "status",
+                        "failed_at",
+                        "error_code",
+                        "error_message",
                     ]
                 )
                 failed += 1
@@ -524,16 +541,25 @@ def send_whatsapp_campaign(
     campaign_run.status = CampaignStatus.COMPLETED
     campaign_run.completed_at = timezone.now()
     if not bridge_available:
-        campaign_run.error_summary = "Bridge unavailable — messages created as in-app notifications"
+        campaign_run.error_summary = (
+            "Bridge unavailable — messages created as in-app notifications"
+        )
     campaign_run.save(
         update_fields=[
-            "sent_count", "failed_count", "status", "completed_at", "error_summary",
+            "sent_count",
+            "failed_count",
+            "status",
+            "completed_at",
+            "error_summary",
         ]
     )
 
     logger.info(
         "WhatsApp campaign %s complete: %d/%d sent, %d failed",
-        campaign_run.id, succeeded, total, failed,
+        campaign_run.id,
+        succeeded,
+        total,
+        failed,
     )
     return {
         "success": True,
@@ -620,5 +646,3 @@ def send_inactive_reminders(days_inactive: int = 30) -> dict:
 # RE-EXPORTS (split per Rule 245 — 650-line limit)
 # =============================================================================
 from apps.notifications.sms.tasks import send_sms_campaign  # noqa: E402, F401
-
-

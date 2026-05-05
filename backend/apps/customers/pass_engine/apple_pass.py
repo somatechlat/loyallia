@@ -20,7 +20,7 @@ import io
 import json
 import logging
 import zipfile
-from typing import Any, cast
+from typing import Any
 
 from django.conf import settings
 
@@ -183,18 +183,16 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         return None
 
     try:
-        from cryptography.hazmat.primitives.serialization import pkcs7 as pkcs7_module
-        from cryptography.hazmat.primitives.serialization import Encoding
-        from cryptography.hazmat.primitives import hashes, serialization
         from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.serialization import Encoding
+        from cryptography.hazmat.primitives.serialization import pkcs7 as pkcs7_module
 
         # Load the signing certificate
         cert = x509.load_pem_x509_certificate(cert_pem.encode("utf-8"))
 
         # Load the private key (no passphrase)
-        key = serialization.load_pem_private_key(
-            key_pem.encode("utf-8"), password=None
-        )
+        key = serialization.load_pem_private_key(key_pem.encode("utf-8"), password=None)
 
         # Load the WWDR intermediate certificate
         wwdr = x509.load_pem_x509_certificate(wwdr_pem.encode("utf-8"))
@@ -206,10 +204,13 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
             .set_data(manifest_json)
             .add_signer(cert, key, hashes.SHA256())
             .add_certificate(wwdr)
-            .sign(Encoding.DER, [
-                pkcs7_module.PKCS7Options.DetachedSignature,
-                pkcs7_module.PKCS7Options.Binary,
-            ])
+            .sign(
+                Encoding.DER,
+                [
+                    pkcs7_module.PKCS7Options.DetachedSignature,
+                    pkcs7_module.PKCS7Options.Binary,
+                ],
+            )
         )
         return signature
     except ImportError:

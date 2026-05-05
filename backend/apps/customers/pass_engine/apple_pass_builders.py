@@ -157,10 +157,18 @@ def _build_fields_for_type(card, customer_pass) -> dict:
 
         return {
             "headerFields": [
-                {"key": "tier", "label": "NIVEL", "value": current_tier.upper() or "BÁSICO"}
+                {
+                    "key": "tier",
+                    "label": "NIVEL",
+                    "value": current_tier.upper() or "BÁSICO",
+                }
             ],
             "primaryFields": [
-                {"key": "discount", "label": "DESCUENTO", "value": f"{current_discount}%"}
+                {
+                    "key": "discount",
+                    "label": "DESCUENTO",
+                    "value": f"{current_discount}%",
+                }
             ],
             "secondaryFields": [
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
@@ -177,7 +185,11 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     )
                     or "Sin niveles configurados",
                 },
-                {"key": "desc", "label": "Descripcion", "value": card.description or ""},
+                {
+                    "key": "desc",
+                    "label": "Descripcion",
+                    "value": card.description or "",
+                },
             ],
         }
 
@@ -194,13 +206,19 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             ],
             "secondaryFields": [
                 {"key": "code", "label": "CÓDIGO", "value": affiliate_code},
-                {"key": "since", "label": "MIEMBRO DESDE", "value": member_since or "—"},
+                {
+                    "key": "since",
+                    "label": "MIEMBRO DESDE",
+                    "value": member_since or "—",
+                },
             ],
             "backFields": [
                 {
                     "key": "benefits",
                     "label": "Beneficios",
-                    "value": ", ".join(metadata.get("benefits", [])) or card.description or "",
+                    "value": ", ".join(metadata.get("benefits", []))
+                    or card.description
+                    or "",
                 },
             ],
         }
@@ -231,7 +249,11 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "label": "Expira en",
                     "value": f"{metadata.get('expiry_days', 365)} días desde la emisión",
                 },
-                {"key": "desc", "label": "Descripcion", "value": card.description or ""},
+                {
+                    "key": "desc",
+                    "label": "Descripcion",
+                    "value": card.description or "",
+                },
             ],
         }
 
@@ -244,14 +266,16 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "headerFields": [
                 {"key": "discount", "label": "DESCUENTO", "value": f"{discount_pct}%"}
             ],
-            "primaryFields": [
-                {"key": "company", "label": "EMPRESA", "value": company}
-            ],
+            "primaryFields": [{"key": "company", "label": "EMPRESA", "value": company}],
             "secondaryFields": [
                 {"key": "employee", "label": "EMPLEADO", "value": customer_name},
             ],
             "backFields": [
-                {"key": "desc", "label": "Condiciones", "value": card.description or ""},
+                {
+                    "key": "desc",
+                    "label": "Condiciones",
+                    "value": card.description or "",
+                },
             ],
         }
 
@@ -280,7 +304,11 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "label": "Precio del paquete",
                     "value": f"${metadata.get('bundle_price', '—')}",
                 },
-                {"key": "desc", "label": "Descripcion", "value": card.description or ""},
+                {
+                    "key": "desc",
+                    "label": "Descripcion",
+                    "value": card.description or "",
+                },
             ],
         }
 
