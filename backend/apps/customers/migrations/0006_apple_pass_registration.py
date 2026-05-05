@@ -8,26 +8,54 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0005_remove_customerpass_idx_pass_card_active_and_more'),
+        ("customers", "0005_remove_customerpass_idx_pass_card_active_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ApplePassRegistration',
+            name="ApplePassRegistration",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('device_library_id', models.CharField(db_index=True, max_length=255, verbose_name='Device Library Identifier')),
-                ('push_token', models.CharField(max_length=255, verbose_name='APNs Push Token')),
-                ('registered_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('customer_pass', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='apple_registrations', to='customers.customerpass', verbose_name='Customer Pass')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "device_library_id",
+                    models.CharField(
+                        db_index=True,
+                        max_length=255,
+                        verbose_name="Device Library Identifier",
+                    ),
+                ),
+                (
+                    "push_token",
+                    models.CharField(max_length=255, verbose_name="APNs Push Token"),
+                ),
+                ("registered_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "customer_pass",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="apple_registrations",
+                        to="customers.customerpass",
+                        verbose_name="Customer Pass",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Apple Pass Registration',
-                'verbose_name_plural': 'Apple Pass Registrations',
-                'db_table': 'loyallia_apple_pass_registrations',
-                'indexes': [models.Index(fields=['customer_pass'], name='idx_apple_reg_pass')],
-                'unique_together': {('device_library_id', 'customer_pass')},
+                "verbose_name": "Apple Pass Registration",
+                "verbose_name_plural": "Apple Pass Registrations",
+                "db_table": "loyallia_apple_pass_registrations",
+                "indexes": [
+                    models.Index(fields=["customer_pass"], name="idx_apple_reg_pass")
+                ],
+                "unique_together": {("device_library_id", "customer_pass")},
             },
         ),
     ]

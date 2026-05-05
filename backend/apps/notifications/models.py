@@ -248,9 +248,7 @@ class CampaignRun(models.Model):
     message_preview = models.TextField(
         max_length=500, verbose_name="Vista previa del mensaje"
     )
-    segment_id = models.CharField(
-        max_length=50, default="all", verbose_name="Segmento"
-    )
+    segment_id = models.CharField(max_length=50, default="all", verbose_name="Segmento")
     status = models.CharField(
         max_length=20,
         choices=CampaignStatus.choices,
@@ -259,7 +257,9 @@ class CampaignRun(models.Model):
     )
 
     # Aggregate counters (updated by Celery worker after each message)
-    total_recipients = models.IntegerField(default=0, verbose_name="Total destinatarios")
+    total_recipients = models.IntegerField(
+        default=0, verbose_name="Total destinatarios"
+    )
     sent_count = models.IntegerField(default=0, verbose_name="Enviados")
     delivered_count = models.IntegerField(default=0, verbose_name="Entregados")
     failed_count = models.IntegerField(default=0, verbose_name="Fallidos")
@@ -373,9 +373,7 @@ class CampaignDeliveryLog(models.Model):
     recipient_phone = models.CharField(
         max_length=20, blank=True, default="", verbose_name="Teléfono"
     )
-    recipient_email = models.EmailField(
-        blank=True, default="", verbose_name="Email"
-    )
+    recipient_email = models.EmailField(blank=True, default="", verbose_name="Email")
     recipient_name = models.CharField(
         max_length=200, blank=True, default="", verbose_name="Nombre"
     )
@@ -390,7 +388,9 @@ class CampaignDeliveryLog(models.Model):
 
     # Bridge/Listmonk message ID for correlation
     external_message_id = models.CharField(
-        max_length=200, blank=True, default="",
+        max_length=200,
+        blank=True,
+        default="",
         verbose_name="ID externo del mensaje",
     )
 
@@ -405,9 +405,7 @@ class CampaignDeliveryLog(models.Model):
     # Timestamps for each state transition
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Enviado")
-    delivered_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Entregado"
-    )
+    delivered_at = models.DateTimeField(null=True, blank=True, verbose_name="Entregado")
     read_at = models.DateTimeField(null=True, blank=True, verbose_name="Leído")
     failed_at = models.DateTimeField(null=True, blank=True, verbose_name="Fallido")
 
@@ -450,12 +448,12 @@ class WhatsAppSession(models.Model):
         verbose_name="Negocio",
     )
     phone_number = models.CharField(
-        max_length=20, blank=True, default="",
+        max_length=20,
+        blank=True,
+        default="",
         verbose_name="Número de WhatsApp",
     )
-    is_connected = models.BooleanField(
-        default=False, verbose_name="Conectado"
-    )
+    is_connected = models.BooleanField(default=False, verbose_name="Conectado")
     last_qr_at = models.DateTimeField(
         null=True, blank=True, verbose_name="Último QR generado"
     )
@@ -566,30 +564,37 @@ class TenantEmailConfig(models.Model):
 
     # Custom sender identity
     sender_name = models.CharField(
-        max_length=200, blank=True, default="",
+        max_length=200,
+        blank=True,
+        default="",
         verbose_name="Nombre del remitente",
         help_text="Display name: 'H&M Ecuador'",
     )
     sender_email = models.EmailField(
-        blank=True, default="",
+        blank=True,
+        default="",
         verbose_name="Email del remitente",
         help_text="From address: promotions@hm-ecuador.com",
     )
 
     # Custom SMTP relay (optional — falls back to platform default)
     smtp_host = models.CharField(
-        max_length=255, blank=True, default="",
+        max_length=255,
+        blank=True,
+        default="",
         verbose_name="Servidor SMTP",
     )
-    smtp_port = models.PositiveIntegerField(
-        default=587, verbose_name="Puerto SMTP"
-    )
+    smtp_port = models.PositiveIntegerField(default=587, verbose_name="Puerto SMTP")
     smtp_user = models.CharField(
-        max_length=255, blank=True, default="",
+        max_length=255,
+        blank=True,
+        default="",
         verbose_name="Usuario SMTP",
     )
     smtp_password = models.CharField(
-        max_length=500, blank=True, default="",
+        max_length=500,
+        blank=True,
+        default="",
         verbose_name="Contraseña SMTP",
         help_text="SEC: Encrypted at rest in production via Vault",
     )

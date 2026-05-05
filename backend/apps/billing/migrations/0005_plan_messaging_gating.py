@@ -6,18 +6,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0004_subscription_trial_extended_count'),
+        ("billing", "0004_subscription_trial_extended_count"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_emails_month',
-            field=models.PositiveIntegerField(default=0, help_text='Monthly email campaign quota via Listmonk. 0=disabled.', verbose_name='Máx. emails/mes'),
+            model_name="subscriptionplan",
+            name="max_emails_month",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Monthly email campaign quota via Listmonk. 0=disabled.",
+                verbose_name="Máx. emails/mes",
+            ),
         ),
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_whatsapp_day',
-            field=models.PositiveIntegerField(default=0, help_text='Daily WhatsApp message limit. 0=disabled. Safe ceiling: 200 (Baileys anti-ban).', verbose_name='Máx. WhatsApp/día'),
+            model_name="subscriptionplan",
+            name="max_whatsapp_day",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Daily WhatsApp message limit. 0=disabled. Safe ceiling: 200 (Baileys anti-ban).",
+                verbose_name="Máx. WhatsApp/día",
+            ),
         ),
     ]

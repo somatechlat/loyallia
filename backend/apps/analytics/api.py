@@ -220,9 +220,11 @@ def get_customer_detail_analytics(request, customer_id: str):
     # Analytics are pre-calculated by background tasks on transaction boundaries.
 
     # PERF: select_related prevents N+1 when accessing card name in serialization
-    recent_transactions = Transaction.objects.filter(
-        customer_pass__customer=customer
-    ).select_related("customer_pass__card").order_by("-created_at")[:10]
+    recent_transactions = (
+        Transaction.objects.filter(customer_pass__customer=customer)
+        .select_related("customer_pass__card")
+        .order_by("-created_at")[:10]
+    )
 
     # PERF: select_related("card") prevents N+1 when serializing card names
     enrollments = CustomerPass.objects.filter(

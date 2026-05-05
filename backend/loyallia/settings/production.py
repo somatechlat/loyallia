@@ -78,7 +78,9 @@ if APPLE_WALLET_ENABLED:
     APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", strict=True)
     # Apple Wallet webServiceURL — derive from APP_URL if not explicitly set
     if not PASS_WEB_SERVICE_URL:  # noqa: F405
-        PASS_WEB_SERVICE_URL = f"{config('APP_URL', default='https://rewards.loyallia.com')}/wallet/apple"
+        PASS_WEB_SERVICE_URL = (
+            f"{config('APP_URL', default='https://rewards.loyallia.com')}/wallet/apple"
+        )
 
 # Google OAuth
 GOOGLE_OAUTH_CLIENT_ID = get_secret("google_oauth_client_id", strict=True)

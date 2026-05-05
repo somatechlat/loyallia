@@ -23,11 +23,10 @@ where authenticationToken is the value we set in pass.json.
 from __future__ import annotations
 
 import logging
-from datetime import timezone as dt_timezone
+from datetime import UTC
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
-
 from ninja import Router
 
 logger = logging.getLogger(__name__)
@@ -38,6 +37,7 @@ router = Router(tags=["Apple Wallet Web Service"])
 # =============================================================================
 # AUTH HELPER
 # =============================================================================
+
 
 def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
     """
@@ -51,7 +51,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
         logger.warning("Apple Web Service: Missing or invalid Authorization header")
         return False
 
-    provided_token = auth_header[len("ApplePass "):]
+    provided_token = auth_header[len("ApplePass ") :]
 
     # authenticationToken is the pass serial (UUID) without dashes
     expected_token = serial_number.replace("-", "")
@@ -77,13 +77,11 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
     try:
-        return CustomerPass.objects.select_related("card", "card__tenant", "customer").get(
-            id=serial_number
-        )
+        return CustomerPass.objects.select_related(
+            "card", "card__tenant", "customer"
+        ).get(id=serial_number)
     except CustomerPass.DoesNotExist:
-        logger.warning(
-            "Apple Web Service: Pass not found: serial=%s", serial_number
-        )
+        logger.warning("Apple Web Service: Pass not found: serial=%s", serial_number)
         return None
     except Exception as exc:
         logger.error(
@@ -95,6 +93,7 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
 # =============================================================================
 # ENDPOINT 1: Register Device
 # =============================================================================
+
 
 @router.post(
     "/v1/devices/{device_library_id}/registrations/{pass_type_id}/{serial_number}",
@@ -161,6 +160,7 @@ def register_device(
 # ENDPOINT 2: Unregister Device
 # =============================================================================
 
+
 @router.delete(
     "/v1/devices/{device_library_id}/registrations/{pass_type_id}/{serial_number}",
     response={200: None, 401: None},
@@ -204,6 +204,7 @@ def unregister_device(
 # =============================================================================
 # ENDPOINT 3: List Updated Passes for Device
 # =============================================================================
+
 
 @router.get(
     "/v1/devices/{device_library_id}/registrations/{pass_type_id}",
@@ -267,17 +268,20 @@ def list_updated_passes(
     # Format the lastUpdated tag as ISO timestamp
     last_updated_tag = ""
     if latest_update:
-        last_updated_tag = latest_update.astimezone(dt_timezone.utc).isoformat()
+        last_updated_tag = latest_update.astimezone(UTC).isoformat()
 
-    return JsonResponse({
-        "serialNumbers": serial_numbers,
-        "lastUpdated": last_updated_tag,
-    })
+    return JsonResponse(
+        {
+            "serialNumbers": serial_numbers,
+            "lastUpdated": last_updated_tag,
+        }
+    )
 
 
 # =============================================================================
 # ENDPOINT 4: Download Updated Pass
 # =============================================================================
+
 
 @router.get(
     "/v1/passes/{pass_type_id}/{serial_number}",
@@ -314,15 +318,15 @@ def get_updated_pass(
         content_type="application/vnd.apple.pkpass",
         status=200,
     )
-    response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="pass-{serial_number}.pkpass"'
+    )
 
     # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:
         from django.utils.http import http_date
 
-        response["Last-Modified"] = http_date(
-            customer_pass.last_updated.timestamp()
-        )
+        response["Last-Modified"] = http_date(customer_pass.last_updated.timestamp())
 
     logger.info(
         "Apple Web Service: Pass downloaded — serial=%s, size=%d bytes",

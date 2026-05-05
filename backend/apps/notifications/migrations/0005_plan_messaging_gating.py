@@ -6,18 +6,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notifications', '0004_alter_notification_channel_campaignrun_and_more'),
+        ("notifications", "0004_alter_notification_channel_campaignrun_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='whatsappsession',
-            name='daily_limit_override',
-            field=models.PositiveIntegerField(default=0, help_text='SuperAdmin override. 0=use plan limit. Max safe value: 200.', verbose_name='Override límite diario'),
+            model_name="whatsappsession",
+            name="daily_limit_override",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="SuperAdmin override. 0=use plan limit. Max safe value: 200.",
+                verbose_name="Override límite diario",
+            ),
         ),
         migrations.AlterField(
-            model_name='whatsappsession',
-            name='daily_limit',
-            field=models.IntegerField(default=200, verbose_name='Límite diario (legacy)'),
+            model_name="whatsappsession",
+            name="daily_limit",
+            field=models.IntegerField(
+                default=200, verbose_name="Límite diario (legacy)"
+            ),
         ),
     ]

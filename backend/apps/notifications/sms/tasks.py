@@ -145,22 +145,26 @@ def send_sms_campaign(
                 delivery_log.error_message = result.get("error", "Unknown error")[:500]
                 delivery_log.save(
                     update_fields=[
-                        "status", "failed_at", "error_code", "error_message",
+                        "status",
+                        "failed_at",
+                        "error_code",
+                        "error_message",
                     ]
                 )
                 failed += 1
         except Exception as exc:
             error_msg = str(exc)[:500]
-            logger.error(
-                "SMS send failed for customer %s: %s", customer.id, error_msg
-            )
+            logger.error("SMS send failed for customer %s: %s", customer.id, error_msg)
             delivery_log.status = DeliveryStatus.FAILED
             delivery_log.failed_at = timezone.now()
             delivery_log.error_code = "SEND_ERROR"
             delivery_log.error_message = error_msg
             delivery_log.save(
                 update_fields=[
-                    "status", "failed_at", "error_code", "error_message",
+                    "status",
+                    "failed_at",
+                    "error_code",
+                    "error_message",
                 ]
             )
             failed += 1
@@ -172,13 +176,19 @@ def send_sms_campaign(
     campaign_run.completed_at = timezone.now()
     campaign_run.save(
         update_fields=[
-            "sent_count", "failed_count", "status", "completed_at",
+            "sent_count",
+            "failed_count",
+            "status",
+            "completed_at",
         ]
     )
 
     logger.info(
         "SMS campaign %s complete: %d/%d sent, %d failed",
-        campaign_run.id, succeeded, total, failed,
+        campaign_run.id,
+        succeeded,
+        total,
+        failed,
     )
     return {
         "success": True,

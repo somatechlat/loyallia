@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0005_plan_messaging_gating'),
+        ("billing", "0005_plan_messaging_gating"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_sms_day',
-            field=models.PositiveIntegerField(default=0, help_text='Daily SMS quota via Twilio. 0=disabled.', verbose_name='Máx. SMS/día'),
+            model_name="subscriptionplan",
+            name="max_sms_day",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Daily SMS quota via Twilio. 0=disabled.",
+                verbose_name="Máx. SMS/día",
+            ),
         ),
     ]

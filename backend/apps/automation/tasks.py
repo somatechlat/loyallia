@@ -187,4 +187,3 @@ def evaluate_birthday_triggers() -> dict:
 
     logger.info("evaluate_birthday_triggers: %d automation triggers fired", triggered)
     return {"triggered": triggered}
-

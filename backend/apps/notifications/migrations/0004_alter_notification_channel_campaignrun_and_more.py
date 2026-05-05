@@ -8,133 +8,449 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0006_apple_pass_registration'),
-        ('notifications', '0003_remove_notification_idx_notif_tenant_type'),
-        ('tenants', '0004_tenant_default_language'),
+        ("customers", "0006_apple_pass_registration"),
+        ("notifications", "0003_remove_notification_idx_notif_tenant_type"),
+        ("tenants", "0004_tenant_default_language"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='notification',
-            name='channel',
-            field=models.CharField(choices=[('push', 'Push Notification'), ('sms', 'SMS'), ('email', 'Email'), ('in_app', 'In-App Notification'), ('whatsapp', 'WhatsApp')], default='push', max_length=20, verbose_name='Canal'),
+            model_name="notification",
+            name="channel",
+            field=models.CharField(
+                choices=[
+                    ("push", "Push Notification"),
+                    ("sms", "SMS"),
+                    ("email", "Email"),
+                    ("in_app", "In-App Notification"),
+                    ("whatsapp", "WhatsApp"),
+                ],
+                default="push",
+                max_length=20,
+                verbose_name="Canal",
+            ),
         ),
         migrations.CreateModel(
-            name='CampaignRun',
+            name="CampaignRun",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('channel', models.CharField(choices=[('push', 'Push Notification'), ('sms', 'SMS'), ('email', 'Email'), ('in_app', 'In-App Notification'), ('whatsapp', 'WhatsApp')], max_length=20, verbose_name='Canal')),
-                ('title', models.CharField(max_length=200, verbose_name='Título')),
-                ('message_preview', models.TextField(max_length=500, verbose_name='Vista previa del mensaje')),
-                ('segment_id', models.CharField(default='all', max_length=50, verbose_name='Segmento')),
-                ('status', models.CharField(choices=[('queued', 'En cola'), ('in_progress', 'Enviando'), ('completed', 'Completado'), ('failed', 'Fallido'), ('paused', 'Pausado')], default='queued', max_length=20, verbose_name='Estado')),
-                ('total_recipients', models.IntegerField(default=0, verbose_name='Total destinatarios')),
-                ('sent_count', models.IntegerField(default=0, verbose_name='Enviados')),
-                ('delivered_count', models.IntegerField(default=0, verbose_name='Entregados')),
-                ('failed_count', models.IntegerField(default=0, verbose_name='Fallidos')),
-                ('read_count', models.IntegerField(default=0, verbose_name='Leídos')),
-                ('started_at', models.DateTimeField(blank=True, null=True, verbose_name='Inicio de envío')),
-                ('completed_at', models.DateTimeField(blank=True, null=True, verbose_name='Fin de envío')),
-                ('error_summary', models.TextField(blank=True, default='', verbose_name='Resumen de errores')),
-                ('sender_domain', models.CharField(default='loyallia', help_text="'loyallia' for default or 'custom' for tenant SMTP", max_length=20, verbose_name='Dominio remitente')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('tenant', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='campaign_runs', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "channel",
+                    models.CharField(
+                        choices=[
+                            ("push", "Push Notification"),
+                            ("sms", "SMS"),
+                            ("email", "Email"),
+                            ("in_app", "In-App Notification"),
+                            ("whatsapp", "WhatsApp"),
+                        ],
+                        max_length=20,
+                        verbose_name="Canal",
+                    ),
+                ),
+                ("title", models.CharField(max_length=200, verbose_name="Título")),
+                (
+                    "message_preview",
+                    models.TextField(
+                        max_length=500, verbose_name="Vista previa del mensaje"
+                    ),
+                ),
+                (
+                    "segment_id",
+                    models.CharField(
+                        default="all", max_length=50, verbose_name="Segmento"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("queued", "En cola"),
+                            ("in_progress", "Enviando"),
+                            ("completed", "Completado"),
+                            ("failed", "Fallido"),
+                            ("paused", "Pausado"),
+                        ],
+                        default="queued",
+                        max_length=20,
+                        verbose_name="Estado",
+                    ),
+                ),
+                (
+                    "total_recipients",
+                    models.IntegerField(default=0, verbose_name="Total destinatarios"),
+                ),
+                ("sent_count", models.IntegerField(default=0, verbose_name="Enviados")),
+                (
+                    "delivered_count",
+                    models.IntegerField(default=0, verbose_name="Entregados"),
+                ),
+                (
+                    "failed_count",
+                    models.IntegerField(default=0, verbose_name="Fallidos"),
+                ),
+                ("read_count", models.IntegerField(default=0, verbose_name="Leídos")),
+                (
+                    "started_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Inicio de envío"
+                    ),
+                ),
+                (
+                    "completed_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Fin de envío"
+                    ),
+                ),
+                (
+                    "error_summary",
+                    models.TextField(
+                        blank=True, default="", verbose_name="Resumen de errores"
+                    ),
+                ),
+                (
+                    "sender_domain",
+                    models.CharField(
+                        default="loyallia",
+                        help_text="'loyallia' for default or 'custom' for tenant SMTP",
+                        max_length=20,
+                        verbose_name="Dominio remitente",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "tenant",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="campaign_runs",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Ejecución de campaña',
-                'verbose_name_plural': 'Ejecuciones de campaña',
-                'db_table': 'loyallia_campaign_runs',
-                'ordering': ['-created_at'],
+                "verbose_name": "Ejecución de campaña",
+                "verbose_name_plural": "Ejecuciones de campaña",
+                "db_table": "loyallia_campaign_runs",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='CampaignDeliveryLog',
+            name="CampaignDeliveryLog",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('recipient_phone', models.CharField(blank=True, default='', max_length=20, verbose_name='Teléfono')),
-                ('recipient_email', models.EmailField(blank=True, default='', max_length=254, verbose_name='Email')),
-                ('recipient_name', models.CharField(blank=True, default='', max_length=200, verbose_name='Nombre')),
-                ('status', models.CharField(choices=[('queued', 'En cola'), ('sent', 'Enviado'), ('delivered', 'Entregado'), ('read', 'Leído'), ('failed', 'Fallido'), ('bounced', 'Rebotado')], default='queued', max_length=20, verbose_name='Estado')),
-                ('external_message_id', models.CharField(blank=True, default='', max_length=200, verbose_name='ID externo del mensaje')),
-                ('error_code', models.CharField(blank=True, default='', max_length=50, verbose_name='Código de error')),
-                ('error_message', models.TextField(blank=True, default='', verbose_name='Mensaje de error')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('sent_at', models.DateTimeField(blank=True, null=True, verbose_name='Enviado')),
-                ('delivered_at', models.DateTimeField(blank=True, null=True, verbose_name='Entregado')),
-                ('read_at', models.DateTimeField(blank=True, null=True, verbose_name='Leído')),
-                ('failed_at', models.DateTimeField(blank=True, null=True, verbose_name='Fallido')),
-                ('customer', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='campaign_deliveries', to='customers.customer', verbose_name='Cliente')),
-                ('campaign_run', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='delivery_logs', to='notifications.campaignrun', verbose_name='Campaña')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "recipient_phone",
+                    models.CharField(
+                        blank=True, default="", max_length=20, verbose_name="Teléfono"
+                    ),
+                ),
+                (
+                    "recipient_email",
+                    models.EmailField(
+                        blank=True, default="", max_length=254, verbose_name="Email"
+                    ),
+                ),
+                (
+                    "recipient_name",
+                    models.CharField(
+                        blank=True, default="", max_length=200, verbose_name="Nombre"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("queued", "En cola"),
+                            ("sent", "Enviado"),
+                            ("delivered", "Entregado"),
+                            ("read", "Leído"),
+                            ("failed", "Fallido"),
+                            ("bounced", "Rebotado"),
+                        ],
+                        default="queued",
+                        max_length=20,
+                        verbose_name="Estado",
+                    ),
+                ),
+                (
+                    "external_message_id",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=200,
+                        verbose_name="ID externo del mensaje",
+                    ),
+                ),
+                (
+                    "error_code",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=50,
+                        verbose_name="Código de error",
+                    ),
+                ),
+                (
+                    "error_message",
+                    models.TextField(
+                        blank=True, default="", verbose_name="Mensaje de error"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "sent_at",
+                    models.DateTimeField(blank=True, null=True, verbose_name="Enviado"),
+                ),
+                (
+                    "delivered_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Entregado"
+                    ),
+                ),
+                (
+                    "read_at",
+                    models.DateTimeField(blank=True, null=True, verbose_name="Leído"),
+                ),
+                (
+                    "failed_at",
+                    models.DateTimeField(blank=True, null=True, verbose_name="Fallido"),
+                ),
+                (
+                    "customer",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="campaign_deliveries",
+                        to="customers.customer",
+                        verbose_name="Cliente",
+                    ),
+                ),
+                (
+                    "campaign_run",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="delivery_logs",
+                        to="notifications.campaignrun",
+                        verbose_name="Campaña",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Log de entrega',
-                'verbose_name_plural': 'Logs de entrega',
-                'db_table': 'loyallia_campaign_delivery_logs',
-                'ordering': ['-created_at'],
+                "verbose_name": "Log de entrega",
+                "verbose_name_plural": "Logs de entrega",
+                "db_table": "loyallia_campaign_delivery_logs",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='TenantEmailConfig',
+            name="TenantEmailConfig",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('sender_name', models.CharField(blank=True, default='', help_text="Display name: 'H&M Ecuador'", max_length=200, verbose_name='Nombre del remitente')),
-                ('sender_email', models.EmailField(blank=True, default='', help_text='From address: promotions@hm-ecuador.com', max_length=254, verbose_name='Email del remitente')),
-                ('smtp_host', models.CharField(blank=True, default='', max_length=255, verbose_name='Servidor SMTP')),
-                ('smtp_port', models.PositiveIntegerField(default=587, verbose_name='Puerto SMTP')),
-                ('smtp_user', models.CharField(blank=True, default='', max_length=255, verbose_name='Usuario SMTP')),
-                ('smtp_password', models.CharField(blank=True, default='', help_text='SEC: Encrypted at rest in production via Vault', max_length=500, verbose_name='Contraseña SMTP')),
-                ('use_tls', models.BooleanField(default=True, verbose_name='Usar TLS')),
-                ('is_verified', models.BooleanField(default=False, help_text='Set to True after successful test email delivery', verbose_name='Verificado')),
-                ('verified_at', models.DateTimeField(blank=True, null=True, verbose_name='Verificado el')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('tenant', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='email_config', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "sender_name",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="Display name: 'H&M Ecuador'",
+                        max_length=200,
+                        verbose_name="Nombre del remitente",
+                    ),
+                ),
+                (
+                    "sender_email",
+                    models.EmailField(
+                        blank=True,
+                        default="",
+                        help_text="From address: promotions@hm-ecuador.com",
+                        max_length=254,
+                        verbose_name="Email del remitente",
+                    ),
+                ),
+                (
+                    "smtp_host",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=255,
+                        verbose_name="Servidor SMTP",
+                    ),
+                ),
+                (
+                    "smtp_port",
+                    models.PositiveIntegerField(
+                        default=587, verbose_name="Puerto SMTP"
+                    ),
+                ),
+                (
+                    "smtp_user",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=255,
+                        verbose_name="Usuario SMTP",
+                    ),
+                ),
+                (
+                    "smtp_password",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="SEC: Encrypted at rest in production via Vault",
+                        max_length=500,
+                        verbose_name="Contraseña SMTP",
+                    ),
+                ),
+                ("use_tls", models.BooleanField(default=True, verbose_name="Usar TLS")),
+                (
+                    "is_verified",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Set to True after successful test email delivery",
+                        verbose_name="Verificado",
+                    ),
+                ),
+                (
+                    "verified_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Verificado el"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "tenant",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="email_config",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Configuración de email',
-                'verbose_name_plural': 'Configuraciones de email',
-                'db_table': 'loyallia_tenant_email_configs',
+                "verbose_name": "Configuración de email",
+                "verbose_name_plural": "Configuraciones de email",
+                "db_table": "loyallia_tenant_email_configs",
             },
         ),
         migrations.CreateModel(
-            name='WhatsAppSession',
+            name="WhatsAppSession",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('phone_number', models.CharField(blank=True, default='', max_length=20, verbose_name='Número de WhatsApp')),
-                ('is_connected', models.BooleanField(default=False, verbose_name='Conectado')),
-                ('last_qr_at', models.DateTimeField(blank=True, null=True, verbose_name='Último QR generado')),
-                ('messages_sent_today', models.IntegerField(default=0, verbose_name='Mensajes enviados hoy')),
-                ('daily_limit', models.IntegerField(default=200, verbose_name='Límite diario')),
-                ('warmup_day', models.IntegerField(default=0, help_text='0=new number, 7=fully warmed up. Limit scales linearly.', verbose_name='Día de calentamiento')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('tenant', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='whatsapp_session', to='tenants.tenant', verbose_name='Negocio')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "phone_number",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        max_length=20,
+                        verbose_name="Número de WhatsApp",
+                    ),
+                ),
+                (
+                    "is_connected",
+                    models.BooleanField(default=False, verbose_name="Conectado"),
+                ),
+                (
+                    "last_qr_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Último QR generado"
+                    ),
+                ),
+                (
+                    "messages_sent_today",
+                    models.IntegerField(
+                        default=0, verbose_name="Mensajes enviados hoy"
+                    ),
+                ),
+                (
+                    "daily_limit",
+                    models.IntegerField(default=200, verbose_name="Límite diario"),
+                ),
+                (
+                    "warmup_day",
+                    models.IntegerField(
+                        default=0,
+                        help_text="0=new number, 7=fully warmed up. Limit scales linearly.",
+                        verbose_name="Día de calentamiento",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "tenant",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="whatsapp_session",
+                        to="tenants.tenant",
+                        verbose_name="Negocio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Sesión de WhatsApp',
-                'verbose_name_plural': 'Sesiones de WhatsApp',
-                'db_table': 'loyallia_whatsapp_sessions',
+                "verbose_name": "Sesión de WhatsApp",
+                "verbose_name_plural": "Sesiones de WhatsApp",
+                "db_table": "loyallia_whatsapp_sessions",
             },
         ),
         migrations.AddIndex(
-            model_name='campaignrun',
-            index=models.Index(fields=['tenant', '-created_at'], name='loyallia_ca_tenant__28298a_idx'),
+            model_name="campaignrun",
+            index=models.Index(
+                fields=["tenant", "-created_at"], name="loyallia_ca_tenant__28298a_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='campaignrun',
-            index=models.Index(fields=['status'], name='loyallia_ca_status_a1024e_idx'),
+            model_name="campaignrun",
+            index=models.Index(fields=["status"], name="loyallia_ca_status_a1024e_idx"),
         ),
         migrations.AddIndex(
-            model_name='campaigndeliverylog',
-            index=models.Index(fields=['campaign_run', 'status'], name='loyallia_ca_campaig_900dfb_idx'),
+            model_name="campaigndeliverylog",
+            index=models.Index(
+                fields=["campaign_run", "status"], name="loyallia_ca_campaig_900dfb_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='campaigndeliverylog',
-            index=models.Index(fields=['customer', '-created_at'], name='loyallia_ca_custome_185532_idx'),
+            model_name="campaigndeliverylog",
+            index=models.Index(
+                fields=["customer", "-created_at"],
+                name="loyallia_ca_custome_185532_idx",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='campaigndeliverylog',
-            unique_together={('campaign_run', 'customer')},
+            name="campaigndeliverylog",
+            unique_together={("campaign_run", "customer")},
         ),
     ]
