@@ -1,6 +1,21 @@
 """
-Loyallia — Analytics Celery Tasks
+Loyallia — Analytics Celery Tasks (apps/analytics/tasks.py)
+
 Asynchronous calculation of business intelligence metrics.
+Triggered after every transaction to keep materialized analytics tables fresh.
+
+Architecture:
+    update_tenant_analytics is the main entry point. It recalculates:
+    1. ProgramAnalytics for every card/program in the tenant.
+    2. DailyAnalytics for the last 7 days (backfills gaps from missed runs).
+
+Performance (Rule 12):
+    - PERF: Runs on 'default' queue, not the 'pass_generation' queue.
+    - PERF: update_metrics() on ProgramAnalytics uses SQL aggregates.
+    - PERF: 7-day DailyAnalytics backfill uses get_or_create (no updates if exists).
+    - PERF: Called with countdown=2 from transact() to batch rapid scans.
+
+Called by: apps/transactions/api.py (transact endpoint, via apply_async).
 """
 
 import logging
@@ -19,15 +34,14 @@ logger = logging.getLogger(__name__)
     name="apps.analytics.tasks.update_tenant_analytics",
 )
 def update_tenant_analytics(self, tenant_id: str) -> dict:
-    """
-    Recalculate and store program and daily analytics for a tenant.
-    This prevents the O(N) database lockups that used to happen on dashboard load.
+    """Recalculate program and daily analytics for a tenant.
 
-    Args:
-        tenant_id: UUID string of Tenant
+    Prevents the O(N) database lockups that would occur if analytics
+    were computed synchronously on dashboard page load.
 
-    Returns:
-        dict with success status
+    PERF: Iterates over programs (typically <20 per tenant) and runs
+    SQL aggregate queries inside update_metrics(). 7-day DailyAnalytics
+    backfill uses get_or_create to skip already-computed days.
     """
     import uuid
 

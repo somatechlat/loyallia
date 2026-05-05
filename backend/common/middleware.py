@@ -1,8 +1,18 @@
 """
-Loyallia — Common Middleware
-B-011: Request ID middleware for distributed tracing.
-LYL-H-SEC-010: CSP nonce generation for script/style tags.
-LYL-M-SEC-018: CSRF enforcement on non-API routes.
+Loyallia — Common Middleware (common/middleware.py)
+
+Three middleware classes that run on EVERY request:
+1. RequestIDMiddleware (B-011): Distributed tracing via X-Request-ID.
+2. CSPNonceMiddleware (LYL-H-SEC-010): Per-request CSP nonce generation.
+3. CSRFExemptAPIMiddleware (LYL-M-SEC-018): Exempt JWT-authenticated API routes from CSRF.
+
+Performance (Rule 12):
+    All three middlewares are O(1) with zero database queries.
+    RequestIDMiddleware: uuid4().hex is a single call.
+    CSPNonceMiddleware: token_urlsafe(16) is a single call.
+    CSRFExemptAPIMiddleware: single startswith() string check.
+
+Called by: Django middleware chain (MIDDLEWARE setting in settings/base.py).
 """
 
 import logging
@@ -29,6 +39,7 @@ class RequestIDMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # PERF: reuse upstream ID if present, otherwise generate (single uuid4 call)
         request_id = request.META.get(
             f"HTTP_{self.HEADER.upper().replace('-', '_')}", ""
         )
@@ -38,6 +49,7 @@ class RequestIDMiddleware:
         request.request_id = request_id
 
         response = self.get_response(request)
+        # Echo ID back so clients can correlate requests with server logs
         response[self.HEADER] = request_id
         return response
 
@@ -57,6 +69,7 @@ class CSPNonceMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # SEC: 128-bit cryptographic nonce (22 chars base64url) per request
         nonce = secrets.token_urlsafe(16)
         request.csp_nonce = nonce
 
@@ -92,7 +105,8 @@ class CSRFExemptAPIMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Mark API paths as CSRF-exempt (JWT auth is CSRF-immune)
+        # SEC: /api/ paths use JWT Bearer tokens which are CSRF-immune by design.
+        # Browsers never auto-attach Authorization headers, so CSRF is impossible.
         if request.path.startswith("/api/"):
             request._dont_enforce_csrf_checks = True
 

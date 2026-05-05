@@ -164,6 +164,31 @@ NO CODING until the entire architecture + flow is understood.
 - **Security:** Standard Django Session/JWT auth.
 
 ===============================================================
+       ⚡ RULE 12: PERFORMANCE-AWARE PROGRAMMING (MURATORI)
+===============================================================
+
+- **REDUCE WORK, DON'T "OPTIMIZE"**: Architecture must minimize total operations. Don't make bad code faster — write less code that does more.
+- **SQL-SIDE COMPUTATION**: Push aggregation, filtering, grouping to the DB. Never fetch rows into Python/JS to process what SQL handles in one query.
+- **NO CHATTY OPERATIONS**: Batch DB writes (`bulk_create`/`bulk_update`). Combine COUNT/SUM into single `aggregate()`. Every round-trip costs.
+- **KNOW YOUR HOT PATH**: Profile before optimizing. Protect the request/response cycle. Offload heavy work to Celery.
+- **NO HIDDEN COSTS**: Prevent N+1 (`select_related`/`prefetch_related`). No lazy-loading traps. No framework magic you can't explain.
+- **CACHE AFTER OPTIMIZATION**: Redis is for fast paths already optimized — never mask slow queries with cache.
+- **SIMPLE DISPATCH**: Switch/if-else over polymorphic hierarchies in hot paths. Static arrays over runtime computation.
+- **MEASURE, DON'T GUESS**: Use `django-debug-toolbar`, DevTools, or `EXPLAIN ANALYZE` before claiming "fast enough."
+
+===============================================================
+            📝 RULE 13: NO AI SLOP — COMMENT STANDARDS
+===============================================================
+
+- **WHY, NOT WHAT**: Never restate code in English. Bad: `# Get the user`. Good: `# SEC: tenant-scoped lookup prevents cross-tenant data leak`.
+- **MODULE DOCSTRINGS**: Every .py file top: purpose, perf notes, tenant isolation, callers.
+- **FUNCTION DOCSTRINGS**: One-liner minimum. Multi-line for complex logic with params/returns/side-effects.
+- **PERF: PREFIX**: Tag performance-critical decisions (`# PERF: bulk_create avoids 15 round-trips`).
+- **SEC: PREFIX**: Tag security decisions (`# SEC: filter by tenant prevents data leak`).
+- **REQ/BUG/PERF REFS**: Link to requirements, bugs, or perf findings so decisions are traceable.
+- **NO ORPHAN COMMENTS**: If code changes, comments must change. Stale comments are worse than none.
+
+===============================================================
                        DEPLOYMENT POSTURE
 ===============================================================
 

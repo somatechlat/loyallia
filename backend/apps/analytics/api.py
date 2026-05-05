@@ -1,6 +1,29 @@
 """
-Loyallia — Analytics API router
-Business intelligence and reporting endpoints.
+Loyallia — Analytics API Router (apps/analytics/api.py)
+
+Business intelligence endpoints: dashboard overview, customer analytics,
+program analytics, time-series trends, and customer segmentation.
+
+Architecture:
+    Analytics data is pre-computed by Celery background tasks (update_tenant_analytics,
+    update_customer_analytics) triggered after each transaction. Endpoints here read
+    from materialized analytics tables, not from raw transaction scans.
+
+    The advanced analytics sub-router (revenue, visits, demographics, program-type)
+    is mounted at the bottom via advanced_api.py (split for Rule 245 line limits).
+
+Performance (Rule 12):
+    - Overview: 5 COUNT/SUM queries (could be consolidated via subquery, but each
+      targets a different table so consolidation benefit is marginal).
+    - Customer/Program analytics: read from pre-computed tables (O(1) per page load).
+    - Segmentation: single GROUP BY query with annotate().
+    - Trends: reads from DailyAnalytics materialized table.
+
+Security (SEC):
+    - All queries filtered by request.tenant (tenant isolation).
+    - All endpoints require MANAGER+ role.
+
+Called by: Dashboard analytics page, customer detail page, program detail page.
 """
 
 from datetime import timedelta
@@ -56,7 +79,12 @@ class ProgramAnalyticsSchema(BaseModel):
 # ============ Dashboard Overview ============
 @router.get("/overview/", auth=jwt_auth, summary="Get business overview analytics")
 def get_overview_analytics(request, days: int = 30):
-    """Get key business metrics for dashboard overview. MANAGER+ only."""
+    """Dashboard overview with key business metrics for the selected period.
+
+    SEC: All queries scoped to request.tenant.
+    PERF: 5 independent queries against different tables. Consolidation into a
+    single query is not beneficial here since each targets a different model.
+    """
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
 
@@ -121,7 +149,12 @@ def get_overview_analytics(request, days: int = 30):
 def get_customer_analytics(
     request, segment: str | None = None, limit: int = 50, offset: int = 0
 ):
-    """Get detailed customer analytics. MANAGER+ only."""
+    """Paginated customer analytics with optional segment filter.
+
+    PERF: Reads from pre-computed CustomerAnalytics table (not raw transactions).
+    select_related("customer") prevents N+1 when serializing customer names.
+    SEC: Scoped to request.tenant.
+    """
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
 
@@ -168,7 +201,11 @@ def get_customer_analytics(
     summary="Get individual customer analytics",
 )
 def get_customer_detail_analytics(request, customer_id: str):
-    """Get detailed analytics for a specific customer. MANAGER+ only."""
+    """Detailed analytics for a single customer with recent transactions and enrollments.
+
+    SEC: Customer lookup scoped to request.tenant.
+    PERF: Recent transactions use select_related to avoid N+1 on card names.
+    """
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
 
@@ -182,13 +219,15 @@ def get_customer_detail_analytics(request, customer_id: str):
     )
     # Analytics are pre-calculated by background tasks on transaction boundaries.
 
-    # Get recent transactions
+    # PERF: select_related prevents N+1 when accessing card name in serialization
     recent_transactions = Transaction.objects.filter(
         customer_pass__customer=customer
-    ).order_by("-created_at")[:10]
+    ).select_related("customer_pass__card").order_by("-created_at")[:10]
 
-    # Get program enrollments
-    enrollments = CustomerPass.objects.filter(customer=customer, is_active=True)
+    # PERF: select_related("card") prevents N+1 when serializing card names
+    enrollments = CustomerPass.objects.filter(
+        customer=customer, is_active=True
+    ).select_related("card")
 
     return {
         "customer": {
@@ -234,7 +273,12 @@ def get_customer_detail_analytics(request, customer_id: str):
 # ============ Program Analytics ============
 @router.get("/programs/", auth=jwt_auth, summary="Get program analytics")
 def get_program_analytics(request, limit: int = 50, offset: int = 0):
-    """Get detailed program analytics. MANAGER+ only."""
+    """Paginated program analytics from pre-computed ProgramAnalytics table.
+
+    PERF: Reads from materialized analytics (not raw transactions).
+    select_related("card") added to prevent N+1 on card name serialization.
+    SEC: Scoped to request.tenant.
+    """
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
 
@@ -244,8 +288,8 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
     # Analytics metrics are updated asynchronously. The synchronous O(N) update loop
     # has been removed to prevent database lockups under production loads.
 
-    # Query
-    query = ProgramAnalytics.objects.filter(tenant=tenant)
+    # PERF: select_related("card") prevents N+1 on card.name access in serialization
+    query = ProgramAnalytics.objects.filter(tenant=tenant).select_related("card")
     total = query.count()
     analytics = query[offset : offset + limit]
 
@@ -277,7 +321,11 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
     "/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics"
 )
 def get_program_detail_analytics(request, program_id: str):
-    """Get detailed analytics for a specific program. MANAGER+ only."""
+    """Detailed analytics for a single program with top customers.
+
+    SEC: Card lookup scoped to request.tenant.
+    PERF: Top customers computed via annotate+aggregate (SQL-side, not Python).
+    """
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
 
@@ -333,7 +381,12 @@ def get_program_detail_analytics(request, program_id: str):
 # ============ Time Series Analytics ============
 @router.get("/trends/", auth=jwt_auth, summary="Get time series analytics")
 def get_trends_analytics(request, days: int = 30):
-    """Get daily analytics trends. MANAGER+ only."""
+    """Daily time-series analytics for chart visualization.
+
+    PERF: Reads from pre-computed DailyAnalytics table. If no data exists,
+    the background task (update_daily_analytics) will populate it.
+    SEC: Scoped to request.tenant.
+    """
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
 
@@ -371,7 +424,12 @@ def get_trends_analytics(request, days: int = 30):
 # ============ Segmentation Analytics ============
 @router.get("/segments/", auth=jwt_auth, summary="Get customer segmentation analytics")
 def get_segmentation_analytics(request):
-    """Get customer segmentation breakdown. MANAGER+ only."""
+    """Customer segmentation breakdown by RFM segment.
+
+    PERF: Single GROUP BY query with annotate() -- all aggregation is SQL-side.
+    No Python iteration over customer rows.
+    SEC: Scoped to request.tenant.
+    """
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
 

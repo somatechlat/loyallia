@@ -265,20 +265,38 @@ def send_notification(request, customer_id: str, data: SendNotificationSchema):
 
 @router.get("/stats/", auth=jwt_auth, summary="Get notification statistics")
 def get_notification_stats(request):
-    """Get notification statistics for the business."""
+    """Get notification statistics for the business.
+
+    PERF-F5: Uses a single aggregate query + a single GROUP BY query
+    instead of N separate COUNT queries per notification type.
+    """
+    from django.db.models import Count, Q
+
     notifications = Notification.objects.filter(tenant=request.tenant)
 
-    total = notifications.count()
-    sent = notifications.filter(is_sent=True).count()
-    read = notifications.filter(is_read=True).count()
-    clicked = notifications.filter(is_clicked=True).count()
+    # Single aggregate query: total, sent, read, clicked in one DB round-trip
+    agg = notifications.aggregate(
+        total=Count("id"),
+        sent=Count("id", filter=Q(is_sent=True)),
+        read=Count("id", filter=Q(is_read=True)),
+        clicked=Count("id", filter=Q(is_clicked=True)),
+    )
+    total = agg["total"]
+    sent = agg["sent"]
+    read = agg["read"]
+    clicked = agg["clicked"]
 
-    # By type
-    by_type = {}
-    for notif_type in NotificationType.choices:
-        count = notifications.filter(notification_type=notif_type[0]).count()
-        if count > 0:
-            by_type[notif_type[1]] = count
+    # Single GROUP BY query instead of N separate COUNT queries
+    type_labels = dict(NotificationType.choices)
+    by_type_qs = (
+        notifications.values("notification_type")
+        .annotate(count=Count("id"))
+        .filter(count__gt=0)
+    )
+    by_type = {
+        type_labels.get(row["notification_type"], row["notification_type"]): row["count"]
+        for row in by_type_qs
+    }
 
     return {
         "total_notifications": total,

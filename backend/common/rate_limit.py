@@ -1,14 +1,33 @@
 """
-Loyallia — Rate Limiting Middleware
+Loyallia — Rate Limiting Middleware (common/rate_limit.py)
+
 Redis-backed per-IP and per-user rate limiting for all API endpoints.
+Uses INCR + EXPIRE (sliding window) for atomic, distributed rate counting.
 
 Protects against:
-  - Brute force login attacks (5 req/min per IP on /auth/)
-  - QR scan abuse (120 req/min per user on /scanner/)
-  - Analytics DDoS (20 req/min per user on /analytics/)
-  - General API abuse (200 req/min per IP on all endpoints)
+    - Brute force login attacks (60 req/min per IP on /auth/login)
+    - QR scan abuse (120 req/min per user on /scanner/)
+    - Analytics DDoS (20 req/min per user on /analytics/)
+    - General API abuse (200 req/min per IP on all endpoints)
 
-Rate limits are enforced using Redis INCR + EXPIRE (sliding window).
+Architecture:
+    Rules are evaluated in order (most specific path first). First match wins.
+    For user-keyed rules, a SHA256 hash of the Authorization header is used
+    as the rate key (avoids storing full tokens in Redis).
+
+Performance (Rule 12):
+    - PERF: Redis pipeline used for INCR (minimizes round-trips).
+    - PERF: _redis_available flag prevents repeated connection attempts after failure.
+    - PERF: Health check endpoint (/api/v1/health/) bypassed entirely.
+    - PERF: Non-API paths bypassed via single startswith() check.
+
+Security (SEC):
+    - SEC: LYL-C-SEC-002 — Auth endpoints fail CLOSED when Redis is unavailable
+      (503 instead of pass-through) to prevent brute force during Redis outages.
+    - SEC: LYL-H-SEC-004 — IP extracted from REMOTE_ADDR only (not X-Forwarded-For)
+      to prevent IP spoofing via client-set headers.
+
+Called by: Django middleware chain. Position: after CorsMiddleware, before TenantMiddleware.
 Returns HTTP 429 Too Many Requests with Retry-After header on violation.
 """
 

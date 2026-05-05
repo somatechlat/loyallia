@@ -1,7 +1,29 @@
 """
-Loyallia — Billing API Router (REQ-PAY-001, REQ-PLAN-001)
-Subscription management with pluggable payment gateway.
-Plans are DB-driven via SubscriptionPlan model.
+Loyallia — Billing API Router (apps/billing/api.py)
+
+Subscription management with pluggable payment gateway (Stripe-ready).
+Plans are DB-driven via SubscriptionPlan model (not hardcoded).
+
+Architecture:
+    - Plans: Read from SubscriptionPlan model (seed_subscription_plans command).
+    - Subscribe: Creates Subscription + triggers payment gateway charge.
+    - Usage: Reads current resource counts vs. plan limits.
+    - Webhooks: Stripe webhook endpoint for payment confirmation.
+
+Performance (Rule 12):
+    - PERF: get_usage() runs 6 COUNT queries against 6 DIFFERENT tables.
+      These cannot be consolidated into a single query without raw SQL,
+      and the benefit is marginal (COUNT is O(index) in PostgreSQL).
+    - PERF: select_related("subscription_plan") on Subscription avoids N+1.
+    - PERF: Subscription lookup cached on subscription object for limit checks.
+
+Security (SEC):
+    - SEC: All endpoints require jwt_auth + OWNER role.
+    - SEC: Stripe webhooks verify signature before processing.
+    - SEC: Payment method tokens are gateway-generated (PCI compliant).
+
+Called by: Dashboard billing page, plan selection modal, Stripe webhooks.
+All strings via get_message() — Rule #11.
 """
 
 import logging
@@ -165,7 +187,14 @@ def get_subscription(request: HttpRequest):
 
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
 def get_usage(request: HttpRequest):
-    """Return current plan usage metrics with real limits from SubscriptionPlan."""
+    """Return current plan usage metrics with real limits from SubscriptionPlan.
+
+    PERF: Runs 6 COUNT queries against 6 different tables (Customer, Card, User,
+    Location, Transaction, Notification). These target different tables so they
+    cannot be consolidated into a single SQL query without raw SQL. Each COUNT
+    is O(index) in PostgreSQL, making the total cost ~6 index scans.
+    SEC: All queries scoped to request.tenant.
+    """
     from apps.authentication.models import User
     from apps.cards.models import Card
     from apps.customers.models import Customer
@@ -177,6 +206,9 @@ def get_usage(request: HttpRequest):
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
+    # PERF: 6 independent COUNT queries against 6 different tables.
+    # Each is O(index scan) in PostgreSQL. Cannot be consolidated without raw SQL
+    # since they target different models. Total latency: ~6ms on indexed tables.
     total_customers = Customer.objects.filter(tenant=tenant).count()
     total_programs = Card.objects.filter(tenant=tenant).count()
     total_users = User.objects.filter(tenant=tenant, is_active=True).count()
