@@ -199,6 +199,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./deploy/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
     networks:
       - backend-net
     restart: unless-stopped

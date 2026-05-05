@@ -107,7 +107,13 @@ vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" \
     apple_team_identifier="$(env_or_existing apple_team_identifier "${_APPLE_TEAM_IDENTIFIER:-}")" \
     apple_cert_pem="$(env_or_existing apple_cert_pem "${_APPLE_CERT_PEM:-}")" \
     apple_cert_key_pem="$(env_or_existing apple_cert_key_pem "${_APPLE_CERT_KEY_PEM:-}")" \
-    apple_wwdr_cert_pem="$(env_or_existing apple_wwdr_cert_pem "${_APPLE_WWDR_CERT_PEM:-}")" >/dev/null
+    apple_wwdr_cert_pem="$(env_or_existing apple_wwdr_cert_pem "${_APPLE_WWDR_CERT_PEM:-}")" \
+    google_wallet_enabled="$(env_or_existing google_wallet_enabled "${_GOOGLE_WALLET_ENABLED:-true}")" \
+    apple_wallet_enabled="$(env_or_existing apple_wallet_enabled "${_APPLE_WALLET_ENABLED:-false}")" \
+    payment_gateway_enabled="$(env_or_existing payment_gateway_enabled "${_PAYMENT_GATEWAY_ENABLED:-false}")" \
+    payment_gateway_provider="$(env_or_existing payment_gateway_provider "${_PAYMENT_GATEWAY_PROVIDER:-none}")" \
+    email_host_user="$(env_or_existing email_host_user "${_EMAIL_HOST_USER:-}")" \
+    email_host_password="$(env_or_existing email_host_password "${_EMAIL_HOST_PASSWORD:-}")" >/dev/null
 
 printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\"]\n}\n" >/vault/runtime/loyallia-app.hcl
 vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null

@@ -1,7 +1,10 @@
 """
 Loyallia Django Settings -- Test Workbench
 
-Tests use the PRODUCTION stack: PgBouncer → PostgreSQL.
+Production-identical database path:
+  - Test DB creation → direct PostgreSQL (same as production migrations)
+  - All test queries → PgBouncer (same as production runtime)
+
 Run `docker compose up -d` before running tests.
 """
 
@@ -19,42 +22,60 @@ MIDDLEWARE = [
 ]
 
 # ---------------------------------------------------------------------------
-# DATABASE — PgBouncer (production-identical path)
+# DATABASE — Production-identical: PgBouncer for queries, direct PG for DDL
 # ---------------------------------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "loyallia"),
-        "USER": os.environ.get("POSTGRES_USER", "loyallia"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
-        "HOST": os.environ.get("PGBOUNCER_HOST", "localhost"),
-        "PORT": os.environ.get("PGBOUNCER_PORT", "33901"),
-        "OPTIONS": {
-            "connect_timeout": 5,
-        },
-        "CONN_MAX_AGE": 0,  # Required for PgBouncer transaction pooling
-        "CONN_HEALTH_CHECKS": False,  # PgBouncer manages health
-        "TEST": {
-            "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
-        },
-    }
-}
+_db_password = os.environ.get("POSTGRES_PASSWORD", "")
+_db_user = os.environ.get("POSTGRES_USER", "loyallia")
+_db_name = os.environ.get("POSTGRES_DB", "loyallia")
+_pg_direct_host = os.environ.get("POSTGRES_HOST", "localhost")
+_pg_direct_port = os.environ.get("POSTGRES_PORT", "33900")
+_pgbouncer_host = os.environ.get("PGBOUNCER_HOST", "localhost")
+_pgbouncer_port = os.environ.get("PGBOUNCER_PORT", "33901")
 
-# If Vault is available, override the password from Vault
+# If Vault is available, use Vault password
 if os.environ.get("VAULT_TOKEN_FILE") or os.environ.get("VAULT_ADDR"):
     try:
         from common.vault import get_secret
 
         _vault_password = get_secret("postgres_password", strict=False)
         if _vault_password:
-            DATABASES["default"]["PASSWORD"] = _vault_password
+            _db_password = _vault_password
     except Exception:
-        pass  # Fall through to env var password
+        pass
+
+DATABASES = {
+    # Default: PgBouncer — all test queries go through the connection pooler
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _db_name,
+        "USER": _db_user,
+        "PASSWORD": _db_password,
+        "HOST": _pgbouncer_host,
+        "PORT": _pgbouncer_port,
+        "CONN_MAX_AGE": 0,
+        "CONN_HEALTH_CHECKS": False,
+        "TEST": {
+            "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
+        },
+    },
+    # Direct: used for test DB creation + migrations (PgBouncer can't CREATE DB)
+    "direct": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _db_name,
+        "USER": _db_user,
+        "PASSWORD": _db_password,
+        "HOST": _pg_direct_host,
+        "PORT": _pg_direct_port,
+        "TEST": {
+            "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
+        },
+    },
+}
 
 DATABASE_ROUTERS = []
 
 # ---------------------------------------------------------------------------
-# CACHES — In-memory for tests (no Redis dependency for cache assertions)
+# CACHES — In-memory for tests
 # ---------------------------------------------------------------------------
 CACHES = {
     "default": {

@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const BASE_API = 'http://localhost:33905';
+const BASE_API = 'http://localhost:80';
 
 async function getToken(request: any) {
   const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {

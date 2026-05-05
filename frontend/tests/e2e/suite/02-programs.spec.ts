@@ -11,7 +11,7 @@ test.describe('Programs — OWNER CRUD @owner', () => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     // Title is "Programas de fidelización"
-    await expect(page.getByText('Programas de fidelización')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Programas de fidelización' })).toBeVisible({ timeout: 10000 });
   });
 
   test('OWNER sees "Nuevo programa" button @owner', async ({ page }) => {
@@ -89,7 +89,7 @@ test.describe('Programs — MANAGER Read-Only @manager', () => {
   test('MANAGER sees programs list @manager', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
-    await expect(page.getByText('Programas de fidelización')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Programas de fidelización' })).toBeVisible({ timeout: 10000 });
   });
 
   test('MANAGER does NOT see "Nuevo programa" button @manager', async ({ page }) => {
