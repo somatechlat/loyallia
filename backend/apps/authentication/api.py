@@ -379,14 +379,17 @@ from apps.authentication.schemas import GoogleTokenIn  # noqa: E402
     summary="Obtener configuración de Google OAuth",
 )
 def google_oauth_config(request):
-    """Returns Google OAuth enabled status only.
+    """Returns Google OAuth config for the frontend.
 
-    SECURITY (LYL-H-SEC-008): Do NOT expose client_id to the frontend.
-    The frontend only needs to know whether Google login is enabled.
+    NOTE: client_id is a PUBLIC identifier — Google's own documentation
+    requires embedding it in frontend <script> tags and meta tags.
+    It is NOT a secret. The frontend needs it to initialize the
+    Google Identity Services (GSI) button via google.accounts.id.initialize().
     """
     client_id = settings.GOOGLE_OAUTH_CLIENT_ID
     return {
         "enabled": bool(client_id),
+        "client_id": client_id or "",
     }
 
 
