@@ -1,6 +1,6 @@
 """
 Tests for backend business logic fixes — audit findings LYL-C-API-001 through LYL-H-API-010.
-Uses Django's TestCase with an in-memory SQLite database.
+Uses Django's TestCase with PostgreSQL.
 Run with: python manage.py test tests.test_audit_fixes
 """
 

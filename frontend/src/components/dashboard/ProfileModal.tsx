@@ -74,7 +74,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
       <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="bg-gradient-to-r from-brand-600 to-indigo-600 px-6 py-5 text-white relative">
@@ -90,7 +90,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
               {(user.first_name?.[0] || '').toUpperCase()}{(user.last_name?.[0] || '').toUpperCase()}
             </div>
             <div>
-              <h2 className="text-lg font-bold">{user.first_name} {user.last_name}</h2>
+              <h2 id="profile-modal-title" className="text-lg font-bold">{user.first_name} {user.last_name}</h2>
               <p className="text-white/75 text-sm">{ROLE_LABELS[user.role] || user.role}</p>
             </div>
           </div>

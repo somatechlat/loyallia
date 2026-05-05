@@ -3,6 +3,8 @@ Loyallia — Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
 
+import logging
+
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -16,6 +18,8 @@ from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import enforce_limit, require_active_subscription
 from common.request import require_tenant
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
