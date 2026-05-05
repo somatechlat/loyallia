@@ -17,7 +17,7 @@ WORKDIR /app
 # LYL-L-INFRA-035: Copy only dependency files first for better layer caching
 # These change infrequently, so npm ci layer is cached until lockfile changes
 COPY package.json package-lock.json* ./
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 # --- Stage 2: Builder ---
 FROM node:20-alpine AS builder
