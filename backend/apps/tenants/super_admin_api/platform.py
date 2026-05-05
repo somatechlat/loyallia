@@ -228,7 +228,7 @@ def delete_plan(request, plan_id: str):
         raise HttpError(404, get_message("NOT_FOUND"))
     plan.is_active = False
     plan.save(update_fields=["is_active", "updated_at"])
-    return MessageOut(success=True, message="Plan desactivado")
+    return MessageOut(success=True, message=get_message("ADMIN_PLAN_DEACTIVATED"))
 
 
 @router.patch("/plans/{plan_id}/", auth=jwt_auth, response=PlanOut)
@@ -298,7 +298,7 @@ def broadcast_announcement(request, payload: BroadcastIn):
         )
     )
     if not owner_emails:
-        return MessageOut(success=True, message="No active owners to broadcast to.")
+        return MessageOut(success=True, message=get_message("ADMIN_BROADCAST_NO_RECIPIENTS"))
 
     messages = tuple(
         (payload.subject, payload.message, "noreply@loyallia.com", [email])

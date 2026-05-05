@@ -183,7 +183,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
             )
     except Exception as e:
         logger.error("Tenant creation failed: %s", e)
-        raise HttpError(500, str(e))
+        raise HttpError(500, get_message("ADMIN_TENANT_CREATION_FAILED", detail=str(e)))
 
 
 @router.get(
