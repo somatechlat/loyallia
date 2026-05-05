@@ -5,7 +5,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const BASE_API = 'http://localhost:33905';
+const BASE_API = 'http://localhost:80';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROGRAMS — BORRADORES SECTION

@@ -10,7 +10,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: 'http://localhost:33906',
+    baseURL: 'http://localhost:80',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -79,6 +79,7 @@ export default defineConfig({
       name: 'public-flow',
       testMatch: /.*\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
+      grepInvert: /@owner|@manager|@staff|@superadmin/,
     },
   ],
 });
