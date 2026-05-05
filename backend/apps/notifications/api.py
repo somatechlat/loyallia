@@ -410,4 +410,10 @@ def create_campaign(request, data: CampaignCreateIn):
             f"En producción, estas se enviarían via WhatsApp Business API.",
         }
     else:
-        raise HttpError(400, "Canal no válido. Usa 'email', 'wallet' o 'whatsapp'.")
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR",
+                detail="Canal no válido. Usa 'email', 'wallet' o 'whatsapp'.",
+            ),
+        )

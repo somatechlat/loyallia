@@ -202,6 +202,10 @@ _MESSAGES_ES: dict[str, str] = {
     "AUDIT_ENTRY_CREATED": "Registro de auditoría creado.",
     "AUDIT_IMPERSONATION_REQUIRES_JUSTIFICATION": "Se requiere una justificación para acceder al entorno del negocio.",
     "AUDIT_EXPORT_LOGGED": "Exportación de datos registrada en auditoría.",
+    # --- SuperAdmin ---
+    "ADMIN_PLAN_DEACTIVATED": "Plan desactivado exitosamente.",
+    "ADMIN_BROADCAST_NO_RECIPIENTS": "No hay propietarios activos para enviar el anuncio.",
+    "ADMIN_TENANT_CREATION_FAILED": "Error al crear el negocio: {detail}",
     # --- Agent API ---
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
@@ -354,6 +358,9 @@ _MESSAGES_EN: dict[str, str] = {
     "AUDIT_ENTRY_CREATED": "Audit entry created.",
     "AUDIT_IMPERSONATION_REQUIRES_JUSTIFICATION": "A justification is required to access the tenant environment.",
     "AUDIT_EXPORT_LOGGED": "Data export logged in audit trail.",
+    "ADMIN_PLAN_DEACTIVATED": "Plan deactivated successfully.",
+    "ADMIN_BROADCAST_NO_RECIPIENTS": "No active owners to broadcast to.",
+    "ADMIN_TENANT_CREATION_FAILED": "Error creating tenant: {detail}",
     "AGENT_KEY_INVALID": "Agent API key is invalid or has expired.",
     "AGENT_KEY_CREATED": "Agent API key created successfully.",
     "AGENT_KEY_REVOKED": "Agent API key revoked.",
