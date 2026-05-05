@@ -136,6 +136,10 @@ def generate_google_wallet_url(customer_pass) -> str | None:
 
 def is_google_wallet_configured() -> bool:
     """Check if Google Wallet credentials are properly configured."""
+    from django.conf import settings
+
+    if not getattr(settings, "GOOGLE_WALLET_ENABLED", True):
+        return False
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
     return sa_data is not None and bool(issuer_id)

@@ -348,13 +348,27 @@ JWT_PRIVATE_KEY_PATH = config(
 )  # RS256 private key file
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
+
 # =============================================================================
 # PASS SIGNING
 # =============================================================================
+def vault_bool(key: str, env_name: str, default: bool = False) -> bool:
+    """Read a feature flag from Vault/env using explicit boolean strings."""
+    value = get_secret(key, env_fallback=env_name, default=str(default).lower())
+    return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
+APPLE_WALLET_ENABLED = vault_bool(
+    "apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False
+)
+GOOGLE_WALLET_ENABLED = vault_bool(
+    "google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True
+)
+
 APPLE_PASS_TYPE_IDENTIFIER = get_secret(
     "apple_pass_type_identifier",
     env_fallback="APPLE_PASS_TYPE_IDENTIFIER",
-    default="pass.com.loyallia.cards",
+    default="",
 )
 APPLE_TEAM_IDENTIFIER = get_secret(
     "apple_team_identifier", env_fallback="APPLE_TEAM_IDENTIFIER", default=""
@@ -393,7 +407,14 @@ FIREBASE_CREDENTIAL_FILE = config(
 # =============================================================================
 # PAYMENT GATEWAY (Pluggable — Bendo/PlacetoPay/Kushki/etc.)
 # =============================================================================
-PAYMENT_GATEWAY_PROVIDER = config("PAYMENT_GATEWAY_PROVIDER", default="bendo")
+PAYMENT_GATEWAY_ENABLED = vault_bool(
+    "payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False
+)
+PAYMENT_GATEWAY_PROVIDER = get_secret(
+    "payment_gateway_provider",
+    env_fallback="PAYMENT_GATEWAY_PROVIDER",
+    default="manual",
+)
 PAYMENT_GATEWAY_BASE_URL = config(
     "PAYMENT_GATEWAY_BASE_URL", default="https://checkout.placetopay.com"
 )
@@ -414,7 +435,7 @@ PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
 # EMAIL
 # =============================================================================
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = config("EMAIL_HOST", default="localhost")
+EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = get_secret(

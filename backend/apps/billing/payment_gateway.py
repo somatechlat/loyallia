@@ -6,6 +6,7 @@ Default provider: Bendo (PlacetoPay infrastructure).
 Providers are selected via settings.PAYMENT_GATEWAY_PROVIDER:
   - "bendo"  → BendoGateway (PlacetoPay API)
   - "manual" → ManualGateway (admin-verified payments)
+  - "disabled" → DisabledGateway (billing collection unavailable)
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ import hmac
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, NoReturn
 
 from django.conf import settings
 
@@ -257,6 +258,42 @@ class ManualGateway(BasePaymentGateway):
         return {"status": "not_applicable"}
 
 
+class DisabledGateway(BasePaymentGateway):
+    """Gateway used when payment collection is explicitly disabled."""
+
+    def _raise_disabled(self) -> NoReturn:
+        raise PaymentGatewayError(
+            message="Payment gateway is disabled by platform configuration.",
+            code="GATEWAY_DISABLED",
+        )
+
+    def create_session(
+        self,
+        tenant_id: str,
+        amount: str,
+        currency: str,
+        description: str,
+        return_url: str,
+        cancel_url: str,
+        reference: str,
+        buyer_email: str = "",
+        buyer_name: str = "",
+    ) -> PaymentSessionResult:
+        self._raise_disabled()
+
+    def check_session(self, session_id: str) -> PaymentStatusResult:
+        self._raise_disabled()
+
+    def cancel_subscription(self, subscription_id: str) -> dict:
+        return {"status": "disabled", "subscription_id": subscription_id}
+
+    def verify_webhook(self, body: bytes, signature: str) -> bool:
+        return False
+
+    def process_webhook(self, event_type: str, data: dict) -> dict:
+        return {"status": "disabled"}
+
+
 # =============================================================================
 # FACTORY
 # =============================================================================
@@ -265,6 +302,7 @@ _GATEWAY_REGISTRY: dict[str, type[BasePaymentGateway]] = {
     "bendo": BendoGateway,
     "placetopay": BendoGateway,
     "manual": ManualGateway,
+    "disabled": DisabledGateway,
 }
 
 _gateway_instance: BasePaymentGateway | None = None
@@ -279,7 +317,10 @@ def get_payment_gateway() -> BasePaymentGateway:
     if _gateway_instance is not None:
         return _gateway_instance
 
-    provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "bendo")
+    if not getattr(settings, "PAYMENT_GATEWAY_ENABLED", False):
+        provider = "disabled"
+    else:
+        provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
     gateway_class = _GATEWAY_REGISTRY.get(provider)
     if gateway_class is None:
         logger.error("Unknown payment gateway provider: %s", provider)
