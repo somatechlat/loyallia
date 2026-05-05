@@ -8,7 +8,11 @@ set -euo pipefail
 BACKUP_DIR="/var/backups/redis"
 RETENTION_DAYS=7
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-REDIS_PASSWORD="${REDIS_PASSWORD:-}"
+VAULT_RUNTIME="${VAULT_RUNTIME_DIR:-/run/loyallia-vault}"
+REDIS_PASSWORD=""
+if [ -f "$VAULT_RUNTIME/redis_password" ]; then
+  REDIS_PASSWORD="$(cat "$VAULT_RUNTIME/redis_password")"
+fi
 
 mkdir -p "$BACKUP_DIR"
 

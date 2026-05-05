@@ -9,7 +9,8 @@ BACKUP_DIR="/var/backups/vault"
 RETENTION_DAYS=30
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-}"
+VAULT_RUNTIME="${VAULT_RUNTIME_DIR:-/run/loyallia-vault}"
+VAULT_TOKEN="$(cat "$VAULT_RUNTIME/app-token")"
 
 mkdir -p "$BACKUP_DIR"
 

@@ -731,7 +731,7 @@ services:
       dockerfile: Dockerfile
     container_name: loyallia-whatsapp-bridge
     command: >
-      sh -c 'export REDIS_URL="redis://:$$(cat /run/loyallia-vault/redis_password)@redis:6379/3" && exec node dist/main'
+      sh -c 'export REDIS_URL="redis://:$$(cat /run/loyallia-vault/redis_password)@redis:6379/3" && exec node src/index.js'
     volumes:
       - vault_runtime:/run/loyallia-vault:ro
     environment:
