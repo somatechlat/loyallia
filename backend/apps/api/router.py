@@ -126,6 +126,7 @@ from apps.customers.export_api import router as customer_export_router
 from apps.customers.segment_api import router as segment_router
 from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
+from apps.notifications.whatsapp.api import router as whatsapp_router
 from apps.tenants.api import router as tenants_router
 from apps.tenants.super_admin_api import router as super_admin_router
 from apps.transactions.api import router as transactions_router
@@ -141,6 +142,7 @@ api.add_router("/customers/", segment_router, tags=["Customer Segments"])
 api.add_router("/scanner/", scanner_router, tags=["Scanner"])
 api.add_router("/transactions/", transactions_router, tags=["Transactions"])
 api.add_router("/notifications/", notifications_router, tags=["Push Notifications"])
+api.add_router("/whatsapp/", whatsapp_router, tags=["WhatsApp"])
 api.add_router("/automation/", automation_router, tags=["Automation"])
 api.add_router("/analytics/", analytics_router, tags=["Analytics"])
 api.add_router("/billing/", billing_router, tags=["Billing"])
