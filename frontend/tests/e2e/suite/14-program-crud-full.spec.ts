@@ -63,11 +63,16 @@ test.describe('Program CRUD - Full Lifecycle @owner', () => {
     await gotoPrograms(page);
     await page.waitForTimeout(2000);
 
-    // Find any program detail link (eye icon) in the programs view
-    const firstLink = page.locator('#programs-view a[href*="/programs/"]').first();
-    const hasProgramLinks = await firstLink.isVisible({ timeout: 10000 }).catch(() => false);
-    test.skip(!hasProgramLinks, 'No programs available to edit — seed data may have been cleared');
-    await firstLink.click();
+    // Find a program detail link (eye icon) — exclude /programs/new
+    const allLinks = page.locator('#programs-view a[href*="/programs/"]');
+    const linkCount = await allLinks.count();
+    let detailLink = null;
+    for (let i = 0; i < linkCount; i++) {
+      const href = await allLinks.nth(i).getAttribute('href');
+      if (href && !href.includes('/new')) { detailLink = allLinks.nth(i); break; }
+    }
+    test.skip(!detailLink, 'No programs available to edit — seed data may have been cleared');
+    await detailLink!.click();
     await page.waitForTimeout(3000);
 
     // Should be on /programs/{id}
@@ -99,11 +104,16 @@ test.describe('Program CRUD - Full Lifecycle @owner', () => {
     await gotoPrograms(page);
     await page.waitForTimeout(2000);
 
-    // Find any program detail link in the programs view
-    const firstLink = page.locator('#programs-view a[href*="/programs/"]').first();
-    const hasProgramLinks = await firstLink.isVisible({ timeout: 10000 }).catch(() => false);
-    test.skip(!hasProgramLinks, 'No programs available to view — seed data may have been cleared');
-    await firstLink.click();
+    // Find a program detail link — exclude /programs/new
+    const allLinks = page.locator('#programs-view a[href*="/programs/"]');
+    const linkCount = await allLinks.count();
+    let detailLink = null;
+    for (let i = 0; i < linkCount; i++) {
+      const href = await allLinks.nth(i).getAttribute('href');
+      if (href && !href.includes('/new')) { detailLink = allLinks.nth(i); break; }
+    }
+    test.skip(!detailLink, 'No programs available to view — seed data may have been cleared');
+    await detailLink!.click();
     await page.waitForTimeout(3000);
 
     // Should be on /programs/{id}

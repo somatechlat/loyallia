@@ -121,3 +121,4 @@ vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token
 chmod 0444 /vault/runtime/app-token
 
 echo "Vault initialized, unsealed, and secrets seeded successfully"
+exit 0
