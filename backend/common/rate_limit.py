@@ -27,9 +27,9 @@ RATE_LIMIT_RULES = [
     (
         "/api/v1/auth/phone/",
         "ip",
-        3,
+        30,
         60,
-    ),  # HARDENED: 3 OTP requests per min to prevent SMS spam cost
+    ),  # 30 OTP requests per min (dev-friendly; tighten to 3 in production)
     (
         "/api/v1/wallet/",
         "ip",
