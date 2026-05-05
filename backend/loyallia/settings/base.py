@@ -308,6 +308,13 @@ APPLE_WWDR_CERT_PATH = config(
 PASS_HMAC_SECRET = get_secret(
     "pass_hmac_secret", env_fallback="PASS_HMAC_SECRET", default=""
 )
+# Apple Wallet webServiceURL — the base URL Apple Wallet calls for pass
+# registration, update checking, and pass re-download. Must be HTTPS in production.
+# Set in pass.json as "webServiceURL". Defaults to APP_URL + /wallet/apple
+PASS_WEB_SERVICE_URL = config(
+    "PASS_WEB_SERVICE_URL",
+    default="",  # Computed in production.py from APP_URL
+)
 
 # APNs token-based auth (JWT) — for push notifications to iOS
 # Separate from the PassKit signing certificates above
