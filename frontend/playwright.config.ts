@@ -31,6 +31,14 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
+    // Pre-accept cookie consent to prevent the banner from blocking clicks
+    storageState: {
+      cookies: [],
+      origins: [{
+        origin: 'http://localhost',
+        localStorage: [{ name: 'loyallia_cookie_consent', value: 'true' }],
+      }],
+    },
   },
   projects: [
     // --- Setup: authenticate all roles ---
