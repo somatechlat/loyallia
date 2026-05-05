@@ -47,6 +47,24 @@ def _resolve_gw_type(card_type: str) -> str:
     return "loyalty"
 
 
+def _get_google_locations(card) -> list:
+    """Build location array from tenant locations for Google Wallet geo-push."""
+    locations = []
+    # Locations belong to the Tenant
+    tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
+    
+    for loc in tenant_locations:
+        try:
+            if loc.latitude and loc.longitude:
+                locations.append({
+                    "latitude": float(loc.latitude), 
+                    "longitude": float(loc.longitude)
+                })
+        except (ValueError, TypeError):
+            continue
+    return locations
+
+
 def _build_class_images(card, payload: dict) -> None:
     """Add heroImage, wideLogo, and imageModulesData to a class payload if available."""
     if card.strip_image_url:
@@ -105,18 +123,9 @@ def _build_loyalty_class(card, tenant) -> dict:
     }
     _build_class_images(card, payload)
 
-    if card.locations:
-        locations = []
-        for loc in card.locations:
-            try:
-                lat = float(loc.get("lat", 0))
-                lng = float(loc.get("lng", 0))
-                if lat and lng:
-                    locations.append({"latitude": lat, "longitude": lng})
-            except (ValueError, TypeError):
-                continue
-        if locations:
-            payload["locations"] = locations
+    locations = _get_google_locations(card)
+    if locations:
+        payload["locations"] = locations
 
     payload["textModulesData"] = [
         {
@@ -274,6 +283,11 @@ def _build_offer_class(card, tenant) -> dict:
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
     _build_class_images(card, payload)
+    
+    locations = _get_google_locations(card)
+    if locations:
+        payload["locations"] = locations
+        
     return payload
 
 
@@ -321,6 +335,11 @@ def _build_gift_card_class(card, tenant) -> dict:
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
     _build_class_images(card, payload)
+    
+    locations = _get_google_locations(card)
+    if locations:
+        payload["locations"] = locations
+        
     return payload
 
 

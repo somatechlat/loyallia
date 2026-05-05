@@ -11,6 +11,18 @@ interface PlanData {
   features: string[]; is_active: boolean; is_featured: boolean; trial_days: number; sort_order: number;
 }
 
+const PREDEFINED_FEATURES = [
+  { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp' },
+  { id: 'sms_campaigns', label: 'Campañas de SMS' },
+  { id: 'email_campaigns', label: 'Campañas de Email' },
+  { id: 'wallet_campaigns', label: 'Apple/Google Wallet' },
+  { id: 'custom_domain', label: 'Dominio Personalizado' },
+  { id: 'api_access', label: 'Acceso a la API' },
+  { id: 'advanced_analytics', label: 'Analítica Avanzada' },
+  { id: 'priority_support', label: 'Soporte Prioritario' },
+  { id: 'white_label', label: 'Marca Blanca' },
+];
+
 const emptyPlan = {
   name: '', slug: '', description: '',
   price_monthly: 0, price_annual: 0,
@@ -131,14 +143,18 @@ export default function SuperAdminPlans() {
             </div>
             <div className="border-t border-surface-100 pt-4 space-y-2 flex-1">
               <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">Incluye:</p>
-              {(plan.features || []).slice(0, 5).map((f, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-surface-700">
-                  <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {f}
-                </div>
-              ))}
+              {(plan.features || []).slice(0, 5).map((f, i) => {
+                const preset = PREDEFINED_FEATURES.find(p => p.id === f);
+                const label = preset ? preset.label : f;
+                return (
+                  <div key={i} className="flex items-center gap-2 text-sm text-surface-700">
+                    <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {label}
+                  </div>
+                );
+              })}
             </div>
             <div className="mt-4 pt-4 border-t border-surface-100 grid grid-cols-2 gap-2 text-xs text-surface-400">
               <p>{plan.max_locations} sucursales</p>
@@ -241,11 +257,15 @@ export default function SuperAdminPlans() {
                   <div className="bg-surface-50/80 rounded-xl p-3">
                     <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">Características</p>
                     <div className="space-y-1">
-                      {selected.features.map((f, i) => (
-                        <div key={i} className="flex items-center gap-1.5 text-sm text-surface-700">
-                          <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> {f}
-                        </div>
-                      ))}
+                      {selected.features.map((f, i) => {
+                        const preset = PREDEFINED_FEATURES.find(p => p.id === f);
+                        const label = preset ? preset.label : f;
+                        return (
+                          <div key={i} className="flex items-center gap-1.5 text-sm text-surface-700">
+                            <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> {label}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -408,29 +428,49 @@ function FormField({ label, value, onChange, placeholder, type = 'text', disable
 
 function FeatureTagInput({ features, onChange }: { features: string[]; onChange: (f: string[]) => void }) {
   const [input, setInput] = useState('');
-  const add = () => { const v = input.trim(); if (v && !features.includes(v)) { onChange([...features, v]); } setInput(''); };
+  
+  const add = () => { 
+    if (input && !features.includes(input)) { 
+      onChange([...features, input]); 
+    } 
+    setInput(''); 
+  };
+  
   const remove = (i: number) => onChange(features.filter((_, j) => j !== i));
+  
+  const availableFeatures = PREDEFINED_FEATURES.filter(f => !features.includes(f.id));
+
   return (
     <div>
       <div className="flex flex-wrap gap-1.5 mb-2">
-        {features.map((f, i) => (
-          <span key={i} className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 text-xs font-medium px-2.5 py-1 rounded-lg border border-brand-200">
-            {f}
-            <button type="button" onClick={() => remove(i)} className="text-brand-400 hover:text-red-500 transition-colors">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </span>
-        ))}
-        {features.length === 0 && <span className="text-xs text-surface-300 italic">Sin características</span>}
+        {features.map((f, i) => {
+          const preset = PREDEFINED_FEATURES.find(p => p.id === f);
+          const label = preset ? preset.label : f;
+          return (
+            <span key={i} className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 text-xs font-medium px-2.5 py-1 rounded-lg border border-brand-200">
+              {label}
+              <button type="button" onClick={() => remove(i)} className="text-brand-400 hover:text-red-500 transition-colors">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </span>
+          );
+        })}
+        {features.length === 0 && <span className="text-xs text-surface-300 italic">Sin características adicionales</span>}
       </div>
       <div className="flex gap-2">
-        <input type="text" value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
-          placeholder="Ej: Google Wallet, Push Notifications..."
-          className="flex-1 px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all" />
-        <button type="button" onClick={add} disabled={!input.trim()}
+        <select 
+          value={input} 
+          onChange={e => setInput(e.target.value)}
+          className="flex-1 px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
+        >
+          <option value="">Seleccionar característica...</option>
+          {availableFeatures.map(f => (
+            <option key={f.id} value={f.id}>{f.label}</option>
+          ))}
+        </select>
+        <button type="button" onClick={add} disabled={!input}
           className="px-3 py-2 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-200 text-white disabled:text-surface-400 rounded-xl text-sm font-semibold transition-all">
-          +
+          Agregar
         </button>
       </div>
     </div>

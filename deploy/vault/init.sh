@@ -14,7 +14,7 @@ wait_for_vault() {
 }
 
 existing_field() {
-    vault kv get -mount=secret -field="$1" "$VAULT_APP_SECRET_PATH" 2>/dev/null || true
+    wget -qO- --header "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/$VAULT_APP_SECRET_PATH" 2>/dev/null | sed -n 's/.*"'"$1"'":"\([^"]*\)".*/\1/p' || true
 }
 
 env_or_existing() {
@@ -114,6 +114,13 @@ vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" \
     payment_gateway_provider="$(env_or_existing payment_gateway_provider "${_PAYMENT_GATEWAY_PROVIDER:-none}")" \
     email_host_user="$(env_or_existing email_host_user "${_EMAIL_HOST_USER:-}")" \
     email_host_password="$(env_or_existing email_host_password "${_EMAIL_HOST_PASSWORD:-}")" >/dev/null
+
+# Export infrastructure secrets to files so containers can read them without plaintext env vars
+printf "%s" "$postgres_password" > /vault/runtime/postgres_password
+printf "%s" "$redis_url" | sed -n 's/.*:\([^@]*\)@.*/\1/p' > /vault/runtime/redis_password
+printf "%s" "$minio_access_key" > /vault/runtime/minio_root_user
+printf "%s" "$minio_secret_key" > /vault/runtime/minio_root_password
+chmod 0444 /vault/runtime/*_password /vault/runtime/minio_root_user
 
 printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\"]\n}\n" >/vault/runtime/loyallia-app.hcl
 vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null
