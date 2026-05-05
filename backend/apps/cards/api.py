@@ -303,10 +303,10 @@ def update_program(request, program_id: str, data: CardUpdateIn):
 
             update_loyalty_class(card)
         except Exception as e:
-            import logging
-
-            logging.getLogger(__name__).error(
-                f"Failed to sync Card {card.id} to Google Wallet on update: {e}"
+            logger.error(
+                "Failed to sync Card %s to Google Wallet on update: %s",
+                card.id,
+                e,
             )
 
     return CardOut.from_model(card)
@@ -425,4 +425,3 @@ def public_program(request, slug: str):
             "secondary_color": tenant.secondary_color,
         },
     }
-    tenant = require_tenant(request)

@@ -105,11 +105,6 @@ OPTIONAL_VARS = [
         default="smtp.gmail.com",
         description="SMTP server hostname",
     ),
-    EnvVar(
-        name="SENTRY_DSN",
-        required=False,
-        description="Sentry error tracking DSN",
-    ),
 ]
 
 PRODUCTION_REQUIRED_VAULT_KEYS = [
@@ -167,6 +162,21 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
     """
     errors: list[ValidationError] = []
     if is_production:
+        # SEC-006: Production MUST use VAULT_TOKEN_FILE, not raw VAULT_TOKEN env var.
+        # Raw VAULT_TOKEN is the dev-mode root token — unacceptable in production.
+        if os.environ.get("VAULT_TOKEN") and not os.environ.get("VAULT_TOKEN_FILE"):
+            errors.append(
+                ValidationError(
+                    var_name="VAULT_TOKEN",
+                    message=(
+                        "Production must use VAULT_TOKEN_FILE (scoped app token), "
+                        "not VAULT_TOKEN (dev root token). "
+                        "Remove VAULT_TOKEN from environment."
+                    ),
+                )
+            )
+            return errors
+
         secrets = fetch_vault_secrets()
         if not secrets:
             return [
