@@ -223,8 +223,17 @@ class PlanOut(BaseModel):
     max_users: int
     max_customers: int
     max_programs: int
+    max_notifications_month: int
+    max_transactions_month: int
     max_whatsapp_day: int
     max_emails_month: int
+    max_sms_day: int
+    max_wallet_pushes_month: int
+    max_automations: int
+    max_automation_executions_day: int
+    max_ai_queries_month: int
+    max_api_calls_day: int
+    max_exports_month: int
     features: list
     is_active: bool
     is_featured: bool
@@ -244,8 +253,17 @@ class PlanOut(BaseModel):
             max_users=p.max_users,
             max_customers=p.max_customers,
             max_programs=p.max_programs,
+            max_notifications_month=p.max_notifications_month,
+            max_transactions_month=p.max_transactions_month,
             max_whatsapp_day=p.max_whatsapp_day,
             max_emails_month=p.max_emails_month,
+            max_sms_day=p.max_sms_day,
+            max_wallet_pushes_month=p.max_wallet_pushes_month,
+            max_automations=p.max_automations,
+            max_automation_executions_day=p.max_automation_executions_day,
+            max_ai_queries_month=p.max_ai_queries_month,
+            max_api_calls_day=p.max_api_calls_day,
+            max_exports_month=p.max_exports_month,
             features=p.features,
             is_active=p.is_active,
             is_featured=p.is_featured,
@@ -264,8 +282,17 @@ class PlanCreateIn(BaseModel):
     max_users: int = 3
     max_customers: int = 500
     max_programs: int = 1
+    max_notifications_month: int = 1000
+    max_transactions_month: int = 5000
     max_whatsapp_day: int = 0
     max_emails_month: int = 0
+    max_sms_day: int = 0
+    max_wallet_pushes_month: int = 0
+    max_automations: int = 3
+    max_automation_executions_day: int = 100
+    max_ai_queries_month: int = 0
+    max_api_calls_day: int = 0
+    max_exports_month: int = 5
     features: list = []
     is_featured: bool = False
     trial_days: int = 14
@@ -281,8 +308,17 @@ class PlanUpdateIn(BaseModel):
     max_users: int | None = None
     max_customers: int | None = None
     max_programs: int | None = None
+    max_notifications_month: int | None = None
+    max_transactions_month: int | None = None
     max_whatsapp_day: int | None = None
     max_emails_month: int | None = None
+    max_sms_day: int | None = None
+    max_wallet_pushes_month: int | None = None
+    max_automations: int | None = None
+    max_automation_executions_day: int | None = None
+    max_ai_queries_month: int | None = None
+    max_api_calls_day: int | None = None
+    max_exports_month: int | None = None
     features: list | None = None
     is_featured: bool | None = None
     is_active: bool | None = None

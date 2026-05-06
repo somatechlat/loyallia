@@ -121,6 +121,39 @@ class SubscriptionPlan(TimestampedModel):
         verbose_name="Máx. SMS/día",
         help_text="Daily SMS quota via Twilio. 0=disabled.",
     )
+    max_wallet_pushes_month = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. wallet pushes/mes",
+        help_text="Monthly Google/Apple Wallet push notifications. 0=disabled. Protects shared issuer quota.",
+    )
+
+    # Feature-specific rate limits
+    # These cap the USAGE of features that have real cost drivers or abuse vectors.
+    max_automations = models.PositiveIntegerField(
+        default=3,
+        verbose_name="Máx. automatizaciones",
+        help_text="Max automation rules a tenant can create.",
+    )
+    max_automation_executions_day = models.PositiveIntegerField(
+        default=100,
+        verbose_name="Máx. ejecuciones automatización/día",
+        help_text="Global daily cap for all automation rule executions per tenant.",
+    )
+    max_ai_queries_month = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. consultas IA/mes",
+        help_text="Monthly AI assistant query quota. 0=disabled. Highest cost feature (LLM tokens).",
+    )
+    max_api_calls_day = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. llamadas API/día",
+        help_text="Daily Agent API call quota. 0=disabled. Enterprise feature.",
+    )
+    max_exports_month = models.PositiveIntegerField(
+        default=5,
+        verbose_name="Máx. exportaciones/mes",
+        help_text="Monthly data export quota. CPU-intensive Celery task.",
+    )
 
     # Feature Flags (selectable in admin — REQ-PLAN-003)
     features = models.JSONField(
@@ -351,6 +384,12 @@ class Subscription(TimestampedModel):
             "whatsapp_day": plan.max_whatsapp_day,
             "emails_month": plan.max_emails_month,
             "sms_day": plan.max_sms_day,
+            "wallet_pushes_month": plan.max_wallet_pushes_month,
+            "automations": plan.max_automations,
+            "automation_executions_day": plan.max_automation_executions_day,
+            "ai_queries_month": plan.max_ai_queries_month,
+            "api_calls_day": plan.max_api_calls_day,
+            "exports_month": plan.max_exports_month,
         }
         return limit_map.get(resource, 0)
 

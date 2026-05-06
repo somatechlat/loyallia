@@ -221,6 +221,8 @@ _MESSAGES_ES: dict[str, str] = {
     "AUDIT_IMPERSONATION_REQUIRES_JUSTIFICATION": "Se requiere una justificación para acceder al entorno del negocio.",
     "AUDIT_EXPORT_LOGGED": "Exportación de datos registrada en auditoría.",
     # --- SuperAdmin ---
+    "ADMIN_PLAN_CREATED": "Plan '{name}' creado exitosamente.",
+    "ADMIN_PLAN_UPDATED": "Plan '{name}' actualizado exitosamente.",
     "ADMIN_PLAN_DEACTIVATED": "Plan desactivado exitosamente.",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No hay propietarios activos para enviar el anuncio.",
     "ADMIN_TENANT_CREATION_FAILED": "Error al crear el negocio: {detail}",
@@ -399,6 +401,8 @@ _MESSAGES_EN: dict[str, str] = {
     "AUDIT_ENTRY_CREATED": "Audit entry created.",
     "AUDIT_IMPERSONATION_REQUIRES_JUSTIFICATION": "A justification is required to access the tenant environment.",
     "AUDIT_EXPORT_LOGGED": "Data export logged in audit trail.",
+    "ADMIN_PLAN_CREATED": "Plan '{name}' created successfully.",
+    "ADMIN_PLAN_UPDATED": "Plan '{name}' updated successfully.",
     "ADMIN_PLAN_DEACTIVATED": "Plan deactivated successfully.",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No active owners to broadcast to.",
     "ADMIN_TENANT_CREATION_FAILED": "Error creating tenant: {detail}",
