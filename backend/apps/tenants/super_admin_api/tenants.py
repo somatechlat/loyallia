@@ -440,7 +440,7 @@ def impersonate_tenant(request, tenant_id: str):
         "tenant_id": str(tenant.id),
         "role": owner.role,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=5)).timestamp()),
+        "exp": int((now + timedelta(minutes=60)).timestamp()),
         "type": "access",
         "impersonated_by": str(request.user.id),
         "impersonated": True,

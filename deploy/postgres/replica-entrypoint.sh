@@ -9,6 +9,7 @@ chown -R postgres:postgres "$DATA_DIR"
 export PGPASSWORD="$(cat /run/loyallia-vault/postgres_password)"
 
 if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
+    export PGPASSWORD="$(cat /run/loyallia-vault/postgres_password)"
     until su-exec postgres pg_basebackup \
         --pgdata="$DATA_DIR" \
         --host=postgres \

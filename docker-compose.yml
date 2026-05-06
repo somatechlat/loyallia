@@ -145,8 +145,16 @@ services:
   postgres-replica:
     image: postgres:16.2-alpine
     container_name: loyallia-postgres-replica
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-loyallia}
+      POSTGRES_PASSWORD_FILE: /run/loyallia-vault/postgres_password
+      PGUSER: ${POSTGRES_USER:-loyallia}
+      PGPASSWORD_FILE: /run/loyallia-vault/postgres_password
     command: sh /usr/local/bin/replica-entrypoint.sh
     volumes:
       - postgres_replica_data:/var/lib/postgresql/data
@@ -154,11 +162,6 @@ services:
       - vault_runtime:/run/loyallia-vault:ro
     ports:
       - "127.0.0.1:33911:5432"
-    depends_on:
-      vault-init:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
     networks:
       - backend-net
     restart: unless-stopped
@@ -732,8 +735,6 @@ services:
     container_name: loyallia-whatsapp-bridge
     command: >
       sh -c 'export REDIS_URL="redis://:$$(cat /run/loyallia-vault/redis_password)@redis:6379/3" && exec node src/index.js'
-    volumes:
-      - vault_runtime:/run/loyallia-vault:ro
     environment:
       API_KEY: ${WHATSAPP_BRIDGE_API_KEY:-dev-bridge-key}
       DJANGO_WEBHOOK_URL: http://api:8000
@@ -741,6 +742,8 @@ services:
       MAX_MESSAGES_PER_HOUR: 200
       AVG_DELAY_MS: 6000
       LOG_LEVEL: info
+    volumes:
+      - vault_runtime:/run/loyallia-vault:ro
     ports:
       - "127.0.0.1:33914:3001"
     depends_on:
