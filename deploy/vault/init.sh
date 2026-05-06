@@ -14,7 +14,7 @@ wait_for_vault() {
 }
 
 existing_field() {
-    vault kv get -mount=secret -field="$1" "$VAULT_APP_SECRET_PATH" 2>/dev/null || true
+    wget -qO- --header "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/$VAULT_APP_SECRET_PATH" 2>/dev/null | sed -n 's/.*"'"$1"'":"\([^"]*\)".*/\1/p' || true
 }
 
 env_or_existing() {

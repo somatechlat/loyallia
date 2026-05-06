@@ -25,6 +25,11 @@ from apps.tenants.schemas import (
     TenantOut,
     TenantUpdateIn,
 )
+from ninja import Schema
+
+class AIChatIn(Schema):
+    message: str
+    context_id: str | None = None
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import enforce_limit, get_current_usage, get_tenant_limits
@@ -64,16 +69,13 @@ def get_plan_features(request):
         plan = subscription.subscription_plan
         plan_name = plan.name if plan else "Trial"
 
-        # Features: from plan or all if trial
         if subscription.is_trial_active and not plan:
             features = PlanFeature.ALL_FEATURES
         elif plan:
             features = plan.features or []
 
-        # Limits
         limits = get_tenant_limits(tenant)
 
-        # Usage for messaging resources
         usage = {
             "whatsapp_today": get_current_usage(tenant, "whatsapp_day"),
             "emails_this_month": get_current_usage(tenant, "emails_month"),
@@ -97,7 +99,6 @@ def get_plan_features(request):
     "/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual"
 )
 def get_tenant(request):
-    """Returns the current tenant's profile."""
     return TenantOut.from_tenant(request.tenant)
 
 
@@ -105,7 +106,6 @@ def get_tenant(request):
     "/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio"
 )
 def update_tenant(request, payload: TenantUpdateIn):
-    """Updates tenant branding and settings. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
@@ -145,7 +145,6 @@ def update_tenant(request, payload: TenantUpdateIn):
     "/settings/", auth=jwt_auth, response=TenantOut, summary="Configuración del negocio"
 )
 def get_tenant_settings(request):
-    """Compatibility alias for the current tenant profile."""
     return get_tenant(request)
 
 
@@ -156,7 +155,6 @@ def get_tenant_settings(request):
     summary="Actualizar configuración del negocio",
 )
 def update_tenant_settings(request, payload: TenantUpdateIn):
-    """Compatibility alias for updating the current tenant profile."""
     return update_tenant(request, payload)
 
 
@@ -172,7 +170,6 @@ def update_tenant_settings(request, payload: TenantUpdateIn):
     summary="Listar ubicaciones del negocio",
 )
 def list_locations(request):
-    """Lists all locations for the current tenant (MANAGER/OWNER)."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
@@ -188,7 +185,6 @@ def list_locations(request):
 )
 @enforce_limit("locations")
 def create_location(request, payload: LocationCreateIn):
-    """Creates a new location for the current tenant. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
@@ -215,7 +211,6 @@ def create_location(request, payload: LocationCreateIn):
         is_primary=payload.is_primary,
     )
 
-    # If this is set as primary, demote all others
     if payload.is_primary:
         Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(
             is_primary=False
@@ -231,7 +226,6 @@ def create_location(request, payload: LocationCreateIn):
     summary="Actualizar ubicación",
 )
 def update_location(request, location_id: str):
-    """Updates an existing location. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
@@ -240,7 +234,6 @@ def update_location(request, location_id: str):
     except (Location.DoesNotExist, ValueError):
         raise HttpError(404, get_message("LOCATION_NOT_FOUND"))
 
-    # Parse body manually since we need the request body
     import json
 
     try:
@@ -293,7 +286,6 @@ def update_location(request, location_id: str):
     summary="Eliminar ubicación",
 )
 def delete_location(request, location_id: str):
-    """Deletes a location. OWNER only. Cannot delete last location."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
@@ -304,7 +296,6 @@ def delete_location(request, location_id: str):
 
     loc.delete()
 
-    # LYL-M-API-023: Return 204 No Content on successful delete
     from django.http import HttpResponse
 
     return HttpResponse(status=204)
@@ -322,7 +313,6 @@ def delete_location(request, location_id: str):
     summary="Listar miembros del equipo",
 )
 def list_team(request):
-    """Lists all users belonging to the current tenant."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
@@ -343,8 +333,6 @@ def list_team(request):
     summary="Agregar miembro al equipo",
 )
 def add_team_member(request, payload: TeamMemberCreateIn):
-    """Creates a new user for the current tenant. OWNER only.
-    Optionally sends a welcome email with temporary credentials."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
@@ -380,7 +368,6 @@ def add_team_member(request, payload: TeamMemberCreateIn):
         request.tenant.name,
     )
 
-    # Send welcome email with credentials
     try:
         from django.conf import settings as django_settings
         from django.core.mail import EmailMultiAlternatives
@@ -404,63 +391,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
         current_year = _dt.now().year
 
-        html_content = f"""<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f4f8; color:#1e293b; }}
-.container {{ max-width:560px; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }}
-.header {{ background: linear-gradient(135deg, {primary_color} 0%, #312e81 100%); padding:32px 24px; text-align:center; color:#fff; }}
-.header h1 {{ margin:0 0 4px; font-size:22px; font-weight:700; }}
-.header p {{ margin:0; font-size:13px; opacity:0.8; }}
-.body {{ padding:28px 24px; }}
-.body h2 {{ margin:0 0 8px; font-size:18px; font-weight:700; color:#1e293b; }}
-.body p {{ margin:0 0 16px; font-size:14px; line-height:1.6; color:#475569; }}
-.cred-box {{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin:16px 0; }}
-.cred-box .label {{ font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:#94a3b8; font-weight:600; margin-bottom:4px; }}
-.cred-box .value {{ font-size:16px; font-weight:700; color:#1e293b; font-family:monospace; }}
-.cta {{ display:inline-block; margin:20px 0; padding:14px 28px; background:{primary_color}; color:#fff; text-decoration:none; border-radius:12px; font-weight:600; font-size:14px; }}
-.warning {{ background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; margin:16px 0; }}
-.warning p {{ margin:0; font-size:12px; color:#92400e; }}
-.footer {{ padding:20px 24px; text-align:center; background:#f8fafc; border-top:1px solid #f1f5f9; }}
-.footer p {{ margin:0; font-size:11px; color:#94a3b8; }}
-.footer a {{ color:{primary_color}; text-decoration:none; }}
-</style></head>
-<body>
-<div class="container">
-<div class="header">
-  <h1>{tenant_name}</h1>
-  <p>Bienvenido al equipo</p>
-</div>
-<div class="body">
-  <h2>Hola {payload.first_name} 👋</h2>
-  <p>Has sido invitado como <strong>{role_label}</strong> en <strong>{tenant_name}</strong>. A continuación encontrarás tus credenciales de acceso:</p>
-
-  <div class="cred-box">
-    <div class="label">Email de acceso</div>
-    <div class="value">{payload.email}</div>
-  </div>
-  <div class="cred-box">
-    <div class="label">Contraseña temporal</div>
-    <div class="value">{temp_password}</div>
-  </div>
-
-  <div class="warning">
-    <p>⚠️ <strong>Importante:</strong> Por seguridad, te recomendamos cambiar tu contraseña al iniciar sesión por primera vez.</p>
-  </div>
-
-  <center><a href="{login_url}" class="cta">Iniciar Sesión →</a></center>
-
-  <p style="font-size:12px; color:#94a3b8; text-align:center; margin-top:20px;">
-    Si no reconoces esta invitación, puedes ignorar este correo.
-  </p>
-</div>
-<div class="footer">
-  <p>Powered by <a href="https://loyallia.com">Loyallia</a> — Intelligent Rewards</p>
-  <p style="margin-top:4px;">© {current_year} {tenant_name}. Todos los derechos reservados.</p>
-</div>
-</div>
-</body></html>"""
+        html_content = f"""<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4f4f8;color:#1e293b;}}.container{{max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}}.header{{background:linear-gradient(135deg,{primary_color} 0%,#312e81 100%);padding:32px 24px;text-align:center;color:#fff;}}.header h1{{margin:0 0 4px;font-size:22px;font-weight:700;}}.header p{{margin:0;font-size:13px;opacity:0.8;}}.body{{padding:28px 24px;}}.body h2{{margin:0 0 8px;font-size:18px;font-weight:700;color:#1e293b;}}.body p{{margin:0 0 16px;font-size:14px;line-height:1.6;color:#475569;}}.cred-box{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:16px 0;}}.cred-box .label{{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:600;margin-bottom:4px;}}.cred-box .value{{font-size:16px;font-weight:700;color:#1e293b;font-family:monospace;}}.cta{{display:inline-block;margin:20px 0;padding:14px 28px;background:{primary_color};color:#fff;text-decoration:none;border-radius:12px;font-weight:600;font-size:14px;}}.warning{{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:16px 0;}}.warning p{{margin:0;font-size:12px;color:#92400e;}}.footer{{padding:20px 24px;text-align:center;background:#f8fafc;border-top:1px solid #f1f5f9;}}.footer p{{margin:0;font-size:11px;color:#94a3b8;}}.footer a{{color:{primary_color};text-decoration:none;}}</style></head><body><div class="container"><div class="header"><h1>{tenant_name}</h1><p>Bienvenido al equipo</p></div><div class="body"><h2>Hola {payload.first_name} 👋</h2><p>Has sido invitado como <strong>{role_label}</strong> en <strong>{tenant_name}</strong>. A continuación encontrarás tus credenciales de acceso:</p><div class="cred-box"><div class="label">Email de acceso</div><div class="value">{payload.email}</div></div><div class="cred-box"><div class="label">Contraseña temporal</div><div class="value">{temp_password}</div></div><div class="warning"><p>⚠️ <strong>Importante:</strong> Por seguridad, te recomendamos cambiar tu contraseña al iniciar sesión por primera vez.</p></div><center><a href="{login_url}" class="cta">Iniciar Sesión →</a></center><p style="font-size:12px;color:#94a3b8;text-align:center;margin-top:20px;">Si no reconoces esta invitación, puedes ignorar este correo.</p></div><div class="footer"><p>Powered by <a href="https://loyallia.com">Loyallia</a> — Intelligent Rewards</p><p style="margin-top:4px;">© {current_year} {tenant_name}. Todos los derechos reservados.</p></div></div></body></html>"""
 
         msg = EmailMultiAlternatives(
             subject=f"Bienvenido al equipo de {tenant_name}",
@@ -475,9 +406,50 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
     return {
         "success": True,
-        "message": get_message("TEAM_MEMBER_ADDED"),
+        "message": get_message("TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"),
         "user_id": str(user.id),
     }
+
+
+@router.post("/me/ai-chat/", auth=jwt_auth, summary="Proxy to AI Agent via Vault")
+def ai_chat_proxy(request, payload: AIChatIn):
+    """
+    Proxies chat requests to the external AI Agent.
+    Injects the Vault-backed AI_AGENT_API_KEY to ensure zero frontend exposure.
+    """
+    import httpx
+    from django.conf import settings
+    from common.vault import get_secret
+    
+    api_key = get_secret("ai_agent_api_key")
+    if not api_key:
+        logger.error("AI_AGENT_API_KEY not found in Vault.")
+        raise HttpError(503, "AI agent service is not configured correctly.")
+        
+    agent_base_url = getattr(settings, "AI_AGENT_BASE_URL", "https://agente.ingelsi.com.ec")
+    
+    request_data = {
+        "message": payload.message,
+        "lifetime_hours": 24,
+    }
+    if payload.context_id:
+        request_data["context_id"] = payload.context_id
+        
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                f"{agent_base_url}/api_message",
+                json=request_data,
+                headers={"X-API-KEY": api_key, "Content-Type": "application/json"}
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.HTTPStatusError as e:
+        logger.error(f"AI Agent returned status {e.response.status_code}: {e.response.text}")
+        raise HttpError(e.response.status_code, "Failed to fetch from AI agent")
+    except Exception as e:
+        logger.error(f"Error calling AI agent: {str(e)}")
+        raise HttpError(500, "Internal server error while contacting AI agent")
 
 
 @router.patch(
@@ -549,7 +521,6 @@ def delete_team_member(request, user_id: str):
     except (User.DoesNotExist, ValueError):
         raise HttpError(404, get_message("USER_NOT_FOUND"))
 
-    # Cannot delete self
     if member.id == request.user.id:
         raise HttpError(400, get_message("TEAM_CANNOT_DELETE_SELF"))
 
