@@ -7,27 +7,38 @@ interface PlanData {
   id: string; name: string; slug: string; description: string;
   price_monthly: number; price_annual: number;
   max_locations: number; max_users: number; max_customers: number; max_programs: number;
-  max_whatsapp_day: number; max_emails_month: number;
+  max_notifications_month: number; max_transactions_month: number;
+  max_whatsapp_day: number; max_emails_month: number; max_sms_day: number;
+  max_wallet_pushes_month: number;
+  max_automations: number; max_automation_executions_day: number;
+  max_ai_queries_month: number; max_api_calls_day: number; max_exports_month: number;
   features: string[]; is_active: boolean; is_featured: boolean; trial_days: number; sort_order: number;
 }
 
 const PREDEFINED_FEATURES = [
-  { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp' },
-  { id: 'sms_campaigns', label: 'Campañas de SMS' },
-  { id: 'email_campaigns', label: 'Campañas de Email' },
-  { id: 'wallet_campaigns', label: 'Apple/Google Wallet' },
-  { id: 'custom_domain', label: 'Dominio Personalizado' },
-  { id: 'api_access', label: 'Acceso a la API' },
-  { id: 'advanced_analytics', label: 'Analítica Avanzada' },
-  { id: 'priority_support', label: 'Soporte Prioritario' },
-  { id: 'white_label', label: 'Marca Blanca' },
+  { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp', icon: '📱' },
+  { id: 'sms_campaigns', label: 'Campañas de SMS', icon: '💬' },
+  { id: 'email_campaigns', label: 'Campañas de Email', icon: '📧' },
+  { id: 'wallet_campaigns', label: 'Apple/Google Wallet', icon: '💳' },
+  { id: 'geo_fencing', label: 'Geo-Fencing', icon: '📍' },
+  { id: 'automation', label: 'Automatización', icon: '⚡' },
+  { id: 'advanced_analytics', label: 'Analítica Avanzada', icon: '📊' },
+  { id: 'ai_assistant', label: 'Asistente IA', icon: '🤖' },
+  { id: 'agent_api', label: 'Acceso API Agente', icon: '🔌' },
+  { id: 'priority_support', label: 'Soporte Prioritario', icon: '⭐' },
+  { id: 'custom_branding', label: 'Marca Personalizada', icon: '🎨' },
+  { id: 'data_export', label: 'Exportación de Datos', icon: '📤' },
 ];
 
 const emptyPlan = {
   name: '', slug: '', description: '',
   price_monthly: 0, price_annual: 0,
   max_locations: 1, max_users: 3, max_customers: 500, max_programs: 1,
-  max_whatsapp_day: 0, max_emails_month: 0,
+  max_notifications_month: 1000, max_transactions_month: 5000,
+  max_whatsapp_day: 0, max_emails_month: 0, max_sms_day: 0,
+  max_wallet_pushes_month: 0,
+  max_automations: 3, max_automation_executions_day: 100,
+  max_ai_queries_month: 0, max_api_calls_day: 0, max_exports_month: 5,
   features: [] as string[], is_featured: false, trial_days: 14, sort_order: 0,
 };
 
@@ -58,7 +69,16 @@ export default function SuperAdminPlans() {
       price_monthly: p.price_monthly, price_annual: p.price_annual,
       max_locations: p.max_locations, max_users: p.max_users,
       max_customers: p.max_customers, max_programs: p.max_programs,
+      max_notifications_month: p.max_notifications_month || 1000,
+      max_transactions_month: p.max_transactions_month || 5000,
       max_whatsapp_day: p.max_whatsapp_day || 0, max_emails_month: p.max_emails_month || 0,
+      max_sms_day: p.max_sms_day || 0,
+      max_wallet_pushes_month: p.max_wallet_pushes_month || 0,
+      max_automations: p.max_automations || 3,
+      max_automation_executions_day: p.max_automation_executions_day || 100,
+      max_ai_queries_month: p.max_ai_queries_month || 0,
+      max_api_calls_day: p.max_api_calls_day || 0,
+      max_exports_month: p.max_exports_month || 5,
       features: p.features || [],
       is_featured: p.is_featured, trial_days: p.trial_days, sort_order: p.sort_order,
     });
@@ -193,7 +213,7 @@ export default function SuperAdminPlans() {
       {(selected || showCreate) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={closeModal}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="relative w-full max-w-lg bg-white/80 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto animate-fade-in"
+          <div className="relative w-full max-w-6xl bg-white/90 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col animate-fade-in"
             onClick={e => e.stopPropagation()}
             style={{ boxShadow: '0 25px 80px rgba(0,0,0,0.15)' }}>
 
@@ -219,7 +239,7 @@ export default function SuperAdminPlans() {
 
             {/* READ MODE */}
             {selected && !editMode && !showCreate && (
-              <div className="px-6 pb-6 space-y-4">
+              <div className="px-6 pb-6 space-y-4 overflow-y-auto flex-1">
                 <p className="text-sm text-surface-600">{selected.description || 'Sin descripción'}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-surface-50/80 rounded-xl p-3">
@@ -231,44 +251,59 @@ export default function SuperAdminPlans() {
                     <p className="text-2xl font-black text-surface-900 dark:text-white">${selected.price_annual}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <InfoRow label="Máx. Sucursales" value={String(selected.max_locations)} />
-                  <InfoRow label="Máx. Usuarios" value={String(selected.max_users)} />
-                  <InfoRow label="Máx. Clientes" value={selected.max_customers.toLocaleString()} />
-                  <InfoRow label="Máx. Programas" value={String(selected.max_programs)} />
-                  <InfoRow label="Días de Prueba" value={String(selected.trial_days)} />
-                  <InfoRow label="Orden" value={String(selected.sort_order)} />
-                </div>
-                {/* Messaging quotas */}
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-3 border border-green-200/50">
-                  <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">📡 Canales de Mensajería</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] font-semibold text-green-600 uppercase">WhatsApp/día</p>
-                      <p className="text-lg font-black text-surface-900">{selected.max_whatsapp_day > 0 ? selected.max_whatsapp_day : <span className="text-surface-300">Deshabilitado</span>}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-blue-600 uppercase">Emails/mes</p>
-                      <p className="text-lg font-black text-surface-900">{selected.max_emails_month > 0 ? selected.max_emails_month.toLocaleString() : <span className="text-surface-300">Deshabilitado</span>}</p>
-                    </div>
+                {/* Resource Limits */}
+                <div className="bg-surface-50/80 rounded-xl p-3">
+                  <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">📦 Límites de Recursos</p>
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <InfoRow label="Sucursales" value={String(selected.max_locations)} />
+                    <InfoRow label="Usuarios" value={String(selected.max_users)} />
+                    <InfoRow label="Clientes" value={selected.max_customers.toLocaleString()} />
+                    <InfoRow label="Programas" value={String(selected.max_programs)} />
+                    <InfoRow label="Automatizaciones" value={String(selected.max_automations)} />
+                    <InfoRow label="Ejec. Autom./día" value={String(selected.max_automation_executions_day)} />
+                    <InfoRow label="Notificaciones/mes" value={selected.max_notifications_month.toLocaleString()} />
+                    <InfoRow label="Transacciones/mes" value={selected.max_transactions_month.toLocaleString()} />
+                    <InfoRow label="Exportaciones/mes" value={String(selected.max_exports_month)} />
                   </div>
                 </div>
+                {/* Messaging */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-3 border border-green-200/50">
+                  <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">📡 Canales de Mensajería</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><p className="text-[10px] font-semibold text-green-600 uppercase">WhatsApp/día</p><p className="text-lg font-black text-surface-900">{selected.max_whatsapp_day > 0 ? selected.max_whatsapp_day : <span className="text-surface-300">Off</span>}</p></div>
+                    <div><p className="text-[10px] font-semibold text-blue-600 uppercase">Emails/mes</p><p className="text-lg font-black text-surface-900">{selected.max_emails_month > 0 ? selected.max_emails_month.toLocaleString() : <span className="text-surface-300">Off</span>}</p></div>
+                    <div><p className="text-[10px] font-semibold text-purple-600 uppercase">SMS/día</p><p className="text-lg font-black text-surface-900">{selected.max_sms_day > 0 ? selected.max_sms_day : <span className="text-surface-300">Off</span>}</p></div>
+                    <div><p className="text-[10px] font-semibold text-indigo-600 uppercase">Wallet/mes</p><p className="text-lg font-black text-surface-900">{selected.max_wallet_pushes_month > 0 ? selected.max_wallet_pushes_month.toLocaleString() : <span className="text-surface-300">Off</span>}</p></div>
+                  </div>
+                </div>
+                {/* AI & API */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-3 border border-purple-200/50">
+                  <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">🤖 IA & API</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><p className="text-[10px] font-semibold text-purple-600 uppercase">Consultas IA/mes</p><p className="text-lg font-black text-surface-900">{selected.max_ai_queries_month > 0 ? selected.max_ai_queries_month : <span className="text-surface-300">Off</span>}</p></div>
+                    <div><p className="text-[10px] font-semibold text-indigo-600 uppercase">API calls/día</p><p className="text-lg font-black text-surface-900">{selected.max_api_calls_day > 0 ? selected.max_api_calls_day.toLocaleString() : <span className="text-surface-300">Off</span>}</p></div>
+                  </div>
+                </div>
+                {/* Features */}
                 {(selected.features || []).length > 0 && (
                   <div className="bg-surface-50/80 rounded-xl p-3">
                     <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">Características</p>
-                    <div className="space-y-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {selected.features.map((f, i) => {
                         const preset = PREDEFINED_FEATURES.find(p => p.id === f);
-                        const label = preset ? preset.label : f;
                         return (
-                          <div key={i} className="flex items-center gap-1.5 text-sm text-surface-700">
-                            <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> {label}
-                          </div>
+                          <span key={i} className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 text-xs font-medium px-2.5 py-1 rounded-lg border border-brand-200">
+                            {preset?.icon} {preset?.label || f}
+                          </span>
                         );
                       })}
                     </div>
                   </div>
                 )}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <InfoRow label="Días de Prueba" value={String(selected.trial_days)} />
+                  <InfoRow label="Orden" value={String(selected.sort_order)} />
+                </div>
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => setEditMode(true)}
                     className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200">
@@ -284,108 +319,134 @@ export default function SuperAdminPlans() {
 
             {/* EDIT / CREATE MODE */}
             {(editMode || showCreate) && (
-              <div className="px-6 pb-6 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Nombre" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="Professional" />
-                  <FormField label="Slug" value={form.slug} onChange={v => setForm(f => ({ ...f, slug: v }))} placeholder="professional" disabled={!!selected && !showCreate} />
-                </div>
-                <FormField label="Descripción" value={form.description} onChange={v => setForm(f => ({ ...f, description: v }))} placeholder="Plan ideal para negocios en crecimiento" />
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Precio Mensual (USD)" value={String(form.price_monthly)} onChange={v => setForm(f => ({ ...f, price_monthly: +v || 0 }))} placeholder="49" type="number" />
-                  <FormField label="Precio Anual (USD)" value={String(form.price_annual)} onChange={v => setForm(f => ({ ...f, price_annual: +v || 0 }))} placeholder="470" type="number" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Máx. Sucursales" value={String(form.max_locations)} onChange={v => setForm(f => ({ ...f, max_locations: +v || 1 }))} type="number" />
-                  <FormField label="Máx. Usuarios" value={String(form.max_users)} onChange={v => setForm(f => ({ ...f, max_users: +v || 1 }))} type="number" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Máx. Clientes" value={String(form.max_customers)} onChange={v => setForm(f => ({ ...f, max_customers: +v || 100 }))} type="number" />
-                  <FormField label="Días de Prueba" value={String(form.trial_days)} onChange={v => setForm(f => ({ ...f, trial_days: +v || 0 }))} type="number" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-surface-500 mb-1 block">Características del Plan</label>
-                  <FeatureTagInput
-                  features={form.features}
-                  onChange={features => setForm(f => ({ ...f, features }))}
-                />
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.is_featured}
-                    onChange={e => setForm(f => ({ ...f, is_featured: e.target.checked }))}
-                    className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-400" />
-                  <span className="text-sm text-surface-700 font-medium">Plan destacado</span>
-                </label>
+              <div className="px-6 pb-6 overflow-y-auto flex-1">
+                <div className="grid grid-cols-3 gap-4">
+                  {/* COLUMN 1: Info & Pricing */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-surface-600 uppercase tracking-wide">📋 Información</p>
+                    <FormField label="Nombre" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="Professional" />
+                    <FormField label="Slug" value={form.slug} onChange={v => setForm(f => ({ ...f, slug: v }))} placeholder="professional" disabled={!!selected && !showCreate} />
+                    <FormField label="Descripción" value={form.description} onChange={v => setForm(f => ({ ...f, description: v }))} placeholder="Plan ideal para negocios en crecimiento" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField label="Precio Mensual (USD)" value={String(form.price_monthly)} onChange={v => setForm(f => ({ ...f, price_monthly: +v || 0 }))} placeholder="49" type="number" />
+                      <FormField label="Precio Anual (USD)" value={String(form.price_annual)} onChange={v => setForm(f => ({ ...f, price_annual: +v || 0 }))} placeholder="470" type="number" />
+                    </div>
 
-                {/* ═══ MESSAGING CHANNELS (LYL-SRS-008) ═══ */}
-                <div className="bg-gradient-to-r from-green-50/80 to-blue-50/80 rounded-xl p-4 border border-green-200/50 space-y-3">
-                  <p className="text-xs font-bold text-surface-600 uppercase tracking-wide">📡 Canales de Mensajería</p>
+                    {/* Resource Limits */}
+                    <p className="text-xs font-bold text-surface-600 uppercase tracking-wide pt-2">📦 Límites de Recursos</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField label="Sucursales" value={String(form.max_locations)} onChange={v => setForm(f => ({ ...f, max_locations: +v || 1 }))} type="number" />
+                      <FormField label="Usuarios" value={String(form.max_users)} onChange={v => setForm(f => ({ ...f, max_users: +v || 1 }))} type="number" />
+                      <FormField label="Clientes" value={String(form.max_customers)} onChange={v => setForm(f => ({ ...f, max_customers: +v || 100 }))} type="number" />
+                      <FormField label="Programas" value={String(form.max_programs)} onChange={v => setForm(f => ({ ...f, max_programs: +v || 1 }))} type="number" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField label="Notificaciones/mes" value={String(form.max_notifications_month)} onChange={v => setForm(f => ({ ...f, max_notifications_month: +v || 0 }))} type="number" />
+                      <FormField label="Transacciones/mes" value={String(form.max_transactions_month)} onChange={v => setForm(f => ({ ...f, max_transactions_month: +v || 0 }))} type="number" />
+                    </div>
+                  </div>
 
-                  {/* WhatsApp Toggle */}
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={form.features.includes('whatsapp_campaigns')}
-                        onChange={() => {
-                          const has = form.features.includes('whatsapp_campaigns');
-                          setForm(f => ({
-                            ...f,
-                            features: has ? f.features.filter(x => x !== 'whatsapp_campaigns') : [...f.features, 'whatsapp_campaigns'],
-                            max_whatsapp_day: has ? 0 : (f.max_whatsapp_day || 100),
-                          }));
-                        }}
-                        className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-400" />
-                      <span className="text-sm text-surface-700 font-semibold">📱 WhatsApp Campaigns</span>
-                    </label>
-                    {form.features.includes('whatsapp_campaigns') && (
-                      <div className="ml-6">
-                        <FormField label="Máx. WhatsApp/día (máx seguro: 200)" value={String(form.max_whatsapp_day)}
-                          onChange={v => setForm(f => ({ ...f, max_whatsapp_day: Math.min(+v || 0, 200) }))} type="number" />
-                        {form.max_whatsapp_day > 200 && (
-                          <p className="text-[10px] text-red-500 font-semibold mt-1">⚠️ {'>'} 200/día puede causar ban de WhatsApp</p>
-                        )}
+                  {/* COLUMN 2: Messaging & Rate Limits */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-surface-600 uppercase tracking-wide">📡 Canales de Mensajería</p>
+                    {/* WhatsApp */}
+                    <div className="bg-gradient-to-r from-green-50/80 to-emerald-50/80 rounded-xl p-3 border border-green-200/40 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.features.includes('whatsapp_campaigns')}
+                          onChange={() => { const has = form.features.includes('whatsapp_campaigns'); setForm(f => ({ ...f, features: has ? f.features.filter(x => x !== 'whatsapp_campaigns') : [...f.features, 'whatsapp_campaigns'], max_whatsapp_day: has ? 0 : (f.max_whatsapp_day || 100) })); }}
+                          className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-400" />
+                        <span className="text-sm text-surface-700 font-semibold">📱 WhatsApp</span>
+                      </label>
+                      {form.features.includes('whatsapp_campaigns') && (
+                        <div className="ml-6">
+                          <FormField label="Máx. WhatsApp/día (máx: 200)" value={String(form.max_whatsapp_day)} onChange={v => setForm(f => ({ ...f, max_whatsapp_day: Math.min(+v || 0, 200) }))} type="number" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Email */}
+                    <div className="bg-gradient-to-r from-blue-50/80 to-sky-50/80 rounded-xl p-3 border border-blue-200/40 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.features.includes('email_campaigns')}
+                          onChange={() => { const has = form.features.includes('email_campaigns'); setForm(f => ({ ...f, features: has ? f.features.filter(x => x !== 'email_campaigns') : [...f.features, 'email_campaigns'], max_emails_month: has ? 0 : (f.max_emails_month || 5000) })); }}
+                          className="w-4 h-4 rounded border-blue-400 text-blue-600 focus:ring-blue-400" />
+                        <span className="text-sm text-surface-700 font-semibold">📧 Email</span>
+                      </label>
+                      {form.features.includes('email_campaigns') && (
+                        <div className="ml-6">
+                          <FormField label="Máx. Emails/mes" value={String(form.max_emails_month)} onChange={v => setForm(f => ({ ...f, max_emails_month: +v || 0 }))} type="number" />
+                        </div>
+                      )}
+                    </div>
+                    {/* SMS */}
+                    <div className="bg-gradient-to-r from-purple-50/80 to-violet-50/80 rounded-xl p-3 border border-purple-200/40 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.features.includes('sms_campaigns')}
+                          onChange={() => { const has = form.features.includes('sms_campaigns'); setForm(f => ({ ...f, features: has ? f.features.filter(x => x !== 'sms_campaigns') : [...f.features, 'sms_campaigns'], max_sms_day: has ? 0 : (f.max_sms_day || 50) })); }}
+                          className="w-4 h-4 rounded border-purple-400 text-purple-600 focus:ring-purple-400" />
+                        <span className="text-sm text-surface-700 font-semibold">💬 SMS (Twilio)</span>
+                      </label>
+                      {form.features.includes('sms_campaigns') && (
+                        <div className="ml-6">
+                          <FormField label="Máx. SMS/día" value={String(form.max_sms_day)} onChange={v => setForm(f => ({ ...f, max_sms_day: +v || 0 }))} type="number" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Wallet */}
+                    <div className="bg-gradient-to-r from-indigo-50/80 to-slate-50/80 rounded-xl p-3 border border-indigo-200/40 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.features.includes('wallet_campaigns')}
+                          onChange={() => { const has = form.features.includes('wallet_campaigns'); setForm(f => ({ ...f, features: has ? f.features.filter(x => x !== 'wallet_campaigns') : [...f.features, 'wallet_campaigns'], max_wallet_pushes_month: has ? 0 : (f.max_wallet_pushes_month || 5000) })); }}
+                          className="w-4 h-4 rounded border-indigo-400 text-indigo-600 focus:ring-indigo-400" />
+                        <span className="text-sm text-surface-700 font-semibold">💳 Wallet (Apple/Google)</span>
+                      </label>
+                      {form.features.includes('wallet_campaigns') && (
+                        <div className="ml-6">
+                          <FormField label="Máx. Wallet Pushes/mes" value={String(form.max_wallet_pushes_month)} onChange={v => setForm(f => ({ ...f, max_wallet_pushes_month: +v || 0 }))} type="number" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* AI & API Rate Limits */}
+                    <p className="text-xs font-bold text-surface-600 uppercase tracking-wide pt-2">🤖 IA & API</p>
+                    <div className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 rounded-xl p-3 border border-purple-200/40 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField label="Consultas IA/mes" value={String(form.max_ai_queries_month)} onChange={v => setForm(f => ({ ...f, max_ai_queries_month: +v || 0 }))} type="number" />
+                        <FormField label="API Calls/día" value={String(form.max_api_calls_day)} onChange={v => setForm(f => ({ ...f, max_api_calls_day: +v || 0 }))} type="number" />
                       </div>
-                    )}
+                      <p className="text-[10px] text-surface-400">0 = deshabilitado. IA consume tokens LLM. API requiere plan Enterprise.</p>
+                    </div>
                   </div>
 
-                  {/* Email Toggle */}
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={form.features.includes('email_campaigns')}
-                        onChange={() => {
-                          const has = form.features.includes('email_campaigns');
-                          setForm(f => ({
-                            ...f,
-                            features: has ? f.features.filter(x => x !== 'email_campaigns') : [...f.features, 'email_campaigns'],
-                            max_emails_month: has ? 0 : (f.max_emails_month || 5000),
-                          }));
-                        }}
-                        className="w-4 h-4 rounded border-blue-400 text-blue-600 focus:ring-blue-400" />
-                      <span className="text-sm text-surface-700 font-semibold">📧 Email Campaigns</span>
-                    </label>
-                    {form.features.includes('email_campaigns') && (
-                      <div className="ml-6">
-                        <FormField label="Máx. Emails/mes" value={String(form.max_emails_month)}
-                          onChange={v => setForm(f => ({ ...f, max_emails_month: +v || 0 }))} type="number" />
+                  {/* COLUMN 3: Features & Automation */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-surface-600 uppercase tracking-wide">⚡ Automatización</p>
+                    <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 rounded-xl p-3 border border-amber-200/40 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField label="Máx. Automatizaciones" value={String(form.max_automations)} onChange={v => setForm(f => ({ ...f, max_automations: +v || 0 }))} type="number" />
+                        <FormField label="Ejec./día" value={String(form.max_automation_executions_day)} onChange={v => setForm(f => ({ ...f, max_automation_executions_day: +v || 0 }))} type="number" />
                       </div>
-                    )}
-                  </div>
+                      <FormField label="Exportaciones/mes" value={String(form.max_exports_month)} onChange={v => setForm(f => ({ ...f, max_exports_month: +v || 0 }))} type="number" />
+                    </div>
 
-                  {/* Wallet (Apple Wallet) Toggle */}
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={form.features.includes('wallet_campaigns')}
-                        onChange={() => {
-                          const has = form.features.includes('wallet_campaigns');
-                          setForm(f => ({
-                            ...f,
-                            features: has ? f.features.filter(x => x !== 'wallet_campaigns') : [...f.features, 'wallet_campaigns'],
-                          }));
-                        }}
-                        className="w-4 h-4 rounded border-purple-400 text-purple-600 focus:ring-purple-400" />
-                      <span className="text-sm text-surface-700 font-semibold">💳 Wallet Campaigns (Apple Wallet)</span>
-                    </label>
+                    <p className="text-xs font-bold text-surface-600 uppercase tracking-wide pt-2">🏷️ Características del Plan</p>
+                    <FeatureTagInput features={form.features} onChange={features => setForm(f => ({ ...f, features }))} />
+
+                    <div className="space-y-2 pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.is_featured}
+                          onChange={e => setForm(f => ({ ...f, is_featured: e.target.checked }))}
+                          className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-400" />
+                        <span className="text-sm text-surface-700 font-medium">⭐ Plan destacado</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField label="Días de Prueba" value={String(form.trial_days)} onChange={v => setForm(f => ({ ...f, trial_days: +v || 0 }))} type="number" />
+                        <FormField label="Orden" value={String(form.sort_order)} onChange={v => setForm(f => ({ ...f, sort_order: +v || 0 }))} type="number" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2 pt-3">
+
+                <div className="flex gap-2 pt-4 mt-4 border-t border-surface-200">
                   <button onClick={handleSave} disabled={saving || !form.name.trim() || (!showCreate && !form.slug.trim())}
                     className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200">
                     {saving ? 'Guardando...' : showCreate ? 'Crear Plan' : 'Guardar Cambios'}

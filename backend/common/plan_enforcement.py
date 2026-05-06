@@ -77,6 +77,13 @@ def get_tenant_limits(tenant) -> dict:
             "transactions_month": 999999,
             "whatsapp_day": 50,  # Trial: 50 WA/day (safe intro)
             "emails_month": 500,  # Trial: 500 emails/month
+            "sms_day": 0,  # Trial: SMS disabled (requires Twilio)
+            "wallet_pushes_month": 500,  # Trial: 500 wallet pushes
+            "automations": 3,  # Trial: 3 automation rules
+            "automation_executions_day": 50,  # Trial: 50 executions/day
+            "ai_queries_month": 50,  # Trial: 50 AI queries
+            "api_calls_day": 0,  # Trial: API disabled (Enterprise)
+            "exports_month": 2,  # Trial: 2 data exports/month
         }
 
     if not plan:
@@ -91,6 +98,13 @@ def get_tenant_limits(tenant) -> dict:
         "transactions_month": plan.max_transactions_month,
         "whatsapp_day": plan.max_whatsapp_day,
         "emails_month": plan.max_emails_month,
+        "sms_day": plan.max_sms_day,
+        "wallet_pushes_month": plan.max_wallet_pushes_month,
+        "automations": plan.max_automations,
+        "automation_executions_day": plan.max_automation_executions_day,
+        "ai_queries_month": plan.max_ai_queries_month,
+        "api_calls_day": plan.max_api_calls_day,
+        "exports_month": plan.max_exports_month,
     }
 
 
@@ -119,6 +133,19 @@ def get_current_usage(tenant, resource: str) -> int:
         ),
         "whatsapp_day": lambda: _get_whatsapp_today(tenant),
         "emails_month": lambda: _count_emails_month(tenant, month_start),
+        "sms_day": lambda: _count_sms_today(tenant),
+        "wallet_pushes_month": lambda: _count_wallet_pushes_month(
+            tenant, month_start
+        ),
+        "automations": lambda: _count_automations(tenant),
+        "automation_executions_day": lambda: _count_automation_executions_today(
+            tenant
+        ),
+        "ai_queries_month": lambda: _count_monthly(
+            "apps.tenants.models", "AIQueryLog", tenant, month_start
+        ),
+        "api_calls_day": lambda: _count_api_calls_today(tenant),
+        "exports_month": lambda: _count_exports_month(tenant, month_start),
     }
 
     counter = usage_map.get(resource)
@@ -167,6 +194,85 @@ def _count_emails_month(tenant, month_start) -> int:
     return CampaignDeliveryLog.objects.filter(
         campaign_run__tenant=tenant,
         campaign_run__channel="email",
+        created_at__gte=month_start,
+    ).count()
+
+
+def _count_sms_today(tenant) -> int:
+    """Count today's SMS deliveries for a tenant.
+
+    PERF: Single COUNT query on CampaignDeliveryLog filtered by sms channel + today.
+    """
+    from apps.notifications.models import CampaignDeliveryLog
+
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    return CampaignDeliveryLog.objects.filter(
+        campaign_run__tenant=tenant,
+        campaign_run__channel="sms",
+        created_at__gte=today_start,
+    ).count()
+
+
+def _count_wallet_pushes_month(tenant, month_start) -> int:
+    """Count wallet push notifications this month.
+
+    PERF: Single COUNT query on CampaignDeliveryLog filtered by wallet channel + date.
+    """
+    from apps.notifications.models import CampaignDeliveryLog
+
+    return CampaignDeliveryLog.objects.filter(
+        campaign_run__tenant=tenant,
+        campaign_run__channel="wallet",
+        created_at__gte=month_start,
+    ).count()
+
+
+def _count_automations(tenant) -> int:
+    """Count total automation rules for a tenant.
+
+    PERF: Single COUNT query on Automation model.
+    """
+    from apps.automation.models import Automation
+
+    return Automation.objects.filter(tenant=tenant).count()
+
+
+def _count_automation_executions_today(tenant) -> int:
+    """Count today's automation executions across all rules for a tenant.
+
+    PERF: Single COUNT query on AutomationExecution filtered by tenant + today.
+    """
+    from apps.automation.models import AutomationExecution
+
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    return AutomationExecution.objects.filter(
+        automation__tenant=tenant,
+        executed_at__gte=today_start,
+    ).count()
+
+
+def _count_api_calls_today(tenant) -> int:
+    """Count today's Agent API calls for a tenant.
+
+    Uses AgentAPIKey.last_used_at as a proxy.
+    Returns 0 — full request counting requires middleware (future enhancement).
+    PERF: Returns 0 until API call logging model is added.
+    """
+    # TODO(LYL-RATE-001): Implement AgentAPICallLog model for accurate counting.
+    # For now, API calls are gated by has_feature("agent_api") only.
+    return 0
+
+
+def _count_exports_month(tenant, month_start) -> int:
+    """Count data exports this month.
+
+    PERF: Single COUNT query on AuditLog filtered by action + date.
+    """
+    from apps.audit.models import AuditLog
+
+    return AuditLog.objects.filter(
+        tenant=tenant,
+        action="data_export",
         created_at__gte=month_start,
     ).count()
 
