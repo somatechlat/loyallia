@@ -23,7 +23,7 @@ where authenticationToken is the value we set in pass.json.
 from __future__ import annotations
 
 import logging
-from datetime import UTC
+from datetime import timezone
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -268,7 +268,7 @@ def list_updated_passes(
     # Format the lastUpdated tag as ISO timestamp
     last_updated_tag = ""
     if latest_update:
-        last_updated_tag = latest_update.astimezone(UTC).isoformat()
+        last_updated_tag = latest_update.astimezone(timezone.utc).isoformat()
 
     return JsonResponse(
         {

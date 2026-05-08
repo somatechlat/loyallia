@@ -1,7 +1,7 @@
 """
 Loyallia — SMS Campaign Celery Task (LYL-SRS-009)
 
-Extracted from tasks.py for Rule 245 compliance (650-line limit).
+Extracted from tasks.py for Rule 245 compliance (600-line limit).
 Real SMS delivery via Twilio with per-message tracking using
 CampaignRun and CampaignDeliveryLog.
 

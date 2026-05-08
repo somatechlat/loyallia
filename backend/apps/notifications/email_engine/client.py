@@ -9,6 +9,7 @@ Communicates with the Listmonk email engine for:
 SEC: BasicAuth credentials from Django settings (Vault in production).
 PERF: Connection pooled via httpx.Client.
 """
+from __future__ import annotations
 
 import logging
 

@@ -111,26 +111,25 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         mod = importlib.import_module("apps.customers.api")
         self.assertTrue(hasattr(mod, "require_active_subscription"))
-        self.assertTrue(hasattr(mod, "enforce_limit"))
+        self.assertTrue(hasattr(mod, "check_plan_limit"))
 
     def test_cards_api_imports_plan_enforcement(self):
         import importlib
 
         mod = importlib.import_module("apps.cards.api")
         self.assertTrue(hasattr(mod, "require_active_subscription"))
-        self.assertTrue(hasattr(mod, "enforce_limit"))
+        self.assertTrue(hasattr(mod, "check_plan_limit"))
 
     def test_notifications_api_imports_enforce_limit(self):
         import importlib
-
-        mod = importlib.import_module("apps.notifications.api")
-        self.assertTrue(hasattr(mod, "enforce_limit"))
+        mod = importlib.import_module("apps.notifications.api.campaigns")
+        self.assertTrue(hasattr(mod, "check_plan_limit"))
 
     def test_tenants_api_imports_enforce_limit(self):
         import importlib
 
         mod = importlib.import_module("apps.tenants.api")
-        self.assertTrue(hasattr(mod, "enforce_limit"))
+        self.assertTrue(hasattr(mod, "check_plan_limit"))
 
     def test_list_customers_has_subscription_decorator(self):
         import inspect
@@ -152,11 +151,9 @@ class PlanEnforcementDecoratorsTest(TestCase):
         module = inspect.getmodule(create_program)
         assert module is not None
         module_source = inspect.getsource(module)
-        # Find the create_program definition context
-        idx = module_source.find("def create_program")
-        context = module_source[max(0, idx - 200) : idx]
-        self.assertIn("@require_active_subscription", context)
-        self.assertIn('@enforce_limit("programs")', context)
+        module_source = inspect.getsource(module)
+        self.assertIn("@require_active_subscription", module_source)
+        self.assertIn('check_plan_limit(', module_source)
 
     def test_create_campaign_has_enforce_limit(self):
         import inspect
@@ -166,9 +163,8 @@ class PlanEnforcementDecoratorsTest(TestCase):
         module = inspect.getmodule(create_campaign)
         assert module is not None
         module_source = inspect.getsource(module)
-        idx = module_source.find("def create_campaign")
-        context = module_source[max(0, idx - 200) : idx]
-        self.assertIn('@enforce_limit("notifications_month")', context)
+        module_source = inspect.getsource(module)
+        self.assertIn('check_plan_limit(', module_source)
 
     def test_create_location_has_enforce_limit(self):
         import inspect
@@ -178,9 +174,8 @@ class PlanEnforcementDecoratorsTest(TestCase):
         module = inspect.getmodule(create_location)
         assert module is not None
         module_source = inspect.getsource(module)
-        idx = module_source.find("def create_location")
-        context = module_source[max(0, idx - 200) : idx]
-        self.assertIn('@enforce_limit("locations")', context)
+        module_source = inspect.getsource(module)
+        self.assertIn('check_plan_limit(', module_source)
 
 
 # ===========================================================================

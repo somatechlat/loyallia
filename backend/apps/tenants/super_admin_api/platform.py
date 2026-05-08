@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.mail import send_mass_mail
+from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone as dj_timezone
 from ninja import Router
@@ -452,6 +453,56 @@ def update_integration_secret(
             "ADMIN_PLAN_UPDATED", name=f"{integration_key}.{payload.key}"
         ),
     )
+
+
+# =============================================================================
+# BILLING CONFIRMATION
+# =============================================================================
+
+
+@router.post("/platform/billing/confirm-payment/{invoice_id}/", auth=jwt_auth, response=MessageOut)
+def confirm_payment(request, invoice_id: str):
+    """Manually activate a subscription after receiving external payment."""
+    _require_super_admin(request)
+
+    try:
+        invoice = Invoice.objects.select_related("subscription").get(id=uuid.UUID(invoice_id))
+    except (Invoice.DoesNotExist, ValueError):
+        raise HttpError(404, get_message("NOT_FOUND"))
+
+    if invoice.status == Invoice.InvoiceStatus.PAID:
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Invoice is already paid."))
+
+    with transaction.atomic():
+        invoice.status = Invoice.InvoiceStatus.PAID
+        invoice.paid_at = dj_timezone.now()
+        invoice.save(update_fields=["status", "paid_at", "updated_at"])
+
+        subscription = invoice.subscription
+        subscription.status = SubscriptionStatus.ACTIVE
+        subscription.save(update_fields=["status", "updated_at"])
+
+        # SEC: Audit log manual payment confirmation
+        try:
+            from common.audit import AuditLog
+            AuditLog.objects.create(
+                tenant=invoice.tenant,
+                actor_email=request.user.email,
+                action="UPDATE",
+                resource="subscription",
+                resource_id=str(subscription.id),
+                ip_address=request.META.get("REMOTE_ADDR", ""),
+                details={"action": "manual_payment_confirmed", "invoice_id": str(invoice.id)},
+            )
+        except Exception:
+            logger.warning("Failed to log manual payment audit", exc_info=True)
+
+    logger.info(
+        "SUPER_ADMIN %s confirmed payment for invoice %s",
+        request.user.email,
+        invoice.invoice_number,
+    )
+    return MessageOut(success=True, message=get_message("BILLING_SUBSCRIBED"))
 
 
 # =============================================================================

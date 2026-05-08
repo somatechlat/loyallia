@@ -189,6 +189,11 @@ class BroadcastIn(BaseModel):
     message: str
 
 
+class ImpersonateIn(BaseModel):
+    owner_pin: str
+    justification: str = Field(..., min_length=10)
+
+
 class ImpersonateOut(BaseModel):
     access_token: str
     token_type: str = "bearer"

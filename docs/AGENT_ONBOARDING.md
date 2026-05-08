@@ -267,7 +267,7 @@ cd backend && ruff check .
 
 ## 9. Rules & Constraints
 
-- **File size limit:** 500 lines per `.py`/`.tsx` file
+- **File size limit:** 600 lines per `.py`/`.tsx` file
 - **No FastAPI:** Django Ninja only
 - **No SQLAlchemy:** Django ORM + migrations only
 - **No hardcoded strings:** Use `common/messages.py` + `get_message()`

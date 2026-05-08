@@ -3,6 +3,8 @@ Loyallia — Automation API router
 Campaign automation and workflow management.
 """
 
+from typing import Optional
+
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -33,13 +35,13 @@ class AutomationSchema(BaseModel):
     action: str
     is_active: bool
     total_executions: int
-    last_executed: str | None
+    last_executed: Optional[str] = None
     created_at: str
 
 
 class CreateAutomationSchema(BaseModel):
     name: str
-    description: str | None = ""
+    description: Optional[str] = ""
     trigger: str
     trigger_config: dict = {}
     action: str
@@ -47,21 +49,21 @@ class CreateAutomationSchema(BaseModel):
     target_program_ids: list[str] = []
     target_segments: list[str] = []
     schedule_config: dict = {}
-    max_executions_per_day: int | None = None
+    max_executions_per_day: Optional[int] = None
     cooldown_hours: int = 24
 
 
 class UpdateAutomationSchema(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    trigger_config: dict | None = None
-    action_config: dict | None = None
-    target_program_ids: list[str] | None = None
-    target_segments: list[str] | None = None
-    schedule_config: dict | None = None
-    max_executions_per_day: int | None = None
-    cooldown_hours: int | None = None
-    is_active: bool | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    trigger_config: Optional[dict] = None
+    action_config: Optional[dict] = None
+    target_program_ids: Optional[list[str]] = None
+    target_segments: Optional[list[str]] = None
+    schedule_config: Optional[dict] = None
+    max_executions_per_day: Optional[int] = None
+    cooldown_hours: Optional[int] = None
+    is_active: Optional[bool] = None
 
 
 # ============ Automation Analytics ============

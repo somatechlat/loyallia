@@ -2,8 +2,7 @@
 Loyallia — Customer API Schemas (Pydantic models)
 """
 
-from __future__ import annotations
-
+from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator
 
 from apps.customers.models import Customer, CustomerPass
@@ -13,10 +12,10 @@ class CustomerCreateIn(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    phone: str | None = ""
-    date_of_birth: str | None = None
-    gender: str | None = ""
-    notes: str | None = ""
+    phone: Optional[str] = ""
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = ""
+    notes: Optional[str] = ""
 
     # Allow dynamic custom fields from the Form Builder to be captured
     model_config = {"extra": "allow"}
@@ -37,17 +36,17 @@ class CustomerCreateIn(BaseModel):
 
 
 class CustomerUpdateIn(BaseModel):
-    first_name: str | None = None
-    last_name: str | None = None
-    phone: str | None = None
-    date_of_birth: str | None = None
-    gender: str | None = None
-    notes: str | None = None
-    is_active: bool | None = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
 
     @field_validator("first_name", "last_name")
     @classmethod
-    def validate_name(cls, v: str | None) -> str | None:
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Name cannot be empty")
         return v.strip() if v else v
@@ -59,18 +58,18 @@ class CustomerOut(BaseModel):
     last_name: str
     email: str
     phone: str
-    date_of_birth: str | None
+    date_of_birth: Optional[str]
     gender: str
     referral_code: str
     is_active: bool
     total_visits: int
     total_spent: str
-    last_visit: str | None
+    last_visit: Optional[str]
     created_at: str
     updated_at: str
 
     @staticmethod
-    def from_model(customer: Customer) -> CustomerOut:
+    def from_model(customer: Customer) -> "CustomerOut":
         return CustomerOut(
             id=str(customer.id),
             first_name=customer.first_name,
@@ -104,7 +103,7 @@ class CustomerPassOut(BaseModel):
     wallet_urls: dict = {}
 
     @staticmethod
-    def from_model(pass_obj: CustomerPass) -> CustomerPassOut:
+    def from_model(pass_obj: CustomerPass) -> "CustomerPassOut":
         pass_id = str(pass_obj.id)
         return CustomerPassOut(
             id=pass_id,

@@ -27,7 +27,11 @@ All strings via get_message() — Rule #11.
 """
 
 import logging
+from datetime import timedelta
+from decimal import Decimal
 
+from django.conf import settings
+from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -35,6 +39,7 @@ from ninja import Router
 from ninja.errors import HttpError
 
 from apps.billing.models import (
+    Invoice,
     PaymentMethod,
     Subscription,
     SubscriptionPlan,
@@ -45,6 +50,7 @@ from apps.billing.schemas import (
     SubscribeSchema,
     UpdateSubscriptionSchema,
 )
+from apps.tenants.models import PlatformSetting
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
 from common.plan_enforcement import get_current_usage
@@ -342,8 +348,7 @@ def get_usage(request: HttpRequest):
 @require_role("OWNER")
 def subscribe(request: HttpRequest, data: SubscribeSchema):
     """
-    Subscribe tenant to a plan via the configured payment gateway.
-    Frontend tokenizes the card via gateway JS SDK and sends the token.
+    Subscribe tenant to a plan using manual SuperAdmin payment verification.
     """
     tenant = require_tenant(request)
     if data.billing_cycle not in ("monthly", "annual"):
@@ -354,22 +359,80 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
     if not plan:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    subscription, _ = Subscription.objects.get_or_create(
-        tenant=tenant,
-        defaults={"plan": plan.slug},
+    now = timezone.now()
+    period_end = now + timedelta(days=365 if data.billing_cycle == "annual" else 30)
+    subtotal = (
+        plan.price_annual if data.billing_cycle == "annual" else plan.price_monthly
     )
-    subscription.subscription_plan = plan
-    subscription.billing_cycle = data.billing_cycle
-    subscription.save(
-        update_fields=["subscription_plan", "billing_cycle", "updated_at"]
-    )
+    tax_rate = Decimal(
+        str(
+            PlatformSetting.get_float(
+                "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
+            )
+        )
+    ).quantize(Decimal("0.0001"))
 
-    logger.warning(
-        "Payment confirmation required before activating tenant %s plan %s",
+    with transaction.atomic():
+        subscription, _ = Subscription.objects.select_for_update().get_or_create(
+            tenant=tenant,
+            defaults={"plan": plan.slug},
+        )
+        subscription.subscription_plan = plan
+        subscription.plan = plan.slug
+        subscription.billing_cycle = data.billing_cycle
+        subscription.status = SubscriptionStatus.PAST_DUE
+        subscription.current_period_start = now
+        subscription.current_period_end = period_end
+        subscription.save(
+            update_fields=[
+                "subscription_plan",
+                "plan",
+                "billing_cycle",
+                "status",
+                "current_period_start",
+                "current_period_end",
+                "updated_at",
+            ]
+        )
+
+        invoice = Invoice(
+            tenant=tenant,
+            subscription=subscription,
+            invoice_number=Invoice.generate_invoice_number(tenant),
+            subtotal=subtotal,
+            tax_rate=tax_rate,
+            tax_amount=Decimal("0.00"),
+            total=Decimal("0.00"),
+            currency="USD",
+            period_start=now,
+            period_end=period_end,
+            status=Invoice.InvoiceStatus.OPEN,
+            invoice_data={
+                "plan_slug": plan.slug,
+                "plan_name": plan.name,
+                "billing_cycle": data.billing_cycle,
+                "verification": "manual",
+            },
+        )
+        invoice.calculate_amounts()
+        invoice.save()
+
+    logger.info(
+        "Manual payment invoice %s created for tenant %s plan %s",
+        invoice.invoice_number,
         tenant.slug,
         plan.slug,
     )
-    raise HttpError(402, get_message("BILLING_PAYMENT_CONFIRMATION_REQUIRED"))
+    return {
+        "success": True,
+        "message": get_message("BILLING_INVOICE_GENERATED", amount=f"${invoice.total}"),
+        "invoice_id": str(invoice.id),
+        "invoice_number": invoice.invoice_number,
+        "status": subscription.status,
+        "amount_due": float(invoice.total),
+        "currency": invoice.currency,
+        "manual_verification_required": True,
+    }
 
 
 # ============================================================================

@@ -2,6 +2,7 @@
 Loyallia — Custom Validators
 Reusable Django validators for authentication and data integrity.
 """
+from __future__ import annotations
 
 import re
 

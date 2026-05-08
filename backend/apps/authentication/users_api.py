@@ -1,6 +1,6 @@
 """
 Loyallia — Users & Profile API (Django Ninja Router)
-Split from authentication/api.py per Rule 245 (650-line limit).
+Split from authentication/api.py per Rule 245 (600-line limit).
 Handles: profile updates, user invitations, team management, phone verification.
 """
 

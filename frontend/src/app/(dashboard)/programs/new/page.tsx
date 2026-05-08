@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 import { uploadFile } from '@/lib/upload';
-import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, BARCODE_TYPES, defaultMeta } from '@/components/programs/constants';
+import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta } from '@/components/programs/constants';
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import {
@@ -15,33 +15,8 @@ import {
 } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
-
-
-/* ─── Step indicator ──────────────────────────────────────────────────── */
-function StepBar({ step }: { step: number }) {
-  const steps = ['Tipo', 'Configuración', 'Diseño', 'Revisión'];
-  return (
-    <div className="flex items-center gap-2 mb-8">
-      {steps.map((label, i) => (
-        <div key={i} className="flex items-center gap-2 flex-1">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-            transition-all duration-300
-            ${i < step ? 'bg-brand-500 text-white' :
-              i === step ? 'bg-brand-500 text-white shadow-glow' :
-              'bg-surface-100 text-surface-400'}`}>
-            {i < step ? '✓' : i + 1}
-          </div>
-          <span className={`text-xs font-semibold hidden sm:block
-            ${i <= step ? 'text-surface-900 dark:text-white' : 'text-surface-400'}`}>{label}</span>
-          {i < steps.length - 1 && (
-            <div className={`flex-1 h-0.5 rounded-full transition-all duration-300 mx-1
-              ${i < step ? 'bg-brand-500' : 'bg-surface-200'}`} />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
+import StepBar from '@/components/programs/new/StepBar';
+import ProgramReviewStep from '@/components/programs/new/ProgramReviewStep';
 
 
 /* ─── Main Page ───────────────────────────────────────────────────────── */
@@ -529,80 +504,16 @@ export default function NewProgramPage() {
 
       {/* ──── STEP 3: Review ──── */}
       {step === 3 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
-          <div className="card p-6 space-y-5">
-            <h2 className="text-lg font-bold text-surface-900 dark:text-white">Revisa tu programa</h2>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-surface-100">
-                <span className="text-sm text-surface-500">Tipo</span>
-                <span className="text-sm font-semibold"><CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-4 h-4 inline-block mr-1" /> {selectedType?.label}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-surface-100">
-                <span className="text-sm text-surface-500">Nombre</span>
-                <span className="text-sm font-semibold">{form.name}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-surface-100">
-                <span className="text-sm text-surface-500">Código</span>
-                <span className="text-sm font-semibold">{BARCODE_TYPES.find(b => b.value === form.barcode_type)?.label || 'QR Code'}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-surface-100">
-                <span className="text-sm text-surface-500">Billetera</span>
-                <span className="text-sm font-semibold">{walletProvider === 'apple' ? 'Apple Wallet' : 'Google Wallet'}</span>
-              </div>
-              {walletProvider === 'apple' && (
-                <div className="flex justify-between py-2 border-b border-surface-100">
-                  <span className="text-sm text-surface-500">NFC Apple</span>
-                  <span className="text-sm font-semibold">
-                    {appleWalletConfig.nfc_enabled
-                      ? appleWalletConfig.nfc_requires_authentication
-                        ? 'Activado con autenticación'
-                        : 'Activado'
-                      : 'Desactivado'}
-                  </span>
-                </div>
-              )}
-              {form.description && (
-                <div className="flex justify-between py-2 border-b border-surface-100">
-                  <span className="text-sm text-surface-500">Descripción</span>
-                  <span className="text-sm font-medium text-right max-w-[60%]">{form.description}</span>
-                </div>
-              )}
-              {Object.entries(meta).map(([key, value]) => (
-                <div key={key} className="flex justify-between py-2 border-b border-surface-100">
-                  <span className="text-sm text-surface-500">{key.replace(/_/g, ' ')}</span>
-                  <span className="text-sm font-medium">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Wallet features info */}
-            <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 text-sm space-y-2">
-              <p className="font-semibold text-brand-800">Funcionalidades de Wallet incluidas:</p>
-              <ul className="text-brand-700 text-xs space-y-1 ml-4 list-disc">
-                <li>Tarjeta digital en {walletProvider === 'apple' ? 'Apple Wallet' : 'Google Wallet'}</li>
-                <li>Código QR único por cliente</li>
-                <li>Notificaciones push por geolocalización</li>
-                <li>Actualización en tiempo real</li>
-                {walletProvider === 'apple' && appleWalletConfig.nfc_enabled && (
-                  <li>NFC Apple sujeto a aprobación Apple, Vault y lector VAS compatible</li>
-                )}
-              </ul>
-            </div>
-          </div>
-
-          {/* Preview */}
-          <div>
-            <WalletCardPreview
-              form={form}
-              selectedType={selectedType}
-              logoPreview={logoPreview}
-              stripPreview={stripPreview}
-              barcodeType={form.barcode_type}
-              walletPlatform={walletProvider}
-              onWalletPlatformChange={setWalletProvider}
-            />
-          </div>
-        </div>
+        <ProgramReviewStep
+          form={form}
+          meta={meta}
+          selectedType={selectedType}
+          logoPreview={logoPreview}
+          stripPreview={stripPreview}
+          walletProvider={walletProvider}
+          setWalletProvider={setWalletProvider}
+          appleWalletConfig={appleWalletConfig}
+        />
       )}
 
       {/* ──── Navigation buttons ──── */}

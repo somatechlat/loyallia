@@ -35,9 +35,9 @@ x-common-env: &common-env
   APPLE_WALLET_MODE: vault
   # Google Wallet
   GOOGLE_WALLET_MODE: vault
-  # Payment Gateway (Bendo/PlacetoPay)
-  PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
-  PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
+  # Payment Gateway (manual admin verification or disabled)
+  PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-manual}
+  PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-}
   # Email
   EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
   EMAIL_PORT: "${EMAIL_PORT:-587}"

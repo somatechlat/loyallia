@@ -1,7 +1,7 @@
 """
 Loyallia — Customer Segment API
 Handles: built-in segmentation, segment listing, segment members, CSV export.
-Split from customers/api.py per the 500-line architectural limit.
+Split from customers/api.py per the 600-line architectural limit.
 """
 
 import logging

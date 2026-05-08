@@ -128,6 +128,7 @@ from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
 from apps.notifications.whatsapp.api import router as whatsapp_router
 from apps.tenants.api import router as tenants_router
+from apps.tenants.security_privacy_api import router as tenant_security_privacy_router
 from apps.tenants.super_admin_api import router as super_admin_router
 from apps.transactions.api import router as transactions_router
 from apps.transactions.api import scanner_router
@@ -135,6 +136,7 @@ from apps.transactions.api import scanner_router
 api.add_router("/auth/", auth_router, tags=["Authentication"])
 api.add_router("/auth/", users_router, tags=["Authentication"])
 api.add_router("/tenants/", tenants_router, tags=["Tenants"])
+api.add_router("/tenants/", tenant_security_privacy_router, tags=["Tenant Privacy"])
 api.add_router("/programs/", cards_router, tags=["Loyalty Programs"])
 api.add_router("/customers/", customers_router, tags=["Customers"])
 api.add_router("/customers/", customer_export_router, tags=["Customer Export"])

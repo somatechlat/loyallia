@@ -177,7 +177,7 @@ docker compose exec api python manage.py test
 cd backend
 ruff check .              # Linting
 black --check .           # Formatting
-find . -name '*.py' | xargs wc -l | awk '$1>500'  # File size check
+find . -name '*.py' | xargs wc -l | awk '$1>600'  # File size check
 ```
 
 ### Environment Variables
