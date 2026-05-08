@@ -3,7 +3,6 @@ Loyallia — Tenant Security & Privacy API
 Handles owner security PIN, full tenant export, and account deletion.
 """
 
-from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta

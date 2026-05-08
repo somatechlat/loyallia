@@ -8,7 +8,6 @@ Providers are selected via settings.PAYMENT_GATEWAY_PROVIDER:
   - "disabled" → DisabledGateway (billing collection unavailable)
 """
 
-from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod

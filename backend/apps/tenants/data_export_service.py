@@ -6,7 +6,6 @@ Generates a ZIP containing tenant data in JSON and CSV formats.
 Called by tenants/api.py for data export and account deletion.
 """
 
-from __future__ import annotations
 
 import csv
 import io

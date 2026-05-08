@@ -5,7 +5,6 @@ Handles: current tenant profile, branding update, location management.
 All strings via get_message() — Rule #11.
 All endpoints require JWT auth with tenant scope.
 """
-from __future__ import annotations
 
 import logging
 import uuid

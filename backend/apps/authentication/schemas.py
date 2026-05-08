@@ -2,7 +2,6 @@
 Loyallia — Authentication API Schemas (Pydantic models)
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

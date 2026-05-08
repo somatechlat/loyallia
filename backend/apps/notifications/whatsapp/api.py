@@ -9,7 +9,6 @@ Endpoints:
     POST /webhook/delivery/       — Delivery status from bridge
     POST /webhook/session/        — Session state changes from bridge
 """
-from __future__ import annotations
 
 import logging
 

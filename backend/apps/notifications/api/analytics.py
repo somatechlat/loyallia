@@ -1,4 +1,3 @@
-from __future__ import annotations
 """Campaign analytics endpoints (LYL-SRS-006)."""
 
 import csv

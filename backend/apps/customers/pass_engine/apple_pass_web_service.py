@@ -20,7 +20,6 @@ Authentication: Apple sends `Authorization: ApplePass <authenticationToken>`
 where authenticationToken is the value we set in pass.json.
 """
 
-from __future__ import annotations
 
 import logging
 from datetime import timezone

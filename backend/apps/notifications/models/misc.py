@@ -4,7 +4,6 @@ Loyallia — Miscellaneous Notification Models
 Core notification records and WhatsApp session management.
 """
 
-from __future__ import annotations
 
 import uuid
 

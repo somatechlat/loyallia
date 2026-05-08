@@ -1,7 +1,6 @@
 """
 Loyallia — Super Admin API: Tenant + Location + Invoice endpoints
 """
-from __future__ import annotations
 
 import json
 import logging

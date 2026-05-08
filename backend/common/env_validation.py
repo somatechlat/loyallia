@@ -4,7 +4,6 @@ Validates required environment variables on startup.
 Fails fast with clear error messages instead of cryptic runtime errors.
 """
 
-from __future__ import annotations
 
 import logging
 import os

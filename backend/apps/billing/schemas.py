@@ -3,7 +3,6 @@ Loyallia — Billing API Schemas (Pydantic models)
 Generic payment gateway — no provider-specific fields.
 """
 
-from __future__ import annotations
 
 from pydantic import BaseModel
 

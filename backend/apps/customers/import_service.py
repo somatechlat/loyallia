@@ -4,7 +4,6 @@ Handles parsing, normalization, and bulk ingestion of customer data from externa
 Decoupled from api.py per Rule 245.
 """
 
-from __future__ import annotations
 
 import logging
 import re

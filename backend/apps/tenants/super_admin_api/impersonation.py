@@ -3,7 +3,6 @@ Loyallia — Super Admin Impersonation API
 PIN-gated tenant owner impersonation with audit logging.
 """
 
-from __future__ import annotations
 
 import logging
 import uuid

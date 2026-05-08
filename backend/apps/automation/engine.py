@@ -24,7 +24,6 @@ Security (SEC):
 Called by: apps/transactions/api.py (transact), apps/customers/api.py (enroll).
 """
 
-from __future__ import annotations
 
 import logging
 

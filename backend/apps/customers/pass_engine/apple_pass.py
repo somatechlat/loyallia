@@ -13,7 +13,6 @@ According to Apple PassKit docs:
 https://developer.apple.com/documentation/walletpasses
 """
 
-from __future__ import annotations
 
 import hashlib
 import io

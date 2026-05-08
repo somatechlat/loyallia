@@ -3,7 +3,6 @@
 Contains the Ninja Router instance, Pydantic schemas used by multiple
 endpoints, and base dependency helpers.
 """
-from __future__ import annotations
 
 from ninja import Router
 from ninja.errors import HttpError
