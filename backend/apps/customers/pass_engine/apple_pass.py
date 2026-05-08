@@ -70,6 +70,69 @@ def _check_config_ready() -> bool:
     return True
 
 
+def get_apple_wallet_diagnostics() -> dict:
+    """Return diagnostic info about Apple Wallet configuration (no secrets exposed)."""
+    from common.vault import get_secret
+
+    diagnostics: dict[str, Any] = {
+        "enabled": False,
+        "pass_type_id_present": False,
+        "team_id_present": False,
+        "cert_pem_present": False,
+        "cert_key_pem_present": False,
+        "wwdr_cert_pem_present": False,
+        "certs_cryptographically_valid": False,
+        "errors": [],
+    }
+
+    enabled = get_secret("apple_wallet_enabled", default="false")
+    diagnostics["enabled"] = enabled.strip().lower() in {"1", "true", "yes", "on"}
+    if not diagnostics["enabled"]:
+        diagnostics["errors"].append("APPLE_WALLET_ENABLED is false in Vault")
+
+    pass_type_id = get_secret("apple_pass_type_identifier", default="")
+    diagnostics["pass_type_id_present"] = bool(pass_type_id and pass_type_id not in ("", "n/a"))
+    if not diagnostics["pass_type_id_present"]:
+        diagnostics["errors"].append("Missing APPLE_PASS_TYPE_IDENTIFIER in Vault")
+
+    team_id = get_secret("apple_team_identifier", default="")
+    diagnostics["team_id_present"] = bool(team_id and team_id not in ("", "n/a"))
+    if not diagnostics["team_id_present"]:
+        diagnostics["errors"].append("Missing APPLE_TEAM_IDENTIFIER in Vault")
+
+    cert_pem = get_secret("apple_cert_pem", default="")
+    diagnostics["cert_pem_present"] = bool(cert_pem and cert_pem not in ("", "n/a"))
+    if not diagnostics["cert_pem_present"]:
+        diagnostics["errors"].append("Missing APPLE_CERT_PEM in Vault")
+
+    key_pem = get_secret("apple_cert_key_pem", default="")
+    diagnostics["cert_key_pem_present"] = bool(key_pem and key_pem not in ("", "n/a"))
+    if not diagnostics["cert_key_pem_present"]:
+        diagnostics["errors"].append("Missing APPLE_CERT_KEY_PEM in Vault")
+
+    wwdr_pem = get_secret("apple_wwdr_cert_pem", default="")
+    diagnostics["wwdr_cert_pem_present"] = bool(wwdr_pem and wwdr_pem not in ("", "n/a"))
+    if not diagnostics["wwdr_cert_pem_present"]:
+        diagnostics["errors"].append("Missing APPLE_WWDR_CERT_PEM in Vault")
+
+    # Only try crypto validation if all PEMs are present
+    if all([
+        diagnostics["cert_pem_present"],
+        diagnostics["cert_key_pem_present"],
+        diagnostics["wwdr_cert_pem_present"],
+    ]):
+        try:
+            from OpenSSL import crypto
+            crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem.encode("utf-8"))
+            crypto.load_privatekey(crypto.FILETYPE_PEM, key_pem.encode("utf-8"))
+            crypto.load_certificate(crypto.FILETYPE_PEM, wwdr_pem.encode("utf-8"))
+            diagnostics["certs_cryptographically_valid"] = True
+        except Exception as exc:
+            diagnostics["errors"].append(f"Apple certificates failed cryptographic validation: {exc}")
+
+    return diagnostics
+
+
 # Mapping from Card.barcode_type to Apple PKBarcodeFormat constants.
 # Per Apple docs: QR, Aztec, Code128, PDF417 are valid on iOS 9+.
 # Code128 is NOT supported on watchOS — Apple auto-falls back.
@@ -202,7 +265,7 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         signature = (
             pkcs7_module.PKCS7SignatureBuilder()
             .set_data(manifest_json)
-            .add_signer(cert, key, hashes.SHA256())
+            .add_signer(cert, key, hashes.SHA256())  # type: ignore[arg-type]
             .add_certificate(wwdr)
             .sign(
                 Encoding.DER,

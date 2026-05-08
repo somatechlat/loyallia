@@ -35,7 +35,7 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 | 7 | Customer Segmentation & Retargeting |
 | 8 | Analytics & KPI Reporting |
 | 9 | Referral Program Engine |
-| 10 | Subscription & Billing (Bendo/PlacetoPay + IVA) |
+| 10 | Subscription & Billing (Manual gateway + IVA) |
 | 11 | Customer Wallet Experience |
 | 12 | REST API & Integration Layer (Django Ninja) |
 | 13 | Super-Admin Panel |
@@ -85,7 +85,7 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 | Reverse Proxy | Nginx (production) |
 | Worker Monitor | Flower |
 | Secret Management | HashiCorp Vault |
-| Payment Gateway | Bendo / PlacetoPay (pluggable) |
+| Payment Gateway | Manual verification (pluggable) |
 | Containers | Docker + Docker Compose |
 | Monitoring | Prometheus + Grafana + Loki |
 
@@ -97,21 +97,16 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 # 1. Clone and enter repo
 git clone <repo> loyallia && cd loyallia
 
-# 2. Copy environment template and fill in your credentials
-cp .env.example .env
-# Edit .env with real values — see .env.example for all required variables
-
-# 3. Place certificates
-mkdir -p certs
-# certs/apple_pass.pem, apple_pass.key, apple_wwdr.pem
-# certs/google_wallet_service_account.json
-# certs/firebase_service_account.json
-
-# 4. Start all services (builds images + migrates + seeds data)
+# 2. Start all services (builds images + migrates + seeds data + inits Vault)
 docker compose up -d --build
 
-# 5. Access points
+# 3. Vault is auto-seeded with dev credentials on first boot.
+#    All real credentials should be injected via SuperAdmin UI or Vault CLI.
+#    See: docs/AGENT_ONBOARDING.md §4 for current Vault contents.
+
+# 4. Access points
 # Dashboard:       http://localhost:33906
+# SuperAdmin:      http://localhost:33906/superadmin/settings
 # API Docs:        http://localhost:33905/api/v1/docs/
 # API Health:      http://localhost:33905/api/v1/health/
 # MinIO Console:   http://localhost:33904
@@ -120,6 +115,19 @@ docker compose up -d --build
 # Grafana:         http://localhost:33910
 # Prometheus:      http://localhost:33909
 ```
+
+### Credential Setup (One-Time)
+
+All secrets are stored in **HashiCorp Vault** (`secret/data/loyallia/production`).
+
+**Current status:** All integrations configured with real credentials.
+See `docs/WALLET_CREDENTIALS_STATUS.md` for full audit.
+
+To update credentials via UI:
+1. Log in as SuperAdmin: `admin@example.com` / `[REDACTED]`
+2. Go to `/superadmin/settings`
+3. Click "Configure credentials in Vault →" on any integration card
+4. Edit inline, click "Save to Vault"
 
 ---
 

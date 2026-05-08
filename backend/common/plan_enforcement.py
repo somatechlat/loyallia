@@ -254,13 +254,16 @@ def _count_automation_executions_today(tenant) -> int:
 def _count_api_calls_today(tenant) -> int:
     """Count today's Agent API calls for a tenant.
 
-    Uses AgentAPIKey.last_used_at as a proxy.
-    Returns 0 — full request counting requires middleware (future enhancement).
-    PERF: Returns 0 until API call logging model is added.
+    Uses AgentAPICallLog for accurate per-call counting.
+    PERF: Single COUNT query on AgentAPICallLog filtered by tenant + today.
     """
-    # TODO(LYL-RATE-001): Implement AgentAPICallLog model for accurate counting.
-    # For now, API calls are gated by has_feature("agent_api") only.
-    return 0
+    from apps.agent_api.models import AgentAPICallLog
+
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    return AgentAPICallLog.objects.filter(
+        tenant=tenant,
+        created_at__gte=today_start,
+    ).count()
 
 
 def _count_exports_month(tenant, month_start) -> int:
@@ -272,7 +275,7 @@ def _count_exports_month(tenant, month_start) -> int:
 
     return AuditLog.objects.filter(
         tenant=tenant,
-        action="data_export",
+        action="EXPORT",
         created_at__gte=month_start,
     ).count()
 

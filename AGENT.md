@@ -1,7 +1,9 @@
 # AGENT.md — Loyallia Agentic Directives
 
 > **Single source of truth for all coding agents operating on this codebase.**
-> Last updated: 2026-04-22
+> Last updated: 2026-05-06
+>
+> **For full onboarding, read `docs/AGENT_ONBOARDING.md` first.**
 
 ---
 
@@ -55,7 +57,8 @@ No `.py` or `.tsx` file shall exceed 500 lines. If a file grows beyond this:
 - **Type checking**: `pyright` basic mode
 - **Import order**: stdlib -> third-party -> Django -> local apps (enforced by ruff isort)
 - **No hardcoded secrets**: All sensitive data via `decouple.config()` or Vault
-- **No mocks/stubs/placeholders**: Production-grade code only
+- **No mocks/stubs/placeholders**: Production-grade code only (see `rules.md`)
+- **No secrets in documentation**: Credential values live in Vault ONLY
 - **Error codes**: Use `common/messages.py` with `get_message(code, **kwargs)`
 - **Logging**: Use `logging.getLogger(__name__)` -- never `print()`
 
@@ -144,9 +147,11 @@ docker exec loyallia-api python manage.py seed_test_data
 ```
 
 ### 6.2 Secrets
-- Development: `.env` file (gitignored) + Vault dev mode
+- **ALL secrets live in HashiCorp Vault** (`secret/data/loyallia/production`)
+- Development: `.env` file (gitignored) seeds Vault on first boot
 - Production: Vault KV v2 with sealed storage
-- NEVER commit `.env` or certificate files
+- NEVER commit `.env`, certificate files, or any secret to Git
+- Current real credentials: see `docs/WALLET_CREDENTIALS_STATUS.md`
 
 ### 6.3 Quality Gates
 ```bash
@@ -164,3 +169,6 @@ find backend -name '*.py' | xargs wc -l | awk '$1>500'  # 0 results (excl. venv)
 - [Google Wallet Brand Guidelines](https://developers.google.com/wallet/generic/resources/brand-guidelines)
 - [Google Wallet Notifications](https://developers.google.com/wallet/generic/use-cases/notifications)
 - [Ecuador LOPDP](https://www.registroficial.gob.ec/) -- Ley Organica de Proteccion de Datos Personales (May 2021)
+- `docs/AGENT_ONBOARDING.md` — Full agent onboarding guide
+- `docs/WALLET_CREDENTIALS_STATUS.md` — Current credential audit
+- `docs/GOOGLE_SETUP_STEP_BY_STEP.md` — How to obtain Google credentials

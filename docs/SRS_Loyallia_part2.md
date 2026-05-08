@@ -201,7 +201,7 @@ Manage tenant subscription lifecycle: free trial, plan selection, payment, invoi
 | LYL-FR-BILL-002 | Trial SHALL include ALL FULL plan features with no credit card required | MUST |
 | LYL-FR-BILL-003 | System SHALL notify tenant at: 7 days, 3 days, 1 day before trial expiry | MUST |
 | LYL-FR-BILL-004 | Upon trial expiry without subscription: tenant account SHALL be suspended (read-only mode) | MUST |
-| LYL-FR-BILL-005 | System SHALL integrate with Bendo/PlacetoPay API for credit card payment processing | MUST |
+| LYL-FR-BILL-005 | System SHALL integrate with a pluggable payment gateway (Manual verification or future provider) for payment processing | MUST |
 | LYL-FR-BILL-006 | System SHALL apply correct IVA rate per country (15% for Ecuador) | MUST |
 | LYL-FR-BILL-007 | System SHALL issue invoice PDF per billing cycle | MUST |
 | LYL-FR-BILL-008 | System SHALL allow tenant to cancel subscription at any time; access continues until period end | MUST |
@@ -296,7 +296,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | LYL-FR-SADM-003 | Super Admin SHALL be able to suspend, reactivate, or delete any tenant | MUST |
 | LYL-FR-SADM-004 | Super Admin SHALL be able to extend trial period for any tenant | MUST |
 | LYL-FR-SADM-005 | Super Admin SHALL view platform-wide metrics: total tenants, MRR, total passes issued, total push sent | MUST |
-| LYL-FR-SADM-006 | Super Admin SHALL be able to impersonate any tenant for support (with audit log) | SHOULD |
+| LYL-FR-SADM-006 | Super Admin SHALL be able to impersonate any tenant for support. Impersonation SHALL require the Owner's 6-digit security PIN and a written justification (min 10 chars). 3 failed PIN attempts SHALL lock impersonation for 15 minutes. All attempts (success/failure) SHALL be logged in the immutable audit log. (LYL-FR-SEC-030) | MUST |
 | LYL-FR-SADM-007 | Super Admin panel SHALL display system health: API response times, queue depth, error rate | MUST |
 | LYL-FR-SADM-008 | Super Admin SHALL be able to broadcast a system notification to all tenants | SHOULD |
 | LYL-FR-SADM-009 | All Super Admin actions SHALL be logged in an immutable audit log | MUST |
@@ -418,7 +418,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 2. Apple APN requires a valid Apple Developer Program membership and PassKit certificate.
 3. Google Wallet API requires a Google Cloud project with Wallet API enabled.
 4. PKPass files must be re-signed upon any pass field update.
-5. Bendo/PlacetoPay is the payment gateway; pluggable architecture supports future alternatives.
+5. Manual payment verification is the default gateway; pluggable architecture supports future provider alternatives.
 6. All open-source components must have permissive licenses (MIT, Apache 2.0, BSD).
 
 ### 21.2 Business Constraints
@@ -432,7 +432,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 1. Businesses have reliable internet for dashboard and scanner operations.
 2. Customers have iOS 15+ or Android 10+ with Apple/Google Wallet installed.
 3. All push notification device tokens are collected upon pass installation.
-4. Bendo/PlacetoPay is available in the target market (Ecuador/LATAM); pluggable gateway architecture supports alternatives.
+4. Manual payment verification is the default; pluggable gateway architecture supports future providers (e.g., PayPhone, Kushki) when available in Ecuador/LATAM.
 5. Email delivery depends on a configured SMTP provider (e.g., SendGrid, Mailjet).
 
 ---

@@ -218,6 +218,14 @@ class Tenant(TimestampedModel):
         help_text="ISO 639-1: es, en, fr, de. Set at tenant registration.",
     )
 
+    # LOPDP Art. 18 — Scheduled account deletion (LYL-FR-DPR-025.8)
+    scheduled_deletion_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Eliminación programada",
+        help_text="When set, Celery will hard-delete all tenant data after this timestamp.",
+    )
+
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_tenants"
         verbose_name = "Negocio"
@@ -266,7 +274,7 @@ class Tenant(TimestampedModel):
             }
             return status_map.get(subscription.status, self.plan)
 
-        return self.plan
+        return self.plan  # type: ignore[return-value]
 
     @property
     def is_trial_active(self) -> bool:
@@ -342,7 +350,7 @@ class Tenant(TimestampedModel):
 
         from apps.billing.models import Subscription, SubscriptionStatus
 
-        trial_end = timezone.now() + timedelta(days=settings.TRIAL_DAYS)
+        trial_end = timezone.now() + timedelta(days=PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)))
 
         # Sync denormalized field (backward compat)
         self.trial_end = trial_end
@@ -412,3 +420,89 @@ class Location(TimestampedModel):
     @property
     def has_coordinates(self) -> bool:
         return self.latitude is not None and self.longitude is not None
+
+
+# =============================================================================
+# PLATFORM SETTINGS — Runtime-configurable without restart
+# =============================================================================
+
+from django.core.cache import cache
+
+_PLATFORM_SETTING_CACHE_PREFIX = "platform_setting"
+_PLATFORM_SETTING_CACHE_TTL = 60
+
+
+class PlatformSetting(models.Model):
+    """A single runtime-configurable platform setting.
+
+    These values can be changed via the SuperAdmin UI and take effect
+    immediately (no container restart required).
+
+    SEC: Only SUPER_ADMIN can modify these via the admin API.
+    PERF: Values are cached in Redis for 60s to avoid DB hits.
+    """
+
+    key = models.CharField(max_length=100, unique=True, db_index=True)
+    value = models.TextField()
+    description = models.CharField(max_length=255, blank=True)
+    category = models.CharField(
+        max_length=50,
+        default="general",
+        help_text="UI grouping category (e.g., billing, system, email)",
+    )
+    requires_restart = models.BooleanField(
+        default=False,
+        help_text="If True, a container restart is needed for full effect",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "loyallia_platform_settings"
+        ordering = ["category", "key"]
+
+    def __str__(self) -> str:
+        return f"{self.key}={self.value}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.set(
+            f"{_PLATFORM_SETTING_CACHE_PREFIX}:{self.key}",
+            self.value,
+            _PLATFORM_SETTING_CACHE_TTL,
+        )
+
+    @classmethod
+    def get(cls, key: str, default: str = "") -> str:
+        """Read a setting value, using Redis cache first."""
+        cached = cache.get(f"{_PLATFORM_SETTING_CACHE_PREFIX}:{key}")
+        if cached is not None:
+            return cached
+        try:
+            value = cls.objects.values_list("value", flat=True).get(key=key)
+        except cls.DoesNotExist:
+            return default
+        cache.set(
+            f"{_PLATFORM_SETTING_CACHE_PREFIX}:{key}",
+            value,
+            _PLATFORM_SETTING_CACHE_TTL,
+        )
+        return value
+
+    @classmethod
+    def get_int(cls, key: str, default: int = 0) -> int:
+        try:
+            return int(cls.get(key, str(default)))
+        except ValueError:
+            return default
+
+    @classmethod
+    def get_float(cls, key: str, default: float = 0.0) -> float:
+        try:
+            return float(cls.get(key, str(default)))
+        except ValueError:
+            return default
+
+    @classmethod
+    def get_bool(cls, key: str, default: bool = False) -> bool:
+        val = cls.get(key, str(default)).lower().strip()
+        return val in ("true", "1", "yes", "on")

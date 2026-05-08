@@ -42,6 +42,24 @@ APPLE_REQUIRED_KEYS = [
     "apple_wwdr_cert_pem",
 ]
 
+APPLE_NFC_REQUIRED_KEYS = [
+    "apple_nfc_encryption_public_key",
+]
+
+INTEGRATION_REQUIRED_KEY_GROUPS = {
+    "whatsapp_bridge": ["whatsapp_bridge_api_key"],
+    "twilio_sms": [
+        "twilio_account_sid",
+        "twilio_auth_token",
+        "twilio_from_number",
+    ],
+    "listmonk": [
+        "listmonk_api_user",
+        "listmonk_api_token",
+    ],
+    "ai_agent": ["ai_agent_api_key"],
+}
+
 
 def _truthy(value: object) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on", "enabled"}
@@ -65,10 +83,19 @@ class Command(BaseCommand):
         required = list(CORE_REQUIRED_KEYS)
         if _truthy(secrets.get("apple_wallet_enabled")):
             required.extend(APPLE_REQUIRED_KEYS)
+        if _truthy(secrets.get("apple_nfc_enabled")):
+            required.extend(APPLE_NFC_REQUIRED_KEYS)
         if _truthy(secrets.get("payment_gateway_enabled")):
             required.extend(PAYMENT_REQUIRED_KEYS)
+        for keys in INTEGRATION_REQUIRED_KEY_GROUPS.values():
+            if any(str(secrets.get(key, "")).strip() for key in keys):
+                required.extend(keys)
 
-        missing = [key for key in required if not str(secrets.get(key, "")).strip()]
+        missing = [
+            key
+            for key in sorted(set(required))
+            if not str(secrets.get(key, "")).strip()
+        ]
         if missing:
             raise CommandError(
                 "Missing required Vault keys: " + ", ".join(sorted(missing))

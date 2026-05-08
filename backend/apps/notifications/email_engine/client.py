@@ -15,6 +15,8 @@ import logging
 import httpx
 from django.conf import settings
 
+from common.vault import get_secret
+
 logger = logging.getLogger(__name__)
 
 _TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0)
@@ -22,9 +24,21 @@ _TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0)
 
 def _get_client() -> httpx.Client:
     """Build an httpx client for Listmonk API."""
-    base_url = getattr(settings, "LISTMONK_URL", "http://listmonk:9000")
-    api_user = getattr(settings, "LISTMONK_API_USER", "")
-    api_token = getattr(settings, "LISTMONK_API_TOKEN", "")
+    base_url = get_secret(
+        "listmonk_url",
+        env_fallback="LISTMONK_URL",
+        default=getattr(settings, "LISTMONK_URL", "http://listmonk:9000"),
+    )
+    api_user = get_secret(
+        "listmonk_api_user",
+        env_fallback="LISTMONK_API_USER",
+        default=getattr(settings, "LISTMONK_API_USER", ""),
+    )
+    api_token = get_secret(
+        "listmonk_api_token",
+        env_fallback="LISTMONK_API_TOKEN",
+        default=getattr(settings, "LISTMONK_API_TOKEN", ""),
+    )
 
     auth = (api_user, api_token) if api_user and api_token else None
 

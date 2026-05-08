@@ -52,12 +52,12 @@ def _get_google_locations(card) -> list:
     locations = []
     # Locations belong to the Tenant
     tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
-    
+
     for loc in tenant_locations:
         try:
             if loc.latitude and loc.longitude:
                 locations.append({
-                    "latitude": float(loc.latitude), 
+                    "latitude": float(loc.latitude),
                     "longitude": float(loc.longitude)
                 })
         except (ValueError, TypeError):
@@ -283,11 +283,11 @@ def _build_offer_class(card, tenant) -> dict:
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
     _build_class_images(card, payload)
-    
+
     locations = _get_google_locations(card)
     if locations:
         payload["locations"] = locations
-        
+
     return payload
 
 
@@ -335,11 +335,11 @@ def _build_gift_card_class(card, tenant) -> dict:
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
     _build_class_images(card, payload)
-    
+
     locations = _get_google_locations(card)
     if locations:
         payload["locations"] = locations
-        
+
     return payload
 
 

@@ -16,7 +16,7 @@ from apps.customers.models import CustomerPass
 from apps.transactions.models import Enrollment
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
-from common.plan_enforcement import enforce_limit, require_active_subscription
+from common.plan_enforcement import check_plan_limit
 from common.request import require_tenant
 
 logger = logging.getLogger(__name__)
@@ -187,8 +187,6 @@ def list_programs(request):
 @router.post(
     "/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización"
 )
-@require_active_subscription
-@enforce_limit("programs")
 def create_program(request, data: CardCreateIn):
     """Create a new loyalty program. OWNER only."""
     from common.permissions import is_owner
@@ -196,14 +194,12 @@ def create_program(request, data: CardCreateIn):
     tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    # Check tenant program limit (from subscription plan, not hardcoded)
     from apps.billing.models import Subscription
 
-    current_count = Card.objects.filter(tenant=tenant).count()
-    sub = Subscription.objects.filter(tenant=tenant).first()
-    max_programs = sub.get_limit("programs") if sub else 0
-    if current_count >= max_programs:
-        raise HttpError(400, get_message("TENANT_MAX_PROGRAMS", max=max_programs))
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+    if not subscription or not subscription.is_access_allowed:
+        raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
+    check_plan_limit(tenant, "programs")
 
     # Check for duplicate name
     if Card.objects.filter(tenant=tenant, name=data.name).exists():

@@ -111,9 +111,19 @@ vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" \
     google_wallet_enabled="$(env_or_existing google_wallet_enabled "${_GOOGLE_WALLET_ENABLED:-true}")" \
     apple_wallet_enabled="$(env_or_existing apple_wallet_enabled "${_APPLE_WALLET_ENABLED:-false}")" \
     payment_gateway_enabled="$(env_or_existing payment_gateway_enabled "${_PAYMENT_GATEWAY_ENABLED:-false}")" \
-    payment_gateway_provider="$(env_or_existing payment_gateway_provider "${_PAYMENT_GATEWAY_PROVIDER:-none}")" \
-    email_host_user="$(env_or_existing email_host_user "${_EMAIL_HOST_USER:-}")" \
-    email_host_password="$(env_or_existing email_host_password "${_EMAIL_HOST_PASSWORD:-}")" >/dev/null
+    payment_gateway_provider="$(env_or_existing payment_gateway_provider "${_PAYMENT_GATEWAY_PROVIDER:-manual}")" \
+    whatsapp_bridge_url="$(env_or_existing whatsapp_bridge_url "${_WHATSAPP_BRIDGE_URL:-}")" \
+    whatsapp_bridge_api_key="$(env_or_existing whatsapp_bridge_api_key "${_WHATSAPP_BRIDGE_API_KEY:-}")" \
+    twilio_account_sid="$(env_or_existing twilio_account_sid "${_TWILIO_ACCOUNT_SID:-}")" \
+    twilio_auth_token="$(env_or_existing twilio_auth_token "${_TWILIO_AUTH_TOKEN:-}")" \
+    twilio_from_number="$(env_or_existing twilio_from_number "${_TWILIO_FROM_NUMBER:-}")" \
+    listmonk_url="$(env_or_existing listmonk_url "${_LISTMONK_URL:-}")" \
+    listmonk_api_user="$(env_or_existing listmonk_api_user "${_LISTMONK_API_USER:-}")" \
+    listmonk_api_token="$(env_or_existing listmonk_api_token "${_LISTMONK_API_TOKEN:-}")" \
+    apple_nfc_enabled="$(env_or_existing apple_nfc_enabled "${_APPLE_NFC_ENABLED:-false}")" \
+    apple_nfc_encryption_public_key="$(env_or_existing apple_nfc_encryption_public_key "${_APPLE_NFC_ENCRYPTION_PUBLIC_KEY:-}")" \
+    ai_agent_base_url="$(env_or_existing ai_agent_base_url "${_AI_AGENT_BASE_URL:-}")" \
+    ai_agent_api_key="$(env_or_existing ai_agent_api_key "${_AI_AGENT_API_KEY:-}")" >/dev/null
 
 # ---------------------------------------------------------------------------
 # Export infrastructure secrets to files so containers read from Vault volume
@@ -128,7 +138,7 @@ printf "%s" "$minio_secret_key" >/vault/runtime/minio_root_password
 chmod 0444 /vault/runtime/postgres_password /vault/runtime/redis_password \
     /vault/runtime/minio_root_user /vault/runtime/minio_root_password
 
-printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\"]\n}\n" >/vault/runtime/loyallia-app.hcl
+printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\"]\n}\n" >/vault/runtime/loyallia-app.hcl
 vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null
 vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token
 chmod 0444 /vault/runtime/app-token

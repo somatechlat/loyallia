@@ -8,9 +8,10 @@ All endpoints require JWT auth with tenant scope.
 
 import logging
 import uuid
+from datetime import datetime
 from typing import cast
 
-from ninja import Router
+from ninja import Router, Schema
 from ninja.errors import HttpError
 
 from apps.tenants.models import Location
@@ -25,14 +26,20 @@ from apps.tenants.schemas import (
     TenantOut,
     TenantUpdateIn,
 )
-from ninja import Schema
+
 
 class AIChatIn(Schema):
     message: str
     context_id: str | None = None
+
+
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
-from common.plan_enforcement import enforce_limit, get_current_usage, get_tenant_limits
+from common.plan_enforcement import (
+    check_plan_limit,
+    get_current_usage,
+    get_tenant_limits,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -183,21 +190,10 @@ def list_locations(request):
     response=LocationOut,
     summary="Crear ubicación",
 )
-@enforce_limit("locations")
 def create_location(request, payload: LocationCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
-    from apps.billing.models import Subscription
-
-    count = Location.objects.filter(tenant=request.tenant).count()
-    sub = Subscription.objects.filter(tenant=request.tenant).first()
-    max_locations = sub.get_limit("locations") if sub else 0
-    if count >= max_locations:
-        raise HttpError(
-            400,
-            get_message("TENANT_MAX_PROGRAMS", max=max_locations),
-        )
+    check_plan_limit(request.tenant, "locations")
 
     loc = Location.objects.create(
         tenant=request.tenant,
@@ -335,6 +331,7 @@ def list_team(request):
 def add_team_member(request, payload: TeamMemberCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    check_plan_limit(request.tenant, "users")
 
     import secrets
 
@@ -406,7 +403,9 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
     return {
         "success": True,
-        "message": get_message("TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"),
+        "message": get_message(
+            "TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"
+        ),
         "user_id": str(user.id),
     }
 
@@ -419,33 +418,40 @@ def ai_chat_proxy(request, payload: AIChatIn):
     """
     import httpx
     from django.conf import settings
+
     from common.vault import get_secret
-    
+
     api_key = get_secret("ai_agent_api_key")
     if not api_key:
         logger.error("AI_AGENT_API_KEY not found in Vault.")
         raise HttpError(503, "AI agent service is not configured correctly.")
-        
-    agent_base_url = getattr(settings, "AI_AGENT_BASE_URL", "https://agente.ingelsi.com.ec")
-    
+
+    agent_base_url = get_secret(
+        "ai_agent_base_url",
+        env_fallback="AI_AGENT_BASE_URL",
+        default=getattr(settings, "AI_AGENT_BASE_URL", "https://agente.ingelsi.com.ec"),
+    )
+
     request_data = {
         "message": payload.message,
         "lifetime_hours": 24,
     }
     if payload.context_id:
         request_data["context_id"] = payload.context_id
-        
+
     try:
         with httpx.Client(timeout=30.0) as client:
             resp = client.post(
                 f"{agent_base_url}/api_message",
                 json=request_data,
-                headers={"X-API-KEY": api_key, "Content-Type": "application/json"}
+                headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
             )
             resp.raise_for_status()
             return resp.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"AI Agent returned status {e.response.status_code}: {e.response.text}")
+        logger.error(
+            f"AI Agent returned status {e.response.status_code}: {e.response.text}"
+        )
         raise HttpError(e.response.status_code, "Failed to fetch from AI agent")
     except Exception as e:
         logger.error(f"Error calling AI agent: {str(e)}")
@@ -535,3 +541,180 @@ def delete_team_member(request, user_id: str):
     )
 
     return {"success": True, "message": get_message("TEAM_MEMBER_REMOVED")}
+
+
+# =============================================================================
+# SECURITY PIN (LYL-SEC-030/031) — OWNER ONLY
+# =============================================================================
+
+
+class SecurityPinIn(Schema):
+    current_password: str
+    pin: str
+
+
+@router.post(
+    "/security-pin/",
+    auth=jwt_auth,
+    response=dict,
+    summary="Establecer PIN de seguridad (OWNER)",
+)
+def set_security_pin(request, payload: SecurityPinIn):
+    """LYL-SEC-031: Set or update the 6-digit security PIN for impersonation verification."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+    user = request.user
+    if not user.check_password(payload.current_password):
+        raise HttpError(403, get_message("AUTH_INVALID_CREDENTIALS"))
+
+    try:
+        user.set_security_pin(payload.pin)
+    except ValueError:
+        raise HttpError(400, get_message("SECURITY_PIN_INVALID_FORMAT"))
+
+    logger.info("OWNER %s set security PIN for tenant %s", user.email, request.tenant.name)
+    return {"success": True, "message": get_message("SECURITY_PIN_SET")}
+
+
+# =============================================================================
+# FULL DATA EXPORT (LYL-FR-DPR-020 / LOPDP Art. 17/20) — OWNER ONLY
+# =============================================================================
+
+
+@router.get(
+    "/data-export/",
+    auth=jwt_auth,
+    summary="Exportar todos los datos del negocio (LOPDP Art. 17/20)",
+)
+def export_tenant_data(request):
+    """LYL-FR-DPR-020: Generates a ZIP with ALL tenant data in JSON + CSV."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+    check_plan_limit(request.tenant, "exports_month")
+
+    from apps.tenants.data_export_service import generate_tenant_export
+
+    buf = generate_tenant_export(request.tenant)
+
+    # Log the export in audit
+    try:
+        from common.audit import AuditLog
+        AuditLog.objects.create(
+            tenant=request.tenant,
+            actor_email=request.user.email,
+            action="EXPORT",
+            resource="tenant_data",
+            resource_id=str(request.tenant.id),
+            ip_address=request.META.get("REMOTE_ADDR", ""),
+            details={"type": "full_data_export", "format": "zip"},
+        )
+    except Exception:
+        logger.warning("Failed to log data export audit", exc_info=True)
+
+    from django.http import HttpResponse as DjangoResponse
+
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    response = DjangoResponse(
+        buf.getvalue(),
+        content_type="application/zip",
+    )
+    response["Content-Disposition"] = f'attachment; filename="loyallia_datos_completos_{date_str}.zip"'
+    return response
+
+
+# =============================================================================
+# ACCOUNT DELETION (LYL-FR-DPR-025 / LOPDP Art. 18) — OWNER ONLY
+# =============================================================================
+
+
+class DeleteAccountIn(Schema):
+    confirmation_phrase: str
+    current_password: str
+
+
+DELETION_PHRASE = "ACEPTO ELIMINACIÓN COMPLETA"
+
+
+@router.post(
+    "/delete-account/",
+    auth=jwt_auth,
+    summary="Eliminar cuenta permanentemente (LOPDP Art. 18)",
+)
+def delete_account(request, payload: DeleteAccountIn):
+    """LYL-FR-DPR-025: Schedule full tenant deletion after 24-hour grace period."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+    tenant = request.tenant
+    user = request.user
+
+    # Already scheduled?
+    if tenant.scheduled_deletion_at is not None:
+        raise HttpError(400, get_message("ACCOUNT_DELETION_ALREADY_SCHEDULED"))
+
+    # Verify confirmation phrase
+    if payload.confirmation_phrase != DELETION_PHRASE:
+        raise HttpError(400, get_message("ACCOUNT_DELETION_WRONG_PHRASE"))
+
+    # Verify password
+    if not user.check_password(payload.current_password):
+        raise HttpError(403, get_message("ACCOUNT_DELETION_WRONG_PASSWORD"))
+
+    # Generate final data export BEFORE deactivation
+    from apps.tenants.data_export_service import generate_tenant_export
+    buf = generate_tenant_export(tenant)
+
+    # Deactivate tenant immediately (LYL-FR-DPR-025.3)
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    tenant.is_active = False
+    tenant.scheduled_deletion_at = timezone.now() + timedelta(hours=24)
+    tenant.save(update_fields=["is_active", "scheduled_deletion_at", "updated_at"])
+
+    # Schedule Celery cascade deletion (LYL-FR-DPR-025.4)
+    try:
+        from apps.tenants.tasks import delete_tenant_cascade
+        delete_tenant_cascade.apply_async(
+            args=[str(tenant.id)],
+            eta=tenant.scheduled_deletion_at,
+        )
+    except Exception:
+        logger.error("Failed to schedule Celery deletion task", exc_info=True)
+
+    # Audit log
+    try:
+        from common.audit import AuditLog
+        AuditLog.objects.create(
+            tenant=tenant,
+            actor_email=user.email,
+            action="ACCOUNT_DELETION_SCHEDULED",
+            resource="tenant",
+            resource_id=str(tenant.id),
+            ip_address=request.META.get("REMOTE_ADDR", ""),
+            details={
+                "scheduled_at": tenant.scheduled_deletion_at.isoformat(),
+                "grace_period_hours": 24,
+            },
+        )
+    except Exception:
+        logger.warning("Failed to log deletion audit", exc_info=True)
+
+    logger.info(
+        "OWNER %s scheduled deletion for tenant %s at %s",
+        user.email, tenant.name, tenant.scheduled_deletion_at,
+    )
+
+    # Return the ZIP as the response body (LYL-FR-DPR-025.5)
+    from django.http import HttpResponse as DjangoResponse
+
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    response = DjangoResponse(
+        buf.getvalue(),
+        content_type="application/zip",
+    )
+    response["Content-Disposition"] = f'attachment; filename="loyallia_datos_finales_{date_str}.zip"'
+    return response

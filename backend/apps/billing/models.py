@@ -13,7 +13,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.tenants.models import Tenant
+from apps.tenants.models import PlatformSetting, Tenant
 from common.models import TimestampedModel
 
 # =============================================================================
@@ -191,13 +191,13 @@ class SubscriptionPlan(TimestampedModel):
     @property
     def price_monthly_with_tax(self) -> Decimal:
         """Monthly price including Ecuador IVA tax."""
-        tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
+        tax_rate = Decimal(str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15))))
         return (self.price_monthly * (1 + tax_rate)).quantize(Decimal("0.01"))
 
     @property
     def price_annual_with_tax(self) -> Decimal:
         """Annual price including Ecuador IVA tax."""
-        tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
+        tax_rate = Decimal(str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15))))
         return (self.price_annual * (1 + tax_rate)).quantize(Decimal("0.01"))
 
     def has_feature(self, feature: str) -> bool:
@@ -407,7 +407,7 @@ class Subscription(TimestampedModel):
         """Set trial period. Called on tenant registration."""
         from datetime import timedelta
 
-        trial_days = getattr(settings, "TRIAL_DAYS", 5)
+        trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
         # Enforce trial extension limits (LYL-H-API-013)
         if self.trial_start is not None:

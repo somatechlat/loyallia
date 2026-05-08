@@ -384,20 +384,22 @@ test.describe('Django WhatsApp RBAC — STAFF blocked @staff', () => {
 
 test.describe('Django WhatsApp RBAC — SUPERADMIN blocked @superadmin', () => {
 
-  test('SUPERADMIN cannot get WhatsApp status (no tenant, 403)', async ({ request }) => {
+  test('SUPERADMIN cannot get WhatsApp status (no tenant, 402)', async ({ request }) => {
     const token = await loginAs(request, 'admin@loyallia.com');
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/00000000-0000-0000-0000-000000000000/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    expect(resp.status()).toBe(403);
+    // SUPER_ADMIN has no tenant → @require_active_subscription returns 402
+    expect(resp.status()).toBe(402);
   });
 
-  test('SUPERADMIN cannot generate QR (no tenant, 403)', async ({ request }) => {
+  test('SUPERADMIN cannot generate QR (no tenant, 402)', async ({ request }) => {
     const token = await loginAs(request, 'admin@loyallia.com');
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/00000000-0000-0000-0000-000000000000/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    expect(resp.status()).toBe(403);
+    // SUPER_ADMIN has no tenant → @require_active_subscription returns 402
+    expect(resp.status()).toBe(402);
   });
 });
 

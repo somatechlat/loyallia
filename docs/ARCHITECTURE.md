@@ -73,7 +73,7 @@ graph TB
         APN[Apple APN<br/>iOS Push]
         FCM[Google FCM<br/>Android Push]
         GW[Google Wallet API<br/>Pass Issuance]
-        GWY[Bendo / PlacetoPay<br/>Payment Gateway]
+        GWY[Payment Gateway<br/>Manual / Pluggable]
         SMTP[SMTP Provider<br/>Transactional Email]
     end
 
@@ -320,7 +320,7 @@ sequenceDiagram
     participant DASH as Dashboard
     participant API as Django API
     participant DB as PostgreSQL
-    participant GWY as Bendo / PlacetoPay
+    participant GWY as Payment Gateway
     participant CEL as Celery
     participant SMTP as Email
 
@@ -642,3 +642,208 @@ erDiagram
     User ||--o{ Transaction : "records"
     Location ||--o{ Transaction : "at"
 ```
+
+
+---
+
+## APPENDIX A — Recent Architecture Changes (2026-05-06)
+
+This appendix documents all backend, frontend, and infrastructure changes made during the 2026-05-06 configuration session. Agents MUST read this before modifying any of the affected subsystems.
+
+---
+
+### A.1 Subscription Plan Rate Limits
+
+**Motivation:** Existing plans only had basic limits (`max_locations`, `max_customers`, etc.). The platform needed granular rate limits for enterprise features.
+
+**Changes:**
+- `apps/billing/models.py` — `SubscriptionPlan` gained 6 new fields:
+  - `max_automations` (default: 3)
+  - `max_automation_executions_day` (default: 100)
+  - `max_ai_queries_month` (default: 0)
+  - `max_api_calls_day` (default: 0)
+  - `max_exports_month` (default: 5)
+  - `max_wallet_pushes_month` (default: 0)
+- Migration `0007_add_rate_limit_fields` — adds columns + CHECK constraints
+- `common/plan_enforcement.py` — `_count_api_calls_day()` now queries `AgentAPICallLog` instead of returning 0
+- Public billing API — returns all 12 rate-limit fields in plan responses
+
+**Database Fix Note:**
+If migration `0007` is recorded in `django_migrations` but columns are missing from `loyallia_subscription_plans`, apply the fix in `docs/AGENT_ONBOARDING.md` §7 (Common Issues).
+
+---
+
+### A.2 Agent API Call Logging
+
+**Motivation:** Need to enforce `max_api_calls_day` plan limit accurately.
+
+**Changes:**
+- `apps/agent_api/models.py` — new `AgentAPICallLog` model:
+  ```python
+  class AgentAPICallLog(models.Model):
+      id = UUIDField(primary_key=True, default=uuid.uuid4)
+      tenant = ForeignKey(Tenant, on_delete=CASCADE, db_index=True)
+      endpoint = CharField(max_length=255)
+      method = CharField(max_length=10)
+      status_code = PositiveSmallIntegerField(null=True, blank=True)
+      created_at = DateTimeField(auto_now_add=True, db_index=True)
+  ```
+- Migration created and applied
+- `plan_enforcement._count_api_calls_day()` uses this model for per-tenant daily counts
+
+---
+
+### A.3 Vault Write API
+
+**Motivation:** SuperAdmin needed a way to update secrets at runtime without CLI access.
+
+**Changes:**
+- `common/vault.py` — added `write_secret(key, value)`:
+  - Reads current Vault data, merges new key, writes back via KV v2 API
+  - Calls `clear_cache()` to force re-fetch
+- `apps/tenants/super_admin_api/platform.py` — added endpoint:
+  ```
+  PUT /api/v1/admin/platform/integrations/{integration_key}/secret/
+  Body: {"key": "vault_key_name", "value": "secret_value"}
+  ```
+  - Validates `key` against per-integration `ALLOWED_KEYS` allowlist
+  - Returns 400 if key not allowed for that integration
+  - Supports: `google_wallet`, `apple_wallet`, `payment_gateway`, `email`
+
+**ALLOWED_KEYS per integration:**
+```python
+"google_wallet": [
+    "google_wallet_enabled",
+    "google_wallet_issuer_id",
+    "google_service_account_json",
+    "google_oauth_client_id",
+    "google_oauth_client_secret",
+],
+"apple_wallet": [
+    "apple_wallet_enabled",
+    "apple_pass_type_identifier",
+    "apple_team_identifier",
+    "apple_cert_pem",
+    "apple_cert_key_pem",
+    "apple_wwdr_cert_pem",
+],
+"payment_gateway": [
+    "payment_gateway_enabled",
+    "payment_gateway_provider",
+    "payment_gateway_login",
+    "payment_gateway_tran_key",
+    "payment_gateway_webhook_secret",
+],
+"email": [
+    "email_host_user",
+    "email_host_password",
+],
+```
+
+---
+
+### A.4 Integration Diagnostics
+
+**Motivation:** SuperAdmin settings page needed to show WHY an integration was failing.
+
+**Changes:**
+- `platform_integrations()` now returns a `diagnostics` object per integration:
+  ```json
+  {
+    "enabled": true,
+    "issuer_id_present": true,
+    "service_account_present": true,
+    "service_account_valid_json": true,
+    "service_account_has_required_fields": true,
+    "errors": []
+  }
+  ```
+- `google_pass.py` — `get_google_wallet_diagnostics()` checks SA JSON has `client_email`, `private_key`, `token_uri`
+- `apple_pass.py` — `get_apple_wallet_diagnostics()` checks all PEMs are present and cryptographically valid via `OpenSSL.crypto`
+- `platform.py` integration endpoint — no secrets exposed in response
+
+---
+
+### A.5 Environment Validation Fix
+
+**Motivation:** API container crashed on startup when email or Apple Wallet credentials were not configured.
+
+**Changes:**
+- `common/env_validation.py`:
+  - Removed `email_host_user`, `email_host_password`, `apple_wallet_enabled` from unconditional `PRODUCTION_REQUIRED_VAULT_KEYS`
+  - Added `EMAIL_REQUIRED_VAULT_KEYS` list
+  - Email credentials only validated if `email_host_user` is non-empty
+  - Apple Wallet fields only validated if `apple_wallet_enabled` is truthy
+  - `payment_gateway` fields only validated if `payment_gateway_enabled` is truthy
+
+This allows the system to boot with a subset of integrations configured.
+
+---
+
+### A.6 Frontend Settings Page
+
+**Motivation:** Monolithic plans page and read-only settings were inadequate.
+
+**Changes:**
+- `src/app/(dashboard)/superadmin/settings/page.tsx`:
+  - Inline Vault editor for ALL integrations (not just Google/Apple)
+  - Per-field inputs with diagnostic status indicators
+  - Password-type fields for secrets
+  - Select dropdowns for enum values (`true`/`false`, provider names)
+- `src/lib/api.ts`:
+  - `superAdminApi` object with structured endpoint paths
+- `src/components/superadmin/plans/PlanModal.tsx`:
+  - Full-screen modal (`w-full h-full`)
+  - `is_active` toggle
+  - Reactivation flow for inactive plans
+  - Plan deactivation guard (shows 409 if active subscribers exist)
+
+---
+
+### A.7 SuperAdmin API Security Fixes
+
+**Motivation:** Integration endpoint was leaking secrets.
+
+**Changes:**
+- Removed `GOOGLE_WALLET_ISSUER_ID` from `detail` field (was exposed in API response)
+- `EMAIL_HOST_PASSWORD` now read via `get_secret()` instead of direct env access
+- Integration diagnostics object added — no secrets in response body
+
+---
+
+### A.8 Certificate File Audit (`certs/`)
+
+**Real files (kept):**
+| File | Purpose |
+|------|---------|
+| `passNew.cer` | Apple-signed Pass Type ID certificate |
+| `apple_pass_new.key` | 2048-bit RSA private key matching `passNew.cer` |
+| `apple_pass_new.csr` | CSR used to obtain `passNew.cer` |
+| `AppleWWDRCAG4.cer` | Apple WWDR G4 intermediate certificate |
+| `client_secret_*.json` | Google OAuth 2.0 client secrets |
+| `scenic-parity-494022-h5-628cf7e3795c.json` | Google Wallet Service Account |
+
+**Removed files (were sanitized placeholders):**
+- `apple_pass.key`, `apple_pass_cert.pem`, `apple_wwdr.pem`, `apple_pass.csr`, `pass.cer`
+
+**Verification:**
+```bash
+# Confirm passNew.cer matches apple_pass_new.key
+openssl x509 -in certs/passNew.cer -inform DER -pubkey -noout | openssl rsa -pubin -modulus -noout
+openssl rsa -in certs/apple_pass_new.key -pubout | openssl rsa -pubin -modulus -noout
+```
+
+---
+
+### A.9 Documentation Created/Updated
+
+| Document | Status | Purpose |
+|----------|--------|---------|
+| `AGENT.md` | Updated | Agent directives, stack rules, wallet specs |
+| `docs/AGENT_ONBOARDING.md` | **New** | Complete onboarding for future agents |
+| `docs/ARCHITECTURE.md` | Updated | This appendix added |
+| `docs/WALLET_CREDENTIALS_STATUS.md` | **New** | Real credential audit |
+| `docs/WALLET_CREDENTIALS_SETUP.md` | Updated | Step-by-step credential acquisition |
+| `docs/GOOGLE_SETUP_STEP_BY_STEP.md` | **New** | Google OAuth + Wallet setup guide |
+| `scripts/inject_wallet_credentials.py` | **New** | Helper script for Vault injection |
+| `README.md` | Updated | Quick start + credential setup notes |

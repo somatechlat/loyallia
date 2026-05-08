@@ -18,6 +18,7 @@ from apps.automation.models import (
 from apps.cards.models import Card
 from common.messages import get_message
 from common.permissions import jwt_auth
+from common.plan_enforcement import check_plan_limit
 from common.role_check import require_role
 
 router = Router()
@@ -133,6 +134,8 @@ def list_automations(request, active_only: bool = False):
 @require_role("OWNER")
 def create_automation(request, data: CreateAutomationSchema):
     """Create a new automation. OWNER only."""
+    check_plan_limit(request.tenant, "automations")
+
     # Validate trigger and action
     if data.trigger not in [choice[0] for choice in AutomationTrigger.choices]:
         raise HttpError(

@@ -224,6 +224,8 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_PLAN_CREATED": "Plan '{name}' creado exitosamente.",
     "ADMIN_PLAN_UPDATED": "Plan '{name}' actualizado exitosamente.",
     "ADMIN_PLAN_DEACTIVATED": "Plan desactivado exitosamente.",
+    "ADMIN_PLAN_REACTIVATED": "Plan '{name}' reactivado exitosamente.",
+    "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "No se puede desactivar el plan '{name}' porque tiene {count} suscripción(es) activa(s).",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No hay propietarios activos para enviar el anuncio.",
     "ADMIN_TENANT_CREATION_FAILED": "Error al crear el negocio: {detail}",
     "ADMIN_WA_OVERRIDE_REMOVED": "Override removido — usando límite del plan.",
@@ -250,6 +252,19 @@ _MESSAGES_ES: dict[str, str] = {
     "AI_ASSISTANT_UNAVAILABLE": "El asistente de IA no está disponible en este momento. Intente más tarde.",
     "AI_ASSISTANT_NOT_CONFIGURED": "El asistente de IA no está configurado. Configure la clave API en Vault.",
     "AI_CHAT_ERROR": "Error al procesar mensaje de IA: {detail}",
+    # --- Security PIN (LYL-FR-SEC-030/031) ---
+    "IMPERSONATION_PIN_REQUIRED": "Se requiere el PIN de seguridad del propietario para impersonar.",
+    "IMPERSONATION_PIN_INVALID": "PIN de seguridad incorrecto.",
+    "IMPERSONATION_PIN_LOCKED": "Impersonación bloqueada por {minutes} minutos tras múltiples intentos fallidos.",
+    "SECURITY_PIN_SET": "PIN de seguridad establecido exitosamente.",
+    "SECURITY_PIN_INVALID_FORMAT": "El PIN debe ser exactamente 6 dígitos numéricos.",
+    "SECURITY_PIN_NOT_SET": "El propietario no tiene un PIN de seguridad configurado. Debe establecerlo primero.",
+    # --- Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18) ---
+    "ACCOUNT_DELETION_SCHEDULED": "Tu cuenta será eliminada permanentemente en 24 horas. Se ha generado un respaldo de todos tus datos.",
+    "ACCOUNT_DELETION_WRONG_PHRASE": "Frase incorrecta. Escriba exactamente: ACEPTO ELIMINACIÓN COMPLETA",
+    "ACCOUNT_DELETION_WRONG_PASSWORD": "Contraseña incorrecta. La eliminación no fue procesada.",
+    "ACCOUNT_DELETION_COMPLETED": "Cuenta y todos los datos asociados eliminados permanentemente.",
+    "ACCOUNT_DELETION_ALREADY_SCHEDULED": "La eliminación de tu cuenta ya fue programada.",
 }
 
 
@@ -404,6 +419,8 @@ _MESSAGES_EN: dict[str, str] = {
     "ADMIN_PLAN_CREATED": "Plan '{name}' created successfully.",
     "ADMIN_PLAN_UPDATED": "Plan '{name}' updated successfully.",
     "ADMIN_PLAN_DEACTIVATED": "Plan deactivated successfully.",
+    "ADMIN_PLAN_REACTIVATED": "Plan '{name}' reactivated successfully.",
+    "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "Cannot deactivate plan '{name}' because it has {count} active subscription(s).",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No active owners to broadcast to.",
     "ADMIN_TENANT_CREATION_FAILED": "Error creating tenant: {detail}",
     "ADMIN_WA_OVERRIDE_REMOVED": "Override removed — using plan default.",
@@ -429,6 +446,19 @@ _MESSAGES_EN: dict[str, str] = {
     "AI_ASSISTANT_UNAVAILABLE": "AI assistant is not available at this time. Please try later.",
     "AI_ASSISTANT_NOT_CONFIGURED": "AI assistant is not configured. Set the API key in Vault.",
     "AI_CHAT_ERROR": "Error processing AI message: {detail}",
+    # --- Security PIN (LYL-FR-SEC-030/031) ---
+    "IMPERSONATION_PIN_REQUIRED": "Owner security PIN is required for impersonation.",
+    "IMPERSONATION_PIN_INVALID": "Invalid security PIN.",
+    "IMPERSONATION_PIN_LOCKED": "Impersonation locked for {minutes} minutes after multiple failed attempts.",
+    "SECURITY_PIN_SET": "Security PIN set successfully.",
+    "SECURITY_PIN_INVALID_FORMAT": "PIN must be exactly 6 numeric digits.",
+    "SECURITY_PIN_NOT_SET": "Owner has no security PIN configured. They must set it first.",
+    # --- Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18) ---
+    "ACCOUNT_DELETION_SCHEDULED": "Your account will be permanently deleted in 24 hours. A backup of all your data has been generated.",
+    "ACCOUNT_DELETION_WRONG_PHRASE": "Incorrect phrase. Type exactly: ACEPTO ELIMINACIÓN COMPLETA",
+    "ACCOUNT_DELETION_WRONG_PASSWORD": "Incorrect password. Deletion was not processed.",
+    "ACCOUNT_DELETION_COMPLETED": "Account and all associated data permanently deleted.",
+    "ACCOUNT_DELETION_ALREADY_SCHEDULED": "Account deletion has already been scheduled.",
 }
 
 
@@ -453,6 +483,7 @@ _MESSAGES_DE: dict[str, str] = {
     "AUTH_PERMISSION_DENIED": "Sie haben keine Berechtigung für diese Aktion.",
     "NOT_FOUND": "Ressource nicht gefunden.",
     "BILLING_PLAN_REQUIRED": "Ein aktives Abonnement ist erforderlich.",
+    "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "Plan '{name}' kann nicht deaktiviert werden, da er {count} aktive Abonnement(s) hat.",
     "PLAN_LIMIT_EXCEEDED": "Limit für {resource} ({limit}) erreicht. Upgraden Sie Ihren Plan.",
     "PLAN_FEATURE_UNAVAILABLE": "Diese Funktion ist in Ihrem aktuellen Plan nicht verfügbar.",
 }

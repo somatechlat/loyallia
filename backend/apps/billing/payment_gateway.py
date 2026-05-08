@@ -1,18 +1,15 @@
 """
-Loyallia — Payment Gateway Abstraction (REQ-PAY-002)
+Loyallia — Payment Gateway Abstraction (LYL-FR-PAY-010)
 Pluggable payment gateway interface. Supports multiple providers via factory.
-Default provider: Bendo (PlacetoPay infrastructure).
+Default provider: Manual (admin-verified payments).
 
 Providers are selected via settings.PAYMENT_GATEWAY_PROVIDER:
-  - "bendo"  → BendoGateway (PlacetoPay API)
-  - "manual" → ManualGateway (admin-verified payments)
+  - "manual"   → ManualGateway (admin-verified payments)
   - "disabled" → DisabledGateway (billing collection unavailable)
 """
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -105,99 +102,6 @@ class BasePaymentGateway(ABC):
     def process_webhook(self, event_type: str, data: dict) -> dict:
         """Process a webhook event from the payment provider."""
 
-
-# =============================================================================
-# BENDO GATEWAY (PlacetoPay Infrastructure)
-# =============================================================================
-
-
-class BendoGateway(BasePaymentGateway):
-    """
-    Bendo.ec payment gateway — powered by PlacetoPay.
-    API docs: https://placetopay.dev/
-    Handles payment sessions, webhook verification, and subscription management.
-    """
-
-    def __init__(self):
-        self.base_url = getattr(
-            settings,
-            "PAYMENT_GATEWAY_BASE_URL",
-            "https://checkout.placetopay.com",
-        )
-        self.login = getattr(settings, "PAYMENT_GATEWAY_LOGIN", "")
-        self.tran_key = getattr(settings, "PAYMENT_GATEWAY_TRAN_KEY", "")
-        self.webhook_secret = getattr(settings, "PAYMENT_GATEWAY_WEBHOOK_SECRET", "")
-
-    def _check_credentials(self) -> None:
-        """Verify gateway credentials are configured."""
-        if not self.login or not self.tran_key:
-            raise PaymentGatewayError(
-                message="Payment gateway credentials not configured. "
-                "Set PAYMENT_GATEWAY_LOGIN and PAYMENT_GATEWAY_TRAN_KEY.",
-                code="GATEWAY_NOT_CONFIGURED",
-            )
-
-    def create_session(
-        self,
-        tenant_id: str,
-        amount: str,
-        currency: str,
-        description: str,
-        return_url: str,
-        cancel_url: str,
-        reference: str,
-        buyer_email: str = "",
-        buyer_name: str = "",
-    ) -> PaymentSessionResult:
-        """Create a PlacetoPay payment session."""
-        self._check_credentials()
-        # PlacetoPay API integration will be wired when credentials are obtained.
-        # Structure follows: POST {base_url}/api/session
-        logger.info(
-            "BendoGateway.create_session: tenant=%s amount=%s ref=%s",
-            tenant_id,
-            amount,
-            reference,
-        )
-        raise PaymentGatewayError(
-            message="Bendo/PlacetoPay integration pending API credentials.",
-            code="GATEWAY_PENDING_CREDENTIALS",
-        )
-
-    def check_session(self, session_id: str) -> PaymentStatusResult:
-        """Check PlacetoPay session status."""
-        self._check_credentials()
-        logger.info("BendoGateway.check_session: session=%s", session_id)
-        raise PaymentGatewayError(
-            message="Bendo/PlacetoPay integration pending API credentials.",
-            code="GATEWAY_PENDING_CREDENTIALS",
-        )
-
-    def cancel_subscription(self, subscription_id: str) -> dict:
-        """Cancel a PlacetoPay recurring subscription."""
-        self._check_credentials()
-        logger.info("BendoGateway.cancel_subscription: sub=%s", subscription_id)
-        raise PaymentGatewayError(
-            message="Bendo/PlacetoPay integration pending API credentials.",
-            code="GATEWAY_PENDING_CREDENTIALS",
-        )
-
-    def verify_webhook(self, body: bytes, signature: str) -> bool:
-        """Verify PlacetoPay webhook HMAC-SHA256 signature."""
-        if not self.webhook_secret:
-            logger.warning("Webhook secret not configured, rejecting.")
-            return False
-        expected = hmac.new(
-            self.webhook_secret.encode(),
-            body,
-            hashlib.sha256,
-        ).hexdigest()
-        return hmac.compare_digest(expected, signature)
-
-    def process_webhook(self, event_type: str, data: dict) -> dict:
-        """Process a PlacetoPay webhook event."""
-        logger.info("BendoGateway.process_webhook: event=%s", event_type)
-        return {"status": "received", "event": event_type}
 
 
 # =============================================================================
@@ -299,8 +203,6 @@ class DisabledGateway(BasePaymentGateway):
 # =============================================================================
 
 _GATEWAY_REGISTRY: dict[str, type[BasePaymentGateway]] = {
-    "bendo": BendoGateway,
-    "placetopay": BendoGateway,
     "manual": ManualGateway,
     "disabled": DisabledGateway,
 }
