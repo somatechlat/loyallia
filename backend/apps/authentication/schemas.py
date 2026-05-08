@@ -121,7 +121,7 @@ class UserOut(BaseModel):
     date_joined: datetime
 
     @classmethod
-    def from_user(cls, user: User) -> UserOut:
+    def from_user(cls, user: User) -> "UserOut":
         return cls(
             id=str(user.id),
             email=user.email,

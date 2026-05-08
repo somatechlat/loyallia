@@ -39,7 +39,7 @@ class TenantAdminOut(BaseModel):
     location_count: int
 
     @classmethod
-    def from_tenant(cls, t: Tenant) -> TenantAdminOut:
+    def from_tenant(cls, t: Tenant) -> "TenantAdminOut":
         return cls(
             id=str(t.id),
             name=t.name,
@@ -83,7 +83,7 @@ class LocationOut(BaseModel):
     is_active: bool
 
     @classmethod
-    def from_location(cls, loc: Location) -> LocationOut:
+    def from_location(cls, loc: Location) -> "LocationOut":
         return cls(
             id=str(loc.id),
             name=loc.name,
@@ -247,7 +247,7 @@ class PlanOut(BaseModel):
     sort_order: int
 
     @classmethod
-    def from_plan(cls, p: SubscriptionPlan) -> PlanOut:
+    def from_plan(cls, p: SubscriptionPlan) -> "PlanOut":
         return cls(
             id=str(p.id),
             name=p.name,
