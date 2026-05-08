@@ -2,9 +2,8 @@
 Loyallia — Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
-from __future__ import annotations
-
 import logging
+from typing import Optional
 
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -17,7 +16,7 @@ from apps.customers.models import CustomerPass
 from apps.transactions.models import Enrollment
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
-from common.plan_enforcement import check_plan_limit
+from common.plan_enforcement import check_plan_limit, require_active_subscription
 from common.request import require_tenant
 
 logger = logging.getLogger(__name__)
@@ -32,20 +31,20 @@ router = Router()
 
 class CardCreateIn(BaseModel):
     name: str
-    description: str | None = ""
+    description: Optional[str] = ""
     card_type: CardType
-    barcode_type: str | None = "qr_code"
-    logo_url: str | None = ""
-    background_color: str | None = "#1a1a2e"
-    text_color: str | None = "#ffffff"
-    strip_image_url: str | None = ""
-    icon_url: str | None = ""
-    metadata: dict | None = {}
-    locations: list | None = []
+    barcode_type: Optional[str] = "qr_code"
+    logo_url: Optional[str] = ""
+    background_color: Optional[str] = "#1a1a2e"
+    text_color: Optional[str] = "#ffffff"
+    strip_image_url: Optional[str] = ""
+    icon_url: Optional[str] = ""
+    metadata: Optional[dict] = {}
+    locations: Optional[list] = []
 
     @field_validator("metadata")
     @classmethod
-    def validate_metadata_size(cls, v: dict | None) -> dict | None:
+    def validate_metadata_size(cls, v: Optional[dict]) -> Optional[dict]:
         """B-007: Limit metadata JSON to 10KB to prevent abuse."""
         if v is not None:
             import json
@@ -77,21 +76,21 @@ class CardCreateIn(BaseModel):
 
 
 class CardUpdateIn(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    barcode_type: str | None = None
-    logo_url: str | None = None
-    background_color: str | None = None
-    text_color: str | None = None
-    strip_image_url: str | None = None
-    icon_url: str | None = None
-    metadata: dict | None = None
-    is_active: bool | None = None
-    locations: list | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    barcode_type: Optional[str] = None
+    logo_url: Optional[str] = None
+    background_color: Optional[str] = None
+    text_color: Optional[str] = None
+    strip_image_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    metadata: Optional[dict] = None
+    is_active: Optional[bool] = None
+    locations: Optional[list] = None
 
     @field_validator("name")
     @classmethod
-    def validate_name(cls, v: str | None) -> str | None:
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
         if v is not None and len(v.strip()) < 2:
             raise ValueError("Program name must be at least 2 characters")
         return v.strip() if v else v
@@ -117,7 +116,7 @@ class CardOut(BaseModel):
     enrollments_count: int = 0
 
     @staticmethod
-    def from_model(card: Card, enrollments_count: int | None = None):
+    def from_model(card: Card, enrollments_count: Optional[int] = None):
         return CardOut(
             id=str(card.id),
             tenant_id=str(card.tenant.id),
@@ -188,6 +187,7 @@ def list_programs(request):
 @router.post(
     "/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización"
 )
+@require_active_subscription
 def create_program(request, data: CardCreateIn):
     """Create a new loyalty program. OWNER only."""
     from common.permissions import is_owner
@@ -195,11 +195,7 @@ def create_program(request, data: CardCreateIn):
     tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    from apps.billing.models import Subscription
 
-    subscription = Subscription.objects.filter(tenant=tenant).first()
-    if not subscription or not subscription.is_access_allowed:
-        raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
     check_plan_limit(tenant, "programs")
 
     # Check for duplicate name

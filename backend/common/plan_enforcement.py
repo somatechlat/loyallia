@@ -274,7 +274,7 @@ def _count_exports_month(tenant, month_start) -> int:
     from apps.audit.models import AuditLog
 
     return AuditLog.objects.filter(
-        tenant=tenant,
+        tenant_id=str(tenant.id),
         action="EXPORT",
         created_at__gte=month_start,
     ).count()
