@@ -150,8 +150,10 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         module = inspect.getmodule(create_program)
         assert module is not None
-        module_source = inspect.getsource(module)
-        module_source = inspect.getsource(module)
+        module_file = getattr(module, "__file__", None)
+        self.assertIsNotNone(module_file)
+        with open(module_file, "r") as f:
+            module_source = f.read()
         self.assertIn("@require_active_subscription", module_source)
         self.assertIn('check_plan_limit(', module_source)
 
@@ -162,8 +164,10 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         module = inspect.getmodule(create_campaign)
         assert module is not None
-        module_source = inspect.getsource(module)
-        module_source = inspect.getsource(module)
+        module_file = getattr(module, "__file__", None)
+        self.assertIsNotNone(module_file)
+        with open(module_file, "r") as f:
+            module_source = f.read()
         self.assertIn('check_plan_limit(', module_source)
 
     def test_create_location_has_enforce_limit(self):
@@ -173,8 +177,10 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         module = inspect.getmodule(create_location)
         assert module is not None
-        module_source = inspect.getsource(module)
-        module_source = inspect.getsource(module)
+        module_file = getattr(module, "__file__", None)
+        self.assertIsNotNone(module_file)
+        with open(module_file, "r") as f:
+            module_source = f.read()
         self.assertIn('check_plan_limit(', module_source)
 
 
