@@ -3,7 +3,6 @@ Loyallia — Customer Models
 Customer profiles, passes, and enrollment management.
 """
 
-from __future__ import annotations
 
 import uuid
 from datetime import datetime

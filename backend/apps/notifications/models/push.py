@@ -4,7 +4,6 @@ Loyallia — Push Notification Models
 Device registration and push notification state.
 """
 
-from __future__ import annotations
 
 import uuid
 

@@ -15,7 +15,6 @@ Apple Wallet pass update pushes:
 Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
 """
 
-from __future__ import annotations
 
 import contextlib
 import logging

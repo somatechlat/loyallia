@@ -4,7 +4,6 @@ Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
 
-from __future__ import annotations
 
 from decimal import Decimal
 

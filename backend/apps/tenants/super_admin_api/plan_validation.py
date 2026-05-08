@@ -3,7 +3,6 @@
 SEC: Rejects unknown plan feature flags and inconsistent feature/limit pairs
 before data reaches SubscriptionPlan persistence.
 """
-from __future__ import annotations
 
 from ninja.errors import HttpError
 

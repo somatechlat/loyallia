@@ -3,7 +3,6 @@ Loyallia — Notification Service
 Handles sending push notifications, emails, and SMS.
 """
 
-from __future__ import annotations
 
 import logging
 

@@ -3,7 +3,6 @@ Loyallia — Super Admin Billing API
 Manual payment confirmation for subscription invoices.
 """
 
-from __future__ import annotations
 
 import logging
 import uuid

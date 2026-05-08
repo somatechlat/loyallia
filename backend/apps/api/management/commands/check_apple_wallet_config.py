@@ -1,6 +1,5 @@
 """Validate Apple Wallet web PKPass and optional NFC Vault configuration."""
 
-from __future__ import annotations
 
 import base64
 

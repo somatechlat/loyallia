@@ -19,7 +19,6 @@ NOTE: APNs HTTP/2 requires httpx with HTTP/2 support (httpx[http2]) or httpcore[
       We use httpx with h2 support explicitly.
 """
 
-from __future__ import annotations
 
 import logging
 import os

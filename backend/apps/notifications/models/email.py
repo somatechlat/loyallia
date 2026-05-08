@@ -4,7 +4,6 @@ Loyallia — Email Configuration Models
 Per-tenant SMTP configuration for campaign delivery.
 """
 
-from __future__ import annotations
 
 import uuid
 

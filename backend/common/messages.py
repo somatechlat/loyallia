@@ -25,7 +25,6 @@ Called by: Every API endpoint, every error handler, every notification template.
 Rule #11: All user-facing strings MUST go through get_message().
 """
 
-from __future__ import annotations
 
 from typing import Any
 

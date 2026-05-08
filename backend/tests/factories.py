@@ -4,7 +4,6 @@ Reusable factory functions for creating test data across all test modules.
 Each factory creates minimal valid objects with sensible defaults.
 """
 
-from __future__ import annotations
 
 import uuid
 from datetime import timedelta

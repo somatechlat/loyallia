@@ -13,7 +13,6 @@ Performance (Rule 12):
 Called by: Customer list, Transaction list, Program list, and other paginated endpoints.
 """
 
-from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 

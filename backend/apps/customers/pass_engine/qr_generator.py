@@ -11,7 +11,6 @@ The scanner validates: recomputes HMAC, checks timestamp age (≤ 24h by default
 The QR image itself is uploaded to MinIO under assets/qr/{pass_id}.png.
 """
 
-from __future__ import annotations
 
 import hashlib
 import hmac

@@ -14,7 +14,6 @@ or:
     {"secret_key": "...", "postgres_password": "..."}
 """
 
-from __future__ import annotations
 
 import argparse
 import json

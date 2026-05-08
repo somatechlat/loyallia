@@ -13,7 +13,6 @@ multi-service architectures needing asymmetric key distribution. Key rotation
 invalidates existing tokens (acceptable given 60min access / 30d refresh TTLs).
 """
 
-from __future__ import annotations
 
 import hashlib
 import logging

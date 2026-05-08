@@ -4,7 +4,6 @@ Loyallia — Campaign Models
 Campaign execution tracking and per-recipient delivery logs.
 """
 
-from __future__ import annotations
 
 import uuid
 
