@@ -2,6 +2,7 @@
 Loyallia — Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
+from __future__ import annotations
 
 import logging
 

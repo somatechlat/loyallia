@@ -1,6 +1,6 @@
 """
 Loyallia — Payment & Invoice Models (REQ-PAY-001)
-Split from billing/models.py per 500-line architectural limit.
+Split from billing/models.py per the 600-line architectural limit.
 Contains PaymentMethod and Invoice models.
 """
 

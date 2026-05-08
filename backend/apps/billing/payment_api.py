@@ -1,6 +1,6 @@
 """
 Loyallia — Billing Payment Methods, Invoices & Webhook API (REQ-PAY-001)
-Split from billing/api.py per the 500-line architectural limit.
+Split from billing/api.py per the 600-line architectural limit.
 """
 
 import hashlib

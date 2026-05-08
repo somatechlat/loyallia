@@ -339,7 +339,7 @@ FIREBASE_CREDENTIAL_FILE = config(
 )
 
 # =============================================================================
-# PAYMENT GATEWAY (Pluggable — Manual / Disabled / Future Providers)
+# PAYMENT GATEWAY (Pluggable — Manual / Disabled)
 # =============================================================================
 PAYMENT_GATEWAY_ENABLED = vault_bool(
     "payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False
@@ -349,9 +349,7 @@ PAYMENT_GATEWAY_PROVIDER = get_secret(
     env_fallback="PAYMENT_GATEWAY_PROVIDER",
     default="manual",
 )
-PAYMENT_GATEWAY_BASE_URL = config(
-    "PAYMENT_GATEWAY_BASE_URL", default=""
-)
+PAYMENT_GATEWAY_BASE_URL = config("PAYMENT_GATEWAY_BASE_URL", default="")
 PAYMENT_GATEWAY_LOGIN = get_secret(
     "payment_gateway_login", env_fallback="PAYMENT_GATEWAY_LOGIN", default=""
 )

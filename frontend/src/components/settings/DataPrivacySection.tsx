@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import ConfirmModal from '@/components/ui/ConfirmModal';
 
 /** Exact confirmation phrase required for account deletion (LOPDP Art. 18) */
 const DELETION_PHRASE = 'ACEPTO ELIMINACIÓN COMPLETA';

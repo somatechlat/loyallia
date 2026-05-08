@@ -2,9 +2,8 @@
 Loyallia — Customers API router.
 Phase 5 implementation of customer + pass management endpoints.
 """
-
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -41,7 +40,7 @@ router = Router()
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
 @require_active_subscription
 def list_customers(
-    request, search: str | None = None, limit: int = 50, offset: int = 0
+    request, search: Optional[str] = None, limit: int = 50, offset: int = 0
 ):
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):

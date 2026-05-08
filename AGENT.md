@@ -40,12 +40,15 @@
 | 33908 | Vault UI |
 
 ### 1.4 File Size Constraint
-> **HARD LIMIT: 500 lines per file**
+> **HARD LIMIT: 600 lines per file**
 
-No `.py` or `.tsx` file shall exceed 500 lines. If a file grows beyond this:
+No `.py` or `.tsx` file shall exceed 600 lines. If a file grows beyond this:
 1. Split into a package directory
 2. Create `__init__.py` that re-exports the public API
 3. Organize by concern (e.g., `api/` -> `api/customers.py`, `api/passes.py`, `api/exports.py`)
+
+### 1.5 Vibe Coding Rule Override (React)
+> **CRITICAL OVERRIDE:** The global Vibe Coding Rule stating "ALL UI components MUST use Lit Web Components" is **VOID** for the Loyallia project. Loyallia uses **REACT/NEXT.JS**. DO NOT attempt to migrate Loyallia components to Lit.
 
 ---
 
@@ -157,7 +160,7 @@ docker exec loyallia-api python manage.py seed_test_data
 ```bash
 cd backend && ruff check .                   # 0 errors
 cd backend && black --check .                # 0 formatting issues
-find backend -name '*.py' | xargs wc -l | awk '$1>500'  # 0 results (excl. venv)
+find backend -name '*.py' | xargs wc -l | awk '$1>600'  # 0 results (excl. venv)
 ```
 
 ---

@@ -1,6 +1,7 @@
 """
 Loyallia — Super Admin API: Tenant + Location + Invoice endpoints
 """
+from __future__ import annotations
 
 import json
 import logging
@@ -10,6 +11,7 @@ from datetime import timedelta
 from typing import cast
 
 from django.conf import settings
+from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 from django.utils.text import slugify
@@ -28,7 +30,6 @@ from apps.tenants.super_admin_api.schemas import (
     CreateTenantOut,
     CreateTenantWizardIn,
     ExtendTrialIn,
-    ImpersonateOut,
     InvoiceOut,
     LocationIn,
     LocationOut,
@@ -156,17 +157,42 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                     is_primary=loc.is_primary or (i == 0),
                 )
             plan_obj = SubscriptionPlan.objects.filter(slug=payload.plan_slug).first()
+            trial_days = plan_obj.trial_days if plan_obj else 14
             sub = Subscription.objects.create(
                 tenant=tenant,
                 plan="full",
                 billing_cycle=payload.billing_cycle,
                 status=SubscriptionStatus.TRIALING,
                 trial_start=dj_timezone.now(),
-                trial_end=dj_timezone.now()
-                + timedelta(days=plan_obj.trial_days if plan_obj else 14),
+                trial_end=dj_timezone.now() + timedelta(days=trial_days),
             )
             tenant.trial_end = sub.trial_end
             tenant.save(update_fields=["trial_end"])
+
+            def _send_owner_welcome() -> None:
+                login_url = f"{settings.FRONTEND_URL.rstrip('/')}/login"
+                try:
+                    send_mail(
+                        subject=get_message("TENANT_WELCOME_EMAIL_SUBJECT"),
+                        message=get_message(
+                            "TENANT_WELCOME_EMAIL_BODY",
+                            name=owner.first_name or owner.email,
+                            tenant=tenant.name,
+                            login_url=login_url,
+                            email=owner.email,
+                            password=temp_password,
+                            trial_days=trial_days,
+                        ),
+                        from_email=None,
+                        recipient_list=[owner.email],
+                        fail_silently=False,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to send owner welcome email to %s", owner.email
+                    )
+
+            transaction.on_commit(_send_owner_welcome)
 
             logger.info(
                 "SUPER_ADMIN %s created tenant %s (%s) with %d locations",
@@ -413,53 +439,6 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     return MessageOut(
         success=True,
         message=get_message("TENANT_TRIAL_EXPIRING", days=tenant.trial_days_remaining),
-    )
-
-
-@router.post(
-    "/tenants/{tenant_id}/impersonate/", auth=jwt_auth, response=ImpersonateOut
-)
-def impersonate_tenant(request, tenant_id: str):
-    _require_super_admin(request)
-    tenant = _get_tenant_or_404(tenant_id)
-    try:
-        owner = User.objects.get(tenant=tenant, role=UserRole.OWNER, is_active=True)
-    except User.DoesNotExist:
-        raise HttpError(404, get_message("NOT_FOUND"))
-
-    from datetime import datetime, timedelta, timezone
-
-    import jwt as pyjwt
-
-    utc = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
-
-    # Short-lived impersonation token — no global settings mutation
-    now = datetime.now(tz=utc)
-    payload = {
-        "user_id": str(owner.id),
-        "tenant_id": str(tenant.id),
-        "role": owner.role,
-        "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=60)).timestamp()),
-        "type": "access",
-        "impersonated_by": str(request.user.id),
-        "impersonated": True,
-    }
-    access = pyjwt.encode(
-        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-    )
-
-    logger.warning(
-        "IMPERSONATION: SUPER_ADMIN %s impersonated OWNER %s of tenant %s (%s)",
-        request.user.email,
-        owner.email,
-        tenant.id,
-        tenant.name,
-    )
-    return ImpersonateOut(
-        access_token=access,
-        impersonated_tenant_id=str(tenant.id),
-        impersonated_user_id=str(owner.id),
     )
 
 

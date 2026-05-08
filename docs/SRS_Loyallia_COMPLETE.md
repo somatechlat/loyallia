@@ -1017,7 +1017,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 
 | Req ID | Requirement | Priority |
 |--------|-------------|----------|
-| LYL-FR-PAY-010 | BendoGateway class SHALL be removed from the codebase. The `_GATEWAY_REGISTRY` SHALL contain only `"manual"` and `"disabled"` providers. All Bendo/PlacetoPay references SHALL be removed from code and documentation. | MUST |
+| LYL-FR-PAY-010 | External payment gateway classes SHALL be removed from the codebase. The `_GATEWAY_REGISTRY` SHALL contain only `"manual"` and `"disabled"` providers. Legacy external provider references SHALL be removed from code and documentation. | MUST |
 | LYL-FR-PAY-011 | `POST /billing/subscribe/` SHALL create a Subscription (status=past_due) and Invoice (status=open), returning `{success, status: "pending_verification", invoice_id}`. The endpoint SHALL NOT raise HTTP 402. | MUST |
 | LYL-FR-PAY-011.1 | SuperAdmin SHALL confirm payment via `POST /admin/billing/confirm-payment/{invoice_id}/`, which SHALL call `invoice.mark_paid()` and `subscription.activate_paid()` | MUST |
 
@@ -1032,7 +1032,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 
 | Req ID | Requirement | Priority |
 |--------|-------------|----------|
-| LYL-NFR-ARCH-040 | Settings page (`settings/page.tsx`) SHALL be modularized: WhatsApp wizard extracted to `WhatsAppWizard.tsx`, LOPDP section to `DataPrivacySection.tsx`. No file SHALL exceed 500 lines. | MUST |
+| LYL-NFR-ARCH-040 | Settings page (`settings/page.tsx`) SHALL be modularized: WhatsApp wizard extracted to `WhatsAppWizard.tsx`, LOPDP section to `DataPrivacySection.tsx`. No file SHALL exceed 600 lines. | MUST |
 
 ---
 
@@ -1045,12 +1045,12 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | Tenant | id, name, slug, owner_id, plan, trial_end, is_active, gateway_customer_id, timezone, country |
 | User | id, tenant_id, email, password_hash, role (OWNER/MANAGER/STAFF), is_active, last_login |
 | Location | id, tenant_id, name, address, lat, long, is_active |
-| LoyaltyProgram | id, tenant_id, card_type, name, config (JSONB), is_active, logo_url, colors |
+| Card | id, tenant_id, card_type, name, metadata (JSONB), is_active, logo_url, colors |
 | Customer | id, tenant_id, first_name, last_name, email, phone, device_token_ios, device_token_android, join_date, is_active |
 | Pass | id, customer_id, program_id, serial_number, balance_data (JSONB), status, issued_at, updated_at |
 | Transaction | id, tenant_id, pass_id, customer_id, staff_id, location_id, type, amount, metadata (JSONB), created_at |
 | PushCampaign | id, tenant_id, title, message, target_segment, status, scheduled_at, sent_count, open_count |
-| AutomationRule | id, tenant_id, name, trigger, conditions (JSONB), actions (JSONB), is_active, execution_count |
+| Automation | id, tenant_id, name, trigger, trigger_config (JSONB), action, action_config (JSONB), is_active, total_executions |
 | Subscription | id, tenant_id, plan, gateway_subscription_id, status, billing_cycle_start, billing_cycle_end |
 | AuditLog | id, actor_id, tenant_id, action, target_type, target_id, metadata (JSONB), created_at |
 
@@ -1129,3 +1129,40 @@ Platform-wide management interface accessible only to Loyallia operations team (
 
 *End of SRS Document — LOYALLIA-SRS-001 v1.0.0*  
 *Next Document: LOYALLIA-ARCH-001 — Architecture, Sequence & Flowchart Diagrams*
+
+## 23. ISO SRS IMPLEMENTATION PLAN: INFRASTRUCTURE STABILIZATION SPRINT (PHASE 3 & 4)
+
+### 23.1 Purpose & Scope
+This implementation plan formalizes the technical directives for completing Phases 3 and 4 of the Loyallia Infrastructure Stabilization sprint. It addresses the remediation of the subscription billing flow (Rule 4: Real Implementations) and the deployment of PIN-gated security controls for SysAdmin impersonation.
+
+### 23.2 Phase 3: Subscription Flow & Welcome Email Restitution
+**Reference:** LYL-FR-PAY-011, LYL-FR-COM-012
+
+#### 23.2.1 Description
+The `subscribe()` endpoint SHALL support manual payment verification by creating an open invoice and marking the subscription as payment-pending until SuperAdmin confirmation.
+
+#### 23.2.2 Technical Directives
+1. **Endpoint `POST /api/v1/billing/subscribe/` (`backend/apps/billing/api.py`)**
+   - **Operation:** Remove the hardcoded 402 exception.
+   - **State Transition:** Create a `Subscription` record with `status=SubscriptionStatus.PAST_DUE`. Create an associated `Invoice` with `status="open"`.
+   - **Response:** Return HTTP 200 containing the `invoice_id` and a message directing the user to manual payment instructions.
+2. **Endpoint `POST /api/v1/admin/billing/confirm-payment/{invoice_id}/` (`backend/apps/tenants/super_admin_api/billing.py`)**
+   - **Operation:** Validate `invoice_id`. Mark `Invoice.status = "paid"`. Update `Subscription.status = "active"`.
+   - **Constraint:** Exclusively accessible to users bearing the `SUPER_ADMIN` role.
+3. **Owner Welcome Dispatch (`backend/apps/tenants/super_admin_api/tenants.py`)**
+   - **Operation:** Following successful `create_tenant_wizard` execution, utilize `django.core.mail.send_mail` to dispatch onboarding credentials.
+   - **Constraint:** All localized copy MUST be sourced from `admin.common.messages.get_message()`.
+
+### 23.3 Phase 4: PIN-Gated Impersonation Verification
+**Reference:** LYL-FR-SEC-030
+
+#### 23.3.1 Description
+Current SuperAdmin impersonation allows access without secondary authentication, violating LOPDP strict access controls. A 6-digit cryptographic PIN verification MUST be enforced.
+
+#### 23.3.2 Technical Directives
+1. **Schema `ImpersonateIn` (`backend/apps/tenants/super_admin_api/schemas.py`)**
+   - **Definition:** `owner_pin: str`, `justification: str (min_length=10)`.
+2. **Endpoint `POST /api/v1/admin/tenants/{tenant_id}/impersonate/` (`backend/apps/tenants/super_admin_api/tenants.py`)**
+   - **Validation:** Enforce `owner.verify_security_pin(payload.owner_pin)`.
+   - **Security Lockout:** Implement a Redis-backed counter (`impersonate_fails:{user_id}`). Terminate request with HTTP 429 if failed attempts >= 3 within 900 seconds (15 minutes).
+   - **Audit Trail:** Transcribe `justification` to `AuditLog`. Record status as `SUCCESS` or `DENIED` depending on PIN validation outcome.

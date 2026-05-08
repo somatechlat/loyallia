@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Campaign listing and creation endpoints."""
 
 from typing import Any

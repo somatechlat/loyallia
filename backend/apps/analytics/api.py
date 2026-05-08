@@ -26,6 +26,7 @@ Security (SEC):
 Called by: Dashboard analytics page, customer detail page, program detail page.
 """
 
+from typing import Optional
 from datetime import timedelta
 
 from django.db.models import Avg, Count, Sum
@@ -58,7 +59,7 @@ class CustomerAnalyticsSchema(BaseModel):
     total_rewards_earned: int
     total_rewards_redeemed: int
     segment: str
-    last_visit: str | None
+    last_visit: Optional[str] = None
 
 
 class ProgramAnalyticsSchema(BaseModel):
@@ -147,7 +148,7 @@ def get_overview_analytics(request, days: int = 30):
 # ============ Customer Analytics ============
 @router.get("/customers/", auth=jwt_auth, summary="Get customer analytics")
 def get_customer_analytics(
-    request, segment: str | None = None, limit: int = 50, offset: int = 0
+    request, segment: Optional[str] = None, limit: int = 50, offset: int = 0
 ):
     """Paginated customer analytics with optional segment filter.
 

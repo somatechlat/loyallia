@@ -3,7 +3,7 @@ Loyallia — Notifications Celery Tasks (apps/notifications/tasks/__init__.py)
 
 Backward-compatible re-exports of all notification tasks.
 This module preserves the original import paths after splitting tasks.py
-into logical submodules per Rule 245 (590-line limit).
+into logical submodules per Rule 245 (600-line limit).
 """
 
 from apps.notifications.sms.tasks import send_sms_campaign  # noqa: F401
