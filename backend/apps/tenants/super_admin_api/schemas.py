@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from apps.authentication.models import User
-from apps.billing.models import SubscriptionPlan
+from apps.billing.models import PlanFeature, SubscriptionPlan
 from apps.tenants.models import Location, Tenant
 
 # =============================================================================
@@ -176,6 +176,8 @@ class PlatformIntegrationOut(BaseModel):
     configured: bool
     status: str
     detail: str
+    diagnostics: dict = Field(default_factory=dict)
+    preview_values: dict = Field(default_factory=dict)
 
 
 class ExtendTrialIn(BaseModel):
@@ -288,15 +290,24 @@ class PlanCreateIn(BaseModel):
     max_emails_month: int = 0
     max_sms_day: int = 0
     max_wallet_pushes_month: int = 0
-    max_automations: int = 3
-    max_automation_executions_day: int = 100
+    max_automations: int = 0
+    max_automation_executions_day: int = 0
     max_ai_queries_month: int = 0
     max_api_calls_day: int = 0
-    max_exports_month: int = 5
-    features: list = []
+    max_exports_month: int = 0
+    features: list[str] = Field(default_factory=list)
     is_featured: bool = False
     trial_days: int = 14
     sort_order: int = 0
+
+    @field_validator("features")
+    @classmethod
+    def features_must_be_known(cls, value: list[str]) -> list[str]:
+        allowed = set(PlanFeature.ALL_FEATURES)
+        unknown = sorted(set(value) - allowed)
+        if unknown:
+            raise ValueError(f"Unknown plan feature(s): {', '.join(unknown)}")
+        return list(dict.fromkeys(value))
 
 
 class PlanUpdateIn(BaseModel):
@@ -319,11 +330,22 @@ class PlanUpdateIn(BaseModel):
     max_ai_queries_month: int | None = None
     max_api_calls_day: int | None = None
     max_exports_month: int | None = None
-    features: list | None = None
+    features: list[str] | None = None
     is_featured: bool | None = None
     is_active: bool | None = None
     trial_days: int | None = None
     sort_order: int | None = None
+
+    @field_validator("features")
+    @classmethod
+    def features_must_be_known(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        allowed = set(PlanFeature.ALL_FEATURES)
+        unknown = sorted(set(value) - allowed)
+        if unknown:
+            raise ValueError(f"Unknown plan feature(s): {', '.join(unknown)}")
+        return list(dict.fromkeys(value))
 
 
 # =============================================================================
@@ -335,3 +357,39 @@ class WhatsAppOverrideIn(BaseModel):
     """Per-tenant WA daily limit override. 0 = use plan default."""
 
     daily_limit_override: int = 0
+
+
+class VaultSecretUpdateIn(BaseModel):
+    """Update a secret in HashiCorp Vault. Only SUPER_ADMIN can use this."""
+
+    key: str
+    value: str
+
+
+# =============================================================================
+# PLATFORM SETTINGS — Runtime configuration without restart
+# =============================================================================
+
+
+class PlatformSettingOut(BaseModel):
+    """A single platform setting exposed to the SuperAdmin UI."""
+
+    key: str
+    value: str
+    description: str
+    category: str
+    requires_restart: bool
+    updated_at: datetime
+
+
+class PlatformSettingUpdateIn(BaseModel):
+    """Update a platform setting value. Only SUPER_ADMIN can use this."""
+
+    value: str
+
+
+class PlatformSettingsSummaryOut(BaseModel):
+    """Grouped platform settings by category."""
+
+    category: str
+    settings: list[PlatformSettingOut]

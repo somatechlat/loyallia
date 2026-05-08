@@ -25,7 +25,7 @@ from apps.customers.schemas import (
 )
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
-from common.plan_enforcement import enforce_limit, require_active_subscription
+from common.plan_enforcement import check_plan_limit, require_active_subscription
 from common.rate_limit import get_client_ip
 from common.request import require_tenant
 
@@ -76,13 +76,17 @@ def list_customers(
 
 
 @router.post("/", auth=jwt_auth, response=CustomerOut, summary="Crear cliente")
-@require_active_subscription
-@enforce_limit("customers")
 def create_customer(request, data: CustomerCreateIn):
     """Create a customer for the current tenant. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = require_tenant(request)
+    from apps.billing.models import Subscription
+
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+    if not subscription or not subscription.is_access_allowed:
+        raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
+    check_plan_limit(tenant, "customers")
 
     if Customer.objects.filter(tenant=tenant, email=data.email).exists():
         raise HttpError(400, get_message("CUSTOMER_DUPLICATE_EMAIL"))
@@ -117,8 +121,6 @@ def create_customer(request, data: CustomerCreateIn):
 @router.post(
     "/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)"
 )
-@require_active_subscription
-@enforce_limit("customers")
 def import_customers(request, file: UploadedFile):
     """
     Import customers from an Excel or CSV file. OWNER only.
@@ -127,6 +129,12 @@ def import_customers(request, file: UploadedFile):
     tenant = require_tenant(request)
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    from apps.billing.models import Subscription
+
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+    if not subscription or not subscription.is_access_allowed:
+        raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
+    check_plan_limit(tenant, "customers")
 
     from apps.customers.import_service import CustomerImportService
 

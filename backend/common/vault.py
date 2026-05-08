@@ -27,6 +27,41 @@ VAULT_CACHE_TTL = int(os.environ.get("VAULT_CACHE_TTL", "300"))
 # Module-level cache state
 _secrets_cache: dict = {}
 _cache_fetched_at: float = 0.0
+_cache_seen_version: str = ""
+
+_VAULT_CACHE_VERSION_KEY = "vault:secrets:version"
+
+
+def _read_shared_cache_version() -> str:
+    """Read cross-process Vault cache version from Django cache when available."""
+    try:
+        from django.core.cache import cache
+
+        return str(cache.get(_VAULT_CACHE_VERSION_KEY) or "")
+    except Exception as exc:
+        logger.debug("Vault: shared cache version unavailable: %s", exc)
+        return ""
+
+
+def _publish_shared_cache_invalidation() -> None:
+    """Publish a cache version bump so other workers drop stale Vault values."""
+    try:
+        from django.core.cache import cache
+
+        cache.set(_VAULT_CACHE_VERSION_KEY, str(time.time()), None)
+    except Exception as exc:
+        logger.debug("Vault: shared cache invalidation unavailable: %s", exc)
+
+
+def _clear_cache_if_shared_version_changed() -> None:
+    """Clear process cache when another worker has written Vault secrets."""
+    global _cache_seen_version
+
+    current_version = _read_shared_cache_version()
+    if not current_version or current_version == _cache_seen_version:
+        return
+    clear_cache()
+    _cache_seen_version = current_version
 
 
 def _get_vault_token() -> str:
@@ -50,6 +85,7 @@ def _fetch_vault_secrets() -> dict:
     """
     global _secrets_cache, _cache_fetched_at
 
+    _clear_cache_if_shared_version_changed()
     now = time.monotonic()
 
     # Return cached secrets if still within TTL
@@ -135,6 +171,56 @@ def get_secret(
 
     # 3. Default for non-strict callers.
     return default
+
+
+def put_secret(vault_key: str, value: str) -> bool:
+    """Write a secret value to Vault KV v2.
+
+    Args:
+        vault_key: Key name in the Vault secret path
+        value: The secret value to store
+
+    Returns:
+        True if the write succeeded, False otherwise.
+    """
+    vault_token = _get_vault_token()
+    if not VAULT_ADDR or not vault_token:
+        logger.warning("Vault not configured (address or token missing). Cannot write.")
+        return False
+
+    import json
+    import urllib.error
+    import urllib.request
+
+    # KV v2 write URL
+    url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH.replace('/data/', '/data/')}"
+    headers = {
+        "X-Vault-Token": vault_token,
+        "Content-Type": "application/json",
+    }
+
+    # Fetch existing data to merge
+    existing = _fetch_vault_secrets()
+    existing[vault_key] = value
+
+    payload = json.dumps({"data": existing}).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as response:
+            if response.status in (200, 204):
+                logger.info(
+                    "Vault: wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH
+                )
+                _publish_shared_cache_invalidation()
+                clear_cache()
+                return True
+    except urllib.error.URLError as exc:
+        logger.error("Vault: write failed (%s).", exc.reason)
+    except Exception as exc:
+        logger.error("Vault: unexpected write error (%s).", exc)
+
+    return False
 
 
 def clear_cache() -> None:

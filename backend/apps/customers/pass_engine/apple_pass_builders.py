@@ -331,13 +331,13 @@ def _build_fields_for_type(card, customer_pass) -> dict:
 def _build_locations(card) -> list:
     """Build location array from tenant locations for geo-push."""
     locations = []
-    
+
     # Locations belong to the Tenant, not the Card
     tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
-    
+
     if not tenant_locations:
         return locations
-        
+
     for loc in tenant_locations:  # Apple max: 10
         try:
             if loc.latitude and loc.longitude:

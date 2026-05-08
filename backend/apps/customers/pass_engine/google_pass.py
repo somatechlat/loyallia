@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from typing import Any
 
 import jwt  # PyJWT
 
@@ -56,6 +57,54 @@ def _load_service_account() -> dict | None:
     except Exception as exc:
         logger.error("Failed to load Google Service Account from Vault: %s", exc)
         return None
+
+
+def get_google_wallet_diagnostics() -> dict:
+    """Return diagnostic info about Google Wallet configuration (no secrets exposed)."""
+    from common.vault import get_secret
+
+    diagnostics: dict[str, Any] = {
+        "enabled": False,
+        "issuer_id_present": False,
+        "service_account_present": False,
+        "service_account_valid_json": False,
+        "service_account_has_required_fields": False,
+        "errors": [],
+    }
+
+    enabled = get_secret("google_wallet_enabled", default="false")
+    diagnostics["enabled"] = enabled.strip().lower() in {"1", "true", "yes", "on"}
+
+    issuer_id = get_secret("google_wallet_issuer_id", default="")
+    diagnostics["issuer_id_present"] = bool(issuer_id and issuer_id not in ("", "n/a", "dummy_issuer_id"))
+    if not diagnostics["issuer_id_present"]:
+        diagnostics["errors"].append("Missing or dummy GOOGLE_WALLET_ISSUER_ID in Vault")
+
+    sa_json_str = get_secret("google_service_account_json", default="")
+    diagnostics["service_account_present"] = bool(sa_json_str)
+    if not diagnostics["service_account_present"]:
+        diagnostics["errors"].append("Missing GOOGLE_SERVICE_ACCOUNT_JSON in Vault")
+        return diagnostics
+
+    try:
+        sa_data = json.loads(sa_json_str)
+        diagnostics["service_account_valid_json"] = True
+    except json.JSONDecodeError as exc:
+        diagnostics["errors"].append(f"GOOGLE_SERVICE_ACCOUNT_JSON is invalid JSON: {exc}")
+        return diagnostics
+
+    has_private_key = "private_key" in sa_data and bool(sa_data["private_key"])
+    has_client_email = "client_email" in sa_data and bool(sa_data["client_email"])
+    diagnostics["service_account_has_required_fields"] = has_private_key and has_client_email
+    if not diagnostics["service_account_has_required_fields"]:
+        missing = []
+        if not has_private_key:
+            missing.append("private_key")
+        if not has_client_email:
+            missing.append("client_email")
+        diagnostics["errors"].append(f"GOOGLE_SERVICE_ACCOUNT_JSON missing fields: {', '.join(missing)}")
+
+    return diagnostics
 
 
 def generate_google_wallet_url(customer_pass) -> str | None:

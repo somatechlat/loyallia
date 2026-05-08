@@ -47,6 +47,7 @@ from apps.billing.schemas import (
 )
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
+from common.plan_enforcement import get_current_usage
 from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.billing")
@@ -74,8 +75,18 @@ def list_plans(request: HttpRequest):
 
     from django.conf import settings
 
-    tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
-    trial_days = getattr(settings, "TRIAL_DAYS", 5)
+    from apps.tenants.models import PlatformSetting
+
+    tax_rate = Decimal(
+        str(
+            PlatformSetting.get_float(
+                "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
+            )
+        )
+    )
+    trial_days = PlatformSetting.get_int(
+        "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
+    )
 
     plans = SubscriptionPlan.objects.filter(is_active=True)
     result = []
@@ -109,6 +120,15 @@ def list_plans(request: HttpRequest):
                     "max_programs": plan.max_programs,
                     "max_notifications_month": plan.max_notifications_month,
                     "max_transactions_month": plan.max_transactions_month,
+                    "max_whatsapp_day": plan.max_whatsapp_day,
+                    "max_emails_month": plan.max_emails_month,
+                    "max_sms_day": plan.max_sms_day,
+                    "max_wallet_pushes_month": plan.max_wallet_pushes_month,
+                    "max_automations": plan.max_automations,
+                    "max_automation_executions_day": plan.max_automation_executions_day,
+                    "max_ai_queries_month": plan.max_ai_queries_month,
+                    "max_api_calls_day": plan.max_api_calls_day,
+                    "max_exports_month": plan.max_exports_month,
                 },
             }
         )
@@ -122,6 +142,7 @@ def list_plans(request: HttpRequest):
 
 
 @router.get("/subscription/", auth=jwt_auth, summary="Obtener suscripción actual")
+@require_role("OWNER")
 def get_subscription(request: HttpRequest):
     """Get the current tenant's subscription details."""
     tenant = require_tenant(request)
@@ -186,6 +207,7 @@ def get_subscription(request: HttpRequest):
 
 
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
+@require_role("OWNER")
 def get_usage(request: HttpRequest):
     """Return current plan usage metrics with real limits from SubscriptionPlan.
 
@@ -270,6 +292,33 @@ def get_usage(request: HttpRequest):
             "percentage": _pct(monthly_notifs, _limit("notifications_month")),
             "is_over_limit": monthly_notifs >= _limit("notifications_month"),
         },
+    }
+
+    for resource in [
+        "whatsapp_day",
+        "emails_month",
+        "sms_day",
+        "wallet_pushes_month",
+        "automations",
+        "automation_executions_day",
+        "api_calls_day",
+        "exports_month",
+    ]:
+        used = get_current_usage(tenant, resource)
+        limit = _limit(resource)
+        limits[resource] = {
+            "used": used,
+            "limit": limit,
+            "percentage": _pct(used, limit),
+            "is_over_limit": used >= limit,
+        }
+
+    ai_limit = _limit("ai_queries_month")
+    limits["ai_queries_month"] = {
+        "used": 0,
+        "limit": ai_limit,
+        "percentage": _pct(0, ai_limit),
+        "is_over_limit": ai_limit <= 0,
     }
 
     plan = subscription.subscription_plan if subscription else None

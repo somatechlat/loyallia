@@ -65,7 +65,7 @@ from apps.authentication.schemas import (
 from apps.authentication.tokens import (
     hash_token,
 )
-from apps.tenants.models import Tenant
+from apps.tenants.models import PlatformSetting, Tenant
 from common.messages import get_message
 from common.permissions import jwt_auth
 from common.rate_limit import get_client_ip
@@ -96,7 +96,12 @@ def register(request, payload: RegisterIn):
     if User.objects.filter(email=payload.email).exists():
         return RegisterOut(
             success=True,
-            message=get_message("TENANT_CREATED", days=settings.TRIAL_DAYS),
+            message=get_message(
+                "TENANT_CREATED",
+                days=PlatformSetting.get_int(
+                    "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
+                ),
+            ),
             tenant_id="",
             user_id="",
         )
@@ -432,11 +437,16 @@ def google_oauth_config(request):
     requires embedding it in frontend <script> tags and meta tags.
     It is NOT a secret. The frontend needs it to initialize the
     Google Identity Services (GSI) button via google.accounts.id.initialize().
+
+    PERF: Reads from Vault directly so SUPER_ADMIN updates take effect
+    without requiring a container restart.
     """
-    client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+    from common.vault import get_secret
+
+    client_id = get_secret("google_oauth_client_id", default="")
     return {
         "enabled": bool(client_id),
-        "client_id": client_id or "",
+        "client_id": client_id,
     }
 
 

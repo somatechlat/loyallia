@@ -27,6 +27,7 @@ from apps.notifications.whatsapp import client as wa_client
 from common.messages import get_message
 from common.permissions import jwt_auth
 from common.plan_enforcement import require_feature
+from common.vault import get_secret
 
 logger = logging.getLogger(__name__)
 
@@ -193,9 +194,11 @@ def _verify_bridge_api_key(request) -> None:
     SEC: Webhooks are called by the bridge service, not by users.
     Authentication via shared API key instead of JWT.
     """
-    from django.conf import settings
-
-    expected_key = getattr(settings, "WHATSAPP_BRIDGE_API_KEY", "")
+    expected_key = get_secret(
+        "whatsapp_bridge_api_key",
+        env_fallback="WHATSAPP_BRIDGE_API_KEY",
+        default="",
+    )
     if not expected_key:
         return  # Dev mode — no key configured
 

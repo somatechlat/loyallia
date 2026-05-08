@@ -787,7 +787,7 @@ Manage tenant subscription lifecycle: free trial, plan selection, payment, invoi
 | LYL-FR-BILL-002 | Trial SHALL include ALL FULL plan features with no credit card required | MUST |
 | LYL-FR-BILL-003 | System SHALL notify tenant at: 7 days, 3 days, 1 day before trial expiry | MUST |
 | LYL-FR-BILL-004 | Upon trial expiry without subscription: tenant account SHALL be suspended (read-only mode) | MUST |
-| LYL-FR-BILL-005 | System SHALL integrate with Bendo/PlacetoPay API for credit card payment processing | MUST |
+| LYL-FR-BILL-005 | System SHALL integrate with a pluggable payment gateway (Manual verification or future provider) for payment processing | MUST |
 | LYL-FR-BILL-006 | System SHALL apply correct IVA rate per country (12% for Ecuador) | MUST |
 | LYL-FR-BILL-007 | System SHALL issue invoice PDF per billing cycle | MUST |
 | LYL-FR-BILL-008 | System SHALL allow tenant to cancel subscription at any time; access continues until period end | MUST |
@@ -882,7 +882,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | LYL-FR-SADM-003 | Super Admin SHALL be able to suspend, reactivate, or delete any tenant | MUST |
 | LYL-FR-SADM-004 | Super Admin SHALL be able to extend trial period for any tenant | MUST |
 | LYL-FR-SADM-005 | Super Admin SHALL view platform-wide metrics: total tenants, MRR, total passes issued, total push sent | MUST |
-| LYL-FR-SADM-006 | Super Admin SHALL be able to impersonate any tenant for support (with audit log) | SHOULD |
+| LYL-FR-SADM-006 | Super Admin SHALL be able to impersonate any tenant for support. Impersonation SHALL require the Owner's 6-digit security PIN and a written justification (min 10 chars). 3 failed PIN attempts SHALL lock impersonation for 15 minutes. All attempts (success/failure) SHALL be logged in the immutable audit log. (LYL-FR-SEC-030) | MUST |
 | LYL-FR-SADM-007 | Super Admin panel SHALL display system health: API response times, queue depth, error rate | MUST |
 | LYL-FR-SADM-008 | Super Admin SHALL be able to broadcast a system notification to all tenants | SHOULD |
 | LYL-FR-SADM-009 | All Super Admin actions SHALL be logged in an immutable audit log | MUST |
@@ -962,6 +962,77 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | LYL-SEC-013 | Apple PKPass SHALL be signed with valid Apple certificate; invalid signatures rejected | MUST |
 | LYL-SEC-014 | LOPDP compliance: customer consent captured at enrollment; right-to-delete implemented | MUST |
 | LYL-SEC-015 | Backup files SHALL be encrypted at rest in MinIO | MUST |
+| LYL-SEC-030 | Super Admin impersonation SHALL require the Owner's 6-digit numeric security PIN (Argon2 hashed). 3 failed attempts SHALL trigger 15-minute lockout via Redis TTL counter. Every attempt SHALL be audit-logged with status (success/denied). | MUST |
+| LYL-SEC-031 | Owner SHALL set security PIN via `POST /tenants/security-pin/` with current password verification. PIN format: exactly 6 numeric digits. | MUST |
+| LYL-SEC-032 | All SMTP credentials SHALL be stored in HashiCorp Vault KV v2 (keys: `email_host_user`, `email_host_password`). NEVER in code or Git. | MUST |
+
+---
+
+## 19.2 LOPDP DATA RIGHTS (Ecuador — Ley Orgánica de Protección de Datos Personales)
+
+> Added: 2026-05-08 — Stabilization Sprint LYL-SRS-ADD-002
+
+### 19.2.1 Right of Access / Data Portability (Art. 17 / Art. 20)
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-DPR-020 | OWNER SHALL be able to export ALL tenant data via Settings → "Datos y Privacidad" → "Exportar Todos Mis Datos" | MUST |
+| LYL-FR-DPR-020.1 | Export SHALL produce a ZIP file containing JSON per data model + CSV for customers | MUST |
+| LYL-FR-DPR-020.2 | Export ZIP SHALL include: tenant_info, owner_profile, team_members, customers (JSON+CSV), loyalty_programs, transactions, subscriptions, invoices, locations, notifications, automations, analytics, audit_log (read-only copy), _metadata | MUST |
+| LYL-FR-DPR-020.3 | Each file SHALL include a `_metadata` header with export date, record count, and LOPDP notice | MUST |
+| LYL-FR-DPR-020.4 | Export endpoint: `GET /tenants/data-export/` — OWNER role only, enforced by `@require_role(OWNER)` and `@enforce_limit("exports_month")` | MUST |
+| LYL-FR-DPR-020.5 | Export SHALL be audit-logged via `log_data_export(resource_type="full_tenant_export")` | MUST |
+
+### 19.2.2 Customer Data Export/Import (Art. 20)
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-DPR-021 | Customers page SHALL display a combo dropdown ("Datos") with two options: "Exportar CSV" and "Importar DB (XLS/CSV)" | MUST |
+| LYL-FR-DPR-021.1 | "Exportar CSV" SHALL trigger `GET /customers/export/` and download the customer database as CSV | MUST |
+| LYL-FR-DPR-021.2 | "Importar DB" SHALL open the existing import modal with LOPDP consent checkbox | MUST |
+| LYL-FR-DPR-021.3 | Both actions SHALL be visible only to OWNER role | MUST |
+
+### 19.2.3 Export Counter Fix
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-DPR-022 | `plan_enforcement._count_exports_month()` SHALL filter by `action="EXPORT"` (matching `AuditAction.EXPORT`), not `"data_export"` | MUST |
+
+### 19.2.4 Right of Erasure / Account Deletion (Art. 18)
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-DPR-025 | OWNER SHALL be able to delete their entire account via Settings → "Datos y Privacidad" → "Eliminar Mi Cuenta" | MUST |
+| LYL-FR-DPR-025.1 | Deletion SHALL require typing the exact confirmation phrase: `"ACEPTO ELIMINACIÓN COMPLETA"` | MUST |
+| LYL-FR-DPR-025.2 | Deletion SHALL require current password verification | MUST |
+| LYL-FR-DPR-025.3 | Upon confirmation: Tenant.is_active SHALL be set to False immediately (no access) | MUST |
+| LYL-FR-DPR-025.4 | System SHALL schedule hard deletion via Celery task with 24-hour grace period | MUST |
+| LYL-FR-DPR-025.5 | System SHALL generate and return a full data export ZIP before deactivation (Art. 17 compliance) | MUST |
+| LYL-FR-DPR-025.6 | Hard deletion SHALL cascade in order: Customers→Transactions→Programs→Campaigns→Automations→Notifications→Locations→Subscriptions→Invoices→PaymentMethods→Users→Tenant | MUST |
+| LYL-FR-DPR-025.7 | AuditLog entries SHALL NOT be deleted (7-year retention). Actor data SHALL be anonymized: `actor_email → "[DELETED]"`, `details → {}` | MUST |
+| LYL-FR-DPR-025.8 | Tenant model SHALL include `scheduled_deletion_at` (DateTimeField, nullable) to track pending deletions | MUST |
+| LYL-FR-DPR-025.9 | Endpoint: `POST /tenants/delete-account/` — OWNER role only | MUST |
+
+### 19.2.5 Payment Gateway Architecture
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-PAY-010 | BendoGateway class SHALL be removed from the codebase. The `_GATEWAY_REGISTRY` SHALL contain only `"manual"` and `"disabled"` providers. All Bendo/PlacetoPay references SHALL be removed from code and documentation. | MUST |
+| LYL-FR-PAY-011 | `POST /billing/subscribe/` SHALL create a Subscription (status=past_due) and Invoice (status=open), returning `{success, status: "pending_verification", invoice_id}`. The endpoint SHALL NOT raise HTTP 402. | MUST |
+| LYL-FR-PAY-011.1 | SuperAdmin SHALL confirm payment via `POST /admin/billing/confirm-payment/{invoice_id}/`, which SHALL call `invoice.mark_paid()` and `subscription.activate_paid()` | MUST |
+
+### 19.2.6 Owner Welcome Email
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-COM-012 | When SuperAdmin creates a tenant, the system SHALL send a welcome email to the new Owner containing: temporary password, login URL, and trial period information | MUST |
+| LYL-FR-COM-012.1 | Email SHALL be sent via Django SMTP backend using credentials from Vault (`email_host_user`, `email_host_password`) | MUST |
+
+### 19.2.7 Architectural Quality
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-NFR-ARCH-040 | Settings page (`settings/page.tsx`) SHALL be modularized: WhatsApp wizard extracted to `WhatsAppWizard.tsx`, LOPDP section to `DataPrivacySection.tsx`. No file SHALL exceed 500 lines. | MUST |
 
 ---
 
@@ -1004,7 +1075,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 2. Apple APN requires a valid Apple Developer Program membership and PassKit certificate.
 3. Google Wallet API requires a Google Cloud project with Wallet API enabled.
 4. PKPass files must be re-signed upon any pass field update.
-5. Bendo/PlacetoPay is the payment gateway; pluggable architecture supports future alternatives.
+5. Manual payment verification is the default gateway; pluggable architecture supports future provider alternatives.
 6. All open-source components must have permissive licenses (MIT, Apache 2.0, BSD).
 
 ### 21.2 Business Constraints
@@ -1018,7 +1089,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 1. Businesses have reliable internet for dashboard and scanner operations.
 2. Customers have iOS 15+ or Android 10+ with Apple/Google Wallet installed.
 3. All push notification device tokens are collected upon pass installation.
-4. Bendo/PlacetoPay is available in the target market (Ecuador/LATAM); pluggable gateway architecture supports alternatives.
+4. Manual payment verification is the default; pluggable gateway architecture supports future providers (e.g., PayPhone, Kushki) when available in Ecuador/LATAM.
 5. Email delivery depends on a configured SMTP provider (e.g., SendGrid, Mailjet).
 
 ---

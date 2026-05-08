@@ -24,6 +24,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showDataMenu, setShowDataMenu] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<{
@@ -168,16 +169,41 @@ export default function CustomersPage() {
           </p>
         </div>
         {user?.role === "OWNER" && (
-          <button
-            onClick={() => {
-              setShowImportModal(true);
-              setConsentGiven(false);
-            }}
-            className="btn-secondary"
-            id="open-import-modal-btn"
-          >
-            Importar DB (XLS/CSV)
-          </button>
+          <div className="relative" id="data-combo-wrapper">
+            <button
+              onClick={() => setShowDataMenu(prev => !prev)}
+              className="btn-secondary flex items-center gap-2"
+              id="data-combo-btn"
+            >
+              <span>Datos</span>
+              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
+            </button>
+            {showDataMenu && (
+              <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-surface-800 rounded-xl shadow-lg border border-surface-200 dark:border-surface-700 z-50 py-1">
+                <button
+                  onClick={() => {
+                    setShowDataMenu(false);
+                    window.location.href = customersApi.exportCsvUrl();
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 flex items-center gap-2"
+                  id="export-csv-btn"
+                >
+                  📥 Exportar Clientes CSV
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDataMenu(false);
+                    setShowImportModal(true);
+                    setConsentGiven(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 flex items-center gap-2"
+                  id="open-import-modal-btn"
+                >
+                  📤 Importar DB (XLS/CSV)
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

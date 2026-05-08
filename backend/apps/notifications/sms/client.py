@@ -27,10 +27,21 @@ import logging
 
 from django.conf import settings
 
+from common.vault import get_secret
+
 logger = logging.getLogger(__name__)
 
 # Twilio SMS body limit (long SMS / concatenated SMS support)
 _MAX_SMS_LENGTH = 1600
+
+
+def _twilio_setting(key: str, env_name: str, setting_name: str) -> str:
+    """Read the current Vault-backed Twilio setting with env fallback."""
+    return get_secret(
+        key,
+        env_fallback=env_name,
+        default=getattr(settings, setting_name, ""),
+    )
 
 
 def _get_twilio_client():
@@ -41,8 +52,12 @@ def _get_twilio_client():
     """
     from twilio.rest import Client
 
-    account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
-    auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
+    account_sid = _twilio_setting(
+        "twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID"
+    )
+    auth_token = _twilio_setting(
+        "twilio_auth_token", "TWILIO_AUTH_TOKEN", "TWILIO_AUTH_TOKEN"
+    )
 
     if not account_sid or not auth_token:
         raise RuntimeError(
@@ -70,7 +85,9 @@ def send_sms(phone: str, message: str) -> dict:
     if not phone:
         return {"success": False, "error": "No recipient phone number provided"}
 
-    from_number = getattr(settings, "TWILIO_FROM_NUMBER", "")
+    from_number = _twilio_setting(
+        "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
+    )
     if not from_number:
         raise RuntimeError(
             "Twilio sender number not configured. Set twilio_from_number in Vault."
@@ -110,7 +127,9 @@ def send_sms_bulk(recipients: list[dict]) -> dict:
     Returns:
         {"succeeded": int, "failed": int, "results": list[dict]}
     """
-    from_number = getattr(settings, "TWILIO_FROM_NUMBER", "")
+    from_number = _twilio_setting(
+        "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
+    )
     if not from_number:
         raise RuntimeError(
             "Twilio sender number not configured. Set twilio_from_number in Vault."
@@ -150,7 +169,13 @@ def send_sms_bulk(recipients: list[dict]) -> dict:
 
 def is_sms_available() -> bool:
     """Check if Twilio SMS is properly configured and available."""
-    account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
-    auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
-    from_number = getattr(settings, "TWILIO_FROM_NUMBER", "")
+    account_sid = _twilio_setting(
+        "twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID"
+    )
+    auth_token = _twilio_setting(
+        "twilio_auth_token", "TWILIO_AUTH_TOKEN", "TWILIO_AUTH_TOKEN"
+    )
+    from_number = _twilio_setting(
+        "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
+    )
     return bool(account_sid and auth_token and from_number)

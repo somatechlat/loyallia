@@ -122,11 +122,8 @@ PRODUCTION_REQUIRED_VAULT_KEYS = [
     "google_wallet_issuer_id",
     "google_service_account_json",
     "google_wallet_enabled",
-    "apple_wallet_enabled",
     "payment_gateway_enabled",
     "payment_gateway_provider",
-    "email_host_user",
-    "email_host_password",
 ]
 
 APPLE_REQUIRED_VAULT_KEYS = [
@@ -141,6 +138,11 @@ PAYMENT_REQUIRED_VAULT_KEYS = [
     "payment_gateway_login",
     "payment_gateway_tran_key",
     "payment_gateway_webhook_secret",
+]
+
+EMAIL_REQUIRED_VAULT_KEYS = [
+    "email_host_user",
+    "email_host_password",
 ]
 
 
@@ -191,6 +193,10 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
             required_keys.extend(APPLE_REQUIRED_VAULT_KEYS)
         if _truthy(secrets.get("payment_gateway_enabled")):
             required_keys.extend(PAYMENT_REQUIRED_VAULT_KEYS)
+        # Only require SMTP credentials if email is actively configured.
+        # An empty email_host_user means "no SMTP configured" — valid state.
+        if str(secrets.get("email_host_user", "")).strip():
+            required_keys.extend(EMAIL_REQUIRED_VAULT_KEYS)
 
         for key in required_keys:
             if not str(secrets.get(key, "")).strip():

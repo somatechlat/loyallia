@@ -46,6 +46,7 @@ INVOICE_STATUS_LABELS = {
 
 
 @router.get("/payment-methods/", auth=jwt_auth, summary="Listar metodos de pago")
+@require_role("OWNER")
 def list_payment_methods(request: HttpRequest):
     """List all active payment methods for the tenant."""
     tenant = require_tenant(request)
@@ -168,6 +169,7 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
 
 
 @router.get("/invoices/", auth=jwt_auth, summary="Listar facturas")
+@require_role("OWNER")
 def list_invoices(request: HttpRequest, limit: int = 20, offset: int = 0):
     """List invoices for the tenant."""
     tenant = require_tenant(request)
@@ -201,6 +203,7 @@ def list_invoices(request: HttpRequest, limit: int = 20, offset: int = 0):
 
 
 @router.get("/invoices/{invoice_id}/", auth=jwt_auth, summary="Detalle de factura")
+@require_role("OWNER")
 def get_invoice(request: HttpRequest, invoice_id: str):
     """Get detailed invoice information."""
     invoice = get_object_or_404(Invoice, id=invoice_id, tenant=require_tenant(request))

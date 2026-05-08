@@ -22,157 +22,21 @@ from apps.customers.models import Customer, CustomerPass
 
 # Engagement
 from apps.notifications.models import Notification, NotificationType
-from apps.tenants.models import Location, Plan, Tenant
-
-# Transactions
-from apps.transactions.models import Transaction, TransactionType
 
 # =============================================================================
 # Authentic Ecuadorian / Latin American Name Pools
 # =============================================================================
-EC_FIRST_NAMES_M = [
-    "Carlos",
-    "Juan",
-    "Sebastián",
-    "Andrés",
-    "Diego",
-    "Mateo",
-    "Santiago",
-    "Ricardo",
-    "Fernando",
-    "Alejandro",
-    "Daniel",
-    "Gabriel",
-    "Luis",
-    "Roberto",
-    "Eduardo",
-    "Francisco",
-    "Emilio",
-    "Pablo",
-    "Nicolás",
-    "Martín",
-    "Cristian",
-    "Xavier",
-    "Leonardo",
-    "Javier",
-    "Jorge",
-    "Patricio",
-    "Mauricio",
-    "Esteban",
-    "Héctor",
-    "Iván",
-    "Óscar",
-    "Marco",
-    "Adrián",
-    "Camilo",
-    "Tomás",
-    "Simón",
-    "Samuel",
-    "Josué",
-]
-EC_FIRST_NAMES_F = [
-    "María",
-    "Ana",
-    "Valentina",
-    "Camila",
-    "Sofía",
-    "Isabella",
-    "Paula",
-    "Daniela",
-    "Gabriela",
-    "Andrea",
-    "Fernanda",
-    "Carolina",
-    "Lucía",
-    "Lorena",
-    "Patricia",
-    "Verónica",
-    "Cristina",
-    "Diana",
-    "Alejandra",
-    "Natalia",
-    "Paola",
-    "Estefanía",
-    "Catalina",
-    "Juliana",
-    "Valeria",
-    "Mariana",
-    "Monserrat",
-    "Rocío",
-    "Karina",
-    "Soledad",
-    "Elena",
-    "Micaela",
-    "Renata",
-    "Ximena",
-    "Tatiana",
-    "Priscila",
-    "Jessica",
-]
-EC_LASTNAMES = [
-    "García",
-    "Rodríguez",
-    "Martínez",
-    "López",
-    "González",
-    "Hernández",
-    "Pérez",
-    "Sánchez",
-    "Ramírez",
-    "Torres",
-    "Flores",
-    "Rivera",
-    "Gómez",
-    "Díaz",
-    "Morales",
-    "Reyes",
-    "Cruz",
-    "Ortega",
-    "Castillo",
-    "Jiménez",
-    "Vargas",
-    "Romero",
-    "Herrera",
-    "Medina",
-    "Aguilar",
-    "Vega",
-    "Castro",
-    "Ramos",
-    "Zambrano",
-    "Cevallos",
-    "Pacheco",
-    "Espinoza",
-    "Salazar",
-    "Mendoza",
-    "Guerrero",
-    "Paredes",
-    "Cárdenas",
-    "Suárez",
-    "Chávez",
-    "Delgado",
-    "Andrade",
-    "Vinueza",
-    "Jaramillo",
-    "Villacís",
-    "Benalcázar",
-    "Proaño",
-    "Córdova",
-    "Intriago",
-]
-
-EC_CITIES = [
-    "Quito",
-    "Guayaquil",
-    "Cuenca",
-    "Ambato",
-    "Manta",
-    "Riobamba",
-    "Loja",
-    "Ibarra",
-]
-
 # Phone prefixes for Ecuador
-EC_PHONE_PREFIXES = ["+59398", "+59399", "+59396", "+59397"]
+from apps.tenants.management.commands.seed_constants import (
+    EC_FIRST_NAMES_F,
+    EC_FIRST_NAMES_M,
+    EC_LASTNAMES,
+    EC_PHONE_PREFIXES,
+)
+from apps.tenants.models import Location, Plan, Tenant
+
+# Transactions
+from apps.transactions.models import Transaction, TransactionType
 
 
 class Command(BaseCommand):

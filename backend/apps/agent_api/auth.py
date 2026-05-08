@@ -54,6 +54,9 @@ class AgentAPIKeyAuth(HttpBearer):
                 api_key.tenant.slug,
             )
             return None
+        if subscription.get_limit("api_calls_day") <= 0:
+            logger.warning("Agent API access denied — daily API quota disabled")
+            return None
 
         # Attach tenant to request
         request.tenant = api_key.tenant
@@ -62,6 +65,28 @@ class AgentAPIKeyAuth(HttpBearer):
         # Update last_used timestamp
         api_key.last_used_at = timezone.now()
         api_key.save(update_fields=["last_used_at"])
+
+        # Log the API call for rate-limiting and audit
+        from apps.agent_api.models import AgentAPICallLog
+
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        calls_today = AgentAPICallLog.objects.filter(
+            tenant=api_key.tenant,
+            created_at__gte=today_start,
+        ).count()
+        if calls_today >= subscription.get_limit("api_calls_day"):
+            logger.warning(
+                "Agent API quota exceeded for tenant %s",
+                api_key.tenant.slug,
+            )
+            return None
+
+        AgentAPICallLog.objects.create(
+            tenant=api_key.tenant,
+            api_key=api_key,
+            endpoint=request.path,
+            method=request.method,
+        )
 
         return api_key
 

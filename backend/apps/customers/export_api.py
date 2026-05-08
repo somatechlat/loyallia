@@ -14,6 +14,7 @@ from apps.audit.service import log_data_export
 from apps.customers.models import Customer
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
+from common.plan_enforcement import check_feature_access, check_plan_limit
 from common.request import require_tenant
 
 logger = logging.getLogger(__name__)
@@ -38,9 +39,11 @@ def export_customers(request):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    customers = Customer.objects.filter(tenant=require_tenant(request)).order_by(
-        "created_at"
-    )
+    tenant = require_tenant(request)
+    check_feature_access(tenant, "data_export")
+    check_plan_limit(tenant, "exports_month")
+
+    customers = Customer.objects.filter(tenant=tenant).order_by("created_at")
 
     # LOPDP Forensic Audit Log
     log_data_export(

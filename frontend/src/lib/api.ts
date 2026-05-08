@@ -140,6 +140,7 @@ export const customersApi = {
   segments: () => api.get('/api/v1/analytics/segments/'),
   segmentMembers: (segId: string, params?: Record<string, unknown>) =>
     api.get(`/api/v1/customers/segments/${segId}/members/`, { params }),
+  exportCsvUrl: () => '/api/v1/customers/export/',
 };
 
 export const programsApi = {
@@ -187,6 +188,19 @@ export const billingApi = {
   subscription: () => api.get('/api/v1/billing/subscription/'),
   usage: () => api.get('/api/v1/billing/usage/'),
   invoices: () => api.get('/api/v1/billing/invoices/'),
+};
+
+export const superAdminApi = {
+  plans: () => api.get('/api/v1/admin/plans/'),
+  createPlan: (data: Record<string, unknown>) => api.post('/api/v1/admin/plans/', data),
+  updatePlan: (id: string, data: Record<string, unknown>) => api.patch(`/api/v1/admin/plans/${id}/`, data),
+  deactivatePlan: (id: string) => api.delete(`/api/v1/admin/plans/${id}/`),
+  metrics: () => api.get('/api/v1/admin/platform/metrics/'),
+  integrations: () => api.get('/api/v1/admin/platform/integrations/'),
+  locations: () => api.get('/api/v1/admin/platform/locations/'),
+  broadcast: (data: { subject: string; message: string }) => api.post('/api/v1/admin/broadcast/', data),
+  updateIntegrationSecret: (integrationKey: string, key: string, value: string) =>
+    api.put(`/api/v1/admin/platform/integrations/${integrationKey}/secret/`, { key, value }),
 };
 
 export const transactionsApi = {

@@ -100,6 +100,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text="ISO 639-1 code (es, en, fr, de). Empty = tenant default.",
     )
 
+    # Security PIN for impersonation verification (LYL-SEC-030/031)
+    security_pin_hash = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        verbose_name="PIN de seguridad (hash)",
+        help_text="Argon2-hashed 6-digit PIN set by OWNER for impersonation verification.",
+    )
+
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -185,6 +194,32 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.failed_login_count = 0
         self.locked_until = None
         self.save(update_fields=["failed_login_count", "locked_until", "updated_at"])
+
+    # ── Security PIN (LYL-SEC-030/031) ──────────────────────────────
+
+    def set_security_pin(self, pin: str) -> None:
+        """Hash and store a 6-digit security PIN for impersonation verification."""
+        import re
+
+        from django.contrib.auth.hashers import make_password
+
+        if not re.fullmatch(r"\d{6}", pin):
+            raise ValueError("PIN must be exactly 6 numeric digits.")
+        self.security_pin_hash = make_password(pin)
+        self.save(update_fields=["security_pin_hash", "updated_at"])
+
+    def verify_security_pin(self, pin: str) -> bool:
+        """Verify a PIN against the stored hash. Returns False if no PIN is set."""
+        from django.contrib.auth.hashers import check_password
+
+        if not self.security_pin_hash:
+            return False
+        return check_password(pin, self.security_pin_hash)
+
+    @property
+    def has_security_pin(self) -> bool:
+        """Check if the user has configured a security PIN."""
+        return bool(self.security_pin_hash)
 
 
 class RefreshToken(models.Model):

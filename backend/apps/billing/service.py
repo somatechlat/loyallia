@@ -33,8 +33,10 @@ class BillingService:
         Returns:
             list of plan dicts with pricing, limits, and features
         """
-        tax_rate = Decimal(str(getattr(settings, "TAX_RATE_ECUADOR", "0.15")))
-        trial_days = getattr(settings, "TRIAL_DAYS", 5)
+        from apps.tenants.models import PlatformSetting
+
+        tax_rate = Decimal(str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15))))
+        trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
         plans = SubscriptionPlan.objects.filter(is_active=True)
         result = []

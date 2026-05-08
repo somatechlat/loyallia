@@ -1,12 +1,10 @@
 """
 Loyallia Django Settings -- Test Workbench
 
-Production-identical database path:
+Database path:
   - Test DB creation + migrations → direct PostgreSQL (PgBouncer can't do DDL)
-  - All test queries → PgBouncer (same as production runtime)
-
-SEC: Tests run through the same connection pooler as production to catch
-     real-world session/connection issues.
+  - All test queries → direct PostgreSQL (PgBouncer transaction mode breaks
+    Django TestCase savepoints; see LYL-TEST-NOTE-001)
 
 Run `docker compose up -d` before running tests.
 """
@@ -25,15 +23,19 @@ MIDDLEWARE = [
 ]
 
 # ---------------------------------------------------------------------------
-# DATABASE — Production-identical: PgBouncer for queries, direct PG for DDL
+# DATABASE — Direct PostgreSQL for both DDL and queries in tests
 # ---------------------------------------------------------------------------
 _db_password = os.environ.get("POSTGRES_PASSWORD", "")
 _db_user = os.environ.get("POSTGRES_USER", "loyallia")
 _db_name = os.environ.get("POSTGRES_DB", "loyallia")
-_pg_direct_host = os.environ.get("POSTGRES_HOST", "localhost")
-_pg_direct_port = os.environ.get("POSTGRES_PORT", "33900")
-_pgbouncer_host = os.environ.get("PGBOUNCER_HOST", "localhost")
-_pgbouncer_port = os.environ.get("PGBOUNCER_PORT", "33901")
+
+# Detect Docker environment so tests work both inside containers and on host
+if os.path.exists("/.dockerenv"):
+    _pg_direct_host = os.environ.get("POSTGRES_HOST", "postgres")
+    _pg_direct_port = os.environ.get("POSTGRES_PORT", "5432")
+else:
+    _pg_direct_host = os.environ.get("POSTGRES_HOST", "localhost")
+    _pg_direct_port = os.environ.get("POSTGRES_PORT", "33900")
 
 # If Vault is available, use Vault password
 if os.environ.get("VAULT_TOKEN_FILE") or os.environ.get("VAULT_ADDR"):
@@ -47,24 +49,25 @@ if os.environ.get("VAULT_TOKEN_FILE") or os.environ.get("VAULT_ADDR"):
         pass
 
 DATABASES = {
-    # Default: PgBouncer — production-identical query path
+    # Default: direct PostgreSQL — PgBouncer transaction mode breaks Django
+    # TestCase savepoints, so we bypass PgBouncer entirely for tests.
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": _db_name,
         "USER": _db_user,
         "PASSWORD": _db_password,
-        "HOST": _pgbouncer_host,
-        "PORT": _pgbouncer_port,
+        "HOST": _pg_direct_host,
+        "PORT": _pg_direct_port,
         "CONN_MAX_AGE": 0,
         "CONN_HEALTH_CHECKS": False,
         "TEST": {
             "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
-            # CREATE_DB: use the 'direct' alias (bypass PgBouncer for DDL)
+            # CREATE_DB: handled by conftest.py / test runner via 'direct' alias
             "CREATE_DB": False,
         },
     },
-    # Direct: used for DDL (CREATE/DROP DATABASE, migrations)
-    # PgBouncer's transaction mode can't handle these operations
+    # Direct: same as default; kept for compatibility with PgBouncerTestRunner
+    # and conftest.py which reference settings.DATABASES["direct"].
     "direct": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": _db_name,
@@ -78,12 +81,11 @@ DATABASES = {
     },
 }
 
-# Route migrations to 'direct' — same router as production
-DATABASE_ROUTERS = ["common.db_routers.PgBouncerRouter"]
+# Disable PgBouncer router in tests — direct PostgreSQL for everything
+DATABASE_ROUTERS = []
 
 # ---------------------------------------------------------------------------
-# CUSTOM TEST RUNNER — Handles PgBouncer DDL limitations
-# Creates/migrates test DB via 'direct', routes queries via PgBouncer
+# CUSTOM TEST RUNNER — Handles test DB create/drop via direct PostgreSQL
 # ---------------------------------------------------------------------------
 TEST_RUNNER = "common.test_runner.PgBouncerTestRunner"
 

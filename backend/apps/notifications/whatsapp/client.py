@@ -15,6 +15,8 @@ import logging
 import httpx
 from django.conf import settings
 
+from common.vault import get_secret
+
 logger = logging.getLogger(__name__)
 
 # Connection timeout: 10s connect, 30s read (QR gen can take time)
@@ -27,8 +29,16 @@ def _get_client() -> httpx.Client:
     PERF: Creates a new client per call. For Celery tasks that send
     many messages, callers should create a single client and pass it.
     """
-    base_url = getattr(settings, "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001")
-    api_key = getattr(settings, "WHATSAPP_BRIDGE_API_KEY", "")
+    base_url = get_secret(
+        "whatsapp_bridge_url",
+        env_fallback="WHATSAPP_BRIDGE_URL",
+        default=getattr(settings, "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
+    )
+    api_key = get_secret(
+        "whatsapp_bridge_api_key",
+        env_fallback="WHATSAPP_BRIDGE_API_KEY",
+        default=getattr(settings, "WHATSAPP_BRIDGE_API_KEY", ""),
+    )
 
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -84,7 +94,7 @@ def send_message(
     Raises:
         httpx.HTTPStatusError: If bridge returns an error
     """
-    payload = {
+    payload: dict[str, str | dict | None] = {
         "tenant_id": str(tenant_id),
         "phone": phone,
         "message": message,

@@ -31,7 +31,7 @@ class TenantOut(BaseModel):
             id=str(t.id),
             name=t.name,
             slug=t.slug,
-            plan=t.plan,
+            plan=t.plan,  # type: ignore[arg-type]
             is_active=t.is_active,
             trial_days_remaining=t.trial_days_remaining,
             logo_url=t.logo_url,

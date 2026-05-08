@@ -79,6 +79,20 @@ def _is_wallet_provider_enabled(card, provider: str) -> bool:
     return mode == "both" or mode == provider
 
 
+def _validate_pass_is_accessible(customer_pass):
+    """Verify the pass belongs to an active customer and an active tenant.
+
+    SEC: Prevents random UUID probing from consuming CPU for .pkpass
+    generation or Google JWT signing.
+    """
+    if not customer_pass.card.tenant.is_active:
+        raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
+    if not customer_pass.customer.is_active:
+        raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
+    if not customer_pass.is_active:
+        raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
+
+
 # =============================================================================
 # PUBLIC CARD INFO
 # =============================================================================
@@ -148,6 +162,8 @@ def download_apple_pass(request, pass_id: str):
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
+    _validate_pass_is_accessible(customer_pass)
+
     if not _is_wallet_provider_enabled(customer_pass.card, "apple"):
         raise HttpError(404, get_message("PASS_WALLET_PROVIDER_DISABLED"))
 
@@ -209,6 +225,8 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
+    _validate_pass_is_accessible(customer_pass)
+
     if not _is_wallet_provider_enabled(customer_pass.card, "google"):
         raise HttpError(404, get_message("PASS_WALLET_PROVIDER_DISABLED"))
 
@@ -246,11 +264,13 @@ def get_wallet_status(request, pass_id: str):
     from apps.customers.pass_engine.google_pass import is_google_wallet_configured
 
     try:
-        customer_pass = CustomerPass.objects.select_related("card").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
+
+    _validate_pass_is_accessible(customer_pass)
 
     apple_available = (
         _is_wallet_provider_enabled(customer_pass.card, "apple")

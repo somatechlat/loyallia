@@ -80,3 +80,50 @@ class AgentAPIKey(models.Model):
     def hash_key(cls, raw_key: str) -> str:
         """Hash a raw API key for comparison."""
         return hashlib.sha256(raw_key.encode()).hexdigest()
+
+
+class AgentAPICallLog(models.Model):
+    """
+    Log of every Agent API call for rate-limiting and audit purposes.
+    One row per call. Expired rows are cleaned by a periodic Celery task.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name="agent_api_call_logs",
+        verbose_name="Negocio",
+    )
+    api_key = models.ForeignKey(
+        AgentAPIKey,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="call_logs",
+        verbose_name="Clave de API",
+    )
+    endpoint = models.CharField(
+        max_length=255,
+        verbose_name="Endpoint",
+        help_text="URL path of the API call",
+    )
+    method = models.CharField(
+        max_length=10,
+        verbose_name="Método HTTP",
+    )
+    status_code = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Código de respuesta",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de llamada")
+
+    class Meta:
+        db_table = "loyallia_agent_api_call_logs"
+        verbose_name = "Log de llamada API (Agente)"
+        verbose_name_plural = "Logs de llamadas API (Agentes)"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["tenant", "created_at"]),
+        ]

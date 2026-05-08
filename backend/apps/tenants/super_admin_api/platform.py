@@ -2,7 +2,6 @@
 Loyallia — Super Admin API: Platform metrics, locations map, broadcast, and plan CRUD
 """
 
-import json
 import logging
 import uuid
 from datetime import timedelta
@@ -16,8 +15,21 @@ from ninja import Router
 from ninja.errors import HttpError
 
 from apps.authentication.models import User, UserRole
-from apps.billing.models import Invoice, SubscriptionPlan
-from apps.tenants.models import Location, Plan, Tenant
+from apps.billing.models import (
+    Invoice,
+    Subscription,
+    SubscriptionPlan,
+    SubscriptionStatus,
+)
+from apps.tenants.models import Location, PlatformSetting, Tenant
+from apps.tenants.super_admin_api.integration_config import (
+    ALLOWED_INTEGRATION_KEYS,
+    additional_integrations,
+)
+from apps.tenants.super_admin_api.plan_validation import (
+    plan_to_config,
+    validate_plan_config,
+)
 from apps.tenants.super_admin_api.schemas import (
     BroadcastIn,
     MessageOut,
@@ -26,6 +38,9 @@ from apps.tenants.super_admin_api.schemas import (
     PlanUpdateIn,
     PlatformIntegrationOut,
     PlatformMetricsOut,
+    PlatformSettingOut,
+    PlatformSettingUpdateIn,
+    VaultSecretUpdateIn,
 )
 from common.messages import get_message
 from common.permissions import is_super_admin, jwt_auth
@@ -83,11 +98,18 @@ def platform_metrics(request):
     except Exception:
         total_customers = 0
 
+    trial_tenants = Subscription.objects.filter(
+        status=SubscriptionStatus.TRIALING
+    ).count()
+    suspended_tenants = Subscription.objects.filter(
+        status=SubscriptionStatus.SUSPENDED
+    ).count()
+
     return PlatformMetricsOut(
         total_tenants=total_tenants,
         active_tenants=active_tenants,
-        trial_tenants=Tenant.objects.filter(plan=Plan.TRIAL).count(),
-        suspended_tenants=Tenant.objects.filter(plan=Plan.SUSPENDED).count(),
+        trial_tenants=trial_tenants,
+        suspended_tenants=suspended_tenants,
         total_users=User.objects.count(),
         total_locations=Location.objects.count(),
         total_customers=total_customers,
@@ -108,7 +130,7 @@ def all_platform_locations(request):
     locations = Location.objects.select_related("tenant").filter(
         latitude__isnull=False, longitude__isnull=False, is_active=True
     )
-    return [
+    integrations = [
         {
             "id": str(loc.id),
             "name": loc.name,
@@ -122,6 +144,8 @@ def all_platform_locations(request):
         }
         for loc in locations
     ]
+    integrations.extend(additional_integrations())
+    return integrations
 
 
 @router.get(
@@ -133,27 +157,60 @@ def platform_integrations(request):
     """Return platform integration status without exposing secret values."""
     _require_super_admin(request)
 
-    from apps.customers.pass_engine.apple_pass import is_apple_wallet_configured
-    from apps.customers.pass_engine.google_pass import is_google_wallet_configured
+    from apps.customers.pass_engine.apple_pass import (
+        get_apple_wallet_diagnostics,
+    )
+    from apps.customers.pass_engine.google_pass import (
+        get_google_wallet_diagnostics,
+    )
+    from common.vault import get_secret
 
-    google_configured = is_google_wallet_configured()
-    apple_enabled = bool(getattr(settings, "APPLE_WALLET_ENABLED", False))
-    apple_configured = apple_enabled and is_apple_wallet_configured()
+    google_diagnostics = get_google_wallet_diagnostics()
+    google_configured = (
+        google_diagnostics["enabled"]
+        and google_diagnostics["issuer_id_present"]
+        and google_diagnostics["service_account_has_required_fields"]
+    )
+
+    apple_diagnostics = get_apple_wallet_diagnostics()
+    apple_enabled = apple_diagnostics["enabled"]
+    apple_configured = (
+        apple_enabled and apple_diagnostics["certs_cryptographically_valid"]
+    )
+
     payment_enabled = bool(getattr(settings, "PAYMENT_GATEWAY_ENABLED", False))
     payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
-    email_configured = bool(
-        getattr(settings, "EMAIL_HOST_USER", "")
-        and getattr(settings, "EMAIL_HOST_PASSWORD", "")
+    email_user = get_secret(
+        "email_host_user", env_fallback="EMAIL_HOST_USER", default=""
     )
+    email_pass = get_secret(
+        "email_host_password", env_fallback="EMAIL_HOST_PASSWORD", default=""
+    )
+    email_configured = bool(email_user and email_pass)
+
+    # Preview values: non-secret fields only, for pre-populating the UI
+    google_issuer_id = get_secret("google_wallet_issuer_id", default="")
+    google_oauth_client_id = get_secret("google_oauth_client_id", default="")
+    apple_pass_type_id = get_secret("apple_pass_type_identifier", default="")
+    apple_team_id = get_secret("apple_team_identifier", default="")
+    payment_login = get_secret("payment_gateway_login", default="")
 
     return [
         PlatformIntegrationOut(
             key="google_wallet",
             name="Google Wallet",
-            enabled=bool(getattr(settings, "GOOGLE_WALLET_ENABLED", True)),
+            enabled=google_diagnostics["enabled"],
             configured=google_configured,
             status="configured" if google_configured else "missing_credentials",
-            detail=f"Issuer ID: {getattr(settings, 'GOOGLE_WALLET_ISSUER_ID', '')}",
+            detail="Google Wallet API integration",
+            diagnostics=google_diagnostics,
+            preview_values={
+                "google_wallet_enabled": (
+                    "true" if google_diagnostics["enabled"] else "false"
+                ),
+                "google_wallet_issuer_id": google_issuer_id,
+                "google_oauth_client_id": google_oauth_client_id,
+            },
         ),
         PlatformIntegrationOut(
             key="apple_wallet",
@@ -165,7 +222,13 @@ def platform_integrations(request):
                 if apple_configured
                 else "disabled" if not apple_enabled else "missing_credentials"
             ),
-            detail="Disabled until Apple Developer certificates are available.",
+            detail="Apple Wallet PKPass integration",
+            diagnostics=apple_diagnostics,
+            preview_values={
+                "apple_wallet_enabled": "true" if apple_enabled else "false",
+                "apple_pass_type_identifier": apple_pass_type_id,
+                "apple_team_identifier": apple_team_id,
+            },
         ),
         PlatformIntegrationOut(
             key="payment_gateway",
@@ -174,6 +237,12 @@ def platform_integrations(request):
             configured=payment_enabled,
             status="active" if payment_enabled else "disabled",
             detail=f"Provider: {payment_provider}",
+            diagnostics={},
+            preview_values={
+                "payment_gateway_enabled": "true" if payment_enabled else "false",
+                "payment_gateway_provider": payment_provider,
+                "payment_gateway_login": payment_login,
+            },
         ),
         PlatformIntegrationOut(
             key="email",
@@ -182,6 +251,14 @@ def platform_integrations(request):
             configured=email_configured,
             status="configured" if email_configured else "missing_credentials",
             detail=f"Host: {getattr(settings, 'EMAIL_HOST', '')}",
+            diagnostics={
+                "host": getattr(settings, "EMAIL_HOST", ""),
+                "user_present": bool(email_user),
+                "pass_present": bool(email_pass),
+            },
+            preview_values={
+                "email_host_user": email_user,
+            },
         ),
     ]
 
@@ -200,6 +277,7 @@ def list_plans(request):
 @router.post("/plans/", auth=jwt_auth, response=PlanOut)
 def create_plan(request, payload: PlanCreateIn):
     _require_super_admin(request)
+    validate_plan_config(payload.model_dump())
     plan = SubscriptionPlan.objects.create(
         name=payload.name,
         slug=payload.slug,
@@ -237,13 +315,28 @@ def delete_plan(request, plan_id: str):
         plan = SubscriptionPlan.objects.get(id=uuid.UUID(plan_id))
     except (SubscriptionPlan.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
+
+    active_subs = Subscription.objects.filter(
+        subscription_plan=plan,
+        status__in=[SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE],
+    ).count()
+    if active_subs > 0:
+        raise HttpError(
+            409,
+            get_message(
+                "ADMIN_PLAN_HAS_SUBSCRIPTIONS",
+                name=plan.name,
+                count=active_subs,
+            ),
+        )
+
     plan.is_active = False
     plan.save(update_fields=["is_active", "updated_at"])
     return MessageOut(success=True, message=get_message("ADMIN_PLAN_DEACTIVATED"))
 
 
 @router.patch("/plans/{plan_id}/", auth=jwt_auth, response=PlanOut)
-def update_plan(request, plan_id: str):
+def update_plan(request, plan_id: str, payload: PlanUpdateIn):
     """Updates an existing subscription plan."""
     _require_super_admin(request)
     try:
@@ -251,13 +344,10 @@ def update_plan(request, plan_id: str):
     except (SubscriptionPlan.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    try:
-        body = json.loads(request.body)
-        payload = PlanUpdateIn(**body)
-    except Exception:
-        raise HttpError(
-            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
-        )
+    updates = payload.model_dump(exclude_none=True)
+    candidate = plan_to_config(plan)
+    candidate.update(updates)
+    validate_plan_config(candidate, changed_fields=set(updates))
 
     update_fields = ["updated_at"]
     for field in [
@@ -302,6 +392,69 @@ def update_plan(request, plan_id: str):
 
 
 # =============================================================================
+# VAULT SECRET MANAGEMENT (Wallet / Integration credentials)
+# =============================================================================
+
+
+@router.put(
+    "/platform/integrations/{integration_key}/secret/",
+    auth=jwt_auth,
+    response=MessageOut,
+)
+def update_integration_secret(
+    request, integration_key: str, payload: VaultSecretUpdateIn
+):
+    """Update a Vault secret for an integration (Google Wallet, Apple Wallet, etc.).
+
+    Only SUPER_ADMIN can write secrets. The value is stored in HashiCorp Vault KV v2
+    and is never logged or returned in API responses.
+    """
+    _require_super_admin(request)
+
+    from common.vault import put_secret
+
+    allowed = ALLOWED_INTEGRATION_KEYS.get(integration_key, [])
+    if payload.key not in allowed:
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR",
+                detail=f"Key '{payload.key}' is not allowed for integration '{integration_key}'",
+            ),
+        )
+
+    success = put_secret(payload.key, payload.value)
+    if not success:
+        raise HttpError(500, get_message("SERVER_ERROR"))
+
+    # SEC: Audit log for Vault secret writes (who changed what)
+    from apps.audit.models import AuditAction, AuditStatus
+    from apps.audit.service import log_action
+
+    log_action(
+        request=request,
+        action=AuditAction.UPDATE,
+        resource_type="vault_secret",
+        resource_id=f"{integration_key}.{payload.key}",
+        details={"integration": integration_key, "key_name": payload.key},
+        status=AuditStatus.SUCCESS,
+    )
+
+    logger.info(
+        "SUPER_ADMIN %s updated Vault secret '%s' for integration '%s'",
+        request.user.email,
+        payload.key,
+        integration_key,
+    )
+    return MessageOut(
+        success=True,
+        message=get_message(
+            "ADMIN_PLAN_UPDATED", name=f"{integration_key}.{payload.key}"
+        ),
+    )
+
+
+# =============================================================================
 # BROADCAST
 # =============================================================================
 
@@ -343,3 +496,62 @@ def broadcast_announcement(request, payload: BroadcastIn):
         success=True,
         message=get_message("CAMPAIGN_SENT", count=len(owner_emails)),
     )
+
+
+# =============================================================================
+# PLATFORM SETTINGS — Runtime configuration without restart
+# =============================================================================
+
+
+@router.get("/platform/settings/", auth=jwt_auth, response=list[PlatformSettingOut])
+def list_platform_settings(request):
+    """List all runtime-configurable platform settings.
+
+    Returns every PlatformSetting row grouped by category.
+    Values take effect immediately — no container restart required
+    (unless `requires_restart` is true for a specific setting).
+    """
+    _require_super_admin(request)
+    settings = PlatformSetting.objects.all().order_by("category", "key")
+    return [
+        PlatformSettingOut(
+            key=s.key,
+            value=s.value,
+            description=s.description,
+            category=s.category,
+            requires_restart=s.requires_restart,
+            updated_at=s.updated_at,
+        )
+        for s in settings
+    ]
+
+
+@router.put("/platform/settings/{key}/", auth=jwt_auth, response=MessageOut)
+def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn):
+    """Update a single platform setting value.
+
+    The change is written to the DB, Redis cache is invalidated,
+    and the new value is active immediately for code that reads
+    via `PlatformSetting.get(key)`.
+    """
+    _require_super_admin(request)
+
+    setting, created = PlatformSetting.objects.get_or_create(
+        key=key,
+        defaults={
+            "value": payload.value,
+            "description": "",
+            "category": "general",
+        },
+    )
+    if not created:
+        setting.value = payload.value
+        setting.save()
+
+    logger.info("SUPER_ADMIN %s updated platform setting '%s'", request.user.email, key)
+
+    msg = f"Setting '{key}' updated"
+    if setting.requires_restart:
+        msg += " (restart required for full effect)"
+
+    return MessageOut(success=True, message=msg)

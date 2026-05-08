@@ -17,6 +17,7 @@ Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-s
 
 from __future__ import annotations
 
+import contextlib
 import logging
 
 import httpx
@@ -163,10 +164,8 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         import os
 
         for path in (cert_path, key_path):
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(path)
-            except OSError:
-                pass
 
 
 def notify_pass_updated(customer_pass) -> int:
