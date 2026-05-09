@@ -106,10 +106,10 @@ export const authApi = {
   googleConfig: () => api.get('/api/v1/auth/google/config/'),
   googleLogin: (credential: string, business_name?: string, is_login_only: boolean = false) =>
     api.post('/api/v1/auth/google/login/', { credential, business_name: business_name || '', is_login_only }),
-  phoneVerifyRequest: (phone_number: string) =>
-    api.post('/api/v1/auth/phone/verify/request/', { phone_number }),
-  phoneVerifyConfirm: (phone_number: string, otp: string) =>
-    api.post('/api/v1/auth/phone/verify/confirm/', { phone_number, otp }),
+  phoneVerifyStart: (phone: string, channel: string = 'sms') =>
+    api.post('/api/v1/auth/verify-phone/start/', { phone, channel }),
+  phoneVerifyCheck: (phone: string, code: string, sid: string = '') =>
+    api.post('/api/v1/auth/verify-phone/check/', { phone, code, sid }),
 };
 
 export const analyticsApi = {

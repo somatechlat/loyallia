@@ -8,7 +8,9 @@ Tests for:
 
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
+
+from common.vault import clear_test_overrides, set_test_override
 
 from apps.automation.models import (
     Automation,
@@ -76,12 +78,14 @@ class AutomationSendSMSTest(TestCase):
         self.customer = make_customer(self.tenant, phone="+593991234567")
         self.card = make_card(self.tenant)
         make_customer_pass(self.customer, self.card)
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "ACtest")
+        set_test_override("twilio_auth_token", "tok")
+        set_test_override("twilio_from_number", "+15005550006")
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest",
-        TWILIO_AUTH_TOKEN="tok",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
+    def tearDown(self):
+        clear_test_overrides()
+
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_send_sms_action_success(self, mock_get_client):
         mock_client = MagicMock()
@@ -109,10 +113,12 @@ class AutomationSendSMSTest(TestCase):
         result = auto._execute_send_sms(customer_no_phone, {})
         self.assertFalse(result)
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
-    )
     def test_send_sms_not_configured_returns_false(self):
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "")
+        set_test_override("twilio_auth_token", "")
+        set_test_override("twilio_from_number", "")
+
         auto = make_automation(
             self.tenant,
             action=AutomationAction.SEND_SMS,
@@ -120,6 +126,8 @@ class AutomationSendSMSTest(TestCase):
         )
         result = auto._execute_send_sms(self.customer, {})
         self.assertFalse(result)
+
+        clear_test_overrides()
 
 
 class AutomationSendWalletTest(TestCase):

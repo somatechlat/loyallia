@@ -29,6 +29,10 @@ _secrets_cache: dict = {}
 _cache_fetched_at: float = 0.0
 _cache_seen_version: str = ""
 
+# Test overrides: set by tests to override Vault reads without modifying Vault server.
+# This is NOT a production bypass. It exists solely for unit/integration tests.
+_test_overrides: dict[str, str] = {}
+
 _VAULT_CACHE_VERSION_KEY = "vault:secrets:version"
 
 
@@ -134,9 +138,10 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict
     Retrieve a secret value.
 
     Priority:
-    1. HashiCorp Vault KV v2.
-    2. Optional env_fallback only when the caller explicitly provides one.
-    3. Default value only when strict=False.
+    1. Test overrides (set by unit tests via set_test_override)
+    2. HashiCorp Vault KV v2.
+    3. Optional env_fallback only when the caller explicitly provides one.
+    4. Default value only when strict=False.
 
     Args:
         vault_key: Key name in the Vault secret path (e.g., "postgres_password")
@@ -147,7 +152,11 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict
     Returns:
         The secret value as a string.
     """
-    # 1. Try Vault
+    # 1. Test overrides (highest priority for tests)
+    if vault_key in _test_overrides:
+        return _test_overrides[vault_key]
+
+    # 2. Try Vault
     secrets = _fetch_vault_secrets()
     vault_value = secrets.get(vault_key, "")
     if vault_value:
@@ -246,3 +255,26 @@ def clear_cache() -> None:
     _secrets_cache = {}
     _cache_fetched_at = 0.0
     logger.info("Vault: secret cache cleared")
+
+
+def set_test_override(key: str, value: str) -> None:
+    """Set a test override for a Vault key.
+
+    This is intended for unit/integration tests only. Overrides take
+    precedence over real Vault reads. Call clear_test_overrides() in tearDown.
+    """
+    global _test_overrides
+    _test_overrides[key] = value
+
+
+def clear_test_override(key: str) -> None:
+    """Clear a single test override."""
+    global _test_overrides
+    _test_overrides.pop(key, None)
+
+
+def clear_test_overrides() -> None:
+    """Clear all test overrides. Call this in test tearDown."""
+    global _test_overrides
+    _test_overrides = {}
+    logger.info("Vault: test overrides cleared")

@@ -11,48 +11,55 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase, override_settings
 
 from common.messages import get_message
+from common.vault import clear_test_overrides, set_test_override
 
 
 class SMSClientAvailabilityTest(TestCase):
     """Tests for is_sms_available() configuration checking."""
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
-    )
+    def tearDown(self):
+        clear_test_overrides()
+
     def test_not_available_when_no_credentials(self):
         from apps.notifications.sms.client import is_sms_available
 
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "")
+        set_test_override("twilio_auth_token", "")
+        set_test_override("twilio_from_number", "")
         self.assertFalse(is_sms_available())
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest123",
-        TWILIO_AUTH_TOKEN="token123",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
     def test_available_when_all_configured(self):
         from apps.notifications.sms.client import is_sms_available
 
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "ACtest123")
+        set_test_override("twilio_auth_token", "token123")
+        set_test_override("twilio_from_number", "+15005550006")
         self.assertTrue(is_sms_available())
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest123",
-        TWILIO_AUTH_TOKEN="",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
     def test_not_available_missing_auth_token(self):
         from apps.notifications.sms.client import is_sms_available
 
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "ACtest123")
+        set_test_override("twilio_auth_token", "")
+        set_test_override("twilio_from_number", "+15005550006")
         self.assertFalse(is_sms_available())
 
 
 class SMSClientSendTest(TestCase):
     """Tests for send_sms() function with mocked Twilio client."""
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest123",
-        TWILIO_AUTH_TOKEN="token123",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
+    def setUp(self):
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "ACtest123")
+        set_test_override("twilio_auth_token", "token123")
+        set_test_override("twilio_from_number", "+15005550006")
+
+    def tearDown(self):
+        clear_test_overrides()
+
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_send_sms_success(self, mock_get_client):
         from apps.notifications.sms.client import send_sms
@@ -75,11 +82,6 @@ class SMSClientSendTest(TestCase):
             to="+593991234567",
         )
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest123",
-        TWILIO_AUTH_TOKEN="token123",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_send_sms_failure(self, mock_get_client):
         from apps.notifications.sms.client import send_sms
@@ -100,25 +102,34 @@ class SMSClientSendTest(TestCase):
         self.assertFalse(result["success"])
         self.assertIn("No recipient", result["error"])
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
-    )
     def test_send_sms_raises_when_not_configured(self):
         from apps.notifications.sms.client import send_sms
+        from common.vault import clear_test_overrides, set_test_override
+
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "")
+        set_test_override("twilio_auth_token", "")
+        set_test_override("twilio_from_number", "")
 
         with self.assertRaises(RuntimeError) as ctx:
             send_sms(phone="+593991234567", message="test")
         self.assertIn("not configured", str(ctx.exception))
 
+        clear_test_overrides()
+
 
 class SMSClientBulkTest(TestCase):
     """Tests for send_sms_bulk() function."""
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest123",
-        TWILIO_AUTH_TOKEN="token123",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
+    def setUp(self):
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "ACtest123")
+        set_test_override("twilio_auth_token", "token123")
+        set_test_override("twilio_from_number", "+15005550006")
+
+    def tearDown(self):
+        clear_test_overrides()
+
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_bulk_send_mixed_results(self, mock_get_client):
         from apps.notifications.sms.client import send_sms_bulk
@@ -150,11 +161,6 @@ class SMSClientBulkTest(TestCase):
         self.assertEqual(result["succeeded"], 2)
         self.assertEqual(result["failed"], 1)
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest123",
-        TWILIO_AUTH_TOKEN="token123",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_bulk_send_skips_missing_data(self, mock_get_client):
         from apps.notifications.sms.client import send_sms_bulk

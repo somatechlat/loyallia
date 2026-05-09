@@ -610,34 +610,58 @@ def seed_demo_data(request):
     summary="Solicitar código para restaurar de fábrica",
 )
 def factory_reset_request(request):
-    """Send OTP to SUPER_ADMIN email+phone for factory reset verification.
+    """Send OTP to SUPER_ADMIN for factory reset verification.
 
-    Step 1 of 2: Generates a 6-digit OTP, stores in Redis (5min TTL),
-    and sends via email (primary) + Twilio SMS (secondary, if configured).
+    Step 1 of 2: Uses OTP strategy (Twilio Verify when enabled,
+    local OTP + Twilio SMS fallback otherwise). Sends via email
+    as secondary notification. Stores verification SID for confirmation.
     """
     _require_super_admin(request)
 
-    import secrets
+    from apps.authentication.otp_service import send_otp
 
-    from apps.authentication.helpers import store_otp
+    phone = getattr(request.user, "phone_number", "")
+    recipient = phone if phone else request.user.email
 
-    otp = f"{secrets.randbelow(900000) + 100000}"
-    store_otp(request.user.email, otp, "factory_reset")
+    if not recipient:
+        raise HttpError(400, get_message("ADMIN_FACTORY_NO_CONTACT"))
 
-    # Primary: Email
+    result = send_otp(
+        recipient=recipient,
+        purpose="factory_reset",
+        custom_friendly_name="Loyallia Platform",
+    )
+
+    # Store verification SID in Redis for confirm step
+    from django.core.cache import cache
+
+    cache.set(f"factory_reset:sid:{request.user.email}", result.get("sid", ""), timeout=300)
+
+    # Secondary: Email notification (always sent, regardless of Verify)
     from django.core.mail import send_mail
 
     try:
+        strategy = result.get("strategy", "local")
+        if strategy == "verify":
+            msg_body = (
+                "Se ha enviado un código de verificación para restaurar de fábrica "
+                f"via {result.get('channel', 'SMS')}.\n\n"
+                "Ingrese el código recibido en la plataforma.\n\n"
+                "Expira en 5 minutos."
+            )
+        else:
+            msg_body = (
+                f"Su código de verificación es: {result.get('code', 'N/A')}\n\n"
+                "Expira en 5 minutos.\n\n"
+                "Si no solicitó esto, ignore este mensaje."
+            )
+
         send_mail(
             subject="Loyallia — Código de Verificación para Restaurar de Fábrica",
-            message=(
-                f"Su código de verificación es: {otp}\n\n"
-                f"Expira en 5 minutos.\n\n"
-                f"Si no solicitó esto, ignore este mensaje."
-            ),
+            message=msg_body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[request.user.email],
-            fail_silently=False,
+            fail_silently=True,
         )
     except Exception:
         logger.error(
@@ -646,27 +670,15 @@ def factory_reset_request(request):
             exc_info=True,
         )
 
-    # Secondary: SMS via Twilio (if configured)
-    sms_sent = False
-    phone = getattr(request.user, "phone_number", "")
-    if phone:
-        try:
-            from apps.notifications.sms.client import is_sms_available, send_sms
-
-            if is_sms_available():
-                send_sms(phone, f"Loyallia Factory Reset Code: {otp}")
-                sms_sent = True
-        except Exception:
-            logger.warning("SMS send failed for factory reset OTP", exc_info=True)
-
     logger.warning(
-        "FACTORY RESET requested by %s (sms=%s)",
+        "FACTORY RESET requested by %s (strategy=%s channel=%s)",
         request.user.email,
-        sms_sent,
+        result.get("strategy"),
+        result.get("channel", "email"),
     )
     return MessageOut(
         success=True,
-        message=get_message("ADMIN_FACTORY_OTP_SENT"),
+        message=get_message("FACTORY_RESET_VERIFY_SENT", channel=result.get("channel", "SMS")),
     )
 
 
@@ -687,9 +699,13 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
 
     from io import StringIO
 
-    from apps.authentication.helpers import verify_otp
+    from apps.authentication.otp_service import check_otp
+    from django.core.cache import cache
 
-    if not verify_otp(request.user.email, payload.otp, "factory_reset"):
+    sid = cache.get(f"factory_reset:sid:{request.user.email}", "")
+    recipient = getattr(request.user, "phone_number", "") or request.user.email
+
+    if not check_otp(recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"):
         raise HttpError(403, get_message("ADMIN_FACTORY_OTP_INVALID"))
 
     # Audit BEFORE wipe (so the log entry is created before data is deleted)
