@@ -316,6 +316,65 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     // Should show sending or success state
     await expect(page.getByRole('button', { name: /Enviando|Enviar a todos/ })).toBeVisible({ timeout: 10000 });
   });
+
+  test('SA sees Twilio SMS integration card @superadmin', async ({ page }) => {
+    await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+    await expect(page.locator('text=Twilio SMS')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('SA can open Vault editor for Twilio SMS @superadmin', async ({ page }) => {
+    await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // Find the Twilio SMS card and open its editor
+    const grid = page.locator('.grid').filter({ has: page.locator('text=Twilio SMS') }).first();
+    const twilioCard = grid.locator('> div').filter({ hasText: 'Twilio SMS' }).first();
+    await twilioCard.getByRole('button').click();
+    await page.waitForTimeout(500);
+
+    // Editor should open with test mode toggle visible
+    await expect(page.getByText('Editor de Vault — Twilio SMS')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=Usar Credenciales de Prueba')).toBeVisible();
+  });
+
+  test('SA sees System Operations section @superadmin', async ({ page }) => {
+    await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // System Operations section with Demo Data and Factory Reset
+    await expect(page.getByRole('heading', { name: 'Operaciones del Sistema' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btn-seed-demo')).toBeVisible();
+    await expect(page.locator('#btn-factory-reset-request')).toBeVisible();
+  });
+
+  test('SA factory reset section shows request OTP button @superadmin', async ({ page }) => {
+    await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // Scroll to factory reset section
+    const resetHeading = page.getByRole('heading', { name: 'Restaurar de Fábrica' });
+    await resetHeading.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+
+    // Verify the request OTP button is visible and has correct text
+    const resetBtn = page.locator('#btn-factory-reset-request');
+    await expect(resetBtn).toBeVisible({ timeout: 5000 });
+    const btnText = await resetBtn.textContent();
+    expect(btnText).toContain('Solicitar');
+  });
+
+  test('SA sees Platform Settings parameters @superadmin', async ({ page }) => {
+    await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // Platform Settings section should be visible
+    await expect(page.getByRole('heading', { name: 'Parámetros del Sistema' })).toBeVisible({ timeout: 10000 });
+
+    // Should have at least one parameter input with save button
+    const inputs = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Parámetros del Sistema' }) }).first().locator('input');
+    expect(await inputs.count()).toBeGreaterThan(0);
+  });
 });
 
 // =============================================================================

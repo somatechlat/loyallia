@@ -38,6 +38,8 @@ class CampaignCreateIn(BaseModel):
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
 def list_campaigns(request):
     """List all push campaigns."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     notifications = Notification.objects.filter(
         tenant=request.tenant, notification_type=NotificationType.MARKETING
     ).order_by("-created_at")[:50]

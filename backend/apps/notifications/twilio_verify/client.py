@@ -72,9 +72,10 @@ class VerifyClient:
         """Return (username, password) for Twilio HTTP Basic Auth.
 
         Priority:
-            1. API Key (SK... + secret) — Twilio-recommended for production
-            2. Account SID + Auth Token — fallback for legacy / testing
-            3. Test credentials — last resort
+            1. Test credentials (if twilio_use_test_mode=true)
+            2. API Key (SK... + secret) — Twilio-recommended for production
+            3. Account SID + Auth Token — fallback for legacy
+            4. Test credentials — last resort (even if mode not explicitly enabled)
 
         Returns:
             (username, password) tuple.
@@ -82,6 +83,16 @@ class VerifyClient:
         Raises:
             VerifyServiceError: If no valid credentials are configured.
         """
+        use_test_mode = get_secret("twilio_use_test_mode", default="false").lower() == "true"
+
+        if use_test_mode:
+            test_sid = get_secret("twilio_test_account_sid", default="")
+            test_token = get_secret("twilio_test_auth_token", default="")
+            if test_sid and test_token:
+                logger.warning("Twilio Verify: using TEST credentials (test mode enabled)")
+                return test_sid, test_token
+            logger.warning("Twilio Verify: test mode enabled but test credentials missing, falling back")
+
         api_key_sid = get_secret("twilio_api_key_sid", default="")
         api_key_secret = get_secret("twilio_api_key_secret", default="")
         if api_key_sid and api_key_secret:

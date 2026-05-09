@@ -60,7 +60,9 @@ def send_sms_campaign(
         CampaignRun,
         CampaignStatus,
         DeliveryStatus,
+        Notification,
         NotificationChannel,
+        NotificationType,
     )
     from apps.notifications.sms.client import is_sms_available, send_sms
     from apps.tenants.models import Tenant
@@ -127,6 +129,16 @@ def send_sms_campaign(
             failed += 1
             continue
 
+        # Create notification record upfront for campaign list visibility (LYL-SRS-009)
+        notification = Notification.objects.create(
+            tenant=tenant,
+            customer=customer,
+            notification_type=NotificationType.MARKETING,
+            channel=NotificationChannel.SMS,
+            title=title,
+            message=message[:500],
+        )
+
         try:
             result = send_sms(phone=customer.phone, message=sms_body)
 
@@ -137,6 +149,7 @@ def send_sms_campaign(
                 delivery_log.save(
                     update_fields=["status", "sent_at", "external_message_id"]
                 )
+                notification.mark_as_sent()
                 succeeded += 1
             else:
                 delivery_log.status = DeliveryStatus.FAILED

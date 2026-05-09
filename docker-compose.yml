@@ -597,7 +597,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: loyallia-celery-default
-    command: celery -A loyallia worker -Q default,email,billing,whatsapp_delivery -c 2 -l info --max-tasks-per-child=500
+    command: celery -A loyallia worker -Q default,email,billing,whatsapp_delivery,sms_delivery -c 2 -l info --max-tasks-per-child=500
     environment:
       <<: *common-env
     volumes:

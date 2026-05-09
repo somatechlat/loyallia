@@ -16,7 +16,7 @@ export default function CampaignsPage() {
   const [segments, setSegments] = useState<{id: string; name: string; member_count: number}[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [campaignType, setCampaignType] = useState<'email' | 'wallet' | 'whatsapp'>('wallet');
+  const [campaignType, setCampaignType] = useState<'email' | 'wallet' | 'whatsapp' | 'sms'>('wallet');
   const [form, setForm] = useState({ title: '', message: '', segment_id: 'all', image_url: '' });
   const [sending, setSending] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
@@ -30,6 +30,7 @@ export default function CampaignsPage() {
   const hasEmail = planFeatures.includes('email_campaigns');
   const hasWhatsApp = planFeatures.includes('whatsapp_campaigns');
   const hasWallet = planFeatures.includes('wallet_campaigns');
+  const hasSMS = planFeatures.includes('sms_campaigns');
 
   const load = () => {
     Promise.all([notificationsApi.campaigns(), customersApi.segments()])
@@ -63,6 +64,8 @@ export default function CampaignsPage() {
           setCampaignType('email');
         } else if (data.features?.includes('whatsapp_campaigns')) {
           setCampaignType('whatsapp');
+        } else if (data.features?.includes('sms_campaigns')) {
+          setCampaignType('sms');
         }
       } catch { /* no plan info — keep current default */ }
     })();
@@ -100,7 +103,9 @@ export default function CampaignsPage() {
       
       const successMsg = campaignType === 'email' 
         ? '¡Campaña de email iniciada! Revisa tu bandeja de salida.'
-        : '¡Notificación de wallet enviada! Los clientes recibirán actualizaciones en sus tarjetas.';
+        : campaignType === 'sms'
+          ? '¡Campaña SMS iniciada! Los mensajes se enviarán progresivamente.'
+          : '¡Notificación de wallet enviada! Los clientes recibirán actualizaciones en sus tarjetas.';
       
       toast.success(resp.data?.message || successMsg);
       setShowForm(false);
@@ -159,8 +164,10 @@ export default function CampaignsPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                <span><b>Auto:</b> Recompensas y cumpleaños</span>
+                <span className={`w-2 h-2 rounded-full ${hasSMS ? 'bg-orange-500' : 'bg-surface-300'}`}></span>
+                <span className={hasSMS ? '' : 'opacity-50'}>
+                  <b>SMS:</b> {hasSMS ? `${planUsage.sms_today ?? 0} / ${planLimits.sms_day ?? 0} hoy` : '🔒 No disponible'}
+                </span>
               </div>
             </div>
           </div>
@@ -174,13 +181,13 @@ export default function CampaignsPage() {
           {/* Campaign Type Selector (LYL-SRS-008: plan-gated) */}
           <div className="mb-4">
             <label className="label">Tipo de campaña</label>
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-3 mt-2 flex-wrap">
               {/* Email — locked if plan lacks email_campaigns */}
               <button
                 type="button"
                 disabled={!hasEmail}
                 onClick={() => hasEmail && setCampaignType('email')} aria-pressed={campaignType === 'email'}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
+                className={`flex-1 p-4 rounded-xl border-2 transition-all relative min-w-[140px] ${
                   !hasEmail
                     ? 'border-surface-200 dark:border-surface-700 opacity-50 cursor-not-allowed'
                     : campaignType === 'email'
@@ -205,7 +212,7 @@ export default function CampaignsPage() {
                 type="button"
                 disabled={!hasWallet}
                 onClick={() => hasWallet && setCampaignType('wallet')} aria-pressed={campaignType === 'wallet'}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
+                className={`flex-1 p-4 rounded-xl border-2 transition-all relative min-w-[140px] ${
                   !hasWallet
                     ? 'border-surface-200 dark:border-surface-700 opacity-50 cursor-not-allowed'
                     : campaignType === 'wallet'
@@ -230,7 +237,7 @@ export default function CampaignsPage() {
                 type="button"
                 disabled={!hasWhatsApp}
                 onClick={() => hasWhatsApp && setCampaignType('whatsapp')} aria-pressed={campaignType === 'whatsapp'}
-                className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
+                className={`flex-1 p-4 rounded-xl border-2 transition-all relative min-w-[140px] ${
                   !hasWhatsApp
                     ? 'border-surface-200 dark:border-surface-700 opacity-50 cursor-not-allowed'
                     : campaignType === 'whatsapp'
@@ -248,6 +255,31 @@ export default function CampaignsPage() {
                 </div>
                 <p className="text-xs text-surface-500 mt-1">
                   {hasWhatsApp ? 'Mensaje directo vía WhatsApp' : 'Actualizar plan →'}
+                </p>
+              </button>
+
+              {/* SMS — locked if plan lacks sms_campaigns */}
+              <button
+                type="button"
+                disabled={!hasSMS}
+                onClick={() => hasSMS && setCampaignType('sms')} aria-pressed={campaignType === 'sms'}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all relative min-w-[140px] ${
+                  !hasSMS
+                    ? 'border-surface-200 dark:border-surface-700 opacity-50 cursor-not-allowed'
+                    : campaignType === 'sms'
+                      ? 'border-orange-500 bg-orange-50'
+                      : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span className="font-medium">SMS</span>
+                  {!hasSMS && <span className="ml-auto text-xs">🔒</span>}
+                </div>
+                <p className="text-xs text-surface-500 mt-1">
+                  {hasSMS ? 'Mensaje de texto vía Twilio' : 'Actualizar plan →'}
                 </p>
               </button>
             </div>
@@ -274,14 +306,37 @@ export default function CampaignsPage() {
                 </div>
               </div>
             )}
+
+            {/* SMS Info Banner */}
+            {campaignType === 'sms' && (
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-800 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">Información de envío SMS</p>
+                    <ul className="mt-1 text-xs text-orange-700 dark:text-orange-300 space-y-1">
+                      <li>• Los mensajes se envían vía Twilio</li>
+                      <li>• Cada SMS tiene un costo adicional según tu plan Twilio</li>
+                      <li>• Los mensajes se truncan automáticamente a 1600 caracteres</li>
+                      <li>• Se requiere número de teléfono en formato internacional (+593...)</li>
+                    </ul>
+                    <p className="text-[10px] text-orange-500 dark:text-orange-400 mt-2">Verifica que tus clientes tengan números de teléfono válidos.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <form onSubmit={sendCampaign} className="space-y-4">
             <div>
               <label className="label" htmlFor="campaign-title">
-                {campaignType === 'email' ? 'Asunto del email' : 'Título de la notificación'}
+                {campaignType === 'email' ? 'Asunto del email' : campaignType === 'sms' ? 'Título del SMS' : 'Título de la notificación'}
               </label>
-              <input id="campaign-title" className="input" placeholder={campaignType === 'email' ? "¡Oferta especial para ti!" : "¡Felicidades! Has ganado puntos"}
+              <input id="campaign-title" className="input" placeholder={campaignType === 'email' ? "¡Oferta especial para ti!" : campaignType === 'sms' ? "Oferta especial" : "¡Felicidades! Has ganado puntos"}
                 value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             
@@ -312,7 +367,7 @@ export default function CampaignsPage() {
 
             <div>
               <label className="label" htmlFor="campaign-msg">
-                {campaignType === 'email' ? 'Contenido del email (HTML)' : 'Mensaje de notificación'}
+                {campaignType === 'email' ? 'Contenido del email (HTML)' : campaignType === 'sms' ? 'Mensaje SMS' : 'Mensaje de notificación'}
               </label>
               {campaignType === 'email' ? (
                 <>
@@ -327,7 +382,8 @@ export default function CampaignsPage() {
               ) : (
                 <textarea id="campaign-msg"
                   className="input min-h-[80px] resize-none"
-                  placeholder="Tu clients recibirán una notificación en sus Wallet cards cuando haya un cambio en su programa (nuevo sello, puntos canjeados, etc)."
+                  placeholder={campaignType === 'sms' ? 'Escribe tu mensaje SMS (máx. 1600 caracteres)...' : "Tu clients recibirán una notificación en sus Wallet cards cuando haya un cambio en su programa (nuevo sello, puntos canjeados, etc)."}
+                  maxLength={campaignType === 'sms' ? 1600 : undefined}
                   value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
               )}
             </div>
@@ -401,7 +457,7 @@ export default function CampaignsPage() {
                 Cancelar
               </button>
               <button type="submit" className="btn-primary flex-1" disabled={sending} id="send-campaign-btn">
-                {sending ? <span className="spinner w-4 h-4" /> : `Enviar campaña ${campaignType === 'email' ? '(Email)' : campaignType === 'wallet' ? '(Wallet)' : '(WhatsApp)'}`}
+                {sending ? <span className="spinner w-4 h-4" /> : `Enviar campaña ${campaignType === 'email' ? '(Email)' : campaignType === 'wallet' ? '(Wallet)' : campaignType === 'sms' ? '(SMS)' : '(WhatsApp)'}`}
               </button>
             </div>
           </form>
@@ -436,11 +492,13 @@ export default function CampaignsPage() {
                       c.channel === 'email' ? 'bg-blue-100 text-blue-700' :
                       c.channel === 'in_app' ? 'bg-purple-100 text-purple-700' :
                       c.channel === 'whatsapp' ? 'bg-emerald-100 text-emerald-700' :
+                      c.channel === 'sms' ? 'bg-orange-100 text-orange-700' :
                       'bg-gray-100 text-gray-700'
                     }`}>
                       {c.channel === 'email' ? '📧 Email' : 
                        c.channel === 'in_app' ? '💳 Wallet' : 
                        c.channel === 'whatsapp' ? '💬 WhatsApp' :
+                       c.channel === 'sms' ? '📱 SMS' :
                        c.channel?.toUpperCase() || 'Email'}
                     </span>
                   </td>
