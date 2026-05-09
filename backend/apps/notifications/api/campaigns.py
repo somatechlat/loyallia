@@ -31,7 +31,7 @@ class CampaignCreateIn(BaseModel):
     message: str
     segment_id: str
     image_url: str | None = ""
-    channel: str | None = "email"  # 'email', 'wallet', or 'whatsapp'
+    channel: str | None = "email"  # 'email', 'wallet', 'whatsapp', or 'sms'
     sender_domain: str | None = "loyallia"  # 'loyallia' or 'custom'
 
 
@@ -80,10 +80,11 @@ def list_campaigns(request):
 def create_campaign(request, data: CampaignCreateIn):
     """Send an email, wallet, or WhatsApp notification campaign to customers in a segment.
 
-    OWNER only. Supports three channels:
+    OWNER only. Supports four channels:
     - 'email': Rich HTML email with images
     - 'wallet': Creates notifications that appear when customers check their wallet cards
     - 'whatsapp': WhatsApp campaign via Baileys bridge — messages queued with Gaussian jitter anti-ban
+    - 'sms': SMS campaign via Twilio with per-message delivery tracking
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -147,11 +148,31 @@ def create_campaign(request, data: CampaignCreateIn):
                 "CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id
             ),
         }
+    elif data.channel == "sms":
+        # LYL-SRS-009: Gate SMS campaigns by plan feature + daily quota
+        check_feature_access(request.tenant, "sms_campaigns")
+        check_plan_limit(request.tenant, "sms_day")
+
+        from apps.notifications.sms.tasks import send_sms_campaign
+
+        task_fn: Any = send_sms_campaign
+        task_fn.delay(
+            tenant_id=str(request.tenant.id),
+            title=data.title,
+            message=data.message,
+            segment_id=data.segment_id,
+        )
+        return {
+            "success": True,
+            "message": get_message(
+                "SMS_CAMPAIGN_STARTED", segment=data.segment_id
+            ),
+        }
     else:
         raise HttpError(
             400,
             get_message(
                 "VALIDATION_ERROR",
-                detail="Canal no válido. Usa 'email', 'wallet' o 'whatsapp'.",
+                detail="Canal no válido. Usa 'email', 'wallet', 'whatsapp' o 'sms'.",
             ),
         )

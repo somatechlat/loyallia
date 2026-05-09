@@ -8,6 +8,7 @@ Idempotent: Re-running has no effect if the user is already correct.
 Reverse: noop.
 """
 
+from django.contrib.auth.hashers import make_password
 from django.db import migrations
 
 
@@ -42,8 +43,8 @@ def repair_superadmin(apps, schema_editor):
         needs_save = True
         update_fields.append("email")
 
-    # Reset password to canonical default via model method
-    admin.set_password("Loyallia@Admin2026!")
+    # Reset password to canonical default (use make_password for historical models)
+    admin.password = make_password("Loyallia@Admin2026!")
     needs_save = True
     update_fields.append("password")
 

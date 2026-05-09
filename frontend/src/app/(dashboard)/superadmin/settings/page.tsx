@@ -71,6 +71,19 @@ const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
     { key: 'twilio_auth_token', label: 'Auth Token', type: 'password' },
     { key: 'twilio_from_number', label: 'From Number', type: 'text' },
   ],
+  twilio_verify: [
+    { key: 'twilio_verify_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'] },
+    { key: 'twilio_verify_service_sid', label: 'Verify Service SID', type: 'text' },
+    { key: 'twilio_verify_default_channel', label: 'Canal por Defecto', type: 'select', options: ['sms', 'whatsapp', 'voice', 'email', 'push', 'totp', 'sna'] },
+  ],
+  twilio_api_key: [
+    { key: 'twilio_api_key_sid', label: 'API Key SID', type: 'text' },
+    { key: 'twilio_api_key_secret', label: 'API Key Secret', type: 'password' },
+  ],
+  twilio_test: [
+    { key: 'twilio_test_account_sid', label: 'Test Account SID', type: 'text' },
+    { key: 'twilio_test_auth_token', label: 'Test Auth Token', type: 'password' },
+  ],
   listmonk: [
     { key: 'listmonk_url', label: 'Listmonk URL', type: 'text' },
     { key: 'listmonk_api_user', label: 'API User', type: 'text' },
@@ -292,6 +305,13 @@ export default function SuperAdminSettings() {
       twilio_account_sid: 'account_sid_present',
       twilio_auth_token: 'auth_token_present',
       twilio_from_number: 'from_number_present',
+      twilio_verify_enabled: 'verify_enabled',
+      twilio_verify_service_sid: 'service_sid_present',
+      twilio_verify_default_channel: 'default_channel',
+      twilio_api_key_sid: 'api_key_sid_present',
+      twilio_api_key_secret: 'api_key_secret_present',
+      twilio_test_account_sid: 'test_account_sid_present',
+      twilio_test_auth_token: 'test_auth_token_present',
       listmonk_api_user: 'api_user_present',
       listmonk_api_token: 'api_token_present',
       apple_nfc_encryption_public_key: 'public_key_present',
