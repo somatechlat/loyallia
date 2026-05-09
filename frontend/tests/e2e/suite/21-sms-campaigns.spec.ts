@@ -34,10 +34,32 @@ async function loginAs(
 // OWNER — UI Tests
 // =============================================================================
 
-// Ensure SMS campaigns are enabled for the test tenant's plan before running OWNER tests
+// CRITICAL SAFETY: Verify Twilio test mode is enabled before running ANY SMS test.
+// This prevents accidental sending of real (charged) SMS messages during E2E runs.
 test.beforeAll(async ({ request }) => {
+  const token = await loginAs(request, 'admin@loyallia.com');
+
+  // ── SAFETY GUARD ──
+  const integrationsResp = await request.get(`${BASE_API}/api/v1/admin/platform/integrations/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (integrationsResp.status() === 200) {
+    const integrations = await integrationsResp.json();
+    const twilioSMS = Array.isArray(integrations)
+      ? integrations.find((i: any) => i.key === 'twilio_sms')
+      : integrations.integrations?.find((i: any) => i.key === 'twilio_sms');
+    const testMode = twilioSMS?.preview_values?.twilio_use_test_mode;
+    if (testMode !== 'true') {
+      throw new Error(
+        `FATAL SAFETY CHECK FAILED: twilio_use_test_mode is '${testMode}'. ` +
+        `Set it to 'true' in SysAdmin → Settings → Twilio SMS before running SMS E2E tests. ` +
+        `This prevents sending real (charged) SMS messages.`
+      );
+    }
+  }
+
+  // Enable SMS campaigns for the test tenant's plan
   try {
-    const token = await loginAs(request, 'admin@loyallia.com');
     const listResp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -75,7 +97,7 @@ test.beforeAll(async ({ request }) => {
       },
     });
   } catch {
-    // If setup fails, tests may skip or fail gracefully
+    // If plan setup fails, tests may skip or fail gracefully
   }
 });
 
