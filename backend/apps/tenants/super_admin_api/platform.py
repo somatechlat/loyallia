@@ -711,22 +711,22 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
     with transaction.atomic():
         # Wipe order: deepest dependencies first to avoid FK violations
         from apps.automation.models import Automation, AutomationExecution
-        from apps.billing.models import Invoice, Subscription, WebhookEvent
-        from apps.cards.models import LoyaltyProgram
+        from apps.billing.models import Subscription
+        from apps.billing.payment_models import Invoice, WebhookEvent
+        from apps.cards.models import Card
         from apps.customers.models import Customer, CustomerPass
-        from apps.notifications.models import DeliveryLog, Notification
+        from apps.notifications.models.misc import Notification
         from apps.transactions.models import Transaction
 
         from apps.authentication.models import RefreshToken
 
-        DeliveryLog.objects.all().delete()
         Notification.objects.all().delete()
         AutomationExecution.objects.all().delete()
         Automation.objects.all().delete()
         CustomerPass.objects.all().delete()
         Transaction.objects.all().delete()
         Customer.objects.all().delete()
-        LoyaltyProgram.objects.all().delete()
+        Card.objects.all().delete()
         Invoice.objects.all().delete()
         WebhookEvent.objects.all().delete()
         Subscription.objects.all().delete()
