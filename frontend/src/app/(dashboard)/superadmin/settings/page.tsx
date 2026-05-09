@@ -372,7 +372,7 @@ export default function SuperAdminSettings() {
                     {savingSetting === s.key ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
-                <p className="text-xs text-surface-400 mt-1">{s.key} — actualizado {new Date(s.updated_at).toLocaleString()}</p>
+                <p className="text-xs text-surface-400 mt-1">Última actualización: {new Date(s.updated_at).toLocaleString()}</p>
               </div>
             ))}
           </div>
