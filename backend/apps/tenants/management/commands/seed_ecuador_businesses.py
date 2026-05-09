@@ -189,7 +189,8 @@ class Command(BaseCommand):
     def _seed_subscription_history(self, tenant, plan_obj):
         sub = Subscription.objects.create(
             tenant=tenant,
-            plan="full",
+            plan=plan_obj.slug if plan_obj else "full",
+            subscription_plan=plan_obj,
             status=SubscriptionStatus.ACTIVE,
             current_period_start=timezone.now() - timedelta(days=30),
             current_period_end=timezone.now() + timedelta(days=30),

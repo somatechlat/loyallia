@@ -54,6 +54,7 @@ ALLOWED_INTEGRATION_KEYS = {
         "twilio_account_sid",
         "twilio_auth_token",
         "twilio_from_number",
+        "twilio_use_test_mode",
     ],
     "twilio_verify": [
         "twilio_verify_enabled",
@@ -149,6 +150,7 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
         "payment_gateway_enabled",
         "apple_nfc_enabled",
         "twilio_verify_enabled",
+        "twilio_use_test_mode",
     }:
         lowered = normalized.lower()
         if lowered not in {"true", "false"}:
@@ -200,6 +202,7 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
     twilio_sid_present = _present("twilio_account_sid")
     twilio_token_present = _present("twilio_auth_token")
     twilio_from_present = _present("twilio_from_number")
+    twilio_test_mode = _truthy(get_secret("twilio_use_test_mode", default="false"))
     verify_enabled = _truthy(get_secret("twilio_verify_enabled", default="false"))
     verify_sid_present = _present("twilio_verify_service_sid")
     api_key_sid_present = _present("twilio_api_key_sid")
@@ -238,9 +241,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "account_sid_present": twilio_sid_present,
                 "auth_token_present": twilio_token_present,
                 "from_number_present": twilio_from_present,
+                "use_test_mode": twilio_test_mode,
             },
             preview_values={
                 "twilio_from_number": get_secret("twilio_from_number", default=""),
+                "twilio_use_test_mode": "true" if twilio_test_mode else "false",
             },
         ),
         PlatformIntegrationOut(

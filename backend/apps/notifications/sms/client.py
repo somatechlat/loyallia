@@ -44,13 +44,40 @@ def _twilio_setting(key: str, env_name: str, setting_name: str) -> str:
     )
 
 
+def _is_test_mode() -> bool:
+    """Check if test credentials should be used (safe sandbox mode)."""
+    return _truthy(_twilio_setting(
+        "twilio_use_test_mode", "TWILIO_USE_TEST_MODE", "TWILIO_USE_TEST_MODE"
+    ))
+
+
+def _truthy(value: str) -> bool:
+    """Return True for common on/true values."""
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _get_twilio_client():
     """Build a Twilio REST client using Vault-managed credentials.
+
+    When twilio_use_test_mode is enabled, uses test credentials instead
+    of production credentials for safe sandbox testing.
 
     Raises:
         RuntimeError: If Twilio credentials are not configured.
     """
     from twilio.rest import Client
+
+    if _is_test_mode():
+        account_sid = _twilio_setting(
+            "twilio_test_account_sid", "TWILIO_TEST_ACCOUNT_SID", "TWILIO_TEST_ACCOUNT_SID"
+        )
+        auth_token = _twilio_setting(
+            "twilio_test_auth_token", "TWILIO_TEST_AUTH_TOKEN", "TWILIO_TEST_AUTH_TOKEN"
+        )
+        if account_sid and auth_token:
+            logger.warning("Twilio SMS: using TEST credentials — NOT for production")
+            return Client(account_sid, auth_token)
+        logger.warning("Twilio SMS: test mode enabled but test credentials missing, falling back to production")
 
     account_sid = _twilio_setting(
         "twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID"
@@ -168,7 +195,22 @@ def send_sms_bulk(recipients: list[dict]) -> dict:
 
 
 def is_sms_available() -> bool:
-    """Check if Twilio SMS is properly configured and available."""
+    """Check if Twilio SMS is properly configured and available.
+
+    When test mode is enabled, checks for test credentials instead.
+    """
+    if _is_test_mode():
+        account_sid = _twilio_setting(
+            "twilio_test_account_sid", "TWILIO_TEST_ACCOUNT_SID", "TWILIO_TEST_ACCOUNT_SID"
+        )
+        auth_token = _twilio_setting(
+            "twilio_test_auth_token", "TWILIO_TEST_AUTH_TOKEN", "TWILIO_TEST_AUTH_TOKEN"
+        )
+        from_number = _twilio_setting(
+            "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
+        )
+        return bool(account_sid and auth_token and from_number)
+
     account_sid = _twilio_setting(
         "twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID"
     )

@@ -20,6 +20,7 @@ type VaultField = {
   label: string;
   type: 'text' | 'textarea' | 'select' | 'password';
   options?: string[];
+  description?: string;
 };
 
 type PlatformSetting = {
@@ -70,6 +71,7 @@ const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
     { key: 'twilio_account_sid', label: 'Account SID', type: 'text' },
     { key: 'twilio_auth_token', label: 'Auth Token', type: 'password' },
     { key: 'twilio_from_number', label: 'From Number', type: 'text' },
+    { key: 'twilio_use_test_mode', label: 'Usar Credenciales de Prueba', type: 'select', options: ['true', 'false'], description: 'Cuando está activo, SMS y Verify usan credenciales de test de Twilio (sandbox seguro)' },
   ],
   twilio_verify: [
     { key: 'twilio_verify_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'] },
@@ -305,6 +307,7 @@ export default function SuperAdminSettings() {
       twilio_account_sid: 'account_sid_present',
       twilio_auth_token: 'auth_token_present',
       twilio_from_number: 'from_number_present',
+      twilio_use_test_mode: 'use_test_mode',
       twilio_verify_enabled: 'verify_enabled',
       twilio_verify_service_sid: 'service_sid_present',
       twilio_verify_default_channel: 'default_channel',
