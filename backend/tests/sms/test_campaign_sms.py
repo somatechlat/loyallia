@@ -9,7 +9,9 @@ Tests for:
 import uuid
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
+
+from common.vault import clear_test_overrides, set_test_override
 
 from apps.billing.models import PlanFeature
 from tests.factories import (
@@ -23,11 +25,16 @@ from tests.factories import (
 class SMSCampaignTaskTest(TestCase):
     """Tests for send_sms_campaign Celery task."""
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="", TWILIO_AUTH_TOKEN="", TWILIO_FROM_NUMBER=""
-    )
+    def tearDown(self):
+        clear_test_overrides()
+
     def test_returns_error_when_twilio_not_configured(self):
         from apps.notifications.sms.tasks import send_sms_campaign
+
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "")
+        set_test_override("twilio_auth_token", "")
+        set_test_override("twilio_from_number", "")
 
         tenant = make_tenant()
         result = send_sms_campaign(
@@ -37,6 +44,8 @@ class SMSCampaignTaskTest(TestCase):
         )
         self.assertFalse(result["success"])
         self.assertIn("not configured", result["error"])
+
+        clear_test_overrides()
 
     def test_returns_error_for_invalid_tenant(self):
         from apps.notifications.sms.tasks import send_sms_campaign
@@ -49,11 +58,12 @@ class SMSCampaignTaskTest(TestCase):
         self.assertFalse(result["success"])
         self.assertIn("not found", result["error"])
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest",
-        TWILIO_AUTH_TOKEN="tok",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
+    def setUp(self):
+        clear_test_overrides()
+        set_test_override("twilio_account_sid", "ACtest")
+        set_test_override("twilio_auth_token", "tok")
+        set_test_override("twilio_from_number", "+15005550006")
+
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_campaign_sends_to_customers(self, mock_get_client):
         from apps.notifications.sms.tasks import send_sms_campaign
@@ -83,11 +93,6 @@ class SMSCampaignTaskTest(TestCase):
         )  # Empty-phone customer filtered by queryset
         self.assertEqual(result["attempted"], 2)  # Only customers with phone
 
-    @override_settings(
-        TWILIO_ACCOUNT_SID="ACtest",
-        TWILIO_AUTH_TOKEN="tok",
-        TWILIO_FROM_NUMBER="+15005550006",
-    )
     @patch("apps.notifications.sms.client._get_twilio_client")
     def test_campaign_creates_campaign_run(self, mock_get_client):
         from apps.notifications.models import CampaignRun, CampaignStatus

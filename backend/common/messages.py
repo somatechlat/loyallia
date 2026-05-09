@@ -235,6 +235,7 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_DEMO_SEEDED": "Datos de demostración cargados exitosamente.",
     "ADMIN_FACTORY_OTP_SENT": "Código de verificación enviado a su email y teléfono.",
     "ADMIN_FACTORY_OTP_INVALID": "Código inválido o expirado. Intente de nuevo.",
+    "ADMIN_FACTORY_NO_CONTACT": "No hay número de teléfono ni email configurado para enviar el código.",
     "ADMIN_FACTORY_RESET_DONE": "Sistema restaurado a estado de fábrica exitosamente.",
     # --- Agent API ---
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
@@ -449,6 +450,7 @@ _MESSAGES_EN: dict[str, str] = {
     "ADMIN_DEMO_SEEDED": "Demo data loaded successfully.",
     "ADMIN_FACTORY_OTP_SENT": "Verification code sent to your email and phone.",
     "ADMIN_FACTORY_OTP_INVALID": "Invalid or expired code. Try again.",
+    "ADMIN_FACTORY_NO_CONTACT": "No phone number or email configured to send the code.",
     "ADMIN_FACTORY_RESET_DONE": "System restored to factory state successfully.",
     "AGENT_KEY_INVALID": "Agent API key is invalid or has expired.",
     "AGENT_KEY_CREATED": "Agent API key created successfully.",

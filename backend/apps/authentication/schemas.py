@@ -197,3 +197,32 @@ class PhoneVerifyConfirmIn(BaseModel):
 
     phone_number: str
     otp: str
+
+
+class PhoneVerifyStartIn(BaseModel):
+    """Request to start phone verification."""
+    phone: str
+    channel: str = "sms"  # sms, whatsapp, voice, email, sna, auto
+
+
+class PhoneVerifyStartOut(BaseModel):
+    """Response from phone verification start."""
+    success: bool
+    message: str
+    sid: str = ""
+    strategy: str = ""
+    channel: str = ""
+
+
+class PhoneVerifyCheckIn(BaseModel):
+    """Request to check phone verification code."""
+    phone: str
+    code: str
+    sid: str = ""
+
+
+class PhoneVerifyCheckOut(BaseModel):
+    """Response from phone verification check."""
+    success: bool
+    message: str
+    valid: bool = False
