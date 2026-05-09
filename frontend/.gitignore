@@ -1,2 +1,4 @@
 .auth/
 tsconfig.tsbuildinfo
+.next/
+.next-docker/
