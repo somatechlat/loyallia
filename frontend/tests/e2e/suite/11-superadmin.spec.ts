@@ -327,10 +327,10 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
 
-    // Find the Twilio SMS card and open its editor
+    // Find the Twilio SMS card and open its Vault editor (not the test mode toggle)
     const grid = page.locator('.grid').filter({ has: page.locator('text=Twilio SMS') }).first();
     const twilioCard = grid.locator('> div').filter({ hasText: 'Twilio SMS' }).first();
-    await twilioCard.getByRole('button').click();
+    await twilioCard.getByRole('button', { name: /Configurar credenciales/ }).click();
     await page.waitForTimeout(500);
 
     // Editor should open with test mode toggle visible

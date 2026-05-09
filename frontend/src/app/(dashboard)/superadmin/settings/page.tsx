@@ -277,6 +277,28 @@ export default function SuperAdminSettings() {
     }
   };
 
+  // Twilio Test Mode toggle — one-click switch between sandbox and production
+  const toggleTwilioTestMode = async (integration: Integration) => {
+    const currentValue = integration.preview_values?.twilio_use_test_mode === 'true';
+    const newValue = !currentValue;
+    setSavingVault(true);
+    const toastId = toast.loading(newValue ? 'Activando modo prueba...' : 'Activando modo producción...');
+    try {
+      await superAdminApi.updateIntegrationSecret('twilio_sms', 'twilio_use_test_mode', newValue ? 'true' : 'false');
+      toast.success(
+        newValue
+          ? '🧪 Modo prueba activado. SMS usan credenciales de test (sin costo).'
+          : '💰 Modo producción activado. SMS usan credenciales reales (con costo).',
+        { id: toastId },
+      );
+      loadIntegrations();
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, 'Error al cambiar modo'), { id: toastId });
+    } finally {
+      setSavingVault(false);
+    }
+  };
+
   const handleVaultFileUpload = (fieldKey: string, file?: File) => {
     if (!file) return;
     const reader = new FileReader();
@@ -408,6 +430,59 @@ export default function SuperAdminSettings() {
                   {(int.diagnostics.errors as string[]).map((err, i) => (
                     <p key={i} className="text-xs text-red-600">• {err}</p>
                   ))}
+                </div>
+              )}
+
+              {/* Twilio Test Mode Toggle — prominently displayed on the card */}
+              {int.key === 'twilio_sms' && (
+                <div className={`rounded-lg p-3 border space-y-2 ${
+                  int.preview_values?.twilio_use_test_mode === 'true'
+                    ? 'bg-amber-50 border-amber-200'
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">
+                        {int.preview_values?.twilio_use_test_mode === 'true' ? '🧪' : '💰'}
+                      </span>
+                      <div>
+                        <p className={`text-xs font-bold uppercase ${
+                          int.preview_values?.twilio_use_test_mode === 'true'
+                            ? 'text-amber-700'
+                            : 'text-red-700'
+                        }`}>
+                          {int.preview_values?.twilio_use_test_mode === 'true'
+                            ? 'MODO PRUEBA (Sandbox)'
+                            : 'MODO PRODUCCIÓN (Real)'}
+                        </p>
+                        <p className={`text-[10px] ${
+                          int.preview_values?.twilio_use_test_mode === 'true'
+                            ? 'text-amber-600'
+                            : 'text-red-600'
+                        }`}>
+                          {int.preview_values?.twilio_use_test_mode === 'true'
+                            ? 'SMS de test sin costo — seguro para desarrollo'
+                            : '⚠️ SMS reales con costo por mensaje'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleTwilioTestMode(int)}
+                      disabled={savingVault}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                        int.preview_values?.twilio_use_test_mode === 'true'
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      } disabled:opacity-50`}
+                    >
+                      {savingVault
+                        ? 'Guardando...'
+                        : int.preview_values?.twilio_use_test_mode === 'true'
+                          ? 'Desactivar Modo Prueba'
+                          : 'Activar Modo Prueba'}
+                    </button>
+                  </div>
                 </div>
               )}
 
