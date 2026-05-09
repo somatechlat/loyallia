@@ -87,9 +87,18 @@ export default function RegisterPage() {
   const countryRef = useRef<HTMLDivElement>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
+  // Phone verification state
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyStep, setVerifyStep] = useState<'idle' | 'sent' | 'verified'>('idle');
+  const [verifySid, setVerifySid] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [verifyError, setVerifyError] = useState('');
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -102,6 +111,9 @@ export default function RegisterPage() {
       phone_number: '',
     },
   });
+
+  const phoneNumber = watch('phone_number');
+  const fullPhone = phoneNumber ? `${countryCode}${phoneNumber.replace(/^0+/, '')}` : '';
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -158,12 +170,67 @@ export default function RegisterPage() {
     }
   };
 
+  const handleSendOtp = async () => {
+    if (!fullPhone) {
+      toast.error('Ingresa tu número de teléfono primero');
+      return;
+    }
+    setVerifyLoading(true);
+    setVerifyError('');
+    try {
+      const resp = await authApi.phoneVerifyStart(fullPhone, 'sms');
+      if (resp.data.success) {
+        setVerifyStep('sent');
+        setVerifySid(resp.data.sid);
+        toast.success('Código enviado. Revisa tu teléfono.');
+      } else {
+        setVerifyError(resp.data.message || 'Error al enviar código');
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setVerifyError(msg || 'Error al enviar código');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleCheckOtp = async () => {
+    if (!otpInput || otpInput.length < 4) {
+      toast.error('Ingresa el código completo');
+      return;
+    }
+    setVerifyLoading(true);
+    setVerifyError('');
+    try {
+      const resp = await authApi.phoneVerifyCheck(fullPhone, otpInput, verifySid);
+      if (resp.data.valid) {
+        setPhoneVerified(true);
+        setVerifyStep('verified');
+        toast.success('¡Teléfono verificado!');
+      } else {
+        setVerifyError(resp.data.message || 'Código inválido');
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setVerifyError(msg || 'Error al verificar código');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
   const onSubmit = async (data: RegisterFormData) => {
+    // Require phone verification if phone is provided
+    if (fullPhone && !phoneVerified) {
+      toast.error('Verifica tu teléfono antes de continuar');
+      return;
+    }
+
     setLoading(true);
     try {
       const submitData = {
         ...data,
-        phone_number: data.phone_number ? `${countryCode}${data.phone_number.replace(/^0+/, '')}` : '',
+        phone_number: fullPhone,
+        phone_verification_sid: verifySid,
       };
       await authApi.register(submitData);
       toast.success('¡Cuenta creada! Redirigiendo al inicio de sesión...');
@@ -322,9 +389,9 @@ export default function RegisterPage() {
         />
       </FormField>
 
-      {/* Phone with country prefix selector */}
+      {/* Phone with country prefix selector + Verification */}
       <div>
-        <label className="label" htmlFor="register-phone_number">Teléfono (opcional)</label>
+        <label className="label" htmlFor="register-phone_number">Teléfono <span className="text-red-400">*</span></label>
         <div className="flex gap-2">
           <div className="relative" ref={countryRef}>
             <button
@@ -393,9 +460,79 @@ export default function RegisterPage() {
             placeholder="991234567"
             autoComplete="tel"
             {...register('phone_number')}
+            disabled={phoneVerified}
           />
         </div>
-        <p className="text-[10px] text-surface-400 mt-1">Se enviará {countryCode} + número al registrar</p>
+        {errors.phone_number && (
+          <p className="text-xs text-red-500 mt-1">{errors.phone_number.message}</p>
+        )}
+
+        {/* Verification UI */}
+        <div className="mt-2 space-y-2">
+          {verifyStep === 'idle' && (
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              disabled={verifyLoading || !fullPhone || phoneVerified}
+              className="btn-secondary w-full justify-center text-sm py-2"
+            >
+              {verifyLoading ? <span className="spinner w-3 h-3" /> : '📱 Verificar teléfono'}
+            </button>
+          )}
+
+          {verifyStep === 'sent' && !phoneVerified && (
+            <div className="space-y-2">
+              <p className="text-xs text-surface-500">Ingresa el código de 6 dígitos enviado a tu teléfono</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="123456"
+                  className="input flex-1 text-center tracking-widest font-mono"
+                  value={otpInput}
+                  onChange={e => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                />
+                <button
+                  type="button"
+                  onClick={handleCheckOtp}
+                  disabled={verifyLoading || otpInput.length < 4}
+                  className="btn-primary px-4"
+                >
+                  {verifyLoading ? <span className="spinner w-3 h-3" /> : 'Verificar'}
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={verifyLoading}
+                  className="text-xs text-brand-500 hover:underline"
+                >
+                  Reenviar código
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setVerifyStep('idle'); setOtpInput(''); setVerifyError(''); }}
+                  className="text-xs text-surface-400 hover:underline"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {phoneVerified && (
+            <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-xl text-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span className="font-medium">Teléfono verificado</span>
+            </div>
+          )}
+
+          {verifyError && (
+            <p className="text-xs text-red-500">{verifyError}</p>
+          )}
+        </div>
       </div>
 
       <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading} id="register-btn">

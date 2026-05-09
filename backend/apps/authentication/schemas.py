@@ -17,6 +17,7 @@ class RegisterIn(BaseModel):
     first_name: str = ""
     last_name: str = ""
     phone_number: str = ""
+    phone_verification_sid: str = ""  # Twilio Verify SID (optional)
 
     @field_validator("password")
     @classmethod

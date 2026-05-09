@@ -24,8 +24,10 @@ from apps.authentication.schemas import (
     ChangePasswordIn,
     InviteIn,
     MessageOut,
+    PhoneVerifyCheckOut,
     PhoneVerifyConfirmIn,
     PhoneVerifyRequestIn,
+    PhoneVerifyStartOut,
     ProfileUpdateIn,
     UserOut,
 )
@@ -199,72 +201,121 @@ def deactivate_user(request, user_id: str):
 @router.post(
     "/phone/verify/request/",
     auth=jwt_auth,
-    response=MessageOut,
+    response=PhoneVerifyStartOut,
     summary="Solicitar verificación de teléfono",
 )
 def phone_verify_request(request, payload: PhoneVerifyRequestIn):
-    """Send a 6-digit OTP for phone verification."""
-    otp = secrets.token_urlsafe(8)
-    store_otp(payload.phone_number, otp, "phone_verify")
+    """Send OTP for phone verification via Twilio Verify (real SMS).
+
+    REAL PRODUCTION CODE — OTP is sent via Twilio Verify API.
+    No DEV bypass. No mock. The code arrives on the actual phone.
+    """
+    from apps.authentication.otp_service import send_otp
+    from django.core.cache import cache
 
     user = request.user
     user.phone_number = payload.phone_number
     user.is_phone_verified = False
     user.save(update_fields=["phone_number", "is_phone_verified", "updated_at"])
 
-    masked_phone = payload.phone_number[:4] + "****" + payload.phone_number[-2:]
-
-    if settings.DEBUG:
-        logger.info(
-            "📱 PHONE VERIFY OTP for %s: %s (DEV MODE — not sent via SMS)",
-            payload.phone_number,
-            otp,
-        )
-
     try:
-        send_otp_email(
-            email=user.email,
-            otp=otp,
-            subject="Loyallia — Código de verificación telefónica",
-            body=(
-                f"Hola {user.first_name or user.email},\n\n"
-                f"Tu código de verificación para {masked_phone} es: {otp}\n\n"
-                f"Este código expira en 15 minutos.\n\n-- Loyallia"
-            ),
+        result = send_otp(
+            recipient=payload.phone_number,
+            purpose="phone_verification",
+            custom_friendly_name="Loyallia",
         )
-    except Exception:
-        logger.exception("Failed to send phone OTP for %s", payload.phone_number)
+    except Exception as exc:
+        logger.error("Phone verify request failed for %s: %s", payload.phone_number, exc)
+        return PhoneVerifyStartOut(
+            success=False,
+            message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),
+        )
 
-    return MessageOut(
+    # Store SID in Redis for confirm step
+    cache.set(
+        f"phone_verify_sid:{payload.phone_number}",
+        result.get("sid", ""),
+        timeout=300,
+    )
+
+    masked_phone = payload.phone_number[:4] + "****" + payload.phone_number[-2:]
+    return PhoneVerifyStartOut(
         success=True,
-        message=get_message("AUTH_PHONE_OTP_SENT", phone=masked_phone),
+        message=get_message("VERIFY_OTP_SENT", channel=result.get("channel", "sms")),
+        sid=result.get("sid", ""),
+        strategy=result.get("strategy", ""),
+        channel=result.get("channel", ""),
     )
 
 
 @router.post(
     "/phone/verify/confirm/",
     auth=jwt_auth,
-    response=MessageOut,
+    response=PhoneVerifyCheckOut,
     summary="Confirmar verificación de teléfono",
 )
 def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
-    """Validate the OTP and mark the phone as verified."""
+    """Validate OTP via Twilio Verify and mark phone as verified.
+
+    REAL PRODUCTION CODE — Validates against Twilio Verify API.
+    """
+    from apps.authentication.otp_service import check_otp
     from django.core.cache import cache
 
+    # Rate limit check
     cache_key = f"otp_attempts:phone_verify:{payload.phone_number}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 5:
-        raise HttpError(429, get_message("RATE_LIMITED"))
+        return PhoneVerifyCheckOut(
+            success=False,
+            message=get_message("VERIFY_RATE_LIMITED", minutes=15),
+            valid=False,
+        )
     cache.set(cache_key, attempts + 1, 900)
 
-    if not verify_otp(payload.phone_number, payload.otp, "phone_verify"):
-        raise HttpError(400, get_message("AUTH_PHONE_OTP_INVALID"))
+    # Retrieve SID from Redis
+    sid = cache.get(f"phone_verify_sid:{payload.phone_number}", "")
+
+    try:
+        is_valid = check_otp(
+            recipient=payload.phone_number,
+            code=payload.otp,
+            sid=sid or None,
+            purpose="phone_verification",
+        )
+    except Exception as exc:
+        logger.error("Phone verify confirm failed for %s: %s", payload.phone_number, exc)
+        return PhoneVerifyCheckOut(
+            success=False,
+            message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),
+            valid=False,
+        )
+
+    if not is_valid:
+        return PhoneVerifyCheckOut(
+            success=False,
+            message=get_message("VERIFY_OTP_INVALID"),
+            valid=False,
+        )
 
     user = request.user
     if user.phone_number != payload.phone_number:
-        raise HttpError(400, get_message("AUTH_PHONE_OTP_INVALID"))
+        return PhoneVerifyCheckOut(
+            success=False,
+            message=get_message("VERIFY_OTP_INVALID"),
+            valid=False,
+        )
 
     user.is_phone_verified = True
     user.save(update_fields=["is_phone_verified", "updated_at"])
+
+    # Clean up
+    cache.delete(f"phone_verify_sid:{payload.phone_number}")
+    cache.delete(cache_key)
+
     logger.info("Phone verified for user %s: %s", user.email, payload.phone_number)
-    return MessageOut(success=True, message=get_message("AUTH_PHONE_VERIFIED"))
+    return PhoneVerifyCheckOut(
+        success=True,
+        message=get_message("VERIFY_OTP_VALID"),
+        valid=True,
+    )
