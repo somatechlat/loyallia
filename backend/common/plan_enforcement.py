@@ -125,25 +125,15 @@ def get_current_usage(tenant, resource: str) -> int:
         "programs": lambda: Card.objects.filter(tenant=tenant).count(),
         "locations": lambda: tenant.locations.count(),
         "users": lambda: tenant.users.filter(is_active=True).count(),
-        "notifications_month": lambda: _count_monthly(
-            "apps.notifications.models", "Notification", tenant, month_start
-        ),
-        "transactions_month": lambda: _count_monthly(
-            "apps.transactions.models", "Transaction", tenant, month_start
-        ),
+        "notifications_month": lambda: _count_monthly("apps.notifications.models", "Notification", tenant, month_start),
+        "transactions_month": lambda: _count_monthly("apps.transactions.models", "Transaction", tenant, month_start),
         "whatsapp_day": lambda: _get_whatsapp_today(tenant),
         "emails_month": lambda: _count_emails_month(tenant, month_start),
         "sms_day": lambda: _count_sms_today(tenant),
-        "wallet_pushes_month": lambda: _count_wallet_pushes_month(
-            tenant, month_start
-        ),
+        "wallet_pushes_month": lambda: _count_wallet_pushes_month(tenant, month_start),
         "automations": lambda: _count_automations(tenant),
-        "automation_executions_day": lambda: _count_automation_executions_today(
-            tenant
-        ),
-        "ai_queries_month": lambda: _count_monthly(
-            "apps.tenants.models", "AIQueryLog", tenant, month_start
-        ),
+        "automation_executions_day": lambda: _count_automation_executions_today(tenant),
+        "ai_queries_month": lambda: _count_monthly("apps.tenants.models", "AIQueryLog", tenant, month_start),
         "api_calls_day": lambda: _count_api_calls_today(tenant),
         "exports_month": lambda: _count_exports_month(tenant, month_start),
     }
@@ -165,9 +155,7 @@ def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> in
 
     module = importlib.import_module(module_path)
     model_class = getattr(module, model_name)
-    return model_class.objects.filter(
-        tenant=tenant, created_at__gte=month_start
-    ).count()
+    return model_class.objects.filter(tenant=tenant, created_at__gte=month_start).count()
 
 
 def _get_whatsapp_today(tenant) -> int:
@@ -257,13 +245,19 @@ def _count_api_calls_today(tenant) -> int:
     Uses AgentAPICallLog for accurate per-call counting.
     PERF: Single COUNT query on AgentAPICallLog filtered by tenant + today.
     """
+    from django.db import ProgrammingError
+
     from apps.agent_api.models import AgentAPICallLog
 
     today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    return AgentAPICallLog.objects.filter(
-        tenant=tenant,
-        created_at__gte=today_start,
-    ).count()
+    try:
+        return AgentAPICallLog.objects.filter(
+            tenant=tenant,
+            created_at__gte=today_start,
+        ).count()
+    except ProgrammingError:
+        logger.warning("Agent API call log table is unavailable; returning usage=0.")
+        return 0
 
 
 def _count_exports_month(tenant, month_start) -> int:
@@ -301,9 +295,7 @@ def check_plan_limit(tenant, resource: str) -> None:
     from apps.billing.models import Subscription
 
     with transaction.atomic():
-        subscription = (
-            Subscription.objects.select_for_update().filter(tenant=tenant).first()
-        )
+        subscription = Subscription.objects.select_for_update().filter(tenant=tenant).first()
         if not subscription:
             raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
 

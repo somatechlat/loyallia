@@ -140,10 +140,6 @@ test.describe('SuperAdmin — Plan Management @superadmin', () => {
     await page.waitForTimeout(200);
     await page.locator('text=Máx. Wallet Pushes/mes').locator('..').locator('input[type="number"]').fill('3000');
 
-    // Set automation limits
-    await page.locator('text=Máx. Automatizaciones').locator('..').locator('input[type="number"]').fill('10');
-    await page.locator('text=Ejec./día').locator('..').locator('input[type="number"]').fill('500');
-
     // Save
     await page.getByRole('button', { name: /Crear Plan/ }).click();
     await page.waitForTimeout(2000);
@@ -252,6 +248,26 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     await expect(page.getByText('Editor de Vault — Google Wallet')).toBeVisible({ timeout: 5000 });
   });
 
+  test('SA wallet editor exposes file uploads and hot enable toggles @superadmin', async ({ page }) => {
+    await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    const grid = page.locator('.grid').filter({ has: page.locator('text=Google Wallet') }).first();
+    const googleCard = grid.locator('> div').filter({ hasText: 'Google Wallet' }).first();
+    await googleCard.getByRole('button').click();
+
+    await expect(page.getByLabel('Subir archivo para Service Account JSON')).toBeVisible({ timeout: 5000 });
+    await expect(googleCard.getByRole('button', { name: 'ON', exact: true })).toBeVisible();
+    await expect(googleCard.getByRole('button', { name: 'OFF', exact: true })).toBeVisible();
+
+    const appleCard = page.locator('.grid').filter({ has: page.locator('text=Apple Wallet') }).first()
+      .locator('> div').filter({ hasText: 'Apple Wallet' }).first();
+    await appleCard.getByRole('button').first().click();
+    await expect(page.getByLabel('Subir archivo para Certificate PEM')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByLabel('Subir archivo para Private Key PEM')).toBeVisible();
+    await expect(page.getByLabel('Subir archivo para WWDR Certificate PEM')).toBeVisible();
+  });
+
   test('SA can edit a non-secret Vault field without page reload @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
@@ -262,7 +278,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     await page.waitForTimeout(500);
 
     // Edit the Issuer ID field (non-secret) — use label text to find the input
-    const issuerInput = page.locator('label').filter({ hasText: 'Issuer ID' }).locator('input, textarea').first();
+    const issuerInput = page.locator('div').filter({ has: page.locator('label', { hasText: 'Issuer ID' }) }).locator('input[type="text"]').first();
     await issuerInput.fill('3388000000023112792');
     await page.getByRole('button', { name: /Guardar en Vault/ }).first().click();
 
@@ -298,7 +314,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     await broadcastForm.getByRole('button', { name: /Enviar a todos/ }).click();
 
     // Should show sending or success state
-    await expect(page.locator('text=/Enviando|Enviado|Sending|Sent/')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /Enviando|Enviar a todos/ })).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -354,6 +370,15 @@ test.describe('SuperAdmin — Integration API @superadmin', () => {
     const resp = await request.put(`${BASE_API}/api/v1/admin/platform/integrations/email/secret/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { key: 'invalid_key', value: 'test' },
+    });
+    expect(resp.status()).toBe(400);
+  });
+
+  test('PUT wallet secret rejects malformed Google JSON @superadmin', async ({ request }) => {
+    const token = await loginAs(request, 'admin@loyallia.com');
+    const resp = await request.put(`${BASE_API}/api/v1/admin/platform/integrations/google_wallet/secret/`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { key: 'google_service_account_json', value: '{bad json' },
     });
     expect(resp.status()).toBe(400);
   });

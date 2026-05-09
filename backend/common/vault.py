@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 VAULT_ADDR = os.environ.get("VAULT_ADDR", "")
 VAULT_TOKEN = os.environ.get("VAULT_TOKEN", "")
 VAULT_TOKEN_FILE = os.environ.get("VAULT_TOKEN_FILE", "")
-VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia")
+VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia/production")
 
 # Cache TTL in seconds (default 300 = 5 minutes)
 VAULT_CACHE_TTL = int(os.environ.get("VAULT_CACHE_TTL", "300"))
@@ -109,9 +109,7 @@ def _fetch_vault_secrets() -> dict:
         with urllib.request.urlopen(req, timeout=5) as response:
             body = json.loads(response.read().decode("utf-8"))
             secrets = body.get("data", {}).get("data", {})
-            logger.info(
-                "Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH
-            )
+            logger.info("Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH)
             _secrets_cache = secrets
             _cache_fetched_at = now
             return secrets
@@ -131,9 +129,7 @@ def fetch_vault_secrets() -> dict:
     return _fetch_vault_secrets().copy()
 
 
-def get_secret(
-    vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False
-) -> str:
+def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False) -> str:
     """
     Retrieve a secret value.
 
@@ -192,26 +188,47 @@ def put_secret(vault_key: str, value: str) -> bool:
     import urllib.error
     import urllib.request
 
-    # KV v2 write URL
-    url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH.replace('/data/', '/data/')}"
+    url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH}"
     headers = {
         "X-Vault-Token": vault_token,
         "Content-Type": "application/json",
     }
+    patch_headers = {
+        "X-Vault-Token": vault_token,
+        "Content-Type": "application/merge-patch+json",
+    }
 
-    # Fetch existing data to merge
-    existing = _fetch_vault_secrets()
-    existing[vault_key] = value
-
-    payload = json.dumps({"data": existing}).encode("utf-8")
+    payload = json.dumps({"data": {vault_key: value}}).encode("utf-8")
 
     try:
-        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+        req = urllib.request.Request(url, data=payload, headers=patch_headers, method="PATCH")
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status in (200, 204):
-                logger.info(
-                    "Vault: wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH
-                )
+                logger.info("Vault: patched secret '%s' in %s", vault_key, VAULT_SECRET_PATH)
+                _publish_shared_cache_invalidation()
+                clear_cache()
+                return True
+    except urllib.error.HTTPError as exc:
+        if exc.code not in (404, 405, 415):
+            logger.error("Vault: patch failed (%s).", exc.reason)
+            return False
+        logger.warning("Vault: patch unsupported or path missing; falling back to merge write.")
+    except urllib.error.URLError as exc:
+        logger.error("Vault: patch failed (%s).", exc.reason)
+        return False
+    except Exception as exc:
+        logger.error("Vault: unexpected patch error (%s).", exc)
+        return False
+
+    existing = _fetch_vault_secrets().copy()
+    existing[vault_key] = value
+    fallback_payload = json.dumps({"data": existing}).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(url, data=fallback_payload, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as response:
+            if response.status in (200, 204):
+                logger.info("Vault: merge-wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH)
                 _publish_shared_cache_invalidation()
                 clear_cache()
                 return True

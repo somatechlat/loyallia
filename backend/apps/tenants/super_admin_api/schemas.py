@@ -397,3 +397,26 @@ class PlatformSettingsSummaryOut(BaseModel):
 
     category: str
     settings: list[PlatformSettingOut]
+
+
+# =============================================================================
+# SYSADMIN OPERATIONS (LYL-BOOT-001)
+# =============================================================================
+
+
+class FactoryResetConfirmIn(BaseModel):
+    """OTP confirmation for factory reset. IRREVERSIBLE.
+
+    The operator must first call /factory-reset/request/ to receive
+    the 6-digit OTP via email+SMS, then submit it here.
+    """
+
+    otp: str = Field(..., min_length=6, max_length=6)
+
+
+class SeedDemoDataOut(BaseModel):
+    """Response from the seed demo data endpoint."""
+
+    success: bool
+    message: str
+    output: str = ""

@@ -44,6 +44,7 @@ htmlcov/
 *.log
 local_settings.py
 db.sqlite3
+*.sqlite3
 staticfiles/
 mediafiles/
 
@@ -87,3 +88,14 @@ frontend/tsconfig.tsbuildinfo
 .agents/
 backend/auth.json
 frontend/.env.test
+
+# Build artifacts & debug output
+full_build.log
+source_output.txt
+test_output.log
+
+# Ruff cache
+.ruff_cache/
+
+# Stray root assets
+1Asset*

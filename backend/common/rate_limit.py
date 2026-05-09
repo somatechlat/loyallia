@@ -117,22 +117,26 @@ class RateLimitMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self._redis_available = None
+        self._cache_available = None
 
-    def _get_redis(self):
-        """Lazy Redis connection from Django cache backend."""
-        if self._redis_available is False:
+    def _get_cache(self):
+        """Lazy Django cache backend connection.
+
+        Uses django.core.cache (works with any backend including django_redis).
+        """
+        if self._cache_available is False:
             return None
         try:
-            from django_redis import get_redis_connection
+            from django.core.cache import cache
 
-            conn = get_redis_connection("default")
-            self._redis_available = True
-            return conn
+            # Quick connectivity test (only on first call)
+            if self._cache_available is None:
+                cache.set("rl:__ping__", 1, 5)
+                self._cache_available = True
+            return cache
         except Exception:
-            # Redis unavailable — fail open (allow all requests)
-            self._redis_available = False
-            logger.warning("Rate limiter: Redis unavailable. Failing open.")
+            self._cache_available = False
+            logger.warning("Rate limiter: Cache backend unavailable. Failing open.")
             return None
 
     def __call__(self, request: HttpRequest):
@@ -145,10 +149,10 @@ class RateLimitMiddleware:
         if path == "/api/v1/health/":
             return self.get_response(request)
 
-        redis = self._get_redis()
-        if redis is None:
+        cache = self._get_cache()
+        if cache is None:
             # SECURITY (LYL-C-SEC-002): Fail CLOSED for auth endpoints.
-            # Auth endpoints must not pass through unchecked when Redis is down.
+            # Auth endpoints must not pass through unchecked when cache is down.
             if any(request.path.startswith(p) for p in AUTH_PATHS):
                 return JsonResponse(
                     {"error": "Service temporarily unavailable"},
@@ -181,24 +185,28 @@ class RateLimitMiddleware:
                 rate_key = f"rl:{rule_path}:ip:{client_ip}"
 
             try:
-                # Use pipeline to minimize round-trips
-                pipe = redis.pipeline()
-                pipe.incr(rate_key)
-                # Only set TTL on first request to prevent permanent lockouts
-                results = pipe.execute()
-                current_count = results[0]
-
-                if current_count == 1:
-                    redis.expire(rate_key, window)
+                current_count = cache.get(rate_key)
+                if current_count is None:
+                    # First request in this window — set to 1 with TTL
+                    cache.set(rate_key, 1, window)
+                    current_count = 1
+                else:
+                    # Increment atomically via cache.incr
+                    try:
+                        current_count = cache.incr(rate_key)
+                    except ValueError:
+                        # Key expired between get and incr — reset
+                        cache.set(rate_key, 1, window)
+                        current_count = 1
             except Exception:
-                # Redis error — fail open
-                logger.warning("Rate limiter: Redis pipeline error. Failing open.")
+                # Cache error — fail open
+                logger.warning("Rate limiter: Cache operation error. Failing open.")
                 break
 
             if current_count > max_requests:
-                # Get TTL for Retry-After header
+                # Estimate TTL for Retry-After header
                 try:
-                    ttl = redis.ttl(rate_key)
+                    ttl = cache.ttl(rate_key) if hasattr(cache, "ttl") else window
                 except Exception:
                     ttl = window
 

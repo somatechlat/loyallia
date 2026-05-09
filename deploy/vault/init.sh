@@ -14,7 +14,7 @@ wait_for_vault() {
 }
 
 existing_field() {
-    wget -qO- --header "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/$VAULT_APP_SECRET_PATH" 2>/dev/null | sed -n 's/.*"'"$1"'":"\([^"]*\)".*/\1/p' || true
+    vault kv get -mount=secret -field="$1" "$VAULT_APP_SECRET_PATH" 2>/dev/null || true
 }
 
 env_or_existing() {
@@ -38,6 +38,28 @@ require_secret() {
 
 generate_basic_auth() {
     printf "loyallia:%s" "$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32)"
+}
+
+set_secret() {
+    key="$1"
+    value="$2"
+    [ -n "$value" ] || return 0
+    vault kv patch -mount=secret "$VAULT_APP_SECRET_PATH" "$key=$value" >/dev/null 2>&1 || \
+        vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" "$key=$value" >/dev/null
+}
+
+set_secret_from_env() {
+    key="$1"
+    value="$2"
+    [ -n "$value" ] || return 0
+    set_secret "$key" "$value"
+}
+
+set_secret_default_if_missing() {
+    key="$1"
+    default_value="$2"
+    [ -n "$(existing_field "$key")" ] && return 0
+    set_secret "$key" "$default_value"
 }
 
 wait_for_vault
@@ -83,47 +105,56 @@ require_secret minio_secret_key "$minio_secret_key"
 require_secret jwt_secret_key "$jwt_secret_key"
 require_secret pass_hmac_secret "$pass_hmac_secret"
 
-vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" \
-    secret_key="$secret_key" \
-    postgres_password="$postgres_password" \
-    redis_url="$redis_url" \
-    celery_broker_url="$celery_broker_url" \
-    celery_result_backend="$celery_result_backend" \
-    minio_access_key="$minio_access_key" \
-    minio_secret_key="$minio_secret_key" \
-    jwt_secret_key="$jwt_secret_key" \
-    pass_hmac_secret="$pass_hmac_secret" \
-    flower_basic_auth="$flower_basic_auth" \
-    google_oauth_client_id="$(env_or_existing google_oauth_client_id "${_GOOGLE_OAUTH_CLIENT_ID:-}")" \
-    google_oauth_client_secret="$(env_or_existing google_oauth_client_secret "${_GOOGLE_OAUTH_CLIENT_SECRET:-}")" \
-    google_wallet_issuer_id="$(env_or_existing google_wallet_issuer_id "${_GOOGLE_WALLET_ISSUER_ID:-}")" \
-    google_service_account_json="$(env_or_existing google_service_account_json "${_GOOGLE_SERVICE_ACCOUNT_JSON:-}")" \
-    payment_gateway_login="$(env_or_existing payment_gateway_login "${_PAYMENT_GATEWAY_LOGIN:-}")" \
-    payment_gateway_tran_key="$(env_or_existing payment_gateway_tran_key "${_PAYMENT_GATEWAY_TRAN_KEY:-}")" \
-    payment_gateway_webhook_secret="$(env_or_existing payment_gateway_webhook_secret "${_PAYMENT_GATEWAY_WEBHOOK_SECRET:-}")" \
-    email_host_user="$(env_or_existing email_host_user "${_EMAIL_HOST_USER:-}")" \
-    email_host_password="$(env_or_existing email_host_password "${_EMAIL_HOST_PASSWORD:-}")" \
-    apple_pass_type_identifier="$(env_or_existing apple_pass_type_identifier "${_APPLE_PASS_TYPE_IDENTIFIER:-}")" \
-    apple_team_identifier="$(env_or_existing apple_team_identifier "${_APPLE_TEAM_IDENTIFIER:-}")" \
-    apple_cert_pem="$(env_or_existing apple_cert_pem "${_APPLE_CERT_PEM:-}")" \
-    apple_cert_key_pem="$(env_or_existing apple_cert_key_pem "${_APPLE_CERT_KEY_PEM:-}")" \
-    apple_wwdr_cert_pem="$(env_or_existing apple_wwdr_cert_pem "${_APPLE_WWDR_CERT_PEM:-}")" \
-    google_wallet_enabled="$(env_or_existing google_wallet_enabled "${_GOOGLE_WALLET_ENABLED:-true}")" \
-    apple_wallet_enabled="$(env_or_existing apple_wallet_enabled "${_APPLE_WALLET_ENABLED:-false}")" \
-    payment_gateway_enabled="$(env_or_existing payment_gateway_enabled "${_PAYMENT_GATEWAY_ENABLED:-false}")" \
-    payment_gateway_provider="$(env_or_existing payment_gateway_provider "${_PAYMENT_GATEWAY_PROVIDER:-manual}")" \
-    whatsapp_bridge_url="$(env_or_existing whatsapp_bridge_url "${_WHATSAPP_BRIDGE_URL:-}")" \
-    whatsapp_bridge_api_key="$(env_or_existing whatsapp_bridge_api_key "${_WHATSAPP_BRIDGE_API_KEY:-}")" \
-    twilio_account_sid="$(env_or_existing twilio_account_sid "${_TWILIO_ACCOUNT_SID:-}")" \
-    twilio_auth_token="$(env_or_existing twilio_auth_token "${_TWILIO_AUTH_TOKEN:-}")" \
-    twilio_from_number="$(env_or_existing twilio_from_number "${_TWILIO_FROM_NUMBER:-}")" \
-    listmonk_url="$(env_or_existing listmonk_url "${_LISTMONK_URL:-}")" \
-    listmonk_api_user="$(env_or_existing listmonk_api_user "${_LISTMONK_API_USER:-}")" \
-    listmonk_api_token="$(env_or_existing listmonk_api_token "${_LISTMONK_API_TOKEN:-}")" \
-    apple_nfc_enabled="$(env_or_existing apple_nfc_enabled "${_APPLE_NFC_ENABLED:-false}")" \
-    apple_nfc_encryption_public_key="$(env_or_existing apple_nfc_encryption_public_key "${_APPLE_NFC_ENCRYPTION_PUBLIC_KEY:-}")" \
-    ai_agent_base_url="$(env_or_existing ai_agent_base_url "${_AI_AGENT_BASE_URL:-}")" \
-    ai_agent_api_key="$(env_or_existing ai_agent_api_key "${_AI_AGENT_API_KEY:-}")" >/dev/null
+set_secret secret_key "$secret_key"
+set_secret postgres_password "$postgres_password"
+set_secret redis_url "$redis_url"
+set_secret celery_broker_url "$celery_broker_url"
+set_secret celery_result_backend "$celery_result_backend"
+set_secret minio_access_key "$minio_access_key"
+set_secret minio_secret_key "$minio_secret_key"
+set_secret jwt_secret_key "$jwt_secret_key"
+set_secret pass_hmac_secret "$pass_hmac_secret"
+set_secret flower_basic_auth "$flower_basic_auth"
+
+# Optional integration values are written only when provided through bootstrap
+# env vars. Existing Vault values are left untouched, which prevents repeated
+# vault-init runs from corrupting multiline JSON/PEM credentials.
+set_secret_from_env google_oauth_client_id "${_GOOGLE_OAUTH_CLIENT_ID:-}"
+set_secret_from_env google_oauth_client_secret "${_GOOGLE_OAUTH_CLIENT_SECRET:-}"
+set_secret_from_env google_wallet_issuer_id "${_GOOGLE_WALLET_ISSUER_ID:-}"
+set_secret_from_env google_service_account_json "${_GOOGLE_SERVICE_ACCOUNT_JSON:-}"
+set_secret_from_env payment_gateway_login "${_PAYMENT_GATEWAY_LOGIN:-}"
+set_secret_from_env payment_gateway_tran_key "${_PAYMENT_GATEWAY_TRAN_KEY:-}"
+set_secret_from_env payment_gateway_webhook_secret "${_PAYMENT_GATEWAY_WEBHOOK_SECRET:-}"
+set_secret_from_env email_host_user "${_EMAIL_HOST_USER:-}"
+set_secret_from_env email_host_password "${_EMAIL_HOST_PASSWORD:-}"
+set_secret_from_env apple_pass_type_identifier "${_APPLE_PASS_TYPE_IDENTIFIER:-}"
+set_secret_from_env apple_team_identifier "${_APPLE_TEAM_IDENTIFIER:-}"
+set_secret_from_env apple_cert_pem "${_APPLE_CERT_PEM:-}"
+set_secret_from_env apple_cert_key_pem "${_APPLE_CERT_KEY_PEM:-}"
+set_secret_from_env apple_wwdr_cert_pem "${_APPLE_WWDR_CERT_PEM:-}"
+set_secret_from_env google_wallet_enabled "${_GOOGLE_WALLET_ENABLED:-}"
+set_secret_from_env apple_wallet_enabled "${_APPLE_WALLET_ENABLED:-}"
+set_secret_from_env payment_gateway_enabled "${_PAYMENT_GATEWAY_ENABLED:-}"
+set_secret_from_env payment_gateway_provider "${_PAYMENT_GATEWAY_PROVIDER:-}"
+set_secret_from_env whatsapp_bridge_url "${_WHATSAPP_BRIDGE_URL:-}"
+set_secret_from_env whatsapp_bridge_api_key "${_WHATSAPP_BRIDGE_API_KEY:-}"
+set_secret_from_env twilio_account_sid "${_TWILIO_ACCOUNT_SID:-}"
+set_secret_from_env twilio_auth_token "${_TWILIO_AUTH_TOKEN:-}"
+set_secret_from_env twilio_from_number "${_TWILIO_FROM_NUMBER:-}"
+set_secret_from_env listmonk_url "${_LISTMONK_URL:-}"
+set_secret_from_env listmonk_api_user "${_LISTMONK_API_USER:-}"
+set_secret_from_env listmonk_api_token "${_LISTMONK_API_TOKEN:-}"
+set_secret_from_env apple_nfc_enabled "${_APPLE_NFC_ENABLED:-}"
+set_secret_from_env apple_nfc_encryption_public_key "${_APPLE_NFC_ENCRYPTION_PUBLIC_KEY:-}"
+set_secret_from_env ai_agent_base_url "${_AI_AGENT_BASE_URL:-}"
+set_secret_from_env ai_agent_api_key "${_AI_AGENT_API_KEY:-}"
+
+set_secret_default_if_missing google_wallet_enabled "true"
+set_secret_default_if_missing apple_wallet_enabled "false"
+set_secret_default_if_missing payment_gateway_enabled "false"
+set_secret_default_if_missing payment_gateway_provider "manual"
+set_secret_default_if_missing apple_nfc_enabled "false"
 
 # ---------------------------------------------------------------------------
 # Export infrastructure secrets to files so containers read from Vault volume
@@ -138,7 +169,7 @@ printf "%s" "$minio_secret_key" >/vault/runtime/minio_root_password
 chmod 0444 /vault/runtime/postgres_password /vault/runtime/redis_password \
     /vault/runtime/minio_root_user /vault/runtime/minio_root_password
 
-printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\"]\n}\n" >/vault/runtime/loyallia-app.hcl
+printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\", \"patch\"]\n}\n" >/vault/runtime/loyallia-app.hcl
 vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null
 vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token
 chmod 0444 /vault/runtime/app-token

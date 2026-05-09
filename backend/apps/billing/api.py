@@ -74,7 +74,7 @@ SUBSCRIPTION_STATUS_LABELS = {
 # ============================================================================
 
 
-@router.get("/plans/", auth=jwt_auth, summary="Planes disponibles")
+@router.get("/plans/", summary="Planes disponibles")
 def list_plans(request: HttpRequest):
     """Return all active subscription plans from the database."""
     from decimal import Decimal
@@ -83,25 +83,15 @@ def list_plans(request: HttpRequest):
 
     from apps.tenants.models import PlatformSetting
 
-    tax_rate = Decimal(
-        str(
-            PlatformSetting.get_float(
-                "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
-            )
-        )
-    )
-    trial_days = PlatformSetting.get_int(
-        "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
-    )
+    tax_rate = Decimal(str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15))))
+    trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
     plans = SubscriptionPlan.objects.filter(is_active=True)
     result = []
 
     for plan in plans:
         annual_monthly = (
-            (plan.price_annual / 12).quantize(Decimal("0.01"))
-            if plan.price_annual > 0
-            else Decimal("0.00")
+            (plan.price_annual / 12).quantize(Decimal("0.01")) if plan.price_annual > 0 else Decimal("0.00")
         )
         result.append(
             {
@@ -171,26 +161,16 @@ def get_subscription(request: HttpRequest):
         "plan_slug": plan.slug if plan else subscription.plan,
         "billing_cycle": subscription.billing_cycle,
         "status": subscription.status,
-        "status_display": SUBSCRIPTION_STATUS_LABELS.get(
-            subscription.status, subscription.status
-        ),
+        "status_display": SUBSCRIPTION_STATUS_LABELS.get(subscription.status, subscription.status),
         "is_access_allowed": subscription.is_access_allowed,
-        "trial_start": (
-            subscription.trial_start.isoformat() if subscription.trial_start else None
-        ),
-        "trial_end": (
-            subscription.trial_end.isoformat() if subscription.trial_end else None
-        ),
+        "trial_start": (subscription.trial_start.isoformat() if subscription.trial_start else None),
+        "trial_end": (subscription.trial_end.isoformat() if subscription.trial_end else None),
         "days_until_trial_end": subscription.days_until_trial_end,
         "current_period_start": (
-            subscription.current_period_start.isoformat()
-            if subscription.current_period_start
-            else None
+            subscription.current_period_start.isoformat() if subscription.current_period_start else None
         ),
         "current_period_end": (
-            subscription.current_period_end.isoformat()
-            if subscription.current_period_end
-            else None
+            subscription.current_period_end.isoformat() if subscription.current_period_end else None
         ),
         "cancel_at_period_end": subscription.cancel_at_period_end,
         "features": plan.features if plan else [],
@@ -241,12 +221,8 @@ def get_usage(request: HttpRequest):
     total_programs = Card.objects.filter(tenant=tenant).count()
     total_users = User.objects.filter(tenant=tenant, is_active=True).count()
     total_locations = Location.objects.filter(tenant=tenant).count()
-    monthly_txns = Transaction.objects.filter(
-        tenant=tenant, created_at__gte=month_start
-    ).count()
-    monthly_notifs = Notification.objects.filter(
-        tenant=tenant, created_at__gte=month_start
-    ).count()
+    monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
+    monthly_notifs = Notification.objects.filter(tenant=tenant, created_at__gte=month_start).count()
 
     # Read limits from subscription plan (not hardcoded)
     subscription = Subscription.objects.filter(tenant=tenant).first()
@@ -361,15 +337,9 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
 
     now = timezone.now()
     period_end = now + timedelta(days=365 if data.billing_cycle == "annual" else 30)
-    subtotal = (
-        plan.price_annual if data.billing_cycle == "annual" else plan.price_monthly
-    )
+    subtotal = plan.price_annual if data.billing_cycle == "annual" else plan.price_monthly
     tax_rate = Decimal(
-        str(
-            PlatformSetting.get_float(
-                "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
-            )
-        )
+        str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
     ).quantize(Decimal("0.0001"))
 
     with transaction.atomic():
@@ -484,11 +454,7 @@ def cancel_subscription(request: HttpRequest):
     return {
         "success": True,
         "message": get_message("BILLING_CANCEL_SCHEDULED"),
-        "effective_date": (
-            subscription.current_period_end.isoformat()
-            if subscription.current_period_end
-            else None
-        ),
+        "effective_date": (subscription.current_period_end.isoformat() if subscription.current_period_end else None),
     }
 
 

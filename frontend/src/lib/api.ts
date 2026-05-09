@@ -201,6 +201,13 @@ export const superAdminApi = {
   broadcast: (data: { subject: string; message: string }) => api.post('/api/v1/admin/broadcast/', data),
   updateIntegrationSecret: (integrationKey: string, key: string, value: string) =>
     api.put(`/api/v1/admin/platform/integrations/${integrationKey}/secret/`, { key, value }),
+  // SysAdmin Operations (LYL-BOOT-001)
+  seedDemoData: () =>
+    api.post('/api/v1/admin/platform/seed-demo-data/'),
+  factoryResetRequest: () =>
+    api.post('/api/v1/admin/platform/factory-reset/request/'),
+  factoryResetConfirm: (otp: string) =>
+    api.post('/api/v1/admin/platform/factory-reset/confirm/', { otp }),
 };
 
 export const transactionsApi = {

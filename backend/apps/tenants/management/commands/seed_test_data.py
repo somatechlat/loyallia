@@ -53,8 +53,12 @@ class Command(BaseCommand):
         from django.conf import settings
 
         if not settings.DEBUG:
-            self.stderr.write("ERROR: Seed commands can only run in DEBUG mode.")
-            return
+            self.stdout.write(
+                self.style.WARNING(
+                    "NOTE: Running seed in non-DEBUG mode. "
+                    "Security is enforced by SUPER_ADMIN API gate."
+                )
+            )
         if options["wipe"]:
             self.stdout.write(self.style.WARNING("Wiping existing synthetic data..."))
             with transaction.atomic():
@@ -114,12 +118,17 @@ class Command(BaseCommand):
                 "first_name": "Sistema",
                 "last_name": "Admin",
                 "role": UserRole.SUPER_ADMIN,
-                "tenant": tenant,
+                "tenant": None,
                 "is_active": True,
+                "is_staff": True,
+                "is_superuser": True,
             },
         )
-        if not admin.tenant:
-            admin.tenant = tenant
+        # SUPER_ADMIN operates at platform level — tenant must be None
+        if admin.tenant is not None:
+            admin.tenant = None
+            admin.is_staff = True
+            admin.is_superuser = True
         admin.set_password("123456")
         admin.save()
 

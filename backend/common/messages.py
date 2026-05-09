@@ -231,6 +231,11 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_TENANT_CREATION_FAILED": "Error al crear el negocio: {detail}",
     "ADMIN_WA_OVERRIDE_REMOVED": "Override removido — usando límite del plan.",
     "ADMIN_WA_OVERRIDE_SET": "Override WA establecido: {limit} msgs/día.",
+    # --- SysAdmin Operations (LYL-BOOT-001) ---
+    "ADMIN_DEMO_SEEDED": "Datos de demostración cargados exitosamente.",
+    "ADMIN_FACTORY_OTP_SENT": "Código de verificación enviado a su email y teléfono.",
+    "ADMIN_FACTORY_OTP_INVALID": "Código inválido o expirado. Intente de nuevo.",
+    "ADMIN_FACTORY_RESET_DONE": "Sistema restaurado a estado de fábrica exitosamente.",
     # --- Agent API ---
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
@@ -432,6 +437,11 @@ _MESSAGES_EN: dict[str, str] = {
     "ADMIN_TENANT_CREATION_FAILED": "Error creating tenant: {detail}",
     "ADMIN_WA_OVERRIDE_REMOVED": "Override removed — using plan default.",
     "ADMIN_WA_OVERRIDE_SET": "WA override set: {limit} msgs/day.",
+    # --- SysAdmin Operations (LYL-BOOT-001) ---
+    "ADMIN_DEMO_SEEDED": "Demo data loaded successfully.",
+    "ADMIN_FACTORY_OTP_SENT": "Verification code sent to your email and phone.",
+    "ADMIN_FACTORY_OTP_INVALID": "Invalid or expired code. Try again.",
+    "ADMIN_FACTORY_RESET_DONE": "System restored to factory state successfully.",
     "AGENT_KEY_INVALID": "Agent API key is invalid or has expired.",
     "AGENT_KEY_CREATED": "Agent API key created successfully.",
     "AGENT_KEY_REVOKED": "Agent API key revoked.",

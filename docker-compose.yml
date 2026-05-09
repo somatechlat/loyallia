@@ -253,7 +253,7 @@ services:
       vault-init:
         condition: service_completed_successfully
     command: >
-      sh -c 'redis-server --dir /data --requirepass "$$(cat /run/loyallia-vault/redis_password)" --appendonly yes --appendfsync everysec --maxmemory 400mb --maxmemory-policy allkeys-lru --save 900 1 --save 300 10 --save 60 10000 --tcp-keepalive 300 --timeout 300'
+      sh -c 'redis-server --dir /data --requirepass "$$(cat /run/loyallia-vault/redis_password)" --appendonly yes --appendfsync everysec --maxmemory 400mb --maxmemory-policy noeviction --save 900 1 --save 300 10 --save 60 10000 --tcp-keepalive 300 --timeout 300'
     volumes:
       - redis_data:/data
       - vault_runtime:/run/loyallia-vault:ro
@@ -343,10 +343,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64M
-          cpus: "0.10"
+          memory: 128M
+          cpus: "0.20"
         reservations:
-          memory: 32M
+          memory: 64M
 
   # ---------------------------------------------------------------------------
   # DJANGO API — Django 5 + Django Ninja → localhost:33905           [2GB]
@@ -361,8 +361,6 @@ services:
     command: >
       sh -c "python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
-      (python manage.py seed_subscription_plans 2>/dev/null || true) &
-      (python manage.py seed_test_data 2>/dev/null || true) &
       python manage.py runserver 0.0.0.0:8000"
     environment:
       <<: *common-env
@@ -757,7 +755,7 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health || exit 1"]
       interval: 30s
       timeout: 5s
       start_period: 10s
