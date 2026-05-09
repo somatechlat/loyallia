@@ -1,22 +1,47 @@
 # Python
+__pycache__
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 *.egg
+*.egg-info
 *.egg-info/
-dist/
+dist
+.dist/
+build
 build/
+.eggs
 .eggs/
+.venv
 .venv/
+venv
 venv/
+env
 env/
+
+# Python cache / test artifacts
+.pytest_cache
+.pytest_cache/
+.ruff_cache
+.ruff_cache/
+.mypy_cache
+.mypy_cache/
+htmlcov
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+*.log
+test_output.log
 
 # Django
 *.log
 db.sqlite3
+staticfiles
 staticfiles/
+mediafiles
 mediafiles/
 
 # Development / Test files (NOT in production image)
@@ -29,9 +54,17 @@ screenshot.py
 test-api.js
 test-campaign.js
 auth.json
+conftest.py
+pytest.ini
+pyrightconfig.json
+error.html
+scripts
+scripts/
 
 # IDE
+.vscode
 .vscode/
+.idea
 .idea/
 *.swp
 *.swo
@@ -41,18 +74,22 @@ auth.json
 Thumbs.db
 
 # Git
+.git
 .git/
 .gitignore
 
 # Docs
+docs
 docs/
 *.md
 *.pptx
 
 # Tests
+tests
 tests/
 *_test.py
 test_*.py
 
 # Certs (mounted at runtime, not baked in)
+certs
 certs/

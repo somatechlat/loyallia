@@ -1,0 +1,34 @@
+# Root-level build artifacts
+full_build.log
+*.log
+
+# Cache directories
+.ruff_cache/
+.pytest_cache/
+__pycache__/
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+docs/
+*.md
+
+# Local env files
+.env
+.env.*
+
+# Node / Python artifacts (covered by subfolder .dockerignore but belt-and-suspenders)
+node_modules/
+*.egg-info/
