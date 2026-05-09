@@ -250,6 +250,14 @@ _MESSAGES_ES: dict[str, str] = {
     "SMS_NOT_CONFIGURED": "El servicio de SMS (Twilio) no está configurado. Configure las credenciales en Vault.",
     "TWILIO_TEST_SENT": "SMS de prueba enviado exitosamente a {phone}.",
     "TWILIO_TEST_FAILED": "Error al enviar SMS de prueba: {detail}",
+    # --- Twilio Verify (LYL-SRS-VERIFY-001) ---
+    "VERIFY_OTP_SENT": "Código de verificación enviado via {channel}.",
+    "VERIFY_OTP_FAILED": "Error al enviar código de verificación: {detail}",
+    "VERIFY_OTP_INVALID": "Código de verificación inválido o expirado.",
+    "VERIFY_OTP_VALID": "Verificación completada exitosamente.",
+    "VERIFY_NOT_CONFIGURED": "Twilio Verify no está configurado. Configure el Service SID en la integración.",
+    "VERIFY_RATE_LIMITED": "Demasiados intentos de verificación. Espere {minutes} minutos.",
+    "FACTORY_RESET_VERIFY_SENT": "Código de verificación para restauración de fábrica enviado via {channel}.",
     # --- Data Export (LYL-SRS-009 / LOPDP Art.17) ---
     "DATA_EXPORT_STARTED": "Exportación de datos iniciada. Se descargará un archivo ZIP con toda la información del negocio.",
     "DATA_EXPORT_FAILED": "Error al exportar datos: {detail}",
@@ -455,6 +463,14 @@ _MESSAGES_EN: dict[str, str] = {
     "SMS_NOT_CONFIGURED": "SMS service (Twilio) is not configured. Set credentials in Vault.",
     "TWILIO_TEST_SENT": "Test SMS sent successfully to {phone}.",
     "TWILIO_TEST_FAILED": "Error sending test SMS: {detail}",
+    # --- Twilio Verify (LYL-SRS-VERIFY-001) ---
+    "VERIFY_OTP_SENT": "Verification code sent via {channel}.",
+    "VERIFY_OTP_FAILED": "Error sending verification code: {detail}",
+    "VERIFY_OTP_INVALID": "Invalid or expired verification code.",
+    "VERIFY_OTP_VALID": "Verification completed successfully.",
+    "VERIFY_NOT_CONFIGURED": "Twilio Verify is not configured. Set the Service SID in the integration.",
+    "VERIFY_RATE_LIMITED": "Too many verification attempts. Wait {minutes} minutes.",
+    "FACTORY_RESET_VERIFY_SENT": "Factory reset verification code sent via {channel}.",
     # --- Data Export (LYL-SRS-009 / LOPDP Art.17) ---
     "DATA_EXPORT_STARTED": "Data export started. A ZIP file with all business data will be downloaded.",
     "DATA_EXPORT_FAILED": "Error exporting data: {detail}",

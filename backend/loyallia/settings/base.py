@@ -406,6 +406,36 @@ TWILIO_FROM_NUMBER = get_secret(
 )
 TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 
+# -----------------------------------------------------------------------------
+# TWILIO VERIFY v2 (LYL-SRS-VERIFY-001)
+# -----------------------------------------------------------------------------
+TWILIO_VERIFY_SERVICE_SID = get_secret(
+    "twilio_verify_service_sid", env_fallback="TWILIO_VERIFY_SERVICE_SID", default=""
+)
+TWILIO_VERIFY_ENABLED = (
+    get_secret(
+        "twilio_verify_enabled", env_fallback="TWILIO_VERIFY_ENABLED", default="false"
+    ).lower()
+    == "true"
+)
+TWILIO_VERIFY_DEFAULT_CHANNEL = get_secret(
+    "twilio_verify_default_channel",
+    env_fallback="TWILIO_VERIFY_DEFAULT_CHANNEL",
+    default="sms",
+)
+TWILIO_API_KEY_SID = get_secret(
+    "twilio_api_key_sid", env_fallback="TWILIO_API_KEY_SID", default=""
+)
+TWILIO_API_KEY_SECRET = get_secret(
+    "twilio_api_key_secret", env_fallback="TWILIO_API_KEY_SECRET", default=""
+)
+TWILIO_TEST_ACCOUNT_SID = get_secret(
+    "twilio_test_account_sid", env_fallback="TWILIO_TEST_ACCOUNT_SID", default=""
+)
+TWILIO_TEST_AUTH_TOKEN = get_secret(
+    "twilio_test_auth_token", env_fallback="TWILIO_TEST_AUTH_TOKEN", default=""
+)
+
 # =============================================================================
 # LISTMONK EMAIL ENGINE (LYL-SRS-006)
 # =============================================================================

@@ -53,6 +53,19 @@ INTEGRATION_REQUIRED_KEY_GROUPS = {
         "twilio_auth_token",
         "twilio_from_number",
     ],
+    "twilio_verify": [
+        "twilio_verify_enabled",
+        "twilio_verify_service_sid",
+        "twilio_verify_default_channel",
+    ],
+    "twilio_api_key": [
+        "twilio_api_key_sid",
+        "twilio_api_key_secret",
+    ],
+    "twilio_test": [
+        "twilio_test_account_sid",
+        "twilio_test_auth_token",
+    ],
     "listmonk": [
         "listmonk_api_user",
         "listmonk_api_token",

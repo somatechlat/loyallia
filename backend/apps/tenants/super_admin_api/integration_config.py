@@ -55,6 +55,19 @@ ALLOWED_INTEGRATION_KEYS = {
         "twilio_auth_token",
         "twilio_from_number",
     ],
+    "twilio_verify": [
+        "twilio_verify_enabled",
+        "twilio_verify_service_sid",
+        "twilio_verify_default_channel",
+    ],
+    "twilio_api_key": [
+        "twilio_api_key_sid",
+        "twilio_api_key_secret",
+    ],
+    "twilio_test": [
+        "twilio_test_account_sid",
+        "twilio_test_auth_token",
+    ],
     "listmonk": [
         "listmonk_url",
         "listmonk_api_user",
@@ -135,11 +148,33 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
         "apple_wallet_enabled",
         "payment_gateway_enabled",
         "apple_nfc_enabled",
+        "twilio_verify_enabled",
     }:
         lowered = normalized.lower()
         if lowered not in {"true", "false"}:
             raise HttpError(400, f"{key} must be 'true' or 'false'")
         return lowered
+
+    if key == "twilio_verify_service_sid":
+        if not re.fullmatch(r"VA[a-fA-F0-9]{32}", normalized):
+            raise HttpError(400, "Invalid Twilio Verify Service SID. Expected format: VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)")
+        return normalized
+
+    if key == "twilio_verify_default_channel":
+        valid_channels = {"sms", "whatsapp", "voice", "email", "push", "totp", "sna"}
+        if normalized.lower() not in valid_channels:
+            raise HttpError(400, f"Invalid Verify channel. Must be one of: {', '.join(sorted(valid_channels))}")
+        return normalized.lower()
+
+    if key == "twilio_api_key_sid":
+        if normalized and not re.fullmatch(r"SK[a-fA-F0-9]{32}", normalized):
+            raise HttpError(400, "Invalid Twilio API Key SID. Expected format: SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)")
+        return normalized
+
+    if key == "twilio_test_account_sid":
+        if normalized and not re.fullmatch(r"AC[a-fA-F0-9]{32}", normalized):
+            raise HttpError(400, "Invalid Twilio Test Account SID. Expected format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)")
+        return normalized
 
     return normalized
 
@@ -165,6 +200,12 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
     twilio_sid_present = _present("twilio_account_sid")
     twilio_token_present = _present("twilio_auth_token")
     twilio_from_present = _present("twilio_from_number")
+    verify_enabled = _truthy(get_secret("twilio_verify_enabled", default="false"))
+    verify_sid_present = _present("twilio_verify_service_sid")
+    api_key_sid_present = _present("twilio_api_key_sid")
+    api_key_secret_present = _present("twilio_api_key_secret")
+    test_sid_present = _present("twilio_test_account_sid")
+    test_token_present = _present("twilio_test_auth_token")
     listmonk_user_present = _present("listmonk_api_user")
     listmonk_token_present = _present("listmonk_api_token")
     apple_nfc_enabled = _truthy(get_secret("apple_nfc_enabled", default="false"))
@@ -201,6 +242,48 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             preview_values={
                 "twilio_from_number": get_secret("twilio_from_number", default=""),
             },
+        ),
+        PlatformIntegrationOut(
+            key="twilio_verify",
+            name="Twilio Verify",
+            enabled=verify_enabled,
+            configured=verify_sid_present,
+            status="configured" if verify_sid_present else "missing_credentials",
+            detail="Multi-channel OTP verification via Twilio Verify v2",
+            diagnostics={
+                "verify_enabled": verify_enabled,
+                "service_sid_present": verify_sid_present,
+                "default_channel": get_secret("twilio_verify_default_channel", default="sms"),
+            },
+            preview_values={
+                "twilio_verify_default_channel": get_secret("twilio_verify_default_channel", default="sms"),
+            },
+        ),
+        PlatformIntegrationOut(
+            key="twilio_api_key",
+            name="Twilio API Key",
+            enabled=api_key_sid_present,
+            configured=api_key_sid_present and api_key_secret_present,
+            status="configured" if (api_key_sid_present and api_key_secret_present) else "missing_credentials",
+            detail="Alternative authentication for Twilio (API Key vs Auth Token)",
+            diagnostics={
+                "api_key_sid_present": api_key_sid_present,
+                "api_key_secret_present": api_key_secret_present,
+            },
+            preview_values={},
+        ),
+        PlatformIntegrationOut(
+            key="twilio_test",
+            name="Twilio Test Credentials",
+            enabled=test_sid_present,
+            configured=test_sid_present and test_token_present,
+            status="configured" if (test_sid_present and test_token_present) else "missing_credentials",
+            detail="Test Account SID + Auth Token for safe sandbox testing",
+            diagnostics={
+                "test_account_sid_present": test_sid_present,
+                "test_auth_token_present": test_token_present,
+            },
+            preview_values={},
         ),
         PlatformIntegrationOut(
             key="listmonk",

@@ -1166,3 +1166,385 @@ Current SuperAdmin impersonation allows access without secondary authentication,
    - **Validation:** Enforce `owner.verify_security_pin(payload.owner_pin)`.
    - **Security Lockout:** Implement a Redis-backed counter (`impersonate_fails:{user_id}`). Terminate request with HTTP 429 if failed attempts >= 3 within 900 seconds (15 minutes).
    - **Audit Trail:** Transcribe `justification` to `AuditLog`. Record status as `SUCCESS` or `DENIED` depending on PIN validation outcome.
+
+
+---
+
+## 24. MODULE 14 — TWILIO COMMUNICATIONS STACK (Verify v2 + SMS)
+
+> **Document ID:** LOYALLIA-SRS-VERIFY-001  
+> **Status:** APPROVED FOR DEVELOPMENT  
+> **Date:** 2026-05-09  
+> **Parent Document:** LOYALLIA-SRS-001 v1.0.0  
+
+---
+
+### 24.1 Purpose & Scope
+
+This module defines the complete integration of the **Twilio Communications Stack** into Loyallia. It covers:
+
+1. **Twilio SMS** (LYL-SRS-009) — Mass campaign delivery and single-send automation actions
+2. **Twilio Verify v2** (NEW) — Multi-channel OTP, identity verification, Silent Network Authentication (SNA), TOTP, and Push
+
+ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the SysAdmin Settings panel. No hardcoded credentials. No environment-variable-only secrets.
+
+---
+
+### 24.2 Definitions
+
+| Term | Definition |
+|------|-----------|
+| Verify Service SID | Twilio Service identifier (`VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`) |
+| Verify Channel | Delivery method: `sms`, `whatsapp`, `voice`, `email`, `push`, `totp`, `sna`, `auto` |
+| SNA | Silent Network Authentication — carrier-level identity proof without user interaction |
+| TOTP | Time-based One-Time Password (Authy, Google Authenticator) |
+| Rate Limit | Twilio Verify programmable rate limiting per unique key |
+| Verification SID | Unique verification attempt identifier (`VExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`) |
+| Friendly Name | Human-readable Verify service label in message templates |
+| Custom Code | Pre-generated verification code (4-10 digits) instead of random |
+
+---
+
+### 24.3 Architecture & Flowcharts
+
+#### 24.3.1 System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         LOYALLIA PLATFORM                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │  Campaigns  │  │ Automation  │  │   Factory   │  │ Registration│   │
+│  │   (OWNER)   │  │   Engine    │  │   Reset     │  │   (PUBLIC)  │   │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘   │
+│         │                │                │                │          │
+│         ▼                ▼                ▼                ▼          │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │              Twilio Service Layer (Django)                       │  │
+│  │  ┌─────────────┐  ┌─────────────────────────────────────────┐   │  │
+│  │  │ SMS Client  │  │      Verify Service Client (NEW)        │   │  │
+│  │  │  (existing) │  │  ┌─────────┐ ┌─────────┐ ┌──────────┐  │   │  │
+│  │  │             │  │  │  start  │ │  check  │ │  fetch   │  │   │  │
+│  │  │  send_sms() │  │  │  verify │ │   code  │ │  status  │  │   │  │
+│  │  │  bulk_send  │  │  └─────────┘ └─────────┘ └──────────┘  │   │  │
+│  │  └──────┬──────┘  └─────────────────────────────────────────┘   │  │
+│  └─────────┼────────────────────────────────────────────────────────┘  │
+│            │                                                           │
+│  ┌─────────┴─────────────────────────────────────────────────────────┐ │
+│  │              Vault KV v2 — Runtime-Editable Secrets                │ │
+│  │  twilio_account_sid     twilio_verify_service_sid                  │ │
+│  │  twilio_auth_token      twilio_api_key_sid                         │ │
+│  │  twilio_from_number     twilio_api_key_secret                      │ │
+│  │                         twilio_verify_enabled                      │ │
+│  │                         twilio_verify_default_channel              │ │
+│  │                         twilio_test_account_sid                    │ │
+│  │                         twilio_test_auth_token                     │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│            │                                                           │
+└────────────┼───────────────────────────────────────────────────────────┘
+             │ HTTPS/TLS 1.2+
+             ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         TWILIO CLOUD                                     │
+│  ┌─────────────┐  ┌─────────────────────────────────────────────────┐   │
+│  │  Messaging  │  │              Verify API v2                       │   │
+│  │  (SMS API)  │  │  SMS │ WhatsApp │ Voice │ Email │ Push │ TOTP │   │
+│  └─────────────┘  └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 24.3.2 Factory Reset OTP Flow (Verify-Enabled)
+
+```
+┌─────────────┐     ┌─────────────────────┐     ┌─────────────────┐
+│ SUPER_ADMIN │────▶│ factory_reset_request│────▶│ is_verify_ready?│
+└─────────────┘     └─────────────────────┘     └────────┬────────┘
+                                                         │
+                                    ┌────────────────────┼────────────────────┐
+                                    │ YES                │                    │ NO
+                                    ▼                    │                    ▼
+                          ┌─────────────────┐            │          ┌─────────────────┐
+                          │ start_verify()  │            │          │ generate_local_otp│
+                          │ (Twilio Verify) │            │          │ (secrets.randbelow)│
+                          └────────┬────────┘            │          └────────┬────────┘
+                                   │                     │                   │
+                                   ▼                     │                   ▼
+                          ┌─────────────────┐            │          ┌─────────────────┐
+                          │  Twilio Cloud   │            │          │  Redis (5min TTL) │
+                          │  sends OTP via  │            │          │  stores local OTP │
+                          │  configured     │            │          └────────┬────────┘
+                          │  channel        │            │                   │
+                          └────────┬────────┘            │                   ▼
+                                   │                     │          ┌─────────────────┐
+                                   │                     │          │ send_email() +    │
+                                   │                     │          │ send_sms()        │
+                                   │                     │          └─────────────────┘
+                                   ▼                     │
+                          ┌─────────────────┐            │
+                          │ SUPER_ADMIN     │            │
+                          │ enters OTP      │            │
+                          └────────┬────────┘            │
+                                   │                     │
+                                   ▼                     │
+                          ┌─────────────────┐            │
+                          │factory_reset_confirm│        │
+                          └────────┬────────┘            │
+                                   │                     │
+                          ┌────────┴────────┐            │
+                          │ verify_code()   │            │
+                          │ (Twilio Verify) │            │
+                          │ or check_local  │◄───────────┘
+                          └────────┬────────┘
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │ VALID        │              │ INVALID
+                    ▼              │              ▼
+          ┌───────────────┐        │     ┌─────────────────┐
+          │ EXECUTE WIPE  │        │     │  return 400     │
+          │ audit_log     │        │     │  "Invalid OTP"  │
+          │ FACTORY_RESET │        │     └─────────────────┘
+          └───────────────┘        │
+                                   │
+```
+
+#### 24.3.3 Registration Phone Verification Flow
+
+```
+┌─────────────┐     ┌─────────────────────┐     ┌─────────────────┐
+│   CUSTOMER  │────▶│   fills signup form │────▶│ phone provided? │
+└─────────────┘     └─────────────────────┘     └────────┬────────┘
+                                                         │
+                                    ┌────────────────────┼────────────────────┐
+                                    │ YES                │                    │ NO
+                                    ▼                    │                    ▼
+                          ┌─────────────────┐            │          ┌─────────────────┐
+                          │ is_verify_ready?│            │          │ create account  │
+                          └────────┬────────┘            │          │ (no phone verify)│
+                                   │                     │          └─────────────────┘
+                    ┌──────────────┼──────────────┐      │
+                    │ YES          │              │ NO   │
+                    ▼              │              ▼      │
+          ┌───────────────┐        │     ┌─────────────────┐
+          │ start_verify()│        │     │ generate_local_otp│
+          │ (Twilio API)  │        │     │ send via Twilio SMS│
+          └───────┬───────┘        │     └─────────────────┘
+                  │                │
+                  ▼                │
+          ┌───────────────┐        │
+          │ Customer gets │        │
+          │ OTP via channel│       │
+          └───────┬───────┘        │
+                  │                │
+                  ▼                │
+          ┌───────────────┐        │
+          │ enters OTP    │        │
+          └───────┬───────┘        │
+                  │                │
+                  ▼                │
+          ┌───────────────┐        │
+          │ check_verify()│        │
+          │ or check_local│◄───────┘
+          └───────┬───────┘
+                  │
+     ┌────────────┼────────────┐
+     │ VALID      │            │ INVALID
+     ▼            │            ▼
+┌─────────┐      │     ┌─────────────────┐
+│ mark    │      │     │ increment       │
+│ phone_  │      │     │ attempt counter │
+│ verified│      │     │ (Redis, max 3)  │
+│ create  │      │     └─────────────────┘
+│ account │      │
+└─────────┘      │
+```
+
+---
+
+### 24.4 Functional Requirements
+
+#### 24.4.1 Twilio SMS (Existing — LYL-SRS-009)
+
+| Req ID | Requirement | Priority | Status |
+|--------|-------------|----------|--------|
+| LYL-FR-SMS-001 | System SHALL send single SMS via `POST /notifications/send-sms/` | MUST | ✅ |
+| LYL-FR-SMS-002 | System SHALL execute mass SMS campaigns via Celery task `send_sms_campaign` | MUST | ✅ |
+| LYL-FR-SMS-003 | Campaigns SHALL be gated by `sms_campaigns` plan feature | MUST | ✅ |
+| LYL-FR-SMS-004 | Campaigns SHALL be gated by `sms_day` plan limit | MUST | ✅ |
+| LYL-FR-SMS-005 | Each message delivery SHALL be tracked in `CampaignDeliveryLog` | MUST | ✅ |
+| LYL-FR-SMS-006 | Twilio credentials SHALL be read from Vault | MUST | ✅ |
+| LYL-FR-SMS-007 | Campaign API (`POST /campaigns/`) SHALL accept `channel="sms"` | MUST | ✅ |
+
+#### 24.4.2 Twilio Verify v2 (NEW)
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-VRF-001 | System SHALL support Twilio Verify v2 API for OTP generation and validation | MUST |
+| LYL-FR-VRF-002 | System SHALL support ALL Verify channels: `sms`, `whatsapp`, `voice`, `email`, `push`, `totp`, `sna`, `auto` | MUST |
+| LYL-FR-VRF-003 | System SHALL store Verify Service SID (`VA...`) in Vault | MUST |
+| LYL-FR-VRF-004 | System SHALL allow SuperAdmin to enable/disable Verify via `twilio_verify_enabled` toggle | MUST |
+| LYL-FR-VRF-005 | System SHALL allow SuperAdmin to set default Verify channel via `twilio_verify_default_channel` | MUST |
+| LYL-FR-VRF-006 | System SHALL support Twilio API Key authentication (`SK...` + secret) as alternative to Auth Token | SHOULD |
+| LYL-FR-VRF-007 | Verify credentials SHALL be editable at runtime via SysAdmin panel (no restart required) | MUST |
+| LYL-FR-VRF-008 | System SHALL validate Verify Service SID format (`VA[32 hex chars]`) before saving | MUST |
+| LYL-FR-VRF-009 | System SHALL expose Verify integration status in `GET /admin/platform/integrations/` | MUST |
+| LYL-FR-VRF-010 | Verify client SHALL reuse existing `twilio_account_sid` and `twilio_auth_token` (or API Key pair) | MUST |
+| LYL-FR-VRF-011 | System SHALL auto-create Verify Service if none exists and Account SID + Auth Token are valid | SHOULD |
+| LYL-FR-VRF-012 | System SHALL support custom verification codes (4-10 digits) for offline scenarios | SHOULD |
+| LYL-FR-VRF-013 | System SHALL support `lookup_enabled` to validate phone numbers before sending | SHOULD |
+| LYL-FR-VRF-014 | System SHALL support `skip_sms_to_landlines` to avoid SMS charges to landlines | SHOULD |
+| LYL-FR-VRF-015 | System SHALL support `do_not_share_warning_enabled` for fraud prevention | SHOULD |
+| LYL-FR-VRF-016 | System SHALL support PSD2 transaction parameters for financial compliance | SHOULD |
+| LYL-FR-VRF-017 | System SHALL support custom message templates (`templateSid`) per verification | SHOULD |
+| LYL-FR-VRF-018 | System SHALL support locale override for international customers | SHOULD |
+| LYL-FR-VRF-019 | System SHALL support rate limits per unique key (e.g., per phone, per IP) | SHOULD |
+| LYL-FR-VRF-020 | System SHALL support SNA (Silent Network Auth) for seamless verification | SHOULD |
+| LYL-FR-VRF-021 | System SHALL support `auto` channel (SNA fallback to SMS) | SHOULD |
+| LYL-FR-VRF-022 | System SHALL support TOTP registration and validation | SHOULD |
+| LYL-FR-VRF-023 | System SHALL support email verification via Twilio SendGrid integration | SHOULD |
+
+#### 24.4.3 Factory Reset OTP Flow
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-RST-001 | Factory reset SHALL use Twilio Verify when `twilio_verify_enabled=true` | MUST |
+| LYL-FR-RST-002 | Factory reset SHALL fall back to local OTP when Verify is disabled | MUST |
+| LYL-FR-RST-003 | Factory reset SHALL send OTP via channel selected in `twilio_verify_default_channel` | MUST |
+| LYL-FR-RST-004 | Factory reset Verify attempt SHALL be audit-logged with `action="FACTORY_RESET_VERIFY"` | MUST |
+| LYL-FR-RST-005 | Factory reset SHALL require SUPER_ADMIN phone number to be set | MUST |
+| LYL-FR-RST-006 | Factory reset SHALL use `customFriendlyName` "Loyallia Platform" in Verify messages | SHOULD |
+
+#### 24.4.4 Registration Phone Verification
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-REG-001 | Registration SHALL optionally require phone verification (tenant-configurable) | MUST |
+| LYL-FR-REG-002 | Phone verification SHALL use Twilio Verify when enabled | MUST |
+| LYL-FR-REG-003 | Phone verification SHALL fall back to local OTP + SMS when Verify disabled | MUST |
+| LYL-FR-REG-004 | Verification SHALL support channel override per-request (default from Vault) | SHOULD |
+| LYL-FR-REG-005 | Max 3 verification attempts per phone number per hour (Redis rate limit) | MUST |
+| LYL-FR-REG-006 | Verified phone SHALL set `Customer.phone_verified_at` timestamp | MUST |
+
+---
+
+### 24.5 SysAdmin Configuration Panel — All Editable Parameters
+
+#### 24.5.1 Requirement
+
+> **ALL Twilio configuration data MUST exist as EDITABLE parameters on the SysAdmin settings panel.**
+
+#### 24.5.2 Vault Key Reference
+
+| Vault Key | Category | Secret? | Validation | UI Type |
+|-----------|----------|---------|------------|---------|
+| `twilio_account_sid` | SMS | No | `^AC[a-f0-9]{32}$` | text |
+| `twilio_auth_token` | SMS | Yes | Min 32 chars | password |
+| `twilio_from_number` | SMS | No | E.164 format | text |
+| `twilio_verify_service_sid` | Verify | No | `^VA[a-f0-9]{32}$` | text |
+| `twilio_verify_enabled` | Verify | No | `true` / `false` | select |
+| `twilio_verify_default_channel` | Verify | No | One of 8 channels | select |
+| `twilio_api_key_sid` | API Key | No | `^SK[a-f0-9]{32}$` | text |
+| `twilio_api_key_secret` | API Key | Yes | Min 32 chars | password |
+| `twilio_test_account_sid` | Test | No | `^AC[a-f0-9]{32}$` | text |
+| `twilio_test_auth_token` | Test | Yes | Min 32 chars | password |
+
+---
+
+### 24.6 Backend Implementation Plan
+
+#### 24.6.1 New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `backend/apps/notifications/twilio_verify/__init__.py` | 5 | Package init |
+| `backend/apps/notifications/twilio_verify/client.py` | 200 | Verify v2 API client — REAL production code |
+| `backend/apps/notifications/twilio_verify/service.py` | 120 | Service CRUD: create, list, fetch, update, delete |
+| `backend/apps/authentication/otp_service.py` | 80 | Strategy pattern: LocalOTPStrategy vs VerifyOTPStrategy |
+
+#### 24.6.2 Modified Files
+
+| File | Changes |
+|------|---------|
+| `backend/loyallia/settings/base.py` | Add 6 new Vault-backed settings |
+| `backend/apps/tenants/super_admin_api/integration_config.py` | Add 3 new integration groups + validation |
+| `backend/apps/tenants/super_admin_api/platform.py` | Refactor factory reset to use OTP strategy |
+| `backend/apps/api/management/commands/check_vault_config.py` | Add new key groups |
+| `backend/common/messages.py` | Add i18n messages for Verify flows |
+
+---
+
+### 24.7 Security Requirements
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-SEC-VRF-001 | Verify Service SID SHALL be validated with regex `^VA[a-f0-9]{32}$` before persistence | MUST |
+| LYL-SEC-VRF-002 | API Key Secret SHALL be stored as password type (masked in UI, encrypted at rest) | MUST |
+| LYL-SEC-VRF-003 | Test credentials SHALL be clearly labeled and SHALL NOT be used in production flows | MUST |
+| LYL-SEC-VRF-004 | Verify responses SHALL NOT expose internal Twilio error codes to end users | MUST |
+| LYL-SEC-VRF-005 | Rate limiting: max 5 Verify start requests per phone per 10 minutes | MUST |
+| LYL-SEC-VRF-006 | All Verify API calls SHALL be logged in AuditLog with `action="VERIFY_*"` | MUST |
+| LYL-SEC-VRF-007 | Verify client SHALL NOT log secrets or OTP codes | MUST |
+| LYL-SEC-VRF-008 | SNA URLs SHALL have 10-minute TTL and single-use enforcement | MUST |
+| LYL-SEC-VRF-009 | Custom codes SHALL be between 4-10 digits inclusive | MUST |
+| LYL-SEC-VRF-010 | PSD2 transaction parameters SHALL be validated when `psd2_enabled=true` | SHOULD |
+
+---
+
+### 24.8 Testing & Acceptance Criteria
+
+| Test ID | Description |
+|---------|-------------|
+| VRF-UT-001 | `VerifyClient.start_verification()` returns valid sid when configured |
+| VRF-UT-002 | `VerifyClient.check_verification()` returns approved for correct code |
+| VRF-UT-003 | `VerifyClient.check_verification()` returns pending for incorrect code |
+| VRF-UT-004 | `is_verify_configured()` returns False when Service SID missing |
+| VRF-UT-005 | `get_otp_strategy()` returns `VerifyOTPStrategy` when enabled |
+| VRF-UT-006 | `get_otp_strategy()` returns `LocalOTPStrategy` when disabled |
+| VRF-UT-007 | Service auto-creation works when no service exists |
+| VRF-UT-008 | Custom code validation rejects codes < 4 digits |
+| VRF-UT-009 | Custom code validation rejects codes > 10 digits |
+| VRF-E2E-001 | SysAdmin can edit all 10 Twilio fields via settings UI |
+| VRF-E2E-002 | Factory reset with Verify enabled sends OTP via configured channel |
+| VRF-E2E-003 | Factory reset with Verify disabled uses local OTP + direct SMS |
+| VRF-E2E-004 | Registration with phone verification creates verified customer |
+
+---
+
+### 24.9 Implementation Roadmap
+
+#### Phase 1: SysAdmin Parameter Infrastructure (Day 1)
+- Add 10 Vault keys to `ALLOWED_INTEGRATION_KEYS`
+- Add 4 integration status objects (twilio_sms, twilio_verify, twilio_api_key, twilio_test)
+- Add 6 new settings to `base.py`
+- Add UI fields for all 10 parameters
+- Add validation for SID formats and channel values
+
+#### Phase 2: Twilio Verify Service Client (Day 2)
+- Create `twilio_verify/client.py` with REAL Twilio API calls
+- Support: start_verification, check_verification, fetch_verification, cancel_verification
+- Support all channels: sms, whatsapp, voice, email, push, totp, sna, auto
+- Support custom codes, templates, PSD2 params, locale override
+- Create `twilio_verify/service.py` for service CRUD
+
+#### Phase 3: OTP Strategy Pattern (Day 3)
+- Create `otp_service.py` with strategy pattern
+- Refactor factory reset to use OTP strategy
+- Add unit tests for both strategies
+
+#### Phase 4: Factory Reset Verify Integration (Day 4)
+- Update `factory_reset_request()` and `factory_reset_confirm()`
+- Add e2e tests
+
+#### Phase 5: Registration Phone Verification (Day 5)
+- Add `phone_verified_at` to Customer model
+- Add verification endpoints
+- Add rate limiting (Redis)
+- Add frontend verification screen
+
+#### Phase 6: Integration & QA (Day 6)
+- Run full Django test suite
+- Run Playwright e2e suite
+- Update documentation
+
+---
+
+*End of Module 14 — Twilio Communications Stack*
+*Updated: 2026-05-09 — Added LYL-SRS-VERIFY-001*
