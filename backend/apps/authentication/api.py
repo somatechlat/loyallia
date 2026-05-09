@@ -106,6 +106,26 @@ def register(request, payload: RegisterIn):
             user_id="",
         )
 
+    # Server-side phone verification (NO BYPASS)
+    is_phone_verified = False
+    if payload.phone_number.strip() and payload.phone_verification_sid:
+        try:
+            from apps.notifications.twilio_verify.client import VerifyClient, VerifyServiceError
+
+            client = VerifyClient()
+            verification = client.fetch_verification(payload.phone_verification_sid)
+            if verification.get("status") == "approved":
+                is_phone_verified = True
+                logger.info(
+                    "Registration phone verified via Twilio: %s", payload.phone_number
+                )
+        except VerifyServiceError as exc:
+            logger.warning(
+                "Registration phone verification failed for %s: %s",
+                payload.phone_number,
+                exc,
+            )
+
     with transaction.atomic():
         slug = slugify_business(payload.business_name)
         tenant = Tenant.objects.create(name=payload.business_name.strip(), slug=slug)
@@ -121,6 +141,7 @@ def register(request, payload: RegisterIn):
             role=UserRole.OWNER,
             is_active=True,
             is_email_verified=False,
+            is_phone_verified=is_phone_verified,
         )
 
     otp = secrets.token_urlsafe(8)
