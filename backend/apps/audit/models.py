@@ -23,6 +23,8 @@ class AuditAction(models.TextChoices):
     LOGIN = "LOGIN", "Inicio de sesión"
     LOGOUT = "LOGOUT", "Cierre de sesión"
     API_ACCESS = "API_ACCESS", "Acceso API"
+    FACTORY_RESET = "FACTORY_RESET", "Restauración de fábrica"
+    SEED_DEMO = "SEED_DEMO", "Carga de datos demo"
 
 
 class AuditStatus(models.TextChoices):

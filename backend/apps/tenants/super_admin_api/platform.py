@@ -26,6 +26,7 @@ from apps.tenants.models import Location, PlatformSetting, Tenant
 from apps.tenants.super_admin_api.integration_config import (
     ALLOWED_INTEGRATION_KEYS,
     additional_integrations,
+    normalize_and_validate_vault_secret,
 )
 from apps.tenants.super_admin_api.plan_validation import (
     plan_to_config,
@@ -33,6 +34,7 @@ from apps.tenants.super_admin_api.plan_validation import (
 )
 from apps.tenants.super_admin_api.schemas import (
     BroadcastIn,
+    FactoryResetConfirmIn,
     MessageOut,
     PlanCreateIn,
     PlanOut,
@@ -41,6 +43,7 @@ from apps.tenants.super_admin_api.schemas import (
     PlatformMetricsOut,
     PlatformSettingOut,
     PlatformSettingUpdateIn,
+    SeedDemoDataOut,
     VaultSecretUpdateIn,
 )
 from common.messages import get_message
@@ -54,11 +57,6 @@ router = Router()
 def _require_super_admin(request) -> None:
     if not is_super_admin(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
-
-# =============================================================================
-# PLATFORM METRICS
-# =============================================================================
 
 
 @router.get("/platform/metrics/", auth=jwt_auth, response=PlatformMetricsOut)
@@ -99,12 +97,8 @@ def platform_metrics(request):
     except Exception:
         total_customers = 0
 
-    trial_tenants = Subscription.objects.filter(
-        status=SubscriptionStatus.TRIALING
-    ).count()
-    suspended_tenants = Subscription.objects.filter(
-        status=SubscriptionStatus.SUSPENDED
-    ).count()
+    trial_tenants = Subscription.objects.filter(status=SubscriptionStatus.TRIALING).count()
+    suspended_tenants = Subscription.objects.filter(status=SubscriptionStatus.SUSPENDED).count()
 
     return PlatformMetricsOut(
         total_tenants=total_tenants,
@@ -119,11 +113,6 @@ def platform_metrics(request):
     )
 
 
-# =============================================================================
-# ALL LOCATIONS (map widget)
-# =============================================================================
-
-
 @router.get("/platform/locations/", auth=jwt_auth, response=list[dict])
 def all_platform_locations(request):
     """Returns all locations with GPS for the SuperAdmin map widget."""
@@ -131,7 +120,7 @@ def all_platform_locations(request):
     locations = Location.objects.select_related("tenant").filter(
         latitude__isnull=False, longitude__isnull=False, is_active=True
     )
-    integrations = [
+    return [
         {
             "id": str(loc.id),
             "name": loc.name,
@@ -145,8 +134,6 @@ def all_platform_locations(request):
         }
         for loc in locations
     ]
-    integrations.extend(additional_integrations())
-    return integrations
 
 
 @router.get(
@@ -175,18 +162,12 @@ def platform_integrations(request):
 
     apple_diagnostics = get_apple_wallet_diagnostics()
     apple_enabled = apple_diagnostics["enabled"]
-    apple_configured = (
-        apple_enabled and apple_diagnostics["certs_cryptographically_valid"]
-    )
+    apple_configured = apple_enabled and apple_diagnostics["certs_cryptographically_valid"]
 
     payment_enabled = bool(getattr(settings, "PAYMENT_GATEWAY_ENABLED", False))
     payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
-    email_user = get_secret(
-        "email_host_user", env_fallback="EMAIL_HOST_USER", default=""
-    )
-    email_pass = get_secret(
-        "email_host_password", env_fallback="EMAIL_HOST_PASSWORD", default=""
-    )
+    email_user = get_secret("email_host_user", env_fallback="EMAIL_HOST_USER", default="")
+    email_pass = get_secret("email_host_password", env_fallback="EMAIL_HOST_PASSWORD", default="")
     email_configured = bool(email_user and email_pass)
 
     # Preview values: non-secret fields only, for pre-populating the UI
@@ -206,9 +187,7 @@ def platform_integrations(request):
             detail="Google Wallet API integration",
             diagnostics=google_diagnostics,
             preview_values={
-                "google_wallet_enabled": (
-                    "true" if google_diagnostics["enabled"] else "false"
-                ),
+                "google_wallet_enabled": ("true" if google_diagnostics["enabled"] else "false"),
                 "google_wallet_issuer_id": google_issuer_id,
                 "google_oauth_client_id": google_oauth_client_id,
             },
@@ -218,11 +197,7 @@ def platform_integrations(request):
             name="Apple Wallet",
             enabled=apple_enabled,
             configured=apple_configured,
-            status=(
-                "configured"
-                if apple_configured
-                else "disabled" if not apple_enabled else "missing_credentials"
-            ),
+            status=("configured" if apple_configured else "disabled" if not apple_enabled else "missing_credentials"),
             detail="Apple Wallet PKPass integration",
             diagnostics=apple_diagnostics,
             preview_values={
@@ -261,12 +236,8 @@ def platform_integrations(request):
                 "email_host_user": email_user,
             },
         ),
+        *additional_integrations(),
     ]
-
-
-# =============================================================================
-# SUBSCRIPTION PLANS CRUD
-# =============================================================================
 
 
 @router.get("/plans/", auth=jwt_auth, response=list[PlanOut])
@@ -392,19 +363,12 @@ def update_plan(request, plan_id: str, payload: PlanUpdateIn):
     return PlanOut.from_plan(plan)
 
 
-# =============================================================================
-# VAULT SECRET MANAGEMENT (Wallet / Integration credentials)
-# =============================================================================
-
-
 @router.put(
     "/platform/integrations/{integration_key}/secret/",
     auth=jwt_auth,
     response=MessageOut,
 )
-def update_integration_secret(
-    request, integration_key: str, payload: VaultSecretUpdateIn
-):
+def update_integration_secret(request, integration_key: str, payload: VaultSecretUpdateIn):
     """Update a Vault secret for an integration (Google Wallet, Apple Wallet, etc.).
 
     Only SUPER_ADMIN can write secrets. The value is stored in HashiCorp Vault KV v2
@@ -424,7 +388,8 @@ def update_integration_secret(
             ),
         )
 
-    success = put_secret(payload.key, payload.value)
+    value = normalize_and_validate_vault_secret(payload.key, payload.value)
+    success = put_secret(payload.key, value)
     if not success:
         raise HttpError(500, get_message("SERVER_ERROR"))
 
@@ -449,18 +414,15 @@ def update_integration_secret(
     )
     return MessageOut(
         success=True,
-        message=get_message(
-            "ADMIN_PLAN_UPDATED", name=f"{integration_key}.{payload.key}"
-        ),
+        message=get_message("ADMIN_PLAN_UPDATED", name=f"{integration_key}.{payload.key}"),
     )
 
 
-# =============================================================================
-# BILLING CONFIRMATION
-# =============================================================================
-
-
-@router.post("/platform/billing/confirm-payment/{invoice_id}/", auth=jwt_auth, response=MessageOut)
+@router.post(
+    "/platform/billing/confirm-payment/{invoice_id}/",
+    auth=jwt_auth,
+    response=MessageOut,
+)
 def confirm_payment(request, invoice_id: str):
     """Manually activate a subscription after receiving external payment."""
     _require_super_admin(request)
@@ -484,15 +446,19 @@ def confirm_payment(request, invoice_id: str):
 
         # SEC: Audit log manual payment confirmation
         try:
-            from common.audit import AuditLog
-            AuditLog.objects.create(
-                tenant=invoice.tenant,
-                actor_email=request.user.email,
-                action="UPDATE",
-                resource="subscription",
+            from apps.audit.models import AuditAction, AuditStatus
+            from apps.audit.service import log_action
+
+            log_action(
+                request=request,
+                action=AuditAction.UPDATE,
+                resource_type="subscription",
                 resource_id=str(subscription.id),
-                ip_address=request.META.get("REMOTE_ADDR", ""),
-                details={"action": "manual_payment_confirmed", "invoice_id": str(invoice.id)},
+                details={
+                    "action": "manual_payment_confirmed",
+                    "invoice_id": str(invoice.id),
+                },
+                status=AuditStatus.SUCCESS,
             )
         except Exception:
             logger.warning("Failed to log manual payment audit", exc_info=True)
@@ -505,33 +471,17 @@ def confirm_payment(request, invoice_id: str):
     return MessageOut(success=True, message=get_message("BILLING_SUBSCRIBED"))
 
 
-# =============================================================================
-# BROADCAST
-# =============================================================================
-
-
 @router.post("/broadcast/", auth=jwt_auth, response=MessageOut)
 def broadcast_announcement(request, payload: BroadcastIn):
     _require_super_admin(request)
     if not payload.subject.strip() or not payload.message.strip():
-        raise HttpError(
-            400, get_message("VALIDATION_ERROR", detail="subject and message required")
-        )
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="subject and message required"))
 
-    owner_emails = list(
-        User.objects.filter(role=UserRole.OWNER, is_active=True).values_list(
-            "email", flat=True
-        )
-    )
+    owner_emails = list(User.objects.filter(role=UserRole.OWNER, is_active=True).values_list("email", flat=True))
     if not owner_emails:
-        return MessageOut(
-            success=True, message=get_message("ADMIN_BROADCAST_NO_RECIPIENTS")
-        )
+        return MessageOut(success=True, message=get_message("ADMIN_BROADCAST_NO_RECIPIENTS"))
 
-    messages = tuple(
-        (payload.subject, payload.message, "noreply@loyallia.com", [email])
-        for email in owner_emails
-    )
+    messages = tuple((payload.subject, payload.message, "noreply@loyallia.com", [email]) for email in owner_emails)
     try:
         send_mass_mail(messages, fail_silently=True)
     except Exception as exc:
@@ -547,11 +497,6 @@ def broadcast_announcement(request, payload: BroadcastIn):
         success=True,
         message=get_message("CAMPAIGN_SENT", count=len(owner_emails)),
     )
-
-
-# =============================================================================
-# PLATFORM SETTINGS — Runtime configuration without restart
-# =============================================================================
 
 
 @router.get("/platform/settings/", auth=jwt_auth, response=list[PlatformSettingOut])
@@ -606,3 +551,206 @@ def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn)
         msg += " (restart required for full effect)"
 
     return MessageOut(success=True, message=msg)
+
+
+# =============================================================================
+# SYSADMIN OPERATIONS (LYL-BOOT-001)
+# =============================================================================
+
+
+@router.post(
+    "/platform/seed-demo-data/",
+    auth=jwt_auth,
+    response=SeedDemoDataOut,
+    summary="Cargar datos de demostración",
+)
+def seed_demo_data(request):
+    """Load demo data (tenants, customers, transactions) for demonstration.
+
+    SUPER_ADMIN only. Calls the seed_test_data management command.
+    Demo data can be loaded at any time from the SysAdmin settings panel.
+    """
+    _require_super_admin(request)
+
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    # Audit
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.SEED_DEMO,
+            resource_type="platform",
+            resource_id="system",
+            details={"triggered_by": request.user.email},
+            status="success",
+        )
+    except Exception:
+        logger.warning("Failed to audit demo seed", exc_info=True)
+
+    output = StringIO()
+    call_command("seed_test_data", stdout=output, stderr=output)
+
+    logger.info("SUPER_ADMIN %s triggered demo data seed", request.user.email)
+    return SeedDemoDataOut(
+        success=True,
+        message=get_message("ADMIN_DEMO_SEEDED"),
+        output=output.getvalue(),
+    )
+
+
+@router.post(
+    "/platform/factory-reset/request/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="Solicitar código para restaurar de fábrica",
+)
+def factory_reset_request(request):
+    """Send OTP to SUPER_ADMIN email+phone for factory reset verification.
+
+    Step 1 of 2: Generates a 6-digit OTP, stores in Redis (5min TTL),
+    and sends via email (primary) + Twilio SMS (secondary, if configured).
+    """
+    _require_super_admin(request)
+
+    import secrets
+
+    from apps.authentication.helpers import store_otp
+
+    otp = f"{secrets.randbelow(900000) + 100000}"
+    store_otp(request.user.email, otp, "factory_reset")
+
+    # Primary: Email
+    from django.core.mail import send_mail
+
+    try:
+        send_mail(
+            subject="Loyallia — Código de Verificación para Restaurar de Fábrica",
+            message=(
+                f"Su código de verificación es: {otp}\n\n"
+                f"Expira en 5 minutos.\n\n"
+                f"Si no solicitó esto, ignore este mensaje."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[request.user.email],
+            fail_silently=False,
+        )
+    except Exception:
+        logger.error(
+            "Failed to send factory reset OTP email to %s",
+            request.user.email,
+            exc_info=True,
+        )
+
+    # Secondary: SMS via Twilio (if configured)
+    sms_sent = False
+    phone = getattr(request.user, "phone_number", "")
+    if phone:
+        try:
+            from apps.notifications.sms.client import is_sms_available, send_sms
+
+            if is_sms_available():
+                send_sms(phone, f"Loyallia Factory Reset Code: {otp}")
+                sms_sent = True
+        except Exception:
+            logger.warning("SMS send failed for factory reset OTP", exc_info=True)
+
+    logger.warning(
+        "FACTORY RESET requested by %s (sms=%s)",
+        request.user.email,
+        sms_sent,
+    )
+    return MessageOut(
+        success=True,
+        message=get_message("ADMIN_FACTORY_OTP_SENT"),
+    )
+
+
+@router.post(
+    "/platform/factory-reset/confirm/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="Confirmar restauración de fábrica con código OTP",
+)
+def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
+    """Verify OTP and execute factory reset. IRREVERSIBLE.
+
+    Step 2 of 2: Validates the OTP from step 1, then wipes ALL tenant data
+    in a single atomic transaction. Re-seeds vital boot data (plans, settings).
+    The SUPER_ADMIN user is preserved.
+    """
+    _require_super_admin(request)
+
+    from io import StringIO
+
+    from apps.authentication.helpers import verify_otp
+
+    if not verify_otp(request.user.email, payload.otp, "factory_reset"):
+        raise HttpError(403, get_message("ADMIN_FACTORY_OTP_INVALID"))
+
+    # Audit BEFORE wipe (so the log entry is created before data is deleted)
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.FACTORY_RESET,
+            resource_type="platform",
+            resource_id="system",
+            details={"triggered_by": request.user.email},
+            status="success",
+        )
+    except Exception:
+        logger.warning("Failed to audit factory reset", exc_info=True)
+
+    with transaction.atomic():
+        # Wipe order: deepest dependencies first to avoid FK violations
+        from apps.automation.models import Automation, AutomationExecution
+        from apps.billing.models import Invoice, Subscription, WebhookEvent
+        from apps.cards.models import LoyaltyProgram
+        from apps.customers.models import Customer, CustomerPass
+        from apps.notifications.models import DeliveryLog, Notification
+        from apps.transactions.models import Transaction
+
+        from apps.authentication.models import RefreshToken
+
+        DeliveryLog.objects.all().delete()
+        Notification.objects.all().delete()
+        AutomationExecution.objects.all().delete()
+        Automation.objects.all().delete()
+        CustomerPass.objects.all().delete()
+        Transaction.objects.all().delete()
+        Customer.objects.all().delete()
+        LoyaltyProgram.objects.all().delete()
+        Invoice.objects.all().delete()
+        WebhookEvent.objects.all().delete()
+        Subscription.objects.all().delete()
+        RefreshToken.objects.all().delete()
+        Location.objects.all().delete()
+        User.objects.exclude(role=UserRole.SUPER_ADMIN).delete()
+        Tenant.objects.all().delete()
+
+    # Re-seed vital data (plans + settings)
+    from django.core.management import call_command
+
+    call_command("seed_subscription_plans", stdout=StringIO())
+    call_command("seed_platform_settings", stdout=StringIO())
+
+    # Flush Redis cache (kill all sessions)
+    from django.core.cache import cache
+
+    try:
+        cache.clear()
+    except Exception:
+        logger.warning("Failed to clear Redis cache during factory reset")
+
+    logger.critical("FACTORY RESET executed by %s", request.user.email)
+    return MessageOut(
+        success=True,
+        message=get_message("ADMIN_FACTORY_RESET_DONE"),
+    )

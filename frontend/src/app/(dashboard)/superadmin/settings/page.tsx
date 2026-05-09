@@ -86,6 +86,27 @@ const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
   ],
 };
 
+const errorMessage = (err: unknown, fallback: string) => {
+  if (typeof err === 'object' && err !== null && 'response' in err) {
+    const response = (err as { response?: { data?: unknown } }).response;
+    const data = response?.data;
+    if (typeof data === 'string') return data;
+    if (typeof data === 'object' && data !== null) {
+      const detail = (data as { detail?: unknown }).detail;
+      const message = (data as { message?: unknown }).message;
+      if (typeof detail === 'string') return detail;
+      if (typeof message === 'string') return message;
+    }
+  }
+  return err instanceof Error ? err.message : fallback;
+};
+
+const fileAcceptFor = (fieldKey: string) => {
+  if (fieldKey.endsWith('_json')) return '.json,application/json';
+  if (fieldKey.endsWith('_pem')) return '.pem,.cer,.crt,.key,text/plain';
+  return undefined;
+};
+
 export default function SuperAdminSettings() {
   const [broadcastForm, setBroadcastForm] = useState({ subject: '', message: '' });
   const [sending, setSending] = useState(false);
@@ -98,6 +119,14 @@ export default function SuperAdminSettings() {
   const [platformSettings, setPlatformSettings] = useState<PlatformSetting[]>([]);
   const [settingForm, setSettingForm] = useState<Record<string, string>>({});
   const [savingSetting, setSavingSetting] = useState<string | null>(null);
+
+  // --- SysAdmin Operations (LYL-BOOT-001) ---
+  const [seedingDemo, setSeedingDemo] = useState(false);
+  const [seedOutput, setSeedOutput] = useState('');
+  const [resetStep, setResetStep] = useState<'idle' | 'otp_sent' | 'confirming'>('idle');
+  const [resetOtp, setResetOtp] = useState('');
+  const [requestingReset, setRequestingReset] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   useEffect(() => {
     loadIntegrations();
@@ -184,11 +213,64 @@ export default function SuperAdminSettings() {
       setVaultForm((prev) => ({ ...prev, [secretKey]: '' }));
       loadIntegrations();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar en Vault';
-      toast.error(msg);
+      toast.error(errorMessage(err, 'Error al guardar en Vault'));
     } finally {
       setSavingVault(false);
     }
+  };
+
+  const saveVaultIntegration = async (integrationKey: string) => {
+    const fields = vaultFieldsFor(integrationKey);
+    const updates = fields
+      .map((field) => ({ key: field.key, value: vaultForm[field.key] || '' }))
+      .filter(({ value }) => value.trim().length > 0);
+
+    if (updates.length === 0) {
+      toast.error('No hay valores para guardar');
+      return;
+    }
+
+    setSavingVault(true);
+    const toastId = toast.loading('Guardando credenciales en Vault...');
+    try {
+      for (const update of updates) {
+        await superAdminApi.updateIntegrationSecret(integrationKey, update.key, update.value);
+      }
+      toast.success(`${updates.length} valor(es) actualizados en Vault`, { id: toastId });
+      setVaultForm({});
+      loadIntegrations();
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, 'Error al guardar credenciales'), { id: toastId });
+    } finally {
+      setSavingVault(false);
+    }
+  };
+
+  const setIntegrationEnabled = async (integrationKey: string, enabled: boolean) => {
+    const field = vaultFieldsFor(integrationKey).find((item) => item.key.endsWith('_enabled'));
+    if (!field) return;
+    setSavingVault(true);
+    try {
+      await superAdminApi.updateIntegrationSecret(integrationKey, field.key, enabled ? 'true' : 'false');
+      toast.success(enabled ? 'Integración habilitada' : 'Integración deshabilitada');
+      loadIntegrations();
+      setVaultForm((prev) => ({ ...prev, [field.key]: enabled ? 'true' : 'false' }));
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, 'Error al cambiar estado'));
+    } finally {
+      setSavingVault(false);
+    }
+  };
+
+  const handleVaultFileUpload = (fieldKey: string, file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setVaultForm((prev) => ({ ...prev, [fieldKey]: String(reader.result || '') }));
+      toast.success(`${file.name} cargado`);
+    };
+    reader.onerror = () => toast.error('No se pudo leer el archivo');
+    reader.readAsText(file);
   };
 
   const getDiagnosticValue = (integration: Integration, fieldKey: string): string => {
@@ -319,7 +401,29 @@ export default function SuperAdminSettings() {
               {/* Vault Secret Editor */}
               {editingVault === int.key && (
                 <div className="bg-surface-50 rounded-lg p-3 space-y-3 border border-surface-200">
-                  <p className="text-xs font-bold text-surface-600 uppercase">Editor de Vault — {int.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-surface-600 uppercase">Editor de Vault — {int.name}</p>
+                    {vaultFieldsFor(int.key).some((field) => field.key.endsWith('_enabled')) && (
+                      <div className="flex rounded-lg border border-surface-200 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setIntegrationEnabled(int.key, true)}
+                          disabled={savingVault}
+                          className={`px-2.5 py-1 text-[10px] font-semibold ${int.enabled ? 'bg-green-600 text-white' : 'bg-white text-surface-500 hover:bg-green-50'}`}
+                        >
+                          ON
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIntegrationEnabled(int.key, false)}
+                          disabled={savingVault}
+                          className={`px-2.5 py-1 text-[10px] font-semibold border-l border-surface-200 ${!int.enabled ? 'bg-surface-700 text-white' : 'bg-white text-surface-500 hover:bg-surface-100'}`}
+                        >
+                          OFF
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {vaultFieldsFor(int.key).map((field) => (
                     <div key={field.key} className="space-y-1">
                       <div className="flex items-center justify-between">
@@ -327,13 +431,24 @@ export default function SuperAdminSettings() {
                         <span className="text-[10px] text-surface-400">{getDiagnosticValue(int, field.key)}</span>
                       </div>
                       {field.type === 'textarea' ? (
-                        <textarea
-                          rows={3}
-                          value={vaultForm[field.key] || ''}
-                          onChange={(e) => setVaultForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                          placeholder={`Nuevo valor para ${field.label}`}
-                          className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white text-xs text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all font-mono"
-                        />
+                        <div className="space-y-2">
+                          {fileAcceptFor(field.key) && (
+                            <input
+                              type="file"
+                              accept={fileAcceptFor(field.key)}
+                              aria-label={`Subir archivo para ${field.label}`}
+                              onChange={(e) => handleVaultFileUpload(field.key, e.target.files?.[0])}
+                              className="block w-full text-xs text-surface-600 file:mr-3 file:rounded-lg file:border-0 file:bg-surface-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-surface-800"
+                            />
+                          )}
+                          <textarea
+                            rows={3}
+                            value={vaultForm[field.key] || ''}
+                            onChange={(e) => setVaultForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                            placeholder={`Nuevo valor para ${field.label}`}
+                            className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white text-xs text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all font-mono"
+                          />
+                        </div>
                       ) : field.type === 'select' ? (
                         <select
                           value={vaultForm[field.key] || ''}
@@ -376,10 +491,151 @@ export default function SuperAdminSettings() {
                       </div>
                     </div>
                   ))}
+                  <div className="pt-2 border-t border-surface-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => saveVaultIntegration(int.key)}
+                      disabled={savingVault || Object.values(vaultForm).every((value) => !value.trim())}
+                      className="text-xs bg-surface-900 hover:bg-surface-800 disabled:bg-surface-300 text-white disabled:text-surface-500 px-4 py-2 rounded-lg font-semibold transition-all"
+                    >
+                      {savingVault ? 'Guardando...' : 'Guardar todos los valores escritos'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ================================================================= */}
+      {/* System Operations (LYL-BOOT-001) */}
+      {/* ================================================================= */}
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm p-6 space-y-6">
+        <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3">Operaciones del Sistema</h2>
+
+        {/* --- Seed Demo Data --- */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-5 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-2xl">📦</span>
+            <div>
+              <h3 className="font-semibold text-surface-900 dark:text-white">Datos de Demostración</h3>
+              <p className="text-sm text-surface-500 mt-1">
+                Carga datos de ejemplo (negocios, clientes, transacciones) para demostración del sistema.
+              </p>
+            </div>
+          </div>
+          <button
+            id="btn-seed-demo"
+            disabled={seedingDemo}
+            onClick={async () => {
+              if (!window.confirm('¿Cargar datos de demostración? Esto puede tardar unos segundos.')) return;
+              setSeedingDemo(true);
+              setSeedOutput('');
+              try {
+                const { data } = await superAdminApi.seedDemoData();
+                toast.success(data.message || 'Datos demo cargados');
+                setSeedOutput(data.output || '');
+              } catch (err) {
+                toast.error(errorMessage(err, 'Error al cargar datos demo'));
+              } finally {
+                setSeedingDemo(false);
+              }
+            }}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
+          >
+            {seedingDemo ? 'Cargando datos...' : '📦 Cargar Datos Demo'}
+          </button>
+          {seedOutput && (
+            <pre className="mt-3 bg-surface-100 dark:bg-surface-800 rounded-lg p-3 text-xs text-surface-600 dark:text-surface-400 max-h-40 overflow-auto whitespace-pre-wrap">
+              {seedOutput}
+            </pre>
+          )}
+        </div>
+
+        {/* --- Factory Reset --- */}
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-5 border border-red-200 dark:border-red-800">
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-2xl">⚠️</span>
+            <div>
+              <h3 className="font-semibold text-red-700 dark:text-red-400">Restaurar de Fábrica</h3>
+              <p className="text-sm text-surface-500 mt-1">
+                Elimina <strong>TODOS</strong> los datos de tenants, clientes y transacciones.
+                El sistema regresa a estado inicial con solo el SysAdmin y planes.
+                Se requiere un código de verificación enviado a su email/teléfono.
+              </p>
+            </div>
+          </div>
+
+          {resetStep === 'idle' && (
+            <button
+              id="btn-factory-reset-request"
+              disabled={requestingReset}
+              onClick={async () => {
+                if (!window.confirm('¿Solicitar código para restaurar de fábrica? Se enviará a su email y teléfono.')) return;
+                setRequestingReset(true);
+                try {
+                  const { data } = await superAdminApi.factoryResetRequest();
+                  toast.success(data.message || 'Código enviado');
+                  setResetStep('otp_sent');
+                } catch (err) {
+                  toast.error(errorMessage(err, 'Error al solicitar código'));
+                } finally {
+                  setRequestingReset(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
+            >
+              {requestingReset ? 'Enviando código...' : '🔑 Solicitar Código de Verificación'}
+            </button>
+          )}
+
+          {resetStep === 'otp_sent' && (
+            <div className="space-y-3">
+              <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                ✉️ Código enviado a su email (y SMS si está configurado). Ingrese el código de 6 dígitos:
+              </p>
+              <div className="flex gap-3 items-center flex-wrap">
+                <input
+                  id="input-factory-otp"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="w-40 px-4 py-2.5 rounded-xl border-2 border-red-300 dark:border-red-700 bg-white dark:bg-surface-800 text-center text-lg font-mono tracking-widest"
+                  placeholder="000000"
+                  value={resetOtp}
+                  onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+                <button
+                  id="btn-factory-reset-confirm"
+                  disabled={confirmingReset || resetOtp.length !== 6}
+                  onClick={async () => {
+                    if (!window.confirm('⚠️ ÚLTIMA ADVERTENCIA: ¿Restaurar el sistema a estado de fábrica? Esta acción es IRREVERSIBLE y eliminará TODOS los datos de negocios.')) return;
+                    setConfirmingReset(true);
+                    try {
+                      const { data } = await superAdminApi.factoryResetConfirm(resetOtp);
+                      toast.success(data.message || 'Sistema restaurado');
+                      setResetStep('idle');
+                      setResetOtp('');
+                    } catch (err) {
+                      toast.error(errorMessage(err, 'Código inválido o expirado'));
+                    } finally {
+                      setConfirmingReset(false);
+                    }
+                  }}
+                  className="bg-red-700 hover:bg-red-800 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
+                >
+                  {confirmingReset ? 'Procesando...' : '🔥 Confirmar Restauración'}
+                </button>
+                <button
+                  onClick={() => { setResetStep('idle'); setResetOtp(''); }}
+                  className="text-surface-500 hover:text-surface-700 text-sm underline"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

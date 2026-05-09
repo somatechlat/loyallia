@@ -4,7 +4,13 @@ SEC: This module lists editable Vault keys and builds non-secret integration
 status objects. It never returns raw secret values.
 """
 
+import json
+import re
+
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
 from django.conf import settings
+from ninja.errors import HttpError
 
 from apps.tenants.super_admin_api.schemas import PlatformIntegrationOut
 from common.vault import get_secret
@@ -75,6 +81,69 @@ def _present(key: str) -> bool:
     return bool(get_secret(key, default="").strip())
 
 
+def _normalize_pem(value: str) -> str:
+    """Normalize PEM pasted with escaped newlines or as a single wrapped line."""
+    normalized = value.strip().replace("\r\n", "\n").replace("\r", "\n")
+    if "\\n" in normalized and "\n" not in normalized:
+        normalized = normalized.replace("\\n", "\n")
+    if "\n" in normalized:
+        return normalized
+
+    match = re.fullmatch(
+        r"-----BEGIN ([A-Z0-9 ]+)-----\s+(.+?)\s+-----END \1-----",
+        normalized,
+    )
+    if not match:
+        return normalized
+
+    label, body = match.groups()
+    compact_body = re.sub(r"\s+", "", body)
+    wrapped = "\n".join(compact_body[i : i + 64] for i in range(0, len(compact_body), 64))
+    return f"-----BEGIN {label}-----\n{wrapped}\n-----END {label}-----"
+
+
+def normalize_and_validate_vault_secret(key: str, value: str) -> str:
+    """Validate high-risk wallet credentials before they are persisted."""
+    normalized = value.strip()
+
+    if key == "google_service_account_json":
+        try:
+            payload = json.loads(normalized)
+        except json.JSONDecodeError as exc:
+            raise HttpError(400, f"Invalid Google service account JSON: {exc}") from exc
+        missing = [field for field in ("client_email", "private_key", "token_uri") if not payload.get(field)]
+        if missing:
+            raise HttpError(
+                400,
+                f"Google service account JSON missing field(s): {', '.join(missing)}",
+            )
+        return json.dumps(payload, separators=(",", ":"))
+
+    if key in {"apple_cert_pem", "apple_cert_key_pem", "apple_wwdr_cert_pem"}:
+        normalized = _normalize_pem(normalized)
+        try:
+            if key == "apple_cert_key_pem":
+                serialization.load_pem_private_key(normalized.encode("utf-8"), password=None)
+            else:
+                x509.load_pem_x509_certificate(normalized.encode("utf-8"))
+        except Exception as exc:
+            raise HttpError(400, f"Invalid PEM value for {key}: {exc}") from exc
+        return normalized
+
+    if key in {
+        "google_wallet_enabled",
+        "apple_wallet_enabled",
+        "payment_gateway_enabled",
+        "apple_nfc_enabled",
+    }:
+        lowered = normalized.lower()
+        if lowered not in {"true", "false"}:
+            raise HttpError(400, f"{key} must be 'true' or 'false'")
+        return lowered
+
+    return normalized
+
+
 def additional_integrations() -> list[PlatformIntegrationOut]:
     """Return non-secret status for integrations beyond wallet/payment/email."""
     whatsapp_url = get_secret(
@@ -117,9 +186,7 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             key="twilio_sms",
             name="Twilio SMS",
             enabled=twilio_sid_present or twilio_token_present or twilio_from_present,
-            configured=twilio_sid_present
-            and twilio_token_present
-            and twilio_from_present,
+            configured=twilio_sid_present and twilio_token_present and twilio_from_present,
             status=(
                 "configured"
                 if twilio_sid_present and twilio_token_present and twilio_from_present
@@ -140,11 +207,7 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             name="Listmonk",
             enabled=bool(listmonk_url),
             configured=listmonk_user_present and listmonk_token_present,
-            status=(
-                "configured"
-                if listmonk_user_present and listmonk_token_present
-                else "missing_credentials"
-            ),
+            status=("configured" if listmonk_user_present and listmonk_token_present else "missing_credentials"),
             detail=f"Listmonk URL: {listmonk_url}",
             diagnostics={
                 "api_user_present": listmonk_user_present,
@@ -159,11 +222,7 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             name="Apple NFC",
             enabled=apple_nfc_enabled,
             configured=(not apple_nfc_enabled) or apple_nfc_key_present,
-            status=(
-                "configured"
-                if (not apple_nfc_enabled) or apple_nfc_key_present
-                else "missing_credentials"
-            ),
+            status=("configured" if (not apple_nfc_enabled) or apple_nfc_key_present else "missing_credentials"),
             detail="Optional Apple Wallet NFC payload encryption",
             diagnostics={
                 "enabled": apple_nfc_enabled,
