@@ -49,6 +49,14 @@ services:
       EMAIL_HOST: ${EMAIL_HOST:-smtp.mailjet.com}
       EMAIL_PORT: "${EMAIL_PORT:-587}"
       EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
+      # ═══════════════════════════════════════════════════════════════════════
+      # GOOGLE OAUTH 2.0 — PRODUCTION MODE
+      # ───────────────────────────────────────────────────────────────────────
+      # PRODUCTION ONLY: Uses the live rewards.loyallia.com OAuth client.
+      # NEVER commit client_id/client_secret to any file — they live ONLY in Vault.
+      #   Authorized JS origins: https://rewards.loyallia.com
+      #   Authorized redirect URIs: https://rewards.loyallia.com/api/v1/auth/google/callback/
+      # ═══════════════════════════════════════════════════════════════════════
       GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://rewards.loyallia.com/api/v1/auth/google/callback/}
     volumes:
       - static_files:/app/staticfiles

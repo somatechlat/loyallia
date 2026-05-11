@@ -1,6 +1,16 @@
 """
 Loyallia Django Settings — DEVELOPMENT
 Inherits from base. Enables DEBUG, relaxed CORS, console email.
+
+LOCAL GOOGLE OAUTH SETUP:
+  1. Create a separate OAuth 2.0 Client ID at Google Cloud Console
+     (do NOT reuse the production client for security).
+  2. Add these to the dev client:
+        Authorized JS origins: http://localhost:3000
+        Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
+  3. Set in your local .env or Vault:
+        GOOGLE_OAUTH_CLIENT_ID=<your-dev-client-id>
+        GOOGLE_OAUTH_CLIENT_SECRET=<your-dev-client-secret>
 """
 
 from .base import *  # noqa: F401, F403
