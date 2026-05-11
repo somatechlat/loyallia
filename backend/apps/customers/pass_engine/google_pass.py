@@ -383,15 +383,15 @@ def update_wallet_object(customer_pass) -> dict:
 
     if gw_type == "offer":
         payload = _build_offer_object(customer_pass, card, customer, tenant)
-        api_endpoint = "offerObjects"
+        api_endpoint = "offerObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.offer-pass-{customer_pass.id}"
     elif gw_type == "giftCard":
         payload = _build_gift_card_object(customer_pass, card, customer, tenant)
-        api_endpoint = "giftCardObjects"
+        api_endpoint = "giftCardObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
     else:
         payload = _build_loyalty_object(customer_pass, card, customer, tenant)
-        api_endpoint = "loyaltyObjects"
+        api_endpoint = "loyaltyObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.loyallia-pass-{customer_pass.id}"
 
     base_url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
