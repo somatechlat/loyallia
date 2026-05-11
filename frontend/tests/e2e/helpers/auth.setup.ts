@@ -8,7 +8,9 @@
  */
 import { test as setup, expect } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:80';
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:80';
+const COOKIE_DOMAIN = new URL(BASE_URL).hostname;
+const COOKIE_SECURE = BASE_URL.startsWith('https');
 
 const USERS = [
   {
@@ -59,19 +61,19 @@ for (const user of USERS) {
       {
         name: 'access_token',
         value: accessToken,
-        domain: 'localhost',
+        domain: COOKIE_DOMAIN,
         path: '/',
         httpOnly: false,
-        secure: false,
+        secure: COOKIE_SECURE,
         sameSite: 'Lax',
       },
       ...(refreshToken ? [{
         name: 'refresh_token',
         value: refreshToken,
-        domain: 'localhost',
+        domain: COOKIE_DOMAIN,
         path: '/',
         httpOnly: false,
-        secure: false,
+        secure: COOKIE_SECURE,
         sameSite: 'Lax' as const,
       }] : []),
     ]);
