@@ -111,3 +111,13 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: loyallia.settings.production
       DEBUG: "False"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # NGINX — Production: Host nginx handles 80/443, container has NO port bind
+  # ───────────────────────────────────────────────────────────────────────
+  # The host-level nginx (deploy/rewards.loyallia.com.conf) manages SSL,
+  # rate limiting, and proxies directly to container ports 33905/33906.
+  # The container nginx must NOT bind to host ports 80/443.
+  # ═══════════════════════════════════════════════════════════════════════
+  nginx:
+    ports: []
