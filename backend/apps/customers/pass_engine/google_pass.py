@@ -241,13 +241,13 @@ def send_push_notification(
 
     if gw_type == "offer":
         object_id = f"{issuer_id}.offer-pass-{customer_pass.id}"
-        api_endpoint = "offerObjects"
+        api_endpoint = "offerObject"  # singular for all object ops
     elif gw_type == "giftCard":
         object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
-        api_endpoint = "giftCardObjects"
+        api_endpoint = "giftCardObject"  # singular
     else:
         object_id = f"{issuer_id}.loyallia-pass-{customer_pass.id}"
-        api_endpoint = "loyaltyObjects"
+        api_endpoint = "loyaltyObject"  # singular
 
     message_body = body
     if action_url:
