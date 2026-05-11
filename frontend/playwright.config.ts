@@ -27,15 +27,16 @@ export default defineConfig({
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: 'http://localhost:80',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:80',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
+    ignoreHTTPSErrors: true,
     // Pre-accept cookie consent to prevent the banner from blocking clicks
     storageState: {
       cookies: [],
       origins: [{
-        origin: 'http://localhost',
+        origin: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost',
         localStorage: [{ name: 'loyallia_cookie_consent', value: 'true' }],
       }],
     },

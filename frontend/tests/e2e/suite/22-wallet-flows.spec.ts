@@ -12,7 +12,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const BASE_API = 'http://localhost:80';
+const BASE_API = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:80';
 
 /**
  * Login helper — returns JWT access_token for API calls.
