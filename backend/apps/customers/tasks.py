@@ -103,6 +103,35 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         tenant = pass_obj.card.tenant
         customer = pass_obj.customer
 
+        # ── 1. Google Wallet: silently PATCH object data first ──
+        try:
+            from apps.customers.pass_engine.google_pass import update_wallet_object
+            gw_result = update_wallet_object(pass_obj)
+            if gw_result.get("success"):
+                logger.info("Google Wallet object updated for pass %s", customer_pass_id)
+            else:
+                logger.warning(
+                    "Google Wallet object update failed for pass %s: %s",
+                    customer_pass_id,
+                    gw_result.get("error", "unknown"),
+                )
+        except Exception as exc:
+            logger.warning("Google Wallet object update error for pass %s: %s", customer_pass_id, exc)
+
+        # ── 2. Apple Wallet: send empty APNs background push ──
+        try:
+            from apps.customers.pass_engine.apple_push import notify_pass_updated
+            apple_count = notify_pass_updated(pass_obj)
+            if apple_count > 0:
+                logger.info(
+                    "Apple Wallet push sent to %d device(s) for pass %s",
+                    apple_count,
+                    customer_pass_id,
+                )
+        except Exception as exc:
+            logger.warning("Apple Wallet push error for pass %s: %s", customer_pass_id, exc)
+
+        # ── 3. In-app push notification (secondary channel) ──
         notification = Notification.objects.create(
             tenant=tenant,
             customer=customer,

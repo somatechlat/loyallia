@@ -34,6 +34,7 @@ class CampaignCreateIn(BaseModel):
     image_url: str | None = ""
     channel: str | None = "email"  # 'email', 'wallet', 'whatsapp', or 'sms'
     sender_domain: str | None = "loyallia"  # 'loyallia' or 'custom'
+    wallet_platform: str = "both"  # 'apple', 'google', or 'both'
 
 
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
@@ -125,6 +126,7 @@ def create_campaign(request, data: CampaignCreateIn):
             title=data.title,
             message=data.message,
             segment_id=data.segment_id,
+            wallet_platform=data.wallet_platform,
         )
         return {
             "success": True,

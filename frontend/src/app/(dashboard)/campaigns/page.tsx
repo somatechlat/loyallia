@@ -4,6 +4,9 @@ import api, { notificationsApi, customersApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
 import { uploadFile } from '@/lib/upload';
+import WalletPlatformSelector from '@/components/notifications/WalletPlatformSelector';
+import WalletNotificationPreview from '@/components/notifications/WalletNotificationPreview';
+import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
 
 interface Campaign {
   id: string; title: string; message: string; segment: string;
@@ -18,6 +21,7 @@ export default function CampaignsPage() {
   const [showForm, setShowForm] = useState(false);
   const [campaignType, setCampaignType] = useState<'email' | 'wallet' | 'whatsapp' | 'sms'>('wallet');
   const [form, setForm] = useState({ title: '', message: '', segment_id: 'all', image_url: '' });
+  const [walletPlatform, setWalletPlatform] = useState<'apple' | 'google' | 'both'>('both');
   const [sending, setSending] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +101,7 @@ export default function CampaignsPage() {
         channel: campaignType,
         title: form.title,
         message: form.message,
+        wallet_platform: walletPlatform,
       };
       
       const resp = await notificationsApi.createCampaign(payload);
@@ -332,10 +337,26 @@ export default function CampaignsPage() {
           </div>
 
           <form onSubmit={sendCampaign} className="space-y-4">
+            {/* Wallet Platform Selector */}
+            {campaignType === 'wallet' && (
+              <div>
+                <label className="label">Plataforma de Wallet</label>
+                <WalletPlatformSelector value={walletPlatform} onChange={setWalletPlatform} />
+                <p className="text-[10px] text-surface-400 mt-1.5">
+                  Selecciona a qué plataforma enviar la notificación. &quot;Ambos&quot; envía a Apple Wallet y Google Wallet.
+                </p>
+              </div>
+            )}
+
             <div>
-              <label className="label" htmlFor="campaign-title">
-                {campaignType === 'email' ? 'Asunto del email' : campaignType === 'sms' ? 'Título del SMS' : 'Título de la notificación'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="label" htmlFor="campaign-title">
+                  {campaignType === 'email' ? 'Asunto del email' : campaignType === 'sms' ? 'Título del SMS' : 'Título de la notificación'}
+                </label>
+                <EmojiPickerButton
+                  onEmojiSelect={emoji => setForm(f => ({ ...f, title: f.title + emoji }))}
+                />
+              </div>
               <input id="campaign-title" className="input" placeholder={campaignType === 'email' ? "¡Oferta especial para ti!" : campaignType === 'sms' ? "Oferta especial" : "¡Felicidades! Has ganado puntos"}
                 value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
@@ -366,9 +387,14 @@ export default function CampaignsPage() {
             )}
 
             <div>
-              <label className="label" htmlFor="campaign-msg">
-                {campaignType === 'email' ? 'Contenido del email (HTML)' : campaignType === 'sms' ? 'Mensaje SMS' : 'Mensaje de notificación'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="label" htmlFor="campaign-msg">
+                  {campaignType === 'email' ? 'Contenido del email (HTML)' : campaignType === 'sms' ? 'Mensaje SMS' : 'Mensaje de notificación'}
+                </label>
+                <EmojiPickerButton
+                  onEmojiSelect={emoji => setForm(f => ({ ...f, message: f.message + emoji }))}
+                />
+              </div>
               {campaignType === 'email' ? (
                 <>
                   <textarea id="campaign-msg"
@@ -387,6 +413,20 @@ export default function CampaignsPage() {
                   value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
               )}
             </div>
+
+            {/* Wallet Notification Preview */}
+            {campaignType === 'wallet' && (
+              <div className="border border-surface-200 dark:border-surface-700 rounded-xl p-4 bg-surface-50 dark:bg-surface-900/50">
+                <p className="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3">
+                  👁️ Vista previa de la notificación
+                </p>
+                <WalletNotificationPreview
+                  title={form.title}
+                  message={form.message}
+                  platform={walletPlatform}
+                />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <label className="label mb-0">Segmento de destinatarios</label>

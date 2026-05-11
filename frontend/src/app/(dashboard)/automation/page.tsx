@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { automationApi, programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import toast from 'react-hot-toast';
+import WalletPlatformSelector from '@/components/notifications/WalletPlatformSelector';
+import WalletNotificationPreview from '@/components/notifications/WalletNotificationPreview';
+import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
 
 interface Automation {
   id: string; name: string; description: string; trigger: string;
@@ -81,6 +84,43 @@ const PRESET_TEMPLATES = [
     action: 'send_email',
     action_config: { title: 'Transacción registrada', message: '¡Has ganado sellos/puntos! Sigue acumulando para obtener tu próxima recompensa.' },
   },
+  // ── Wallet preset templates ──
+  {
+    id: 'wallet_welcome',
+    name: '🎉 Bienvenida Wallet',
+    description: 'Envía notificación en wallet cuando alguien se inscribe',
+    trigger: 'customer_enrolled',
+    action: 'send_wallet',
+    action_config: {
+      title: '🎉 ¡Bienvenido!',
+      message: 'Gracias por unirte. Tu tarjeta digital está lista. Acumula sellos y gana recompensas.',
+      wallet_platform: 'both',
+    },
+  },
+  {
+    id: 'wallet_reward',
+    name: '🎁 Recompensa en Wallet',
+    description: 'Notifica en wallet cuando el cliente gana una recompensa',
+    trigger: 'reward_earned',
+    action: 'send_wallet',
+    action_config: {
+      title: '🎁 ¡Recompensa ganada!',
+      message: 'Has alcanzado una recompensa. ¡Canjéala en tu próxima visita!',
+      wallet_platform: 'both',
+    },
+  },
+  {
+    id: 'wallet_transaction',
+    name: '💳 Confirmación Wallet',
+    description: 'Confirma transacciones directamente en la tarjeta digital',
+    trigger: 'transaction_completed',
+    action: 'send_wallet',
+    action_config: {
+      title: '💳 Transacción registrada',
+      message: '¡Has ganado sellos/puntos! Sigue acumulando para tu próxima recompensa.',
+      wallet_platform: 'both',
+    },
+  },
 ];
 
 const ACTION_LABELS: Record<string, string> = {
@@ -109,7 +149,7 @@ function ActionIcon({ action, className = 'w-5 h-5' }: { action: string; classNa
 
 const EMPTY_FORM = {
   name: '', description: '', trigger: 'customer_enrolled', action: 'send_notification',
-  trigger_config: {} as Record<string, string>, action_config: { title: '', message: '' } as Record<string, string>,
+  trigger_config: {} as Record<string, unknown>, action_config: { title: '', message: '' } as Record<string, any>,
   cooldown_hours: 24, max_executions_per_day: null as number | null,
 };
 
@@ -175,7 +215,7 @@ export default function AutomationPage() {
     setForm({
       name: a.name, description: a.description, trigger: a.trigger, action: a.action,
       trigger_config: (a.trigger_config || {}) as Record<string, string>,
-      action_config: (a.action_config || { title: '', message: '' }) as Record<string, string>,
+      action_config: (a.action_config || { title: '', message: '' }) as Record<string, unknown>,
       cooldown_hours: a.cooldown_hours || 24, max_executions_per_day: a.max_executions_per_day,
     });
     setStep(1);
@@ -418,21 +458,59 @@ export default function AutomationPage() {
               {step === 3 && (
                 <div className="space-y-4">
                   {/* Action config: notification title/message */}
-                  {(form.action === 'send_notification' || form.action === 'send_email') && (
+                  {(form.action === 'send_notification' || form.action === 'send_email' || form.action === 'send_wallet') && (
                     <>
                       <div>
-                        <label className="label" htmlFor="action-title">Título del mensaje</label>
+                        <div className="flex items-center justify-between">
+                          <label className="label" htmlFor="action-title">Título del mensaje</label>
+                          <EmojiPickerButton
+                            onEmojiSelect={emoji => setForm(f => ({ ...f, action_config: { ...f.action_config, title: (f.action_config.title || '') + emoji } }))}
+                          />
+                        </div>
                         <input id="action-title" className="input" placeholder="Ej: ¡Bienvenido a nuestro programa!"
                           value={form.action_config.title || ''}
                           onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, title: e.target.value } }))} />
                       </div>
                       <div>
-                        <label className="label" htmlFor="action-message">Contenido del mensaje</label>
+                        <div className="flex items-center justify-between">
+                          <label className="label" htmlFor="action-message">Contenido del mensaje</label>
+                          <EmojiPickerButton
+                            onEmojiSelect={emoji => setForm(f => ({ ...f, action_config: { ...f.action_config, message: (f.action_config.message || '') + emoji } }))}
+                          />
+                        </div>
                         <textarea id="action-message" className="input min-h-[80px] resize-none"
                           placeholder="Ej: Gracias por unirte. Tu primera recompensa te espera."
                           value={form.action_config.message || ''}
                           onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, message: e.target.value } }))} />
                       </div>
+
+                      {/* Wallet Platform Selector (only for send_wallet) */}
+                      {form.action === 'send_wallet' && (
+                        <div>
+                          <label className="label">Plataforma de Wallet</label>
+                          <WalletPlatformSelector
+                            value={(form.action_config.wallet_platform as 'apple' | 'google' | 'both') || 'both'}
+                            onChange={value => setForm(f => ({ ...f, action_config: { ...f.action_config, wallet_platform: value } }))}
+                          />
+                          <p className="text-[10px] text-surface-400 mt-1.5">
+                            Selecciona a qué plataforma enviar la notificación de wallet.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Wallet Notification Preview (only for send_wallet) */}
+                      {form.action === 'send_wallet' && (
+                        <div className="border border-surface-200 dark:border-surface-700 rounded-xl p-4 bg-surface-50 dark:bg-surface-900/50">
+                          <p className="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3">
+                            👁️ Vista previa de la notificación
+                          </p>
+                          <WalletNotificationPreview
+                            title={form.action_config.title || ''}
+                            message={form.action_config.message || ''}
+                            platform={(form.action_config.wallet_platform as 'apple' | 'google' | 'both') || 'both'}
+                          />
+                        </div>
+                      )}
                     </>
                   )}
 
