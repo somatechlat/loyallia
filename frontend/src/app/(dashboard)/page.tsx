@@ -114,7 +114,7 @@ export default function DashboardPage() {
     const days = resolveDays(range);
     try {
       const [dash, trend, vis, tb, demo, rb, pt, ns] = await Promise.all([
-        analyticsApi.dashboard(),
+        analyticsApi.dashboard(days),
         analyticsApi.trends(days),
         analyticsApi.visits(days),
         analyticsApi.topBuyers(15, days),

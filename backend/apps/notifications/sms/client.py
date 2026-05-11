@@ -51,8 +51,10 @@ def _is_test_mode() -> bool:
     ))
 
 
-def _truthy(value: str) -> bool:
+def _truthy(value: str | None) -> bool:
     """Return True for common on/true values."""
+    if value is None:
+        return False
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 

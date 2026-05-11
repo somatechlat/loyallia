@@ -170,15 +170,17 @@ export default function NewProgramPage() {
             </div>
             {/* Right: Hover Preview Panel (desktop only) */}
             <div className="hidden lg:flex items-start justify-center w-[220px] flex-shrink-0 sticky top-8" id="hover-preview-panel">
-              {hoveredType ? (
-                <div className="animate-fade-in">
-                  <WalletPreviewContent type={hoveredType} />
-                </div>
-              ) : (
-                <div className="w-full h-[370px] flex items-center justify-center text-center">
-                  <p className="text-xs text-surface-400">👆 Pasa el mouse sobre un tipo de programa para ver una vista previa de la tarjeta</p>
-                </div>
-              )}
+              <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full">
+                {hoveredType ? (
+                  <div className="animate-fade-in flex justify-center">
+                    <WalletPreviewContent type={hoveredType} />
+                  </div>
+                ) : (
+                  <div className="w-full h-[370px] flex items-center justify-center text-center">
+                    <p className="text-xs text-surface-500 dark:text-surface-400">👆 Pasa el mouse sobre un tipo de programa para ver una vista previa de la tarjeta</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -488,7 +490,7 @@ export default function NewProgramPage() {
           </div>
 
           {/* Right: Live Wallet Preview */}
-          <div className="sticky top-24">
+          <div className="sticky top-24 bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">
             <WalletCardPreview
               form={form}
               selectedType={selectedType}

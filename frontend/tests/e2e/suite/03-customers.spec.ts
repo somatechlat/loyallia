@@ -19,6 +19,9 @@ test.describe('Customers — OWNER CRUD @owner', () => {
   test('OWNER sees "Importar DB" button @owner', async ({ page }) => {
     await page.goto('/customers', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
+    // Open the data combo dropdown first
+    await page.locator('#data-combo-btn').click();
+    await page.waitForTimeout(300);
     const btn = page.locator('#open-import-modal-btn');
     await expect(btn).toBeVisible({ timeout: 10000 });
   });
@@ -38,6 +41,9 @@ test.describe('Customers — OWNER CRUD @owner', () => {
   test('OWNER can open import modal @owner', async ({ page }) => {
     await page.goto('/customers', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
+    // Open the data combo dropdown first
+    await page.locator('#data-combo-btn').click();
+    await page.waitForTimeout(300);
     await page.locator('#open-import-modal-btn').click();
     await page.waitForTimeout(500);
     // Modal should appear with title

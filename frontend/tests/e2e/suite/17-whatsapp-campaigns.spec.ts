@@ -300,24 +300,24 @@ test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin', ()
     expect(resp.status()).toBe(403);
   });
 
-  test('SUPERADMIN cannot create campaigns (402 — no subscription) @superadmin', async ({ request }) => {
+  test('SUPERADMIN cannot create campaigns (403 — no tenant) @superadmin', async ({ request }) => {
     const token = await loginAs(request, 'admin@loyallia.com');
     const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { title: 'SA Hack', message: 'Test', segment_id: 'all', channel: 'whatsapp' },
     });
-    // SUPER_ADMIN has no tenant → @require_active_subscription returns 402
-    expect(resp.status()).toBe(402);
+    // SUPER_ADMIN has no tenant → is_owner returns false → 403
+    expect(resp.status()).toBe(403);
   });
 
-  test('SUPERADMIN cannot access WhatsApp QR (402 — no subscription) @superadmin', async ({ request }) => {
+  test('SUPERADMIN cannot access WhatsApp QR (403 — no tenant) @superadmin', async ({ request }) => {
     const token = await loginAs(request, 'admin@loyallia.com');
     const fakeTenantId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${fakeTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // SUPER_ADMIN has no tenant → @require_active_subscription returns 402
-    expect(resp.status()).toBe(402);
+    // SUPER_ADMIN has no tenant → is_owner returns false → 403
+    expect(resp.status()).toBe(403);
   });
 });
 

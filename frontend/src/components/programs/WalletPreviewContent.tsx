@@ -104,8 +104,8 @@ function WalletPreviewContent({ type }: { type: string }) {
 
   return (
     <div className="flex flex-col items-center">
-      {/* iPhone Frame */}
-      <div className="relative w-[180px] bg-black rounded-[2.2rem] border-[3px] border-gray-700 shadow-2xl overflow-hidden flex flex-col">
+      {/* iPhone Frame — elevated with visible contrast in both light/dark modes */}
+      <div className="relative w-[180px] bg-black rounded-[2.2rem] border-[3px] border-gray-600 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-1 ring-white/20">
         {/* Dynamic Island */}
         <div className="flex justify-center pt-2 pb-0.5">
           <div className="w-16 h-4 bg-black rounded-full border border-gray-800" />

@@ -107,55 +107,66 @@ def send_sms_campaign(
     succeeded = 0
     failed = 0
 
-    for customer in audience.iterator(chunk_size=50):
-        # Create delivery log row (status=QUEUED)
-        delivery_log = CampaignDeliveryLog.objects.create(
-            campaign_run=campaign_run,
-            customer=customer,
-            recipient_phone=customer.phone or "",
-            recipient_email=customer.email or "",
-            recipient_name=f"{customer.first_name} {customer.last_name}".strip(),
-            status=DeliveryStatus.QUEUED,
-        )
+    try:
+        for customer in audience.iterator(chunk_size=50):
+            # Defensive: skip customers without a valid phone number
+            if not customer.phone:
+                failed += 1
+                continue
 
-        if not customer.phone:
-            delivery_log.status = DeliveryStatus.FAILED
-            delivery_log.failed_at = timezone.now()
-            delivery_log.error_code = "NO_PHONE"
-            delivery_log.error_message = "Cliente sin número de teléfono"
-            delivery_log.save(
-                update_fields=["status", "failed_at", "error_code", "error_message"]
+            # Create delivery log row (status=QUEUED)
+            delivery_log = CampaignDeliveryLog.objects.create(
+                campaign_run=campaign_run,
+                customer=customer,
+                recipient_phone=customer.phone,
+                recipient_email=customer.email or "",
+                recipient_name=f"{customer.first_name} {customer.last_name}".strip(),
+                status=DeliveryStatus.QUEUED,
             )
-            failed += 1
-            continue
 
-        # Create notification record upfront for campaign list visibility (LYL-SRS-009)
-        notification = Notification.objects.create(
-            tenant=tenant,
-            customer=customer,
-            notification_type=NotificationType.MARKETING,
-            channel=NotificationChannel.SMS,
-            title=title,
-            message=message[:500],
-        )
+            # Create notification record upfront for campaign list visibility (LYL-SRS-009)
+            notification = Notification.objects.create(
+                tenant=tenant,
+                customer=customer,
+                notification_type=NotificationType.MARKETING,
+                channel=NotificationChannel.SMS,
+                title=title,
+                message=message[:500],
+            )
 
-        try:
-            result = send_sms(phone=customer.phone, message=sms_body)
+            try:
+                result = send_sms(phone=customer.phone, message=sms_body)
 
-            if result.get("success"):
-                delivery_log.status = DeliveryStatus.SENT
-                delivery_log.sent_at = timezone.now()
-                delivery_log.external_message_id = result.get("sid", "")
-                delivery_log.save(
-                    update_fields=["status", "sent_at", "external_message_id"]
-                )
-                notification.mark_as_sent()
-                succeeded += 1
-            else:
+                if result.get("success"):
+                    delivery_log.status = DeliveryStatus.SENT
+                    delivery_log.sent_at = timezone.now()
+                    delivery_log.external_message_id = result.get("sid", "")
+                    delivery_log.save(
+                        update_fields=["status", "sent_at", "external_message_id"]
+                    )
+                    notification.mark_as_sent()
+                    succeeded += 1
+                else:
+                    delivery_log.status = DeliveryStatus.FAILED
+                    delivery_log.failed_at = timezone.now()
+                    delivery_log.error_code = "TWILIO_ERROR"
+                    delivery_log.error_message = result.get("error", "Unknown error")[:500]
+                    delivery_log.save(
+                        update_fields=[
+                            "status",
+                            "failed_at",
+                            "error_code",
+                            "error_message",
+                        ]
+                    )
+                    failed += 1
+            except Exception as exc:
+                error_msg = str(exc)[:500]
+                logger.error("SMS send failed for customer %s: %s", customer.id, error_msg)
                 delivery_log.status = DeliveryStatus.FAILED
                 delivery_log.failed_at = timezone.now()
-                delivery_log.error_code = "TWILIO_ERROR"
-                delivery_log.error_message = result.get("error", "Unknown error")[:500]
+                delivery_log.error_code = "SEND_ERROR"
+                delivery_log.error_message = error_msg
                 delivery_log.save(
                     update_fields=[
                         "status",
@@ -165,36 +176,20 @@ def send_sms_campaign(
                     ]
                 )
                 failed += 1
-        except Exception as exc:
-            error_msg = str(exc)[:500]
-            logger.error("SMS send failed for customer %s: %s", customer.id, error_msg)
-            delivery_log.status = DeliveryStatus.FAILED
-            delivery_log.failed_at = timezone.now()
-            delivery_log.error_code = "SEND_ERROR"
-            delivery_log.error_message = error_msg
-            delivery_log.save(
-                update_fields=[
-                    "status",
-                    "failed_at",
-                    "error_code",
-                    "error_message",
-                ]
-            )
-            failed += 1
-
-    # Finalize campaign run
-    campaign_run.sent_count = succeeded
-    campaign_run.failed_count = failed
-    campaign_run.status = CampaignStatus.COMPLETED
-    campaign_run.completed_at = timezone.now()
-    campaign_run.save(
-        update_fields=[
-            "sent_count",
-            "failed_count",
-            "status",
-            "completed_at",
-        ]
-    )
+    finally:
+        # Always finalize campaign run so it never stays stuck IN_PROGRESS
+        campaign_run.sent_count = succeeded
+        campaign_run.failed_count = failed
+        campaign_run.status = CampaignStatus.COMPLETED
+        campaign_run.completed_at = timezone.now()
+        campaign_run.save(
+            update_fields=[
+                "sent_count",
+                "failed_count",
+                "status",
+                "completed_at",
+            ]
+        )
 
     logger.info(
         "SMS campaign %s complete: %d/%d sent, %d failed",
