@@ -493,7 +493,21 @@ TAX_RATE_ECUADOR = config(
 )  # Ecuador IVA 15%
 
 # =============================================================================
-# GOOGLE OAUTH 2.0 (Social Login)
+# GOOGLE OAUTH 2.0 (Social Login) — Google Identity Services (GIS)
+# ─────────────────────────────────────────────────────────────────────────────
+# Loyallia uses GIS (modern "Sign in with Google" button), NOT traditional
+# OAuth 2.0 redirect flow. The frontend gets an ID token directly from Google
+# and sends it to POST /api/v1/auth/google/login/ for verification.
+#
+# ENVIRONMENT SEPARATION:
+#   • LOCAL DEV:  Create a separate OAuth client for localhost:
+#                 Authorized JS origins: http://localhost:3000
+#                 Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
+#   • PRODUCTION: Use the live rewards.loyallia.com client:
+#                 Authorized JS origins: https://rewards.loyallia.com
+#                 Authorized redirect URIs: https://rewards.loyallia.com/api/v1/auth/google/callback/
+#
+# NEVER commit client_id/client_secret to any file. They live ONLY in Vault.
 # Get credentials from: https://console.cloud.google.com/apis/credentials
 # =============================================================================
 GOOGLE_OAUTH_CLIENT_ID = get_secret(

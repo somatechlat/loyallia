@@ -57,4 +57,5 @@ playwright.config.ts
 tsconfig.tsbuildinfo
 vitest.config.ts
 .eslintrc.json
-postcss.config.js
+# NOTE: postcss.config.js and tailwind.config.js MUST be included in the build
+# so that Next.js can compile Tailwind CSS. Do NOT add them here.
