@@ -584,6 +584,32 @@ The Business Dashboard is the primary management interface for Business Owners a
 | LYL-FR-DASH-053 | OWNER SHALL be able to revoke any user's access immediately | MUST |
 | LYL-FR-DASH-054 | Dashboard SHALL show last-login per user | SHOULD |
 
+#### 8.2.7 OWNER ADMIN Navigation Structure
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-DASH-060 | OWNER role SHALL see 10 sidebar menu items: Resumen, Programas, Clientes, Analíticas, Automatización, Campañas, Sucursales, Equipo, Configuración, Facturación | MUST |
+| LYL-FR-DASH-061 | MANAGER role SHALL see 5 sidebar menu items: Resumen, Programas, Clientes, Analíticas, Sucursales | MUST |
+| LYL-FR-DASH-062 | Non-OWNER roles SHALL be redirected away from OWNER-only routes: /campaigns, /billing, /settings, /automation | MUST |
+| LYL-FR-DASH-063 | STAFF role SHALL be redirected to /scanner/scan immediately upon login | MUST |
+| LYL-FR-DASH-064 | Sidebar SHALL display tenant logo (if uploaded) or Loyallia logo | MUST |
+| LYL-FR-DASH-065 | Sidebar SHALL include theme toggle (Light / Dark / System) | MUST |
+| LYL-FR-DASH-066 | Sidebar SHALL display user profile with role label and logout button | MUST |
+
+#### 8.2.8 Wallet Provider Selection (Apple vs Google)
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-DASH-070 | Program creation wizard SHALL allow selecting wallet provider: Apple Wallet or Google Wallet | MUST |
+| LYL-FR-DASH-071 | Apple Wallet option SHALL show: pass style (storeCard/coupon/generic), NFC toggle, NFC auth toggle, strip/thumbnail image guidance | MUST |
+| LYL-FR-DASH-072 | Google Wallet option SHALL show: Google Wallet class type (LoyaltyClass/GiftCardClass/OfferClass), hero image guidance, cardTemplateOverride info | MUST |
+| LYL-FR-DASH-073 | Live phone preview SHALL update based on selected provider: iPhone frame for Apple, Android frame for Google | MUST |
+| LYL-FR-DASH-074 | Selected wallet provider SHALL be stored in Card.metadata.wallet_provider | MUST |
+| LYL-FR-DASH-075 | Enrollment page SHALL only show wallet buttons for the enabled provider(s) | MUST |
+| LYL-FR-DASH-076 | Apple Wallet endpoint SHALL return 404 if wallet_provider is "google" | MUST |
+| LYL-FR-DASH-077 | Google Wallet endpoint SHALL return 404 if wallet_provider is "apple" | MUST |
+| LYL-FR-DASH-078 | Existing cards (created before wallet provider feature) SHALL default to "both" providers for backward compatibility | MUST |
+
 
 ---
 
@@ -830,6 +856,22 @@ Define the end-to-end customer-facing flow: from QR discovery to wallet pass. Th
 | LYL-FR-WALL-008 | Customer SHALL be able to opt-out of push notifications from pass settings (Wallet native) | MUST |
 | LYL-FR-WALL-009 | System SHALL collect device_push_token during enrollment for future push delivery | MUST |
 | LYL-FR-WALL-010 | Pass backside (Apple) and details (Google) SHALL display: business contact, website, terms link | SHOULD |
+
+#### 15.3.1 Wallet Provider Differentiation Requirements
+
+| Req ID | Requirement | Priority |
+|--------|-------------|----------|
+| LYL-FR-WALL-020 | System SHALL support per-card wallet provider configuration: "apple", "google", or "both" | MUST |
+| LYL-FR-WALL-021 | Apple Wallet passes SHALL use PKPass format (.pkpass) with proper passTypeIdentifier and teamIdentifier | MUST |
+| LYL-FR-WALL-022 | Apple Wallet pass style SHALL be determined by card type: storeCard (stamp, cashback, discount, gift_certificate, multipass), coupon (coupon), generic (affiliate, vip_membership, corporate_discount, referral_pass) | MUST |
+| LYL-FR-WALL-023 | Apple Wallet storeCard/coupon passes SHALL support strip.png (375×123pt panoramic image) | MUST |
+| LYL-FR-WALL-024 | Apple Wallet generic passes SHALL support thumbnail.png (90×90pt) instead of strip | MUST |
+| LYL-FR-WALL-025 | Apple Wallet passes SHALL optionally support NFC with VAS protocol when enabled and properly configured in Vault | SHOULD |
+| LYL-FR-WALL-026 | Google Wallet passes SHALL use JWT-signed URLs with appropriate class type mapping: LoyaltyClass (stamp, affiliate, vip_membership), GiftCardClass (cashback, gift_certificate, multipass), OfferClass (coupon, discount, corporate_discount, referral_pass) | MUST |
+| LYL-FR-WALL-027 | Google Wallet passes SHALL support hero image (full-width banner) on all class types | MUST |
+| LYL-FR-WALL-028 | Google Wallet passes SHALL use cardTemplateOverride with 1-3 field rows for layout | MUST |
+| LYL-FR-WALL-029 | Phone preview in dashboard SHALL render with visible contrast regardless of light/dark theme | MUST |
+| LYL-FR-WALL-030 | Phone preview SHALL display accurate platform-specific UI: Dynamic Island for iPhone, center pill for Android | MUST |
 
 ---
 

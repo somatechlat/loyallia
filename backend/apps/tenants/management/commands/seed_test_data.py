@@ -10,18 +10,27 @@ from django.utils import timezone
 from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
 
 # Core
-from apps.authentication.models import User, UserRole
+from apps.authentication.models import RefreshToken, User, UserRole
 from apps.automation.models import Automation
 
 # Billing
-from apps.billing.models import Invoice, PaymentMethod, Subscription, SubscriptionStatus
+from apps.billing.models import Invoice, PaymentMethod, Subscription, SubscriptionStatus, SubscriptionPlan
+
+# Audit
+from apps.audit.models import AuditLog
 
 # Loyalty
 from apps.cards.models import Card, CardType
 from apps.customers.models import Customer, CustomerPass
 
 # Engagement
-from apps.notifications.models import Notification, NotificationType
+from apps.notifications.models import (
+    CampaignRun,
+    CampaignDeliveryLog,
+    Notification,
+    NotificationType,
+    WhatsAppSession,
+)
 
 # =============================================================================
 # Authentic Ecuadorian / Latin American Name Pools
@@ -60,24 +69,46 @@ class Command(BaseCommand):
                 )
             )
         if options["wipe"]:
-            self.stdout.write(self.style.WARNING("Wiping existing synthetic data..."))
+            self.stdout.write(
+                self.style.WARNING(
+                    "Wiping existing DEMO data only (operational infrastructure preserved)..."
+                )
+            )
+            # Operational identifiers that must NEVER be deleted
+            OPERATIONAL_PLAN_SLUGS = {"trial", "starter", "professional", "enterprise"}
+            SUPERADMIN_EMAIL = "admin@loyallia.com"
+
             with transaction.atomic():
-                DailyAnalytics.objects.all().delete()
-                CustomerAnalytics.objects.all().delete()
-                ProgramAnalytics.objects.all().delete()
-                Automation.objects.all().delete()
+                # Child records with FK dependencies first
+                superadmin = User.objects.filter(email=SUPERADMIN_EMAIL).first()
+                superadmin_id = superadmin.id if superadmin else None
+                if superadmin_id:
+                    RefreshToken.objects.exclude(user_id=superadmin_id).delete()
+                CampaignDeliveryLog.objects.all().delete()
                 Notification.objects.all().delete()
+                CampaignRun.objects.all().delete()
+                WhatsAppSession.objects.all().delete()
                 Transaction.objects.all().delete()
                 CustomerPass.objects.all().delete()
-                Customer.objects.all().delete()
-                Card.objects.all().delete()
+                CustomerAnalytics.objects.all().delete()
+                ProgramAnalytics.objects.all().delete()
+                DailyAnalytics.objects.all().delete()
+                Automation.objects.all().delete()
+                AuditLog.objects.all().delete()
                 Invoice.objects.all().delete()
                 PaymentMethod.objects.all().delete()
                 Subscription.objects.all().delete()
+                # Tenant-scoped entities
+                Customer.objects.all().delete()
+                Card.objects.all().delete()
                 Location.objects.all().delete()
-                User.objects.all().delete()
+                User.objects.exclude(email=SUPERADMIN_EMAIL).delete()
                 Tenant.objects.all().delete()
-            self.stdout.write(self.style.SUCCESS("Database wiped."))
+                # Non-operational subscription plans (E2E test pollution)
+                SubscriptionPlan.objects.exclude(
+                    slug__in=OPERATIONAL_PLAN_SLUGS
+                ).delete()
+            self.stdout.write(self.style.SUCCESS("Demo data wiped. Operational infrastructure preserved."))
 
         self.stdout.write("Starting massive data seed process (Ecuador context)...")
 

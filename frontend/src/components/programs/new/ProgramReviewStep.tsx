@@ -106,7 +106,7 @@ export default function ProgramReviewStep({
           </div>
 
           {/* Preview */}
-          <div>
+          <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">
             <WalletCardPreview
               form={form}
               selectedType={selectedType}

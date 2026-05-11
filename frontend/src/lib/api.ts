@@ -113,7 +113,7 @@ export const authApi = {
 };
 
 export const analyticsApi = {
-  dashboard: () => api.get('/api/v1/analytics/overview/'),
+  dashboard: (days = 30) => api.get(`/api/v1/analytics/overview/?days=${days}`),
   trends: (days = 30) => api.get(`/api/v1/analytics/trends/?days=${days}`),
   segments: () => api.get('/api/v1/analytics/segments/'),
   programs: () => api.get('/api/v1/analytics/programs/'),

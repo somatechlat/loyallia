@@ -281,7 +281,7 @@ function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcod
     : bgColor;
 
   return (
-    <div className="bg-gray-900 rounded-[3rem] p-3 shadow-2xl border-4 border-gray-800">
+    <div className="bg-gray-900 rounded-[3rem] p-3 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-4 border-gray-600 ring-1 ring-white/20">
       <div className="bg-gray-900 rounded-[2.5rem] overflow-hidden relative">
         {/* Dynamic Island */}
         <div className="bg-black/80 px-6 py-3 flex justify-center">
@@ -388,7 +388,7 @@ function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barco
   const heroImage = stripPreview || form.strip_image_url;
 
   return (
-    <div className="bg-gray-900 rounded-[2.2rem] p-2.5 shadow-2xl border-4 border-gray-800">
+    <div className="bg-gray-900 rounded-[2.2rem] p-2.5 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-4 border-gray-600 ring-1 ring-white/20">
       <div className="bg-gray-950 rounded-[1.8rem] overflow-hidden relative">
         {/* Android status bar with pill */}
         <div className="flex justify-between items-center px-5 pt-2.5 pb-1">

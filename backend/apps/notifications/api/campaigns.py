@@ -24,6 +24,7 @@ class CampaignOut(BaseModel):
     status: str
     sent_count: int
     created_at: str
+    channel: str | None = None
 
 
 class CampaignCreateIn(BaseModel):
