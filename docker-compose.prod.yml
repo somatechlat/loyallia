@@ -120,4 +120,4 @@ services:
   # The container nginx must NOT bind to host ports 80/443.
   # ═══════════════════════════════════════════════════════════════════════
   nginx:
-    ports: []
+    ports: !reset []
