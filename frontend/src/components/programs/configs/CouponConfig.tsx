@@ -10,6 +10,7 @@
  */
 import React, { useCallback } from 'react';
 import Tooltip from '@/components/ui/Tooltip';
+import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
 import type { ConfigProps } from './types';
 
 /** Coupon card configuration with discount types, dates, push notifications. */
@@ -190,13 +191,24 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
           Permite definir un mensaje de notificación push que el cliente recibirá automáticamente cuando agregue o descargue el cupón en su wallet.
         </p>
         <div className="mb-3">
-          <label className="label">Título de la notificación</label>
+          <div className="flex items-center justify-between">
+            <label className="label">Título de la notificación</label>
+            <EmojiPickerButton
+              onEmojiSelect={emoji => set('push_title', ((meta.push_title as string) || '') + emoji)}
+            />
+          </div>
           <input type="text" className="input" placeholder="¡Tu cupón está listo!" maxLength={60}
             value={meta.push_title as string ?? ''}
             onChange={e => set('push_title', e.target.value)} />
           <span className="text-[10px] text-surface-400 mt-0.5 block">{(meta.push_title as string ?? '').length}/60</span>
         </div>
         <div className="relative">
+          <div className="flex items-center justify-between mb-1">
+            <label className="label mb-0">Mensaje de la notificación</label>
+            <EmojiPickerButton
+              onEmojiSelect={emoji => set('push_message', ((meta.push_message as string) || '') + emoji)}
+            />
+          </div>
           <textarea className="input min-h-[80px] resize-none"
             placeholder="Tu cupón ya está activo. Disfruta $5 de descuento en tu próxima compra 🍕"
             maxLength={178} value={meta.push_message as string ?? ''}

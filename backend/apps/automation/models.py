@@ -402,6 +402,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         """Send wallet push notification to customer's active passes.
 
         LYL-SRS-009: Sends push via Google Wallet API + Apple APNs.
+        Respects wallet_platform config: "apple", "google", or "both" (default).
         """
         from apps.customers.models import CustomerPass
 
@@ -414,43 +415,56 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
         title = self.action_config.get("title", "Notificación")
         message = self.action_config.get("message", "")
+        wallet_platform = self.action_config.get("wallet_platform", "both")
         push_sent = False
 
         for pass_obj in passes:
-            try:
-                # Google Wallet push
-                from django.conf import settings
+            # ── Google Wallet ──
+            if wallet_platform in ("google", "both"):
+                try:
+                    # First: silently PATCH object data
+                    from apps.customers.pass_engine.google_pass import (
+                        update_wallet_object,
+                    )
 
-                from apps.customers.pass_engine.google_pass import (
-                    send_push_notification,
-                )
+                    gw_update = update_wallet_object(pass_obj)
+                    if gw_update.get("success"):
+                        push_sent = True
 
-                action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
-                result = send_push_notification(
-                    pass_obj, header=title, body=message, action_url=action_url
-                )
-                if result.get("success"):
-                    push_sent = True
-            except Exception as exc:
-                import logging
+                    # Then: send visible message notification
+                    from django.conf import settings
 
-                logging.getLogger(__name__).warning(
-                    "Google wallet push failed for pass %s: %s", pass_obj.id, exc
-                )
+                    from apps.customers.pass_engine.google_pass import (
+                        send_push_notification,
+                    )
 
-            try:
-                # Apple Wallet push — trigger pass re-download
-                from apps.customers.pass_engine.apple_push import notify_pass_updated
+                    action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
+                    result = send_push_notification(
+                        pass_obj, header=title, body=message, action_url=action_url
+                    )
+                    if result.get("success"):
+                        push_sent = True
+                except Exception as exc:
+                    import logging
 
-                apple_count = notify_pass_updated(pass_obj)
-                if apple_count > 0:
-                    push_sent = True
-            except Exception as exc:
-                import logging
+                    logging.getLogger(__name__).warning(
+                        "Google wallet push failed for pass %s: %s", pass_obj.id, exc
+                    )
 
-                logging.getLogger(__name__).warning(
-                    "Apple wallet push failed for pass %s: %s", pass_obj.id, exc
-                )
+            # ── Apple Wallet ──
+            if wallet_platform in ("apple", "both"):
+                try:
+                    from apps.customers.pass_engine.apple_push import notify_pass_updated
+
+                    apple_count = notify_pass_updated(pass_obj)
+                    if apple_count > 0:
+                        push_sent = True
+                except Exception as exc:
+                    import logging
+
+                    logging.getLogger(__name__).warning(
+                        "Apple wallet push failed for pass %s: %s", pass_obj.id, exc
+                    )
 
         return push_sent
 

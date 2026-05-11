@@ -26,6 +26,7 @@ def send_wallet_notification_campaign(
     title: str,
     message: str,
     segment_id: str = "all",
+    wallet_platform: str = "both",
 ) -> dict:
     """Send wallet push notifications to customers with active passes.
 
@@ -81,28 +82,31 @@ def send_wallet_notification_campaign(
         active_cards = Card.objects.filter(tenant=tenant, is_active=True)
         for card in active_cards:
             broadcast_url = f"{settings.FRONTEND_URL}/enroll/{str(card.id)}"
-            # Google Wallet broadcast
-            send_push_notification_to_class(
-                card, header=title, body=message, action_url=broadcast_url
-            )
-            logger.info("Google broadcast push sent for card %s", card.name)
 
-            # Apple Wallet broadcast — send empty APNs push to all registered devices
-            try:
-                from apps.customers.pass_engine.apple_push import notify_card_updated
-
-                apple_count = notify_card_updated(card)
-                apple_push_sent += apple_count
-                if apple_count > 0:
-                    logger.info(
-                        "Apple broadcast push sent to %d devices for card %s",
-                        apple_count,
-                        card.name,
-                    )
-            except Exception as exc:
-                logger.warning(
-                    "Apple broadcast push failed for card %s: %s", card.name, exc
+            if wallet_platform in ("google", "both"):
+                # Google Wallet broadcast
+                send_push_notification_to_class(
+                    card, header=title, body=message, action_url=broadcast_url
                 )
+                logger.info("Google broadcast push sent for card %s", card.name)
+
+            if wallet_platform in ("apple", "both"):
+                # Apple Wallet broadcast — send empty APNs push to all registered devices
+                try:
+                    from apps.customers.pass_engine.apple_push import notify_card_updated
+
+                    apple_count = notify_card_updated(card)
+                    apple_push_sent += apple_count
+                    if apple_count > 0:
+                        logger.info(
+                            "Apple broadcast push sent to %d devices for card %s",
+                            apple_count,
+                            card.name,
+                        )
+                except Exception as exc:
+                    logger.warning(
+                        "Apple broadcast push failed for card %s: %s", card.name, exc
+                    )
 
     for customer in audience.iterator(chunk_size=50):
         try:
@@ -131,29 +135,34 @@ def send_wallet_notification_campaign(
                     action_url = (
                         f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
                     )
-                    # Google Wallet individual push
-                    result = send_push_notification(
-                        pass_obj, header=title, body=message, action_url=action_url
-                    )
-                    if result.get("success"):
-                        push_sent += 1
-                        logger.info("Google push sent to pass %s", pass_obj.id)
-
-                    # Apple Wallet individual push — trigger pass re-download
-                    try:
-                        from apps.customers.pass_engine.apple_push import (
-                            notify_pass_updated,
+                    if wallet_platform in ("google", "both"):
+                        # Google Wallet individual push
+                        result = send_push_notification(
+                            pass_obj, header=title, body=message, action_url=action_url
                         )
+                        if result.get("success"):
+                            push_sent += 1
+                            logger.info("Google push sent to pass %s", pass_obj.id)
 
-                        apple_count = notify_pass_updated(pass_obj)
-                        apple_push_sent += apple_count
-                    except Exception as exc:
-                        logger.warning(
-                            "Apple push failed for pass %s: %s", pass_obj.id, exc
-                        )
+                    if wallet_platform in ("apple", "both"):
+                        # Apple Wallet individual push — trigger pass re-download
+                        try:
+                            from apps.customers.pass_engine.apple_push import (
+                                notify_pass_updated,
+                            )
+
+                            apple_count = notify_pass_updated(pass_obj)
+                            apple_push_sent += apple_count
+                        except Exception as exc:
+                            logger.warning(
+                                "Apple push failed for pass %s: %s", pass_obj.id, exc
+                            )
             else:
                 # Mark as "push sent" in stats because we did a broadcast
-                push_sent += passes.count()
+                if wallet_platform in ("google", "both"):
+                    push_sent += passes.count()
+                if wallet_platform in ("apple", "both"):
+                    apple_push_sent += passes.count()
 
         except Exception as exc:
             logger.error("Wallet campaign failed for %s: %s", customer.id, exc)
