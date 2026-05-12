@@ -63,7 +63,10 @@ echo ""
 echo "Verifying stored values..."
 docker compose exec -e VAULT_TOKEN="$ROOT_TOKEN" -e VAULT_ADDR="$VAULT_ADDR" \
     vault vault kv get -format=json secret/loyallia | \
-    jq '.data.data | {google_oauth_client_id, google_oauth_client_secret}'
+    jq '.data.data | {
+        google_oauth_client_id_present: (.google_oauth_client_id | type == "string" and length > 0),
+        google_oauth_client_secret_present: (.google_oauth_client_secret | type == "string" and length > 0)
+    }'
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════════"

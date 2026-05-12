@@ -1,6 +1,6 @@
 #!/bin/bash
-# Run this on YOUR LOCAL MACHINE where Loyallia works perfectly
-# It exports all Vault secrets to a file you can send me
+# Run this on YOUR LOCAL MACHINE where Loyallia works.
+# It prints a redacted Vault inventory only. It does not export secret values.
 
 set -euo pipefail
 
@@ -16,15 +16,11 @@ if [[ -z "$LOCAL_TOKEN" || "$LOCAL_TOKEN" == "null" ]]; then
     exit 1
 fi
 
-echo "Exporting local Vault secrets..."
+echo "Reading local Vault secret inventory..."
 
-# Export ALL secrets
+# Read secret metadata and print key presence only.
 docker compose exec -e VAULT_TOKEN="$LOCAL_TOKEN" vault \
-  vault kv get -format=json secret/loyallia/production > /tmp/loyallia_vault_export.json
+  vault kv get -format=json secret/loyallia/production | \
+  jq '.data.data | with_entries(.value = ((.value | type == "string") and (.value | length > 0)))'
 
-echo "✓ Exported to: /tmp/loyallia_vault_export.json"
-echo ""
-echo "=== Secrets found ==="
-jq '.data.data | keys | .[]' /tmp/loyallia_vault_export.json
-echo ""
-echo "NEXT: Send me /tmp/loyallia_vault_export.json and I'll import to production"
+echo "✓ Redacted inventory complete. Secret values were not written to disk."

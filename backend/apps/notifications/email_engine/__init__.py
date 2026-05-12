@@ -1,1 +1,1 @@
-# Loyallia — Listmonk Email Engine Integration (LYL-SRS-006)
+# Loyallia — Mailjet Email Engine Integration (LYL-SRS-006)

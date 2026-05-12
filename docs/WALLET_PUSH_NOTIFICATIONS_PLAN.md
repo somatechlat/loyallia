@@ -133,9 +133,9 @@ ssl_context.load_default_certs()
 |-------|--------|-------|
 | `apple_wallet_enabled` | ✅ | `true` |
 | `google_wallet_enabled` | ✅ | `true` |
-| `apple_pass_type_identifier` | ✅ | `pass.com.loyallia.cards` |
-| `apple_team_identifier` | ✅ | `29NGPXM563` |
-| `google_wallet_issuer_id` | ✅ | `3388000000023112792` |
+| `apple_pass_type_identifier` | Verify locally | Vault value |
+| `apple_team_identifier` | Verify locally | Vault value |
+| `google_wallet_issuer_id` | Verify locally | Vault value |
 | `apple_cert_pem` | ✅ | Configured |
 | `apple_cert_key_pem` | ✅ | Configured |
 | `google_service_account_json` | ✅ | Configured |
@@ -150,7 +150,7 @@ ssl_context.load_default_certs()
 
 **Step 1.1:** Verify `PASS_WEB_SERVICE_URL` is actually set in the running container:
 ```bash
-ssh root@140.82.15.48
+ssh <production-user>@<production-server-ip>
 cd /opt/loyallia
 docker compose exec api python -c "from django.conf import settings; print(settings.PASS_WEB_SERVICE_URL)"
 ```

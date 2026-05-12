@@ -367,16 +367,20 @@ PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
 # EMAIL
 # =============================================================================
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_HOST = config("EMAIL_HOST", default="in-v3.mailjet.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = get_secret(
-    "email_host_user", env_fallback="EMAIL_HOST_USER", default=""
+    "mailjet_api_key", env_fallback="MAILJET_API_KEY", default=""
 )
 EMAIL_HOST_PASSWORD = get_secret(
-    "email_host_password", env_fallback="EMAIL_HOST_PASSWORD", default=""
+    "mailjet_secret_key", env_fallback="MAILJET_SECRET_KEY", default=""
 )
-DEFAULT_FROM_EMAIL = config("EMAIL_FROM", default="noreply@loyallia.com")
+DEFAULT_FROM_EMAIL = get_secret(
+    "mailjet_sender_email",
+    env_fallback="MAILJET_SENDER_EMAIL",
+    default=config("EMAIL_FROM", default="noreply@loyallia.com"),
+)
 
 # =============================================================================
 # WHATSAPP BRIDGE (LYL-SRS-006)
@@ -434,17 +438,6 @@ TWILIO_TEST_ACCOUNT_SID = get_secret(
 )
 TWILIO_TEST_AUTH_TOKEN = get_secret(
     "twilio_test_auth_token", env_fallback="TWILIO_TEST_AUTH_TOKEN", default=""
-)
-
-# =============================================================================
-# LISTMONK EMAIL ENGINE (LYL-SRS-006)
-# =============================================================================
-LISTMONK_URL = config("LISTMONK_URL", default="http://listmonk:9000")
-LISTMONK_API_USER = get_secret(
-    "listmonk_api_user", env_fallback="LISTMONK_API_USER", default=""
-)
-LISTMONK_API_TOKEN = get_secret(
-    "listmonk_api_token", env_fallback="LISTMONK_API_TOKEN", default=""
 )
 
 # =============================================================================

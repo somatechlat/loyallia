@@ -734,9 +734,10 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
     "payment_gateway_tran_key",
     "payment_gateway_webhook_secret",
 ],
-"email": [
-    "email_host_user",
-    "email_host_password",
+"mailjet": [
+    "mailjet_api_key",
+    "mailjet_secret_key",
+    "mailjet_sender_email",
 ],
 ```
 
@@ -770,9 +771,9 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
 
 **Changes:**
 - `common/env_validation.py`:
-  - Removed `email_host_user`, `email_host_password`, `apple_wallet_enabled` from unconditional `PRODUCTION_REQUIRED_VAULT_KEYS`
+  - Removed Mailjet and Apple Wallet credentials from unconditional `PRODUCTION_REQUIRED_VAULT_KEYS`
   - Added `EMAIL_REQUIRED_VAULT_KEYS` list
-  - Email credentials only validated if `email_host_user` is non-empty
+  - Mailjet credentials only validated if `mailjet_api_key` is non-empty
   - Apple Wallet fields only validated if `apple_wallet_enabled` is truthy
   - `payment_gateway` fields only validated if `payment_gateway_enabled` is truthy
 
@@ -816,12 +817,12 @@ This allows the system to boot with a subset of integrations configured.
 **Real files (kept):**
 | File | Purpose |
 |------|---------|
-| `passNew.cer` | Apple-signed Pass Type ID certificate |
-| `apple_pass_new.key` | 2048-bit RSA private key matching `passNew.cer` |
-| `apple_pass_new.csr` | CSR used to obtain `passNew.cer` |
-| `AppleWWDRCAG4.cer` | Apple WWDR G4 intermediate certificate |
-| `client_secret_*.json` | Google OAuth 2.0 client secrets |
-| `scenic-parity-494022-h5-628cf7e3795c.json` | Google Wallet Service Account |
+| `passNew.cer` | Ignored local Apple Pass Type ID certificate |
+| `apple_pass_new.key` | Ignored local Apple private key |
+| `apple_pass_new.csr` | Ignored local CSR |
+| `AppleWWDRCAG4.cer` | Ignored local Apple WWDR intermediate certificate |
+| `client_secret_*.json` | Ignored local Google OAuth client secrets |
+| `service-account-*.json` | Ignored local Google Wallet service account |
 
 **Removed files (were sanitized placeholders):**
 - `apple_pass.key`, `apple_pass_cert.pem`, `apple_wwdr.pem`, `apple_pass.csr`, `pass.cer`

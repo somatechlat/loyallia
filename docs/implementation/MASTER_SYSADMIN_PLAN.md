@@ -300,7 +300,7 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │  │ Google OAuth    │ true/false│ true/false │                             │ │
 │  │ WhatsApp Bridge │ true/false│ true/false │                             │ │
 │  │ Twilio SMS      │ true/false│ true/false │                             │ │
-│  │ Listmonk        │ true/false│ true/false │                             │ │
+│  │ Mailjet Email   │ true/false│ true/false │                             │ │
 │  │ Apple NFC       │ true/false│ true/false │                             │ │
 │  │ AI Agent        │ true/false│ true/false │                             │ │
 │  └─────────────────┴───────────┴────────────┴─────────────────────────────┘ │
@@ -568,7 +568,7 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 **Fix Required:**
 1. Create HTML email template for broadcasts
 2. Add unsubscribe footer
-3. Track delivery via Listmonk integration
+3. Track delivery via Mailjet/provider delivery events where supported
 
 ### GAP-010: No Bulk Operations on Tenants
 **Location:** Missing

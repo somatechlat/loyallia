@@ -38,9 +38,11 @@ ALLOWED_INTEGRATION_KEYS = {
         "payment_gateway_tran_key",
         "payment_gateway_webhook_secret",
     ],
-    "email": [
-        "email_host_user",
-        "email_host_password",
+    "mailjet": [
+        "mailjet_api_key",
+        "mailjet_secret_key",
+        "mailjet_sender_email",
+        "mailjet_sender_name",
     ],
     "google_oauth": [
         "google_oauth_client_id",
@@ -68,11 +70,6 @@ ALLOWED_INTEGRATION_KEYS = {
     "twilio_test": [
         "twilio_test_account_sid",
         "twilio_test_auth_token",
-    ],
-    "listmonk": [
-        "listmonk_url",
-        "listmonk_api_user",
-        "listmonk_api_token",
     ],
     "apple_nfc": [
         "apple_nfc_enabled",
@@ -188,11 +185,6 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
         env_fallback="WHATSAPP_BRIDGE_URL",
         default=getattr(settings, "WHATSAPP_BRIDGE_URL", ""),
     )
-    listmonk_url = get_secret(
-        "listmonk_url",
-        env_fallback="LISTMONK_URL",
-        default=getattr(settings, "LISTMONK_URL", ""),
-    )
     ai_agent_base_url = get_secret(
         "ai_agent_base_url",
         env_fallback="AI_AGENT_BASE_URL",
@@ -209,8 +201,6 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
     api_key_secret_present = _present("twilio_api_key_secret")
     test_sid_present = _present("twilio_test_account_sid")
     test_token_present = _present("twilio_test_auth_token")
-    listmonk_user_present = _present("listmonk_api_user")
-    listmonk_token_present = _present("listmonk_api_token")
     apple_nfc_enabled = _truthy(get_secret("apple_nfc_enabled", default="false"))
     apple_nfc_key_present = _present("apple_nfc_encryption_public_key")
     ai_agent_key_present = _present("ai_agent_api_key")
@@ -222,9 +212,12 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             enabled=bool(whatsapp_url),
             configured=whatsapp_key_present,
             status="configured" if whatsapp_key_present else "missing_credentials",
-            detail=f"Bridge URL: {whatsapp_url}",
-            diagnostics={"api_key_present": whatsapp_key_present},
-            preview_values={"whatsapp_bridge_url": whatsapp_url},
+            detail="Bridge endpoint configured" if whatsapp_url else "Bridge endpoint missing",
+            diagnostics={
+                "endpoint_present": bool(whatsapp_url),
+                "api_key_present": whatsapp_key_present,
+            },
+            preview_values={},
         ),
         PlatformIntegrationOut(
             key="twilio_sms",
@@ -244,7 +237,6 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "use_test_mode": twilio_test_mode,
             },
             preview_values={
-                "twilio_from_number": get_secret("twilio_from_number", default=""),
                 "twilio_use_test_mode": "true" if twilio_test_mode else "false",
             },
         ),
@@ -260,9 +252,7 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "service_sid_present": verify_sid_present,
                 "default_channel": get_secret("twilio_verify_default_channel", default="sms"),
             },
-            preview_values={
-                "twilio_verify_default_channel": get_secret("twilio_verify_default_channel", default="sms"),
-            },
+            preview_values={},
         ),
         PlatformIntegrationOut(
             key="twilio_api_key",
@@ -291,21 +281,6 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             preview_values={},
         ),
         PlatformIntegrationOut(
-            key="listmonk",
-            name="Listmonk",
-            enabled=bool(listmonk_url),
-            configured=listmonk_user_present and listmonk_token_present,
-            status=("configured" if listmonk_user_present and listmonk_token_present else "missing_credentials"),
-            detail=f"Listmonk URL: {listmonk_url}",
-            diagnostics={
-                "api_user_present": listmonk_user_present,
-                "api_token_present": listmonk_token_present,
-            },
-            preview_values={
-                "listmonk_api_user": get_secret("listmonk_api_user", default=""),
-            },
-        ),
-        PlatformIntegrationOut(
             key="apple_nfc",
             name="Apple NFC",
             enabled=apple_nfc_enabled,
@@ -326,8 +301,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             enabled=bool(ai_agent_base_url),
             configured=ai_agent_key_present,
             status="configured" if ai_agent_key_present else "missing_credentials",
-            detail=f"Agent URL: {ai_agent_base_url}",
-            diagnostics={"api_key_present": ai_agent_key_present},
-            preview_values={"ai_agent_base_url": ai_agent_base_url},
+            detail="AI Agent endpoint configured" if ai_agent_base_url else "AI Agent endpoint missing",
+            diagnostics={
+                "endpoint_present": bool(ai_agent_base_url),
+                "api_key_present": ai_agent_key_present,
+            },
+            preview_values={},
         ),
     ]

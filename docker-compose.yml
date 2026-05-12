@@ -8,7 +8,7 @@
 # MEMORY ALLOCATION:
 #   postgres=1.5G | redis=512M | minio=512M | pgbouncer=128M
 #   api=2G | web=2G | celery-pass/push/default=384Mx3 | celery-beat=192M
-#   flower=192M | vault=256M | whatsapp-bridge=256M | listmonk=256M
+#   flower=192M | vault=256M | whatsapp-bridge=256M
 #   init containers=64Mx2 (ephemeral)
 #
 # SECRETS: Local development may seed Vault from .env. Production app runtime
@@ -39,7 +39,7 @@ x-common-env: &common-env
   PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-manual}
   PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-}
   # Email
-  EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+  EMAIL_HOST: ${EMAIL_HOST:-in-v3.mailjet.com}
   EMAIL_PORT: "${EMAIL_PORT:-587}"
   EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
   # ═══════════════════════════════════════════════════════════════════════
@@ -57,11 +57,6 @@ x-common-env: &common-env
   # WhatsApp Bridge (LYL-SRS-006)
   WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:3001
   WHATSAPP_BRIDGE_API_KEY: ${WHATSAPP_BRIDGE_API_KEY:-dev-bridge-key}
-  # Listmonk Email Engine (LYL-SRS-006)
-  LISTMONK_URL: http://listmonk:9000
-  LISTMONK_API_USER: ${LISTMONK_API_USER:-loyallia}
-  LISTMONK_API_TOKEN: ${LISTMONK_API_TOKEN:-}
-
 services:
   # ---------------------------------------------------------------------------
   # POSTGRESQL 16 — Primary Database  → localhost:33900              [1.5GB]
@@ -777,49 +772,6 @@ services:
           memory: 64M
 
   # ---------------------------------------------------------------------------
-  # LISTMONK — Mass Email Engine          → localhost:33915           [256M]
-  # LYL-SRS-006: High-performance campaign email delivery
-  # Shares PostgreSQL with main app (separate 'listmonk' schema)
-  # SEC: Admin dashboard internal-only — super admins use Django API bridge
-  # ---------------------------------------------------------------------------
-  listmonk:
-    image: listmonk/listmonk:v4.1.0
-    container_name: loyallia-listmonk
-    command: >
-      sh -c 'export LISTMONK_db__password="$$(cat /run/loyallia-vault/postgres_password)" && exec ./listmonk --config /etc/listmonk/config.toml'
-    volumes:
-      - ./services/listmonk/config.toml:/etc/listmonk/config.toml:ro
-      - vault_runtime:/run/loyallia-vault:ro
-    environment:
-      TZ: America/Guayaquil
-      LISTMONK_app__admin_password: ${LISTMONK_ADMIN_PASSWORD:-loyallia-dev}
-    ports:
-      - "127.0.0.1:33915:9000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - backend-net
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      start_period: 15s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
-        reservations:
-          memory: 64M
-
-  # ---------------------------------------------------------------------------
   # HASHICORP VAULT — Secret Management   → localhost:33908           [256M]
   # ---------------------------------------------------------------------------
   vault:
@@ -877,10 +829,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64M
-          cpus: "0.10"
+          memory: 256M
+          cpus: "0.50"
         reservations:
-          memory: 32M
+          memory: 64M
 
   # ---------------------------------------------------------------------------
   # NGINX — Reverse Proxy + Security Headers

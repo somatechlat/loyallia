@@ -116,7 +116,7 @@ Esto te da el **Issuer ID** que necesito.
    - Categoría: seleccioná **"Loyalty"** o **"Fidelización"**
 5. Aceptá los términos y hacé click en **"Continuar"**
 
-📸 *Lo que aparece:* Una pantalla con tu **Issuer ID** (es un número largo, algo como `3388000000022321101`).
+📸 *Lo que aparece:* Una pantalla con tu **Issuer ID**. Guárdalo en Vault como `google_wallet_issuer_id`.
 
 6. **Copiá ese número y pasámelo a mí.**
 
@@ -157,8 +157,7 @@ Este archivo JSON es lo más importante. **NO LO COMPARTAS PÚBLICAMENTE.**
 4. Seleccioná **"JSON"**
 5. Hacé click en **"CREAR"**
 
-📸 *Lo que pasa:* Se descarga un archivo `.json` a tu computadora. El nombre es algo como:
-`loyallia-wallet-123456-abcdef123456.json`
+📸 *Lo que pasa:* Se descarga un archivo `.json` a tu computadora. El nombre será generado por Google.
 
 6. **No abras ese archivo todavía.** Primero pasame el nombre del archivo para confirmar que se descargó.
 

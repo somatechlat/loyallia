@@ -59,9 +59,11 @@ const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
     { key: 'payment_gateway_tran_key', label: 'Transaction Key', type: 'password' },
     { key: 'payment_gateway_webhook_secret', label: 'Webhook Secret', type: 'password' },
   ],
-  email: [
-    { key: 'email_host_user', label: 'SMTP Usuario', type: 'text' },
-    { key: 'email_host_password', label: 'SMTP Contraseña', type: 'password' },
+  mailjet: [
+    { key: 'mailjet_api_key', label: 'Mailjet API Key', type: 'text' },
+    { key: 'mailjet_secret_key', label: 'Mailjet Secret Key', type: 'password' },
+    { key: 'mailjet_sender_email', label: 'Sender Email', type: 'text' },
+    { key: 'mailjet_sender_name', label: 'Sender Name', type: 'text' },
   ],
   whatsapp_bridge: [
     { key: 'whatsapp_bridge_url', label: 'Bridge URL', type: 'text' },
@@ -85,11 +87,6 @@ const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
   twilio_test: [
     { key: 'twilio_test_account_sid', label: 'Test Account SID', type: 'text' },
     { key: 'twilio_test_auth_token', label: 'Test Auth Token', type: 'password' },
-  ],
-  listmonk: [
-    { key: 'listmonk_url', label: 'Listmonk URL', type: 'text' },
-    { key: 'listmonk_api_user', label: 'API User', type: 'text' },
-    { key: 'listmonk_api_token', label: 'API Token', type: 'password' },
   ],
   apple_nfc: [
     { key: 'apple_nfc_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'] },
@@ -323,8 +320,9 @@ export default function SuperAdminSettings() {
       apple_cert_pem: 'cert_pem_present',
       apple_cert_key_pem: 'cert_key_pem_present',
       apple_wwdr_cert_pem: 'wwdr_cert_pem_present',
-      email_host_user: 'user_present',
-      email_host_password: 'pass_present',
+      mailjet_api_key: 'api_key_present',
+      mailjet_secret_key: 'secret_key_present',
+      mailjet_sender_email: 'sender_email_present',
       whatsapp_bridge_api_key: 'api_key_present',
       twilio_account_sid: 'account_sid_present',
       twilio_auth_token: 'auth_token_present',
@@ -337,8 +335,6 @@ export default function SuperAdminSettings() {
       twilio_api_key_secret: 'api_key_secret_present',
       twilio_test_account_sid: 'test_account_sid_present',
       twilio_test_auth_token: 'test_auth_token_present',
-      listmonk_api_user: 'api_user_present',
-      listmonk_api_token: 'api_token_present',
       apple_nfc_encryption_public_key: 'public_key_present',
       ai_agent_api_key: 'api_key_present',
     };

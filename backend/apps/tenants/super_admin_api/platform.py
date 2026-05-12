@@ -3,6 +3,7 @@ Loyallia — Super Admin API: Platform metrics, locations map, broadcast, and pl
 """
 
 import logging
+import os
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -54,9 +55,27 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
+SENSITIVE_PLATFORM_SETTING_TOKENS = (
+    "SECRET",
+    "PASSWORD",
+    "TOKEN",
+    "PRIVATE_KEY",
+    "API_KEY",
+    "CLIENT_SECRET",
+    "TRAN_KEY",
+    "CERT",
+    "CREDENTIAL",
+)
+
+
 def _require_super_admin(request) -> None:
     if not is_super_admin(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+
+def _is_sensitive_platform_setting_key(key: str) -> bool:
+    normalized = key.upper()
+    return any(token in normalized for token in SENSITIVE_PLATFORM_SETTING_TOKENS)
 
 
 @router.get("/platform/metrics/", auth=jwt_auth, response=PlatformMetricsOut)
@@ -166,16 +185,10 @@ def platform_integrations(request):
 
     payment_enabled = bool(getattr(settings, "PAYMENT_GATEWAY_ENABLED", False))
     payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
-    email_user = get_secret("email_host_user", env_fallback="EMAIL_HOST_USER", default="")
-    email_pass = get_secret("email_host_password", env_fallback="EMAIL_HOST_PASSWORD", default="")
-    email_configured = bool(email_user and email_pass)
-
-    # Preview values: non-secret fields only, for pre-populating the UI
-    google_issuer_id = get_secret("google_wallet_issuer_id", default="")
-    google_oauth_client_id = get_secret("google_oauth_client_id", default="")
-    apple_pass_type_id = get_secret("apple_pass_type_identifier", default="")
-    apple_team_id = get_secret("apple_team_identifier", default="")
-    payment_login = get_secret("payment_gateway_login", default="")
+    mailjet_api_key = get_secret("mailjet_api_key", env_fallback="MAILJET_API_KEY", default="")
+    mailjet_secret_key = get_secret("mailjet_secret_key", env_fallback="MAILJET_SECRET_KEY", default="")
+    mailjet_sender_email = get_secret("mailjet_sender_email", env_fallback="MAILJET_SENDER_EMAIL", default="")
+    mailjet_configured = bool(mailjet_api_key and mailjet_secret_key and mailjet_sender_email)
 
     return [
         PlatformIntegrationOut(
@@ -188,8 +201,6 @@ def platform_integrations(request):
             diagnostics=google_diagnostics,
             preview_values={
                 "google_wallet_enabled": ("true" if google_diagnostics["enabled"] else "false"),
-                "google_wallet_issuer_id": google_issuer_id,
-                "google_oauth_client_id": google_oauth_client_id,
             },
         ),
         PlatformIntegrationOut(
@@ -202,8 +213,6 @@ def platform_integrations(request):
             diagnostics=apple_diagnostics,
             preview_values={
                 "apple_wallet_enabled": "true" if apple_enabled else "false",
-                "apple_pass_type_identifier": apple_pass_type_id,
-                "apple_team_identifier": apple_team_id,
             },
         ),
         PlatformIntegrationOut(
@@ -217,24 +226,22 @@ def platform_integrations(request):
             preview_values={
                 "payment_gateway_enabled": "true" if payment_enabled else "false",
                 "payment_gateway_provider": payment_provider,
-                "payment_gateway_login": payment_login,
             },
         ),
         PlatformIntegrationOut(
-            key="email",
-            name="Email SMTP",
+            key="mailjet",
+            name="Mailjet Email",
             enabled=True,
-            configured=email_configured,
-            status="configured" if email_configured else "missing_credentials",
-            detail=f"Host: {getattr(settings, 'EMAIL_HOST', '')}",
+            configured=mailjet_configured,
+            status="configured" if mailjet_configured else "missing_credentials",
+            detail="Mailjet SMTP mass email provider",
             diagnostics={
                 "host": getattr(settings, "EMAIL_HOST", ""),
-                "user_present": bool(email_user),
-                "pass_present": bool(email_pass),
+                "api_key_present": bool(mailjet_api_key),
+                "secret_key_present": bool(mailjet_secret_key),
+                "sender_email_present": bool(mailjet_sender_email),
             },
-            preview_values={
-                "email_host_user": email_user,
-            },
+            preview_values={},
         ),
         *additional_integrations(),
     ]
@@ -512,7 +519,7 @@ def list_platform_settings(request):
     return [
         PlatformSettingOut(
             key=s.key,
-            value=s.value,
+            value="<redacted>" if _is_sensitive_platform_setting_key(s.key) else s.value,
             description=s.description,
             category=s.category,
             requires_restart=s.requires_restart,
@@ -531,6 +538,15 @@ def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn)
     via `PlatformSetting.get(key)`.
     """
     _require_super_admin(request)
+
+    if _is_sensitive_platform_setting_key(key):
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR",
+                detail="Secret-like platform settings must be stored via the Vault integration settings endpoint.",
+            ),
+        )
 
     setting, created = PlatformSetting.objects.get_or_create(
         key=key,
@@ -592,8 +608,18 @@ def seed_demo_data(request):
     except Exception:
         logger.warning("Failed to audit demo seed", exc_info=True)
 
+    seed_password = os.environ.get("LOYALLIA_SEED_PASSWORD")
+    if not seed_password:
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR",
+                detail="LOYALLIA_SEED_PASSWORD is required to seed local demo users.",
+            ),
+        )
+
     output = StringIO()
-    call_command("seed_test_data", stdout=output, stderr=output)
+    call_command("seed_test_data", password=seed_password, stdout=output, stderr=output)
 
     logger.info("SUPER_ADMIN %s triggered demo data seed", request.user.email)
     return SeedDemoDataOut(

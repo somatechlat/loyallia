@@ -8,7 +8,7 @@ alert-type pushes for the Loyallia iOS app.
 Apple Wallet pass update pushes:
   - Payload MUST be an empty JSON dictionary: {}
   - apns-push-type MUST be "background" (not "alert")
-  - apns-topic MUST be the Pass Type Identifier (e.g., pass.com.loyallia.cards)
+  - apns-topic MUST be the configured Pass Type Identifier from Vault/settings
   - Authentication uses the Pass Type Certificate (PEM from Vault), NOT the APNs Auth Key (.p8)
   - Upon receiving this push, the device calls our web service to download the updated .pkpass
 
@@ -78,7 +78,10 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         )
         return False
 
-    topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards")
+    topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
+    if not topic:
+        logger.warning("Apple pass push: Pass type identifier is not configured")
+        return False
 
     # Auto-detect sandbox from Django DEBUG setting
     use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)

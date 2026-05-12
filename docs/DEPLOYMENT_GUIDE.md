@@ -6,7 +6,7 @@ This guide covers the complete deployment of Loyallia to a production server.
 
 **Server:** Ubuntu 24.04 LTS  
 **Domain:** `rewards.loyallia.com`  
-**IP:** `140.82.15.48`  
+**IP:** `<production-server-ip>`
 **Path:** `/opt/loyallia`
 
 ---
@@ -102,7 +102,7 @@ docker compose logs vault-init -f
 ```bash
 # Get root token
 ROOT_TOKEN=$(docker compose exec vault cat /vault/file/init.json | jq -r '.root_token')
-echo "Root Token: $ROOT_TOKEN"
+# Do not echo or log root tokens.
 
 # Set app token
 docker compose exec -e VAULT_TOKEN="$ROOT_TOKEN" vault \
@@ -133,17 +133,18 @@ docker compose exec -e VAULT_TOKEN="$ROOT_TOKEN" vault vault kv put secret/loyal
   redis_url="redis://:$(openssl rand -hex 32)@redis:6379/0" \
   celery_broker_url="redis://:$(openssl rand -hex 32)@redis:6379/1" \
   celery_result_backend="redis://:$(openssl rand -hex 32)@redis:6379/2" \
-  google_oauth_client_id="YOUR_GOOGLE_CLIENT_ID" \
-  google_oauth_client_secret="YOUR_GOOGLE_CLIENT_SECRET" \
-  google_wallet_issuer_id="YOUR_GOOGLE_WALLET_ISSUER_ID" \
+  google_oauth_client_id="<vault:google_oauth_client_id>" \
+  google_oauth_client_secret="<vault:google_oauth_client_secret>" \
+  google_wallet_issuer_id="<vault:google_wallet_issuer_id>" \
   google_service_account_json='{"type":"service_account","project_id":"..."}' \
-  email_host_user="your-email@domain.com" \
-  email_host_password="your-email-password" \
-  twilio_account_sid="YOUR_TWILIO_SID" \
-  twilio_auth_token="YOUR_TWILIO_TOKEN" \
-  twilio_from_number="+1234567890" \
-  payment_gateway_login="YOUR_PAYMENT_LOGIN" \
-  payment_gateway_tran_key="YOUR_PAYMENT_TRAN_KEY" \
+  mailjet_api_key="<vault:mailjet_api_key>" \
+  mailjet_secret_key="<vault:mailjet_secret_key>" \
+  mailjet_sender_email="<vault:mailjet_sender_email>" \
+  twilio_account_sid="<vault:twilio_account_sid>" \
+  twilio_auth_token="<vault:twilio_auth_token>" \
+  twilio_from_number="<vault:twilio_from_number>" \
+  payment_gateway_login="<vault:payment_gateway_login>" \
+  payment_gateway_tran_key="<vault:payment_gateway_tran_key>" \
   payment_gateway_webhook_secret="$(openssl rand -hex 32)" \
   whatsapp_bridge_api_key="$(openssl rand -hex 32)" \
   whatsapp_bridge_url="http://whatsapp-bridge:3001" \
@@ -214,12 +215,10 @@ else:
 
 ---
 
-## Step 8: Listmonk Setup
+## Step 8: Mailjet Setup
 
-```bash
-# Initialize listmonk database
-docker compose run --rm listmonk ./listmonk --install --yes
-```
+Configure `mailjet_api_key`, `mailjet_secret_key`, and `mailjet_sender_email` in Vault.
+The sender email must be verified in Mailjet.
 
 ---
 
@@ -306,9 +305,8 @@ docker cp loyallia-vault:/vault/file/init.json vault-backup-$(date +%Y%m%d).json
 | Google OAuth | ✅ Working | None |
 | Google Wallet | ⚠️ Empty JSON | Add service account JSON |
 | Apple Wallet | ⚠️ Disabled | Add certificates + enable |
-| Email SMTP | ⚠️ Placeholder | Add real email credentials |
+| Mailjet Email | ⚠️ Placeholder | Add Mailjet credentials |
 | Payments | ⚠️ Disabled | Add payment gateway credentials |
 | Twilio SMS | ⚠️ Missing | Add Twilio credentials |
 | WhatsApp Bridge | ⚠️ Missing | Add bridge API key |
 | AI Agent | ⚠️ Missing | Add AI API key |
-| Listmonk | ⚠️ Missing | Configure listmonk settings |

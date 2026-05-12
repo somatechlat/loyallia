@@ -2,7 +2,7 @@
 
 > **Single source of truth for any coding agent joining this project.**
 > Updated: 2026-05-06
-> Status: All integrations configured with real credentials
+> Status: Verify locally before claiming readiness
 
 ---
 
@@ -14,16 +14,14 @@
 | Frontend | 🟢 Healthy | Next.js 14, SuperAdmin UI functional |
 | PostgreSQL | 🟢 Healthy | Primary + replica, migration 0007 applied |
 | Redis | 🟢 Healthy | Cache + Celery broker |
-| Vault | 🟢 Healthy | KV v2, all secrets populated |
-| Google Wallet | 🟢 Configured | Real SA JSON + real Issuer ID |
-| Apple Wallet | 🟢 Configured | Real cert + real key + WWDR |
-| Google OAuth | 🟢 Configured | Real Client ID + Secret |
-| Email SMTP | 🟢 Configured | Gmail SMTP + app password |
+| Vault | Verify locally | KV v2; do not print secret values |
+| Google Wallet | Verify locally | Service account and issuer live in Vault/local ignored files |
+| Apple Wallet | Verify locally | Certificates and private keys live in Vault/local ignored files |
+| Google OAuth | Verify locally | Client ID/secret live in Vault/local ignored files |
+| Mailjet Email | Verify locally | Mailjet credentials live in Vault |
 | Nginx | 🟢 Healthy | Reverse proxy active |
 
-**Test Credentials:**
-- SuperAdmin: `admin@example.com` / `[REDACTED]`
-- Owner (seeded): `owner@example.com` / `123456`
+**Test Credentials:** use `PLAYWRIGHT_*` environment variables or a local operator-provided seed password. Do not document passwords in Git.
 
 ---
 
@@ -77,7 +75,7 @@ certs/             Certificate files (real + dev)
 | **Vault Write** | `common/vault.py` | `write_secret()` + `clear_cache()` for runtime secret updates |
 | **Integration Diagnostics** | `apps/tenants/super_admin_api/platform.py` | `platform_integrations()` returns per-service diagnostics with `errors` array |
 | **Vault Secret Endpoint** | `apps/tenants/super_admin_api/platform.py` | `PUT /integrations/{key}/secret/` — writes single key to Vault, validates against `ALLOWED_KEYS` |
-| **Env Validation Fix** | `common/env_validation.py` | Email + Apple Wallet no longer hard-required. Email only required if `email_host_user` set. Apple only if `apple_wallet_enabled=true` |
+| **Env Validation Fix** | `common/env_validation.py` | Mailjet + Apple Wallet no longer hard-required. Mailjet only required if `mailjet_api_key` set. Apple only if `apple_wallet_enabled=true` |
 | **OAuth in ALLOWED_KEYS** | `apps/tenants/super_admin_api/platform.py` | `google_wallet` ALLOWED_KEYS now includes `google_oauth_client_id` + `google_oauth_client_secret` |
 
 ### Frontend Changes
@@ -101,8 +99,8 @@ certs/             Certificate files (real + dev)
 
 ### Vault Access
 ```bash
-# Get root token
-docker exec loyallia-vault cat /vault/file/init.json | python3 -c "import sys,json; print(json.load(sys.stdin)['root_token'])"
+# Load root token into a local shell variable only; do not echo or log it.
+ROOT_TOKEN="$(docker exec loyallia-vault cat /vault/file/init.json | python3 -c "import sys,json; print(json.load(sys.stdin)['root_token'])")"
 
 # Read a secret
 curl -H "X-Vault-Token: <token>" http://localhost:33908/v1/secret/data/loyallia/production
@@ -113,35 +111,36 @@ curl -X POST -H "X-Vault-Token: <token>" -H "Content-Type: application/json" \
   -d '{"data": {"key": "value"}}'
 ```
 
-### Current Vault Contents (Real Data)
+### Current Vault Keys
 
 | Key | Value Source | Status |
 |-----|--------------|--------|
-| `google_wallet_issuer_id` | `3388000000023112792` | Real issuer ID |
-| `google_service_account_json` | `certs/scenic-parity-494022-h5-628cf7e3795c.json` | Real SA |
-| `google_wallet_enabled` | `true` | Active |
-| `google_oauth_client_id` | `[REDACTED]` | Real OAuth |
-| `google_oauth_client_secret` | `[REDACTED]` | Real OAuth |
-| `apple_pass_type_identifier` | `pass.com.loyallia.cards` | From real cert |
-| `apple_team_identifier` | `29NGPXM563` | From real cert |
-| `apple_cert_pem` | Converted from `certs/passNew.cer` | Real Apple-signed |
-| `apple_cert_key_pem` | `certs/apple_pass_new.key` | Real 2048-bit RSA |
-| `apple_wwdr_cert_pem` | Converted from `certs/AppleWWDRCAG4.cer` | Real WWDR G4 |
-| `apple_wallet_enabled` | `true` | Active |
-| `email_host_user` | `info@loyallia.com` | Real Gmail |
-| `email_host_password` | `[REDACTED]` | Real app password |
-| `jwt_secret_key` | `[REDACTED]` | Dev only — rotate for prod |
-| `secret_key` | `[REDACTED]` | Dev only — rotate for prod |
+| `google_wallet_issuer_id` | Vault/local ignored credentials | Required when Google Wallet is enabled |
+| `google_service_account_json` | Vault/local ignored credentials | Required when Google Wallet is enabled |
+| `google_wallet_enabled` | Vault/platform setting | Controls Google Wallet availability |
+| `google_oauth_client_id` | Vault/local ignored credentials | Required for Google OAuth |
+| `google_oauth_client_secret` | Vault/local ignored credentials | Required for Google OAuth |
+| `apple_pass_type_identifier` | Vault/local ignored credentials | Required when Apple Wallet is enabled |
+| `apple_team_identifier` | Vault/local ignored credentials | Required when Apple Wallet is enabled |
+| `apple_cert_pem` | Vault/local ignored credentials | Required when Apple Wallet is enabled |
+| `apple_cert_key_pem` | Vault/local ignored credentials | Required when Apple Wallet is enabled |
+| `apple_wwdr_cert_pem` | Vault/local ignored credentials | Required when Apple Wallet is enabled |
+| `apple_wallet_enabled` | Vault/platform setting | Controls Apple Wallet availability |
+| `mailjet_api_key` | Vault | Required when Mailjet is enabled |
+| `mailjet_secret_key` | Vault | Required when Mailjet is enabled |
+| `mailjet_sender_email` | Vault | Required when Mailjet is enabled |
+| `jwt_secret_key` | Vault | Required for JWT signing |
+| `secret_key` | Vault | Required for Django |
 
 ### Certificate Files in `certs/`
 ```
 certs/
-  passNew.cer              ✅ Real Apple Pass Type ID cert (matches apple_pass_new.key)
-  apple_pass_new.key       ✅ Real private key (matches passNew.cer)
-  apple_pass_new.csr       ✅ CSR used to obtain passNew.cer
-  AppleWWDRCAG4.cer        ✅ Apple WWDR G4 intermediate cert
-  client_secret_*.json     ✅ Google OAuth client secrets
-  scenic-parity-*.json     ✅ Google Wallet Service Account
+  passNew.cer              Local ignored Apple Pass Type ID cert
+  apple_pass_new.key       Local ignored Apple private key
+  apple_pass_new.csr       Local ignored CSR
+  AppleWWDRCAG4.cer        Local ignored Apple WWDR intermediate cert
+  client_secret_*.json     Local ignored Google OAuth client secrets
+  service-account-*.json   Local ignored Google Wallet service account
   README.md                — Documentation
 ```
 
@@ -188,7 +187,7 @@ GET /api/v1/health/                → {status: "ok", version: "1.0.0"}
 # 1. Get token
 TOKEN=$(curl -s -X POST http://localhost:33905/api/v1/auth/login/ \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"[REDACTED]"}' | \
+  -d '{"email":"<superadmin-email>","password":"<local-password-from-env-or-vault>"}' | \
   python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
 # 2. Check all integrations

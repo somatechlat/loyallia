@@ -124,7 +124,10 @@ def send_apns_message(
     if not jwt_token:
         return False
 
-    topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards")
+    topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
+    if not topic:
+        logger.warning("APNs send skipped: Apple pass type identifier is not configured")
+        return False
 
     # Auto-detect sandbox from Django DEBUG setting
     use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)

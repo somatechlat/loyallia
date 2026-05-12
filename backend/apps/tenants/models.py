@@ -461,7 +461,7 @@ class PlatformSetting(models.Model):
         ordering = ["category", "key"]
 
     def __str__(self) -> str:
-        return f"{self.key}={self.value}"
+        return self.key
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

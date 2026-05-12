@@ -262,10 +262,10 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     await expect(page.getByLabel('Subir archivo para WWDR Certificate PEM')).toBeVisible();
   });
 
-  test('SA settings page shows Email SMTP integration @superadmin', async ({ page }) => {
+  test('SA settings page shows Mailjet integration @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
-    await expect(page.locator('text=Email SMTP')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Mailjet Email')).toBeVisible({ timeout: 10000 });
   });
 
   test('SA can access broadcast announcement form without sending @superadmin', async ({ page }) => {
