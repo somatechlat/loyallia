@@ -59,7 +59,7 @@ class Command(BaseCommand):
                 "features": [
                     PlanFeature.DATA_EXPORT,
                 ],
-                "trial_days": 5,
+                "trial_days": 0,
                 "sort_order": 1,
                 "is_featured": False,
             },
@@ -87,7 +87,7 @@ class Command(BaseCommand):
                     PlanFeature.CUSTOM_BRANDING,
                     PlanFeature.DATA_EXPORT,
                 ],
-                "trial_days": 5,
+                "trial_days": 0,
                 "sort_order": 2,
                 "is_featured": True,
             },
@@ -108,18 +108,18 @@ class Command(BaseCommand):
                 "max_sms_day": 500,
                 "max_wallet_pushes_month": 10000,
                 "features": PlanFeature.ALL_FEATURES,
-                "trial_days": 5,
+                "trial_days": 0,
                 "sort_order": 3,
                 "is_featured": False,
             },
         ]
 
         created_count = 0
-        updated_count = 0
+        skipped_count = 0
 
         for plan_data in plans:
             slug = plan_data.pop("slug")
-            obj, created = SubscriptionPlan.objects.update_or_create(
+            obj, created = SubscriptionPlan.objects.get_or_create(
                 slug=slug,
                 defaults=plan_data,
             )
@@ -127,11 +127,13 @@ class Command(BaseCommand):
                 created_count += 1
                 self.stdout.write(self.style.SUCCESS(f"  ✅ Created: {obj.name}"))
             else:
-                updated_count += 1
-                self.stdout.write(self.style.WARNING(f"  🔄 Updated: {obj.name}"))
+                skipped_count += 1
+                self.stdout.write(
+                    self.style.NOTICE(f"  ⏭️  Skipped: {obj.name} (already exists)")
+                )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"\nDone: {created_count} created, {updated_count} updated."
+                f"\nDone: {created_count} created, {skipped_count} skipped."
             )
         )

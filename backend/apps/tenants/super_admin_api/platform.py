@@ -765,13 +765,17 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
         from apps.billing.payment_models import Invoice, WebhookEvent
         from apps.cards.models import Card
         from apps.customers.models import Customer, CustomerPass
+        from apps.notifications.models import CampaignRun, CampaignDeliveryLog
         from apps.notifications.models.misc import Notification
-        from apps.transactions.models import Transaction
+        from apps.transactions.models import Transaction, Enrollment
 
         Notification.objects.all().delete()
+        CampaignDeliveryLog.objects.all().delete()
+        CampaignRun.objects.all().delete()
         AutomationExecution.objects.all().delete()
         Automation.objects.all().delete()
         CustomerPass.objects.all().delete()
+        Enrollment.objects.all().delete()
         Transaction.objects.all().delete()
         Customer.objects.all().delete()
         Card.objects.all().delete()

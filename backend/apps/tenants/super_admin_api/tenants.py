@@ -121,6 +121,10 @@ def create_tenant(request, payload: CreateTenantWizardIn):
 
     try:
         with transaction.atomic():
+            plan_obj = SubscriptionPlan.objects.filter(slug=payload.plan_slug).first()
+            trial_days = plan_obj.trial_days if plan_obj else 14
+            plan_slug = plan_obj.slug if plan_obj else "trial"
+
             tenant = Tenant.objects.create(
                 name=payload.name,
                 legal_name=payload.legal_name,
@@ -136,7 +140,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 email=payload.email,
                 website=payload.website,
                 country="EC",
-                plan="trial",  # LYL-H-ARCH-011: denormalized; Subscription is authoritative
+                plan=plan_slug,  # LYL-H-ARCH-011: denormalized; Subscription is authoritative
                 is_active=True,
             )
             temp_password = secrets.token_urlsafe(8)
@@ -159,17 +163,20 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                     longitude=loc.longitude,
                     is_primary=loc.is_primary or (i == 0),
                 )
-            plan_obj = SubscriptionPlan.objects.filter(slug=payload.plan_slug).first()
-            trial_days = plan_obj.trial_days if plan_obj else 14
-            plan_slug = plan_obj.slug if plan_obj else "trial"
+            
+            sub_status = SubscriptionStatus.TRIALING if plan_slug == "trial" else SubscriptionStatus.ACTIVE
+            is_trial = sub_status == SubscriptionStatus.TRIALING
+
             sub = Subscription.objects.create(
                 tenant=tenant,
                 subscription_plan=plan_obj,
                 plan=plan_slug,
                 billing_cycle=payload.billing_cycle,
-                status=SubscriptionStatus.TRIALING,
-                trial_start=dj_timezone.now(),
-                trial_end=dj_timezone.now() + timedelta(days=trial_days),
+                status=sub_status,
+                trial_start=dj_timezone.now() if is_trial else None,
+                trial_end=dj_timezone.now() + timedelta(days=trial_days) if is_trial else None,
+                current_period_start=dj_timezone.now() if not is_trial else None,
+                current_period_end=dj_timezone.now() + timedelta(days=365 if payload.billing_cycle == "annual" else 30) if not is_trial else None,
             )
             tenant.trial_end = sub.trial_end
             tenant.save(update_fields=["trial_end"])
@@ -432,14 +439,18 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
                 ),
             )
 
-    base = max(tenant.trial_end or dj_timezone.now(), dj_timezone.now())
-    tenant.trial_end = base + timedelta(days=payload.days)
+    base_trial_end = subscription.trial_end if subscription else tenant.trial_end
+    base = max(base_trial_end or dj_timezone.now(), dj_timezone.now())
+    
+    new_trial_end = base + timedelta(days=payload.days)
+    
+    tenant.trial_end = new_trial_end
     tenant.is_active = True
     tenant.save(update_fields=["trial_end", "is_active", "updated_at"])
 
     # Update Subscription trial_end
     if subscription:
-        subscription.trial_end = tenant.trial_end
+        subscription.trial_end = new_trial_end
         subscription.status = SubscriptionStatus.TRIALING
         subscription.save(update_fields=["trial_end", "status", "updated_at"])
 

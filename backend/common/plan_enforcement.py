@@ -67,24 +67,28 @@ def get_tenant_limits(tenant) -> dict:
 
     plan = subscription.subscription_plan
     if not plan and subscription.is_trial_active:
-        # Trial with no plan = unlimited
-        return {
-            "customers": 999999,
-            "programs": 999999,
-            "locations": 999999,
-            "users": 999999,
-            "notifications_month": 999999,
-            "transactions_month": 999999,
-            "whatsapp_day": 50,  # Trial: 50 WA/day (safe intro)
-            "emails_month": 500,  # Trial: 500 emails/month
-            "sms_day": 0,  # Trial: SMS disabled (requires Twilio)
-            "wallet_pushes_month": 500,  # Trial: 500 wallet pushes
-            "automations": 3,  # Trial: 3 automation rules
-            "automation_executions_day": 50,  # Trial: 50 executions/day
-            "ai_queries_month": 50,  # Trial: 50 AI queries
-            "api_calls_day": 0,  # Trial: API disabled (Enterprise)
-            "exports_month": 2,  # Trial: 2 data exports/month
-        }
+        from apps.billing.models import SubscriptionPlan
+
+        trial_plan = SubscriptionPlan.objects.filter(slug="trial").first()
+        if trial_plan:
+            return {
+                "customers": trial_plan.max_customers,
+                "programs": trial_plan.max_programs,
+                "locations": trial_plan.max_locations,
+                "users": trial_plan.max_users,
+                "notifications_month": trial_plan.max_notifications_month,
+                "transactions_month": trial_plan.max_transactions_month,
+                "whatsapp_day": trial_plan.max_whatsapp_day,
+                "emails_month": trial_plan.max_emails_month,
+                "sms_day": trial_plan.max_sms_day,
+                "wallet_pushes_month": trial_plan.max_wallet_pushes_month,
+                "automations": trial_plan.max_automations,
+                "automation_executions_day": trial_plan.max_automation_executions_day,
+                "ai_queries_month": trial_plan.max_ai_queries_month,
+                "api_calls_day": trial_plan.max_api_calls_day,
+                "exports_month": trial_plan.max_exports_month,
+            }
+        return {}
 
     if not plan:
         return {}

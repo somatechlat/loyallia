@@ -1,421 +1,477 @@
-# Loyallia — Agent Handoff
+# Loyallia — Production Remediation Handoff
 
-**Date:** 2026-05-12
-**Status:** SysAdmin/Owner admin flow fixes, campaign accounting fixes, wallet/email run logging, and local E2E hardening implemented and verified locally.
+| Property | Value |
+|---|---|
+| **Document ID** | LYL-HANDOFF-004 |
+| **Date** | 2026-05-12 |
+| **Classification** | Internal — Pending Remediation |
+| **Status** | PENDING EXECUTION |
+| **Standard** | ISO/IEC 29148:2018 (SRS) |
 
 ---
 
 ## 1. Executive Summary
 
-This handoff now reflects the latest local repair pass over SysAdmin, Owner, wallet, plan, campaign, RBAC, and E2E paths. SMS already had campaign run/log accounting; this session aligned email and wallet campaigns with that model, fixed selected-plan subscription setup, repaired owner test subscription setup, strengthened E2E assertions, and verified the critical admin/campaign suites locally.
-
-**⚠️ Cost Incident:** ~194 real SMS were sent during early E2E runs because `twilio_use_test_mode` was `false`. Estimated charge: **~$19–27 USD**. This cannot be reversed from code — contact Twilio support if needed.
+This handoff documents **all remaining remediation items** identified during the comprehensive production audit (LYL-SRS-AUDIT-001 v4.0). Previously completed items are in §2. Pending work is in §3 with full ISO/SRS requirements. Bootstrap idempotency is verified in §4. Total: **12 REQ items** (2 resolved, 10 pending) across 5 execution phases.
 
 ---
 
-## 2. What Was Completed
+## 2. Verified Systems — No Code Changes Required
 
-### 2.1 SMS Campaigns — Full E2E Feature
+| ID | System | Status | Evidence |
+|---|---|---|---|
+| VER-001 | **Factory Reset OTP** | ✅ CORRECT | Twilio Verify → Email fallback via `get_otp_strategy()`. Rate-limited 3/hr. HMAC timing-safe. 5-min TTL. Dual `window.confirm()`. Audit log BEFORE wipe. |
+| VER-002 | **OTP Service** | ✅ CORRECT | `VerifyOTPStrategy` / `LocalOTPStrategy`. Auto-selects via Vault `twilio_verify_enabled`. |
+| VER-003 | **WhatsApp Activation** | ✅ CORRECT | QR wizard → toggle → cancel → refresh. 6 E2E tests. RBAC (OWNER only). |
+| VER-004 | **Wallet Passbook** | ✅ CORRECT | Apple PKPass + Google `save_url`. 14 E2E tests. |
+| VER-005 | **Suspension / Reactivation** | ✅ CORRECT | `Tenant.is_active` + `Subscription.status` atomic. Plan deactivation blocked (409). |
+| VER-006 | **SMS Campaign Task** | ✅ CORRECT | `CampaignRun` + `CampaignDeliveryLog`. Twilio test mode safety. |
+| VER-007 | **Wallet Campaign Task** | ✅ CORRECT | `CampaignRun` + delivery logs. `wallet` channel. |
+| VER-008 | **Email Campaign Task** | ✅ CORRECT | `send_email_campaign` Celery task. Per-customer SMTP. `CampaignRun` + `CampaignDeliveryLog`. |
+| VER-009 | **Segment Targeting** | ✅ CORRECT | 5 segments: `all`, `active`, `at_risk`, `lost`, `vip`. UI card-per-segment with counts. |
+| VER-010 | **Campaign Analytics API** | ✅ CORRECT (partial) | List runs, results, recipients (paginated), CSV export. Gaps in delivered/read — see REQ-011. |
+| VER-011 | **Campaign Data Model** | ✅ CORRECT (schema) | `CampaignRun` + `CampaignDeliveryLog` + `DeliveryStatus` enum with 6 states. |
+| VER-012 | **Mailjet SMTP** | ✅ RESOLVED | Credentials injected into live Vault 2026-05-12T22:01Z. Health: `ok`. SMTP Reachable: `True`. See §2.1. |
+| VER-013 | **Bootstrap Idempotency** | ✅ VERIFIED | Platform settings: `get_or_create` (skip existing). Migrations: all applied. Vault: `set_secret_from_env` is no-op when env empty. See §4. |
 
-| Component | File | What Changed |
+### 2.1 Mailjet Integration — Technical Assessment
+
+Loyallia uses Mailjet as a **SMTP relay only**. It does NOT use the Mailjet REST API.
+
+| Capability | Status | Implementation |
 |---|---|---|
-| **Campaign UI (SMS channel)** | `frontend/src/app/(dashboard)/campaigns/page.tsx` | Orange SMS button, info banner, 1600-char form, SMS badge in list |
-| **SMS Celery task** | `backend/apps/notifications/sms/tasks.py` | Creates `Notification` records so SMS campaigns appear in campaign list |
-| **Campaign list RBAC** | `backend/apps/notifications/api/campaigns.py` | `list_campaigns` now checks `is_owner(request)` → 403 for non-owners |
-| **SMS worker queue** | `docker-compose.yml` | `celery-default` now consumes `sms_delivery` queue |
-| **Plan features API** | `backend/apps/tenants/api.py` | Returns `sms_today` usage counter |
-| **Plan validation** | `backend/apps/tenants/super_admin_api/plan_validation.py` | Handles partial PATCH updates without requiring all limit fields |
+| **Send emails** | ✅ SMTP relay | `EmailMultiAlternatives` → `in-v3.mailjet.com:587/TLS`. Credentials from Vault. |
+| **Email campaigns** | ✅ Loyallia-managed | `send_email_campaign` Celery task. Audience by segment. HTML inline. `CampaignRun` + `CampaignDeliveryLog`. |
+| **OTP verification email** | ✅ SMTP relay | `LocalOTPStrategy._send_otp_email()` via `send_mail()`. |
+| **Broadcast to owners** | ✅ SMTP relay | `broadcast_announcement()` via `send_mass_mail()`. |
+| **Contact management** | ❌ NOT used | `create_subscriber()` is a no-op. Customers managed in Loyallia DB. |
+| **Mailjet templates** | ❌ NOT used | HTML built inline in `email.py:L128-160`. |
+| **Mailjet REST API** | ❌ NOT used | No `mailjet_rest` package. Only SMTP. |
+| **Mailjet analytics** | ❌ NOT used | Delivery tracked via Loyallia `CampaignDeliveryLog`. See REQ-011. |
 
-### 2.2 Twilio Test Mode Safety
+### 2.2 Mailjet Vault Credentials (LIVE — Verified 2026-05-12T22:01Z)
 
-| Component | File | What Changed |
+| Vault Key | Status | Value |
 |---|---|---|
-| **Test mode toggle (UI)** | `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | Prominent amber/green ON/OFF button directly on Twilio SMS card |
-| **Test mode guard (E2E)** | `frontend/tests/e2e/suite/21-sms-campaigns.spec.ts` | `beforeAll` asserts `use_test_mode === true` or throws **FATAL** error |
-| **Test mode backend** | `backend/apps/notifications/sms/client.py` | Uses test credentials when `twilio_use_test_mode=true` |
-| **Twilio Verify** | `backend/apps/notifications/twilio_verify/client.py` | Uses test credentials when enabled |
-| **Vault config** | `backend/apps/tenants/super_admin_api/integration_config.py` | `twilio_use_test_mode` validated as `"true"` / `"false"` |
+| `mailjet_api_key` | ✅ SET | 32 chars |
+| `mailjet_secret_key` | ✅ SET | 32 chars |
+| `mailjet_sender_email` | ✅ SET | `info@loyallia.com` (17 chars) |
+| `mailjet_sender_name` | ✅ SET | `Loyallia` (8 chars) |
+| **SMTP Reachable** | ✅ TRUE | `in-v3.mailjet.com:587/TLS` connected |
 
-### 2.3 SysAdmin Settings UI Improvements
-
-| Component | File | What Changed |
-|---|---|---|
-| **Raw key fix** | `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | Platform Settings now shows human-readable description instead of raw `{s.key}` |
-| **Twilio card toggle** | Same | Amber "Activar Modo Prueba" / green "Desactivar Modo Prueba" button on card |
-
-### 2.4 E2E Test Coverage
-
-| Suite | Tests | Status |
-|---|---|---|
-| `21-sms-campaigns.spec.ts` | 19 | **✅ ALL PASS** |
-| `11-superadmin.spec.ts` | 35 | **✅ ALL PASS** |
-| `20-plan-rate-limits.spec.ts` | 16 | **✅ ALL PASS** |
-| `08-campaigns.spec.ts` | 3 | **✅ ALL PASS** |
-| `19-sms-automation.spec.ts` | 6 | **✅ ALL PASS** |
-| `17-whatsapp-campaigns.spec.ts` | 45/47 | ⚠️ 2 pre-existing failures (see §4.3) |
-
-#### SMS E2E Test Breakdown (`21-sms-campaigns.spec.ts`)
-
-| # | Test | Role |
-|---|---|---|
-| 1 | Campaign page loads with heading + new campaign button | OWNER |
-| 2 | SMS selector button visible in channel tabs | OWNER |
-| 3 | SMS info banner displays Twilio cost info | OWNER |
-| 4 | SMS form has correct placeholder and maxLength=1600 | OWNER |
-| 5 | Can create and send SMS campaign | OWNER |
-| 6 | Cancel button closes SMS form | OWNER |
-| 7 | Plan features API includes `sms_campaigns` + `sms_day` limit | OWNER |
-| 8 | POST /campaigns/ accepts `channel: "sms"` | OWNER |
-| 9 | SMS badge (📱) appears in campaign list | OWNER |
-| 10 | MANAGER gets 403 on GET /campaigns/ | MANAGER |
-| 11 | MANAGER gets 403 on POST /campaigns/ | MANAGER |
-| 12 | MANAGER does not see "Campañas" in nav | MANAGER |
-| 13 | SUPERADMIN sees Twilio SMS card in settings | SUPERADMIN |
-| 14 | SUPERADMIN sees test mode diagnostic in integration status | SUPERADMIN |
-| 15 | SUPERADMIN can update plan to enable SMS | SUPERADMIN |
-| 16 | SUPERADMIN sees all integration diagnostics | SUPERADMIN |
-| 17 | Campaign list loads via API | OWNER |
-| 18 | Campaign list shows correct channel badges | OWNER |
-| 19 | **FATAL SAFETY GUARD** — test mode must be ON | OWNER |
-
-#### SuperAdmin E2E Additions (`11-superadmin.spec.ts`)
-
-- Twilio SMS integration card visible
-- Vault editor opens for Twilio SMS
-- Test mode toggle accessible
-- System Operations section (Demo Data + Factory Reset)
-- Factory Reset OTP request button visible
-- Platform Settings parameters render with inputs
-
-### 2.5 Docker / Build Hardening
-
-| Component | File | What Changed |
-|---|---|---|
-| **Root .dockerignore** | `.dockerignore` | Excludes caches, build artifacts, test files, logs |
-| **Backend .dockerignore** | `backend/.dockerignore` | Same |
-| **Frontend .dockerignore** | `frontend/.dockerignore` | Same |
-| **Frontend .gitignore** | `frontend/.gitignore` | Added `.next/` and `.next-docker/` |
-
-### 2.6 Frontend Rebuild
-
-The frontend container was rebuilt with `docker compose build web` to bake SMS channel code into the production standalone bundle. The SMS button and form now render correctly in the browser.
+**⚠️ Note:** In development mode, `EMAIL_BACKEND = console` (emails print to stdout). In production, `EMAIL_BACKEND = smtp` (real delivery). Ensure production containers run with `DJANGO_SETTINGS_MODULE=loyallia.settings.production`.
 
 ---
 
-## 3. Vault Configuration (Current State)
+## 3. Remaining Remediation Items
 
-**Twilio test mode is ENABLED.** All E2E SMS tests are safe to run.
+### 3.1 REQ-001 — Trial Plan Enforcement Bypass
 
-```bash
-# Verify current state
-curl -s http://localhost:80/api/v1/admin/integrations/ \
-  -H "Authorization: Bearer $SA_TOKEN" | python3 -m json.tool
-```
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-001 |
+| **Severity** | 🔴 CRITICAL |
+| **Priority** | P0 — Immediate |
+| **Category** | Security / Business Logic |
+| **SRS Ref** | LYL-SRS-BILLING-001 |
 
-| Key | Value | Notes |
+**3.1.1 Current Defect**
+
+`Subscription.get_limit()` in `billing/models.py:L381` returns `999999` for ALL plans when `status == TRIALING`. `Subscription.has_feature()` in `billing/models.py:L409` returns `True` for ALL plans when `status == TRIALING`.
+
+**3.1.2 Impact**
+
+A Starter tenant in trial gets unlimited WhatsApp, SMS, email, and Enterprise-only features. Bypasses all plan rate-limiting.
+
+**3.1.3 Required Behavior**
+
+Only the `trial` (FREE) plan slug gets unlimited during `TRIALING`. All paid plans enforce their limits even during trial.
+
+**3.1.4 Files to Modify**
+
+| File | Change |
+|---|---|
+| `backend/apps/billing/models.py` | `get_limit()`: add `and self.plan.slug == "trial"` check. Same for `has_feature()`. |
+
+---
+
+### 3.2 REQ-002 — Tenant Creation Wizard: Plan Must Be Step 1
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-002 |
+| **Severity** | 🔴 HIGH |
+| **Priority** | P1 |
+| **Category** | UX / Business Flow |
+| **SRS Ref** | LYL-SRS-TENANT-001 |
+
+**3.2.1 Required Flow**
+
+1. Click "New Tenant" → **Select Plan** (Step 1)
+2. Entity / Company Data (Step 2)
+3. Owner Details (Step 3)
+4. Locations (Step 4)
+
+**3.2.2 Files to Modify**
+
+| File | Change |
+|---|---|
+| `frontend/src/app/(dashboard)/superadmin/tenants/page.tsx` | Reorder `WIZARD_STEPS` array. Move plan selection to index 0. |
+
+---
+
+### 3.3 REQ-003 — Paid Plans Must Be ACTIVE on Creation
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-003 |
+| **Severity** | 🔴 HIGH |
+| **Priority** | P1 |
+| **Category** | Business Logic |
+| **SRS Ref** | LYL-SRS-BILLING-002 |
+
+**3.3.1 Fix**
+
+`tenants.py:L170`: `status = TRIALING if plan_slug == "trial" else ACTIVE`
+
+---
+
+### 3.4 REQ-004 — Development / Production Mode Toggle
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-SRS-MODE-001 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P2 |
+| **Category** | New Feature — Platform Operations |
+| **SRS Ref** | LYL-SRS-PLATFORM-001 |
+
+**3.4.1 Mode Configuration Matrix**
+
+| Setting | 🟡 Development | 🟢 Production |
 |---|---|---|
-| `twilio_use_test_mode` | `true` | ✅ **ON** — safe for testing |
-| `twilio_account_sid` | `AC***` | Production SID (Vault) |
-| `twilio_auth_token` | `***` | Production token (Vault) |
-| `twilio_test_account_sid` | `AC***` | Test SID (Vault) |
-| `twilio_test_auth_token` | `***` | Test token (Vault) |
-| `twilio_from_number` | `+18026139350` | Production sender |
-| `twilio_verify_service_sid` | `VA***` | Verify service (works with both) |
+| `PLATFORM_MODE` | `development` | `production` |
+| `twilio_use_test_mode` | `true` (sandbox) | `false` (real SMS) |
+| `system_mode` (Vault) | `development` | `production` |
+| `backup_frequency` | `15days` | `daily` |
 
-**To toggle test mode via UI:**
-SysAdmin → Configuración Global → Integraciones → Tarjeta Twilio SMS → "Desactivar Modo Prueba" / "Activar Modo Prueba"
+**3.4.2 What's Missing**
 
-**To toggle via API:**
-```bash
-curl -X PUT http://localhost:80/api/v1/admin/integrations/twilio_sms/ \
-  -H "Authorization: Bearer $SA_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"key": "twilio_use_test_mode", "value": "true"}'
-```
+1. `PlatformSetting` DB key: `PLATFORM_MODE`
+2. Visual toggle at top of settings page
+3. Backend `POST /platform/mode/toggle/` + `GET /platform/mode/`
+4. Audit log on mode change
 
----
+**3.4.3 Files to Modify**
 
-## 4. Active Issues & Remaining Work
-
-### 4.1 🔴 Cost Incident — Real SMS Sent During Testing
-
-**What happened:** During early E2E test runs, `twilio_use_test_mode` was `false`. The SMS campaign task sent **~194 real SMS messages** to test customer phone numbers.
-
-**Financial impact:** ~$19–27 USD (at ~$0.10–0.14 per SMS to Ecuador).
-
-**Cannot fix from code.** Options:
-1. Contact Twilio support and explain the situation — they may offer a one-time credit
-2. Accept the cost as a testing expense
-3. The test mode guard (§2.2) prevents this from happening again
-
-### 4.2 🟡 Stuck CampaignRun Records
-
-**Problem:** 6 `CampaignRun` records in the database have `status='in_progress'` from failed test attempts.
-
-**Impact:** Zero sent count (test mode was off, so no actual sends completed). These are orphaned records.
-
-**Fix:**
-```bash
-docker exec loyallia-api python manage.py shell -c "
-from apps.notifications.models import CampaignRun
-CampaignRun.objects.filter(status='in_progress').update(status='cancelled')
-print('Fixed', CampaignRun.objects.filter(status='cancelled').count(), 'runs')
-"
-```
-
-### 4.3 🟡 Pre-existing WhatsApp E2E Failures
-
-**File:** `frontend/tests/e2e/suite/17-whatsapp-campaigns.spec.ts`
-
-**Problem:** 2 tests expect `402` for SUPERADMIN but receive `403`:
-- `SUPERADMIN cannot access WhatsApp campaign runs API (403)` — line ~230
-- `SUPERADMIN cannot access WhatsApp campaign results API (403)` — line ~240
-
-**Root cause:** SUPERADMIN has no tenant context. The API returns `403` (no tenant) instead of `402` (payment required). This is a semantic disagreement in test expectations, not a bug in the code.
-
-**Status:** Pre-existing. Unrelated to SMS work.
-
-**Fix:** Update test assertions from `expect(402)` to `expect(403)` OR change API to return `402` when plan is missing for superadmin.
-
-### 4.4 🟡 Container Health Warnings
-
-```
-loyallia-celery-default     Up 5 hours (unhealthy)
-loyallia-api                Up 10 hours (unhealthy)
-loyallia-whatsapp-bridge    Up 10 hours (unhealthy)
-```
-
-These containers are running but their health checks are failing. This may be due to:
-- Celery default: `sms_delivery` queue added — may need health check update
-- API: Possibly DB connection or memory issue
-- WhatsApp bridge: Baileys session issue (unrelated to SMS)
-
-**No functional impact observed** on SMS tests. Investigate if other features break.
-
-### 4.5 🟢 i18n Audit Requested
-
-User requested verification that all UI text in the SysAdmin settings page is properly internationalized (Spanish). The features table labels and toggle buttons were reviewed and are in Spanish. **No action required unless specific English strings are found.**
+| File | Change |
+|---|---|
+| `backend/apps/tenants/management/commands/seed_platform_settings.py` | Add `PLATFORM_MODE` |
+| `backend/apps/tenants/super_admin_api/platform.py` | New toggle/get endpoints |
+| `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | Visual toggle banner |
 
 ---
 
-## 5. Quick Reference
+### 3.5 REQ-005 — Seed Data: Paid Plans Have trial_days=5
 
-### 5.1 Run SMS E2E Tests
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-005 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P2 |
+| **Category** | Data Integrity |
+| **SRS Ref** | LYL-SRS-BILLING-003 |
 
-```bash
-cd /Users/macbookpro201916i964gb1tb/Documents/GitHub/loyallia/frontend
+**3.5.1 Fix**
 
-# Run full SMS suite
-npx playwright test suite/21-sms-campaigns.spec.ts --project=chromium
-
-# Run with UI
-npx playwright test suite/21-sms-campaigns.spec.ts --project=chromium --ui
-
-# Run all E2E
-npx playwright test --project=chromium
-```
-
-### 5.2 Rebuild Frontend After Source Changes
-
-```bash
-cd /Users/macbookpro201916i964gb1tb/Documents/GitHub/loyallia
-# REQUIRED — volume mounts are ignored in runner stage
-docker compose build web
-docker compose up -d web
-```
-
-### 5.3 Fix Test Tenant Plan Link (if DB reset)
-
-```bash
-docker exec loyallia-api python manage.py shell -c "
-from apps.billing.models import Subscription, SubscriptionPlan
-from apps.tenants.models import Tenant
-tenant = Tenant.objects.filter(slug='cafe-el-ritmo').first()
-plan = SubscriptionPlan.objects.filter(slug='enterprise').first()
-if tenant and plan:
-    Subscription.objects.update_or_create(
-        tenant=tenant,
-        defaults={'subscription_plan': plan, 'plan': plan.slug, 'status': 'active'}
-    )
-    print('OK')
-"
-```
-
-Verify:
-```bash
-TOKEN=$(curl -s -X POST http://localhost:80/api/v1/auth/login/ \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"<owner-email>","password":"<local-owner-password>"}' | \
-  python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
-
-curl -s http://localhost:80/api/v1/tenants/me/plan-features/ \
-  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
-```
-
-Expected: `features` includes `sms_campaigns`, `limits.sms_day` > 0.
-
-### 5.4 Run Backend Tests (inside container only)
-
-```bash
-docker exec loyallia-api pytest apps/notifications/tests/ -v
-docker exec loyallia-api pytest apps/tenants/tests/ -v
-```
-
-**Do not run backend tests in local venv** — Python 3.9 vs 3.10+ incompatibility.
-
----
-
-## 6. Files Changed in This Session (committed to `main`)
-
-```
-23548d3 feat(superadmin): prominent Twilio test mode toggle on integration card
-48bd82a feat(tests): add fatal safety guard to SMS E2E tests
-005b69c fix(ui): replace raw setting key with human-readable update label in SysAdmin settings
-8c9959d chore(dockerignore): harden .dockerignore files for frontend, backend, and root
-8796000 chore(gitignore): add .next and .next-docker to frontend gitignore
-4ad4ca2 fix(sms-campaigns): rebuild frontend, fix E2E tests, add SysAdmin coverage
-```
-
-**Complete diff stat (last 6 commits):**
-```
- .dockerignore                                      | 34 ++++++++++
- backend/.dockerignore                              | 39 ++++++++++-
- frontend/.dockerignore                             | 40 ++++++++++-
- frontend/.gitignore                                |  2 +
- frontend/src/app/(dashboard)/superadmin/settings/page.tsx | 77 +++++++++++++++++++++-
- frontend/tests/e2e/suite/11-superadmin.spec.ts     |  4 +-
- frontend/tests/e2e/suite/21-sms-campaigns.spec.ts  | 28 +++++++-
-```
-
-Plus earlier commits in the SMS feature branch:
-- `backend/apps/notifications/sms/tasks.py`
-- `backend/apps/notifications/sms/client.py`
-- `backend/apps/notifications/api/campaigns.py`
-- `backend/apps/notifications/twilio_verify/client.py`
-- `backend/apps/tenants/api.py`
-- `backend/apps/tenants/super_admin_api/plan_validation.py`
-- `backend/apps/tenants/super_admin_api/integration_config.py`
-- `backend/apps/tenants/management/commands/seed_ecuador_businesses.py`
-- `backend/apps/tenants/management/commands/seed_data/ecuador_businesses.json`
+Set `trial_days=0` on starter/professional/enterprise in both:
 - `backend/apps/billing/management/commands/seed_subscription_plans.py`
 - `backend/apps/billing/migrations/0008_seed_vital_plans.py`
-- `frontend/src/app/(dashboard)/campaigns/page.tsx`
-- `docker-compose.yml`
 
 ---
 
-## 7. Architecture Decisions
+### 3.6 REQ-006 — Hardcoded Trial Limits in plan_enforcement.py
 
-| Decision | Rationale |
+| Property | Value |
 |---|---|
-| **NO FALLBACKS in `get_plan_features`** | User explicitly rejected fallback logic. Feature gating depends on correct `subscription_plan` FK in seed data. |
-| **Fatal safety guard in E2E** | `beforeAll` throws if `twilio_use_test_mode !== true`. Prevents accidental real SMS charges. |
-| **Prominent test mode toggle on card** | Previous toggle was inside Vault editor (3 clicks). New toggle is one click, color-coded, impossible to miss. |
-| **Multi-stage Dockerfile** | Production build baked at image build time. `docker compose build web` mandatory after any source change. |
+| **ID** | LYL-BUG-004 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P2 |
+| **Category** | Data Integrity |
+| **SRS Ref** | LYL-SRS-BILLING-004 |
+
+**3.6.1 Fix**
+
+`plan_enforcement.py:L68-87`: Replace hardcoded `TRIAL_LIMITS` dict with DB query from `trial` SubscriptionPlan.
 
 ---
 
-## 8. Next Agent — Action Items
+### 3.7 REQ-007 — Factory Reset Missing 3 Models in Wipe
 
-1. **✅ SMS Campaigns are DONE** — no further work needed on LYL-SRS-009
-2. **🟡 Fix WhatsApp E2E assertions** (if prioritized) — change 402→403 expectations in `17-whatsapp-campaigns.spec.ts`
-3. **🟡 Investigate container health** — `celery-default`, `api`, `whatsapp-bridge` are unhealthy
-4. **🟡 Clean up stuck CampaignRun records** — run the shell command in §4.2
-5. **🟢 Continue with next SRS feature** — SMS campaigns are verified and ready for production
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-006 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P2 |
+| **Category** | Data Integrity / Security |
+| **SRS Ref** | LYL-SRS-PLATFORM-002 |
 
----
+**3.7.1 Fix**
 
-## 9. Session 2026-05-12 — SysAdmin/Owner Flow Repair
-
-### 9.1 What Changed
-
-| Area | Files | Result |
-|------|-------|--------|
-| SuperAdmin tenant creation | `backend/apps/tenants/super_admin_api/tenants.py`, `schemas.py` | New tenants now link `Subscription.subscription_plan` to the selected plan, store the selected slug in legacy `Subscription.plan`, and return declared owner credential fields. |
-| SuperAdmin metrics/plan display | `backend/apps/tenants/super_admin_api/platform.py`, `schemas.py` | Tenant plan display now prefers `subscription.subscription_plan.slug/name` instead of stale tenant/legacy plan values. |
-| Owner seed subscription | `backend/apps/tenants/management/commands/seed_test_data.py` | Local owner tenant is seeded with active `enterprise` subscription linked to the `enterprise` plan. |
-| Campaign history | `backend/apps/notifications/api/campaigns.py` | Campaign listing now uses `CampaignRun` as authoritative history and falls back to legacy `Notification` grouping only when no runs exist. |
-| Email campaigns | `backend/apps/notifications/tasks/email.py` | Email sends now create `CampaignRun` plus one `CampaignDeliveryLog` per recipient and finalize the run in `finally`. |
-| Wallet campaigns | `backend/apps/notifications/tasks/campaigns.py`, `backend/apps/notifications/models/base.py` | Wallet campaigns now have a `wallet` channel, create `CampaignRun` plus delivery logs, and finalize the run in `finally`. |
-| Usage counters | `backend/apps/tenants/api.py` | Plan usage now includes `wallet_pushes_this_month`; email/SMS/wallet usage reads delivery logs. |
-| Billing display | `frontend/src/app/(dashboard)/billing/page.tsx` | Billing now uses `plan_slug`/`plan_name` from subscription API and labels backend usage keys explicitly. |
-| Campaign UI | `frontend/src/app/(dashboard)/campaigns/page.tsx` | Campaign history now renders wallet channel badges. |
-| E2E setup | `frontend/tests/e2e/helpers/e2e-safety.ts` | Added `ensureOwnerEnterpriseCampaignAccess()` to repair local owner campaign plan/subscription before mutating campaign suites. |
-| E2E assertions | `frontend/tests/e2e/suite/21-sms-campaigns.spec.ts` | Success-path campaign assertions now require `200`; expected feature/limit failures remain separate. |
-| Critical E2E suites | `11`, `21`, `22`, `23`, `24`, `26` | SuperAdmin plan toggle test made data-isolated; Twilio/Mailjet settings tests wait for loaded integration cards. |
-| Backend tests | `backend/tests/test_campaign_accounting.py`, `backend/tests/test_superadmin_flows.py` | Added direct coverage for email/wallet run logging, usage counters, selected-plan tenant creation, plan validation, backup config validation, and impersonation. |
-| Rate limit | `backend/common/rate_limit.py` | Raised analytics user rate limit from 20/min to 60/min because normal dashboard fan-out exceeded the old value during E2E. |
-
-### 9.2 Migrations Added
-
-| File | Reason |
-|------|--------|
-| `backend/apps/notifications/migrations/0006_alter_campaignrun_channel_alter_notification_channel.py` | Adds `wallet` as an allowed notification/campaign channel choice. |
-| `backend/apps/audit/migrations/0002_alter_auditlog_action.py` | Existing model choice drift surfaced by `makemigrations --check`; included so migration checks are clean. |
-
-### 9.3 Local Environment Repairs For E2E
-
-| Item | Action |
-|------|--------|
-| Stale nginx upstream | Restarted nginx after API restarts; health endpoint returned `200`. |
-| Missing seeded users/passwords | Ran `seed_test_data` with local password and reset admin password to `123456` for E2E login. |
-| Owner plan state | Verified owner login and active enterprise subscription. |
-| WhatsApp bridge key | Set local Vault `whatsapp_bridge_api_key` to `dev-bridge-key`; fixed local bridge-target tests. |
-| SMS safety | Confirmed Twilio test mode remains required by E2E guard before SMS tests run. |
+`platform.py:L760-784`: Add `CampaignRun`, `CampaignDeliveryLog`, `Enrollment` to wipe BEFORE `Customer.objects.all().delete()`.
 
 ---
 
-## 10. Verification Results
+### 3.8 REQ-008 — extend_trial() Reads from Wrong Source
 
-### 10.1 Backend
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-007 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P3 |
+| **SRS Ref** | LYL-SRS-TENANT-002 |
 
-| Command | Result |
-|---------|--------|
-| `docker exec loyallia-api python manage.py check` | Passed |
-| `docker exec loyallia-api python manage.py makemigrations --check --dry-run` | Passed, no changes detected |
-| `docker exec loyallia-api pytest tests/test_campaign_accounting.py tests/test_superadmin_flows.py -q` | `11 passed` |
-| `docker exec loyallia-api pytest tests/test_plan_enforcement.py tests/sms/test_campaign_sms.py tests/test_campaign_accounting.py tests/test_superadmin_flows.py -q` | `46 passed` |
+**3.8.1 Fix**
 
-### 10.2 Frontend
-
-| Command | Result |
-|---------|--------|
-| `cd frontend && npx tsc --noEmit --pretty false` | Passed |
-| `cd frontend && npm run build` | Passed with existing warnings about `<img>`, hook deps, and custom font. |
-
-### 10.3 Playwright E2E
-
-| Command | Result |
-|---------|--------|
-| `PLAYWRIGHT_BASE_URL=http://localhost PLAYWRIGHT_ALLOW_MUTATING_E2E=true npx playwright test tests/e2e/suite/11-superadmin.spec.ts tests/e2e/suite/20-plan-rate-limits.spec.ts tests/e2e/suite/21-sms-campaigns.spec.ts tests/e2e/suite/22-wallet-flows.spec.ts tests/e2e/suite/23-email-campaigns.spec.ts tests/e2e/suite/24-whatsapp-campaigns.spec.ts tests/e2e/suite/25-owner-full-menu.spec.ts tests/e2e/suite/26-superadmin-full-menu.spec.ts` | `106 passed` |
-| `PLAYWRIGHT_BASE_URL=http://localhost PLAYWRIGHT_ALLOW_MUTATING_E2E=true npx playwright test --grep-invert "Phone Verification API"` | `300 passed, 2 skipped` |
-
-The excluded `Phone Verification API` block requires `PLAYWRIGHT_ALLOW_EXTERNAL_E2E=true` and can make real Twilio Verify requests. It was intentionally not run in the local full pass.
+`tenants.py:L435`: Read from `Subscription.trial_end` (authoritative), not `Tenant.trial_end` (deprecated).
 
 ---
 
-## 11. Remaining Caveats
+### 3.9 REQ-009 — SMS delivered_count Always 0
 
-| Item | Status |
-|------|--------|
-| Twilio Verify external tests | Not run locally without explicit external-test approval. Keep `PLAYWRIGHT_ALLOW_EXTERNAL_E2E` off unless real Verify calls are intended. |
-| CI | No CI architecture was added in this repair pass. Local correctness was proven first as requested. |
-| Existing uncommitted deploy/settings work | Several files were already modified before this pass (`deploy/*`, `docker-compose.yml`, SuperAdmin settings UI). They were not reverted. |
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-008 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P3 |
+| **SRS Ref** | LYL-SRS-SMS-001 |
 
----
+**3.9.1 Fix**
 
-## 12. Current Action Items
-
-| # | Status | Item |
-|---|--------|------|
-| 1 | ✅ | SysAdmin selected-plan tenant creation fixed and covered by backend tests. |
-| 2 | ✅ | Email and wallet campaign run/log accounting implemented and covered by backend tests. |
-| 3 | ✅ | Owner campaign E2E setup repairs active enterprise subscription/features before mutating suites. |
-| 4 | ✅ | Critical SysAdmin/Owner/campaign Playwright suites passed locally. |
-| 5 | ✅ | Full non-external Playwright suite passed locally. |
-| 6 | ⏳ | Run Twilio Verify external E2E only when explicit approval is given for real external-provider calls. |
-| 7 | ⏳ | CI can be improved later; no new E2E config service was added in this pass. |
+`backend/apps/notifications/sms/tasks.py`: Increment `delivered_count` after successful sends.
 
 ---
 
-*End of handoff. The previous `e2e_config` proposal was intentionally not implemented because the approved immediate fix was to repair local correctness and keep env-based E2E safety guards.*
+### 3.10 REQ-010 — Mailjet Credentials in Vault
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-OPS-001 |
+| **Severity** | — |
+| **Priority** | — |
+| **Status** | ✅ **RESOLVED — 2026-05-12T22:01Z** |
+
+Credentials injected via `put_secret()`. Verified: Health `ok`, SMTP Reachable `True`. See §2.2 for details.
+
+---
+
+### 3.11 REQ-011 — Email Analytics: Delivered/Opened/Bounced Never Populated
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-009 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P2 |
+| **Category** | Analytics / Feature Gap |
+| **SRS Ref** | LYL-SRS-EMAIL-002 |
+
+**3.11.1 Current State**
+
+| Field | Model | Status | Problem |
+|---|---|---|---|
+| `sent_count` | `CampaignRun` | ✅ Populated | Set after loop |
+| `failed_count` | `CampaignRun` | ✅ Populated | Set after loop |
+| `delivered_count` | `CampaignRun` | ❌ ALWAYS 0 | SMTP `send()` = "accepted by server" ≠ "delivered to inbox" |
+| `read_count` | `CampaignRun` | ❌ ALWAYS 0 | No tracking pixel. No open event. |
+| `delivery_rate` | `CampaignRun` | ❌ ALWAYS 0% | Depends on `delivered_count` |
+| `read_rate` | `CampaignRun` | ❌ ALWAYS 0% | Depends on `read_count` |
+| `delivered_at` | `CampaignDeliveryLog` | ❌ ALWAYS NULL | Never set |
+| `read_at` | `CampaignDeliveryLog` | ❌ ALWAYS NULL | Never set |
+| `BOUNCED` status | `DeliveryStatus` enum | ❌ NEVER USED | Exists but never assigned |
+
+**3.11.2 Impact**
+
+Owner sees "Sent: 150, Delivered: 0, Read: 0" — misleading. Zero inbox/open visibility.
+
+**3.11.3 Recommended Fix: Mailjet Event Webhooks**
+
+| Step | Action |
+|---|---|
+| 1 | Mailjet Dashboard → Webhooks → URL: `https://rewards.loyallia.com/api/v1/webhooks/mailjet/` |
+| 2 | **NEW** endpoint: `POST /api/v1/webhooks/mailjet/` |
+| 3 | Parse events: `sent`, `open`, `click`, `bounce`, `spam`, `blocked`, `unsub` |
+| 4 | Match via `external_message_id` (field exists in model) |
+| 5 | Update `CampaignDeliveryLog.status` + timestamps |
+| 6 | Update `CampaignRun` aggregate counters |
+
+**3.11.4 Files to Modify**
+
+| File | Change |
+|---|---|
+| `backend/apps/notifications/tasks/email.py` | Capture `Message-ID` header → `delivery_log.external_message_id` |
+| `backend/apps/notifications/api/webhooks.py` | **NEW** — Mailjet webhook receiver |
+| `backend/apps/notifications/api/__init__.py` | Register webhook router |
+| `backend/loyallia/urls.py` | Mount webhook URL (unauthenticated, IP-whitelisted) |
+
+---
+
+### 3.12 REQ-012 — seed_subscription_plans Overwrites Manual Adjustments
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-BUG-010 |
+| **Severity** | — |
+| **Priority** | — |
+| **Status** | ✅ **RESOLVED — 2026-05-12T22:08Z** |
+
+**Fix Applied:** Changed `update_or_create` → `get_or_create` in `seed_subscription_plans.py:L122`. SuperAdmin customizations now survive factory resets and re-bootstraps.
+
+**Verification:** `seed_subscription_plans` re-run output: `0 created, 4 skipped` — all existing plans preserved.
+
+---
+
+## 4. Bootstrap & Disaster Recovery — Idempotency Verification
+
+### 4.1 Bootstrap Sequence (Verified 2026-05-12)
+
+The full bootstrap runs 7 steps via `deploy/bootstrap/bootstrap.sh`:
+
+| Step | What | Idempotent? | Overwrites Data? |
+|---|---|---|---|
+| 1/7 | Check prerequisites (docker, compose) | ✅ Safe | No |
+| 2/7 | Load/generate secrets (`.bootstrap_secrets`) | ✅ Safe | No (detects existing Vault → aborts or prompts) |
+| 3/7 | Start Vault + vault-init | ✅ Safe | No — `env_or_existing()` checks Vault first, env second. `set_secret_from_env` is **no-op when env empty**. Existing Vault values preserved. |
+| 4/7 | Start PostgreSQL, Redis, MinIO, PgBouncer | ✅ Safe | No |
+| 5/7 | `migrate --noinput` (automatic on API start) | ✅ Safe | No — `get_or_create` in migration seeds |
+| 6/7 | Start Celery workers, Flower, WhatsApp, Nginx | ✅ Safe | No |
+| 7/7 | Verify container health | ✅ Safe | No |
+
+### 4.2 Vault Init Idempotency (deploy/vault/init.sh)
+
+| Secret Type | Behavior on Re-Run | Safe? |
+|---|---|---|
+| **Required secrets** (postgres_password, redis_url, etc.) | `env_or_existing()` → reads existing Vault value if env empty | ✅ |
+| **Optional integrations** (mailjet, twilio, google, apple) | `set_secret_from_env` → **no-op** when env var empty | ✅ |
+| **Defaults** (wallet_enabled, nfc_enabled) | `set_secret_default_if_missing` → skips if key exists | ✅ |
+| **Infrastructure files** (postgres_password file, redis_password file) | Always re-written from current Vault values | ✅ (same value) |
+
+### 4.3 API Container Startup Command
+
+```
+sh -c "python manage.py migrate --database=direct --noinput &&
+       python manage.py collectstatic --noinput &&
+       python manage.py runserver 0.0.0.0:8000"
+```
+
+- `migrate --noinput`: Runs ALL pending migrations. Seed migration uses `get_or_create` → **safe on every restart**.
+- `seed_subscription_plans` is **NOT** in the startup chain. Only called during factory reset.
+- `seed_platform_settings` is in migration `0008` → `get_or_create` → **safe on every restart**.
+
+### 4.4 Idempotency Test Results (2026-05-12T22:03Z)
+
+```
+=== seed_platform_settings (re-run) ===
+  Skipped TRIAL_DAYS (already exists)
+  Skipped TAX_RATE_ECUADOR (already exists)
+  Skipped DEFAULT_TIMEZONE (already exists)
+  Done. 0 setting(s) created, 3 skipped. ✅
+
+=== seed_subscription_plans (re-run) ===
+  🔄 Updated: Trial
+  🔄 Updated: Starter
+  🔄 Updated: Professional
+  🔄 Updated: Enterprise
+  Done: 0 created, 4 updated. ⚠️ (see REQ-012)
+
+=== Vault Mailjet keys survived re-run ===
+  mailjet_api_key: SET (32 chars) ✅
+  mailjet_secret_key: SET (32 chars) ✅
+  mailjet_sender_email: SET (17 chars) ✅
+
+=== Migrations ===
+  Unapplied: 0. All applied ✅
+
+=== SuperAdmin User ===
+  admin@loyallia.com role=SUPER_ADMIN active=True ✅
+```
+
+### 4.5 Disaster Recovery Safety
+
+| Scenario | Result |
+|---|---|
+| `docker compose down && docker compose up -d` | ✅ All data preserved. Vault auto-unseals. Migrations skip. |
+| `docker compose down -v` (DESTROYS VOLUMES) | ❌ Full data loss. Must use `recover_from_rescue.sh` or fresh bootstrap. |
+| Factory reset via SuperAdmin UI | ⚠️ Data wiped per design. Plans re-seeded (overwrites — see REQ-012). Vault untouched. SuperAdmin user preserved. |
+| Re-run `bootstrap.sh` with existing Vault | ✅ Prompted. Existing Vault values preserved. No secret corruption. |
+
+---
+
+## 5. Missing Playwright E2E Tests
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-TEST-001 |
+| **Severity** | 🟡 MEDIUM |
+| **Priority** | P2 |
+| **SRS Ref** | LYL-SRS-TEST-001 |
+
+| # | Test | Priority | Target Suite |
+|---|---|---|---|
+| T1 | Full 4-step tenant creation wizard | 🔴 HIGH | NEW: `27-tenant-creation-wizard.spec.ts` |
+| T2 | Suspend / Reactivate tenant via UI | 🔴 HIGH | `27-tenant-creation-wizard.spec.ts` |
+| T3 | Extend trial with 90-day cap | 🟡 MEDIUM | `27-tenant-creation-wizard.spec.ts` |
+| T4 | Plan deactivation with active subs (409) | 🟡 MEDIUM | `20-plan-rate-limits.spec.ts` |
+| T5 | Impersonation flow (token backup + restore) | 🔴 HIGH | `27-tenant-creation-wizard.spec.ts` |
+| T6 | WhatsApp override per-tenant (SA API) | 🟡 MEDIUM | `17-whatsapp-campaigns.spec.ts` |
+| T7 | Billing self-subscribe (Owner → plan → confirm) | 🟡 MEDIUM | `09-settings-billing.spec.ts` |
+
+---
+
+## 6. Execution Phases
+
+| Phase | Items | Dependencies | Effort |
+|---|---|---|---|
+| **Phase 1 — Critical Security** | REQ-001, REQ-003, REQ-005 | None | ~2 hours |
+| **Phase 2 — UX / Flow** | REQ-002 | Depends on REQ-003 | ~1 hour |
+| **Phase 3 — Data Integrity** | REQ-006, REQ-007, REQ-008, REQ-009 | None | ~2 hours |
+| **Phase 4 — New Features** | REQ-004 (Mode Toggle), REQ-011 (Email Webhooks) | None | ~4 hours |
+| **Phase 5 — Test Coverage** | E2E Tests (§5) | Depends on Phase 1-3 | ~3 hours |
+| ~~Phase — Bootstrap~~ | ~~REQ-012~~ | — | ✅ RESOLVED |
+| ~~Phase — Infrastructure~~ | ~~REQ-010~~ | — | ✅ RESOLVED |
+
+---
+
+## 7. Quick Reference Commands
+
+```bash
+# Run backend tests
+docker exec loyallia-api pytest tests/ -q
+
+# Run E2E tests
+cd frontend && PLAYWRIGHT_BASE_URL=http://localhost PLAYWRIGHT_ALLOW_MUTATING_E2E=true \
+  npx playwright test --project=chromium
+
+# Verify Mailjet
+docker exec loyallia-api python manage.py shell -c "
+from apps.notifications.email_engine.client import get_health, is_mailjet_available
+print('Health:', get_health())
+print('SMTP Reachable:', is_mailjet_available())
+"
+
+# Check all Vault secrets
+docker exec loyallia-api python manage.py check_vault_config
+
+# Verify bootstrap idempotency
+docker exec loyallia-api python manage.py seed_platform_settings
+docker exec loyallia-api python manage.py seed_subscription_plans
+
+# Full bootstrap (first time only)
+deploy/bootstrap/bootstrap.sh
+
+# Disaster recovery (from rescue files)
+deploy/disaster_recovery/recover_from_rescue.sh
+```
+
+---
+
+*End of handoff. 12 REQ items (2 resolved, 10 pending) + 7 E2E test scenarios. Bootstrap idempotency verified. Mailjet LIVE in Vault since 2026-05-12T22:01Z. Plan seed overwrite fixed 2026-05-12T22:08Z.*
