@@ -96,6 +96,13 @@ const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
     { key: 'ai_agent_base_url', label: 'Agent Base URL', type: 'text' },
     { key: 'ai_agent_api_key', label: 'Agent API Key', type: 'password' },
   ],
+  backup_config: [
+    { key: 'system_mode', label: 'System Mode', type: 'select', options: ['production', 'development'], description: 'Production = daily backups. Development = every 15 days.' },
+    { key: 'backup_frequency', label: 'Backup Frequency', type: 'select', options: ['daily', '15days', 'weekly', 'monthly'] },
+    { key: 'backup_retention', label: 'Backup Retention (days)', type: 'text', description: 'How many days to keep backups (1-365)' },
+    { key: 'cron_hour', label: 'Cron Hour (0-23)', type: 'text', description: 'Hour of day to run backups' },
+    { key: 'vault_thresholds', label: 'Vault Thresholds (JSON)', type: 'textarea', description: 'e.g. {"max_secret_ttl_days": 90, "max_init_age_days": 365}' },
+  ],
 };
 
 const errorMessage = (err: unknown, fallback: string) => {
@@ -479,6 +486,38 @@ export default function SuperAdminSettings() {
                           : 'Activar Modo Prueba'}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Backup Config — status table */}
+              {int.key === 'backup_config' && int.diagnostics && (
+                <div className="bg-surface-50 rounded-lg p-3 border border-surface-200 space-y-2">
+                  <p className="text-xs font-bold text-surface-600 uppercase">Estado de Respaldos</p>
+                  <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-surface-500 border-b border-surface-200 pb-1">
+                    <span>Componente</span>
+                    <span>Último Resp.</span>
+                    <span>Antigüedad</span>
+                    <span>Tamaño</span>
+                  </div>
+                  {['pg', 'redis', 'vault', 'minio', 'certs', 'env'].map((comp) => {
+                    const diag = (int.diagnostics as Record<string, unknown>)[comp] as Record<string, unknown> | undefined;
+                    return (
+                      <div key={comp} className="grid grid-cols-4 gap-2 text-[11px] text-surface-700">
+                        <span className="font-semibold uppercase">{comp}</span>
+                        <span className="truncate">{String(diag?.latest ?? '—')}</span>
+                        <span>{diag?.age_hours != null ? `${String(diag.age_hours)}h` : '—'}</span>
+                        <span>{diag?.size_bytes != null ? `${Math.round(Number(diag.size_bytes) / 1024)}KB` : '—'}</span>
+                      </div>
+                    );
+                  })}
+                  {int.preview_values?.system_mode && (
+                    <div className="pt-2 border-t border-surface-200 flex gap-4 text-[10px] text-surface-500">
+                      <span>Modo: <strong className="text-surface-700">{int.preview_values.system_mode}</strong></span>
+                      <span>Frecuencia: <strong className="text-surface-700">{int.preview_values.backup_frequency}</strong></span>
+                      <span>Retención: <strong className="text-surface-700">{int.preview_values.backup_retention}d</strong></span>
+                      <span>Cron: <strong className="text-surface-700">{int.preview_values.cron_hour}:00</strong></span>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -101,6 +101,89 @@ export async function loginOwnerContext(
   return { token: body.access_token, tenantId: body.tenant_id };
 }
 
+const ENTERPRISE_CAMPAIGN_FEATURES = [
+  'whatsapp_campaigns',
+  'email_campaigns',
+  'wallet_campaigns',
+  'sms_campaigns',
+  'automation',
+  'advanced_analytics',
+  'priority_support',
+  'custom_branding',
+  'data_export',
+  'geo_fencing',
+  'ai_assistant',
+  'agent_api',
+];
+
+export async function ensureOwnerEnterpriseCampaignAccess(
+  request: APIRequestContext,
+): Promise<void> {
+  requireMutatingE2EAllowed();
+  const baseURL = getE2EBaseURL();
+  const superToken = await loginRole(request, 'superadmin');
+
+  const plansResp = await request.get(`${baseURL}/api/v1/admin/plans/`, {
+    headers: { Authorization: `Bearer ${superToken}` },
+  });
+  expect(plansResp.status(), 'SuperAdmin plans list should return 200').toBe(200);
+  const plans = await plansResp.json();
+  const enterprisePlan = plans.find((plan: { slug?: string }) => plan.slug === 'enterprise');
+  expect(enterprisePlan, 'enterprise plan must exist before campaign E2E').toBeTruthy();
+
+  const updateResp = await request.patch(`${baseURL}/api/v1/admin/plans/${enterprisePlan.id}/`, {
+    headers: { Authorization: `Bearer ${superToken}` },
+    data: {
+      features: ENTERPRISE_CAMPAIGN_FEATURES,
+      max_sms_day: 5000,
+      max_whatsapp_day: 200,
+      max_emails_month: 10000,
+      max_wallet_pushes_month: 10000,
+      max_automations: 10,
+      max_automation_executions_day: 1000,
+      max_ai_queries_month: 500,
+      max_api_calls_day: 1000,
+      max_exports_month: 10,
+    },
+  });
+  expect(updateResp.status(), 'Enterprise plan campaign setup should return 200').toBe(200);
+
+  const ownerToken = await loginRole(request, 'owner');
+  const currentResp = await request.get(`${baseURL}/api/v1/billing/subscription/`, {
+    headers: { Authorization: `Bearer ${ownerToken}` },
+  });
+  expect(currentResp.status(), 'Owner subscription API should return 200').toBe(200);
+  const currentSub = await currentResp.json();
+  if (
+    currentSub.plan_slug === 'enterprise' &&
+    ['active', 'trialing'].includes(currentSub.status)
+  ) {
+    return;
+  }
+
+  const subscribeResp = await request.post(`${baseURL}/api/v1/billing/subscribe/`, {
+    headers: { Authorization: `Bearer ${ownerToken}` },
+    data: { plan_slug: 'enterprise', billing_cycle: 'monthly' },
+  });
+  expect(subscribeResp.status(), 'Owner enterprise subscribe should return 200').toBe(200);
+  const subscribeBody = await subscribeResp.json();
+  expect(subscribeBody.invoice_id, 'Manual-payment invoice id should exist').toBeTruthy();
+
+  const confirmResp = await request.post(
+    `${baseURL}/api/v1/admin/billing/confirm-payment/${subscribeBody.invoice_id}/`,
+    { headers: { Authorization: `Bearer ${superToken}` } },
+  );
+  expect(confirmResp.status(), 'SuperAdmin manual payment confirmation should return 200').toBe(200);
+
+  const verifiedResp = await request.get(`${baseURL}/api/v1/billing/subscription/`, {
+    headers: { Authorization: `Bearer ${ownerToken}` },
+  });
+  expect(verifiedResp.status(), 'Owner subscription verification should return 200').toBe(200);
+  const verifiedSub = await verifiedResp.json();
+  expect(verifiedSub.plan_slug, 'Owner tenant should be linked to enterprise').toBe('enterprise');
+  expect(verifiedSub.status, 'Owner enterprise subscription should be active').toBe('active');
+}
+
 export function expectIntegrationResponseDoesNotExposeSecrets(integrations: unknown): void {
   expect(Array.isArray(integrations), 'integrations response should be an array').toBe(true);
 

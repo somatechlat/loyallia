@@ -10,7 +10,12 @@
  *   6. API: Invalid channel returns 400
  */
 import { test, expect } from '@playwright/test';
-import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
+import {
+  ensureOwnerEnterpriseCampaignAccess,
+  getE2EBaseURL,
+  loginRole,
+  requireMutatingE2EAllowed,
+} from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -23,8 +28,9 @@ async function getOwnerToken(request: import('@playwright/test').APIRequestConte
 
 test.describe('Email Campaigns — OWNER @owner', () => {
 
-  test.beforeAll(() => {
+  test.beforeAll(async ({ request }) => {
     requireMutatingE2EAllowed();
+    await ensureOwnerEnterpriseCampaignAccess(request);
   });
 
   test('1. Campaign page loads with Email channel indicator', async ({ page }) => {

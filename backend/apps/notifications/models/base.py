@@ -14,6 +14,7 @@ class NotificationChannel(models.TextChoices):
     PUSH = "push", "Push Notification"
     SMS = "sms", "SMS"
     EMAIL = "email", "Email"
+    WALLET = "wallet", "Wallet"
     IN_APP = "in_app", "In-App Notification"
     WHATSAPP = "whatsapp", "WhatsApp"
 

@@ -252,15 +252,36 @@ class Command(BaseCommand):
             locations.append(loc)
 
         # =====================================================================
-        # 5. Billing — Active FULL subscription
+        # 5. Billing — Active Enterprise subscription
         # =====================================================================
+        enterprise_plan = SubscriptionPlan.objects.filter(slug="enterprise", is_active=True).first()
         sub, _ = Subscription.objects.get_or_create(
             tenant=tenant,
             defaults={
-                "plan": "full",
+                "subscription_plan": enterprise_plan,
+                "plan": enterprise_plan.slug if enterprise_plan else "enterprise",
                 "billing_cycle": "monthly",
                 "status": SubscriptionStatus.ACTIVE,
+                "current_period_start": now,
+                "current_period_end": now + timedelta(days=30),
             },
+        )
+        sub.subscription_plan = enterprise_plan
+        sub.plan = enterprise_plan.slug if enterprise_plan else "enterprise"
+        sub.billing_cycle = "monthly"
+        sub.status = SubscriptionStatus.ACTIVE
+        sub.current_period_start = sub.current_period_start or now
+        sub.current_period_end = sub.current_period_end or now + timedelta(days=30)
+        sub.save(
+            update_fields=[
+                "subscription_plan",
+                "plan",
+                "billing_cycle",
+                "status",
+                "current_period_start",
+                "current_period_end",
+                "updated_at",
+            ]
         )
 
         # =====================================================================

@@ -7,7 +7,7 @@ Uses INCR + EXPIRE (sliding window) for atomic, distributed rate counting.
 Protects against:
     - Brute force login attacks (60 req/min per IP on /auth/login)
     - QR scan abuse (120 req/min per user on /scanner/)
-    - Analytics DDoS (20 req/min per user on /analytics/)
+    - Analytics DDoS (60 req/min per user on /analytics/)
     - General API abuse (200 req/min per IP on all endpoints)
 
 Architecture:
@@ -69,7 +69,9 @@ RATE_LIMIT_RULES = [
     ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP
     ("/api/v1/auth/", "ip", 20, 60),  # 20 general auth requests per minute per IP
     ("/api/v1/scanner/", "user", 120, 60),  # 120 scans per minute per user
-    ("/api/v1/analytics/", "user", 20, 60),  # 20 analytics queries per minute per user
+    # Dashboard loads fan out to several analytics endpoints; 60/min lets normal
+    # date-filter usage work while preserving user-scoped abuse protection.
+    ("/api/v1/analytics/", "user", 60, 60),
     (
         "/api/v1/notifications/",
         "user",

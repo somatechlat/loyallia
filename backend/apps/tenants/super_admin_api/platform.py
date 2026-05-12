@@ -98,12 +98,18 @@ def platform_metrics(request):
         / 2
     )
 
-    recent = Tenant.objects.order_by("-created_at")[:8]
+    recent = Tenant.objects.select_related("subscription__subscription_plan").order_by("-created_at")[:8]
     recent_list = [
         {
             "id": str(t.id),
             "name": t.name,
-            "plan": t.plan,
+            "plan": (
+                t.subscription.subscription_plan.slug
+                if hasattr(t, "subscription")
+                and t.subscription
+                and t.subscription.subscription_plan
+                else t.effective_plan
+            ),
             "city": t.city,
             "created_at": t.created_at.isoformat(),
             "is_active": t.is_active,

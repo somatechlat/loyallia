@@ -5,7 +5,9 @@ status objects. It never returns raw secret values.
 """
 
 import json
+import os
 import re
+from datetime import datetime, timezone
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -78,6 +80,13 @@ ALLOWED_INTEGRATION_KEYS = {
     "ai_agent": [
         "ai_agent_base_url",
         "ai_agent_api_key",
+    ],
+    "backup_config": [
+        "vault_thresholds",
+        "backup_frequency",
+        "backup_retention",
+        "cron_hour",
+        "system_mode",
     ],
 }
 
@@ -175,7 +184,89 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
             raise HttpError(400, "Invalid Twilio Test Account SID. Expected format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)")
         return normalized
 
+    if key == "vault_thresholds":
+        try:
+            payload = json.loads(normalized)
+        except json.JSONDecodeError as exc:
+            raise HttpError(400, f"Invalid vault_thresholds JSON: {exc}") from exc
+        if not isinstance(payload, dict):
+            raise HttpError(400, "vault_thresholds must be a JSON object")
+        return json.dumps(payload, separators=(",", ":"))
+
+    if key == "backup_frequency":
+        valid = {"daily", "15days", "weekly", "monthly"}
+        if normalized.lower() not in valid:
+            raise HttpError(400, f"backup_frequency must be one of: {', '.join(sorted(valid))}")
+        return normalized.lower()
+
+    if key == "backup_retention":
+        try:
+            val = int(normalized)
+        except ValueError:
+            raise HttpError(400, "backup_retention must be an integer (days)")
+        if val < 1 or val > 365:
+            raise HttpError(400, "backup_retention must be between 1 and 365")
+        return str(val)
+
+    if key == "cron_hour":
+        try:
+            val = int(normalized)
+        except ValueError:
+            raise HttpError(400, "cron_hour must be an integer (0-23)")
+        if val < 0 or val > 23:
+            raise HttpError(400, "cron_hour must be between 0 and 23")
+        return str(val)
+
+    if key == "system_mode":
+        valid = {"production", "development"}
+        if normalized.lower() not in valid:
+            raise HttpError(400, f"system_mode must be one of: {', '.join(sorted(valid))}")
+        return normalized.lower()
+
     return normalized
+
+
+BACKUP_BASE = "/var/backups/loyallia"
+
+
+def _latest_backup(subdir: str, pattern: str) -> dict:
+    """Return diagnostics for the latest backup in a subdirectory."""
+    path = os.path.join(BACKUP_BASE, subdir)
+    if not os.path.isdir(path):
+        return {"latest": None, "age_hours": None, "size_bytes": None}
+    try:
+        files = [f for f in os.listdir(path) if f.startswith(pattern)]
+        if not files:
+            return {"latest": None, "age_hours": None, "size_bytes": None}
+        files.sort(reverse=True)
+        latest = files[0]
+        full = os.path.join(path, latest)
+        mtime = os.path.getmtime(full)
+        age = (datetime.now(timezone.utc).timestamp() - mtime) / 3600
+        return {
+            "latest": latest,
+            "age_hours": round(age, 1),
+            "size_bytes": os.path.getsize(full),
+        }
+    except (OSError, PermissionError):
+        return {"latest": None, "age_hours": None, "size_bytes": None}
+
+
+def _get_backup_diagnostics() -> dict:
+    """Scan backup directories and return a summary."""
+    components = ["pg", "redis", "vault", "minio", "certs", "env"]
+    patterns = {
+        "pg": "loyallia_pg_",
+        "redis": "loyallia_redis_",
+        "vault": "loyallia_vault_secrets_",
+        "minio": "loyallia_minio_",
+        "certs": "loyallia_certs_",
+        "env": "loyallia_env_",
+    }
+    result = {}
+    for comp in components:
+        result[comp] = _latest_backup(comp, patterns[comp])
+    return result
 
 
 def additional_integrations() -> list[PlatformIntegrationOut]:
@@ -204,6 +295,8 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
     apple_nfc_enabled = _truthy(get_secret("apple_nfc_enabled", default="false"))
     apple_nfc_key_present = _present("apple_nfc_encryption_public_key")
     ai_agent_key_present = _present("ai_agent_api_key")
+
+    backup_diagnostics = _get_backup_diagnostics()
 
     return [
         PlatformIntegrationOut(
@@ -307,5 +400,20 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "api_key_present": ai_agent_key_present,
             },
             preview_values={},
+        ),
+        PlatformIntegrationOut(
+            key="backup_config",
+            name="Backup & Disaster Recovery",
+            enabled=True,
+            configured=True,
+            status="active",
+            detail="Host-level encrypted backups via age",
+            diagnostics=backup_diagnostics,
+            preview_values={
+                "system_mode": get_secret("system_mode", default="development"),
+                "backup_frequency": get_secret("backup_frequency", default="15days"),
+                "backup_retention": get_secret("backup_retention", default="31"),
+                "cron_hour": get_secret("cron_hour", default="5"),
+            },
         ),
     ]

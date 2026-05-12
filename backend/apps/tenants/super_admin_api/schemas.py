@@ -40,11 +40,17 @@ class TenantAdminOut(BaseModel):
 
     @classmethod
     def from_tenant(cls, t: Tenant) -> "TenantAdminOut":
+        subscription = getattr(t, "subscription", None)
+        plan = (
+            subscription.subscription_plan.slug
+            if subscription is not None and subscription.subscription_plan
+            else t.effective_plan
+        )
         return cls(
             id=str(t.id),
             name=t.name,
             slug=t.slug,
-            plan=t.effective_plan,  # LYL-H-ARCH-011: derive from Subscription
+            plan=plan,  # LYL-H-ARCH-011: derive from Subscription
             is_active=t.is_active,
             trial_days_remaining=t.trial_days_remaining,
             country=t.country,
@@ -149,6 +155,8 @@ class CreateTenantOut(BaseModel):
     message: str
     tenant_id: str
     owner_id: str
+    owner_email: str = ""
+    temp_password: str = ""
 
 
 class PlatformMetricsOut(BaseModel):
