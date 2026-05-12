@@ -164,9 +164,16 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 )
                 msg.attach_alternative(html_content, "text/html")
                 msg.send(fail_silently=False)
+                
+                # Capture Message-ID for webhooks
+                message_id = ""
+                if hasattr(msg, "anymail_status") and msg.anymail_status:
+                    message_id = msg.anymail_status.message_id or ""
+
                 delivery_log.status = DeliveryStatus.SENT
+                delivery_log.external_message_id = message_id
                 delivery_log.sent_at = timezone.now()
-                delivery_log.save(update_fields=["status", "sent_at"])
+                delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
                 notification.mark_as_sent()
                 succeeded += 1
 

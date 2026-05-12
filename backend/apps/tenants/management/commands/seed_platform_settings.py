@@ -29,6 +29,12 @@ DEFAULTS = [
         "description": "Zona horaria por defecto de la plataforma",
         "category": "system",
     },
+    {
+        "key": "PLATFORM_MODE",
+        "value": "production",
+        "description": "Modo de la plataforma (development/production)",
+        "category": "system",
+    },
 ]
 
 

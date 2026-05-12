@@ -382,13 +382,24 @@ export default function SuperAdminSettings() {
                   )}
                 </label>
                 <div className="flex gap-2">
-                  <input
-                    type={s.key.includes('DAYS') || s.key.includes('PRICE') || s.key.includes('RATE') ? 'number' : 'text'}
-                    step={s.key.includes('RATE') ? '0.01' : undefined}
-                    className="flex-1 px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 text-sm"
-                    value={settingForm[s.key] || ''}
-                    onChange={(e) => setSettingForm((prev) => ({ ...prev, [s.key]: e.target.value }))}
-                  />
+                  {s.key === 'PLATFORM_MODE' ? (
+                    <select
+                      className="flex-1 px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 text-sm"
+                      value={settingForm[s.key] || 'production'}
+                      onChange={(e) => setSettingForm((prev) => ({ ...prev, [s.key]: e.target.value }))}
+                    >
+                      <option value="production">Production (Estricto)</option>
+                      <option value="development">Development (Permisivo)</option>
+                    </select>
+                  ) : (
+                    <input
+                      type={s.key.includes('DAYS') || s.key.includes('PRICE') || s.key.includes('RATE') ? 'number' : 'text'}
+                      step={s.key.includes('RATE') ? '0.01' : undefined}
+                      className="flex-1 px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 text-sm"
+                      value={settingForm[s.key] || ''}
+                      onChange={(e) => setSettingForm((prev) => ({ ...prev, [s.key]: e.target.value }))}
+                    />
+                  )}
                   <button
                     onClick={() => updateSetting(s.key)}
                     disabled={savingSetting === s.key || (settingForm[s.key] ?? '') === s.value}

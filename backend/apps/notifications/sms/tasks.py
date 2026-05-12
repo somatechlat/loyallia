@@ -179,12 +179,14 @@ def send_sms_campaign(
     finally:
         # Always finalize campaign run so it never stays stuck IN_PROGRESS
         campaign_run.sent_count = succeeded
+        campaign_run.delivered_count = succeeded  # For SMS, sent is effectively delivered to carrier
         campaign_run.failed_count = failed
         campaign_run.status = CampaignStatus.COMPLETED
         campaign_run.completed_at = timezone.now()
         campaign_run.save(
             update_fields=[
                 "sent_count",
+                "delivered_count",
                 "failed_count",
                 "status",
                 "completed_at",

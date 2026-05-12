@@ -6,7 +6,7 @@ Django Ninja discovers the registered routes.
 
 from common.plan_enforcement import enforce_limit
 
-from . import analytics, campaigns, inbox, misc, push  # noqa: F401
+from . import analytics, campaigns, inbox, misc, push, webhooks  # noqa: F401
 from .base import router
 from .campaigns import create_campaign
 
