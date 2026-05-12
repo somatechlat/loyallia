@@ -4,8 +4,9 @@
  * coupon push title/image/expiry reminder, and enrollment privacy consent.
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
+const BASE_API = getE2EBaseURL();
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROGRAMS — BORRADORES SECTION
@@ -169,10 +170,7 @@ test.describe('Enrollment Page — Public Flow', () => {
 
   test('Enrollment page loads for a valid card', async ({ page, request }) => {
     // Get a card ID from the API
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     const cardsResp = await request.get(`${BASE_API}/api/v1/cards/`, {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -194,10 +192,7 @@ test.describe('Enrollment Page — Public Flow', () => {
   });
 
   test('Enrollment form shows privacy consent checkbox', async ({ page, request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     const cardsResp = await request.get(`${BASE_API}/api/v1/cards/`, {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -219,10 +214,7 @@ test.describe('Enrollment Page — Public Flow', () => {
   });
 
   test('Enroll button disabled until privacy accepted', async ({ page, request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     const cardsResp = await request.get(`${BASE_API}/api/v1/cards/`, {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -250,15 +242,16 @@ test.describe('Enrollment Page — Public Flow', () => {
 
 test.describe('Coupon Validation API @owner', () => {
 
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
+
   test('Card creation API accepts special_promo discount type @owner', async ({ request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    expect(loginResp.status(), 'Login should succeed').toBe(200);
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
+    const suffix = Date.now();
 
     const cardData = {
-      name: 'E2E Promo Coupon',
+      name: `E2E Promo Coupon ${suffix}`,
       card_type: 'coupon',
       description: 'Test special promo',
       metadata: {
@@ -277,14 +270,11 @@ test.describe('Coupon Validation API @owner', () => {
   });
 
   test('Card creation API validates coupon dates @owner', async ({ request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    expect(loginResp.status(), 'Login should succeed').toBe(200);
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
+    const suffix = Date.now();
 
     const cardData = {
-      name: 'E2E Bad Dates Coupon',
+      name: `E2E Bad Dates Coupon ${suffix}`,
       card_type: 'coupon',
       description: 'Test invalid dates',
       metadata: {

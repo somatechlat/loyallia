@@ -27,32 +27,29 @@ import sys
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings")
 
 import django
+
 django.setup()
 
 from django.db import transaction
 
-# Operational models
-from apps.authentication.models import User, UserRole
-from apps.billing.models import SubscriptionPlan
-from apps.tenants.models import PlatformSetting
+from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
+from apps.audit.models import AuditLog
 
+# Operational models
 # Data to be deleted
-from apps.authentication.models import RefreshToken
-from apps.tenants.models import Tenant, Location
+from apps.authentication.models import RefreshToken, User
+from apps.automation.models import Automation
+from apps.billing.models import Invoice, PaymentMethod, Subscription, SubscriptionPlan
 from apps.cards.models import Card
 from apps.customers.models import Customer, CustomerPass
-from apps.transactions.models import Transaction
 from apps.notifications.models import (
-    CampaignRun,
     CampaignDeliveryLog,
+    CampaignRun,
     Notification,
     WhatsAppSession,
 )
-from apps.automation.models import Automation
-from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
-from apps.billing.models import Subscription, Invoice, PaymentMethod
-from apps.audit.models import AuditLog
-
+from apps.tenants.models import Location, PlatformSetting, Tenant
+from apps.transactions.models import Transaction
 
 # =============================================================================
 # Operational identifiers (NEVER delete these)
@@ -90,10 +87,7 @@ def main():
         print()
 
         # 1. RefreshToken → FK to User
-        total_deleted += delete_model_qs(
-            RefreshToken.objects.exclude(user_id=superadmin_id),
-            "refresh tokens"
-        )
+        total_deleted += delete_model_qs(RefreshToken.objects.exclude(user_id=superadmin_id), "refresh tokens")
 
         # 2. CampaignDeliveryLog → FK to CampaignRun, Customer
         total_deleted += delete_model_qs(CampaignDeliveryLog.objects.all(), "campaign delivery logs")
@@ -151,10 +145,7 @@ def main():
         total_deleted += delete_model_qs(Location.objects.all(), "locations")
 
         # 19. User (non-SUPER_ADMIN) → FK to Tenant (nullable)
-        total_deleted += delete_model_qs(
-            User.objects.exclude(email=SUPERADMIN_EMAIL),
-            "non-SUPER_ADMIN users"
-        )
+        total_deleted += delete_model_qs(User.objects.exclude(email=SUPERADMIN_EMAIL), "non-SUPER_ADMIN users")
 
         # 20. Tenant
         total_deleted += delete_model_qs(Tenant.objects.all(), "tenants")
@@ -165,8 +156,7 @@ def main():
 
         # 21. Non-operational SubscriptionPlans
         total_deleted += delete_model_qs(
-            SubscriptionPlan.objects.exclude(slug__in=OPERATIONAL_PLAN_SLUGS),
-            "non-operational subscription plans"
+            SubscriptionPlan.objects.exclude(slug__in=OPERATIONAL_PLAN_SLUGS), "non-operational subscription plans"
         )
 
     # =====================================================================
@@ -204,7 +194,7 @@ def main():
 
     print()
     print("=" * 70)
-    print(f"Cleanup complete. Total record groups deleted: verified above")
+    print("Cleanup complete. Total record groups deleted: verified above")
     print("=" * 70)
 
     # Final health check

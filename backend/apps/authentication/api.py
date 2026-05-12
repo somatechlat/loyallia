@@ -79,9 +79,7 @@ router = Router()
 # =============================================================================
 
 
-@router.post(
-    "/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio"
-)
+@router.post("/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio")
 def register(request, payload: RegisterIn):
     """Create a new tenant (business) with its OWNER user atomically.
 
@@ -98,9 +96,7 @@ def register(request, payload: RegisterIn):
             success=True,
             message=get_message(
                 "TENANT_CREATED",
-                days=PlatformSetting.get_int(
-                    "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
-                ),
+                days=PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)),
             ),
             tenant_id="",
             user_id="",
@@ -116,9 +112,7 @@ def register(request, payload: RegisterIn):
             verification = client.fetch_verification(payload.phone_verification_sid)
             if verification.get("status") == "approved":
                 is_phone_verified = True
-                logger.info(
-                    "Registration phone verified via Twilio: %s", payload.phone_number
-                )
+                logger.info("Registration phone verified via Twilio: %s", payload.phone_number)
         except VerifyServiceError as exc:
             logger.warning(
                 "Registration phone verification failed for %s: %s",
@@ -176,9 +170,7 @@ def login(request, payload: LoginIn):
     if user.is_locked:
         if user.locked_until is None:
             raise HttpError(423, get_message("AUTH_ACCOUNT_LOCKED", minutes=15))
-        remaining = max(
-            0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60)
-        )
+        remaining = max(0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60))
         raise HttpError(423, get_message("AUTH_ACCOUNT_LOCKED", minutes=remaining))
     if not user.is_active:
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
@@ -190,9 +182,7 @@ def login(request, payload: LoginIn):
     return issue_tokens(user)
 
 
-@router.post(
-    "/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso"
-)
+@router.post("/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso")
 def refresh_token(request, payload: RefreshIn):
     """Validate refresh token and issue a new access+refresh pair.
 
@@ -233,9 +223,9 @@ def logout(request, payload: LogoutIn):
     the RefreshToken object into Python memory.
     """
     token_hash = hash_token(payload.refresh_token)
-    RefreshToken.objects.filter(
-        token_hash=token_hash, user=request.user, revoked_at__isnull=True
-    ).update(revoked_at=dj_timezone.now())
+    RefreshToken.objects.filter(token_hash=token_hash, user=request.user, revoked_at__isnull=True).update(
+        revoked_at=dj_timezone.now()
+    )
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
 
 
@@ -313,12 +303,8 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     user.set_password(payload.new_password)
     user.failed_login_count = 0
     user.locked_until = None
-    user.save(
-        update_fields=["password", "failed_login_count", "locked_until", "updated_at"]
-    )
-    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
-        revoked_at=dj_timezone.now()
-    )
+    user.save(update_fields=["password", "failed_login_count", "locked_until", "updated_at"])
+    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_RESET_SUCCESS"))
 
 
@@ -432,9 +418,7 @@ def reset_password(request, payload: ResetPasswordIn):
 
     user.set_password(payload.new_password)
     user.save(update_fields=["password", "updated_at"])
-    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
-        revoked_at=dj_timezone.now()
-    )
+    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
     logger.info("Password reset completed for %s", user.email)
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
@@ -571,9 +555,7 @@ def google_login(request, payload: GoogleTokenIn):
         user_manager = cast(UserManager, User.objects)
         user = user_manager.create_user(
             email=email,
-            password=secrets.token_urlsafe(
-                32
-            ),  # Random password (user logs in via Google)
+            password=secrets.token_urlsafe(32),  # Random password (user logs in via Google)
             first_name=first_name,
             last_name=last_name,
             tenant=tenant,
@@ -608,8 +590,9 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
 
     PUBLIC endpoint. No auth required. Rate limited.
     """
-    from apps.authentication.otp_service import send_otp
     from django.core.cache import cache
+
+    from apps.authentication.otp_service import send_otp
 
     # Rate limit: max 5 starts per phone per 10 minutes
     rate_key = f"verify_phone_start:{payload.phone}"

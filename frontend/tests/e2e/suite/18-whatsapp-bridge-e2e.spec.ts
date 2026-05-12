@@ -14,39 +14,19 @@
  * Prerequisites:
  * - loyallia-whatsapp-bridge container running on localhost:33914
  * - loyallia-api container running (via nginx on localhost:80)
- * - Seeded test data (owner@example.com as OWNER)
+ * - PLAYWRIGHT_* role credentials configured for a real E2E tenant
  */
 import { test, expect } from '@playwright/test';
+import {
+  getE2EBaseURL,
+  loginOwnerContext,
+  loginRole,
+  requireMutatingE2EAllowed,
+} from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
+const BASE_API = getE2EBaseURL();
 const BRIDGE_URL = 'http://127.0.0.1:33914';
 const BRIDGE_API_KEY = 'dev-bridge-key';
-
-// Helper: login and return access_token
-async function loginAs(
-  request: import('@playwright/test').APIRequestContext,
-  email: string,
-  password: string = '123456',
-): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
-  expect(resp.status(), `Login should succeed for ${email}`).toBe(200);
-  const body = await resp.json();
-  expect(body.access_token).toBeTruthy();
-  return body.access_token;
-}
-
-// Helper: get tenant_id from login response
-async function getOwnerContext(
-  request: import('@playwright/test').APIRequestContext,
-): Promise<{ token: string; tenantId: string }> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email: 'owner@example.com', password: '123456' },
-  });
-  const body = await resp.json();
-  return { token: body.access_token, tenantId: body.tenant_id };
-}
 
 // =============================================================================
 // 1. BRIDGE HEALTH — Direct access to the whatsapp-bridge container
@@ -132,6 +112,10 @@ test.describe('Bridge Auth — Direct @owner', () => {
 // =============================================================================
 
 test.describe('Bridge Session — Direct @owner', () => {
+
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
 
   test('Status returns default for unknown tenant', async ({ request }) => {
     const resp = await request.get(`${BRIDGE_URL}/status/nonexistent-tenant-xyz`, {
@@ -270,8 +254,12 @@ test.describe('Bridge Queue Stats — Direct @owner', () => {
 
 test.describe('Django→Bridge API — OWNER @owner', () => {
 
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
+
   test('OWNER gets WhatsApp status through Django API', async ({ request }) => {
-    const { token, tenantId } = await getOwnerContext(request);
+    const { token, tenantId } = await loginOwnerContext(request);
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -284,7 +272,7 @@ test.describe('Django→Bridge API — OWNER @owner', () => {
   });
 
   test('OWNER generates QR through Django API', async ({ request }) => {
-    const { token, tenantId } = await getOwnerContext(request);
+    const { token, tenantId } = await loginOwnerContext(request);
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 30000,
@@ -299,7 +287,7 @@ test.describe('Django→Bridge API — OWNER @owner', () => {
   });
 
   test('OWNER disconnect through Django API', async ({ request }) => {
-    const { token, tenantId } = await getOwnerContext(request);
+    const { token, tenantId } = await loginOwnerContext(request);
     const resp = await request.post(`${BASE_API}/api/v1/whatsapp/disconnect/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -309,7 +297,7 @@ test.describe('Django→Bridge API — OWNER @owner', () => {
   });
 
   test('Django status includes messages_remaining calculation', async ({ request }) => {
-    const { token, tenantId } = await getOwnerContext(request);
+    const { token, tenantId } = await loginOwnerContext(request);
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -325,8 +313,8 @@ test.describe('Django→Bridge API — OWNER @owner', () => {
 test.describe('Django WhatsApp RBAC — MANAGER blocked @manager', () => {
 
   test('MANAGER cannot get WhatsApp status (403)', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
-    const { tenantId } = await getOwnerContext(request);
+    const token = await loginRole(request, 'manager');
+    const { tenantId } = await loginOwnerContext(request);
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -334,8 +322,8 @@ test.describe('Django WhatsApp RBAC — MANAGER blocked @manager', () => {
   });
 
   test('MANAGER cannot get QR code (403)', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
-    const { tenantId } = await getOwnerContext(request);
+    const token = await loginRole(request, 'manager');
+    const { tenantId } = await loginOwnerContext(request);
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -343,8 +331,8 @@ test.describe('Django WhatsApp RBAC — MANAGER blocked @manager', () => {
   });
 
   test('MANAGER cannot disconnect WhatsApp (403)', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
-    const { tenantId } = await getOwnerContext(request);
+    const token = await loginRole(request, 'manager');
+    const { tenantId } = await loginOwnerContext(request);
     const resp = await request.post(`${BASE_API}/api/v1/whatsapp/disconnect/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -355,8 +343,8 @@ test.describe('Django WhatsApp RBAC — MANAGER blocked @manager', () => {
 test.describe('Django WhatsApp RBAC — STAFF blocked @staff', () => {
 
   test('STAFF cannot get WhatsApp status (403)', async ({ request }) => {
-    const token = await loginAs(request, 'staff@example.com');
-    const { tenantId } = await getOwnerContext(request);
+    const token = await loginRole(request, 'staff');
+    const { tenantId } = await loginOwnerContext(request);
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -364,8 +352,8 @@ test.describe('Django WhatsApp RBAC — STAFF blocked @staff', () => {
   });
 
   test('STAFF cannot get QR code (403)', async ({ request }) => {
-    const token = await loginAs(request, 'staff@example.com');
-    const { tenantId } = await getOwnerContext(request);
+    const token = await loginRole(request, 'staff');
+    const { tenantId } = await loginOwnerContext(request);
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -373,8 +361,8 @@ test.describe('Django WhatsApp RBAC — STAFF blocked @staff', () => {
   });
 
   test('STAFF cannot disconnect WhatsApp (403)', async ({ request }) => {
-    const token = await loginAs(request, 'staff@example.com');
-    const { tenantId } = await getOwnerContext(request);
+    const token = await loginRole(request, 'staff');
+    const { tenantId } = await loginOwnerContext(request);
     const resp = await request.post(`${BASE_API}/api/v1/whatsapp/disconnect/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -384,22 +372,20 @@ test.describe('Django WhatsApp RBAC — STAFF blocked @staff', () => {
 
 test.describe('Django WhatsApp RBAC — SUPERADMIN blocked @superadmin', () => {
 
-  test('SUPERADMIN cannot get WhatsApp status (no tenant, 402)', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+  test('SUPERADMIN cannot get WhatsApp status (403)', async ({ request }) => {
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/00000000-0000-0000-0000-000000000000/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // SUPER_ADMIN has no tenant → @require_active_subscription returns 402
-    expect(resp.status()).toBe(402);
+    expect(resp.status()).toBe(403);
   });
 
-  test('SUPERADMIN cannot generate QR (no tenant, 402)', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+  test('SUPERADMIN cannot generate QR (403)', async ({ request }) => {
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/00000000-0000-0000-0000-000000000000/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // SUPER_ADMIN has no tenant → @require_active_subscription returns 402
-    expect(resp.status()).toBe(402);
+    expect(resp.status()).toBe(403);
   });
 });
 
@@ -410,7 +396,7 @@ test.describe('Django WhatsApp RBAC — SUPERADMIN blocked @superadmin', () => {
 test.describe('Cross-Tenant Isolation @owner', () => {
 
   test('OWNER cannot access another tenant status (403)', async ({ request }) => {
-    const { token } = await getOwnerContext(request);
+    const { token } = await loginOwnerContext(request);
     const otherTenantId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${otherTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -419,7 +405,7 @@ test.describe('Cross-Tenant Isolation @owner', () => {
   });
 
   test('OWNER cannot disconnect another tenant (403)', async ({ request }) => {
-    const { token } = await getOwnerContext(request);
+    const { token } = await loginOwnerContext(request);
     const otherTenantId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     const resp = await request.post(`${BASE_API}/api/v1/whatsapp/disconnect/${otherTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -428,7 +414,7 @@ test.describe('Cross-Tenant Isolation @owner', () => {
   });
 
   test('OWNER cannot get QR for another tenant (403)', async ({ request }) => {
-    const { token } = await getOwnerContext(request);
+    const { token } = await loginOwnerContext(request);
     const otherTenantId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${otherTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -443,8 +429,12 @@ test.describe('Cross-Tenant Isolation @owner', () => {
 
 test.describe('Session Lifecycle — Full cycle @owner', () => {
 
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
+
   test('Full lifecycle: QR → status shows session → disconnect → status clean', async ({ request }) => {
-    const { token, tenantId } = await getOwnerContext(request);
+    const { token, tenantId } = await loginOwnerContext(request);
 
     // Step 1: Generate QR (starts session in bridge)
     const qrResp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${tenantId}/`, {
@@ -486,6 +476,10 @@ test.describe('Session Lifecycle — Full cycle @owner', () => {
 // =============================================================================
 
 test.describe('Settings WhatsApp Wizard — OWNER @owner', () => {
+
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
 
   test('Settings page renders Integraciones section', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });

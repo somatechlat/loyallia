@@ -1,123 +1,122 @@
 # Current Production Readiness TODO
 
-**Document ID:** LOYALLIA-TODO-CURRENT-PROD-001  
-**Date:** 2026-05-03
-**Status:** ACTIVE  
-**Source:** Current workspace state, Plan B SRS, project rules, AGENT.md, architecture docs, client scope docs, and latest real gate runs.
+**Document ID:** LOYALLIA-TODO-CURRENT-PROD-001
+**Date:** 2026-05-11
+**Status:** ACTIVE
+**Source of truth:** Current repository code, `rules.md`, and real local command results from this workspace.
+
+This document is the active production-readiness artifact for Loyallia. It must not claim readiness from old evidence, mocked routes, seeded demo shortcuts, or destructive SysAdmin flows. Mark an item `DONE` only when its evidence command passes in the current codebase or when there is a written accepted-risk decision.
 
 Status values: `OPEN`, `IN_PROGRESS`, `BLOCKED`, `VERIFYING`, `DONE`, `ACCEPTED_RISK`.
 
-No item may be marked `DONE` unless the evidence command passes or the item has an explicit `ACCEPTED_RISK` decision.
+## Latest Verified Snapshot
 
-## Immediate Rule Baseline
-
-| ID | Rule | Status | Evidence / Notes |
+| Gate | Command | Result | Notes |
 |---|---|---|---|
-| LYL-CUR-RULE-001 | No plaintext production secrets in committed code, docs, scripts, compose files, or env defaults. | OPEN | Secret-pattern audit found remaining env interpolation/default paths. |
-| LYL-CUR-RULE-002 | Production secrets SHALL be loaded from Vault KV v2 only. | DONE | All real secrets now in Vault KV v2. API reads exclusively from Vault. `VAULT_TOKEN_FILE` mounted at `/run/loyallia-vault/app-token`. |
-| LYL-CUR-RULE-003 | No mocks, stubs, placeholders, or fake integrations for production readiness. | DONE | All integrations use real credentials. Placeholder cert files removed from `certs/`. Env validation no longer requires unconfigured integrations. |
-| LYL-CUR-RULE-004 | Real Docker and real test runners SHALL be used for readiness evidence. | VERIFYING | Docker pytest with Vault-backed PostgreSQL test DB passes: 460 passed, 2 skipped. |
-| LYL-CUR-RULE-005 | Do not claim Apple Wallet/NFC readiness until web PKPass prerequisites and optional NFC approval are validated. | DONE | Real Apple Pass Type ID cert, private key, and WWDR cert all in Vault. Keypair cryptographically verified. NFC remains optional gated feature. |
+| Frontend typecheck | `cd frontend && npm run typecheck` | PASS | Current workspace. |
+| Frontend unit tests | `cd frontend && npm run test:unit` | PASS | 1 file, 12 tests. |
+| Frontend build | `cd frontend && npm run build` | PASS WITH WARNINGS | Existing warnings remain for `<img>`, hook dependencies, and custom font. |
+| Playwright discovery | `cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:80 npx playwright test --list` | PASS | 323 tests discovered. Tests now require explicit base URL. |
+| Diff whitespace | `git diff --check` | PASS | No whitespace errors found. |
+| Backend Ruff | `cd backend && python3 -m ruff check .` | FAIL | 81 lint errors, mostly import sorting, unused imports, typing upgrades, and datetime UTC modernization. |
+| Backend pytest | `cd backend && DEBUG=False python3 -m pytest -q` | FAIL/BLOCKED | PostgreSQL on `localhost:33900` was not reachable and DB password was not supplied. 518 setup/collection errors. |
 
-## Vault And Secret Management
+## P0 Rules Baseline
 
-| ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
-|---|---|---:|---|---|---|---|---|
-| LYL-CUR-VAULT-001 | Production Django settings SHALL fail if Vault is missing required secrets. | P0 | DONE | `backend/loyallia/settings/production.py` | `docker compose exec -T api python manage.py check_vault_config --include-apple` | PASS | All required Vault keys populated with real values. |
-| LYL-CUR-VAULT-002 | Remove env fallback for production critical secrets. | P0 | VERIFYING | `backend/loyallia/settings/production.py`, `backend/common/vault.py` | source inspection + Docker startup | PARTIAL | Runtime uses Vault token file; bootstrap service credentials still require final production operator decision. |
-| LYL-CUR-VAULT-003 | Remove hardcoded/default Vault root token behavior. | P0 | VERIFYING | `backend/scripts/vault_migration.py`, `docker-compose.yml`, docs | source inspection | PASS for migration script; compose creates runtime token file | App no longer receives `VAULT_TOKEN` env; it reads `/run/loyallia-vault/app-token`. |
-| LYL-CUR-VAULT-004 | Remove placeholder secret payloads. | P0 | VERIFYING | `backend/scripts/vault_migration.py` | source inspection | PASS for migration script | Remaining placeholder-like strings exist in dev/test defaults and docs; production path still blocked by sealed Vault. |
-| LYL-CUR-VAULT-005 | Stop passing app runtime secrets through compose env where app can read Vault directly. | P0 | VERIFYING | `docker-compose.yml`, `docker-compose.prod.yml` | `docker compose exec -T api sh -c '[ -n "$VAULT_TOKEN" ] && echo present || echo empty'` | PASS for app Vault token env | Runtime token is file-mounted; required real secret values remain missing in Vault. |
-| LYL-CUR-VAULT-006 | Define exact Vault key names for all runtime secrets. | P0 | VERIFYING | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md`, production settings | source inspection | PASS for current listed keys | Includes Django, JWT, DB, Redis, MinIO, payment, email, Google, and Apple Wallet web PKPass/NFC keys. |
-| LYL-CUR-VAULT-007 | Add a non-secret Vault readiness command. | P1 | DONE | `backend/apps/api/management/commands/check_vault_config.py` | `docker compose exec -T api python manage.py check_vault_config --include-apple` | PASS | All required Vault keys present. Command does not print secret values. |
-| LYL-CUR-VAULT-008 | Rotate any secret that appeared in `.env`, scripts, docs, or logs. | P0 | OPEN | Vault/operator task | rotation evidence | PENDING | Do not print secret values in evidence. |
+| ID | Requirement | Status | Evidence / Notes |
+|---|---|---|---|
+| LYL-RULE-001 | Code is the source of truth. Documentation must follow the actual Django/Next/React implementation. | DONE | `rules.md` is repo-specific and contains no YachaqIdentity or Lit rules. |
+| LYL-RULE-002 | Do not wipe Vault, rotate secrets, or mutate Vault from normal Playwright tests. | DONE | E2E Vault-write test was removed. |
+| LYL-RULE-003 | Do not execute factory reset or seed-demo SysAdmin paths from E2E readiness tests. | VERIFYING | Search found no E2E references to `factory-reset/confirm` or `seed-demo-data`. Backend protections still need audit. |
+| LYL-RULE-004 | No hardcoded default credentials in production-readiness Playwright flows. | DONE | Owner/Admin/SysAdmin E2E flows now use environment-provided credentials. |
+| LYL-RULE-005 | No mocked route fulfillment as production-readiness proof. | DONE | Route-mocked WhatsApp E2E tests were removed from readiness suite. |
+| LYL-RULE-006 | Do not claim production ready while backend lint or backend tests fail. | OPEN | Backend gates currently fail. |
 
-## Apple Wallet Web PKPass And NFC
+## P0 E2E Safety And Owner/Admin/SysAdmin Flows
 
-| ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
-|---|---|---:|---|---|---|---|---|
-| LYL-CUR-APPLE-001 | Confirm Apple web PKPass product path: no native iOS app required for customer add-to-wallet flow. | P0 | DONE | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md` | source review | PASS | Verify with Wallet identity flow is out of current scope. |
-| LYL-CUR-APPLE-002 | Store Apple Team ID, Pass Type ID, PKPass cert/key, and WWDR cert in Vault. | P0 | DONE | production settings, wallet docs | Vault readiness check | PASS | All Apple Wallet secrets in Vault: `apple_pass_type_identifier`, `apple_team_identifier`, `apple_cert_pem`, `apple_cert_key_pem`, `apple_wwdr_cert_pem`. |
-| LYL-CUR-APPLE-003 | Add NFC as an optional gated feature requiring Apple approval and real reader validation. | P0 | VERIFYING | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md`, pass engine | source review | CODE PARTIAL | NFC is now card-metadata gated in the pass engine; real Apple approval and reader validation remain required. |
-| LYL-CUR-APPLE-004 | Store Apple PKPass signing cert/key and WWDR certificate in Vault. | P0 | DONE | `backend/apps/customers/pass_engine/apple_pass.py` | wallet cert parse check | PASS | Real Apple-signed cert (`passNew.cer`), real private key (`apple_pass_new.key`), real WWDR (`AppleWWDRCAG4.cer`). Keypair modulus verified match. |
-| LYL-CUR-APPLE-005 | Remove Verify with Wallet identity keys from current web Wallet readiness gate. | P0 | DONE | readiness commands, production settings, compose | source inspection | PASS | Command, production settings, and compose seeding now use web PKPass/NFC scope. |
-| LYL-CUR-APPLE-006 | Document simple customer add-to-wallet flow. | P1 | DONE | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md` | source review | PASS | Customer uses public enrollment URL and browser Add to Apple Wallet flow. |
-| LYL-CUR-APPLE-007 | Add pre-Docker Apple Wallet readiness check for web PKPass/NFC only. | P0 | DONE | `backend/apps/api/management/commands/check_apple_wallet_config.py` | `docker compose exec -T api python manage.py check_apple_wallet_config` | PASS | Validates real PKPass cert/key/WWDR cryptographically. No secret values printed. |
-| LYL-CUR-APPLE-008 | Add real Apple Wallet tests for configured, disabled, invalid pass, valid pass, and NFC-gated paths. | P1 | OPEN | backend tests | pytest wallet tests | PENDING | No mocks for production readiness; fixture payloads must be documented test fixtures. |
+| ID | Requirement | Status | Primary Files | Evidence | Notes |
+|---|---|---|---|---|---|
+| LYL-E2E-001 | Add shared E2E safety helper for base URL, role credentials, production-host refusal, mutation guard, and external-service guard. | DONE | `frontend/tests/e2e/helpers/e2e-safety.ts` | Typecheck and Playwright list pass. | `PLAYWRIGHT_BASE_URL` is mandatory. |
+| LYL-E2E-002 | Remove `http://localhost:80` fallback defaults from E2E suites. | DONE | `frontend/tests/e2e/helpers/auth.setup.ts`, suites | `rg` search found no remaining hardcoded fallback. | Tests must be explicit about target environment. |
+| LYL-E2E-003 | Replace hardcoded owner, manager, staff, and superadmin passwords with environment credentials. | DONE | E2E suites 01, 11, 13-18, 20-25 | `rg` search found no default credential matches in E2E. | Required env vars are documented by helper names. |
+| LYL-E2E-004 | Gate mutating Owner/Admin/SysAdmin flows behind `PLAYWRIGHT_ALLOW_MUTATING_E2E=true`. | DONE | Suites 02, 09, 11, 14, 16, 18, 20, 21, 22, 23, 24 | Playwright list pass. | Prevents accidental mutation against shared/prod systems. |
+| LYL-E2E-005 | Gate external SMS verification behind `PLAYWRIGHT_ALLOW_EXTERNAL_E2E=true`. | DONE | `frontend/tests/e2e/suite/15-phone-verification.spec.ts` | Playwright list pass. | Avoids accidental provider calls. |
+| LYL-E2E-006 | Remove readiness tests that write Vault secrets. | DONE | `frontend/tests/e2e/suite/11-superadmin.spec.ts` | Search found no `writes Vault secret` match. | Replaced with read-only integration response secret-exposure check. |
+| LYL-E2E-007 | Remove mocked WhatsApp UI tests from readiness proof. | DONE | `frontend/tests/e2e/suite/09-settings-billing.spec.ts` | Search found no `page.route` or `route.fulfill` in E2E. | Real behavior still needs staged E2E execution. |
+| LYL-E2E-008 | Execute guarded Playwright flows against a disposable/staging environment. | OPEN | E2E suite | Pending command | Requires real `PLAYWRIGHT_*` credentials and explicit mutation flag only for disposable/staging. |
 
-## Backend Runtime And Tests
+## P0 Backend Quality Gates
 
-| ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
-|---|---|---:|---|---|---|---|---|
-| LYL-CUR-BE-001 | Re-run backend Ruff after latest patches. | P0 | DONE | backend | `cd backend && ./venv/bin/ruff check .` | PASS | 2026-05-03. |
-| LYL-CUR-BE-002 | Re-run backend Black after latest patches. | P0 | DONE | backend | `cd backend && ./venv/bin/black --check .` | PASS | 2026-05-03. |
-| LYL-CUR-BE-003 | Re-run backend Pyright after latest patches. | P0 | DONE | backend | `cd backend && pyright` | PASS | 2026-05-03. |
-| LYL-CUR-BE-004 | Backend Docker pytest SHALL reach zero failures. | P0 | DONE | backend tests/app code | `docker compose exec -T api env DJANGO_SETTINGS_MODULE=loyallia.settings.test python -m pytest -q` | PASS: 460 passed, 2 skipped | Test settings now use Vault-backed PostgreSQL in Docker. |
-| LYL-CUR-BE-005 | Fix API route mismatches causing 404/405 in tests. | P0 | DONE | API router files, tests | `docker compose exec -T api env DJANGO_SETTINGS_MODULE=loyallia.settings.test pytest -q tests/test_api.py::CustomersAPITest tests/test_api.py::CardsAPITest tests/test_api.py::TenantsAPITest tests/test_api.py::AutomationAPITest tests/test_api.py::NotificationsAPITest` | PASS: 12 passed | Added real compatibility aliases and customer CRUD/tenant/notification routes. |
-| LYL-CUR-BE-006 | Align card factories/test setup with required metadata. | P0 | DONE | `backend/tests/factories.py`, card tests | Docker pytest full suite | PASS | Factories now merge valid defaults and preserve invalid-validation test cases. |
-| LYL-CUR-BE-007 | Fix scanner auth workflow returning 401 in scanner tests. | P0 | DONE | `backend/apps/cards/tests.py`, pass processing | Docker pytest full suite | PASS | Scanner tests now use correct auth header path; typed pass counters sync with JSON pass data. |
-| LYL-CUR-BE-008 | Align trial and plan enforcement behavior with SRS/business rules. | P0 | DONE | billing, tenants, plan enforcement | Docker pytest full suite | PASS | Trial tests use active trial dates; no indefinite trial assumption remains. |
-| LYL-CUR-BE-009 | Fix remaining source-inspection security test for invitation hashing. | P1 | DONE | auth tests | Docker pytest full suite | PASS | Test now verifies actual invitation implementation in `users_api.py`. |
-| LYL-CUR-BE-010 | Run migration drift check. | P0 | DONE | migrations | `docker compose exec -T api env DJANGO_SETTINGS_MODULE=loyallia.settings.test python manage.py makemigrations --check --dry-run` | PASS | No changes detected. |
-| LYL-CUR-BE-011 | Run deploy check under production settings with Vault available. | P0 | BLOCKED | settings/Vault/compose | `docker compose exec -T api python manage.py check_vault_config --include-apple` | FAIL: missing real Vault keys | Production deploy check remains blocked until real Google, payment, email, and Apple Vault keys are provided. |
+| ID | Requirement | Status | Primary Files | Evidence | Notes |
+|---|---|---|---|---|---|
+| LYL-BE-001 | Fix backend Ruff errors without changing behavior. | OPEN | `backend/` | `python3 -m ruff check .` failed with 81 errors. | Mostly mechanical cleanup; inspect before editing. |
+| LYL-BE-002 | Re-run backend formatting check after Ruff fixes. | OPEN | `backend/` | Pending | Use the project formatter only after understanding current config. |
+| LYL-BE-003 | Re-run backend type checks if configured. | OPEN | `backend/` | Pending | Confirm actual command from repo config before claiming. |
+| LYL-BE-004 | Bring up the real backend test dependencies. | BLOCKED | Docker/PostgreSQL/Vault/env | Pytest failed because PostgreSQL `localhost:33900` was unavailable and DB password was empty. | Do not replace this with mocks. |
+| LYL-BE-005 | Run full backend pytest against real test services. | BLOCKED | `backend/` | Pending after DB/Vault environment is available. | Current result is not a code-pass. |
 
-## Frontend Runtime And Tests
+## P0 Authorization And Tenant Isolation Audit
 
-| ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
-|---|---|---:|---|---|---|---|---|
-| LYL-CUR-FE-001 | Re-run frontend typecheck after latest changes. | P0 | DONE | frontend | `cd frontend && npm run typecheck` | PASS | 2026-05-03; script clears stale TypeScript build-info before real typecheck. |
-| LYL-CUR-FE-002 | Re-run frontend lint and record warnings. | P1 | VERIFYING | frontend | `cd frontend && npm run lint` | PASS with warnings | Warnings remain for `<img>`, hook dependencies, and custom font. |
-| LYL-CUR-FE-003 | Re-run frontend build. | P0 | DONE | frontend | `cd frontend && npm run build` | PASS | 2026-05-03. |
-| LYL-CUR-FE-004 | Re-run frontend unit tests. | P0 | DONE | frontend tests | `cd frontend && npm run test:unit` | PASS: 1 file, 12 tests | 2026-05-03. |
-| LYL-CUR-FE-005 | Resolve remaining lint warnings where production-relevant. | P2 | OPEN | dashboard/program/scanner components | lint output | PENDING | `img`, hook dependency, and custom font warnings. |
+| ID | Requirement | Status | Primary Files | Evidence | Notes |
+|---|---|---|---|---|---|
+| LYL-AUTHZ-001 | Audit Owner APIs for tenant scoping on every list/detail/mutation. | OPEN | Backend owner/admin APIs | Pending source review and tests. | Must prove no cross-tenant reads/writes. |
+| LYL-AUTHZ-002 | Audit Manager and Staff role restrictions against Owner-only capabilities. | OPEN | Backend APIs and frontend menus | Pending source review and tests. | UI hiding is not sufficient; backend enforcement required. |
+| LYL-AUTHZ-003 | Audit SuperAdmin APIs for platform-scope access and explicit guardrails. | OPEN | SuperAdmin backend APIs | Pending source review and tests. | Destructive actions require extra confirmation and audit. |
+| LYL-AUTHZ-004 | Add or verify negative authorization tests for cross-tenant access. | OPEN | Backend tests and Playwright where applicable | Pending. | Use real users/tenants; no mocked authorization. |
 
-## Docker And Infrastructure
+## P0 SysAdmin Destructive-Action Safety
 
-| ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
-|---|---|---:|---|---|---|---|---|
-| LYL-CUR-INFRA-001 | Confirm Docker cluster health after Vault cleanup. | P0 | BLOCKED | compose | `docker compose ps` | PARTIAL | Vault, Postgres, Redis, PgBouncer run; API starts but fails runtime validation due missing real Vault keys. |
-| LYL-CUR-INFRA-002 | Ensure app runtime uses production-safe Vault access. | P0 | VERIFYING | compose/settings/Vault | startup logs + health | PARTIAL | API reads Vault through token file and logs missing key names only; real key values still absent. |
-| LYL-CUR-INFRA-003 | Reconcile development `.env` usage with Vault-only production rule. | P0 | OPEN | `.env`, docs, compose | source inspection | PENDING | `.env` exists locally; production must not depend on plaintext passwords. |
-| LYL-CUR-INFRA-004 | Ensure Redis auth is consistently sourced from Vault or controlled bootstrap path. | P0 | OPEN | compose/settings | Redis smoke | PENDING | Redis server still needs password at startup; app should not rely on plaintext env fallback. |
-| LYL-CUR-INFRA-005 | Add/verify CI gates for backend, frontend, Docker, audit, E2E, and migration drift. | P1 | OPEN | `.github/workflows` | workflow grep + CI run | PENDING | Existing Plan B doc says partial. |
-| LYL-CUR-INFRA-006 | Fix Postgres WAL archive permission errors in Docker. | P0 | DONE | `docker-compose.yml` | `docker compose logs --since=90s postgres | rg "archive command failed|wal_archive|Permission denied"` | PASS | No WAL archive permission errors after Postgres recreate. |
+| ID | Requirement | Status | Primary Files | Evidence | Notes |
+|---|---|---|---|---|---|
+| LYL-SA-001 | Verify factory reset cannot run accidentally or from normal E2E. | VERIFYING | Backend SysAdmin routes, frontend SysAdmin UI | E2E search is clean; backend audit pending. | Must inspect actual endpoint implementation. |
+| LYL-SA-002 | Verify seed-demo paths cannot run in production/shared environments. | VERIFYING | Backend SysAdmin routes/scripts | E2E search is clean; backend audit pending. | Must confirm server-side environment guard. |
+| LYL-SA-003 | Verify every SysAdmin mutation writes immutable audit evidence. | OPEN | Audit model/API/middleware | Pending. | Include actor, role, IP/device where available. |
+| LYL-SA-004 | Confirm SysAdmin UI cannot expose secret values. | VERIFYING | SuperAdmin integration API/UI | Read-only E2E secret-exposure assertion added. | Backend and UI source audit still pending. |
 
-## Dependency And Security Audit
+## P0 Secret And Vault Handling
 
-| ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
-|---|---|---:|---|---|---|---|---|
-| LYL-CUR-DEP-001 | Run npm production audit. | P0 | OPEN | frontend deps | `cd frontend && npm audit --omit=dev --audit-level=high` | FAIL | High Next.js advisory and moderate PostCSS advisory remain; fix suggests breaking Next 16 upgrade. |
-| LYL-CUR-DEP-002 | Add and run Python dependency audit. | P1 | OPEN | backend deps/CI | `cd backend && pip-audit -r requirements.txt` | BLOCKED | `pip-audit` is not installed in backend venv. |
-| LYL-CUR-SEC-001 | Run Bandit with documented Apple PKPass SHA1 exception if needed. | P1 | OPEN | backend | `bandit -r backend -x backend/venv,backend/**/migrations` | BLOCKED | `bandit` is not installed in backend venv. |
-| LYL-CUR-SEC-002 | Verify no committed secret values or placeholders remain. | P0 | OPEN | full repo | `rg` secret-pattern audit | PENDING | Must not print secret values in reports. |
+| ID | Requirement | Status | Primary Files | Evidence | Notes |
+|---|---|---|---|---|---|
+| LYL-SEC-001 | Verify no committed secrets in code, docs, scripts, or cert folders. | OPEN | Full repo | Pending secret-pattern audit. | Do not print secret values in reports. |
+| LYL-SEC-002 | Verify runtime secrets come from Vault or approved local-dev files only. | OPEN | Settings, compose, Vault helpers | Pending. | Production path must be Vault-backed. |
+| LYL-SEC-003 | Verify APIs never return secret values in integration previews. | VERIFYING | SuperAdmin integration APIs | Read-only Playwright assertion added. | Backend source audit still required. |
+| LYL-SEC-004 | Verify logs mask PII and secrets. | OPEN | Logging, middleware, service clients | Pending. | Must include error paths. |
 
-## Documentation And Traceability
+## P1 Frontend Cleanup
 
-| ID | Requirement | Priority | Status | Primary Files | Evidence Command | Result | Notes |
-|---|---|---:|---|---|---|---|---|
-| LYL-CUR-DOC-001 | Update stale Plan B TODO rows with latest real gate results. | P0 | OPEN | `docs/TODO_PLAN_B_TRACEABILITY.md` | source inspection | PENDING | Existing rows still mention older black/ruff failures. |
-| LYL-CUR-DOC-002 | Add Vault-only production secret policy to docs. | P0 | OPEN | `docs/secret-rotation.md`, SRS/Plan B | source inspection | PENDING | Current docs still mention `.env` updates for secret rotation. |
-| LYL-CUR-DOC-003 | Add corrected Apple web PKPass/NFC setup and operator checklist. | P1 | DONE | `docs/APPLE_WALLET_WEB_PKPASS_NFC.md` | doc review | PASS | Cites Apple docs and avoids account password instructions. |
-| LYL-CUR-DOC-004 | Update `HANDOFF.md` only after all P0/P1 gates pass or are accepted risk. | P0 | OPEN | `HANDOFF.md` | manual review | PENDING | Do not claim production-ready before gates pass. |
+| ID | Requirement | Status | Primary Files | Evidence | Notes |
+|---|---|---|---|---|---|
+| LYL-FE-001 | Resolve production-relevant Next build warnings. | OPEN | Frontend app/components | `npm run build` passes with warnings. | Warnings include `<img>`, hook deps, and font declaration. |
+| LYL-FE-002 | Run real guarded Playwright Owner flow on staging. | OPEN | Playwright suites | Pending. | Requires `PLAYWRIGHT_OWNER_EMAIL/PASSWORD`. |
+| LYL-FE-003 | Run real guarded Playwright SysAdmin flow on staging. | OPEN | Playwright suites | Pending. | Requires `PLAYWRIGHT_SUPERADMIN_EMAIL/PASSWORD`; mutation flag only on disposable/staging. |
+| LYL-FE-004 | Confirm frontend menus match backend permissions. | OPEN | Next routes/components and backend permissions | Pending. | Do not rely only on client-side guards. |
 
-## Execution Order
+## P1 Dependency And Security Audit
 
-1. Finish Vault-only cleanup and remove placeholder/default secret paths.
-2. Add Vault readiness checks and Apple Wallet pre-Docker readiness checks.
-3. Re-run backend/frontend static gates.
-4. Fix the 58 known Docker pytest failures by cluster: routes, factories, scanner auth, trial/plan behavior, security source test.
-5. Run full Docker pytest until zero failures.
-6. Run migration drift and deploy checks under production settings with Vault available.
-7. Run dependency/security audits.
-8. Start/verify Docker cluster health.
-9. Update traceability and `HANDOFF.md` with only verified evidence.
+| ID | Requirement | Status | Primary Files | Evidence | Notes |
+|---|---|---|---|---|---|
+| LYL-DEP-001 | Run frontend production dependency audit. | OPEN | `frontend/package-lock.json` | Pending current command. | Record real advisories only. |
+| LYL-DEP-002 | Run Python dependency audit with installed tool. | OPEN | `backend/requirements*.txt` | Pending. | Install/use approved project tooling only. |
+| LYL-DEP-003 | Run backend security scanner if configured. | OPEN | Backend | Pending. | Do not invent a configured gate. |
 
-## Latest Known Evidence Snapshot
+## Current Implementation Delta
 
-| Date | Evidence | Result |
-|---|---|---|
-| 2026-05-03 | Docker pytest with Vault-backed PostgreSQL test DB | PASS: 460 passed, 2 skipped |
-| 2026-05-03 | Backend ruff/black/pyright after latest patches | PASS |
-| 2026-05-03 | Frontend typecheck/lint/test/build after latest patches | PASS, lint/build with warnings |
-| 2026-05-03 | Docker Vault readiness checks | FAIL: missing real Google, payment, email, and Apple PKPass Vault keys |
-| 2026-05-02 | npm production audit | FAIL: Next.js high advisories and PostCSS moderate advisory |
+| Area | Files |
+|---|---|
+| Rules artifact | `rules.md` |
+| E2E safety helper | `frontend/tests/e2e/helpers/e2e-safety.ts` |
+| E2E suites changed | `frontend/tests/e2e/helpers/auth.setup.ts`, `frontend/tests/e2e/suite/01-auth.spec.ts`, `02-programs.spec.ts`, `09-settings-billing.spec.ts`, `11-superadmin.spec.ts`, `13-dashboard-kpis.spec.ts`, `14-program-crud-full.spec.ts`, `15-phone-verification.spec.ts`, `16-srs-hardening.spec.ts`, `17-whatsapp-campaigns.spec.ts`, `18-whatsapp-bridge-e2e.spec.ts`, `20-plan-rate-limits.spec.ts`, `21-sms-campaigns.spec.ts`, `22-wallet-flows.spec.ts`, `23-email-campaigns.spec.ts`, `24-whatsapp-campaigns.spec.ts`, `25-owner-full-menu.spec.ts`, `26-superadmin-full-menu.spec.ts` |
+| Existing dirty file not owned by this TODO slice | `backend/apps/authentication/otp_service.py` |
+
+## Execution Order From Here
+
+1. Fix backend Ruff errors with minimal behavior-preserving edits.
+2. Re-run backend Ruff and formatting gates.
+3. Inspect backend test configuration and start the real required Postgres/Vault test services.
+4. Run backend pytest against real services and fix real failures.
+5. Audit backend Owner/Admin/SysAdmin authorization and tenant isolation.
+6. Audit SysAdmin destructive endpoints and server-side environment guards.
+7. Audit secret handling in Vault, APIs, UI previews, and logs.
+8. Run guarded Playwright flows against a disposable/staging environment with real credentials.
+9. Run dependency/security audits.
+10. Update this document with only current command evidence.

@@ -2,8 +2,9 @@
 Loyallia — Customers API router.
 Phase 5 implementation of customer + pass management endpoints.
 """
+
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -39,9 +40,7 @@ router = Router()
 
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
 @require_active_subscription
-def list_customers(
-    request, search: Optional[str] = None, limit: int = 50, offset: int = 0
-):
+def list_customers(request, search: str | None = None, limit: int = 50, offset: int = 0):
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -117,9 +116,7 @@ def create_customer(request, data: CustomerCreateIn):
     return CustomerOut.from_model(customer)
 
 
-@router.post(
-    "/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)"
-)
+@router.post("/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)")
 def import_customers(request, file: UploadedFile):
     """
     Import customers from an Excel or CSV file. OWNER only.
@@ -168,9 +165,7 @@ def import_customers(request, file: UploadedFile):
     return result
 
 
-@router.post(
-    "/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente"
-)
+@router.post("/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente")
 def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateIn):
     """Public endpoint for customer self-enrollment via QR code scan.
 
@@ -228,9 +223,7 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
         "gender",
         "notes",
     }
-    dynamic_fields = {
-        k: v for k, v in customer_data.model_dump().items() if k not in standard_fields
-    }
+    dynamic_fields = {k: v for k, v in customer_data.model_dump().items() if k not in standard_fields}
 
     pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
@@ -240,9 +233,7 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
 
     from apps.transactions.models import Enrollment
 
-    Enrollment.objects.create(
-        tenant=card.tenant, customer=customer, card=card, enrollment_method="qr_scan"
-    )
+    Enrollment.objects.create(tenant=card.tenant, customer=customer, card=card, enrollment_method="qr_scan")
 
     from apps.automation.engine import fire_trigger_async
 
@@ -277,14 +268,10 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
 # =============================================================================
 
 
-@router.get(
-    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente"
-)
+@router.get("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente")
 def get_customer(request, customer_id: str):
     """Customer profile with pass and transaction history."""
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
 
     log_action(
         request=request,
@@ -297,17 +284,13 @@ def get_customer(request, customer_id: str):
     return CustomerOut.from_model(customer)
 
 
-@router.patch(
-    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
-)
+@router.patch("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
 def update_customer(request, customer_id: str, data: CustomerUpdateIn):
     """Update customer information. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
 
     update_fields = []
     if data.first_name is not None:
@@ -347,18 +330,14 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
     return CustomerOut.from_model(customer)
 
 
-@router.put(
-    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
-)
+@router.put("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
 def replace_customer(request, customer_id: str, data: CustomerUpdateIn):
     """Compatibility alias for clients that send PUT for partial customer updates."""
     return update_customer(request, customer_id, data)
 
 
-@router.delete(
-    "/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente"
-)
+@router.delete("/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente")
 @require_active_subscription
 def delete_customer(request, customer_id: str):
     """Permanent delete of a customer and all associated data. OWNER only.
@@ -366,9 +345,7 @@ def delete_customer(request, customer_id: str):
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
 
     log_action(
         request=request,
@@ -393,9 +370,7 @@ def delete_customer(request, customer_id: str):
 )
 def get_customer_passes(request, customer_id: str):
     """Get all passes for a customer."""
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
     passes = CustomerPass.objects.filter(customer=customer).select_related("card")
     return [CustomerPassOut.from_model(pass_obj) for pass_obj in passes]
 
@@ -421,9 +396,7 @@ def enroll_customer(request, customer_id: str, card_id: str):
 
     from apps.transactions.models import Enrollment
 
-    Enrollment.objects.create(
-        tenant=tenant, customer=customer, card=card, enrollment_method="manual"
-    )
+    Enrollment.objects.create(tenant=tenant, customer=customer, card=card, enrollment_method="manual")
 
     from apps.automation.engine import fire_trigger_async
 

@@ -12,23 +12,9 @@
  * RBAC Roles: OWNER, MANAGER, STAFF, SUPER_ADMIN
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
-
-// Helper: login and return access_token
-async function loginAs(
-  request: import('@playwright/test').APIRequestContext,
-  email: string,
-  password: string = '123456',
-): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
-  expect(resp.status(), `Login should succeed for ${email}`).toBe(200);
-  const body = await resp.json();
-  expect(body.access_token).toBeTruthy();
-  return body.access_token;
-}
+const BASE_API = getE2EBaseURL();
 
 // =============================================================================
 // OWNER — UI Tests
@@ -82,7 +68,7 @@ test.describe('WhatsApp Campaign UI — OWNER @owner', () => {
 test.describe('Campaign Analytics API — OWNER @owner', () => {
 
   test('GET /campaigns/runs/ returns list @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/runs/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -93,7 +79,7 @@ test.describe('Campaign Analytics API — OWNER @owner', () => {
   });
 
   test('GET /campaigns/{bad-id}/results/ returns 404 @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const fakeId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/${fakeId}/results/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -102,7 +88,7 @@ test.describe('Campaign Analytics API — OWNER @owner', () => {
   });
 
   test('GET /campaigns/{bad-id}/recipients/ returns 404 @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const fakeId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/${fakeId}/recipients/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -111,7 +97,7 @@ test.describe('Campaign Analytics API — OWNER @owner', () => {
   });
 
   test('GET /campaigns/{bad-id}/export/ returns 404 @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const fakeId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/${fakeId}/export/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -127,7 +113,7 @@ test.describe('Campaign Analytics API — OWNER @owner', () => {
 test.describe('WhatsApp Session API — OWNER @owner', () => {
 
   test('GET /whatsapp/status/{tenant_id}/ returns status @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     // Get tenant ID from /auth/me/
     const meResp = await request.get(`${BASE_API}/api/v1/auth/me/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -149,7 +135,7 @@ test.describe('WhatsApp Session API — OWNER @owner', () => {
   });
 
   test('GET /whatsapp/qr/{tenant_id}/ returns QR or bridge error @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const meResp = await request.get(`${BASE_API}/api/v1/auth/me/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -165,7 +151,7 @@ test.describe('WhatsApp Session API — OWNER @owner', () => {
   });
 
   test('GET /whatsapp/status/ with wrong tenant_id returns 403 @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const fakeTenantId = '00000000-0000-0000-0000-000000000099';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${fakeTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -182,7 +168,7 @@ test.describe('WhatsApp Session API — OWNER @owner', () => {
 test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
 
   test('MANAGER cannot access campaign runs API (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/runs/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -190,7 +176,7 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
   });
 
   test('MANAGER cannot access campaign results API (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const fakeId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/${fakeId}/results/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -199,7 +185,7 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
   });
 
   test('MANAGER cannot create campaigns (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { title: 'Hack', message: 'Test', segment_id: 'all', channel: 'whatsapp' },
@@ -208,7 +194,7 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
   });
 
   test('MANAGER cannot access WhatsApp QR (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const fakeTenantId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${fakeTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -217,7 +203,7 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
   });
 
   test('MANAGER cannot disconnect WhatsApp (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const fakeTenantId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.post(`${BASE_API}/api/v1/whatsapp/disconnect/${fakeTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -240,7 +226,7 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
 test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff', () => {
 
   test('STAFF cannot access campaign runs API (403) @staff', async ({ request }) => {
-    const token = await loginAs(request, 'staff@example.com');
+    const token = await loginRole(request, 'staff');
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/runs/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -248,7 +234,7 @@ test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff', () => {
   });
 
   test('STAFF cannot create campaigns (403) @staff', async ({ request }) => {
-    const token = await loginAs(request, 'staff@example.com');
+    const token = await loginRole(request, 'staff');
     const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { title: 'Hack', message: 'Test', segment_id: 'all', channel: 'email' },
@@ -257,7 +243,7 @@ test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff', () => {
   });
 
   test('STAFF cannot access WhatsApp QR (403) @staff', async ({ request }) => {
-    const token = await loginAs(request, 'staff@example.com');
+    const token = await loginRole(request, 'staff');
     const fakeTenantId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${fakeTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -266,7 +252,7 @@ test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff', () => {
   });
 
   test('STAFF cannot access campaign export (403) @staff', async ({ request }) => {
-    const token = await loginAs(request, 'staff@example.com');
+    const token = await loginRole(request, 'staff');
     const fakeId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/${fakeId}/export/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -292,7 +278,7 @@ test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff', () => {
 test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin', () => {
 
   test('SUPERADMIN cannot access campaign runs (no tenant, 403) @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/runs/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -301,7 +287,7 @@ test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin', ()
   });
 
   test('SUPERADMIN cannot create campaigns (403 — no tenant) @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { title: 'SA Hack', message: 'Test', segment_id: 'all', channel: 'whatsapp' },
@@ -311,7 +297,7 @@ test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin', ()
   });
 
   test('SUPERADMIN cannot access WhatsApp QR (403 — no tenant) @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const fakeTenantId = '00000000-0000-0000-0000-000000000000';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${fakeTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -357,7 +343,7 @@ test.describe('Webhook Security — Unauthenticated', () => {
 test.describe('Cross-Tenant Isolation — OWNER @owner', () => {
 
   test('OWNER cannot access WhatsApp status for another tenant @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     // Use a different tenant ID that doesn't belong to this owner
     const otherTenantId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${otherTenantId}/`, {
@@ -367,7 +353,7 @@ test.describe('Cross-Tenant Isolation — OWNER @owner', () => {
   });
 
   test('OWNER cannot disconnect another tenant WhatsApp @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const otherTenantId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     const resp = await request.post(`${BASE_API}/api/v1/whatsapp/disconnect/${otherTenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },

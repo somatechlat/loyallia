@@ -4,22 +4,9 @@
  * the billing API returns complete plan data including messaging/AI/automation limits.
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
-
-async function loginAs(
-  request: import('@playwright/test').APIRequestContext,
-  email: string,
-  password: string = '123456',
-): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
-  expect(resp.status(), `Login should succeed for ${email}`).toBe(200);
-  const body = await resp.json();
-  expect(body.access_token).toBeTruthy();
-  return body.access_token;
-}
+const BASE_API = getE2EBaseURL();
 
 // =============================================================================
 // PUBLIC BILLING API — Rate Limits in Response
@@ -89,7 +76,7 @@ test.describe('Public Billing API — Rate Limits @owner', () => {
 test.describe('Owner Subscription — Rate Limit Visibility @owner', () => {
 
   test('GET /billing/subscription/ returns current plan with limits @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const resp = await request.get(`${BASE_API}/api/v1/billing/subscription/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -107,7 +94,7 @@ test.describe('Owner Subscription — Rate Limit Visibility @owner', () => {
   });
 
   test('GET /billing/usage/ returns usage breakdown @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const resp = await request.get(`${BASE_API}/api/v1/billing/usage/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -126,8 +113,12 @@ test.describe('Owner Subscription — Rate Limit Visibility @owner', () => {
 
 test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin', () => {
 
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
+
   test('SA can create plan with all rate limits via API @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const planPayload = {
       name: `RateLimit Test ${Date.now()}`,
       slug: `rate-test-${Date.now()}`,
@@ -179,18 +170,50 @@ test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin', () => {
   });
 
   test('SA can update plan rate limits @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
 
-    // Get existing plans
-    const listResp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
+    const createResp = await request.post(`${BASE_API}/api/v1/admin/plans/`, {
       headers: { Authorization: `Bearer ${token}` },
+      data: {
+        name: `RateLimit Update ${Date.now()}`,
+        slug: `rate-update-${Date.now()}`,
+        description: 'Plan for testing rate limit updates',
+        price_monthly: 79,
+        price_annual: 790,
+        max_locations: 5,
+        max_users: 15,
+        max_customers: 5000,
+        max_programs: 5,
+        max_notifications_month: 10000,
+        max_transactions_month: 50000,
+        max_whatsapp_day: 100,
+        max_emails_month: 10000,
+        max_sms_day: 100,
+        max_wallet_pushes_month: 5000,
+        max_automations: 10,
+        max_automation_executions_day: 1000,
+        max_ai_queries_month: 500,
+        max_api_calls_day: 1000,
+        max_exports_month: 10,
+        features: [
+          'whatsapp_campaigns',
+          'email_campaigns',
+          'sms_campaigns',
+          'wallet_campaigns',
+          'automation',
+          'ai_assistant',
+          'agent_api',
+          'data_export',
+        ],
+        is_active: true,
+        is_featured: false,
+        trial_days: 14,
+        sort_order: 99,
+      },
     });
-    expect(listResp.status()).toBe(200);
-    const plans = await listResp.json();
-    expect(plans.length).toBeGreaterThan(0);
-
-    const plan = plans[0];
-    const newMaxWhatsApp = (plan.max_whatsapp_day || 0) + 1;
+    expect(createResp.status()).toBe(200);
+    const plan = await createResp.json();
+    const newMaxWhatsApp = 101;
 
     const updateResp = await request.patch(`${BASE_API}/api/v1/admin/plans/${plan.id}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -209,7 +232,7 @@ test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin', () => {
 test.describe('Plan Admin RBAC — Non-SA blocked @owner @manager', () => {
 
   test('OWNER cannot list admin plans (403) @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const resp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -217,7 +240,7 @@ test.describe('Plan Admin RBAC — Non-SA blocked @owner @manager', () => {
   });
 
   test('MANAGER cannot list admin plans (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const resp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -225,7 +248,7 @@ test.describe('Plan Admin RBAC — Non-SA blocked @owner @manager', () => {
   });
 
   test('OWNER cannot create admin plans (403) @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const resp = await request.post(`${BASE_API}/api/v1/admin/plans/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { name: 'Hack', slug: 'hack' },

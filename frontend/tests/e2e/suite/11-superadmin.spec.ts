@@ -4,22 +4,14 @@
  * settings Vault editing, broadcast, and non-SA isolation.
  */
 import { test, expect } from '@playwright/test';
+import {
+  getE2EBaseURL,
+  loginRole,
+  expectIntegrationResponseDoesNotExposeSecrets,
+  requireMutatingE2EAllowed,
+} from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
-
-async function loginAs(
-  request: import('@playwright/test').APIRequestContext,
-  email: string,
-  password: string = '123456',
-): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
-  expect(resp.status(), `Login should succeed for ${email}`).toBe(200);
-  const body = await resp.json();
-  expect(body.access_token).toBeTruthy();
-  return body.access_token;
-}
+const BASE_API = getE2EBaseURL();
 
 // =============================================================================
 // PLATFORM DASHBOARD & NAVIGATION
@@ -111,6 +103,7 @@ test.describe('SuperAdmin — Plan Management @superadmin', () => {
   });
 
   test('SA can create a new plan with rate limits @superadmin', async ({ page }) => {
+    requireMutatingE2EAllowed();
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     await page.getByRole('button', { name: /Nuevo Plan/ }).click();
@@ -161,6 +154,7 @@ test.describe('SuperAdmin — Plan Management @superadmin', () => {
   });
 
   test('SA can deactivate and reactivate a plan @superadmin', async ({ page }) => {
+    requireMutatingE2EAllowed();
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     // Find first active plan card and click it
@@ -268,34 +262,13 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     await expect(page.getByLabel('Subir archivo para WWDR Certificate PEM')).toBeVisible();
   });
 
-  test('SA can edit a non-secret Vault field without page reload @superadmin', async ({ page }) => {
-    await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    // Open Google Wallet editor (each card has exactly one button)
-    const grid = page.locator('.grid').filter({ has: page.locator('text=Google Wallet') }).first();
-    const googleCard = grid.locator('> div').filter({ hasText: 'Google Wallet' }).first();
-    await googleCard.getByRole('button').click();
-    await page.waitForTimeout(500);
-
-    // Edit the Issuer ID field (non-secret) — use label text to find the input
-    const issuerInput = page.locator('div').filter({ has: page.locator('label', { hasText: 'Issuer ID' }) }).locator('input[type="text"]').first();
-    await issuerInput.fill('3388000000023112792');
-    await page.getByRole('button', { name: /Guardar en Vault/ }).first().click();
-
-    // Should show success toast without page reload
-    await expect(page.locator('text=actualizado en Vault')).toBeVisible({ timeout: 5000 });
-
-    // Page URL should still be /superadmin/settings
-    expect(page.url()).toContain('/superadmin/settings');
-  });
-
   test('SA settings page shows Email SMTP integration @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     await expect(page.locator('text=Email SMTP')).toBeVisible({ timeout: 10000 });
   });
 
-  test('SA can send broadcast announcement @superadmin', async ({ page }) => {
+  test('SA can access broadcast announcement form without sending @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
 
@@ -308,13 +281,10 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
     const broadcastSection = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Anuncio Global (Broadcast)' }) }).first();
     const broadcastForm = broadcastSection.locator('form');
     const subjectInput = broadcastForm.locator('input[type="text"]').first();
-    await subjectInput.fill('E2E Test Broadcast');
     const messageTextarea = broadcastForm.locator('textarea').first();
-    await messageTextarea.fill('This is an automated test broadcast.');
-    await broadcastForm.getByRole('button', { name: /Enviar a todos/ }).click();
-
-    // Should show sending or success state
-    await expect(page.getByRole('button', { name: /Enviando|Enviar a todos/ })).toBeVisible({ timeout: 10000 });
+    await expect(subjectInput).toBeVisible();
+    await expect(messageTextarea).toBeVisible();
+    await expect(broadcastForm.getByRole('button', { name: /Enviar a todos/ })).toBeVisible();
   });
 
   test('SA sees Twilio SMS integration card @superadmin', async ({ page }) => {
@@ -384,7 +354,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
 test.describe('SuperAdmin — Integration API @superadmin', () => {
 
   test('GET /admin/platform/integrations/ returns all integrations @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.get(`${BASE_API}/api/v1/admin/platform/integrations/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -403,6 +373,7 @@ test.describe('SuperAdmin — Integration API @superadmin', () => {
       expect(integration).toHaveProperty('diagnostics');
       expect(integration).toHaveProperty('preview_values');
     }
+    expectIntegrationResponseDoesNotExposeSecrets(body);
 
     // Google and Apple should be configured
     const google = body.find((i: any) => i.key === 'google_wallet');
@@ -413,19 +384,18 @@ test.describe('SuperAdmin — Integration API @superadmin', () => {
     expect(apple.configured).toBe(true);
   });
 
-  test('PUT /admin/platform/integrations/{key}/secret/ writes Vault secret @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
-    const resp = await request.put(`${BASE_API}/api/v1/admin/platform/integrations/email/secret/`, {
+  test('GET /admin/platform/integrations/ does not expose Vault secret values @superadmin', async ({ request }) => {
+    const token = await loginRole(request, 'superadmin');
+    const resp = await request.get(`${BASE_API}/api/v1/admin/platform/integrations/`, {
       headers: { Authorization: `Bearer ${token}` },
-      data: { key: 'email_host_user', value: 'info@loyallia.com' },
     });
     expect(resp.status()).toBe(200);
     const body = await resp.json();
-    expect(body.success).toBe(true);
+    expectIntegrationResponseDoesNotExposeSecrets(body);
   });
 
   test('PUT secret with invalid key returns 400 @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.put(`${BASE_API}/api/v1/admin/platform/integrations/email/secret/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { key: 'invalid_key', value: 'test' },
@@ -434,7 +404,7 @@ test.describe('SuperAdmin — Integration API @superadmin', () => {
   });
 
   test('PUT wallet secret rejects malformed Google JSON @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.put(`${BASE_API}/api/v1/admin/platform/integrations/google_wallet/secret/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { key: 'google_service_account_json', value: '{bad json' },

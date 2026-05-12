@@ -3,8 +3,6 @@ Loyallia — Automation API router
 Campaign automation and workflow management.
 """
 
-from typing import Optional
-
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -35,13 +33,13 @@ class AutomationSchema(BaseModel):
     action: str
     is_active: bool
     total_executions: int
-    last_executed: Optional[str] = None
+    last_executed: str | None = None
     created_at: str
 
 
 class CreateAutomationSchema(BaseModel):
     name: str
-    description: Optional[str] = ""
+    description: str | None = ""
     trigger: str
     trigger_config: dict = {}
     action: str
@@ -49,21 +47,21 @@ class CreateAutomationSchema(BaseModel):
     target_program_ids: list[str] = []
     target_segments: list[str] = []
     schedule_config: dict = {}
-    max_executions_per_day: Optional[int] = None
+    max_executions_per_day: int | None = None
     cooldown_hours: int = 24
 
 
 class UpdateAutomationSchema(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    trigger_config: Optional[dict] = None
-    action_config: Optional[dict] = None
-    target_program_ids: Optional[list[str]] = None
-    target_segments: Optional[list[str]] = None
-    schedule_config: Optional[dict] = None
-    max_executions_per_day: Optional[int] = None
-    cooldown_hours: Optional[int] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    trigger_config: dict | None = None
+    action_config: dict | None = None
+    target_program_ids: list[str] | None = None
+    target_segments: list[str] | None = None
+    schedule_config: dict | None = None
+    max_executions_per_day: int | None = None
+    cooldown_hours: int | None = None
+    is_active: bool | None = None
 
 
 # ============ Automation Analytics ============
@@ -80,9 +78,7 @@ def get_automation_stats(request):
 
     total_executions = executions.count()
     successful_executions = executions.filter(success=True).count()
-    success_rate = (
-        (successful_executions / total_executions * 100) if total_executions > 0 else 0
-    )
+    success_rate = (successful_executions / total_executions * 100) if total_executions > 0 else 0
 
     # By trigger type
     trigger_stats = executions.values("automation__trigger").annotate(count=Count("id"))
@@ -96,12 +92,8 @@ def get_automation_stats(request):
         "total_executions": total_executions,
         "successful_executions": successful_executions,
         "success_rate": success_rate,
-        "trigger_breakdown": {
-            item["automation__trigger"]: item["count"] for item in trigger_stats
-        },
-        "action_breakdown": {
-            item["automation__action"]: item["count"] for item in action_stats
-        },
+        "trigger_breakdown": {item["automation__trigger"]: item["count"] for item in trigger_stats},
+        "action_breakdown": {item["automation__action"]: item["count"] for item in action_stats},
     }
 
 
@@ -140,14 +132,10 @@ def create_automation(request, data: CreateAutomationSchema):
 
     # Validate trigger and action
     if data.trigger not in [choice[0] for choice in AutomationTrigger.choices]:
-        raise HttpError(
-            400, get_message("AUTOMATION_INVALID_TRIGGER", trigger=data.trigger)
-        )
+        raise HttpError(400, get_message("AUTOMATION_INVALID_TRIGGER", trigger=data.trigger))
 
     if data.action not in [choice[0] for choice in AutomationAction.choices]:
-        raise HttpError(
-            400, get_message("AUTOMATION_INVALID_ACTION", action=data.action)
-        )
+        raise HttpError(400, get_message("AUTOMATION_INVALID_ACTION", action=data.action))
 
     # Create automation
     automation = Automation.objects.create(
@@ -165,9 +153,7 @@ def create_automation(request, data: CreateAutomationSchema):
 
     # Set target programs
     if data.target_program_ids:
-        programs = Card.objects.filter(
-            id__in=data.target_program_ids, tenant=request.tenant
-        )
+        programs = Card.objects.filter(id__in=data.target_program_ids, tenant=request.tenant)
         automation.target_programs.set(programs)
 
     # Set target segments
@@ -227,9 +213,7 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
 
     # Update target programs
     if data.target_program_ids is not None:
-        programs = Card.objects.filter(
-            id__in=data.target_program_ids, tenant=request.tenant
-        )
+        programs = Card.objects.filter(id__in=data.target_program_ids, tenant=request.tenant)
         automation.target_programs.set(programs)
 
     # Update target segments
@@ -255,13 +239,9 @@ def delete_automation(request, automation_id: str):
     # LYL-M-API-022: Try UUID first, then slug
     try:
         uuid.UUID(automation_id)
-        automation = get_object_or_404(
-            Automation, id=automation_id, tenant=request.tenant
-        )
+        automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
     except ValueError:
-        automation = get_object_or_404(
-            Automation, name=automation_id, tenant=request.tenant
-        )
+        automation = get_object_or_404(Automation, name=automation_id, tenant=request.tenant)
 
     automation.delete()
 
@@ -271,9 +251,7 @@ def delete_automation(request, automation_id: str):
     return HttpResponse(status=204)
 
 
-@router.post(
-    "/{automation_id}/toggle/", auth=jwt_auth, summary="Toggle automation active status"
-)
+@router.post("/{automation_id}/toggle/", auth=jwt_auth, summary="Toggle automation active status")
 @require_role("OWNER")
 def toggle_automation(request, automation_id: str):
     """Enable or disable an automation. OWNER only.
@@ -289,9 +267,7 @@ def toggle_automation(request, automation_id: str):
 
 
 # ============ Manual Execution ============
-@router.post(
-    "/{automation_id}/execute/", auth=jwt_auth, summary="Execute automation manually"
-)
+@router.post("/{automation_id}/execute/", auth=jwt_auth, summary="Execute automation manually")
 @require_role("OWNER")
 def execute_automation_manually(request, automation_id: str, customer_id: str):
     """Manually execute an automation for a specific customer. OWNER only.
@@ -317,11 +293,7 @@ def execute_automation_manually(request, automation_id: str, customer_id: str):
 
     return {
         "success": success,
-        "message": (
-            get_message("AUTOMATION_EXECUTED")
-            if success
-            else get_message("AUTOMATION_FAILED")
-        ),
+        "message": (get_message("AUTOMATION_EXECUTED") if success else get_message("AUTOMATION_FAILED")),
     }
 
 
@@ -351,18 +323,14 @@ def get_automation(request, automation_id: str):
         "trigger_config": automation.trigger_config,
         "action": automation.action,
         "action_config": automation.action_config,
-        "target_programs": [
-            {"id": str(p.id), "name": p.name} for p in automation.target_programs.all()
-        ],
+        "target_programs": [{"id": str(p.id), "name": p.name} for p in automation.target_programs.all()],
         "target_segments": automation.target_segments,
         "schedule_config": automation.schedule_config,
         "is_active": automation.is_active,
         "max_executions_per_day": automation.max_executions_per_day,
         "cooldown_hours": automation.cooldown_hours,
         "total_executions": automation.total_executions,
-        "last_executed": (
-            automation.last_executed.isoformat() if automation.last_executed else None
-        ),
+        "last_executed": (automation.last_executed.isoformat() if automation.last_executed else None),
         "created_at": automation.created_at.isoformat(),
         "updated_at": automation.updated_at.isoformat(),
     }

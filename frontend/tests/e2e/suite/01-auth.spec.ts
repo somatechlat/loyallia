@@ -4,8 +4,9 @@
  * registration form (with phone), and validates correct landing pages.
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, getRoleCredentials } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
+const BASE_API = getE2EBaseURL();
 
 async function login(page: any, email: string, password: string) {
   // Intercept the login response to capture tokens (secure cookies won't stick on HTTP)
@@ -63,19 +64,22 @@ test.describe('Authentication & Role Routing', () => {
   });
 
   test('OWNER login lands on dashboard /', async ({ page }) => {
-    await login(page, 'owner@example.com', '123456');
+    const credentials = getRoleCredentials('owner');
+    await login(page, credentials.email, credentials.password);
     const url = page.url();
     expect(url).not.toContain('/login');
   });
 
   test('MANAGER login lands on dashboard /', async ({ page }) => {
-    await login(page, 'manager@example.com', '123456');
+    const credentials = getRoleCredentials('manager');
+    await login(page, credentials.email, credentials.password);
     const url = page.url();
     expect(url).not.toContain('/login');
   });
 
   test('STAFF login redirects to /scanner/scan', async ({ page }) => {
-    await login(page, 'staff@example.com', '123456');
+    const credentials = getRoleCredentials('staff');
+    await login(page, credentials.email, credentials.password);
     const cookies = await page.context().cookies();
     const accessToken = cookies.find((c: any) => c.name === 'access_token');
     expect(accessToken).toBeTruthy();
@@ -84,7 +88,8 @@ test.describe('Authentication & Role Routing', () => {
   });
 
   test('SUPER_ADMIN login redirects to /superadmin', async ({ page }) => {
-    await login(page, 'admin@example.com', '[REDACTED]');
+    const credentials = getRoleCredentials('superadmin');
+    await login(page, credentials.email, credentials.password);
     const cookies = await page.context().cookies();
     const accessToken = cookies.find((c: any) => c.name === 'access_token');
     expect(accessToken).toBeTruthy();
@@ -198,8 +203,9 @@ test.describe('Health & API Basics', () => {
   });
 
   test('Login API returns tokens', async ({ request }) => {
+    const credentials = getRoleCredentials('owner');
     const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
+      data: credentials,
     });
     expect(resp.status()).toBe(200);
     const body = await resp.json();

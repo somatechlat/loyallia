@@ -4,8 +4,9 @@
  * Runs in the 'owner' project so auth cookies are pre-loaded.
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
+const BASE_API = getE2EBaseURL();
 
 /**
  * Helper: navigate to the programs page and wait for data to load.
@@ -17,6 +18,10 @@ async function gotoPrograms(page: any) {
 }
 
 test.describe('Program CRUD - Full Lifecycle @owner', () => {
+
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
 
   test('1. Create program with all customizations (logo, hero, icon, colors)', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
@@ -126,10 +131,7 @@ test.describe('Program CRUD - Full Lifecycle @owner', () => {
 
   test('4. Deactivate (soft delete) program - verify it shows as inactive', async ({ page, request }) => {
     // Use the API to deactivate the first program directly
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     // Get all programs
     const cardsResp = await request.get(`${BASE_API}/api/v1/cards/`, {

@@ -699,8 +699,9 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
 
     from io import StringIO
 
-    from apps.authentication.otp_service import check_otp
     from django.core.cache import cache
+
+    from apps.authentication.otp_service import check_otp
 
     sid = cache.get(f"factory_reset:sid:{request.user.email}", "")
     recipient = getattr(request.user, "phone_number", "") or request.user.email
@@ -726,6 +727,7 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
 
     with transaction.atomic():
         # Wipe order: deepest dependencies first to avoid FK violations
+        from apps.authentication.models import RefreshToken
         from apps.automation.models import Automation, AutomationExecution
         from apps.billing.models import Subscription
         from apps.billing.payment_models import Invoice, WebhookEvent
@@ -733,8 +735,6 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
         from apps.customers.models import Customer, CustomerPass
         from apps.notifications.models.misc import Notification
         from apps.transactions.models import Transaction
-
-        from apps.authentication.models import RefreshToken
 
         Notification.objects.all().delete()
         AutomationExecution.objects.all().delete()

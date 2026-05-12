@@ -9,15 +9,15 @@ from django.utils import timezone
 
 from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
 
+# Audit
+from apps.audit.models import AuditLog
+
 # Core
 from apps.authentication.models import RefreshToken, User, UserRole
 from apps.automation.models import Automation
 
 # Billing
-from apps.billing.models import Invoice, PaymentMethod, Subscription, SubscriptionStatus, SubscriptionPlan
-
-# Audit
-from apps.audit.models import AuditLog
+from apps.billing.models import Invoice, PaymentMethod, Subscription, SubscriptionPlan, SubscriptionStatus
 
 # Loyalty
 from apps.cards.models import Card, CardType
@@ -25,8 +25,8 @@ from apps.customers.models import Customer, CustomerPass
 
 # Engagement
 from apps.notifications.models import (
-    CampaignRun,
     CampaignDeliveryLog,
+    CampaignRun,
     Notification,
     NotificationType,
     WhatsAppSession,
@@ -64,15 +64,12 @@ class Command(BaseCommand):
         if not settings.DEBUG:
             self.stdout.write(
                 self.style.WARNING(
-                    "NOTE: Running seed in non-DEBUG mode. "
-                    "Security is enforced by SUPER_ADMIN API gate."
+                    "NOTE: Running seed in non-DEBUG mode. Security is enforced by SUPER_ADMIN API gate."
                 )
             )
         if options["wipe"]:
             self.stdout.write(
-                self.style.WARNING(
-                    "Wiping existing DEMO data only (operational infrastructure preserved)..."
-                )
+                self.style.WARNING("Wiping existing DEMO data only (operational infrastructure preserved)...")
             )
             # Operational identifiers that must NEVER be deleted
             OPERATIONAL_PLAN_SLUGS = {"trial", "starter", "professional", "enterprise"}
@@ -105,9 +102,7 @@ class Command(BaseCommand):
                 User.objects.exclude(email=SUPERADMIN_EMAIL).delete()
                 Tenant.objects.all().delete()
                 # Non-operational subscription plans (E2E test pollution)
-                SubscriptionPlan.objects.exclude(
-                    slug__in=OPERATIONAL_PLAN_SLUGS
-                ).delete()
+                SubscriptionPlan.objects.exclude(slug__in=OPERATIONAL_PLAN_SLUGS).delete()
             self.stdout.write(self.style.SUCCESS("Demo data wiped. Operational infrastructure preserved."))
 
         self.stdout.write("Starting massive data seed process (Ecuador context)...")
@@ -331,10 +326,10 @@ class Command(BaseCommand):
             last1 = random.choice(EC_LASTNAMES)
             last2 = random.choice(EC_LASTNAMES)
             full_last = f"{last1} {last2}" if random.random() > 0.3 else last1
-            email_base = f"{first.lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('ñ','n')}.{last1.lower().replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u').replace('ñ','n')}"
+            email_base = f"{first.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')}.{last1.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')}"
             email = f"{email_base}{i}@gmail.com"
             if email in used_emails:
-                email = f"{email_base}{i}{random.randint(10,99)}@gmail.com"
+                email = f"{email_base}{i}{random.randint(10, 99)}@gmail.com"
             used_emails.add(email)
 
             phone_prefix = random.choice(EC_PHONE_PREFIXES)
@@ -349,9 +344,7 @@ class Command(BaseCommand):
                 first_name=first,
                 last_name=full_last,
                 phone=phone,
-                date_of_birth=(
-                    now - timedelta(days=365 * random.randint(18, 55))
-                ).date(),
+                date_of_birth=(now - timedelta(days=365 * random.randint(18, 55))).date(),
             )
             Customer.objects.filter(id=c.id).update(created_at=c_date)
             customers.append(c)
@@ -385,7 +378,7 @@ class Command(BaseCommand):
                     customer=c,
                     card=c_referral,
                     pass_data={
-                        "referral_code": f"REF-{first[:3].upper()}{random.randint(100,999)}",
+                        "referral_code": f"REF-{first[:3].upper()}{random.randint(100, 999)}",
                         "referrals_made": random.randint(0, 5),
                     },
                     enrolled_at=c_date + timedelta(days=random.randint(0, 7)),
@@ -447,20 +440,12 @@ class Command(BaseCommand):
         self.stdout.write("  -> Hidratando analítica de series de tiempo (90 días)...")
         for day_offset in range(90, -1, -1):
             target_date = (now - timedelta(days=day_offset)).date()
-            daily_tx = Transaction.objects.filter(
-                tenant=tenant, created_at__date=target_date
-            )
+            daily_tx = Transaction.objects.filter(tenant=tenant, created_at__date=target_date)
 
             tx_count = daily_tx.count()
-            daily_rev = daily_tx.aggregate(Sum("amount"))["amount__sum"] or Decimal(
-                "0.00"
-            )
-            new_customers = Customer.objects.filter(
-                tenant=tenant, created_at__date=target_date
-            ).count()
-            new_enrollments = CustomerPass.objects.filter(
-                card__tenant=tenant, enrolled_at__date=target_date
-            ).count()
+            daily_rev = daily_tx.aggregate(Sum("amount"))["amount__sum"] or Decimal("0.00")
+            new_customers = Customer.objects.filter(tenant=tenant, created_at__date=target_date).count()
+            new_enrollments = CustomerPass.objects.filter(card__tenant=tenant, enrolled_at__date=target_date).count()
             rewards_issued = daily_tx.filter(
                 transaction_type__in=[
                     TransactionType.STAMP_EARNED,
@@ -492,9 +477,7 @@ class Command(BaseCommand):
         # =====================================================================
         self.stdout.write("  -> Calculando segmentación de clientes...")
         for c in Customer.objects.filter(tenant=tenant):
-            analytics, _ = CustomerAnalytics.objects.get_or_create(
-                customer=c, tenant=tenant
-            )
+            analytics, _ = CustomerAnalytics.objects.get_or_create(customer=c, tenant=tenant)
             analytics.update_metrics()
 
         for p in Card.objects.filter(tenant=tenant):
@@ -608,7 +591,5 @@ class Command(BaseCommand):
             total_notifs += len(notifs)
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas"
-            )
+            self.style.SUCCESS(f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas")
         )

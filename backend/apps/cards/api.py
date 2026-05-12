@@ -2,8 +2,8 @@
 Loyallia — Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
+
 import logging
-from typing import Optional
 
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -31,29 +31,27 @@ router = Router()
 
 class CardCreateIn(BaseModel):
     name: str
-    description: Optional[str] = ""
+    description: str | None = ""
     card_type: CardType
-    barcode_type: Optional[str] = "qr_code"
-    logo_url: Optional[str] = ""
-    background_color: Optional[str] = "#1a1a2e"
-    text_color: Optional[str] = "#ffffff"
-    strip_image_url: Optional[str] = ""
-    icon_url: Optional[str] = ""
-    metadata: Optional[dict] = {}
-    locations: Optional[list] = []
+    barcode_type: str | None = "qr_code"
+    logo_url: str | None = ""
+    background_color: str | None = "#1a1a2e"
+    text_color: str | None = "#ffffff"
+    strip_image_url: str | None = ""
+    icon_url: str | None = ""
+    metadata: dict | None = {}
+    locations: list | None = []
 
     @field_validator("metadata")
     @classmethod
-    def validate_metadata_size(cls, v: Optional[dict]) -> Optional[dict]:
+    def validate_metadata_size(cls, v: dict | None) -> dict | None:
         """B-007: Limit metadata JSON to 10KB to prevent abuse."""
         if v is not None:
             import json
 
             size = len(json.dumps(v))
             if size > 10240:
-                raise ValueError(
-                    f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
-                )
+                raise ValueError(f"Metadata too large ({size} bytes). Maximum allowed is 10KB.")
         return v
 
     @field_validator("name")
@@ -76,21 +74,21 @@ class CardCreateIn(BaseModel):
 
 
 class CardUpdateIn(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    barcode_type: Optional[str] = None
-    logo_url: Optional[str] = None
-    background_color: Optional[str] = None
-    text_color: Optional[str] = None
-    strip_image_url: Optional[str] = None
-    icon_url: Optional[str] = None
-    metadata: Optional[dict] = None
-    is_active: Optional[bool] = None
-    locations: Optional[list] = None
+    name: str | None = None
+    description: str | None = None
+    barcode_type: str | None = None
+    logo_url: str | None = None
+    background_color: str | None = None
+    text_color: str | None = None
+    strip_image_url: str | None = None
+    icon_url: str | None = None
+    metadata: dict | None = None
+    is_active: bool | None = None
+    locations: list | None = None
 
     @field_validator("name")
     @classmethod
-    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+    def validate_name(cls, v: str | None) -> str | None:
         if v is not None and len(v.strip()) < 2:
             raise ValueError("Program name must be at least 2 characters")
         return v.strip() if v else v
@@ -116,7 +114,7 @@ class CardOut(BaseModel):
     enrollments_count: int = 0
 
     @staticmethod
-    def from_model(card: Card, enrollments_count: Optional[int] = None):
+    def from_model(card: Card, enrollments_count: int | None = None):
         return CardOut(
             id=str(card.id),
             tenant_id=str(card.tenant.id),
@@ -135,9 +133,7 @@ class CardOut(BaseModel):
             created_at=card.created_at.isoformat(),
             updated_at=card.updated_at.isoformat(),
             enrollments_count=(
-                enrollments_count
-                if enrollments_count is not None
-                else CustomerPass.objects.filter(card=card).count()
+                enrollments_count if enrollments_count is not None else CustomerPass.objects.filter(card=card).count()
             ),
         )
 
@@ -157,9 +153,7 @@ class CardListOut(BaseModel):
     total: int
 
 
-@router.get(
-    "/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización"
-)
+@router.get("/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización")
 def list_programs(request):
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     tenant = require_tenant(request)
@@ -174,9 +168,7 @@ def list_programs(request):
         "programs": [
             CardOut.from_model(
                 c,
-                getattr(
-                    c, "_enrollments_count", CustomerPass.objects.filter(card=c).count()
-                ),
+                getattr(c, "_enrollments_count", CustomerPass.objects.filter(card=c).count()),
             )
             for c in cards
         ],
@@ -184,9 +176,7 @@ def list_programs(request):
     }
 
 
-@router.post(
-    "/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización"
-)
+@router.post("/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización")
 @require_active_subscription
 def create_program(request, data: CardCreateIn):
     """Create a new loyalty program. OWNER only."""
@@ -202,36 +192,35 @@ def create_program(request, data: CardCreateIn):
     if Card.objects.filter(tenant=tenant, name=data.name).exists():
         raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
 
-    card = Card.objects.create(
-        tenant=tenant,
-        card_type=data.card_type,
-        barcode_type=data.barcode_type,
-        name=data.name,
-        description=data.description,
-        logo_url=data.logo_url,
-        background_color=data.background_color,
-        text_color=data.text_color,
-        strip_image_url=data.strip_image_url,
-        icon_url=data.icon_url,
-        metadata=data.metadata,
-        locations=data.locations,
-    )
+    try:
+        card = Card.objects.create(
+            tenant=tenant,
+            card_type=data.card_type,
+            barcode_type=data.barcode_type,
+            name=data.name,
+            description=data.description,
+            logo_url=data.logo_url,
+            background_color=data.background_color,
+            text_color=data.text_color,
+            strip_image_url=data.strip_image_url,
+            icon_url=data.icon_url,
+            metadata=data.metadata,
+            locations=data.locations,
+        )
+    except ValueError as exc:
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
 
     return CardOut.from_model(card)
 
 
-@router.get(
-    "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa"
-)
+@router.get("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa")
 def get_program(request, program_id: str):
     """Returns a single loyalty program."""
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
     return CardOut.from_model(card)
 
 
-@router.patch(
-    "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa"
-)
+@router.patch("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa")
 def update_program(request, program_id: str, data: CardUpdateIn):
     """Update a loyalty program. OWNER only."""
     if not is_owner(request):
@@ -242,11 +231,7 @@ def update_program(request, program_id: str, data: CardUpdateIn):
     update_fields = []
     if data.name is not None:
         # Check for duplicate name (excluding current card)
-        if (
-            Card.objects.filter(tenant=request.tenant, name=data.name)
-            .exclude(id=card.id)
-            .exists()
-        ):
+        if Card.objects.filter(tenant=request.tenant, name=data.name).exclude(id=card.id).exists():
             raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
         card.name = data.name
         update_fields.append("name")
@@ -292,7 +277,10 @@ def update_program(request, program_id: str, data: CardUpdateIn):
         update_fields.append("is_active")
 
     if update_fields:
-        card.save(update_fields=update_fields + ["updated_at"])
+        try:
+            card.save(update_fields=update_fields + ["updated_at"])
+        except ValueError as exc:
+            raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
 
         # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
         try:
@@ -378,9 +366,7 @@ def program_stats(request, program_id: str):
     }
 
 
-@router.get(
-    "/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)"
-)
+@router.get("/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)")
 def public_program(request, slug: str):
     """
     Public program info for the enrollment page. No authentication required.

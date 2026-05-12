@@ -8,7 +8,7 @@ Tests for:
 
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 from common.messages import get_message
 from common.vault import clear_test_overrides, set_test_override
@@ -24,6 +24,7 @@ class SMSClientAvailabilityTest(TestCase):
         from apps.notifications.sms.client import is_sms_available
 
         clear_test_overrides()
+        set_test_override("twilio_use_test_mode", "false")
         set_test_override("twilio_account_sid", "")
         set_test_override("twilio_auth_token", "")
         set_test_override("twilio_from_number", "")
@@ -33,6 +34,7 @@ class SMSClientAvailabilityTest(TestCase):
         from apps.notifications.sms.client import is_sms_available
 
         clear_test_overrides()
+        set_test_override("twilio_use_test_mode", "false")
         set_test_override("twilio_account_sid", "ACtest123")
         set_test_override("twilio_auth_token", "token123")
         set_test_override("twilio_from_number", "+15005550006")
@@ -42,6 +44,7 @@ class SMSClientAvailabilityTest(TestCase):
         from apps.notifications.sms.client import is_sms_available
 
         clear_test_overrides()
+        set_test_override("twilio_use_test_mode", "false")
         set_test_override("twilio_account_sid", "ACtest123")
         set_test_override("twilio_auth_token", "")
         set_test_override("twilio_from_number", "+15005550006")
