@@ -12,7 +12,12 @@
  * RBAC Roles: OWNER, MANAGER, SUPER_ADMIN
  */
 import { test, expect } from '@playwright/test';
-import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
+import {
+  ensureOwnerEnterpriseCampaignAccess,
+  getE2EBaseURL,
+  loginRole,
+  requireMutatingE2EAllowed,
+} from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -45,6 +50,8 @@ test.beforeAll(async ({ request }) => {
     }
   }
 
+  await ensureOwnerEnterpriseCampaignAccess(request);
+
   // Enable SMS campaigns for the test tenant's plan
   try {
     const listResp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
@@ -72,7 +79,7 @@ test.beforeAll(async ({ request }) => {
           'ai_assistant',
           'agent_api',
         ],
-        max_sms_day: 500,
+        max_sms_day: 5000,
         max_whatsapp_day: 200,
         max_emails_month: 10000,
         max_wallet_pushes_month: 10000,
@@ -245,14 +252,10 @@ test.describe('SMS Plan Features API — OWNER @owner', () => {
         channel: 'sms',
       },
     });
-    // 200 = success, 403 = plan limit (acceptable if env not seeded)
-    expect([200, 403]).toContain(resp.status());
-
-    if (resp.status() === 200) {
-      const body = await resp.json();
-      expect(body.success).toBe(true);
-      expect(body.message).toContain('SMS');
-    }
+    expect(resp.status(), 'Seeded owner enterprise plan should allow SMS campaign create').toBe(200);
+    const body = await resp.json();
+    expect(body.success).toBe(true);
+    expect(body.message).toContain('SMS');
   });
 });
 
@@ -342,7 +345,7 @@ test.describe('SuperAdmin — Twilio Test Mode @superadmin', () => {
           'ai_assistant',
           'agent_api',
         ],
-        max_sms_day: 500,
+        max_sms_day: 5000,
         max_whatsapp_day: 200,
         max_emails_month: 10000,
         max_wallet_pushes_month: 10000,
@@ -356,7 +359,7 @@ test.describe('SuperAdmin — Twilio Test Mode @superadmin', () => {
     expect(updateResp.status()).toBe(200);
     const updated = await updateResp.json();
     expect(updated.features).toContain('sms_campaigns');
-    expect(updated.max_sms_day).toBe(500);
+    expect(updated.max_sms_day).toBe(5000);
   });
 
   test('SA settings API returns twilio_use_test_mode diagnostic @superadmin', async ({ request }) => {
@@ -406,7 +409,7 @@ test.describe('Campaign List — SMS Badge @owner', () => {
           channel: 'sms',
         },
       });
-      expect([200, 403]).toContain(resp.status());
+      expect(resp.status(), 'Seeded owner enterprise plan should allow SMS badge campaign create').toBe(200);
 
       // Wait for async Celery worker to create notification records
       await page.waitForTimeout(8000);

@@ -153,47 +153,74 @@ test.describe('SuperAdmin — Plan Management @superadmin', () => {
     await expect(page.locator('text=Canal')).toBeVisible();
   });
 
-  test('SA can deactivate and reactivate a plan @superadmin', async ({ page }) => {
+  test('SA can deactivate and reactivate a plan @superadmin', async ({ page, request }) => {
     requireMutatingE2EAllowed();
+    const token = await loginRole(request, 'superadmin');
+    const unique = Date.now();
+    const planName = `E2E Toggle Plan ${unique}`;
+    const planSlug = `e2e-toggle-${unique}`;
+
+    const createResp = await request.post(`${BASE_API}/api/v1/admin/plans/`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        name: planName,
+        slug: planSlug,
+        description: 'Plan created by E2E toggle coverage',
+        price_monthly: 7,
+        price_annual: 70,
+        max_locations: 1,
+        max_users: 2,
+        max_customers: 100,
+        max_programs: 1,
+        max_notifications_month: 100,
+        max_transactions_month: 100,
+        max_whatsapp_day: 0,
+        max_emails_month: 0,
+        max_sms_day: 0,
+        max_wallet_pushes_month: 0,
+        max_automations: 0,
+        max_automation_executions_day: 0,
+        max_ai_queries_month: 0,
+        max_api_calls_day: 0,
+        max_exports_month: 0,
+        features: [],
+        trial_days: 5,
+        sort_order: 99,
+        is_featured: false,
+      },
+    });
+    expect(createResp.status(), 'Plan create should return 200').toBe(200);
+    const created = await createResp.json();
+
+    const deactivateResp = await request.delete(`${BASE_API}/api/v1/admin/plans/${created.id}/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(deactivateResp.status(), 'Plan deactivate should return 200').toBe(200);
+
+    let listResp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(listResp.status()).toBe(200);
+    let plans = await listResp.json();
+    let plan = plans.find((p: { slug: string }) => p.slug === planSlug);
+    expect(plan?.is_active, 'Plan should be inactive after deactivate').toBe(false);
+
+    const reactivateResp = await request.patch(`${BASE_API}/api/v1/admin/plans/${created.id}/`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { is_active: true },
+    });
+    expect(reactivateResp.status(), 'Plan reactivate should return 200').toBe(200);
+
+    listResp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(listResp.status()).toBe(200);
+    plans = await listResp.json();
+    plan = plans.find((p: { slug: string }) => p.slug === planSlug);
+    expect(plan?.is_active, 'Plan should be active after reactivate').toBe(true);
+
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    // Find first active plan card and click it
-    const firstPlan = page.locator('h3').first();
-    const planName = await firstPlan.textContent() || '';
-    await firstPlan.click();
-    await page.waitForTimeout(500);
-
-    // The modal should be open — look for status indicator inside the modal
-    const modal = page.locator('div.fixed.inset-0').first();
-    const statusText = modal.locator('span').filter({ hasText: /Activo|Inactivo/ }).first();
-    const isActive = await statusText.textContent() === 'Activo';
-
-    if (isActive) {
-      // Deactivate with confirm dialog — modal closes after success
-      page.once('dialog', dialog => dialog.accept());
-      await page.getByRole('button', { name: 'Desactivar' }).click();
-      await expect(page.locator('text=Plan desactivado')).toBeVisible({ timeout: 10000 });
-      await page.waitForTimeout(1500);
-
-      // Verify plan moved to inactive section
-      await expect(page.locator('h2').filter({ hasText: 'Planes Inactivos' })).toBeVisible({ timeout: 5000 });
-      await expect(page.locator('text=' + planName.trim())).toBeVisible();
-
-      // Reopen the plan to reactivate
-      const inactivePlan = page.locator('h2').filter({ hasText: 'Planes Inactivos' }).locator('..').locator('text=' + planName.trim()).first();
-      await inactivePlan.click();
-      await page.waitForTimeout(500);
-
-      // Reactivate with confirm dialog
-      page.once('dialog', dialog => dialog.accept());
-      await page.getByRole('button', { name: 'Reactivar' }).click();
-      await expect(page.locator('text=Plan reactivado')).toBeVisible({ timeout: 10000 });
-    } else {
-      // Already inactive — just reactivate
-      page.once('dialog', dialog => dialog.accept());
-      await page.getByRole('button', { name: 'Reactivar' }).click();
-      await expect(page.locator('text=Plan reactivado')).toBeVisible({ timeout: 10000 });
-    }
+    await expect(page.getByRole('heading', { name: planName })).toBeVisible({ timeout: 10000 });
   });
 });
 

@@ -75,7 +75,11 @@ def _get_tenant_or_404(tenant_id: str) -> Tenant:
 def list_all_tenants(request, plan: str | None = None, is_active: bool | None = None):
     """Lists all tenants on the platform. SUPER_ADMIN only."""
     _require_super_admin(request)
-    qs = Tenant.objects.prefetch_related("users", "locations").order_by("-created_at")
+    qs = (
+        Tenant.objects.select_related("subscription__subscription_plan")
+        .prefetch_related("users", "locations")
+        .order_by("-created_at")
+    )
     # LYL-H-ARCH-011: Filter by Subscription status instead of denormalized Tenant.plan
     if plan:
         from apps.billing.models import Subscription, SubscriptionStatus
@@ -157,9 +161,11 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 )
             plan_obj = SubscriptionPlan.objects.filter(slug=payload.plan_slug).first()
             trial_days = plan_obj.trial_days if plan_obj else 14
+            plan_slug = plan_obj.slug if plan_obj else "trial"
             sub = Subscription.objects.create(
                 tenant=tenant,
-                plan="full",
+                subscription_plan=plan_obj,
+                plan=plan_slug,
                 billing_cycle=payload.billing_cycle,
                 status=SubscriptionStatus.TRIALING,
                 trial_start=dj_timezone.now(),
@@ -205,6 +211,8 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 message=get_message("TENANT_UPDATED"),
                 tenant_id=str(tenant.id),
                 owner_id=str(owner.id),
+                owner_email=owner.email,
+                temp_password=temp_password,
             )
     except Exception as e:
         logger.error("Tenant creation failed: %s", e)

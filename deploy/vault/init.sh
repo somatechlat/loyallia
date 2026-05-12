@@ -64,23 +64,73 @@ set_secret_default_if_missing() {
 
 wait_for_vault
 
-[ -f /vault/file/init.json ] || vault operator init -key-shares=1 -key-threshold=1 -format=json >/vault/file/init.json
-UNSEAL_KEY="$(awk -F '"' '/unseal_keys_b64/ {getline; print $2}' /vault/file/init.json)"
-ROOT_TOKEN="$(awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
+# Support rescue injection: copy VAULT_RESCUE_INIT_JSON into place if provided
+if [ -n "${VAULT_RESCUE_INIT_JSON:-}" ] && [ -f "$VAULT_RESCUE_INIT_JSON" ]; then
+    cp "$VAULT_RESCUE_INIT_JSON" /vault/file/init.json
+    echo "Injected rescue init.json from $VAULT_RESCUE_INIT_JSON"
+fi
 
-[ -n "$UNSEAL_KEY" ] || {
-    echo "missing unseal key"
-    exit 1
-}
-[ -n "$ROOT_TOKEN" ] || {
-    echo "missing root token"
-    exit 1
-}
+# Determine if Vault is already initialized (API check — authoritative)
+VAULT_INIT_STATUS="$(vault status -format=json 2>/dev/null || true)"
+VAULT_ALREADY_INIT="$(printf "%s" "$VAULT_INIT_STATUS" | grep -c '"initialized":[ ]*true' || true)"
 
-vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || true
-export VAULT_TOKEN="$ROOT_TOKEN"
+if [ "$VAULT_ALREADY_INIT" -gt 0 ]; then
+    echo "Vault already initialized."
+    UNSEAL_KEY=""
+    ROOT_TOKEN=""
 
-vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true
+    # Extract keys from init.json if it exists and has content
+    if [ -s /vault/file/init.json ]; then
+        UNSEAL_KEY="$(awk -F '"' '/unseal_keys_b64/ {getline; print $2}' /vault/file/init.json)"
+        ROOT_TOKEN="$(awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
+    fi
+
+    # Fallback: use runtime app-token if init.json is missing or empty
+    if [ -z "$ROOT_TOKEN" ] && [ -f /vault/runtime/app-token ]; then
+        ROOT_TOKEN="$(cat /vault/runtime/app-token 2>/dev/null || true)"
+        echo "Using runtime app-token as VAULT_TOKEN (init.json was empty)."
+    fi
+
+    # Last resort: generate a new token with the existing loyallia-app policy
+    if [ -z "$ROOT_TOKEN" ] && [ -f /vault/runtime/app-token ]; then
+        APP_TOKEN="$(cat /vault/runtime/app-token 2>/dev/null || true)"
+        if [ -n "$APP_TOKEN" ]; then
+            ROOT_TOKEN="$(VAULT_TOKEN="$APP_TOKEN" vault token create -policy=loyallia-app -field=token 2>/dev/null || true)"
+            [ -n "$ROOT_TOKEN" ] && echo "Generated new app token as fallback."
+        fi
+    fi
+
+    [ -n "$ROOT_TOKEN" ] || {
+        echo "CRITICAL: Cannot obtain any Vault token. Vault is initialized but unreachable."
+        exit 1
+    }
+
+    export VAULT_TOKEN="$ROOT_TOKEN"
+
+    # Vault may be sealed after container restart — unseal if needed
+    VAULT_SEALED="$(printf "%s" "$VAULT_INIT_STATUS" | grep -c '"sealed":[ ]*true' || true)"
+    if [ "$VAULT_SEALED" -gt 0 ]; then
+        if [ -n "$UNSEAL_KEY" ]; then
+            vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || true
+        else
+            echo "WARNING: Vault sealed but no unseal key available. Cannot auto-unseal."
+        fi
+    fi
+else
+    # Fresh initialization — generate new keys
+    echo "Vault not initialized. Performing first-time initialization..."
+    vault operator init -key-shares=1 -key-threshold=1 -format=json >/vault/file/init.json
+    UNSEAL_KEY="$(awk -F '"' '/unseal_keys_b64/ {getline; print $2}' /vault/file/init.json)"
+    ROOT_TOKEN="$(awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
+
+    [ -n "$UNSEAL_KEY" ] || { echo "missing unseal key"; exit 1; }
+    [ -n "$ROOT_TOKEN" ] || { echo "missing root token"; exit 1; }
+
+    vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || true
+    export VAULT_TOKEN="$ROOT_TOKEN"
+
+    vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true
+fi
 
 secret_key="$(env_or_existing secret_key "${_SECRET_KEY:-}")"
 postgres_password="$(env_or_existing postgres_password "${_POSTGRES_PASSWORD:-}")"
@@ -168,10 +218,13 @@ printf "%s" "$minio_secret_key" >/vault/runtime/minio_root_password
 chmod 0444 /vault/runtime/postgres_password /vault/runtime/redis_password \
     /vault/runtime/minio_root_user /vault/runtime/minio_root_password
 
+# Create/refresh loyallia-app policy and token (may fail on re-run with non-root token)
 printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\", \"patch\"]\n}\n" >/vault/runtime/loyallia-app.hcl
-vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null
-vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token
-chmod 0444 /vault/runtime/app-token
+vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null 2>&1 || echo "Policy write skipped (non-root token — policy already exists)"
+if ! [ -f /vault/runtime/app-token ] || ! [ -s /vault/runtime/app-token ]; then
+    vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token 2>/dev/null || true
+    chmod 0444 /vault/runtime/app-token 2>/dev/null || true
+fi
 
 echo "Vault initialized, unsealed, and secrets seeded successfully"
 exit 0

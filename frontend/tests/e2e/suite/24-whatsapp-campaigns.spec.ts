@@ -11,7 +11,12 @@
  * NOTE: Actual message delivery cannot be E2E tested (requires real phone/QR).
  */
 import { test, expect } from '@playwright/test';
-import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
+import {
+  ensureOwnerEnterpriseCampaignAccess,
+  getE2EBaseURL,
+  loginRole,
+  requireMutatingE2EAllowed,
+} from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -21,8 +26,9 @@ async function getOwnerToken(request: import('@playwright/test').APIRequestConte
 
 test.describe('WhatsApp Campaigns — OWNER @owner', () => {
 
-  test.beforeAll(() => {
+  test.beforeAll(async ({ request }) => {
     requireMutatingE2EAllowed();
+    await ensureOwnerEnterpriseCampaignAccess(request);
   });
 
   test('1. WhatsApp channel indicator visible on campaigns page', async ({ page }) => {

@@ -86,6 +86,7 @@ def get_plan_features(request):
             "whatsapp_today": get_current_usage(tenant, "whatsapp_day"),
             "emails_this_month": get_current_usage(tenant, "emails_month"),
             "sms_today": get_current_usage(tenant, "sms_day"),
+            "wallet_pushes_this_month": get_current_usage(tenant, "wallet_pushes_month"),
             "customers": get_current_usage(tenant, "customers"),
         }
 

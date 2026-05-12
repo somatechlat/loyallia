@@ -5,7 +5,7 @@ from typing import Any
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
-from apps.notifications.models import Notification, NotificationType
+from apps.notifications.models import CampaignRun, Notification, NotificationType
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
 from common.plan_enforcement import (
@@ -42,6 +42,26 @@ def list_campaigns(request):
     """List all push campaigns."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[:50]
+    if runs:
+        return {
+            "campaigns": [
+                {
+                    "id": str(run.id),
+                    "title": run.title or "Sin título",
+                    "message": run.message_preview or "",
+                    "segment": run.segment_id or "all",
+                    "status": run.status,
+                    "sent_count": run.sent_count,
+                    "created_at": run.created_at.isoformat() if run.created_at else "",
+                    "channel": run.channel,
+                }
+                for run in runs
+            ],
+            "total": len(runs),
+        }
+
     notifications = Notification.objects.filter(
         tenant=request.tenant, notification_type=NotificationType.MARKETING
     ).order_by("-created_at")[:50]

@@ -530,13 +530,13 @@ export default function CampaignsPage() {
                   <td>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       c.channel === 'email' ? 'bg-blue-100 text-blue-700' :
-                      c.channel === 'in_app' ? 'bg-purple-100 text-purple-700' :
+                      (c.channel === 'wallet' || c.channel === 'in_app') ? 'bg-purple-100 text-purple-700' :
                       c.channel === 'whatsapp' ? 'bg-emerald-100 text-emerald-700' :
                       c.channel === 'sms' ? 'bg-orange-100 text-orange-700' :
                       'bg-gray-100 text-gray-700'
                     }`}>
-                      {c.channel === 'email' ? '📧 Email' : 
-                       c.channel === 'in_app' ? '💳 Wallet' : 
+                      {c.channel === 'email' ? '📧 Email' :
+                       (c.channel === 'wallet' || c.channel === 'in_app') ? '💳 Wallet' :
                        c.channel === 'whatsapp' ? '💬 WhatsApp' :
                        c.channel === 'sms' ? '📱 SMS' :
                        c.channel?.toUpperCase() || 'Email'}

@@ -1,13 +1,13 @@
 # Loyallia — Agent Handoff
 
-**Date:** 2026-05-09  
-**Status:** LYL-SRS-009 (SMS Campaigns) FULLY IMPLEMENTED, TESTED, AND DEPLOYED. All critical fixes committed and pushed to `main`.
+**Date:** 2026-05-12
+**Status:** SysAdmin/Owner admin flow fixes, campaign accounting fixes, wallet/email run logging, and local E2E hardening implemented and verified locally.
 
 ---
 
 ## 1. Executive Summary
 
-This session delivered the complete SMS Campaign feature end-to-end, hardened the test infrastructure to prevent real Twilio charges, and expanded SysAdmin Playwright coverage. **All 19 SMS campaign E2E tests pass.** The frontend container was rebuilt and deployed with SMS baked into the production bundle.
+This handoff now reflects the latest local repair pass over SysAdmin, Owner, wallet, plan, campaign, RBAC, and E2E paths. SMS already had campaign run/log accounting; this session aligned email and wallet campaigns with that model, fixed selected-plan subscription setup, repaired owner test subscription setup, strengthened E2E assertions, and verified the critical admin/campaign suites locally.
 
 **⚠️ Cost Incident:** ~194 real SMS were sent during early E2E runs because `twilio_use_test_mode` was `false`. Estimated charge: **~$19–27 USD**. This cannot be reversed from code — contact Twilio support if needed.
 
@@ -325,4 +325,97 @@ Plus earlier commits in the SMS feature branch:
 
 ---
 
-*End of handoff.*
+## 9. Session 2026-05-12 — SysAdmin/Owner Flow Repair
+
+### 9.1 What Changed
+
+| Area | Files | Result |
+|------|-------|--------|
+| SuperAdmin tenant creation | `backend/apps/tenants/super_admin_api/tenants.py`, `schemas.py` | New tenants now link `Subscription.subscription_plan` to the selected plan, store the selected slug in legacy `Subscription.plan`, and return declared owner credential fields. |
+| SuperAdmin metrics/plan display | `backend/apps/tenants/super_admin_api/platform.py`, `schemas.py` | Tenant plan display now prefers `subscription.subscription_plan.slug/name` instead of stale tenant/legacy plan values. |
+| Owner seed subscription | `backend/apps/tenants/management/commands/seed_test_data.py` | Local owner tenant is seeded with active `enterprise` subscription linked to the `enterprise` plan. |
+| Campaign history | `backend/apps/notifications/api/campaigns.py` | Campaign listing now uses `CampaignRun` as authoritative history and falls back to legacy `Notification` grouping only when no runs exist. |
+| Email campaigns | `backend/apps/notifications/tasks/email.py` | Email sends now create `CampaignRun` plus one `CampaignDeliveryLog` per recipient and finalize the run in `finally`. |
+| Wallet campaigns | `backend/apps/notifications/tasks/campaigns.py`, `backend/apps/notifications/models/base.py` | Wallet campaigns now have a `wallet` channel, create `CampaignRun` plus delivery logs, and finalize the run in `finally`. |
+| Usage counters | `backend/apps/tenants/api.py` | Plan usage now includes `wallet_pushes_this_month`; email/SMS/wallet usage reads delivery logs. |
+| Billing display | `frontend/src/app/(dashboard)/billing/page.tsx` | Billing now uses `plan_slug`/`plan_name` from subscription API and labels backend usage keys explicitly. |
+| Campaign UI | `frontend/src/app/(dashboard)/campaigns/page.tsx` | Campaign history now renders wallet channel badges. |
+| E2E setup | `frontend/tests/e2e/helpers/e2e-safety.ts` | Added `ensureOwnerEnterpriseCampaignAccess()` to repair local owner campaign plan/subscription before mutating campaign suites. |
+| E2E assertions | `frontend/tests/e2e/suite/21-sms-campaigns.spec.ts` | Success-path campaign assertions now require `200`; expected feature/limit failures remain separate. |
+| Critical E2E suites | `11`, `21`, `22`, `23`, `24`, `26` | SuperAdmin plan toggle test made data-isolated; Twilio/Mailjet settings tests wait for loaded integration cards. |
+| Backend tests | `backend/tests/test_campaign_accounting.py`, `backend/tests/test_superadmin_flows.py` | Added direct coverage for email/wallet run logging, usage counters, selected-plan tenant creation, plan validation, backup config validation, and impersonation. |
+| Rate limit | `backend/common/rate_limit.py` | Raised analytics user rate limit from 20/min to 60/min because normal dashboard fan-out exceeded the old value during E2E. |
+
+### 9.2 Migrations Added
+
+| File | Reason |
+|------|--------|
+| `backend/apps/notifications/migrations/0006_alter_campaignrun_channel_alter_notification_channel.py` | Adds `wallet` as an allowed notification/campaign channel choice. |
+| `backend/apps/audit/migrations/0002_alter_auditlog_action.py` | Existing model choice drift surfaced by `makemigrations --check`; included so migration checks are clean. |
+
+### 9.3 Local Environment Repairs For E2E
+
+| Item | Action |
+|------|--------|
+| Stale nginx upstream | Restarted nginx after API restarts; health endpoint returned `200`. |
+| Missing seeded users/passwords | Ran `seed_test_data` with local password and reset admin password to `123456` for E2E login. |
+| Owner plan state | Verified owner login and active enterprise subscription. |
+| WhatsApp bridge key | Set local Vault `whatsapp_bridge_api_key` to `dev-bridge-key`; fixed local bridge-target tests. |
+| SMS safety | Confirmed Twilio test mode remains required by E2E guard before SMS tests run. |
+
+---
+
+## 10. Verification Results
+
+### 10.1 Backend
+
+| Command | Result |
+|---------|--------|
+| `docker exec loyallia-api python manage.py check` | Passed |
+| `docker exec loyallia-api python manage.py makemigrations --check --dry-run` | Passed, no changes detected |
+| `docker exec loyallia-api pytest tests/test_campaign_accounting.py tests/test_superadmin_flows.py -q` | `11 passed` |
+| `docker exec loyallia-api pytest tests/test_plan_enforcement.py tests/sms/test_campaign_sms.py tests/test_campaign_accounting.py tests/test_superadmin_flows.py -q` | `46 passed` |
+
+### 10.2 Frontend
+
+| Command | Result |
+|---------|--------|
+| `cd frontend && npx tsc --noEmit --pretty false` | Passed |
+| `cd frontend && npm run build` | Passed with existing warnings about `<img>`, hook deps, and custom font. |
+
+### 10.3 Playwright E2E
+
+| Command | Result |
+|---------|--------|
+| `PLAYWRIGHT_BASE_URL=http://localhost PLAYWRIGHT_ALLOW_MUTATING_E2E=true npx playwright test tests/e2e/suite/11-superadmin.spec.ts tests/e2e/suite/20-plan-rate-limits.spec.ts tests/e2e/suite/21-sms-campaigns.spec.ts tests/e2e/suite/22-wallet-flows.spec.ts tests/e2e/suite/23-email-campaigns.spec.ts tests/e2e/suite/24-whatsapp-campaigns.spec.ts tests/e2e/suite/25-owner-full-menu.spec.ts tests/e2e/suite/26-superadmin-full-menu.spec.ts` | `106 passed` |
+| `PLAYWRIGHT_BASE_URL=http://localhost PLAYWRIGHT_ALLOW_MUTATING_E2E=true npx playwright test --grep-invert "Phone Verification API"` | `300 passed, 2 skipped` |
+
+The excluded `Phone Verification API` block requires `PLAYWRIGHT_ALLOW_EXTERNAL_E2E=true` and can make real Twilio Verify requests. It was intentionally not run in the local full pass.
+
+---
+
+## 11. Remaining Caveats
+
+| Item | Status |
+|------|--------|
+| Twilio Verify external tests | Not run locally without explicit external-test approval. Keep `PLAYWRIGHT_ALLOW_EXTERNAL_E2E` off unless real Verify calls are intended. |
+| CI | No CI architecture was added in this repair pass. Local correctness was proven first as requested. |
+| Existing uncommitted deploy/settings work | Several files were already modified before this pass (`deploy/*`, `docker-compose.yml`, SuperAdmin settings UI). They were not reverted. |
+
+---
+
+## 12. Current Action Items
+
+| # | Status | Item |
+|---|--------|------|
+| 1 | ✅ | SysAdmin selected-plan tenant creation fixed and covered by backend tests. |
+| 2 | ✅ | Email and wallet campaign run/log accounting implemented and covered by backend tests. |
+| 3 | ✅ | Owner campaign E2E setup repairs active enterprise subscription/features before mutating suites. |
+| 4 | ✅ | Critical SysAdmin/Owner/campaign Playwright suites passed locally. |
+| 5 | ✅ | Full non-external Playwright suite passed locally. |
+| 6 | ⏳ | Run Twilio Verify external E2E only when explicit approval is given for real external-provider calls. |
+| 7 | ⏳ | CI can be improved later; no new E2E config service was added in this pass. |
+
+---
+
+*End of handoff. The previous `e2e_config` proposal was intentionally not implemented because the approved immediate fix was to repair local correctness and keep env-based E2E safety guards.*

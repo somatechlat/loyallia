@@ -45,20 +45,12 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin', () => {
 
   test('5. Settings shows Twilio integration card', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    const twilioCard = page.locator('text=Twilio');
-    const hasTwilio = (await twilioCard.count()) > 0;
-    expect(hasTwilio, 'Twilio integration card should be visible').toBeTruthy();
+    await expect(page.getByText('Twilio SMS')).toBeVisible({ timeout: 10000 });
   });
 
   test('6. Settings shows Mailjet integration card', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    const emailCard = page.locator('text=Mailjet Email');
-    const hasEmail = (await emailCard.count()) > 0;
-    expect(hasEmail, 'Mailjet integration card should be visible').toBeTruthy();
+    await expect(page.getByText('Mailjet Email')).toBeVisible({ timeout: 10000 });
   });
 
   test('7. Metrics (/superadmin/metrics) loads with charts', async ({ page }) => {

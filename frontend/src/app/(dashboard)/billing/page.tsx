@@ -4,7 +4,13 @@ import { billingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
 
-interface Subscription { plan: string; status: string; days_until_trial_end?: number; }
+interface Subscription {
+  plan: string;
+  plan_name?: string;
+  plan_slug?: string;
+  status: string;
+  days_until_trial_end?: number;
+}
 interface UsageItem { used: number; limit: number; percentage: number; }
 interface Usage { limits: Record<string, UsageItem>; status: string; }
 
@@ -24,7 +30,21 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 };
 
 const USAGE_LABELS: Record<string, { label: string; icon: string }> = {
+  customers:     { label: 'Clientes', icon: '👤' },
   programs:      { label: 'Programas', icon: '📋' },
+  users:         { label: 'Usuarios', icon: '👥' },
+  locations:     { label: 'Sucursales', icon: '📍' },
+  notifications_month: { label: 'Notificaciones/mes', icon: '🔔' },
+  transactions_month:  { label: 'Transacciones/mes', icon: '💳' },
+  emails_month:  { label: 'Emails/mes', icon: '📧' },
+  sms_day:       { label: 'SMS/día', icon: '💬' },
+  whatsapp_day:  { label: 'WhatsApp/día', icon: '📱' },
+  wallet_pushes_month: { label: 'Wallet pushes/mes', icon: '🎫' },
+  automations:   { label: 'Automatizaciones', icon: '⚡' },
+  automation_executions_day: { label: 'Ejec. automatización/día', icon: '⚙️' },
+  ai_queries_month: { label: 'Consultas IA/mes', icon: '🤖' },
+  api_calls_day: { label: 'Llamadas API/día', icon: '🔗' },
+  exports_month: { label: 'Exportaciones/mes', icon: '📤' },
   enrollments:   { label: 'Inscripciones', icon: '👤' },
   notifications: { label: 'Notificaciones', icon: '🔔' },
   team_members:  { label: 'Miembros del equipo', icon: '👥' },
@@ -79,8 +99,9 @@ export default function BillingPage() {
   }
 
   const statusInfo = STATUS_COLORS[sub?.status ?? ''] ?? STATUS_COLORS['active'] ?? { bg: 'bg-gray-100', text: 'text-gray-700', label: sub?.status ?? 'Desconocido' };
-  const planIcon = PLAN_ICONS[sub?.plan ?? ''] ?? '📦';
-  const planLabel = PLAN_LABELS[sub?.plan ?? ''] ?? sub?.plan ?? 'Plan';
+  const planSlug = sub?.plan_slug || sub?.plan || '';
+  const planIcon = PLAN_ICONS[planSlug] ?? '📦';
+  const planLabel = sub?.plan_name || PLAN_LABELS[planSlug] || planSlug || 'Plan';
 
   return (
     <div className="space-y-6" id="billing-view">
@@ -117,13 +138,13 @@ export default function BillingPage() {
         <div className="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-1 text-sm text-surface-600 dark:text-surface-400">
             <p>
-              {sub?.plan === 'trial'
+              {planSlug === 'trial'
                 ? 'Explora todas las funciones durante tu período de prueba. Actualiza para desbloquear capacidades ilimitadas.'
                 : 'Gestiona tu plan actual y sus características. Puedes cambiar de plan en cualquier momento.'}
             </p>
           </div>
           <button className="btn-primary whitespace-nowrap" id="upgrade-btn">
-            {sub?.plan === 'trial' ? '🚀 Mejorar plan' : '⬆️ Cambiar plan'}
+            {planSlug === 'trial' ? '🚀 Mejorar plan' : '⬆️ Cambiar plan'}
           </button>
         </div>
       </div>

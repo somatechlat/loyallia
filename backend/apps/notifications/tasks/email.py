@@ -41,9 +41,14 @@ def send_email_campaign(
 
     from django.conf import settings
     from django.core.mail import EmailMultiAlternatives
+    from django.utils import timezone
 
     from apps.customers.models import Customer
     from apps.notifications.models import (
+        CampaignDeliveryLog,
+        CampaignRun,
+        CampaignStatus,
+        DeliveryStatus,
         Notification,
         NotificationChannel,
         NotificationType,
@@ -67,17 +72,34 @@ def send_email_campaign(
         "Email campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total
     )
 
+    campaign_run = CampaignRun.objects.create(
+        tenant=tenant,
+        channel=NotificationChannel.EMAIL,
+        title=subject,
+        message_preview=html_body[:500],
+        segment_id=segment_id,
+        status=CampaignStatus.IN_PROGRESS,
+        total_recipients=total,
+        started_at=timezone.now(),
+    )
+
     succeeded = 0
     failed = 0
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
     primary_color = getattr(tenant, "primary_color", "#6366f1")
+    error_summary = ""
 
-    for customer in audience.iterator(chunk_size=50):
-        try:
-            if not customer.email:
-                continue
-
-            Notification.objects.create(
+    try:
+        for customer in audience.iterator(chunk_size=50):
+            delivery_log = CampaignDeliveryLog.objects.create(
+                campaign_run=campaign_run,
+                customer=customer,
+                recipient_phone=customer.phone or "",
+                recipient_email=customer.email or "",
+                recipient_name=f"{customer.first_name} {customer.last_name}".strip(),
+                status=DeliveryStatus.QUEUED,
+            )
+            notification = Notification.objects.create(
                 tenant=tenant,
                 customer=customer,
                 notification_type=NotificationType.MARKETING,
@@ -86,8 +108,24 @@ def send_email_campaign(
                 message=html_body[:500],
                 action_url=image_url,
             )
+            try:
+                if not customer.email:
+                    delivery_log.status = DeliveryStatus.FAILED
+                    delivery_log.failed_at = timezone.now()
+                    delivery_log.error_code = "NO_EMAIL"
+                    delivery_log.error_message = "Cliente sin email"
+                    delivery_log.save(
+                        update_fields=[
+                            "status",
+                            "failed_at",
+                            "error_code",
+                            "error_message",
+                        ]
+                    )
+                    failed += 1
+                    continue
 
-            html_content = f"""<!DOCTYPE html>
+                html_content = f"""<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
@@ -121,20 +159,57 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 </div>
 </body></html>"""
 
-            msg = EmailMultiAlternatives(
-                subject=subject, from_email=from_email, to=[customer.email]
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=False)
-            succeeded += 1
+                msg = EmailMultiAlternatives(
+                    subject=subject, from_email=from_email, to=[customer.email]
+                )
+                msg.attach_alternative(html_content, "text/html")
+                msg.send(fail_silently=False)
+                delivery_log.status = DeliveryStatus.SENT
+                delivery_log.sent_at = timezone.now()
+                delivery_log.save(update_fields=["status", "sent_at"])
+                notification.mark_as_sent()
+                succeeded += 1
 
-        except Exception as exc:
-            logger.error("Email campaign failed for %s: %s", customer.id, exc)
-            failed += 1
+            except Exception as exc:
+                error_msg = str(exc)[:500]
+                logger.error("Email campaign failed for %s: %s", customer.id, exc)
+                delivery_log.status = DeliveryStatus.FAILED
+                delivery_log.failed_at = timezone.now()
+                delivery_log.error_code = "EMAIL_SEND_ERROR"
+                delivery_log.error_message = error_msg
+                delivery_log.save(
+                    update_fields=[
+                        "status",
+                        "failed_at",
+                        "error_code",
+                        "error_message",
+                    ]
+                )
+                failed += 1
+    except Exception as exc:
+        error_summary = str(exc)[:500]
+        logger.exception("Email campaign failed before completion")
+        raise
+    finally:
+        campaign_run.sent_count = succeeded
+        campaign_run.failed_count = failed
+        campaign_run.status = CampaignStatus.COMPLETED
+        campaign_run.completed_at = timezone.now()
+        campaign_run.error_summary = error_summary
+        campaign_run.save(
+            update_fields=[
+                "sent_count",
+                "failed_count",
+                "status",
+                "completed_at",
+                "error_summary",
+            ]
+        )
 
     logger.info("Email campaign complete: %d/%d", succeeded, total)
     return {
         "success": True,
+        "campaign_run_id": str(campaign_run.id),
         "attempted": total,
         "succeeded": succeeded,
         "failed": failed,
