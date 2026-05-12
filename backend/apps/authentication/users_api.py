@@ -16,8 +16,6 @@ from ninja.errors import HttpError
 
 from apps.authentication.helpers import (
     send_otp_email,
-    store_otp,
-    verify_otp,
 )
 from apps.authentication.models import RefreshToken, User, UserManager
 from apps.authentication.schemas import (
@@ -65,9 +63,7 @@ def me(request):
     }
 
 
-@router.put(
-    "/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil"
-)
+@router.put("/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil")
 def update_profile(request, payload: ProfileUpdateIn):
     """Update the authenticated user's profile (name fields only)."""
     u = request.user
@@ -104,9 +100,7 @@ def change_password(request, payload: ChangePasswordIn):
 # =============================================================================
 
 
-@router.post(
-    "/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo"
-)
+@router.post("/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo")
 def invite_user(request, payload: InviteIn):
     """OWNER invites a MANAGER or STAFF user."""
     tenant = require_tenant(request)
@@ -145,9 +139,7 @@ def invite_user(request, payload: InviteIn):
         body=f"Has sido invitado a unirte a {tenant.name} en Loyallia como {payload.role}.\n\n"
         f"Haz clic en el siguiente enlace para aceptar la invitacion:\n{invite_url}\n\nEste enlace expirara en 7 dias.\n\n-- Loyallia",
     )
-    return MessageOut(
-        success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email)
-    )
+    return MessageOut(success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email))
 
 
 @router.get(
@@ -187,9 +179,7 @@ def deactivate_user(request, user_id: str):
 
     from django.utils import timezone as dj_timezone
 
-    RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
-        revoked_at=dj_timezone.now()
-    )
+    RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
     return MessageOut(success=True, message=get_message("AUTH_USER_DEACTIVATED"))
 
 
@@ -210,8 +200,9 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
     REAL PRODUCTION CODE — OTP is sent via Twilio Verify API.
     No DEV bypass. No mock. The code arrives on the actual phone.
     """
-    from apps.authentication.otp_service import send_otp
     from django.core.cache import cache
+
+    from apps.authentication.otp_service import send_otp
 
     user = request.user
     user.phone_number = payload.phone_number
@@ -238,7 +229,6 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
         timeout=300,
     )
 
-    masked_phone = payload.phone_number[:4] + "****" + payload.phone_number[-2:]
     return PhoneVerifyStartOut(
         success=True,
         message=get_message("VERIFY_OTP_SENT", channel=result.get("channel", "sms")),
@@ -259,8 +249,9 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
 
     REAL PRODUCTION CODE — Validates against Twilio Verify API.
     """
-    from apps.authentication.otp_service import check_otp
     from django.core.cache import cache
+
+    from apps.authentication.otp_service import check_otp
 
     # Rate limit check
     cache_key = f"otp_attempts:phone_verify:{payload.phone_number}"

@@ -4,8 +4,9 @@
  * campaign KPIs block, custom date picker, and InfoTooltips.
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
+const BASE_API = getE2EBaseURL();
 
 /**
  * Navigates to the dashboard and waits for data to finish loading.
@@ -158,10 +159,7 @@ test.describe('Dashboard KPIs — OWNER @owner', () => {
 test.describe('Dashboard API Endpoints', () => {
 
   test('Analytics overview API returns valid structure', async ({ request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     const resp = await request.get(`${BASE_API}/api/v1/analytics/overview/`, {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -175,10 +173,7 @@ test.describe('Dashboard API Endpoints', () => {
   });
 
   test('Analytics trends API returns daily_data', async ({ request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     const resp = await request.get(`${BASE_API}/api/v1/analytics/trends/?days=30`, {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -189,10 +184,7 @@ test.describe('Dashboard API Endpoints', () => {
   });
 
   test('Visit metrics API returns unregistered_visits key', async ({ request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     const resp = await request.get(`${BASE_API}/api/v1/analytics/visits/?days=30`, {
       headers: { Authorization: `Bearer ${access_token}` },
@@ -205,10 +197,7 @@ test.describe('Dashboard API Endpoints', () => {
   });
 
   test('Revenue breakdown API returns loyalty/referral/non_loyalty', async ({ request }) => {
-    const loginResp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-      data: { email: 'owner@example.com', password: '123456' },
-    });
-    const { access_token } = await loginResp.json();
+    const access_token = await loginRole(request, 'owner');
 
     const resp = await request.get(`${BASE_API}/api/v1/analytics/revenue-breakdown/?days=30`, {
       headers: { Authorization: `Bearer ${access_token}` },

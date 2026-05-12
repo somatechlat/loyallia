@@ -2,7 +2,6 @@
 Loyallia — Customer API Schemas (Pydantic models)
 """
 
-from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator
 
 from apps.customers.models import Customer, CustomerPass
@@ -12,10 +11,10 @@ class CustomerCreateIn(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    phone: Optional[str] = ""
-    date_of_birth: Optional[str] = None
-    gender: Optional[str] = ""
-    notes: Optional[str] = ""
+    phone: str | None = ""
+    date_of_birth: str | None = None
+    gender: str | None = ""
+    notes: str | None = ""
 
     # Allow dynamic custom fields from the Form Builder to be captured
     model_config = {"extra": "allow"}
@@ -36,17 +35,17 @@ class CustomerCreateIn(BaseModel):
 
 
 class CustomerUpdateIn(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    gender: Optional[str] = None
-    notes: Optional[str] = None
-    is_active: Optional[bool] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    date_of_birth: str | None = None
+    gender: str | None = None
+    notes: str | None = None
+    is_active: bool | None = None
 
     @field_validator("first_name", "last_name")
     @classmethod
-    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+    def validate_name(cls, v: str | None) -> str | None:
         if v is not None and len(v.strip()) < 1:
             raise ValueError("Name cannot be empty")
         return v.strip() if v else v
@@ -58,13 +57,13 @@ class CustomerOut(BaseModel):
     last_name: str
     email: str
     phone: str
-    date_of_birth: Optional[str]
+    date_of_birth: str | None
     gender: str
     referral_code: str
     is_active: bool
     total_visits: int
     total_spent: str
-    last_visit: Optional[str]
+    last_visit: str | None
     created_at: str
     updated_at: str
 
@@ -76,9 +75,7 @@ class CustomerOut(BaseModel):
             last_name=customer.last_name,
             email=customer.email,
             phone=customer.phone,
-            date_of_birth=(
-                customer.date_of_birth.isoformat() if customer.date_of_birth else None
-            ),
+            date_of_birth=(customer.date_of_birth.isoformat() if customer.date_of_birth else None),
             gender=customer.gender,
             referral_code=customer.referral_code,
             is_active=customer.is_active,

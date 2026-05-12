@@ -7,8 +7,9 @@
  * and is the most reliable approach.
  */
 import { test as setup, expect } from '@playwright/test';
+import { getE2EBaseURL } from './e2e-safety';
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:80';
+const BASE_URL = getE2EBaseURL();
 const COOKIE_DOMAIN = new URL(BASE_URL).hostname;
 const COOKIE_SECURE = BASE_URL.startsWith('https');
 

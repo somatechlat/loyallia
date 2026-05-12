@@ -22,11 +22,10 @@ from typing import Any
 
 from django.core.cache import cache
 
-from common.messages import get_message
-from common.vault import get_secret
-
 from apps.notifications.sms.client import send_sms
 from apps.notifications.twilio_verify.client import VerifyClient, VerifyServiceError
+from common.messages import get_message
+from common.vault import get_secret
 
 logger = logging.getLogger(__name__)
 
@@ -148,10 +147,16 @@ class VerifyOTPStrategy(OTPStrategy):
 
 
 class LocalOTPStrategy(OTPStrategy):
-    """Local OTP generation + Twilio direct SMS fallback strategy.
+    """Local OTP generation with multi-channel delivery.
 
-    Generates a 6-digit code using Python secrets, stores in Redis,
-    sends via Twilio direct SMS. Falls back to email if SMS fails.
+    Generates a 6-digit code using Python secrets, stores in Redis.
+    Delivery priority:
+        1. Twilio direct SMS (if recipient is E.164 phone)
+        2. Email OTP via Django send_mail (fallback, or if recipient is email)
+        3. Code stored in Redis regardless — always verifiable
+
+    This strategy activates when Twilio Verify is disabled in Vault,
+    enabling a seamless enable/disable toggle for phone verification.
     """
 
     def _generate_code(self) -> str:
@@ -168,29 +173,87 @@ class LocalOTPStrategy(OTPStrategy):
         key = f"{OTP_REDIS_PREFIX}code:{recipient}"
         return cache.get(key)
 
+    def _send_otp_email(self, email: str, code: str) -> dict[str, Any]:
+        """Send OTP code via email using Django's SMTP backend (Mailjet).
+
+        Args:
+            email: Recipient email address.
+            code: The 6-digit OTP code.
+
+        Returns:
+            {"success": bool, "error": str | None}
+        """
+        from django.conf import settings
+        from django.core.mail import send_mail
+
+        try:
+            result = send_mail(
+                subject="Loyallia — Código de verificación",
+                message=(
+                    f"Tu código de verificación Loyallia es: {code}\n\n"
+                    f"Este código expira en {OTP_TTL_SECONDS // 60} minutos.\n"
+                    f"No compartas este código con nadie.\n\n"
+                    f"— Loyallia"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            logger.info("OTP email sent to %s: result=%s", email, result)
+            return {"success": bool(result), "error": None}
+        except Exception as exc:
+            logger.error("OTP email send failed for %s: %s", email, exc)
+            return {"success": False, "error": str(exc)}
+
     def send(self, recipient: str, channel: str | None = None, **kwargs: Any) -> dict[str, Any]:
         """Generate and send local OTP.
 
         Args:
-            recipient: Phone number (E.164) or email.
-            channel: Ignored (always SMS for local strategy).
+            recipient: Phone number (E.164) or email address.
+            channel: Hint for delivery. Ignored for SMS; used to detect email.
+            **kwargs: Optional 'email' key for fallback email delivery when
+                      recipient is a phone number.
         """
         self._check_rate_limit(recipient)
 
         code = self._generate_code()
         self._store_code(recipient, code)
 
-        # Try Twilio SMS first
-        sms_result = {"success": False, "error": "SMS not attempted"}
-        if recipient.startswith("+"):
+        delivery_channel = "none"
+        delivery_success = False
+        delivery_error: str | None = None
+
+        # Determine if recipient is a phone or email
+        is_phone = recipient.startswith("+")
+        fallback_email = kwargs.get("email", "")
+
+        if is_phone:
+            # Try Twilio direct SMS first
             try:
                 sms_result = send_sms(
                     phone=recipient,
                     message=f"Tu código de verificación Loyallia es: {code}. No lo compartas con nadie.",
                 )
+                delivery_success = sms_result.get("success", False)
+                delivery_error = sms_result.get("error")
+                delivery_channel = "sms"
             except Exception as exc:
                 logger.error("Local OTP SMS send failed: %s", exc)
-                sms_result = {"success": False, "error": str(exc)}
+                delivery_error = str(exc)
+
+            # If SMS failed and we have a fallback email, send via email
+            if not delivery_success and fallback_email:
+                logger.info("SMS failed, falling back to email OTP for %s", fallback_email)
+                email_result = self._send_otp_email(fallback_email, code)
+                delivery_success = email_result["success"]
+                delivery_error = email_result.get("error")
+                delivery_channel = "email"
+        else:
+            # Recipient is an email address — send directly
+            email_result = self._send_otp_email(recipient, code)
+            delivery_success = email_result["success"]
+            delivery_error = email_result.get("error")
+            delivery_channel = "email"
 
         self._increment_attempts(recipient)
 
@@ -198,8 +261,9 @@ class LocalOTPStrategy(OTPStrategy):
             "sid": f"local:{recipient}",
             "status": "pending",
             "strategy": "local",
-            "sms_success": sms_result.get("success", False),
-            "sms_error": sms_result.get("error", None),
+            "channel": delivery_channel,
+            "delivery_success": delivery_success,
+            "delivery_error": delivery_error,
         }
 
     def verify(self, recipient: str, code: str, sid: str | None = None, **kwargs: Any) -> bool:

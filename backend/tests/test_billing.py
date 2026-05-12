@@ -242,10 +242,14 @@ class BillingServiceGetPlansTest(TestCase):
     """Tests for BillingService.get_plans."""
 
     def test_returns_active_plans(self):
-        make_plan(name="Starter", slug="starter")
-        make_plan(name="Pro", slug="pro")
+        starter_slug = "test-starter-plan"
+        pro_slug = "test-pro-plan"
+        make_plan(name="Starter", slug=starter_slug)
+        make_plan(name="Pro", slug=pro_slug)
         plans = BillingService.get_plans()
-        self.assertGreaterEqual(len(plans), 2)
+        slugs = [p["slug"] for p in plans]
+        self.assertIn(starter_slug, slugs)
+        self.assertIn(pro_slug, slugs)
 
     def test_excludes_inactive_plans(self):
         make_plan(name="Active", slug="active-plan")
@@ -256,23 +260,25 @@ class BillingServiceGetPlansTest(TestCase):
         self.assertNotIn("inactive-plan", slugs)
 
     def test_plan_contains_limits(self):
-        make_plan()
+        plan = make_plan()
         plans = BillingService.get_plans()
-        self.assertIn("limits", plans[0])
-        self.assertIn("max_customers", plans[0]["limits"])
+        result = next(p for p in plans if p["slug"] == plan.slug)
+        self.assertIn("limits", result)
+        self.assertIn("max_customers", result["limits"])
 
     def test_plan_contains_pricing(self):
-        make_plan(price_monthly=Decimal("99.00"), price_annual=Decimal("990.00"))
+        plan = make_plan(price_monthly=Decimal("99.00"), price_annual=Decimal("990.00"))
         plans = BillingService.get_plans()
-        plan = plans[0]
-        self.assertIn("price_monthly", plan)
-        self.assertIn("price_annual", plan)
-        self.assertIn("price_monthly_with_tax", plan)
+        result = next(p for p in plans if p["slug"] == plan.slug)
+        self.assertIn("price_monthly", result)
+        self.assertIn("price_annual", result)
+        self.assertIn("price_monthly_with_tax", result)
 
     def test_plan_contains_trial_days(self):
-        make_plan(trial_days=14)
+        plan = make_plan(trial_days=14)
         plans = BillingService.get_plans()
-        self.assertEqual(plans[0]["trial_days"], 14)
+        result = next(p for p in plans if p["slug"] == plan.slug)
+        self.assertEqual(result["trial_days"], 14)
 
 
 class BillingServiceCheckUsageTest(TestCase):

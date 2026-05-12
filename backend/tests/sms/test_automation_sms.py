@@ -10,13 +10,12 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from common.vault import clear_test_overrides, set_test_override
-
 from apps.automation.models import (
     Automation,
     AutomationAction,
     AutomationTrigger,
 )
+from common.vault import clear_test_overrides, set_test_override
 from tests.factories import (
     make_automation,
     make_card,

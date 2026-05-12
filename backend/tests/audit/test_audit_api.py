@@ -122,6 +122,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
     def test_notifications_api_imports_enforce_limit(self):
         import importlib
+
         mod = importlib.import_module("apps.notifications.api.campaigns")
         self.assertTrue(hasattr(mod, "check_plan_limit"))
 
@@ -152,10 +153,10 @@ class PlanEnforcementDecoratorsTest(TestCase):
         assert module is not None
         module_file = getattr(module, "__file__", None)
         self.assertIsNotNone(module_file)
-        with open(module_file, "r") as f:
+        with open(module_file) as f:
             module_source = f.read()
         self.assertIn("@require_active_subscription", module_source)
-        self.assertIn('check_plan_limit(', module_source)
+        self.assertIn("check_plan_limit(", module_source)
 
     def test_create_campaign_has_enforce_limit(self):
         import inspect
@@ -166,9 +167,9 @@ class PlanEnforcementDecoratorsTest(TestCase):
         assert module is not None
         module_file = getattr(module, "__file__", None)
         self.assertIsNotNone(module_file)
-        with open(module_file, "r") as f:
+        with open(module_file) as f:
             module_source = f.read()
-        self.assertIn('check_plan_limit(', module_source)
+        self.assertIn("check_plan_limit(", module_source)
 
     def test_create_location_has_enforce_limit(self):
         import inspect
@@ -179,9 +180,9 @@ class PlanEnforcementDecoratorsTest(TestCase):
         assert module is not None
         module_file = getattr(module, "__file__", None)
         self.assertIsNotNone(module_file)
-        with open(module_file, "r") as f:
+        with open(module_file) as f:
             module_source = f.read()
-        self.assertIn('check_plan_limit(', module_source)
+        self.assertIn("check_plan_limit(", module_source)
 
 
 # ===========================================================================
@@ -197,9 +198,7 @@ class EnrollmentEndpointTest(TestCase):
         self.card = _make_card(self.tenant, card_type="stamp")
         self.factory = RequestFactory()
 
-    @override_settings(
-        CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
-    )
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
     def test_rate_limiting_applied(self):
         """Enrollment should be rate-limited to 10 per hour per IP."""
         # We test the rate limiting logic by examining the source code
@@ -231,8 +230,7 @@ class EnrollmentEndpointTest(TestCase):
             if in_post_create and "if not created:" in line:
                 # Should NOT be present in the fixed code
                 self.fail(
-                    "Found 'if not created:' overwrite block — "
-                    "enrollment should not overwrite customer profile data"
+                    "Found 'if not created:' overwrite block — enrollment should not overwrite customer profile data"
                 )
 
 

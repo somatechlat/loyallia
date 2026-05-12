@@ -12,23 +12,9 @@
  * RBAC Roles: OWNER, MANAGER, SUPER_ADMIN
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
-
-// Helper: login and return access_token
-async function loginAs(
-  request: import('@playwright/test').APIRequestContext,
-  email: string,
-  password: string = '123456',
-): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
-  expect(resp.status(), `Login should succeed for ${email}`).toBe(200);
-  const body = await resp.json();
-  expect(body.access_token).toBeTruthy();
-  return body.access_token;
-}
+const BASE_API = getE2EBaseURL();
 
 // =============================================================================
 // OWNER — UI Tests
@@ -37,7 +23,8 @@ async function loginAs(
 // CRITICAL SAFETY: Verify Twilio test mode is enabled before running ANY SMS test.
 // This prevents accidental sending of real (charged) SMS messages during E2E runs.
 test.beforeAll(async ({ request }) => {
-  const token = await loginAs(request, 'admin@loyallia.com');
+  requireMutatingE2EAllowed();
+  const token = await loginRole(request, 'superadmin');
 
   // ── SAFETY GUARD ──
   const integrationsResp = await request.get(`${BASE_API}/api/v1/admin/platform/integrations/`, {
@@ -227,7 +214,7 @@ test.describe('SMS Campaign UI — OWNER @owner', () => {
 test.describe('SMS Plan Features API — OWNER @owner', () => {
 
   test('GET /me/plan-features/ includes sms_campaigns @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const resp = await request.get(`${BASE_API}/api/v1/tenants/me/plan-features/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -248,7 +235,7 @@ test.describe('SMS Plan Features API — OWNER @owner', () => {
   });
 
   test('POST /campaigns/ creates SMS campaign @owner', async ({ request }) => {
-    const token = await loginAs(request, 'owner@example.com');
+    const token = await loginRole(request, 'owner');
     const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {
@@ -276,7 +263,7 @@ test.describe('SMS Plan Features API — OWNER @owner', () => {
 test.describe('SMS Campaign RBAC — MANAGER blocked @manager', () => {
 
   test('MANAGER cannot access campaign list API (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -284,7 +271,7 @@ test.describe('SMS Campaign RBAC — MANAGER blocked @manager', () => {
   });
 
   test('MANAGER cannot create SMS campaign (403) @manager', async ({ request }) => {
-    const token = await loginAs(request, 'manager@example.com');
+    const token = await loginRole(request, 'manager');
     const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
       headers: { Authorization: `Bearer ${token}` },
       data: {
@@ -324,7 +311,7 @@ test.describe('SuperAdmin — Twilio Test Mode @superadmin', () => {
   });
 
   test('SA can update plan to enable SMS campaigns @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
 
     // Get existing plans
     const listResp = await request.get(`${BASE_API}/api/v1/admin/plans/`, {
@@ -373,7 +360,7 @@ test.describe('SuperAdmin — Twilio Test Mode @superadmin', () => {
   });
 
   test('SA settings API returns twilio_use_test_mode diagnostic @superadmin', async ({ request }) => {
-    const token = await loginAs(request, 'admin@loyallia.com');
+    const token = await loginRole(request, 'superadmin');
     const resp = await request.get(`${BASE_API}/api/v1/admin/platform/integrations/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -409,7 +396,7 @@ test.describe('Campaign List — SMS Badge @owner', () => {
 
     // If no SMS badges in UI, create a campaign via API (faster than UI flow)
     if (uiCount === 0) {
-      const token = await loginAs(request, 'owner@example.com');
+      const token = await loginRole(request, 'owner');
       const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
         headers: { Authorization: `Bearer ${token}` },
         data: {

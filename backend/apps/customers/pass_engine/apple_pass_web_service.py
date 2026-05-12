@@ -20,9 +20,8 @@ Authentication: Apple sends `Authorization: ApplePass <authenticationToken>`
 where authenticationToken is the value we set in pass.json.
 """
 
-
 import logging
-from datetime import timezone
+from datetime import UTC
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -64,9 +63,7 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
     """
     from apps.customers.models import CustomerPass
 
-    configured_pass_type = getattr(
-        settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards"
-    )
+    configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards")
     if pass_type_id != configured_pass_type:
         logger.warning(
             "Apple Web Service: Pass type mismatch: expected %s, got %s",
@@ -76,16 +73,12 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
     try:
-        return CustomerPass.objects.select_related(
-            "card", "card__tenant", "customer"
-        ).get(id=serial_number)
+        return CustomerPass.objects.select_related("card", "card__tenant", "customer").get(id=serial_number)
     except CustomerPass.DoesNotExist:
         logger.warning("Apple Web Service: Pass not found: serial=%s", serial_number)
         return None
     except Exception as exc:
-        logger.error(
-            "Apple Web Service: Error looking up pass %s: %s", serial_number, exc
-        )
+        logger.error("Apple Web Service: Error looking up pass %s: %s", serial_number, exc)
         return None
 
 
@@ -222,9 +215,7 @@ def list_updated_passes(
     """
     from apps.customers.models import ApplePassRegistration
 
-    configured_pass_type = getattr(
-        settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards"
-    )
+    configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards")
     if pass_type_id != configured_pass_type:
         return HttpResponse(status=404)
 
@@ -267,7 +258,7 @@ def list_updated_passes(
     # Format the lastUpdated tag as ISO timestamp
     last_updated_tag = ""
     if latest_update:
-        last_updated_tag = latest_update.astimezone(timezone.utc).isoformat()
+        last_updated_tag = latest_update.astimezone(UTC).isoformat()
 
     return JsonResponse(
         {
@@ -317,9 +308,7 @@ def get_updated_pass(
         content_type="application/vnd.apple.pkpass",
         status=200,
     )
-    response["Content-Disposition"] = (
-        f'attachment; filename="pass-{serial_number}.pkpass"'
-    )
+    response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
 
     # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:

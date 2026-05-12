@@ -17,6 +17,12 @@ if (existsSync(envTestPath)) {
     }
   }
 }
+
+const baseURL = process.env.PLAYWRIGHT_BASE_URL;
+if (!baseURL) {
+  throw new Error('PLAYWRIGHT_BASE_URL is required for Playwright tests.');
+}
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60000,
@@ -27,7 +33,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:80',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -36,7 +42,7 @@ export default defineConfig({
     storageState: {
       cookies: [],
       origins: [{
-        origin: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost',
+        origin: baseURL,
         localStorage: [{ name: 'loyallia_cookie_consent', value: 'true' }],
       }],
     },
@@ -104,6 +110,7 @@ export default defineConfig({
     {
       name: 'public-flow',
       testMatch: /.*\.spec\.ts/,
+      testIgnore: /suite\/01-auth\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
       grepInvert: /@owner|@manager|@staff|@superadmin/,
     },

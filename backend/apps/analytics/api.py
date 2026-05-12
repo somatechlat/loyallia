@@ -26,7 +26,6 @@ Security (SEC):
 Called by: Dashboard analytics page, customer detail page, program detail page.
 """
 
-from typing import Optional
 from datetime import timedelta
 
 from django.db.models import Avg, Count, Sum
@@ -59,7 +58,7 @@ class CustomerAnalyticsSchema(BaseModel):
     total_rewards_earned: int
     total_rewards_redeemed: int
     segment: str
-    last_visit: Optional[str] = None
+    last_visit: str | None = None
 
 
 class ProgramAnalyticsSchema(BaseModel):
@@ -95,9 +94,7 @@ def get_overview_analytics(request, days: int = 30):
 
     # Customer metrics
     total_customers = Customer.objects.filter(tenant=tenant).count()
-    new_customers = Customer.objects.filter(
-        tenant=tenant, created_at__gte=start_date
-    ).count()
+    new_customers = Customer.objects.filter(tenant=tenant, created_at__gte=start_date).count()
 
     # Transaction metrics
     transactions = Transaction.objects.filter(tenant=tenant, created_at__gte=start_date)
@@ -106,34 +103,24 @@ def get_overview_analytics(request, days: int = 30):
 
     # Program metrics
     total_programs = Card.objects.filter(tenant=tenant).count()
-    active_programs = (
-        Card.objects.filter(tenant=tenant, passes__is_active=True).distinct().count()
-    )
+    active_programs = Card.objects.filter(tenant=tenant, passes__is_active=True).distinct().count()
 
     # Notification metrics
     from apps.notifications.models import Notification
 
-    notifications_sent = Notification.objects.filter(
-        tenant=tenant, created_at__gte=start_date
-    ).count()
+    notifications_sent = Notification.objects.filter(tenant=tenant, created_at__gte=start_date).count()
 
     return {
         "period_days": days,
         "customers": {
             "total": total_customers,
             "new": new_customers,
-            "growth_rate": (
-                (new_customers / total_customers * 100) if total_customers > 0 else 0
-            ),
+            "growth_rate": ((new_customers / total_customers * 100) if total_customers > 0 else 0),
         },
         "transactions": {
             "total": total_transactions,
             "revenue": float(total_revenue),
-            "average_value": (
-                float(total_revenue / total_transactions)
-                if total_transactions > 0
-                else 0
-            ),
+            "average_value": (float(total_revenue / total_transactions) if total_transactions > 0 else 0),
         },
         "programs": {
             "total": total_programs,
@@ -147,9 +134,7 @@ def get_overview_analytics(request, days: int = 30):
 
 # ============ Customer Analytics ============
 @router.get("/customers/", auth=jwt_auth, summary="Get customer analytics")
-def get_customer_analytics(
-    request, segment: Optional[str] = None, limit: int = 50, offset: int = 0
-):
+def get_customer_analytics(request, segment: str | None = None, limit: int = 50, offset: int = 0):
     """Paginated customer analytics with optional segment filter.
 
     PERF: Reads from pre-computed CustomerAnalytics table (not raw transactions).
@@ -187,9 +172,7 @@ def get_customer_analytics(
                 "total_rewards_earned": a.total_rewards_earned,
                 "total_rewards_redeemed": a.total_rewards_redeemed,
                 "segment": a.segment,
-                "last_visit": (
-                    a.customer.last_visit.isoformat() if a.customer.last_visit else None
-                ),
+                "last_visit": (a.customer.last_visit.isoformat() if a.customer.last_visit else None),
             }
             for a in analytics
         ],
@@ -215,9 +198,7 @@ def get_customer_detail_analytics(request, customer_id: str):
 
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
 
-    analytics, created = CustomerAnalytics.objects.get_or_create(
-        customer=customer, defaults={"tenant": request.tenant}
-    )
+    analytics, created = CustomerAnalytics.objects.get_or_create(customer=customer, defaults={"tenant": request.tenant})
     # Analytics are pre-calculated by background tasks on transaction boundaries.
 
     # PERF: select_related prevents N+1 when accessing card name in serialization
@@ -228,9 +209,7 @@ def get_customer_detail_analytics(request, customer_id: str):
     )
 
     # PERF: select_related("card") prevents N+1 when serializing card names
-    enrollments = CustomerPass.objects.filter(
-        customer=customer, is_active=True
-    ).select_related("card")
+    enrollments = CustomerPass.objects.filter(customer=customer, is_active=True).select_related("card")
 
     return {
         "customer": {
@@ -247,9 +226,7 @@ def get_customer_detail_analytics(request, customer_id: str):
             "total_rewards_earned": analytics.total_rewards_earned,
             "total_rewards_redeemed": analytics.total_rewards_redeemed,
             "segment": analytics.segment,
-            "last_visit": (
-                customer.last_visit.isoformat() if customer.last_visit else None
-            ),
+            "last_visit": (customer.last_visit.isoformat() if customer.last_visit else None),
         },
         "recent_transactions": [
             {
@@ -320,9 +297,7 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
     }
 
 
-@router.get(
-    "/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics"
-)
+@router.get("/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics")
 def get_program_detail_analytics(request, program_id: str):
     """Detailed analytics for a single program with top customers.
 
@@ -337,9 +312,7 @@ def get_program_detail_analytics(request, program_id: str):
 
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
-    analytics, created = ProgramAnalytics.objects.get_or_create(
-        card=card, defaults={"tenant": request.tenant}
-    )
+    analytics, created = ProgramAnalytics.objects.get_or_create(card=card, defaults={"tenant": request.tenant})
     # Analytics are pre-calculated by background tasks.
 
     # Get top customers for this program
@@ -398,9 +371,7 @@ def get_trends_analytics(request, days: int = 30):
     start_date = timezone.now().date() - timedelta(days=days)
 
     # Get daily analytics
-    daily_data = DailyAnalytics.objects.filter(
-        tenant=tenant, analytics_date__gte=start_date
-    ).order_by("analytics_date")
+    daily_data = DailyAnalytics.objects.filter(tenant=tenant, analytics_date__gte=start_date).order_by("analytics_date")
 
     # If no data, generate from transactions
     if not daily_data.exists():
@@ -463,9 +434,7 @@ def get_segmentation_analytics(request):
             {
                 "segment": s["segment"],
                 "count": s["count"],
-                "percentage": (
-                    (s["count"] / total_customers * 100) if total_customers > 0 else 0
-                ),
+                "percentage": ((s["count"] / total_customers * 100) if total_customers > 0 else 0),
                 "total_spent": float(s["sum_spent"] or 0),
                 "avg_spent": float(s["avg_spent"] or 0),
                 "total_visits": s["sum_visits"],

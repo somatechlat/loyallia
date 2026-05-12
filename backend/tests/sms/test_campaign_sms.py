@@ -11,9 +11,8 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from common.vault import clear_test_overrides, set_test_override
-
 from apps.billing.models import PlanFeature
+from common.vault import clear_test_overrides, set_test_override
 from tests.factories import (
     make_customer,
     make_plan,
@@ -88,9 +87,7 @@ class SMSCampaignTaskTest(TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["succeeded"], 2)
-        self.assertEqual(
-            result["failed"], 0
-        )  # Empty-phone customer filtered by queryset
+        self.assertEqual(result["failed"], 0)  # Empty-phone customer filtered by queryset
         self.assertEqual(result["attempted"], 2)  # Only customers with phone
 
     @patch("apps.notifications.sms.client._get_twilio_client")

@@ -20,8 +20,6 @@ Refs:
 import logging
 from typing import Any
 
-from common.vault import get_secret
-
 from .client import VerifyClient, VerifyServiceError
 
 logger = logging.getLogger(__name__)

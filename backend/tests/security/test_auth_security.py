@@ -70,7 +70,7 @@ class TestRateLimiterFailClosed(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_auth_login_returns_503_without_redis(self, mock_redis):
         """Auth login endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
@@ -80,7 +80,7 @@ class TestRateLimiterFailClosed(TestCase):
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_auth_register_returns_503_without_redis(self, mock_redis):
         """Auth register endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
@@ -90,7 +90,7 @@ class TestRateLimiterFailClosed(TestCase):
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_auth_phone_returns_503_without_redis(self, mock_redis):
         """Auth phone endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
@@ -100,7 +100,7 @@ class TestRateLimiterFailClosed(TestCase):
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_auth_password_reset_returns_503_without_redis(self, mock_redis):
         """Auth password-reset endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
@@ -110,7 +110,7 @@ class TestRateLimiterFailClosed(TestCase):
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_auth_forgot_password_returns_503_without_redis(self, mock_redis):
         """Auth forgot-password endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
@@ -120,7 +120,7 @@ class TestRateLimiterFailClosed(TestCase):
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_auth_verify_email_returns_503_without_redis(self, mock_redis):
         """Auth verify-email endpoint must return 503 when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
@@ -130,7 +130,7 @@ class TestRateLimiterFailClosed(TestCase):
         response = middleware(request)
         self.assertEqual(response.status_code, 503)
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_non_auth_endpoint_passes_through_without_redis(self, mock_redis):
         """Non-auth endpoints should still pass through (fail open) when Redis is down."""
         from common.rate_limit import RateLimitMiddleware
@@ -142,7 +142,7 @@ class TestRateLimiterFailClosed(TestCase):
         # Non-auth endpoints pass through
         self.assertEqual(response, mock_response)
 
-    @patch("common.rate_limit.RateLimitMiddleware._get_redis", return_value=None)
+    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
     def test_503_response_body_format(self, mock_redis):
         """503 response should have proper JSON body."""
         from common.rate_limit import RateLimitMiddleware

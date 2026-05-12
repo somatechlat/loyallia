@@ -11,8 +11,9 @@
  * Runs in the 'owner' project so auth cookies are pre-loaded.
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
-const BASE_API = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:80';
+const BASE_API = getE2EBaseURL();
 
 /**
  * Login helper — returns JWT access_token for API calls.
@@ -20,13 +21,7 @@ const BASE_API = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:80';
 async function loginAsOwner(
   request: import('@playwright/test').APIRequestContext,
 ): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email: 'owner@example.com', password: '123456' },
-  });
-  expect(resp.status(), 'Login should succeed for owner').toBe(200);
-  const body = await resp.json();
-  expect(body.access_token).toBeTruthy();
-  return body.access_token;
+  return loginRole(request, 'owner');
 }
 
 // ─── Shared state across serial tests ──────────────────────────────────────
@@ -42,6 +37,10 @@ let walletStatusUrl = '';
 // =============================================================================
 
 test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner', () => {
+
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
 
   test('1. Create card/program with wallet_provider="both" via API', async ({ request }) => {
     const token = await loginAsOwner(request);

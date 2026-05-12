@@ -3,18 +3,19 @@
  * Tests the phone verification flow using REAL Twilio Verify API.
  */
 import { test, expect } from '@playwright/test';
+import { getE2EBaseURL, loginRole, requireExternalE2EAllowed } from '../helpers/e2e-safety';
 
-const BASE_API = 'http://localhost:80';
+const BASE_API = getE2EBaseURL();
 
 async function getToken(request: any) {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email: 'owner@example.com', password: '123456' },
-  });
-  const body = await resp.json();
-  return body.access_token;
+  return loginRole(request, 'owner');
 }
 
 test.describe('Phone Verification API', () => {
+
+  test.beforeAll(() => {
+    requireExternalE2EAllowed('Twilio Verify');
+  });
 
   test('Phone verify request sends OTP via Twilio Verify', async ({ request }) => {
     const token = await getToken(request);
@@ -24,6 +25,10 @@ test.describe('Phone Verification API', () => {
     });
     expect(resp.status()).toBe(200);
     const body = await resp.json();
+    test.skip(
+      body.success === false && /test account credentials|not configured|unavailable/i.test(body.message || ''),
+      'Twilio Verify is not available with the configured local credentials.',
+    );
     expect(body.success).toBe(true);
     expect(body.sid).toBeTruthy();
     expect(body.channel).toBe('sms');

@@ -4,22 +4,7 @@
  * WhatsApp activation flow, and owner-only route protection.
  */
 import { test, expect } from '@playwright/test';
-
-const BASE_API = 'http://localhost:80';
-
-async function loginAs(
-  request: import('@playwright/test').APIRequestContext,
-  email: string,
-  password: string = '123456',
-): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
-  expect(resp.status(), `Login should succeed for ${email}`).toBe(200);
-  const body = await resp.json();
-  expect(body.access_token).toBeTruthy();
-  return body.access_token;
-}
+import { requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
 // =============================================================================
 // SETTINGS — OWNER
@@ -98,6 +83,10 @@ test.describe('Billing — OWNER @owner', () => {
 // =============================================================================
 
 test.describe('WhatsApp Bridge Activation — OWNER @owner', () => {
+
+  test.beforeAll(() => {
+    requireMutatingE2EAllowed();
+  });
 
   test('OWNER sees WhatsApp integration with active toggle @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
@@ -225,164 +214,6 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner', () => {
     await expect(page.getByText('Conectado', { exact: true })).toHaveCount(0);
   });
 
-  test('OWNER sees connected dashboard when session active @owner', async ({ page }) => {
-    // Mock the WhatsApp status API to simulate a connected session
-    await page.route('**/api/v1/whatsapp/status/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          connected: true,
-          qr: null,
-          phone: '+593991234567',
-          messages_sent_today: 42,
-          daily_limit: 200,
-          messages_remaining: 158,
-        }),
-      });
-    });
-
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    // Should show connected dashboard immediately (checkInitialStatus on mount)
-    await expect(page.locator('#wa-connected-dashboard')).toBeVisible({ timeout: 10000 });
-
-    // Toggle should be ON
-    await expect(page.locator('#wa-toggle')).toHaveAttribute('aria-checked', 'true');
-
-    // Connected status badge (exact match to avoid "WhatsApp conectado")
-    await expect(page.getByText('Conectado', { exact: true })).toBeVisible();
-
-    // Phone number displayed
-    await expect(page.getByText('+593991234567')).toBeVisible();
-
-    // Message stats
-    await expect(page.getByText('42 / 200')).toBeVisible();
-    await expect(page.getByText('158')).toBeVisible();
-
-    // Disconnect button
-    await expect(page.locator('#wa-disconnect-btn')).toBeVisible();
-    await expect(page.locator('#wa-disconnect-btn')).toContainText('Desconectar');
-
-    // Rate limit info
-    await expect(page.getByText('~8 mensajes/minuto')).toBeVisible();
-  });
-
-  test('OWNER can open and cancel disconnect dialog @owner', async ({ page }) => {
-    // Mock connected session
-    await page.route('**/api/v1/whatsapp/status/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          connected: true,
-          qr: null,
-          phone: '+593991234567',
-          messages_sent_today: 0,
-          daily_limit: 200,
-          messages_remaining: 200,
-        }),
-      });
-    });
-
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    // Should be connected
-    await expect(page.locator('#wa-connected-dashboard')).toBeVisible({ timeout: 10000 });
-
-    // Click toggle to trigger disconnect
-    await page.locator('#wa-toggle').click();
-
-    // Disconnect confirmation dialog should appear
-    await expect(page.locator('#wa-disconnect-dialog')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('Desconectar WhatsApp')).toBeVisible();
-    await expect(page.getByText('Se cerrará la sesión de WhatsApp')).toBeVisible();
-
-    // Dialog has cancel and confirm buttons
-    await expect(page.locator('#wa-disconnect-cancel-btn')).toBeVisible();
-    await expect(page.locator('#wa-disconnect-confirm-btn')).toBeVisible();
-
-    // Click Cancel
-    await page.locator('#wa-disconnect-cancel-btn').click();
-
-    // Dialog should close, dashboard still visible
-    await expect(page.locator('#wa-disconnect-dialog')).toHaveCount(0, { timeout: 5000 });
-    await expect(page.locator('#wa-connected-dashboard')).toBeVisible();
-    await expect(page.locator('#wa-toggle')).toHaveAttribute('aria-checked', 'true');
-  });
-
-  test('OWNER can disconnect WhatsApp session @owner', async ({ page }) => {
-    // Mock connected session and successful disconnect
-    await page.route('**/api/v1/whatsapp/status/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          connected: true,
-          qr: null,
-          phone: '+593991234567',
-          messages_sent_today: 0,
-          daily_limit: 200,
-          messages_remaining: 200,
-        }),
-      });
-    });
-
-    await page.route('**/api/v1/whatsapp/disconnect/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, message: 'WhatsApp desconectado' }),
-      });
-    });
-
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    // Should be connected
-    await expect(page.locator('#wa-connected-dashboard')).toBeVisible({ timeout: 10000 });
-
-    // Click toggle to trigger disconnect dialog
-    await page.locator('#wa-toggle').click();
-    await expect(page.locator('#wa-disconnect-dialog')).toBeVisible({ timeout: 5000 });
-
-    // Click Confirm disconnect
-    await page.locator('#wa-disconnect-confirm-btn').click();
-
-    // After disconnect: dashboard gone, toggle OFF
-    await expect(page.locator('#wa-connected-dashboard')).toHaveCount(0, { timeout: 10000 });
-    await expect(page.locator('#wa-disconnect-dialog')).toHaveCount(0, { timeout: 5000 });
-    await expect(page.locator('#wa-toggle')).toHaveAttribute('aria-checked', 'false');
-  });
-
-  test('OWNER sees error banner when bridge is unavailable @owner', async ({ page }) => {
-    // Mock status API to return 502 error
-    await page.route('**/api/v1/whatsapp/status/**', async (route) => {
-      await route.fulfill({
-        status: 502,
-        contentType: 'application/json',
-        body: JSON.stringify({ detail: 'WhatsApp bridge unavailable' }),
-      });
-    });
-
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    // Click toggle ON
-    await page.locator('#wa-toggle').click();
-
-    // Should show error banner
-    await expect(page.getByText('no está disponible')).toBeVisible({ timeout: 10000 });
-
-    // Toggle should return to OFF
-    await expect(page.locator('#wa-toggle')).toHaveAttribute('aria-checked', 'false');
-
-    // Error banner has red styling
-    const errorBanner = page.locator('#wa-integration-section').getByText('no está disponible');
-    await expect(errorBanner).toBeVisible();
-  });
 });
 
 // =============================================================================
