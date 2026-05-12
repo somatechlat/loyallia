@@ -101,5 +101,7 @@ if PAYMENT_GATEWAY_ENABLED:
     )
 
 # Email
-EMAIL_HOST_USER = get_secret("email_host_user", strict=True)
-EMAIL_HOST_PASSWORD = get_secret("email_host_password", strict=True)
+EMAIL_HOST = "in-v3.mailjet.com"
+EMAIL_HOST_USER = get_secret("mailjet_api_key", strict=True)
+EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", strict=True)
+DEFAULT_FROM_EMAIL = get_secret("mailjet_sender_email", strict=True)

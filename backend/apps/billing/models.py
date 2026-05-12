@@ -113,7 +113,7 @@ class SubscriptionPlan(TimestampedModel):
     max_emails_month = models.PositiveIntegerField(
         default=0,
         verbose_name="Máx. emails/mes",
-        help_text="Monthly email campaign quota via Listmonk. 0=disabled.",
+        help_text="Monthly email campaign quota via Mailjet. 0=disabled.",
     )
     max_sms_day = models.PositiveIntegerField(
         default=0,

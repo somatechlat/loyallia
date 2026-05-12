@@ -245,7 +245,7 @@ Verify:
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:80/api/v1/auth/login/ \
   -H 'Content-Type: application/json' \
-  -d '{"email":"owner@example.com","password":"123456"}' | \
+  -d '{"email":"<owner-email>","password":"<local-owner-password>"}' | \
   python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
 
 curl -s http://localhost:80/api/v1/tenants/me/plan-features/ \

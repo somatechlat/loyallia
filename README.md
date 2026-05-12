@@ -100,9 +100,8 @@ git clone <repo> loyallia && cd loyallia
 # 2. Start all services (builds images + migrates + seeds data + inits Vault)
 docker compose up -d --build
 
-# 3. Vault is auto-seeded with dev credentials on first boot.
-#    All real credentials should be injected via SuperAdmin UI or Vault CLI.
-#    See: docs/AGENT_ONBOARDING.md §4 for current Vault contents.
+# 3. Vault must be configured with local operator credentials.
+#    Do not commit or document secret values.
 
 # 4. Access points
 # Dashboard:       http://localhost:33906
@@ -120,11 +119,10 @@ docker compose up -d --build
 
 All secrets are stored in **HashiCorp Vault** (`secret/data/loyallia/production`).
 
-**Current status:** All integrations configured with real credentials.
-See `docs/WALLET_CREDENTIALS_STATUS.md` for full audit.
+Run the local readiness checks before claiming any integration is configured.
 
 To update credentials via UI:
-1. Log in as SuperAdmin: `admin@example.com` / `[REDACTED]`
+1. Log in with a local SuperAdmin account configured by the operator.
 2. Go to `/superadmin/settings`
 3. Click "Configure credentials in Vault →" on any integration card
 4. Edit inline, click "Save to Vault"

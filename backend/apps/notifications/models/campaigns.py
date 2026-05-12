@@ -168,7 +168,7 @@ class CampaignDeliveryLog(models.Model):
         verbose_name="Estado",
     )
 
-    # Bridge/Listmonk message ID for correlation
+    # Provider message ID for correlation
     external_message_id = models.CharField(
         max_length=200,
         blank=True,

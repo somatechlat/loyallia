@@ -13,7 +13,7 @@ This document explains how to obtain and configure real API credentials for **Go
 | Service | Key | Status |
 |---------|-----|--------|
 | Google Wallet | `google_wallet_enabled` | `false` (needs SA JSON) |
-| Google Wallet | `google_wallet_issuer_id` | `3388000000022321101` (demo/test ID) |
+| Google Wallet | `google_wallet_issuer_id` | `<vault:google_wallet_issuer_id>` |
 | Google Wallet | `google_service_account_json` | **EMPTY** (needs real JSON) |
 | Apple Wallet | `apple_wallet_enabled` | `false` |
 | Apple Wallet | `apple_pass_type_identifier` | **EMPTY** |
@@ -36,7 +36,7 @@ This document explains how to obtain and configure real API credentials for **Go
 2. Sign in with your Google account
 3. Click **"Get Started"** or **"Create Account"**
 4. Complete the business verification process
-5. Once approved, you will receive an **Issuer ID** (e.g., `3388000000022321101`)
+5. Once approved, you will receive an **Issuer ID**. Store it in Vault.
 
 ### Step 2: Create a Service Account in Google Cloud
 
@@ -126,7 +126,7 @@ python3 scripts/inject_wallet_credentials.py --google-issuer-id "YOUR_ISSUER_ID"
 2. Click **"+"** to add a new identifier
 3. Select **"Pass Type IDs"**
 4. Description: `Loyallia Loyalty Pass`
-5. Identifier: `pass.com.yourcompany.loyallia` (replace `yourcompany` with your domain)
+5. Identifier: your Apple Pass Type Identifier. Store the exact value in Vault.
 6. Click **Continue** → **Register**
 
 ### Step 2: Create a Pass Type ID Certificate
@@ -172,7 +172,7 @@ openssl x509 -in pass.cer -inform DER -out apple_cert.pem -outform PEM
 
 1. Go to [Apple Developer Account](https://developer.apple.com/account)
 2. Click on **Membership Details**
-3. Copy your **Team ID** (10-character string, e.g., `ABCDE12345`)
+3. Copy your **Team ID** and store it in Vault.
 
 ### Step 7: Inject Credentials into Vault
 
@@ -183,8 +183,8 @@ openssl x509 -in pass.cer -inform DER -out apple_cert.pem -outform PEM
 3. Find the **Apple Wallet** card
 4. Click **"Configurar credenciales en Vault"**
 5. Fill in each field:
-   - `apple_pass_type_identifier`: `pass.com.yourcompany.loyallia`
-   - `apple_team_identifier`: `ABCDE12345`
+   - `apple_pass_type_identifier`: your Apple Pass Type Identifier
+   - `apple_team_identifier`: your Apple Team ID
    - `apple_cert_pem`: Paste contents of `apple_cert.pem`
    - `apple_cert_key_pem`: Paste contents of `apple_cert_key.pem`
    - `apple_wwdr_cert_pem`: Paste contents of `apple_wwdr.pem`
@@ -208,8 +208,8 @@ curl -X POST \
   http://localhost:33908/v1/secret/data/loyallia/production \
   -d "{
     \"data\": {
-      \"apple_pass_type_identifier\": \"pass.com.yourcompany.loyallia\",
-      \"apple_team_identifier\": \"ABCDE12345\",
+      \"apple_pass_type_identifier\": \"<vault:apple_pass_type_identifier>\",
+      \"apple_team_identifier\": \"<vault:apple_team_identifier>\",
       \"apple_cert_pem\": \"$CERT_PEM\",
       \"apple_cert_key_pem\": \"$KEY_PEM\",
       \"apple_wwdr_cert_pem\": \"$WWDR_PEM\",
@@ -223,8 +223,8 @@ curl -X POST \
 ```bash
 # Run the injection script
 python3 scripts/inject_wallet_credentials.py \
-  --apple-pass-id "pass.com.yourcompany.loyallia" \
-  --apple-team-id "ABCDE12345" \
+  --apple-pass-id "<vault:apple_pass_type_identifier>" \
+  --apple-team-id "<vault:apple_team_identifier>" \
   --apple-cert ./apple_cert.pem \
   --apple-key ./apple_cert_key.pem \
   --apple-wwdr ./apple_wwdr.pem
@@ -248,23 +248,23 @@ A convenience script is provided at `scripts/inject_wallet_credentials.py` to au
 ```bash
 # Google Wallet only
 python3 scripts/inject_wallet_credentials.py \
-  --google-issuer-id "3388000000022321101" \
+  --google-issuer-id "<vault:google_wallet_issuer_id>" \
   --google-sa-json ./google-service-account.json
 
 # Apple Wallet only
 python3 scripts/inject_wallet_credentials.py \
-  --apple-pass-id "pass.com.yourcompany.loyallia" \
-  --apple-team-id "ABCDE12345" \
+  --apple-pass-id "<vault:apple_pass_type_identifier>" \
+  --apple-team-id "<vault:apple_team_identifier>" \
   --apple-cert ./apple_cert.pem \
   --apple-key ./apple_cert_key.pem \
   --apple-wwdr ./apple_wwdr.pem
 
 # Both
 python3 scripts/inject_wallet_credentials.py \
-  --google-issuer-id "3388000000022321101" \
+  --google-issuer-id "<vault:google_wallet_issuer_id>" \
   --google-sa-json ./google-service-account.json \
-  --apple-pass-id "pass.com.yourcompany.loyallia" \
-  --apple-team-id "ABCDE12345" \
+  --apple-pass-id "<vault:apple_pass_type_identifier>" \
+  --apple-team-id "<vault:apple_team_identifier>" \
   --apple-cert ./apple_cert.pem \
   --apple-key ./apple_cert_key.pem \
   --apple-wwdr ./apple_wwdr.pem

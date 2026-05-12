@@ -1,8 +1,9 @@
+import os
 import random
 from datetime import timedelta
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
@@ -57,6 +58,11 @@ class Command(BaseCommand):
             action="store_true",
             help="Wipe the database before seeding (Destructive!)",
         )
+        parser.add_argument(
+            "--password",
+            default=None,
+            help="Local-only password for generated demo tenant users. Can also be set with LOYALLIA_SEED_PASSWORD.",
+        )
 
     def handle(self, *args, **options):
         from django.conf import settings
@@ -107,15 +113,22 @@ class Command(BaseCommand):
 
         self.stdout.write("Starting massive data seed process (Ecuador context)...")
 
+        seed_password = options["password"] or os.environ.get("LOYALLIA_SEED_PASSWORD")
+        if not seed_password:
+            raise CommandError(
+                "Set LOYALLIA_SEED_PASSWORD or pass --password for local demo users. "
+                "This command does not contain a hardcoded password."
+            )
+
         with transaction.atomic():
-            self._seed_data()
+            self._seed_data(seed_password)
 
         self.stdout.write(self.style.SUCCESS("Successfully seeded massive test data!"))
-        self.stdout.write("Test Credentials (Password is 123456):")
-        self.stdout.write("  SuperAdmin: admin@loyallia.com")
+        self.stdout.write("Demo tenant users were created with the operator-provided local seed password.")
+        self.stdout.write("SuperAdmin password is not created or reset by this seed command.")
         self.stdout.write("  Owner: owner@example.com")
 
-    def _seed_data(self):
+    def _seed_data(self, seed_password: str):
         now = timezone.now()
 
         # =====================================================================
@@ -138,7 +151,7 @@ class Command(BaseCommand):
         # =====================================================================
         # 2. SuperAdmin
         # =====================================================================
-        admin, _ = User.objects.get_or_create(
+        admin, admin_created = User.objects.get_or_create(
             email="admin@loyallia.com",
             defaults={
                 "first_name": "Sistema",
@@ -151,12 +164,25 @@ class Command(BaseCommand):
             },
         )
         # SUPER_ADMIN operates at platform level — tenant must be None
+        admin_needs_save = False
+        admin_update_fields = []
+        if admin_created:
+            admin.set_unusable_password()
+            admin_update_fields.append("password")
         if admin.tenant is not None:
             admin.tenant = None
+            admin_needs_save = True
+            admin_update_fields.append("tenant")
+        if not admin.is_staff:
             admin.is_staff = True
+            admin_needs_save = True
+            admin_update_fields.append("is_staff")
+        if not admin.is_superuser:
             admin.is_superuser = True
-        admin.set_password("123456")
-        admin.save()
+            admin_needs_save = True
+            admin_update_fields.append("is_superuser")
+        if admin_created or admin_needs_save:
+            admin.save(update_fields=[*admin_update_fields, "updated_at"])
 
         # =====================================================================
         # 3. Staff Users (Ecuadorian names)
@@ -184,7 +210,7 @@ class Command(BaseCommand):
             )
             if not u.tenant:
                 u.tenant = tenant
-            u.set_password("123456")
+            u.set_password(seed_password)
             u.save()
 
         # =====================================================================

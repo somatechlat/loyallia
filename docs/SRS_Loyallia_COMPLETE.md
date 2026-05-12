@@ -1006,7 +1006,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | LYL-SEC-015 | Backup files SHALL be encrypted at rest in MinIO | MUST |
 | LYL-SEC-030 | Super Admin impersonation SHALL require the Owner's 6-digit numeric security PIN (Argon2 hashed). 3 failed attempts SHALL trigger 15-minute lockout via Redis TTL counter. Every attempt SHALL be audit-logged with status (success/denied). | MUST |
 | LYL-SEC-031 | Owner SHALL set security PIN via `POST /tenants/security-pin/` with current password verification. PIN format: exactly 6 numeric digits. | MUST |
-| LYL-SEC-032 | All SMTP credentials SHALL be stored in HashiCorp Vault KV v2 (keys: `email_host_user`, `email_host_password`). NEVER in code or Git. | MUST |
+| LYL-SEC-032 | All Mailjet SMTP credentials SHALL be stored in HashiCorp Vault KV v2 (keys: `mailjet_api_key`, `mailjet_secret_key`, `mailjet_sender_email`). NEVER in code or Git. | MUST |
 
 ---
 
@@ -1068,7 +1068,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | Req ID | Requirement | Priority |
 |--------|-------------|----------|
 | LYL-FR-COM-012 | When SuperAdmin creates a tenant, the system SHALL send a welcome email to the new Owner containing: temporary password, login URL, and trial period information | MUST |
-| LYL-FR-COM-012.1 | Email SHALL be sent via Django SMTP backend using credentials from Vault (`email_host_user`, `email_host_password`) | MUST |
+| LYL-FR-COM-012.1 | Email SHALL be sent via Django SMTP backend using Mailjet credentials from Vault (`mailjet_api_key`, `mailjet_secret_key`, `mailjet_sender_email`) | MUST |
 
 ### 19.2.7 Architectural Quality
 

@@ -46,7 +46,7 @@ services:
       PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
       PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
       # Email
-      EMAIL_HOST: ${EMAIL_HOST:-smtp.mailjet.com}
+      EMAIL_HOST: ${EMAIL_HOST:-in-v3.mailjet.com}
       EMAIL_PORT: "${EMAIL_PORT:-587}"
       EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
       # ═══════════════════════════════════════════════════════════════════════

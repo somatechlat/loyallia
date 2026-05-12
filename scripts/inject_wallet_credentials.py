@@ -5,23 +5,23 @@ Inject Google Wallet and Apple Wallet credentials into HashiCorp Vault.
 Usage:
     # Google Wallet only
     python3 inject_wallet_credentials.py \
-        --google-issuer-id "3388000000022321101" \
+        --google-issuer-id "<vault:google_wallet_issuer_id>" \
         --google-sa-json ./google-service-account.json
 
     # Apple Wallet only
     python3 inject_wallet_credentials.py \
-        --apple-pass-id "pass.com.yourcompany.loyallia" \
-        --apple-team-id "ABCDE12345" \
+        --apple-pass-id "<vault:apple_pass_type_identifier>" \
+        --apple-team-id "<vault:apple_team_identifier>" \
         --apple-cert ./apple_cert.pem \
         --apple-key ./apple_cert_key.pem \
         --apple-wwdr ./apple_wwdr.pem
 
     # Both
     python3 inject_wallet_credentials.py \
-        --google-issuer-id "3388000000022321101" \
+        --google-issuer-id "<vault:google_wallet_issuer_id>" \
         --google-sa-json ./google-service-account.json \
-        --apple-pass-id "pass.com.yourcompany.loyallia" \
-        --apple-team-id "ABCDE12345" \
+        --apple-pass-id "<vault:apple_pass_type_identifier>" \
+        --apple-team-id "<vault:apple_team_identifier>" \
         --apple-cert ./apple_cert.pem \
         --apple-key ./apple_cert_key.pem \
         --apple-wwdr ./apple_wwdr.pem

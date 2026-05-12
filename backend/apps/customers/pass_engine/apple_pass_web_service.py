@@ -63,7 +63,10 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
     """
     from apps.customers.models import CustomerPass
 
-    configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards")
+    configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
+    if not configured_pass_type:
+        logger.warning("Apple Web Service: Pass type identifier is not configured")
+        return None
     if pass_type_id != configured_pass_type:
         logger.warning(
             "Apple Web Service: Pass type mismatch: expected %s, got %s",
@@ -215,7 +218,9 @@ def list_updated_passes(
     """
     from apps.customers.models import ApplePassRegistration
 
-    configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "pass.com.loyallia.cards")
+    configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
+    if not configured_pass_type:
+        return HttpResponse(status=404)
     if pass_type_id != configured_pass_type:
         return HttpResponse(status=404)
 

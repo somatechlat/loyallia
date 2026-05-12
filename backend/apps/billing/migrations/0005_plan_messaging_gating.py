@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name="max_emails_month",
             field=models.PositiveIntegerField(
                 default=0,
-                help_text="Monthly email campaign quota via Listmonk. 0=disabled.",
+                help_text="Monthly email campaign quota via Mailjet. 0=disabled.",
                 verbose_name="Máx. emails/mes",
             ),
         ),

@@ -1,48 +1,38 @@
-# Loyallia Wallet Credentials — Current Status (REAL DATA ONLY)
+# Loyallia Wallet Credentials — Current Status
 
 > **Document Date:** 2026-05-06
-> **Policy:** NO placeholders, NO mocks, NO simulated data. All credentials verified from actual files.
+> **Policy:** Do not store credential values in Git. Verify locally against Vault or ignored certificate files.
 
 ---
 
-## ✅ GOOGLE WALLET — FULLY CONFIGURED
+## GOOGLE WALLET
 
 | Vault Key | Value | Source |
 |-----------|-------|--------|
-| `google_wallet_enabled` | `true` | User confirmed |
-| `google_wallet_issuer_id` | `3388000000023112792` | Real issuer account |
-| `google_service_account_json` | Real service account | `certs/scenic-parity-494022-h5-628cf7e3795c.json` |
-| `google_oauth_client_id` | `[REDACTED]` | `certs/client_secret_*.json` |
-| `google_oauth_client_secret` | `[REDACTED]` | `certs/client_secret_*.json` |
+| `google_wallet_enabled` | Vault boolean | SuperAdmin/Vault |
+| `google_wallet_issuer_id` | Vault value | SuperAdmin/Vault |
+| `google_service_account_json` | Vault secret | Ignored local service account JSON |
+| `google_oauth_client_id` | Vault value | Ignored local OAuth JSON |
+| `google_oauth_client_secret` | Vault secret | Ignored local OAuth JSON |
 
-**Service Account Details:**
-- Project: `scenic-parity-494022-h5`
-- Client Email: `loyallia-srvc-account-wallet@scenic-parity-494022-h5.iam.gserviceaccount.com`
-- Has `private_key` and `client_email` fields — cryptographically valid
+**Service Account Details:** verify required fields locally without printing values: `private_key`, `client_email`, `token_uri`.
 
 **Diagnostics:** All green — `enabled=true`, `issuer_id_present=true`, `service_account_present=true`, `service_account_valid_json=true`, `service_account_has_required_fields=true`
 
 ---
 
-## ✅ APPLE WALLET — FULLY CONFIGURED
+## APPLE WALLET
 
 | Vault Key | Value | Source |
 |-----------|-------|--------|
-| `apple_wallet_enabled` | `true` | Enabled after real cert obtained |
-| `apple_pass_type_identifier` | `pass.com.loyallia.cards` | Extracted from real `passNew.cer` |
-| `apple_team_identifier` | `29NGPXM563` | Extracted from real `passNew.cer` |
-| `apple_cert_pem` | Real Apple-signed certificate | Converted from `certs/passNew.cer` |
-| `apple_cert_key_pem` | Real 2048-bit RSA private key | `certs/apple_pass_new.key` |
-| `apple_wwdr_cert_pem` | Real Apple WWDR G4 cert | Converted from `certs/AppleWWDRCAG4.cer` |
+| `apple_wallet_enabled` | Vault boolean | SuperAdmin/Vault |
+| `apple_pass_type_identifier` | Vault value | Ignored local Apple certificate |
+| `apple_team_identifier` | Vault value | Ignored local Apple certificate |
+| `apple_cert_pem` | Vault secret | Ignored local Apple certificate |
+| `apple_cert_key_pem` | Vault secret | Ignored local Apple private key |
+| `apple_wwdr_cert_pem` | Vault value | Ignored local WWDR certificate |
 
-**Certificate Details:**
-- Serial: `557e3f522e292afe946c5cfedbe3423a` (OLD cert, revoked)
-- New Serial: from `passNew.cer` — signed by Apple for keypair `apple_pass_new.key`
-- Pass Type ID: `pass.com.loyallia.cards`
-- Team ID: `29NGPXM563`
-- Owner: ROBERTO MANOSALVAS (EC)
-- Issuer: Apple Worldwide Developer Relations Certification Authority, OU=G4
-- Validity: May 2026 → Jun 2027
+**Certificate Details:** verify serial, pass type identifier, team identifier, issuer, validity, and keypair match locally without committing values.
 
 **Keypair Verification:**
 ```bash
@@ -55,18 +45,19 @@ openssl rsa -in apple_pass_new.key -pubout | openssl rsa -pubin -modulus -noout
 
 ---
 
-## ✅ EMAIL SMTP — FULLY CONFIGURED
+## MAILJET EMAIL
 
 | Vault Key | Value | Source |
 |-----------|-------|--------|
-| `email_host_user` | `info@loyallia.com` | User provided |
-| `email_host_password` | `[REDACTED]` | Google App Password (user provided) |
+| `mailjet_api_key` | Vault secret | Operator provided |
+| `mailjet_secret_key` | Vault secret | Operator provided |
+| `mailjet_sender_email` | Vault value | Operator provided |
 
-**SMTP Server:** `smtp.gmail.com` (from Django settings)
+**SMTP Server:** `in-v3.mailjet.com` (Mailjet)
 **Port:** `587` (from Django settings)
 **Security:** TLS
 
-**Diagnostics:** `user_present=true`, `pass_present=true`
+**Diagnostics:** `api_key_present=true`, `secret_key_present=true`, `sender_email_present=true`
 
 ---
 
@@ -74,12 +65,12 @@ openssl rsa -in apple_pass_new.key -pubout | openssl rsa -pubin -modulus -noout
 
 **File Modified:** `backend/common/env_validation.py`
 
-**Problem:** `email_host_user` and `email_host_password` were unconditionally required in `PRODUCTION_REQUIRED_VAULT_KEYS`, causing the API to crash when email was not configured.
+**Problem:** Mail provider credentials were unconditionally required in `PRODUCTION_REQUIRED_VAULT_KEYS`, causing the API to crash when email was not configured.
 
 **Fix:**
-- Removed `email_host_user`, `email_host_password`, and `apple_wallet_enabled` from unconditional required list
+- Removed Mailjet and Apple Wallet credentials from unconditional required list
 - Added `EMAIL_REQUIRED_VAULT_KEYS` list
-- Email credentials are now only validated if `email_host_user` is non-empty (meaning email is actively configured)
+- Mailjet credentials are now only validated if `mailjet_api_key` is non-empty (meaning email is actively configured)
 - Apple Wallet fields are only validated if `apple_wallet_enabled` is truthy
 
 This allows the system to boot with only the integrations that are actually configured.
@@ -94,7 +85,7 @@ All integration cards now support inline Vault editing:
 - Google Wallet: Enabled, Issuer ID, Service Account JSON, OAuth Client ID, OAuth Client Secret
 - Apple Wallet: Enabled, Pass Type ID, Team ID, Certificate PEM, Private Key PEM, WWDR PEM
 - Payment Gateway: Enabled, Provider, Login, Transaction Key, Webhook Secret
-- Email SMTP: Username, Password
+- Mailjet Email: API key, secret key, sender email
 
 ---
 
@@ -102,12 +93,12 @@ All integration cards now support inline Vault editing:
 
 | File | Status | Notes |
 |------|--------|-------|
-| `AppleWWDRCAG4.cer` | ✅ Real | Apple WWDR G4 intermediate cert |
-| `passNew.cer` | ✅ Real | Apple-signed Pass Type ID cert (matches apple_pass_new.key) |
-| `apple_pass_new.key` | ✅ Real | 2048-bit RSA private key (matches passNew.cer) |
-| `apple_pass_new.csr` | ✅ Real | CSR generated from apple_pass_new.key |
-| `client_secret_*.json` | ✅ Real | Google OAuth 2.0 client secrets |
-| `scenic-parity-494022-h5-628cf7e3795c.json` | ✅ Real | Google Wallet Service Account |
+| `AppleWWDRCAG4.cer` | Ignored local credential | Apple WWDR intermediate cert |
+| `passNew.cer` | Ignored local credential | Apple Pass Type ID cert |
+| `apple_pass_new.key` | Ignored local credential | Apple private key |
+| `apple_pass_new.csr` | Ignored local credential | CSR |
+| `client_secret_*.json` | Ignored local credential | Google OAuth 2.0 client secrets |
+| `service-account-*.json` | Ignored local credential | Google Wallet service account |
 | `README.md` | — | Documentation |
 
 **Removed Files (sanitized/obsolete):**
@@ -123,16 +114,16 @@ All integration cards now support inline Vault editing:
 
 | Integration | Status | Real Data Source |
 |-------------|--------|------------------|
-| Google Wallet | 🟢 Configured | `scenic-parity-494022-h5-628cf7e3795c.json` + Issuer ID |
-| Google OAuth | 🟢 Configured | `client_secret_*.json` |
-| Apple Wallet | 🟢 Configured | `passNew.cer` + `apple_pass_new.key` + `AppleWWDRCAG4.cer` |
-| Email SMTP | 🟢 Configured | `info@loyallia.com` + Google App Password |
-| Payments | ⚪ Disabled | Not configured |
+| Google Wallet | Verify locally | Vault + ignored local files |
+| Google OAuth | Verify locally | Vault + ignored local files |
+| Apple Wallet | Verify locally | Vault + ignored local files |
+| Mailjet Email | Verify locally | Vault |
+| Payments | Verify locally | Vault/operator setting |
 
 ---
 
 ## NEXT STEPS
 
-1. **Production:** Replace `email_host_password` with a fresh Google App Password before going live
-2. **Security:** Rotate `google_service_account_json` private key annually per Google best practices
-3. **Apple Wallet:** Certificate expires Jun 2027 — renewal required before expiry
+1. **Production:** keep SMTP password in Vault only and rotate by operator policy.
+2. **Security:** rotate Google service account keys by operator policy.
+3. **Apple Wallet:** track certificate expiry outside Git and renew before expiry.

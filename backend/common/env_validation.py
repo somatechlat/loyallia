@@ -101,7 +101,7 @@ OPTIONAL_VARS = [
     EnvVar(
         name="EMAIL_HOST",
         required=False,
-        default="smtp.gmail.com",
+        default="in-v3.mailjet.com",
         description="SMTP server hostname",
     ),
 ]
@@ -140,8 +140,9 @@ PAYMENT_REQUIRED_VAULT_KEYS = [
 ]
 
 EMAIL_REQUIRED_VAULT_KEYS = [
-    "email_host_user",
-    "email_host_password",
+    "mailjet_api_key",
+    "mailjet_secret_key",
+    "mailjet_sender_email",
 ]
 
 
@@ -192,9 +193,9 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
             required_keys.extend(APPLE_REQUIRED_VAULT_KEYS)
         if _truthy(secrets.get("payment_gateway_enabled")):
             required_keys.extend(PAYMENT_REQUIRED_VAULT_KEYS)
-        # Only require SMTP credentials if email is actively configured.
-        # An empty email_host_user means "no SMTP configured" — valid state.
-        if str(secrets.get("email_host_user", "")).strip():
+        # Only require Mailjet credentials if email is actively configured.
+        # An empty mailjet_api_key means "no mass-email provider configured" — valid state.
+        if str(secrets.get("mailjet_api_key", "")).strip():
             required_keys.extend(EMAIL_REQUIRED_VAULT_KEYS)
 
         for key in required_keys:

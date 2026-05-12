@@ -24,8 +24,9 @@ CORE_REQUIRED_KEYS = [
     "apple_wallet_enabled",
     "payment_gateway_enabled",
     "payment_gateway_provider",
-    "email_host_user",
-    "email_host_password",
+    "mailjet_api_key",
+    "mailjet_secret_key",
+    "mailjet_sender_email",
 ]
 
 PAYMENT_REQUIRED_KEYS = [
@@ -66,9 +67,10 @@ INTEGRATION_REQUIRED_KEY_GROUPS = {
         "twilio_test_account_sid",
         "twilio_test_auth_token",
     ],
-    "listmonk": [
-        "listmonk_api_user",
-        "listmonk_api_token",
+    "mailjet": [
+        "mailjet_api_key",
+        "mailjet_secret_key",
+        "mailjet_sender_email",
     ],
     "ai_agent": ["ai_agent_api_key"],
 }

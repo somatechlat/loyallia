@@ -52,13 +52,13 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin', () => {
     expect(hasTwilio, 'Twilio integration card should be visible').toBeTruthy();
   });
 
-  test('6. Settings shows Email SMTP integration card', async ({ page }) => {
+  test('6. Settings shows Mailjet integration card', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
 
-    const emailCard = page.locator('text=SMTP').or(page.locator('text=Email'));
+    const emailCard = page.locator('text=Mailjet Email');
     const hasEmail = (await emailCard.count()) > 0;
-    expect(hasEmail, 'Email/SMTP integration card should be visible').toBeTruthy();
+    expect(hasEmail, 'Mailjet integration card should be visible').toBeTruthy();
   });
 
   test('7. Metrics (/superadmin/metrics) loads with charts', async ({ page }) => {

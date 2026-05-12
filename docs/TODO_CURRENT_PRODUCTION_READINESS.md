@@ -13,6 +13,10 @@ Status values: `OPEN`, `IN_PROGRESS`, `BLOCKED`, `VERIFYING`, `DONE`, `ACCEPTED_
 
 | Gate | Command | Result | Notes |
 |---|---|---|---|
+| DR Docker cluster rebuild | `docker compose down` + recreate target data volumes + `docker compose up -d` | PASS | Local zero-state target rebuilt after Vault import. Production was read-only. |
+| Docker service health | `docker compose ps` | PASS/PENDING | API, Postgres, replica, PgBouncer, Redis, MinIO, Vault, web, WhatsApp healthy. Celery health was still starting at snapshot time. |
+| Frontend HTTP | `curl -I http://localhost:80` | PASS | HTTP 200 from Nginx/Next.js. |
+| WhatsApp bridge health | `curl http://localhost:33914/health` | PASS | Returned `status=ok`; no real messages sent. |
 | Frontend typecheck | `cd frontend && npm run typecheck` | PASS | Current workspace. |
 | Frontend unit tests | `cd frontend && npm run test:unit` | PASS | 1 file, 12 tests. |
 | Frontend build | `cd frontend && npm run build` | PASS WITH WARNINGS | Existing warnings remain for `<img>`, hook dependencies, and custom font. |
@@ -81,6 +85,29 @@ Status values: `OPEN`, `IN_PROGRESS`, `BLOCKED`, `VERIFYING`, `DONE`, `ACCEPTED_
 | LYL-SEC-002 | Verify runtime secrets come from Vault or approved local-dev files only. | OPEN | Settings, compose, Vault helpers | Pending. | Production path must be Vault-backed. |
 | LYL-SEC-003 | Verify APIs never return secret values in integration previews. | VERIFYING | SuperAdmin integration APIs | Read-only Playwright assertion added. | Backend source audit still required. |
 | LYL-SEC-004 | Verify logs mask PII and secrets. | OPEN | Logging, middleware, service clients | Pending. | Must include error paths. |
+
+## P0 Disaster Recovery Runbook
+
+| ID | Requirement | Status | Evidence | Notes |
+|---|---|---|---|---|
+| LYL-DR-001 | Production is read-only during recovery export. | DONE | SSH commands used Docker inspect and Vault KV read only. | No production containers were restarted, edited, or redeployed. |
+| LYL-DR-002 | Vault is restored before stateful services initialize. | DONE | Local failure reproduced when Postgres initialized before Vault import; fixed by recreating local Postgres/Redis/MinIO/runtime volumes after Vault import. | This ordering is mandatory. |
+| LYL-DR-003 | Fresh target bootstrap order is documented. | DONE | Runbook below. | Vault alone restores config/secrets, not tenant data. |
+| LYL-DR-004 | Database/object storage backup restore is defined. | OPEN | Pending backup artifact names and retention policy. | Current drill rebuilt empty DB and applied migrations; it did not restore production tenant data. |
+| LYL-DR-005 | Mailjet credentials are configured in Vault. | BLOCKED | Production Vault snapshot did not contain `mailjet_api_key`, `mailjet_secret_key`, or `mailjet_sender_email`. | Requires verified Mailjet sender email/domain before production strict settings can pass. |
+
+### Disaster Recovery Bootstrap Order
+
+1. Provision the replacement host and install Docker/Compose.
+2. Deploy the repository and confirm `.env`, `.agents`, `certs`, and generated reports are not staged.
+3. Start only Vault and import `secret/loyallia/production` from the approved backup or read-only production export.
+4. Run `vault-init` so it unseals Vault, validates required keys, writes `/run/loyallia-vault/*`, and creates the scoped app token.
+5. Restore Postgres backup before starting API workers, or initialize an empty database only for a clean recovery drill.
+6. Restore MinIO buckets/objects before validating wallet assets and generated pass media.
+7. Start the full stack with `docker compose up -d`.
+8. Run migrations, collectstatic, Docker health checks, API readiness, frontend HTTP, Celery queue checks, MinIO bucket checks, and WhatsApp bridge health.
+9. Run wallet, automation, admin, settings, scanner, campaign, and role-isolation tests against the recovered target.
+10. Record `PASS`, `FAIL`, `BLOCKED`, and `NOT LOCALLY PROVABLE`; do not claim production readiness while any P0 gate is failing.
 
 ## P1 Frontend Cleanup
 

@@ -5,7 +5,7 @@ Creates or corrects the platform-level SUPER_ADMIN user on first migration.
 This guarantees the system boots to a usable state regardless of DEBUG mode.
 
 Idempotent:
-    - If no SUPER_ADMIN exists → creates one with correct credentials/flags.
+    - If no SUPER_ADMIN exists → creates one with an unusable password and correct flags.
     - If a SUPER_ADMIN exists but has wrong tenant/staff/superuser flags
       (legacy from old seed scripts) → corrects them.
     - If already correct → no-op.
@@ -23,7 +23,7 @@ from django.db import migrations
 def ensure_superadmin(apps, schema_editor):
     """Create or repair the default SUPER_ADMIN user.
 
-    SEC: Password is hashed via Django's make_password() — no plaintext storage.
+    SEC: No default password is embedded in migrations.
     ARCH: tenant=None → platform-level access, not scoped to any business.
     """
     User = apps.get_model("authentication", "User")
@@ -36,7 +36,7 @@ def ensure_superadmin(apps, schema_editor):
         User.objects.create(
             id=uuid.uuid4(),
             email="admin@loyallia.com",
-            password=make_password("Loyallia@Admin2026!"),
+            password=make_password(None),
             first_name="Sistema",
             last_name="Admin",
             role="SUPER_ADMIN",
@@ -62,12 +62,8 @@ def ensure_superadmin(apps, schema_editor):
         admin.email = "admin@loyallia.com"
         needs_save = True
 
-    # Always reset password to the canonical default (idempotent for new deploys)
-    admin.password = make_password("Loyallia@Admin2026!")
-    needs_save = True
-
     if needs_save:
-        admin.save(update_fields=["tenant", "is_staff", "is_superuser", "email", "password"])
+        admin.save(update_fields=["tenant", "is_staff", "is_superuser", "email"])
 
 
 def noop(apps, schema_editor):
