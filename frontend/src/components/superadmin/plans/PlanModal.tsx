@@ -119,7 +119,6 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
       <div
         className="relative w-full h-full bg-white/90 dark:bg-surface-950/95 backdrop-blur-xl border border-white/30 dark:border-white/[0.06] shadow-2xl overflow-hidden flex flex-col animate-fade-in"
         onClick={(e) => e.stopPropagation()}
-        style={{ boxShadow: '0 25px 80px rgba(0,0,0,0.15)' }}
       >
         <div className="h-1.5 bg-gradient-to-r from-brand-400 via-purple-400 to-indigo-500" />
 
@@ -180,29 +179,29 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
             </div>
 
             {/* Messaging */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-emerald-950/40 dark:to-blue-950/30 rounded-xl p-3 border border-green-200/50 dark:border-emerald-500/20">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-3 border border-green-200/50">
               <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">📡 Canales de Mensajería</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[10px] font-semibold text-green-600 dark:text-green-400 uppercase">WhatsApp/día</p>
+                  <p className="text-[10px] font-semibold text-green-600 uppercase">WhatsApp/día</p>
                   <p className="text-lg font-black text-surface-900 dark:text-surface-100">
                     {selected.max_whatsapp_day > 0 ? selected.max_whatsapp_day : <span className="text-surface-300 dark:text-surface-500">Off</span>}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase">Emails/mes</p>
+                  <p className="text-[10px] font-semibold text-blue-600 uppercase">Emails/mes</p>
                   <p className="text-lg font-black text-surface-900 dark:text-surface-100">
                     {selected.max_emails_month > 0 ? selected.max_emails_month.toLocaleString() : <span className="text-surface-300 dark:text-surface-500">Off</span>}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase">SMS/día</p>
+                  <p className="text-[10px] font-semibold text-purple-600 uppercase">SMS/día</p>
                   <p className="text-lg font-black text-surface-900 dark:text-surface-100">
                     {selected.max_sms_day > 0 ? selected.max_sms_day : <span className="text-surface-300 dark:text-surface-500">Off</span>}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase">Wallet/mes</p>
+                  <p className="text-[10px] font-semibold text-indigo-600 uppercase">Wallet/mes</p>
                   <p className="text-lg font-black text-surface-900 dark:text-surface-100">
                     {selected.max_wallet_pushes_month > 0 ? selected.max_wallet_pushes_month.toLocaleString() : <span className="text-surface-300 dark:text-surface-500">Off</span>}
                   </p>
@@ -211,17 +210,17 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
             </div>
 
             {/* AI & API */}
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/30 rounded-xl p-3 border border-purple-200/50 dark:border-purple-500/20">
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-3 border border-purple-200/50">
               <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">🤖 IA & API</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase">Consultas IA/mes</p>
+                  <p className="text-[10px] font-semibold text-purple-600 uppercase">Consultas IA/mes</p>
                   <p className="text-lg font-black text-surface-900 dark:text-surface-100">
                     {selected.max_ai_queries_month > 0 ? selected.max_ai_queries_month : <span className="text-surface-300 dark:text-surface-500">Off</span>}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase">API calls/día</p>
+                  <p className="text-[10px] font-semibold text-indigo-600 uppercase">API calls/día</p>
                   <p className="text-lg font-black text-surface-900 dark:text-surface-100">
                     {selected.max_api_calls_day > 0 ? selected.max_api_calls_day.toLocaleString() : <span className="text-surface-300 dark:text-surface-500">Off</span>}
                   </p>
@@ -266,8 +265,8 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                 disabled={saving}
                 className={`px-4 py-2.5 rounded-xl font-semibold text-sm border transition-all ${
                   selected.is_active
-                    ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/50 border-red-200 dark:border-red-500/30'
-                    : 'bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950/50 border-green-200 dark:border-green-500/30'
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
+                    : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200'
                 }`}
               >
                 {selected.is_active ? 'Desactivar' : 'Reactivar'}
@@ -342,7 +341,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
               <div className="space-y-3">
                 <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide">📡 Canales de Mensajería</p>
                 {/* WhatsApp */}
-                <div className="bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-emerald-950/40 dark:to-emerald-900/20 rounded-xl p-3 border border-green-200/40 dark:border-emerald-500/20 space-y-2">
+                <div className="bg-gradient-to-r from-green-50/80 to-emerald-50/80 rounded-xl p-3 border border-green-200/40 space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -371,7 +370,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   )}
                 </div>
                 {/* Email */}
-                <div className="bg-gradient-to-r from-blue-50/80 to-sky-50/80 dark:from-blue-950/40 dark:to-sky-950/20 rounded-xl p-3 border border-blue-200/40 dark:border-blue-500/20 space-y-2">
+                <div className="bg-gradient-to-r from-blue-50/80 to-sky-50/80 rounded-xl p-3 border border-blue-200/40 space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -400,7 +399,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   )}
                 </div>
                 {/* SMS */}
-                <div className="bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-950/40 dark:to-violet-950/20 rounded-xl p-3 border border-purple-200/40 dark:border-purple-500/20 space-y-2">
+                <div className="bg-gradient-to-r from-purple-50/80 to-violet-50/80 rounded-xl p-3 border border-purple-200/40 space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -429,7 +428,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   )}
                 </div>
                 {/* Wallet */}
-                <div className="bg-gradient-to-r from-indigo-50/80 to-slate-50/80 dark:from-indigo-950/40 dark:to-surface-900/70 rounded-xl p-3 border border-indigo-200/40 dark:border-indigo-500/20 space-y-2">
+                <div className="bg-gradient-to-r from-indigo-50/80 to-slate-50/80 rounded-xl p-3 border border-indigo-200/40 space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -460,7 +459,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
 
                 {/* AI & API Rate Limits */}
                 <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide pt-2">🤖 IA & API</p>
-                <div className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 dark:from-purple-950/40 dark:to-indigo-950/25 rounded-xl p-3 border border-purple-200/40 dark:border-purple-500/20 space-y-2">
+                <div className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 rounded-xl p-3 border border-purple-200/40 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <FormField
                       label="Consultas IA/mes"
@@ -482,7 +481,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
               {/* COLUMN 3: Features & Automation */}
               <div className="space-y-3">
                 <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide">⚡ Automatización</p>
-                <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/40 dark:to-orange-950/25 rounded-xl p-3 border border-amber-200/40 dark:border-amber-500/20 space-y-2">
+                <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 rounded-xl p-3 border border-amber-200/40 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <FormField
                       label="Máx. Automatizaciones"
