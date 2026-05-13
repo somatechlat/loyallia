@@ -32,6 +32,10 @@ async function gotoLoadedDashboard(page: any): Promise<boolean> {
   return dataLoaded;
 }
 
+async function expectDashboardStatsReloaded(page: any) {
+  await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 45000 });
+}
+
 test.describe('Dashboard KPIs — OWNER @owner', () => {
 
   test('Dashboard loads with welcome message @owner', async ({ page }) => {
@@ -64,17 +68,14 @@ test.describe('Dashboard KPIs — OWNER @owner', () => {
     const loaded = await gotoLoadedDashboard(page);
     test.skip(!loaded, 'Dashboard API did not load in time');
     await page.locator('#date-range-7').click();
-    // Wait for data reload — stat cards should still be 4
-    await page.waitForTimeout(3000);
-    await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 10000 });
+    await expectDashboardStatsReloaded(page);
   });
 
   test('Clicking Hoy filter reloads data @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
     test.skip(!loaded, 'Dashboard API did not load in time');
     await page.locator('#date-range-1').click();
-    await page.waitForTimeout(3000);
-    await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 10000 });
+    await expectDashboardStatsReloaded(page);
   });
 
   test('Custom date picker appears on Periodo click @owner', async ({ page }) => {

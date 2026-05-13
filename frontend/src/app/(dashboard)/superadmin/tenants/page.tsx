@@ -132,6 +132,9 @@ export default function SuperAdminTenants() {
   const [dtLocsLoading, setDtLocsLoading] = useState(false);
   const [editLoc, setEditLoc] = useState<TenantLocation | 'new' | null>(null);
   const [locForm, setLocForm] = useState<Partial<TenantLocation>>({});
+  const [impersonationPin, setImpersonationPin] = useState('');
+  const [impersonationJustification, setImpersonationJustification] = useState('');
+  const [impersonating, setImpersonating] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -184,7 +187,14 @@ export default function SuperAdminTenants() {
     } catch (e) { console.error('Locations fetch failed:', e); setDtLocs([]); }
     setDtLocsLoading(false);
   };
-  const closeDetail = () => { setDt(null); setDtEdit(false); setEditLoc(null); };
+  const closeDetail = () => {
+    setDt(null);
+    setDtEdit(false);
+    setEditLoc(null);
+    setImpersonationPin('');
+    setImpersonationJustification('');
+    setImpersonating(false);
+  };
   const saveDetail = async () => {
     if (!dt) return;
     setDtSaving(true);
@@ -192,6 +202,43 @@ export default function SuperAdminTenants() {
   };
   const doSuspend = async () => { if (!dt || !confirm(`¿Suspender "${dt.name}"?`)) return; await api(`/tenants/${dt.id}/suspend/`, { method: 'POST' }); toast.success('Suspendido'); closeDetail(); fetchData(); };
   const doReactivate = async () => { if (!dt) return; await api(`/tenants/${dt.id}/reactivate/`, { method: 'POST' }); toast.success('Reactivado'); closeDetail(); fetchData(); };
+  const doImpersonate = async () => {
+    if (!dt) return;
+    const ownerPin = impersonationPin.replace(/\D/g, '');
+    const justification = impersonationJustification.trim();
+    if (ownerPin.length !== 6) {
+      toast.error('Ingresa el PIN de 6 dígitos del propietario');
+      return;
+    }
+    if (justification.length < 10) {
+      toast.error('Ingresa una justificación de soporte');
+      return;
+    }
+    if (!confirm(`¿Impersonar a "${dt.name}"? Podrás volver al panel de admin.`)) return;
+
+    setImpersonating(true);
+    try {
+      const currentToken = Cookies.get('access_token') || '';
+      const { data: d } = await api(`/tenants/${dt.id}/impersonate/`, {
+        method: 'POST',
+        body: JSON.stringify({ owner_pin: ownerPin, justification }),
+      });
+      if (d.access_token) {
+        sessionStorage.setItem('superadmin_token', currentToken);
+        sessionStorage.setItem('impersonation_started_at', String(Date.now()));
+        const isProd = process.env.NODE_ENV === 'production';
+        Cookies.set('access_token', d.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
+        window.location.href = '/';
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al impersonar';
+      toast.error(msg);
+      sessionStorage.removeItem('superadmin_token');
+      sessionStorage.removeItem('impersonation_started_at');
+    } finally {
+      setImpersonating(false);
+    }
+  };
   const openLocEdit = (loc: TenantLocation) => { setEditLoc(loc); setLocForm({ name: loc.name, address: loc.address||'', city: loc.city||'', phone: '', latitude: loc.latitude, longitude: loc.longitude, is_active: loc.is_active, is_primary: loc.is_primary }); };
   const openLocNew = () => { setEditLoc('new'); setLocForm({ name: '', address: '', city: '', phone: '', latitude: null, longitude: null, is_active: true, is_primary: false }); };
   const saveLoc = async () => {
@@ -476,23 +523,37 @@ export default function SuperAdminTenants() {
                   <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
                     <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">Impersonar</h4>
                     <p className="text-xs text-surface-500 mb-3">Iniciar sesión como el propietario de este negocio para soporte.</p>
-                    {/* SEC-009 fix: backup admin token before impersonation */}
-                    <button onClick={async () => {
-                      if (!dt || !confirm(`¿Impersonar a "${dt.name}"? Podrás volver al panel de admin.`)) return;
-                      try {
-                        // Backup superadmin token + timestamp for auto-expiry
-                        const currentToken = Cookies.get('access_token') || '';
-                        sessionStorage.setItem('superadmin_token', currentToken);
-                        sessionStorage.setItem('impersonation_started_at', String(Date.now()));
-                        const { data: d } = await api(`/tenants/${dt.id}/impersonate/`, { method: 'POST' });
-                        if (d.access_token) {
-                          const isProd = process.env.NODE_ENV === 'production';
-                          Cookies.set('access_token', d.access_token, { expires: 1/24, secure: isProd, sameSite: 'strict' });
-                          window.location.href = '/';
-                        }
-                      } catch { toast.error('Error al impersonar'); }
-                    }}
-                      className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.key} Impersonar Propietario</button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label htmlFor="impersonation-owner-pin" className="text-xs font-semibold text-surface-500 mb-1 block">PIN del propietario</label>
+                        <input
+                          id="impersonation-owner-pin"
+                          value={impersonationPin}
+                          onChange={e => setImpersonationPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          inputMode="numeric"
+                          type="password"
+                          maxLength={6}
+                          className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="impersonation-justification" className="text-xs font-semibold text-surface-500 mb-1 block">Justificación</label>
+                        <input
+                          id="impersonation-justification"
+                          value={impersonationJustification}
+                          onChange={e => setImpersonationJustification(e.target.value)}
+                          placeholder="Soporte solicitado por el propietario"
+                          className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={doImpersonate}
+                      disabled={impersonating}
+                      className="bg-purple-500 hover:bg-purple-600 disabled:opacity-60 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
+                    >
+                      {IC.key} {impersonating ? 'Impersonando...' : 'Impersonar Propietario'}
+                    </button>
                   </div>
                   <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
                     <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-1">Información Técnica</h4>

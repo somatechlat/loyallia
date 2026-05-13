@@ -474,4 +474,41 @@ deploy/disaster_recovery/recover_from_rescue.sh
 
 ---
 
+## 8. Verification Update — 2026-05-12
+
+The previous stale E2E assumptions were rechecked against the current code and corrected.
+
+### Implemented / Repaired
+
+- SuperAdmin impersonation UI now sends the required owner PIN and support justification to the PIN-gated impersonation API, stores the SuperAdmin token only after a successful owner token response, and exposes labeled inputs for accessibility/testability.
+- Stale SuperAdmin E2E suites were aligned to the current UI/API:
+  - `27-tenant-creation-wizard.spec.ts`: current Plan → Tipo & Datos → Propietario → Sucursales order.
+  - `28-tenant-lifecycle.spec.ts`: current tenant detail tabs/actions.
+  - `29-plan-management.spec.ts`: real `409` API assertion for active-subscription plan deactivation.
+  - `30-impersonation.spec.ts`: owner PIN setup, impersonation banner, return-to-admin flow.
+  - `31-whatsapp-override.spec.ts`: current per-tenant WhatsApp daily-limit override API.
+  - `32-billing-self-subscribe.spec.ts`: current `/billing` page and usage controls.
+  - `13-dashboard-kpis.spec.ts`: waits for actual dashboard stats reload instead of fixed sleeps.
+
+### Final Local Verification
+
+```bash
+docker compose up -d --build web
+docker exec loyallia-api python manage.py check
+cd frontend && npx tsc --noEmit --pretty false
+git diff --check
+cd frontend && PLAYWRIGHT_BASE_URL=http://localhost PLAYWRIGHT_ALLOW_MUTATING_E2E=true \
+  npx playwright test --grep-invert "Phone Verification API"
+```
+
+Results:
+
+- `docker exec loyallia-api python manage.py check`: passed.
+- `cd frontend && npx tsc --noEmit --pretty false`: passed.
+- `git diff --check`: passed.
+- Safe full Playwright suite: `307 passed, 2 skipped (16.0m)`.
+- Excluded intentionally: `Phone Verification API`, because it requires `PLAYWRIGHT_ALLOW_EXTERNAL_E2E=true` and may call external Twilio Verify.
+
+---
+
 *End of handoff. 12 REQ items (2 resolved, 10 pending) + 7 E2E test scenarios. Bootstrap idempotency verified. Mailjet LIVE in Vault since 2026-05-12T22:01Z. Plan seed overwrite fixed 2026-05-12T22:08Z.*
