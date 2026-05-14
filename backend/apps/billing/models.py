@@ -375,12 +375,15 @@ class Subscription(TimestampedModel):
     def get_limit(self, resource: str) -> int:
         """
         Get the plan limit for a resource.
-        Active trial = unlimited (returns very high number) during trial period.
+        Trial plan = unlimited (returns very high number) during trial period.
+        Paid plans = from SubscriptionPlan model, even during trial.
         """
-        if self.status == SubscriptionStatus.TRIALING and self.is_trial_active:
-            return 999999  # Trial period grants unlimited access
-
         plan = self.subscription_plan
+        is_trial_plan = (plan.slug == "trial") if plan else (self.plan == "trial")
+
+        if self.status == SubscriptionStatus.TRIALING and self.is_trial_active and is_trial_plan:
+            return 999999  # Only the 'trial' plan gets unlimited during trial
+
         if not plan:
             return 0  # No plan = no access
 
@@ -405,10 +408,12 @@ class Subscription(TimestampedModel):
 
     def has_feature(self, feature: str) -> bool:
         """Check if current plan includes a feature."""
-        if self.status == SubscriptionStatus.TRIALING and self.is_trial_active:
-            return True  # Trial period grants all features
-
         plan = self.subscription_plan
+        is_trial_plan = (plan.slug == "trial") if plan else (self.plan == "trial")
+
+        if self.status == SubscriptionStatus.TRIALING and self.is_trial_active and is_trial_plan:
+            return True  # Only the 'trial' plan gets all features during trial
+
         if not plan:
             return False
         return plan.has_feature(feature)

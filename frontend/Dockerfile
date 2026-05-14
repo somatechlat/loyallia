@@ -19,6 +19,17 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps
 
+# --- Stage: Development ---
+FROM deps AS development
+WORKDIR /app
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
+ENV HOST=0.0.0.0
+ENV PORT=3000
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
+
 # --- Stage 2: Builder ---
 FROM node:20-alpine AS builder
 WORKDIR /app

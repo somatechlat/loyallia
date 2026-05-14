@@ -62,6 +62,8 @@ DATABASES = {
         "CONN_HEALTH_CHECKS": False,
         "TEST": {
             "NAME": os.environ.get("POSTGRES_TEST_DB", "test_loyallia"),
+            # CREATE_DB: handled by conftest.py / test runner via 'direct' alias
+            "CREATE_DB": False,
         },
     },
     # Direct: same as default; kept for compatibility with PgBouncerTestRunner
