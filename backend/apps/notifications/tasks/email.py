@@ -159,16 +159,16 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 </div>
 </body></html>"""
 
+                # Generate a stable Message-ID for webhook correlation
+                import uuid as _uuid
+
+                message_id = f"{_uuid.uuid4().hex}@loyallia.com"
                 msg = EmailMultiAlternatives(
                     subject=subject, from_email=from_email, to=[customer.email]
                 )
                 msg.attach_alternative(html_content, "text/html")
+                msg.extra_headers["Message-ID"] = f"<{message_id}>"
                 msg.send(fail_silently=False)
-                
-                # Capture Message-ID for webhooks
-                message_id = ""
-                if hasattr(msg, "anymail_status") and msg.anymail_status:
-                    message_id = msg.anymail_status.message_id or ""
 
                 delivery_log.status = DeliveryStatus.SENT
                 delivery_log.external_message_id = message_id

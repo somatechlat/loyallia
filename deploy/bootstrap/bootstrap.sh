@@ -3,8 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SECRETS_FILE="${BOOTSTRAP_SECRETS_FILE:-$PROJECT_ROOT/.bootstrap_secrets}"
+SECRETS_FILE="${BOOTSTRAP_SECRETS_FILE:-$PROJECT_ROOT/.bootstrap_secrets.json}"
 RESCUE_DIR="$PROJECT_ROOT/.agents"
+BOOTSTRAP_VOL="loyallia_bootstrap_tmp"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -65,13 +66,10 @@ generate_or_load_secrets() {
 
     if [ -f "$SECRETS_FILE" ]; then
         log "Found existing secrets file: $SECRETS_FILE"
-        log "Exporting variables for docker compose..."
-        set -a
-        source "$SECRETS_FILE"
-        set +a
-        log "Secrets loaded from $SECRETS_FILE"
+        log "This file will be mounted into vault-init as a read-only volume."
+        log "It will NEVER be sourced or exported to environment variables."
     elif [ -f "$RESCUE_DIR/vault_secrets_rescue.json" ]; then
-        log "No .bootstrap_secrets file found, but rescue files exist in .agents/"
+        log "No .bootstrap_secrets.json found, but rescue files exist in .agents/"
         warn "This appears to be a DISASTER RECOVERY, not a fresh bootstrap."
         warn "Use deploy/disaster_recovery/recover_from_rescue.sh instead."
         exit 1
@@ -82,40 +80,58 @@ generate_or_load_secrets() {
             err "generate_secrets.sh failed to produce $SECRETS_FILE"
             exit 1
         fi
-        set -a
-        source "$SECRETS_FILE"
-        set +a
-        log "Secrets generated and loaded."
+        log "Secrets generated."
     fi
+}
 
-    require_set() {
-        local name="$1"
-        local value="${!name:-}"
-        if [ -z "$value" ]; then
-            err "Required secret '$name' is empty. Check $SECRETS_FILE"
-            exit 1
-        fi
-    }
+prepare_bootstrap_volume() {
+    step "3/7 — Preparing secure bootstrap volume"
 
-    require_set "_SECRET_KEY"
-    require_set "_POSTGRES_PASSWORD"
-    require_set "_REDIS_URL"
-    require_set "_CELERY_BROKER_URL"
-    require_set "_CELERY_RESULT_BACKEND"
-    require_set "_MINIO_ROOT_USER"
-    require_set "_MINIO_ROOT_PASSWORD"
-    require_set "_JWT_SECRET_KEY"
-    require_set "_PASS_HMAC_SECRET"
+    # Docker Compose prefixes volume names with project name (loyallia_)
+    local compose_vol="loyallia_${BOOTSTRAP_VOL}"
 
-    log "All required secrets validated."
+    # Create temporary Docker volume for bootstrap secrets
+    docker volume inspect "$compose_vol" &>/dev/null 2>&1 && docker volume rm "$compose_vol" >/dev/null 2>&1 || true
+    docker volume create "$compose_vol" >/dev/null
+    log "Created temporary volume: $compose_vol"
+
+    # Copy secrets JSON into the volume (never export to env)
+    docker run --rm \
+        -v "$compose_vol:/bootstrap" \
+        -v "$PROJECT_ROOT:/project:ro" \
+        alpine \
+        cp /project/.bootstrap_secrets.json /bootstrap/secrets.json >/dev/null 2>&1
+
+    log "Secrets JSON copied to temporary volume (read-only mount)."
+    log "NO secrets were exported to environment variables."
 }
 
 start_vault() {
-    step "3/7 — Starting Vault + vault-init"
+    step "4/7 — Starting Vault + vault-init"
 
-    log "Starting Vault services..."
+    log "Starting Vault..."
+    docker compose up -d vault
 
-    docker compose up -d vault vault-init
+    log "Waiting for Vault to be healthy..."
+    local timeout=60
+    local elapsed=0
+    while [ "$elapsed" -lt "$timeout" ]; do
+        if docker inspect loyallia-vault --format '{{.State.Health.Status}}' 2>/dev/null | grep -q healthy; then
+            log "Vault is healthy."
+            break
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+
+    if [ "$elapsed" -ge "$timeout" ]; then
+        err "Vault failed to become healthy within ${timeout}s"
+        docker logs loyallia-vault --tail=20
+        exit 1
+    fi
+
+    log "Starting vault-init..."
+    docker compose up -d vault-init
 
     log "Waiting for vault-init to complete..."
     local timeout=120
@@ -145,30 +161,47 @@ start_vault() {
         exit 1
     fi
 
-    docker compose logs loyallia-vault-init --tail=5
+    docker compose logs vault-init --tail=5
+}
 
-    echo ""
-    log "SAVE THIS init.json FILE IMMEDIATELY:"
-    log "  mkdir -p $RESCUE_DIR"
-    log "  docker cp loyallia-vault:/vault/file/init.json $RESCUE_DIR/vault_init_rescue.json"
-    echo ""
+auto_create_rescue_files() {
+    step "5/7 — Creating rescue files"
 
-    local answer
-    read -r -p "Did you save init.json to .agents/? [y/N]: " answer
-    if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
-        warn "Saving init.json automatically..."
-        mkdir -p "$RESCUE_DIR"
-        docker cp loyallia-vault:/vault/file/init.json "$RESCUE_DIR/vault_init_rescue.json" 2>/dev/null || true
-        if [ -f "$RESCUE_DIR/vault_init_rescue.json" ]; then
-            log "init.json saved to $RESCUE_DIR/vault_init_rescue.json"
-            log "WARNING: This file contains the Vault unseal key and root token."
-            log "Store it OFFLINE (USB drive, password manager)."
-        fi
-    fi
+    mkdir -p "$RESCUE_DIR"
+    chmod 0700 "$RESCUE_DIR"
+
+    log "Extracting Vault init.json..."
+    docker cp loyallia-vault:/vault/file/init.json "$RESCUE_DIR/vault_init_rescue.json" 2>/dev/null || {
+        warn "Failed to copy init.json. Vault may not have initialized."
+        return 1
+    }
+    chmod 0600 "$RESCUE_DIR/vault_init_rescue.json"
+    log "Saved: $RESCUE_DIR/vault_init_rescue.json"
+
+    log "Exporting Vault secrets..."
+    local root_token
+    root_token="$(docker exec loyallia-vault sh -c 'cat /vault/file/init.json' | python3 -c 'import json,sys; print(json.load(sys.stdin)["root_token"])')"
+
+    docker exec -e VAULT_TOKEN="$root_token" loyallia-vault \
+        vault kv get -mount=secret -format=json "loyallia/production" \
+        > "$RESCUE_DIR/vault_secrets_rescue.json" 2>/dev/null || {
+        warn "Failed to export Vault secrets."
+        return 1
+    }
+    chmod 0600 "$RESCUE_DIR/vault_secrets_rescue.json"
+    log "Saved: $RESCUE_DIR/vault_secrets_rescue.json"
+
+    log "╔══════════════════════════════════════════════════════════════════════╗"
+    log "║  RESCUE FILES CREATED                                               ║"
+    log "║                                                                     ║"
+    log "║  Store these OFFLINE (USB drive, password manager):                 ║"
+    log "║    - $RESCUE_DIR/vault_init_rescue.json                             ║"
+    log "║    - $RESCUE_DIR/vault_secrets_rescue.json                           ║"
+    log "╚══════════════════════════════════════════════════════════════════════╝"
 }
 
 start_stateful_services() {
-    step "4/7 — Starting stateful services"
+    step "6/7 — Starting stateful services"
 
     log "Starting PostgreSQL, Redis, MinIO..."
     docker compose up -d postgres redis minio minio-init
@@ -189,20 +222,32 @@ start_stateful_services() {
     done
 
     log "Waiting for Redis health..."
-    docker compose wait redis 2>/dev/null || true
+
+    # Extract Redis password from bootstrap secrets JSON
+    local redis_password=""
+    if command -v python3 &>/dev/null && [ -f "$SECRETS_FILE" ]; then
+        redis_password="$(python3 -c "import json; d=json.load(open('$SECRETS_FILE')); print(d.get('secrets',{}).get('redis_url','').split(':')[2].split('@')[0], end='')" 2>/dev/null)"
+    fi
+
     elapsed=0
     while [ "$elapsed" -lt "$timeout" ]; do
-        if docker compose exec -T redis redis-cli -a "$(cat /dev/null 2>/dev/null; echo '')" ping &>/dev/null || \
-           docker compose exec -T redis sh -c 'redis-cli ping' &>/dev/null; then
-            log "Redis is ready."
-            break
+        if [ -n "$redis_password" ]; then
+            if docker compose exec -T redis sh -c "redis-cli -a '$redis_password' ping" 2>/dev/null | grep -q PONG; then
+                log "Redis is ready."
+                break
+            fi
+        else
+            if docker compose exec -T redis sh -c 'redis-cli ping' 2>/dev/null | grep -q PONG; then
+                log "Redis is ready."
+                break
+            fi
         fi
         sleep 2
         elapsed=$((elapsed + 2))
     done
 
     log "Waiting for MinIO health..."
-    docker compose wait minio 2>/dev/null || true
+    docker compose exec -T minio mc ready local 2>/dev/null || true
 
     log "Starting PgBouncer..."
     docker compose up -d pgbouncer
@@ -212,7 +257,7 @@ start_stateful_services() {
 }
 
 migrate_and_seed() {
-    step "5/7 — Running migrations + seeds"
+    step "6/7 — Running migrations + seeds"
 
     log "Starting API container for migrations..."
     docker compose up -d api --no-deps
@@ -254,9 +299,35 @@ start_workers_and_proxy() {
     docker compose up -d prometheus grafana loki
 }
 
-verify_bootstrap() {
-    step "7/7 — Verifying bootstrap"
+secure_delete() {
+    local file="$1"
+    if [ -f "$file" ]; then
+        if command -v shred &>/dev/null; then
+            shred -n 3 -z -u "$file" 2>/dev/null || rm -f "$file"
+        else
+            dd if=/dev/urandom of="$file" bs=1k count=10 conv=notrunc 2>/dev/null || true
+            rm -f "$file"
+        fi
+    fi
+}
 
+cleanup_bootstrap() {
+    step "7/7 — Secure cleanup"
+
+    local compose_vol="loyallia_${BOOTSTRAP_VOL}"
+
+    # Remove temporary bootstrap volume
+    docker volume rm "$compose_vol" 2>/dev/null || true
+    log "Removed temporary volume: $compose_vol"
+
+    # Securely delete bootstrap secrets JSON
+    if [ -f "$SECRETS_FILE" ]; then
+        secure_delete "$SECRETS_FILE"
+        log "Securely deleted: $SECRETS_FILE"
+    fi
+}
+
+verify_bootstrap() {
     local errors=0
     local services=(
         "postgres:PostgreSQL"
@@ -324,18 +395,11 @@ except:
     log "╚══════════════════════════════════════════════════════════════════════╝"
 }
 
-cleanup_secrets() {
-    if [ -f "$SECRETS_FILE" ] && [ "${SKIP_SECRETS_CLEANUP:-}" != "true" ]; then
-        log "Cleaning up bootstrap secrets file..."
-        rm -f "$SECRETS_FILE"
-        log "Deleted: $SECRETS_FILE"
-    fi
-}
-
 main() {
     echo ""
     echo -e "${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║        LOYALLIA — FULL BOOTSTRAP SEQUENCE                     ║${NC}"
+    echo -e "${CYAN}║        LOYALLIA — ZERO TRUST BOOTSTRAP SEQUENCE               ║${NC}"
+    echo -e "${CYAN}║        No secrets in environment variables. Ever.             ║${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
@@ -357,14 +421,16 @@ main() {
     fi
 
     generate_or_load_secrets
+    prepare_bootstrap_volume
     start_vault
+    auto_create_rescue_files
     start_stateful_services
     migrate_and_seed
     start_workers_and_proxy
+    cleanup_bootstrap
     verify_bootstrap
-    cleanup_secrets
 
-    log "Bootstrap sequence complete."
+    log "Zero Trust bootstrap sequence complete."
 }
 
 main

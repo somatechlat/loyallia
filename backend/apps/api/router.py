@@ -4,6 +4,8 @@ Central registration of all sub-routers.
 Mounted at /api/v1/ in loyallia/urls.py
 """
 
+from typing import Any
+
 from django.http import HttpRequest, JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import HttpError, ValidationError
@@ -154,6 +156,24 @@ api.add_router("/", wallet_router, tags=["Wallet"])
 api.add_router("/upload/", upload_router, tags=["Uploads"])
 api.add_router("/agent/", agent_api_router, tags=["Agent API"])
 api.add_router("/admin/audit/", audit_router, tags=["Audit"])
+
+
+# Mailjet webhook receiver — mounted at root so URL is /api/v1/webhooks/mailjet/
+@api.post("/webhooks/mailjet/", auth=None, tags=["Webhooks"])
+def mailjet_webhook(request, payload: list[dict[str, Any]]) -> dict:
+    """Receive Mailjet event webhooks for email delivery tracking.
+
+    SEC: No authentication required — Mailjet sends signed requests.
+    IP whitelisting should be configured at Nginx level.
+    """
+    from apps.notifications.api.webhooks import process_mailjet_event
+
+    processed = 0
+    for event in payload:
+        if process_mailjet_event(event):
+            processed += 1
+
+    return {"success": True, "processed": processed}
 
 
 # Backward-compatible aliases for legacy clients and tests.

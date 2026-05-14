@@ -5,7 +5,7 @@ Seeds the 4-tier plan structure (Trial, Starter, Professional, Enterprise)
 that the platform requires to function. Without plans, no tenant can
 register or subscribe.
 
-Idempotent: Uses update_or_create on slug — safe on repeated migrations.
+Idempotent: Uses get_or_create on slug — preserves manual SuperAdmin adjustments.
 Reverse: noop (plans remain on rollback).
 
 Called by: `python manage.py migrate --noinput` (automatic on every deploy).
@@ -135,7 +135,7 @@ def seed_plans(apps, schema_editor):
 
     for plan_data in plans:
         slug = plan_data.pop("slug")
-        SubscriptionPlan.objects.update_or_create(
+        SubscriptionPlan.objects.get_or_create(
             slug=slug,
             defaults=plan_data,
         )

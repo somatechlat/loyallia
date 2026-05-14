@@ -76,11 +76,12 @@ class Command(BaseCommand):
             plan_data["price_monthly"] = Decimal(plan_data["price_monthly"])
             plan_data["price_annual"] = Decimal(plan_data["price_annual"])
 
-            obj, created = SubscriptionPlan.objects.update_or_create(
-                slug=plan_data["slug"],
+            slug = plan_data.pop("slug")
+            obj, created = SubscriptionPlan.objects.get_or_create(
+                slug=slug,
                 defaults=plan_data,
             )
-            status = "CREATED" if created else "UPDATED"
+            status = "CREATED" if created else "SKIPPED"
             self.stdout.write(
                 f"  [{status}] Plan: {obj.name} — ${obj.price_monthly}/mes"
             )

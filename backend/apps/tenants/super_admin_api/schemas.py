@@ -408,6 +408,31 @@ class PlatformSettingsSummaryOut(BaseModel):
 
 
 # =============================================================================
+# PLATFORM MODE (LYL-SRS-MODE-001)
+# =============================================================================
+
+
+class PlatformModeOut(BaseModel):
+    """Current platform mode (development / production)."""
+
+    mode: str
+    updated_at: datetime | None = None
+
+
+class PlatformModeToggleIn(BaseModel):
+    """Toggle platform mode. Must be development or production."""
+
+    mode: str
+
+    @field_validator("mode")
+    @classmethod
+    def mode_must_be_valid(cls, value: str) -> str:
+        if value not in ("development", "production"):
+            raise ValueError("mode must be 'development' or 'production'")
+        return value
+
+
+# =============================================================================
 # SYSADMIN OPERATIONS (LYL-BOOT-001)
 # =============================================================================
 

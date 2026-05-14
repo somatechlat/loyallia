@@ -115,6 +115,7 @@ class SMSCampaignTaskTest(TestCase):
         campaign_run = CampaignRun.objects.get(id=uuid.UUID(result["campaign_run_id"]))
         self.assertEqual(campaign_run.status, CampaignStatus.COMPLETED)
         self.assertEqual(campaign_run.sent_count, 1)
+        self.assertEqual(campaign_run.delivered_count, 1)
 
 
 class PlanFeatureSMSTest(TestCase):

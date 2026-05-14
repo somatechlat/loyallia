@@ -139,6 +139,10 @@ export default function SuperAdminSettings() {
   const [settingForm, setSettingForm] = useState<Record<string, string>>({});
   const [savingSetting, setSavingSetting] = useState<string | null>(null);
 
+  // Platform Mode (REQ-004)
+  const [platformMode, setPlatformMode] = useState<'development' | 'production'>('production');
+  const [loadingMode, setLoadingMode] = useState(false);
+
   // --- SysAdmin Operations (LYL-BOOT-001) ---
   const [seedingDemo, setSeedingDemo] = useState(false);
   const [seedOutput, setSeedOutput] = useState('');
@@ -150,6 +154,7 @@ export default function SuperAdminSettings() {
   useEffect(() => {
     loadIntegrations();
     loadSettings();
+    loadPlatformMode();
   }, []);
 
   const loadIntegrations = () => {
@@ -168,6 +173,49 @@ export default function SuperAdminSettings() {
         setSettingForm(initialForm);
       })
       .catch(() => setPlatformSettings([]));
+  };
+
+  const loadPlatformMode = () => {
+    superAdminApi.getPlatformMode()
+      .then(({ data }) => {
+        const mode = data.mode === 'development' ? 'development' : 'production';
+        setPlatformMode(mode);
+        // Also sync the settings form so the dropdown stays consistent
+        setSettingForm((prev) => ({ ...prev, PLATFORM_MODE: mode }));
+      })
+      .catch(() => {
+        // silently fail — banner shows production as default
+      });
+  };
+
+  const togglePlatformMode = async () => {
+    const nextMode = platformMode === 'production' ? 'development' : 'production';
+    const confirmMessage =
+      nextMode === 'development'
+        ? '¿Cambiar a MODO DESARROLLO? Los SMS usarán credenciales de prueba, los respaldos serán cada 15 días, y Twilio usará sandbox.'
+        : '¿Cambiar a MODO PRODUCCIÓN? Los SMS usarán credenciales reales (con costo), los respaldos serán diarios, y todas las integraciones usarán entornos reales.';
+    if (!window.confirm(confirmMessage)) return;
+
+    setLoadingMode(true);
+    const toastId = toast.loading(`Cambiando a ${nextMode}...`);
+    try {
+      const { data } = await superAdminApi.togglePlatformMode(nextMode);
+      const newMode = data.mode === 'development' ? 'development' : 'production';
+      setPlatformMode(newMode);
+      setSettingForm((prev) => ({ ...prev, PLATFORM_MODE: newMode }));
+      toast.success(
+        newMode === 'development'
+          ? '🟡 Modo Desarrollo activado. Sandbox seguro para pruebas.'
+          : '🟢 Modo Producción activado. Operaciones reales habilitadas.',
+        { id: toastId },
+      );
+      // Refresh integrations so backup_config diagnostics reflect new mode
+      loadIntegrations();
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, 'Error al cambiar modo de plataforma'), { id: toastId });
+    } finally {
+      setLoadingMode(false);
+    }
   };
 
   const updateSetting = async (key: string) => {
@@ -363,6 +411,55 @@ export default function SuperAdminSettings() {
         <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">Configuración Global</h1>
         <p className="text-surface-500 mt-1">Ajustes de la plataforma Loyallia</p>
       </header>
+
+      {/* Platform Mode Toggle Banner (REQ-004) */}
+      <div
+        className={`rounded-2xl border p-5 space-y-3 ${
+          platformMode === 'development'
+            ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+            : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+        }`}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{platformMode === 'development' ? '🟡' : '🟢'}</span>
+            <div>
+              <p
+                className={`text-sm font-bold uppercase ${
+                  platformMode === 'development' ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'
+                }`}
+              >
+                {platformMode === 'development' ? 'MODO DESARROLLO' : 'MODO PRODUCCIÓN'}
+              </p>
+              <p
+                className={`text-xs ${
+                  platformMode === 'development' ? 'text-amber-600 dark:text-amber-500' : 'text-green-600 dark:text-green-500'
+                }`}
+              >
+                {platformMode === 'development'
+                  ? 'Twilio sandbox · Respaldos cada 15 días · Seguro para pruebas'
+                  : 'Twilio real · Respaldos diarios · Operaciones con costo real'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={togglePlatformMode}
+            disabled={loadingMode}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+              platformMode === 'development'
+                ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            } disabled:opacity-50`}
+          >
+            {loadingMode
+              ? 'Cambiando...'
+              : platformMode === 'development'
+                ? 'Activar Modo Producción'
+                : 'Activar Modo Desarrollo'}
+          </button>
+        </div>
+      </div>
 
       {/* Platform Settings */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm p-6 space-y-6">
