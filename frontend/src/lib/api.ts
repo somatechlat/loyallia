@@ -208,6 +208,9 @@ export const superAdminApi = {
     api.post('/api/v1/admin/platform/factory-reset/request/'),
   factoryResetConfirm: (otp: string) =>
     api.post('/api/v1/admin/platform/factory-reset/confirm/', { otp }),
+  getPlatformMode: () => api.get('/api/v1/admin/platform/mode/'),
+  togglePlatformMode: (mode: 'development' | 'production') =>
+    api.post('/api/v1/admin/platform/mode/toggle/', { mode }),
 };
 
 export const transactionsApi = {

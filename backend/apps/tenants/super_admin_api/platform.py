@@ -42,6 +42,8 @@ from apps.tenants.super_admin_api.schemas import (
     PlanUpdateIn,
     PlatformIntegrationOut,
     PlatformMetricsOut,
+    PlatformModeOut,
+    PlatformModeToggleIn,
     PlatformSettingOut,
     PlatformSettingUpdateIn,
     SeedDemoDataOut,
@@ -76,6 +78,60 @@ def _require_super_admin(request) -> None:
 def _is_sensitive_platform_setting_key(key: str) -> bool:
     normalized = key.upper()
     return any(token in normalized for token in SENSITIVE_PLATFORM_SETTING_TOKENS)
+
+
+@router.get("/platform/mode/", auth=jwt_auth, response=PlatformModeOut)
+def get_platform_mode(request):
+    """Get current platform mode (development or production).
+
+    Reads from PlatformSetting key PLATFORM_MODE.
+    """
+    _require_super_admin(request)
+    setting = PlatformSetting.objects.filter(key="PLATFORM_MODE").first()
+    mode = setting.value if setting else "production"
+    return PlatformModeOut(
+        mode=mode,
+        updated_at=setting.updated_at if setting else None,
+    )
+
+
+@router.post("/platform/mode/toggle/", auth=jwt_auth, response=PlatformModeOut)
+def toggle_platform_mode(request, payload: PlatformModeToggleIn):
+    """Toggle platform mode between development and production.
+
+    SEC: SUPER_ADMIN only. Audit logged.
+    """
+    _require_super_admin(request)
+
+    setting, created = PlatformSetting.objects.get_or_create(
+        key="PLATFORM_MODE",
+        defaults={
+            "value": payload.mode,
+            "description": "Modo de la plataforma (development/production)",
+            "category": "system",
+        },
+    )
+    if not created:
+        setting.value = payload.mode
+        setting.save(update_fields=["value", "updated_at"])
+
+    # Audit
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="platform_mode",
+            resource_id="PLATFORM_MODE",
+            details={"new_mode": payload.mode},
+            status="success",
+        )
+    except Exception:
+        logger.warning("Failed to audit platform mode toggle", exc_info=True)
+
+    return PlatformModeOut(mode=setting.value, updated_at=setting.updated_at)
 
 
 @router.get("/platform/metrics/", auth=jwt_auth, response=PlatformMetricsOut)
@@ -765,9 +821,9 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
         from apps.billing.payment_models import Invoice, WebhookEvent
         from apps.cards.models import Card
         from apps.customers.models import Customer, CustomerPass
-        from apps.notifications.models import CampaignRun, CampaignDeliveryLog
+        from apps.notifications.models import CampaignDeliveryLog, CampaignRun
         from apps.notifications.models.misc import Notification
-        from apps.transactions.models import Transaction, Enrollment
+        from apps.transactions.models import Enrollment, Transaction
 
         Notification.objects.all().delete()
         CampaignDeliveryLog.objects.all().delete()

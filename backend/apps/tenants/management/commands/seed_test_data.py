@@ -148,6 +148,13 @@ class Command(BaseCommand):
             },
         )
 
+        # Idempotency guard: skip if demo data already exists
+        if Customer.objects.filter(tenant=tenant).exists():
+            self.stdout.write(
+                self.style.NOTICE("Demo data already exists for Café El Ritmo. Skipping seed.")
+            )
+            return
+
         # =====================================================================
         # 2. SuperAdmin
         # =====================================================================
