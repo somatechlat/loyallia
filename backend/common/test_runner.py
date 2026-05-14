@@ -67,6 +67,28 @@ class PgBouncerTestRunner(DiscoverRunner):
         for alias in connections:
             connections[alias].close()
 
+        # If test DB already exists, force-drop it via psycopg2 so Django's
+        # setup_databases doesn't hit 'database is being accessed by other users'
+        try:
+            import psycopg2
+
+            conn = psycopg2.connect(
+                host=direct_cfg["HOST"],
+                port=direct_cfg["PORT"],
+                user=direct_cfg["USER"],
+                password=direct_cfg["PASSWORD"],
+                dbname=direct_cfg["NAME"],
+            )
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DROP DATABASE IF EXISTS %s WITH (FORCE)"
+                    % psycopg2.extensions.quote_ident(test_db_name, conn)
+                )
+            conn.close()
+        except Exception:
+            pass  # DB may not exist; let Django handle it
+
         logger.info(
             "Test DB setup: routing 'default' to direct PostgreSQL (%s:%s)",
             direct_cfg["HOST"],
@@ -80,6 +102,9 @@ class PgBouncerTestRunner(DiscoverRunner):
         settings.DATABASES["default"]["PORT"] = self._original_port
         settings.DATABASE_ROUTERS = self._original_routers
 
+        # Re-grant connect permission so tests can access the DB
+        self._grant_connect(test_db_name)
+
         # Close connections so new ones use PgBouncer
         for alias in connections:
             connections[alias].close()
@@ -88,7 +113,11 @@ class PgBouncerTestRunner(DiscoverRunner):
         return result
 
     def teardown_databases(self, old_config, **kwargs):
-        """Drop test database via direct PostgreSQL."""
+        """Drop test database via direct PostgreSQL.
+
+        Uses a connection to the 'direct' database (not the test DB itself)
+        because PostgreSQL refuses to DROP a database you are connected to.
+        """
         from django.conf import settings
         from django.db import connections
 
@@ -97,20 +126,42 @@ class PgBouncerTestRunner(DiscoverRunner):
         )
         self._terminate_backends(test_db_name)
 
-        # Route to direct for DROP DATABASE
-        direct_cfg = settings.DATABASES["direct"]
-        settings.DATABASES["default"]["HOST"] = direct_cfg["HOST"]
-        settings.DATABASES["default"]["PORT"] = direct_cfg["PORT"]
-        settings.DATABASE_ROUTERS = []
-
+        # Close all connections to the test database before dropping
         for alias in connections:
             connections[alias].close()
 
-        super().teardown_databases(old_config, **kwargs)
+        # Drop the test database using a fresh connection to 'direct'
+        # (not to the test DB itself — that would fail)
+        direct_cfg = settings.DATABASES["direct"]
+        try:
+            import psycopg2
+
+            conn = psycopg2.connect(
+                host=direct_cfg["HOST"],
+                port=direct_cfg["PORT"],
+                user=direct_cfg["USER"],
+                password=direct_cfg["PASSWORD"],
+                dbname=direct_cfg["NAME"],
+            )
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DROP DATABASE IF EXISTS %s WITH (FORCE)"
+                    % psycopg2.extensions.quote_ident(test_db_name, conn)
+                )
+            conn.close()
+        except Exception as exc:
+            logger.warning("Failed to drop test database %s: %s", test_db_name, exc)
+            # Fallback to Django's default behavior
+            settings.DATABASES["default"]["HOST"] = direct_cfg["HOST"]
+            settings.DATABASES["default"]["PORT"] = direct_cfg["PORT"]
+            settings.DATABASE_ROUTERS = []
+            super().teardown_databases(old_config, **kwargs)
 
     @staticmethod
     def _terminate_backends(db_name):
-        """Terminate all PostgreSQL sessions connected to the given database.
+        """Terminate all PostgreSQL sessions connected to the given database
+        and revoke connect permission to prevent reconnection races.
 
         PERF: Single SQL call terminates all sessions, preventing
         'database is being accessed by other users' errors during
@@ -131,13 +182,45 @@ class PgBouncerTestRunner(DiscoverRunner):
             )
             conn.autocommit = True
             with conn.cursor() as cur:
+                # Terminate existing sessions
                 cur.execute(
                     "SELECT pg_terminate_backend(pid) "
                     "FROM pg_stat_activity "
                     "WHERE datname = %s AND pid <> pg_backend_pid()",
                     [db_name],
                 )
+                # Prevent new sessions while we drop/create
+                cur.execute(
+                    "REVOKE CONNECT ON DATABASE %s FROM PUBLIC"
+                    % psycopg2.extensions.quote_ident(db_name, conn)
+                )
             conn.close()
         except Exception:
             # Non-fatal: test DB may not exist yet on first run
+            pass
+
+    @staticmethod
+    def _grant_connect(db_name):
+        """Re-grant connect permission after test DB is created."""
+        from django.conf import settings
+
+        try:
+            import psycopg2
+
+            direct = settings.DATABASES["direct"]
+            conn = psycopg2.connect(
+                host=direct["HOST"],
+                port=direct["PORT"],
+                user=direct["USER"],
+                password=direct["PASSWORD"],
+                dbname=direct["NAME"],
+            )
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute(
+                    "GRANT CONNECT ON DATABASE %s TO PUBLIC"
+                    % psycopg2.extensions.quote_ident(db_name, conn)
+                )
+            conn.close()
+        except Exception:
             pass

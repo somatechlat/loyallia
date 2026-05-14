@@ -164,7 +164,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                     is_primary=loc.is_primary or (i == 0),
                 )
             
-            sub_status = SubscriptionStatus.TRIALING if plan_slug == "trial" else SubscriptionStatus.ACTIVE
+            sub_status = SubscriptionStatus.TRIALING if trial_days > 0 else SubscriptionStatus.ACTIVE
             is_trial = sub_status == SubscriptionStatus.TRIALING
 
             sub = Subscription.objects.create(
