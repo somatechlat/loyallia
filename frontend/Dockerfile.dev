@@ -1,0 +1,20 @@
+# =============================================================================
+# Loyallia Frontend — Development Container
+# Uses host node_modules (mounted via docker-compose) for instant startup.
+# Runs Next.js dev server with hot reload — NOT a production build.
+#
+# ISOLATION: This dev container is COMPLETELY SEPARATE from production.
+# Production uses Dockerfile (standalone build) + docker-compose.prod.yml
+# =============================================================================
+FROM node:20-alpine
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
+ENV HOST=0.0.0.0
+ENV PORT=3000
+
+EXPOSE 3000
+
+# node_modules is mounted from host — no install needed
+CMD ["npm", "run", "dev"]
