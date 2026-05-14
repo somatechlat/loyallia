@@ -429,10 +429,12 @@ services:
   web:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: loyallia-web
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:33905}
+      # NEXT_PUBLIC_API_URL is used for SSR direct API calls inside the container.
+      # Browser requests use Next.js rewrite (via NEXT_INTERNAL_API_URL) instead.
+      NEXT_PUBLIC_API_URL: http://api:8000
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:33906}
       NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://api:8000}
       NODE_ENV: development
@@ -443,12 +445,16 @@ services:
       - "127.0.0.1:33906:3000"
     stop_grace_period: 30s  # B-012: Graceful shutdown
     volumes:
+      - ./frontend/package.json:/app/package.json:ro
+      - ./frontend/package-lock.json:/app/package-lock.json:ro
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
       - ./frontend/next.config.js:/app/next.config.js
       - ./frontend/tailwind.config.js:/app/tailwind.config.js
       - ./frontend/tests:/app/tests:ro
       - ./frontend/playwright.config.ts:/app/playwright.config.ts:ro
+      - ./frontend/node_modules:/app/node_modules
       - next_cache:/app/.next/cache
     depends_on:
       - api
