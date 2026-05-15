@@ -6,6 +6,14 @@ Database path:
   - All test queries → direct PostgreSQL (PgBouncer transaction mode breaks
     Django TestCase savepoints; see LYL-TEST-NOTE-001)
 
+Router:
+  - PgBouncerRouter is ENABLED so tests exercise production routing logic.
+  - Both 'default' and 'direct' point to the same test DB, so functionality
+    is identical but the router code path is now covered.
+
+For integration tests through the real PgBouncer path, use
+loyallia.settings.test_integration (TransactionTestCase required).
+
 Run `docker compose up -d` before running tests.
 """
 
@@ -81,8 +89,10 @@ DATABASES = {
     },
 }
 
-# Disable PgBouncer router in tests — direct PostgreSQL for everything
-DATABASE_ROUTERS = []
+# Enable PgBouncer router so tests exercise production routing logic.
+# Both 'default' and 'direct' point to the same test DB (direct PostgreSQL
+# for speed), but the router code path is now tested.
+DATABASE_ROUTERS = ["common.db_routers.PgBouncerRouter"]
 
 # ---------------------------------------------------------------------------
 # CUSTOM TEST RUNNER — Handles test DB create/drop via direct PostgreSQL
