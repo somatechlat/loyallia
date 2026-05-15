@@ -8,7 +8,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('SuperAdmin — Tenant Creation Wizard @superadmin', () => {
+test.describe('SuperAdmin — Tenant Creation Wizard @superadmin @superadmin', () => {
 
   test('SA can create a tenant using the 4-step wizard', async ({ page }) => {
     test.setTimeout(90000);

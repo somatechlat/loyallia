@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Analytics — OWNER @owner', () => {
+test.describe('Analytics — OWNER @owner @analytics', () => {
 
   test('OWNER sees analytics dashboard with metrics @owner', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
@@ -16,7 +16,7 @@ test.describe('Analytics — OWNER @owner', () => {
 
 });
 
-test.describe('Analytics — MANAGER Read @manager', () => {
+test.describe('Analytics — MANAGER Read @manager @analytics', () => {
 
   test('MANAGER sees analytics dashboard @manager', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });

@@ -95,7 +95,7 @@ test.beforeAll(async ({ request }) => {
   }
 });
 
-test.describe('SMS Campaign UI — OWNER @owner', () => {
+test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
   test('Campaign page loads with SMS channel button @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
@@ -218,7 +218,7 @@ test.describe('SMS Campaign UI — OWNER @owner', () => {
 // OWNER — Plan Features API Tests
 // =============================================================================
 
-test.describe('SMS Plan Features API — OWNER @owner', () => {
+test.describe('SMS Plan Features API — OWNER @owner @campaigns', () => {
 
   test('GET /me/plan-features/ includes sms_campaigns @owner', async ({ request }) => {
     const token = await loginRole(request, 'owner');
@@ -263,7 +263,7 @@ test.describe('SMS Plan Features API — OWNER @owner', () => {
 // MANAGER — RBAC Enforcement (403 on all campaign/SMS endpoints)
 // =============================================================================
 
-test.describe('SMS Campaign RBAC — MANAGER blocked @manager', () => {
+test.describe('SMS Campaign RBAC — MANAGER blocked @manager @campaigns', () => {
 
   test('MANAGER cannot access campaign list API (403) @manager', async ({ request }) => {
     const token = await loginRole(request, 'manager');
@@ -299,7 +299,7 @@ test.describe('SMS Campaign RBAC — MANAGER blocked @manager', () => {
 // SUPERADMIN — Twilio Test Mode Settings
 // =============================================================================
 
-test.describe('SuperAdmin — Twilio Test Mode @superadmin', () => {
+test.describe('SuperAdmin — Twilio Test Mode @superadmin @superadmin', () => {
 
   test('SA can view Twilio SMS integration settings @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
@@ -387,7 +387,7 @@ test.describe('SuperAdmin — Twilio Test Mode @superadmin', () => {
 // Cross-cutting: Campaign List Shows SMS Badge Correctly
 // =============================================================================
 
-test.describe('Campaign List — SMS Badge @owner', () => {
+test.describe('Campaign List — SMS Badge @owner @campaigns', () => {
 
   test('SMS campaigns display orange SMS badge @owner', async ({ page, request }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });

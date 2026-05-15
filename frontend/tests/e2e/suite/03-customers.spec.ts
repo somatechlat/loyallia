@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Customers — OWNER CRUD @owner', () => {
+test.describe('Customers — OWNER CRUD @owner @customers', () => {
 
   test('OWNER sees customer list with data @owner', async ({ page }) => {
     await page.goto('/customers', { waitUntil: 'domcontentloaded' });
@@ -54,7 +54,7 @@ test.describe('Customers — OWNER CRUD @owner', () => {
 
 });
 
-test.describe('Customers — MANAGER Read-Only @manager', () => {
+test.describe('Customers — MANAGER Read-Only @manager @customers', () => {
 
   test('MANAGER sees customer list @manager', async ({ page }) => {
     await page.goto('/customers', { waitUntil: 'domcontentloaded' });

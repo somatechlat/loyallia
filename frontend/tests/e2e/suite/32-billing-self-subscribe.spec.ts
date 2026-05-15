@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Owner — Billing @owner', () => {
+test.describe('Owner — Billing @owner @settings', () => {
 
   test('Owner billing page shows current plan and usage controls', async ({ page }) => {
     await page.goto('/billing', { waitUntil: 'domcontentloaded' });

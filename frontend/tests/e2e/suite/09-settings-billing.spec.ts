@@ -10,7 +10,7 @@ import { requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 // SETTINGS — OWNER
 // =============================================================================
 
-test.describe('Settings — OWNER @owner', () => {
+test.describe('Settings — OWNER @owner @settings', () => {
 
   test('OWNER can access settings page @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
@@ -45,7 +45,7 @@ test.describe('Settings — OWNER @owner', () => {
 // BILLING — OWNER
 // =============================================================================
 
-test.describe('Billing — OWNER @owner', () => {
+test.describe('Billing — OWNER @owner @settings', () => {
 
   test('OWNER can access billing page @owner', async ({ page }) => {
     await page.goto('/billing', { waitUntil: 'domcontentloaded' });
@@ -82,7 +82,7 @@ test.describe('Billing — OWNER @owner', () => {
 // disconnect flow coverage.
 // =============================================================================
 
-test.describe('WhatsApp Bridge Activation — OWNER @owner', () => {
+test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();
@@ -220,7 +220,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner', () => {
 // SETTINGS & BILLING — MANAGER ISOLATION
 // =============================================================================
 
-test.describe('Settings & Billing — MANAGER Isolation @manager', () => {
+test.describe('Settings & Billing — MANAGER Isolation @manager @settings', () => {
 
   test('MANAGER does NOT have "Configuración" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -251,7 +251,7 @@ test.describe('Settings & Billing — MANAGER Isolation @manager', () => {
 // SETTINGS & BILLING — STAFF ISOLATION
 // =============================================================================
 
-test.describe('Settings & Billing — STAFF Isolation @staff', () => {
+test.describe('Settings & Billing — STAFF Isolation @staff @settings', () => {
 
   test('STAFF does NOT have "Configuración" in navigation @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

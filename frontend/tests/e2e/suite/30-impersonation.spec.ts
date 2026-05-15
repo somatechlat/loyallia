@@ -12,7 +12,7 @@ import {
 
 const BASE_API = getE2EBaseURL();
 
-test.describe('SuperAdmin — Impersonation @superadmin', () => {
+test.describe('SuperAdmin — Impersonation @superadmin @superadmin', () => {
 
   test('SA can impersonate an owner with PIN and return to SA', async ({ page, request }) => {
     const owner = await loginOwnerContext(request);

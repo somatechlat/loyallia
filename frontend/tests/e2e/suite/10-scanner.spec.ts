@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Scanner — STAFF @staff', () => {
+test.describe('Scanner — STAFF @staff @scanner', () => {
 
   test('STAFF lands on scanner page after login @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

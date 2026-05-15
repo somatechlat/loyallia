@@ -12,7 +12,7 @@ const BASE_API = getE2EBaseURL();
 // PUBLIC BILLING API — Rate Limits in Response
 // =============================================================================
 
-test.describe('Public Billing API — Rate Limits @owner', () => {
+test.describe('Public Billing API — Rate Limits @owner @security', () => {
 
   test('GET /billing/plans/ returns plans with all rate limit fields @owner', async ({ request }) => {
     const resp = await request.get(`${BASE_API}/api/v1/billing/plans/`);
@@ -73,7 +73,7 @@ test.describe('Public Billing API — Rate Limits @owner', () => {
 // OWNER SUBSCRIPTION — Current Plan & Usage
 // =============================================================================
 
-test.describe('Owner Subscription — Rate Limit Visibility @owner', () => {
+test.describe('Owner Subscription — Rate Limit Visibility @owner @settings', () => {
 
   test('GET /billing/subscription/ returns current plan with limits @owner', async ({ request }) => {
     const token = await loginRole(request, 'owner');
@@ -111,7 +111,7 @@ test.describe('Owner Subscription — Rate Limit Visibility @owner', () => {
 // SUPERADMIN — Plan CRUD with Rate Limits
 // =============================================================================
 
-test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin', () => {
+test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin @superadmin', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();
@@ -229,7 +229,7 @@ test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin', () => {
 // RBAC — Non-SuperAdmin blocked from plan admin APIs
 // =============================================================================
 
-test.describe('Plan Admin RBAC — Non-SA blocked @owner @manager', () => {
+test.describe('Plan Admin RBAC — Non-SA blocked @owner @manager @security', () => {
 
   test('OWNER cannot list admin plans (403) @owner', async ({ request }) => {
     const token = await loginRole(request, 'owner');

@@ -7,7 +7,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('SMS Campaign Channel — OWNER @owner', () => {
+test.describe('SMS Campaign Channel — OWNER @owner @campaigns', () => {
 
   test('OWNER sees campaigns page with channel selector @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
@@ -38,7 +38,7 @@ test.describe('SMS Campaign Channel — OWNER @owner', () => {
 
 });
 
-test.describe('Automation Actions — OWNER @owner', () => {
+test.describe('Automation Actions — OWNER @owner @automation', () => {
 
   test('OWNER sees automation page with action types @owner', async ({ page }) => {
     await page.goto('/automation', { waitUntil: 'domcontentloaded' });
@@ -77,7 +77,7 @@ test.describe('Automation Actions — OWNER @owner', () => {
 
 });
 
-test.describe('Automation — MANAGER Isolation @manager', () => {
+test.describe('Automation — MANAGER Isolation @manager @automation', () => {
 
   test('MANAGER does NOT see automation creation controls @manager', async ({ page }) => {
     await page.goto('/automation', { waitUntil: 'domcontentloaded' });
@@ -99,7 +99,7 @@ test.describe('Automation — MANAGER Isolation @manager', () => {
 
 });
 
-test.describe('Settings — SMS Configuration @owner', () => {
+test.describe('Settings — SMS Configuration @owner @settings', () => {
 
   test('OWNER can navigate to settings page @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
@@ -111,7 +111,7 @@ test.describe('Settings — SMS Configuration @owner', () => {
 
 });
 
-test.describe('SuperAdmin — Plans with SMS Feature @superadmin', () => {
+test.describe('SuperAdmin — Plans with SMS Feature @superadmin @superadmin', () => {
 
   test('SA sees plan management page @superadmin', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });

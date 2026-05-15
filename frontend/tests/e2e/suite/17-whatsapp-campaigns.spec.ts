@@ -20,7 +20,7 @@ const BASE_API = getE2EBaseURL();
 // OWNER — UI Tests
 // =============================================================================
 
-test.describe('WhatsApp Campaign UI — OWNER @owner', () => {
+test.describe('WhatsApp Campaign UI — OWNER @owner @campaigns', () => {
 
   test('Campaign page loads with heading and form button @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
@@ -65,7 +65,7 @@ test.describe('WhatsApp Campaign UI — OWNER @owner', () => {
 // OWNER — Campaign Analytics API Tests
 // =============================================================================
 
-test.describe('Campaign Analytics API — OWNER @owner', () => {
+test.describe('Campaign Analytics API — OWNER @owner @analytics', () => {
 
   test('GET /campaigns/runs/ returns list @owner', async ({ request }) => {
     const token = await loginRole(request, 'owner');
@@ -110,7 +110,7 @@ test.describe('Campaign Analytics API — OWNER @owner', () => {
 // OWNER — WhatsApp Session API Tests
 // =============================================================================
 
-test.describe('WhatsApp Session API — OWNER @owner', () => {
+test.describe('WhatsApp Session API — OWNER @owner @whatsapp', () => {
 
   test('GET /whatsapp/status/{tenant_id}/ returns status @owner', async ({ request }) => {
     const token = await loginRole(request, 'owner');
@@ -165,7 +165,7 @@ test.describe('WhatsApp Session API — OWNER @owner', () => {
 // MANAGER — RBAC Enforcement (403 on all campaign/WhatsApp endpoints)
 // =============================================================================
 
-test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
+test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager @whatsapp', () => {
 
   test('MANAGER cannot access campaign runs API (403) @manager', async ({ request }) => {
     const token = await loginRole(request, 'manager');
@@ -223,7 +223,7 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager', () => {
 // STAFF — RBAC Enforcement (403 on all campaign/WhatsApp endpoints)
 // =============================================================================
 
-test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff', () => {
+test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff @whatsapp', () => {
 
   test('STAFF cannot access campaign runs API (403) @staff', async ({ request }) => {
     const token = await loginRole(request, 'staff');
@@ -275,7 +275,7 @@ test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff', () => {
 // SUPERADMIN — RBAC Enforcement (no tenant → 403)
 // =============================================================================
 
-test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin', () => {
+test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin @whatsapp', () => {
 
   test('SUPERADMIN cannot access campaign runs (no tenant, 403) @superadmin', async ({ request }) => {
     const token = await loginRole(request, 'superadmin');
@@ -311,7 +311,7 @@ test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin', ()
 // WEBHOOK SECURITY — Unauthenticated calls blocked
 // =============================================================================
 
-test.describe('Webhook Security — Unauthenticated', () => {
+test.describe('Webhook Security — Unauthenticated @security', () => {
 
   test('Delivery webhook responds without crash', async ({ request }) => {
     const resp = await request.post(`${BASE_API}/api/v1/whatsapp/webhook/delivery/`, {
@@ -340,7 +340,7 @@ test.describe('Webhook Security — Unauthenticated', () => {
 // CROSS-TENANT ISOLATION
 // =============================================================================
 
-test.describe('Cross-Tenant Isolation — OWNER @owner', () => {
+test.describe('Cross-Tenant Isolation — OWNER @owner @security', () => {
 
   test('OWNER cannot access WhatsApp status for another tenant @owner', async ({ request }) => {
     const token = await loginRole(request, 'owner');
@@ -366,7 +366,7 @@ test.describe('Cross-Tenant Isolation — OWNER @owner', () => {
 // SETTINGS PAGE — WhatsApp Bridge Wizard (LYL-SRS-007)
 // =============================================================================
 
-test.describe('WhatsApp Settings Wizard — OWNER @owner', () => {
+test.describe('WhatsApp Settings Wizard — OWNER @owner @whatsapp', () => {
 
   test('Settings page shows WhatsApp integration section @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
@@ -420,7 +420,7 @@ test.describe('WhatsApp Settings Wizard — OWNER @owner', () => {
   });
 });
 
-test.describe('WhatsApp Settings — MANAGER denied @manager', () => {
+test.describe('WhatsApp Settings — MANAGER denied @manager @whatsapp', () => {
   test('MANAGER cannot access settings page @manager', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);

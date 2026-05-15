@@ -5,7 +5,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Team — OWNER CRUD @owner', () => {
+test.describe('Team — OWNER CRUD @owner @team', () => {
 
   test('OWNER sees team members list @owner', async ({ page }) => {
     await page.goto('/team', { waitUntil: 'domcontentloaded' });
@@ -38,7 +38,7 @@ test.describe('Team — OWNER CRUD @owner', () => {
 
 });
 
-test.describe('Team — MANAGER Isolation @manager', () => {
+test.describe('Team — MANAGER Isolation @manager @team', () => {
 
   test('MANAGER does NOT have "Equipo" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

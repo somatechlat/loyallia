@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Automation — OWNER @owner', () => {
+test.describe('Automation — OWNER @owner @automation', () => {
 
   test('OWNER sees automation page @owner', async ({ page }) => {
     await page.goto('/automation', { waitUntil: 'domcontentloaded' });
@@ -22,7 +22,7 @@ test.describe('Automation — OWNER @owner', () => {
 
 });
 
-test.describe('Automation — MANAGER Isolation @manager', () => {
+test.describe('Automation — MANAGER Isolation @manager @automation', () => {
 
   test('MANAGER does NOT have "Automatización" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

@@ -36,7 +36,7 @@ async function expectDashboardStatsReloaded(page: any) {
   await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 45000 });
 }
 
-test.describe('Dashboard KPIs — OWNER @owner', () => {
+test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
   test('Dashboard loads with welcome message @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
@@ -157,7 +157,7 @@ test.describe('Dashboard KPIs — OWNER @owner', () => {
   });
 });
 
-test.describe('Dashboard API Endpoints', () => {
+test.describe('Dashboard API Endpoints @analytics', () => {
 
   test('Analytics overview API returns valid structure', async ({ request }) => {
     const access_token = await loginRole(request, 'owner');

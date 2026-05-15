@@ -56,7 +56,7 @@ async function login(page: any, email: string, password: string) {
 // when Next.js dev server is compiling pages. Retries provide resilience.
 test.describe.configure({ retries: 2 });
 
-test.describe('Authentication & Role Routing', () => {
+test.describe('Authentication & Role Routing @auth', () => {
   // Browser form login is sensitive to Next.js dev-server compilation
   // delays under full-suite load. A longer per-test timeout prevents
   // premature failures when the API or frontend is temporarily slow.
@@ -138,7 +138,7 @@ test.describe('Authentication & Role Routing', () => {
   });
 });
 
-test.describe('Registration Form', () => {
+test.describe('Registration Form @auth', () => {
 
   test('Register page renders all fields including phone', async ({ page }) => {
     await page.goto('/register', { waitUntil: 'domcontentloaded' });
@@ -183,7 +183,7 @@ test.describe('Registration Form', () => {
   });
 });
 
-test.describe('Google OAuth API', () => {
+test.describe('Google OAuth API @auth', () => {
 
   test('GET /auth/google/config/ returns enabled status and client_id', async ({ request }) => {
     const resp = await request.get(`${BASE_API}/api/v1/auth/google/config/`);
@@ -201,7 +201,7 @@ test.describe('Google OAuth API', () => {
   });
 });
 
-test.describe('Health & API Basics', () => {
+test.describe('Health & API Basics @auth', () => {
 
   test('Health check endpoint returns OK', async ({ request }) => {
     const resp = await request.get(`${BASE_API}/api/v1/health/`);

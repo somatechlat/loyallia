@@ -41,7 +41,7 @@ let walletStatusUrl = '';
 // PHASE 1: DATA SETUP VIA API
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner', () => {
+test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', () => {
 
   test.beforeAll(async ({ request }) => {
     requireMutatingE2EAllowed();
@@ -137,7 +137,7 @@ test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner', () => {
 // PHASE 2: WALLET API VALIDATION
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner', () => {
+test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', () => {
 
   test('4. Wallet status shows both providers available', async ({ request }) => {
     test.skip(!walletStatusUrl, 'Skipped: no wallet status URL from enrollment');
@@ -194,7 +194,7 @@ test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner', () => {
 // PHASE 3: CAMPAIGN UI WITH PLATFORM SELECTOR
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner', () => {
+test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => {
 
   test('7. Campaigns page shows wallet type with platform selector', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
@@ -383,7 +383,7 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner', () => {
 // PHASE 4: PROGRAM WIZARD WALLET PROVIDER
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 4: Program Wizard @owner', () => {
+test.describe.serial('Wallet Lifecycle — Phase 4: Program Wizard @owner @wallet', () => {
 
   test('12. Program wizard Step 2 shows WalletProviderSelector', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
