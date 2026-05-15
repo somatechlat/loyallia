@@ -110,10 +110,14 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
         {/* Card Preview - Premium Wallet Design */}
         <div className="card p-8 text-center bg-surface-50 border-2 border-dashed border-surface-200 dark:border-surface-700">
           <div className="relative w-full max-w-sm mx-auto">
-            <div className="bg-gray-900 rounded-[2rem] p-2 shadow-2xl border-2 border-gray-800">
-              <div className="bg-gray-900 rounded-[1.5rem] overflow-hidden">
+            <div className="relative bg-black rounded-[40px] p-3 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-[3px] border-transparent bg-gradient-to-b from-gray-700 to-gray-800 bg-clip-padding ring-1 ring-white/20">
+              {/* Side buttons */}
+              <div className="absolute top-20 -left-[3px] w-[2px] h-7 bg-gray-600 rounded-l-sm" />
+              <div className="absolute top-32 -left-[3px] w-[2px] h-12 bg-gray-600 rounded-l-sm" />
+              <div className="absolute top-28 -right-[3px] w-[2px] h-14 bg-gray-600 rounded-r-sm" />
+              <div className="bg-black rounded-[36px] overflow-hidden relative">
                 <div className="bg-black/60 px-20 py-2 flex justify-center">
-                  <div className="w-12 h-2 bg-gray-700 rounded-full" />
+                  <div className="w-14 h-1.5 bg-gray-800 rounded-full" />
                 </div>
                 <div
                   className="mx-2 mb-2 rounded-2xl p-4 min-h-[160px] flex flex-col justify-between shadow-xl relative overflow-hidden"

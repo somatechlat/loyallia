@@ -121,8 +121,8 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: 
                           </button>
                         </div>
                       )}
-                      <a href={`/programs/${p.id}`} className="p-2 text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-full transition-colors" title="Ver detalles">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      <a href={`/programs/${p.id}`} className="px-2 py-1 text-[10px] rounded-full bg-brand-100 text-brand-600 hover:bg-brand-200 dark:bg-brand-900/30 dark:text-brand-400 font-medium transition-colors" title="Editar programa">
+                        Editar
                       </a>
                     </div>
                   </div>
@@ -219,7 +219,7 @@ export default function ProgramsPage() {
           </p>
         </div>
         {user?.role === 'OWNER' && (
-          <a href="/programs/new" className="btn-primary" id="new-program-btn">+ Crear nueva tarjeta</a>
+          <a href="/programs/new" className="btn-primary" id="new-program-btn">+ Crear programa</a>
         )}
       </div>
 

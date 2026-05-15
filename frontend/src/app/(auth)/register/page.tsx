@@ -78,6 +78,7 @@ export default function RegisterPage() {
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showGoogleBizName, setShowGoogleBizName] = useState(false);
   const [googleCredential, setGoogleCredential] = useState('');
   const [googleBizName, setGoogleBizName] = useState('');
@@ -386,15 +387,26 @@ export default function RegisterPage() {
       </FormField>
 
       <FormField label="Contraseña" htmlFor="register-password" error={errors.password?.message}>
-        <input
-          id="register-password"
-          type="password"
-          className={`input ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-          placeholder="••••••••"
-          autoComplete="new-password"
-          aria-invalid={!!errors.password}
-          {...register('password')}
-        />
+        <div className="relative">
+          <input
+            id="register-password"
+            type={showPassword ? 'text' : 'password'}
+            className={`input pr-10 ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+            placeholder="••••••••"
+            autoComplete="new-password"
+            aria-invalid={!!errors.password}
+            {...register('password')}
+          />
+          <button type="button" onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+            {showPassword ? (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            ) : (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            )}
+          </button>
+        </div>
       </FormField>
 
       {/* Phone with country prefix selector + Verification */}

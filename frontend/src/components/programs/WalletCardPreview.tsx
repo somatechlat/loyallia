@@ -281,8 +281,12 @@ function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcod
     : bgColor;
 
   return (
-    <div className="bg-gray-900 rounded-[3rem] p-3 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-4 border-gray-600 ring-1 ring-white/20">
-      <div className="bg-gray-900 rounded-[2.5rem] overflow-hidden relative">
+    <div className="bg-black rounded-[40px] p-3 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-[3px] border-gray-700 ring-1 ring-white/10 relative">
+      {/* Side buttons — iPhone style */}
+      <div className="absolute -left-[5px] top-[100px] w-[3px] h-8 bg-gray-700 rounded-l-sm" />
+      <div className="absolute -left-[5px] top-[140px] w-[3px] h-16 bg-gray-700 rounded-l-sm" />
+      <div className="absolute -right-[5px] top-[120px] w-[3px] h-20 bg-gray-700 rounded-r-sm" />
+      <div className="bg-black rounded-[32px] overflow-hidden relative">
         {/* Dynamic Island */}
         <div className="bg-black/80 px-6 py-3 flex justify-center">
           <div className="w-24 h-6 bg-black rounded-full border border-gray-800" />
@@ -388,8 +392,12 @@ function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barco
   const heroImage = stripPreview || form.strip_image_url;
 
   return (
-    <div className="bg-gray-900 rounded-[2.2rem] p-2.5 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-4 border-gray-600 ring-1 ring-white/20">
-      <div className="bg-gray-950 rounded-[1.8rem] overflow-hidden relative">
+    <div className="bg-black rounded-[36px] p-2.5 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-[3px] border-gray-700 ring-1 ring-white/10 relative">
+      {/* Side buttons — Android style */}
+      <div className="absolute -left-[5px] top-[90px] w-[3px] h-10 bg-gray-700 rounded-l-sm" />
+      <div className="absolute -left-[5px] top-[150px] w-[3px] h-10 bg-gray-700 rounded-l-sm" />
+      <div className="absolute -right-[5px] top-[110px] w-[3px] h-14 bg-gray-700 rounded-r-sm" />
+      <div className="bg-gray-950 rounded-[28px] overflow-hidden relative">
         {/* Android status bar with pill */}
         <div className="flex justify-between items-center px-5 pt-2.5 pb-1">
           <span className="text-[9px] text-white/50 font-medium">9:41</span>
@@ -516,7 +524,7 @@ export default function WalletCardPreview({
   };
 
   return (
-    <div className="relative w-full max-w-sm mx-auto">
+    <div className="relative w-full max-w-[320px]">
       <PlatformToggle platform={platform} onChange={handlePlatformChange} />
       {platform === 'apple' ? (
         <AppleWalletCard form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={barcodeType} />
