@@ -194,6 +194,7 @@ export default function SuperAdminTenants() {
     setImpersonationPin('');
     setImpersonationJustification('');
     setImpersonating(false);
+    setDeleteJustification('');
   };
   const saveDetail = async () => {
     if (!dt) return;
@@ -202,6 +203,25 @@ export default function SuperAdminTenants() {
   };
   const doSuspend = async () => { if (!dt || !confirm(`¿Suspender "${dt.name}"?`)) return; await api(`/tenants/${dt.id}/suspend/`, { method: 'POST' }); toast.success('Suspendido'); closeDetail(); fetchData(); };
   const doReactivate = async () => { if (!dt) return; await api(`/tenants/${dt.id}/reactivate/`, { method: 'POST' }); toast.success('Reactivado'); closeDetail(); fetchData(); };
+  const [deleteJustification, setDeleteJustification] = useState('');
+  const doDelete = async () => {
+    if (!dt) return;
+    const justification = deleteJustification.trim();
+    if (justification.length < 10) {
+      toast.error('Ingresa una justificación de al menos 10 caracteres');
+      return;
+    }
+    const confirmPhrase = window.prompt(`Para eliminar permanentemente "${dt.name}", escribe ELIMINAR:`);
+    if (confirmPhrase !== 'ELIMINAR') {
+      toast.error('Frase de confirmación incorrecta. No se eliminó el negocio.');
+      return;
+    }
+    if (!confirm(`¿ESTÁS SEGURO? Esta acción NO se puede deshacer. Se eliminarán TODOS los datos de "${dt.name}" incluyendo clientes, transacciones, campañas y passes de wallet.`)) return;
+    await api(`/tenants/${dt.id}/`, { method: 'DELETE', body: JSON.stringify({ justification }) });
+    toast.success('Negocio eliminado permanentemente');
+    closeDetail();
+    fetchData();
+  };
   const doImpersonate = async () => {
     if (!dt) return;
     const ownerPin = impersonationPin.replace(/\D/g, '');
@@ -519,6 +539,21 @@ export default function SuperAdminTenants() {
                     ) : (
                       <button onClick={doReactivate} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.play} Reactivar Negocio</button>
                     )}
+                  </div>
+                  <div className="bg-red-50 rounded-xl p-4 border border-red-200 dark:border-red-900/30">
+                    <h4 className="font-bold text-red-900 dark:text-red-200 text-sm mb-2">Zona Peligrosa</h4>
+                    <p className="text-xs text-red-600 dark:text-red-400 mb-3">Elimina permanentemente este negocio y todos sus datos. Esta acción no se puede deshacer.</p>
+                    <div className="mb-3">
+                      <label htmlFor="delete-justification" className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1 block">Justificación (mínimo 10 caracteres)</label>
+                      <input
+                        id="delete-justification"
+                        value={deleteJustification}
+                        onChange={e => setDeleteJustification(e.target.value)}
+                        placeholder="Solicitud del propietario para eliminar cuenta"
+                        className="w-full px-3 py-2 rounded-xl border border-red-200 dark:border-red-800 bg-white/60 backdrop-blur-sm text-sm text-red-900 dark:text-red-100"
+                      />
+                    </div>
+                    <button onClick={doDelete} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.x} Eliminar Permanentemente</button>
                   </div>
                   <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
                     <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">Impersonar</h4>

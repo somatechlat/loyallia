@@ -74,11 +74,9 @@ def export_tenant_data(tenant_id: str, user_email: str):
             )
 
 
-@shared_task(queue="default", bind=True, max_retries=2)
-def delete_tenant_cascade(self, tenant_id: str):
+def hard_delete_tenant(tenant_id: str) -> str:
     """
-    LYL-FR-DPR-025.6/025.7: LOPDP Art. 18 — Hard-delete ALL tenant data.
-    Runs 24 hours after owner requests deletion via POST /tenants/delete-account/.
+    Synchronously hard-delete ALL tenant data.
 
     Cascade order (dependency-safe):
     1. Notifications & Campaigns
@@ -90,19 +88,18 @@ def delete_tenant_cascade(self, tenant_id: str):
     7. Team users (non-OWNER first, then OWNER)
     8. Anonymize AuditLog
     9. Delete Tenant
+
+    Returns the tenant name for logging.
     """
-    logger.info("Starting cascade deletion for tenant %s", tenant_id)
+    logger.info("Starting hard deletion for tenant %s", tenant_id)
 
     try:
         tenant = Tenant.objects.get(id=tenant_id)
     except Tenant.DoesNotExist:
         logger.warning("Tenant %s already deleted, skipping", tenant_id)
-        return
+        return ""
 
-    # Safety: only proceed if deletion was actually scheduled
-    if tenant.scheduled_deletion_at is None:
-        logger.warning("Tenant %s has no scheduled_deletion_at, aborting", tenant_id)
-        return
+    tenant_name = tenant.name
 
     # 1. Notifications & campaign delivery records.
     with contextlib.suppress(Exception):
@@ -169,22 +166,52 @@ def delete_tenant_cascade(self, tenant_id: str):
             actor_email="[DELETED]",
             details={},
         )
-        # Final audit entry
+
+    # 9. Delete Tenant
+    tenant.delete()
+
+    logger.info(
+        "Hard deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id
+    )
+    return tenant_name
+
+
+@shared_task(queue="default", bind=True, max_retries=2)
+def delete_tenant_cascade(self, tenant_id: str):
+    """
+    LYL-FR-DPR-025.6/025.7: LOPDP Art. 18 — Hard-delete ALL tenant data.
+    Runs 24 hours after owner requests deletion via POST /tenants/delete-account/.
+    """
+    logger.info("Starting cascade deletion for tenant %s", tenant_id)
+
+    try:
+        tenant = Tenant.objects.get(id=tenant_id)
+    except Tenant.DoesNotExist:
+        logger.warning("Tenant %s already deleted, skipping", tenant_id)
+        return
+
+    # Safety: only proceed if deletion was actually scheduled
+    if tenant.scheduled_deletion_at is None:
+        logger.warning("Tenant %s has no scheduled_deletion_at, aborting", tenant_id)
+        return
+
+    tenant_name = hard_delete_tenant(tenant_id)
+
+    # Final audit entry (owner not present in Celery context)
+    with contextlib.suppress(Exception):
+        from apps.audit.models import AuditAction, AuditLog
+
         AuditLog.objects.create(
             actor_id=uuid.UUID(int=0),
             actor_email="[SYSTEM]",
             actor_role="system",
-            action="TENANT_DELETED",
+            action=AuditAction.DELETE,
             resource_type="tenant",
-            resource_id=str(tenant.id),
-            tenant_id=tenant.id,
+            resource_id=tenant_id,
+            tenant_id=None,
             ip_address="",
-            details={"deletion_type": "lopdp_art18_cascade"},
+            details={"deletion_type": "lopdp_art18_cascade", "tenant_name": tenant_name},
         )
-
-    # 9. Delete Tenant
-    tenant_name = tenant.name
-    tenant.delete()
 
     logger.info(
         "Cascade deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id

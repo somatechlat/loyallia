@@ -99,6 +99,8 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
             qs = qs.filter(plan=plan)
     if is_active is not None:
         qs = qs.filter(is_active=is_active)
+    # Hide tenants scheduled for deletion (cascade delete in progress)
+    qs = qs.filter(scheduled_deletion_at__isnull=True)
     return [TenantAdminOut.from_tenant(t) for t in qs]
 
 
@@ -384,6 +386,61 @@ def suspend_tenant(request, tenant_id: str):
         tenant.name,
     )
     return MessageOut(success=True, message=get_message("TENANT_SUSPENDED"))
+
+
+@router.delete("/tenants/{tenant_id}/", auth=jwt_auth, response=MessageOut)
+def delete_tenant(request, tenant_id: str):
+    """SuperAdmin hard-delete: synchronously delete all tenant data with audit."""
+    _require_super_admin(request)
+    tenant = _get_tenant_or_404(tenant_id)
+
+    # Prevent deleting tenants already scheduled for deletion
+    if tenant.scheduled_deletion_at is not None:
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="El negocio ya está programado para eliminación"))
+
+    # Require justification
+    try:
+        body = json.loads(request.body) if request.body else {}
+    except Exception:
+        body = {}
+    justification = body.get("justification", "").strip()
+    if len(justification) < 10:
+        raise HttpError(
+            400,
+            get_message("VALIDATION_ERROR", detail="Justificación requerida (mínimo 10 caracteres)"),
+        )
+
+    tenant_name = tenant.name
+    tenant_id_str = str(tenant.id)
+
+    # SYNCHRONOUS hard delete — data is gone before response returns
+    from apps.tenants.tasks import hard_delete_tenant
+    hard_delete_tenant(tenant_id_str)
+
+    # Audit log with ACTUAL SuperAdmin identity
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.DELETE,
+            resource_type="tenant",
+            resource_id=tenant_id_str,
+            justification=justification,
+            details={"tenant_name": tenant_name, "deletion_type": "superadmin_hard_delete"},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception:
+        logger.warning("Failed to log deletion audit", exc_info=True)
+
+    logger.warning(
+        "SUPER_ADMIN %s hard-deleted tenant %s (%s)",
+        request.user.email,
+        tenant_id_str,
+        tenant_name,
+    )
+    return MessageOut(success=True, message=get_message("TENANT_DELETED"))
 
 
 @router.post("/tenants/{tenant_id}/reactivate/", auth=jwt_auth, response=MessageOut)

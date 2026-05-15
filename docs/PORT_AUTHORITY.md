@@ -37,8 +37,8 @@ All Loyallia services use the **33900** port range to avoid collisions with othe
 - **Flower**: http://localhost:33907 (credentials in `.env`)
 - **Vault UI**: http://localhost:33908 (token in `.env`)
 
-> **Security Note**: All service credentials are stored in the gitignored `.env` file.
-> See `.env.example` for the required variable names without real values.
+> **Security Note**: All service credentials are stored in HashiCorp Vault.
+> Port bindings use `DOCKER_BIND_HOST` (default `127.0.0.1`). Set to `0.0.0.0` for LAN access.
 
 ## Test Credentials (Development Only)
 
@@ -47,7 +47,7 @@ created for each role. See the seed command source for email/password values:
 `backend/apps/tenants/management/commands/seed_test_data.py`
 
 > **Never commit credentials to version control.** All passwords are set via
-> environment variables or the seed command. See `.env.example` for configuration.
+> environment variables or the seed command.
 
 ## Docker Commands
 

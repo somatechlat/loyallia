@@ -113,7 +113,7 @@ services:
       - ./deploy/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "127.0.0.1:33900:5432"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33900:5432"
     networks:
       - backend-net
     restart: unless-stopped
@@ -164,7 +164,7 @@ services:
       - ./deploy/postgres/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint.sh:ro
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "127.0.0.1:33911:5432"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33911:5432"
     networks:
       - backend-net
     restart: unless-stopped
@@ -214,7 +214,7 @@ services:
       LOG_CONNECTIONS: "1"
       LOG_DISCONNECTIONS: "1"
     ports:
-      - "127.0.0.1:33901:6432"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33901:6432"
     depends_on:
       vault-init:
         condition: service_completed_successfully
@@ -261,7 +261,7 @@ services:
       - redis_data:/data
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "127.0.0.1:33902:6379"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33902:6379"
     networks:
       - backend-net
     restart: unless-stopped
@@ -299,8 +299,8 @@ services:
       - minio_data:/data
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "127.0.0.1:33903:9000"
-      - "127.0.0.1:33904:9001"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33903:9000"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33904:9001"
     networks:
       - backend-net
     restart: unless-stopped
@@ -376,7 +376,7 @@ services:
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     ports:
-      - "127.0.0.1:33905:8000"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33905:8000"
     stop_grace_period: 30s  # B-012: Graceful shutdown for in-flight requests
     depends_on:
       postgres:
@@ -441,7 +441,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       HOST: "0.0.0.0"
     ports:
-      - "127.0.0.1:33906:3000"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33906:3000"
     stop_grace_period: 30s  # B-012: Graceful shutdown
     volumes:
       - ./frontend/src:/app/src
@@ -706,7 +706,7 @@ services:
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     ports:
-      - "127.0.0.1:33907:5555"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33907:5555"
     depends_on:
       - redis
     networks:
@@ -747,7 +747,7 @@ services:
     volumes:
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "127.0.0.1:33914:3001"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33914:3001"
     depends_on:
       redis:
         condition: service_healthy
@@ -788,7 +788,7 @@ services:
       - ./deploy/vault.hcl:/vault/config/vault.hcl:ro
       - vault_data:/vault/file
     ports:
-      - "127.0.0.1:33908:8200"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33908:8200"
     networks:
       - backend-net
     restart: unless-stopped
@@ -843,8 +843,8 @@ services:
     image: nginx:1.25.4-alpine
     container_name: loyallia-nginx
     ports:
-      - "127.0.0.1:80:80"
-      - "127.0.0.1:443:443"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:80:80"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:443:443"
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -892,7 +892,7 @@ services:
       - ./deploy/alerts:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
     ports:
-      - "127.0.0.1:33909:9090"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33909:9090"
     networks:
       - backend-net
     restart: unless-stopped
@@ -922,7 +922,7 @@ services:
       - ./deploy/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./deploy/grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
     ports:
-      - "127.0.0.1:33910:3000"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33910:3000"
     depends_on:
       - prometheus
       - loki
@@ -954,7 +954,7 @@ services:
       - ./deploy/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki_data:/loki
     ports:
-      - "127.0.0.1:33912:3100"
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:33912:3100"
     networks:
       - monitoring-net
     restart: unless-stopped

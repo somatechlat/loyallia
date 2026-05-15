@@ -206,7 +206,7 @@ docker compose exec api python manage.py shell -c "
 from apps.authentication.models import User
 from apps.tenants.models import Tenant
 if not User.objects.filter(email='admin@loyallia.com').exists():
-    user = User.objects.create_superuser('admin@loyallia.com', 'AdminPassword123!', first_name='Admin', last_name='System')
+    user = User.objects.create_superuser('admin@loyallia.com', 'CHANGE_THIS_PASSWORD_IMMEDIATELY', first_name='Admin', last_name='System')
     print('Superadmin created')
 else:
     print('Superadmin already exists')
@@ -279,7 +279,7 @@ nginx:
 
 | Service | URL | Auth |
 |---------|-----|------|
-| Grafana | `https://rewards.loyallia.com:33910` | Basic Auth |
+| Grafana | `http://localhost:33910` | Basic Auth |
 | Prometheus | `http://localhost:33909` | None |
 | Flower (Celery) | `http://localhost:33907` | Basic Auth |
 | Vault UI | `http://localhost:33908` | Token |
