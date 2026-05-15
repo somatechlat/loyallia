@@ -76,13 +76,15 @@ class CSPNonceMiddleware:
         response = self.get_response(request)
 
         # Build CSP header with nonce
+        # LYL-H-SEC-010: Covers Google Identity Services domains to prevent
+        # CSP violations when Google OAuth is enabled.
         csp_directives = [
             "default-src 'self'",
             f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com",
-            f"style-src 'self' 'nonce-{nonce}'",
-            "img-src 'self' data: https:",
+            f"style-src 'self' 'nonce-{nonce}' https://accounts.google.com",
+            "img-src 'self' data: https: blob:",
             "font-src 'self' https://fonts.gstatic.com",
-            "connect-src 'self' https://oauth2.googleapis.com",
+            "connect-src 'self' https://oauth2.googleapis.com https://accounts.google.com https://apis.google.com",
             "frame-src 'self' https://accounts.google.com",
             "base-uri 'self'",
             "form-action 'self'",

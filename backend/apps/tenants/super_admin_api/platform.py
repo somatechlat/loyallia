@@ -75,6 +75,19 @@ def _require_super_admin(request) -> None:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
 
+def _is_production_environment() -> bool:
+    """Check if the platform is running in production mode.
+
+    Reads PLATFORM_MODE from PlatformSetting (runtime toggle) first,
+    then falls back to Django settings.ENVIRONMENT.
+    """
+    setting = PlatformSetting.objects.filter(key="PLATFORM_MODE").first()
+    return bool(
+        (setting and setting.value == "production")
+        or getattr(settings, "ENVIRONMENT", "") == "production"
+    )
+
+
 def _is_sensitive_platform_setting_key(key: str) -> bool:
     normalized = key.upper()
     return any(token in normalized for token in SENSITIVE_PLATFORM_SETTING_TOKENS)
@@ -650,6 +663,9 @@ def seed_demo_data(request):
     """
     _require_super_admin(request)
 
+    if _is_production_environment():
+        raise HttpError(403, get_message("ADMIN_FACTORY_PRODUCTION_BLOCKED"))
+
     from io import StringIO
 
     from django.core.management import call_command
@@ -784,6 +800,9 @@ def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
     The SUPER_ADMIN user is preserved.
     """
     _require_super_admin(request)
+
+    if _is_production_environment():
+        raise HttpError(403, get_message("ADMIN_FACTORY_PRODUCTION_BLOCKED"))
 
     from io import StringIO
 

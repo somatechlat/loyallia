@@ -237,6 +237,7 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_FACTORY_OTP_INVALID": "Código inválido o expirado. Intente de nuevo.",
     "ADMIN_FACTORY_NO_CONTACT": "No hay número de teléfono ni email configurado para enviar el código.",
     "ADMIN_FACTORY_RESET_DONE": "Sistema restaurado a estado de fábrica exitosamente.",
+    "ADMIN_FACTORY_PRODUCTION_BLOCKED": "Operación bloqueada en modo producción.",
     # --- Agent API ---
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
@@ -452,6 +453,7 @@ _MESSAGES_EN: dict[str, str] = {
     "ADMIN_FACTORY_OTP_INVALID": "Invalid or expired code. Try again.",
     "ADMIN_FACTORY_NO_CONTACT": "No phone number or email configured to send the code.",
     "ADMIN_FACTORY_RESET_DONE": "System restored to factory state successfully.",
+    "ADMIN_FACTORY_PRODUCTION_BLOCKED": "Operation blocked in production mode.",
     "AGENT_KEY_INVALID": "Agent API key is invalid or has expired.",
     "AGENT_KEY_CREATED": "Agent API key created successfully.",
     "AGENT_KEY_REVOKED": "Agent API key revoked.",

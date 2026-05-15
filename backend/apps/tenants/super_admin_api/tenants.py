@@ -163,7 +163,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                     longitude=loc.longitude,
                     is_primary=loc.is_primary or (i == 0),
                 )
-            
+
             sub_status = SubscriptionStatus.TRIALING if plan_slug == "trial" else SubscriptionStatus.ACTIVE
             is_trial = sub_status == SubscriptionStatus.TRIALING
 
@@ -441,9 +441,9 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
 
     base_trial_end = subscription.trial_end if subscription else tenant.trial_end
     base = max(base_trial_end or dj_timezone.now(), dj_timezone.now())
-    
+
     new_trial_end = base + timedelta(days=payload.days)
-    
+
     tenant.trial_end = new_trial_end
     tenant.is_active = True
     tenant.save(update_fields=["trial_end", "is_active", "updated_at"])

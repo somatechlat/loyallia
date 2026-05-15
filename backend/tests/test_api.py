@@ -336,6 +336,40 @@ class AuthUsersAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 400)
 
+    def test_add_team_member_superadmin_blocked(self):
+        tenant = make_tenant()
+        owner = make_user(
+            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
+        )
+        make_subscription(tenant)
+        header = _get_auth_header(owner, "[REDACTED]")
+        resp = self.client.post(
+            "/api/v1/tenants/team/",
+            data=json.dumps({
+                "email": "hacker@test.com",
+                "first_name": "Hacker",
+                "last_name": "Admin",
+                "role": "SUPER_ADMIN",
+            }),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=header,
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_manager_cannot_update_tenant_settings(self):
+        tenant = make_tenant()
+        manager = make_user(
+            tenant=tenant, role=UserRole.MANAGER, password="[REDACTED]"
+        )
+        header = _get_auth_header(manager, "[REDACTED]")
+        resp = self.client.put(
+            "/api/v1/tenants/settings/",
+            data=json.dumps({"name": "Hacked Name"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=header,
+        )
+        self.assertEqual(resp.status_code, 403)
+
 
 # =============================================================================
 # Customers API Tests

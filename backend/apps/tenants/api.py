@@ -60,7 +60,10 @@ def get_plan_features(request):
 
     LYL-SRS-008: Used by the frontend to gate UI components
     (WhatsApp wizard, Campaign channel selector, etc.)
+    MANAGER+ only.
     """
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
     from apps.billing.models import PlanFeature, Subscription
 
@@ -416,7 +419,10 @@ def ai_chat_proxy(request, payload: AIChatIn):
     """
     Proxies chat requests to the external AI Agent.
     Injects the Vault-backed AI_AGENT_API_KEY to ensure zero frontend exposure.
+    MANAGER+ only.
     """
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     import httpx
     from django.conf import settings
 

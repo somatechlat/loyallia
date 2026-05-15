@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from apps.authentication.models import User, UserManager, UserRole
 from apps.automation.models import Automation, AutomationAction, AutomationTrigger
-from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
+from apps.billing.models import PlanFeature, Subscription, SubscriptionPlan, SubscriptionStatus
 from apps.cards.models import Card, CardType
 from apps.customers.models import Customer, CustomerPass
 from apps.tenants.models import Location, Tenant
@@ -152,9 +152,40 @@ def make_customer_pass(customer, card, pass_data=None, **kwargs):
 
 
 def make_subscription(tenant, plan=None, status=SubscriptionStatus.ACTIVE, **kwargs):
-    """Create a Subscription with sensible defaults."""
+    """Create a Subscription with sensible defaults.
+
+    When status=TRIALING and no plan is provided, auto-creates/links a
+    SubscriptionPlan with slug="trial" so trial unlimited behavior works.
+    """
     if plan is None:
-        plan = make_plan()
+        if status == SubscriptionStatus.TRIALING:
+            plan, _ = SubscriptionPlan.objects.get_or_create(
+                slug="trial",
+                defaults={
+                    "name": "Trial",
+                    "price_monthly": Decimal("0.00"),
+                    "price_annual": Decimal("0.00"),
+                    "max_customers": 999999,
+                    "max_programs": 999999,
+                    "max_locations": 999999,
+                    "max_users": 999999,
+                    "max_notifications_month": 999999,
+                    "max_transactions_month": 999999,
+                    "max_whatsapp_day": 999999,
+                    "max_emails_month": 999999,
+                    "max_sms_day": 999999,
+                    "max_wallet_pushes_month": 999999,
+                    "max_automations": 999999,
+                    "max_automation_executions_day": 999999,
+                    "max_ai_queries_month": 999999,
+                    "max_api_calls_day": 999999,
+                    "max_exports_month": 999999,
+                    "features": list(PlanFeature.ALL_FEATURES),
+                    "trial_days": 5,
+                },
+            )
+        else:
+            plan = make_plan()
     now = timezone.now()
     defaults = {
         "subscription_plan": plan,
@@ -166,7 +197,7 @@ def make_subscription(tenant, plan=None, status=SubscriptionStatus.ACTIVE, **kwa
     }
     if status == SubscriptionStatus.TRIALING:
         defaults["trial_start"] = now
-        defaults["trial_end"] = now + timedelta(days=14)
+        defaults["trial_end"] = now + timedelta(days=plan.trial_days if plan else 14)
     defaults.update(kwargs)
     sub, created = Subscription.objects.get_or_create(tenant=tenant, defaults=defaults)
     if not created:

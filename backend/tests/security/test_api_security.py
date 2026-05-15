@@ -230,6 +230,142 @@ class TestAPICodeChanges(TestCase):
 
 
 # =============================================================================
+# Cross-Tenant Isolation Tests
+# =============================================================================
+
+
+class TestCrossTenantIsolation(TestCase):
+    """Verify tenants cannot access each other's data via ID manipulation."""
+
+    def setUp(self):
+        from apps.billing.models import SubscriptionStatus
+        from tests.factories import make_card, make_subscription, make_tenant, make_user
+
+        self.tenant_a = make_tenant(name="Tenant A")
+        self.tenant_b = make_tenant(name="Tenant B")
+        self.owner_a = make_user(tenant=self.tenant_a, role="OWNER")
+        self.owner_b = make_user(tenant=self.tenant_b, role="OWNER")
+        make_subscription(self.tenant_a, status=SubscriptionStatus.ACTIVE)
+        make_subscription(self.tenant_b, status=SubscriptionStatus.ACTIVE)
+        self.card_a = make_card(self.tenant_a, name="Program A")
+        self.card_b = make_card(self.tenant_b, name="Program B")
+
+    def _request(self, user):
+        from django.test import RequestFactory
+        req = RequestFactory().get("/api/v1/test/")
+        req.user = user
+        req.tenant = user.tenant
+        return req
+
+    def test_owner_a_cannot_access_tenant_b_program(self):
+        from django.http import Http404
+        from ninja.errors import HttpError
+
+        from apps.cards.api import get_program
+
+        req = self._request(self.owner_a)
+        with self.assertRaises((HttpError, Http404)) as ctx:
+            get_program(req, str(self.card_b.id))
+        if hasattr(ctx.exception, 'status_code'):
+            self.assertIn(ctx.exception.status_code, (403, 404))
+
+    def test_owner_b_cannot_access_tenant_a_program(self):
+        from django.http import Http404
+        from ninja.errors import HttpError
+
+        from apps.cards.api import get_program
+
+        req = self._request(self.owner_b)
+        with self.assertRaises((HttpError, Http404)) as ctx:
+            get_program(req, str(self.card_a.id))
+        if hasattr(ctx.exception, 'status_code'):
+            self.assertIn(ctx.exception.status_code, (403, 404))
+
+
+# =============================================================================
+# Role Boundary API Tests
+# =============================================================================
+
+
+class TestRoleBoundariesAPI(TestCase):
+    """Verify MANAGER cannot perform OWNER-only API operations."""
+
+    def setUp(self):
+        from apps.billing.models import SubscriptionStatus
+        from tests.factories import make_subscription, make_tenant, make_user
+
+        self.tenant = make_tenant()
+        self.owner = make_user(tenant=self.tenant, role="OWNER")
+        self.manager = make_user(tenant=self.tenant, role="MANAGER")
+        make_subscription(self.tenant, status=SubscriptionStatus.ACTIVE)
+
+    def _request(self, user):
+        from django.test import RequestFactory
+        req = RequestFactory().post("/api/v1/test/", data=b"{}", content_type="application/json")
+        req.user = user
+        req.tenant = self.tenant
+        return req
+
+    def test_manager_cannot_create_program(self):
+        from ninja.errors import HttpError
+
+        from apps.cards.api import CardCreateIn, create_program
+
+        req = self._request(self.manager)
+        payload = CardCreateIn(name="Hacker", card_type="stamp")
+        with self.assertRaises(HttpError) as ctx:
+            create_program(req, payload)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_manager_cannot_add_team_member(self):
+        from ninja.errors import HttpError
+
+        from apps.tenants.api import add_team_member
+        from apps.tenants.schemas import TeamMemberCreateIn
+
+        req = self._request(self.manager)
+        payload = TeamMemberCreateIn(email="x@test.com", first_name="X", last_name="Y", role="STAFF")
+        with self.assertRaises(HttpError) as ctx:
+            add_team_member(req, payload)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+
+# =============================================================================
+# Rate Limit Rule Coverage Tests
+# =============================================================================
+
+
+class TestRateLimitRules(TestCase):
+    """Verify rate limit rules cover newly added endpoint prefixes."""
+
+    def test_admin_rate_limit_exists(self):
+        from common.rate_limit import RATE_LIMIT_RULES
+        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        self.assertIn("/api/v1/admin/", paths)
+
+    def test_upload_rate_limit_exists(self):
+        from common.rate_limit import RATE_LIMIT_RULES
+        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        self.assertIn("/api/v1/upload/", paths)
+
+    def test_whatsapp_rate_limit_exists(self):
+        from common.rate_limit import RATE_LIMIT_RULES
+        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        self.assertIn("/api/v1/whatsapp/", paths)
+
+    def test_agent_rate_limit_exists(self):
+        from common.rate_limit import RATE_LIMIT_RULES
+        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        self.assertIn("/api/v1/agent/", paths)
+
+    def test_rules_ordered_most_specific_first(self):
+        from common.rate_limit import RATE_LIMIT_RULES
+        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        general_index = paths.index("/api/v1/")
+        self.assertEqual(general_index, len(paths) - 1)
+
+
+# =============================================================================
 # Integration: Verify Rate Limiter code changes
 # =============================================================================
 

@@ -78,6 +78,30 @@ RATE_LIMIT_RULES = [
         30,
         60,
     ),  # 30 notification ops per minute per user
+    (
+        "/api/v1/admin/",
+        "ip",
+        60,
+        60,
+    ),  # 60 SuperAdmin ops per minute per IP (factory reset, broadcast, impersonation)
+    (
+        "/api/v1/upload/",
+        "ip",
+        20,
+        60,
+    ),  # 20 file uploads per minute per IP (storage abuse protection)
+    (
+        "/api/v1/whatsapp/",
+        "user",
+        30,
+        60,
+    ),  # 30 WhatsApp ops per minute per user (cost-driven channel)
+    (
+        "/api/v1/agent/",
+        "user",
+        30,
+        60,
+    ),  # 30 Agent API calls per minute per user (LLM token cost protection)
     ("/api/v1/", "ip", 200, 60),  # 200 general API requests per minute per IP
 ]
 

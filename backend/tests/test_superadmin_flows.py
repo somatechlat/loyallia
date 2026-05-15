@@ -10,8 +10,8 @@ from apps.authentication.models import UserRole
 from apps.authentication.tokens import decode_access_token
 from apps.billing.models import PlanFeature, Subscription, SubscriptionStatus
 from apps.tenants.models import Tenant
-from apps.tenants.super_admin_api.integration_config import normalize_and_validate_vault_secret
 from apps.tenants.super_admin_api.impersonation import impersonate_tenant
+from apps.tenants.super_admin_api.integration_config import normalize_and_validate_vault_secret
 from apps.tenants.super_admin_api.plan_validation import validate_plan_config
 from apps.tenants.super_admin_api.schemas import CreateTenantWizardIn, ImpersonateIn
 from apps.tenants.super_admin_api.tenants import create_tenant
@@ -53,7 +53,7 @@ class SuperAdminTenantCreationTest(TestCase):
         subscription = Subscription.objects.select_related("subscription_plan").get(tenant=tenant)
         self.assertEqual(subscription.subscription_plan, plan)
         self.assertEqual(subscription.plan, plan.slug)
-        self.assertEqual(subscription.status, SubscriptionStatus.TRIALING)
+        self.assertEqual(subscription.status, SubscriptionStatus.ACTIVE)
         self.assertEqual(response.owner_email, "owner-plan-linked@example.com")
         self.assertTrue(response.temp_password)
 
@@ -77,7 +77,7 @@ class PlanValidationTest(TestCase):
         )
 
     def test_disabled_feature_rejects_nonzero_limit(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(HttpError):
             validate_plan_config(
                 {
                     "features": [],
@@ -114,9 +114,8 @@ class BackupConfigValidationTest(TestCase):
             ("vault_thresholds", "[]"),
         ]
         for key, value in invalid_inputs:
-            with self.subTest(key=key):
-                with self.assertRaises(Exception):
-                    normalize_and_validate_vault_secret(key, value)
+            with self.subTest(key=key), self.assertRaises(HttpError):
+                normalize_and_validate_vault_secret(key, value)
 
 
 class SuperAdminImpersonationTest(TestCase):
@@ -181,3 +180,74 @@ class SuperAdminImpersonationTest(TestCase):
         self.assertEqual(decoded["tenant_id"], str(self.tenant.id))
         self.assertTrue(decoded["impersonated"])
         self.assertEqual(decoded["impersonated_by"], str(self.request.user.id))
+
+
+class FactoryResetGuardrailsTest(TestCase):
+    """Factory reset and seed demo must be blocked in production and require SUPER_ADMIN."""
+
+    def setUp(self):
+        self.request = RequestFactory().post(
+            "/api/v1/admin/platform/factory-reset/confirm/",
+            data=json.dumps({}),
+            content_type="application/json",
+        )
+        self.request.user = make_user(tenant=None, role=UserRole.SUPER_ADMIN)
+
+    def test_factory_reset_blocked_in_production(self):
+        from ninja.errors import HttpError
+
+        from apps.tenants.models import PlatformSetting
+        from apps.tenants.super_admin_api.platform import factory_reset_confirm
+        from apps.tenants.super_admin_api.schemas import FactoryResetConfirmIn
+
+        PlatformSetting.objects.create(key="PLATFORM_MODE", value="production")
+        with self.assertRaises(HttpError) as ctx:
+            factory_reset_confirm(self.request, FactoryResetConfirmIn(otp="[REDACTED]"))
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_seed_demo_blocked_in_production(self):
+        from ninja.errors import HttpError
+
+        from apps.tenants.models import PlatformSetting
+        from apps.tenants.super_admin_api.platform import seed_demo_data
+
+        PlatformSetting.objects.create(key="PLATFORM_MODE", value="production")
+        with self.assertRaises(HttpError) as ctx:
+            seed_demo_data(self.request)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_non_superadmin_cannot_factory_reset(self):
+        from ninja.errors import HttpError
+
+        from apps.tenants.super_admin_api.platform import factory_reset_request
+
+        owner = make_user(tenant=Tenant.objects.create(
+            name="Owner Tenant", slug="owner-tenant", is_active=True, country="EC"
+        ), role=UserRole.OWNER)
+        req = RequestFactory().post(
+            "/api/v1/admin/platform/factory-reset/request/",
+            data=json.dumps({}),
+            content_type="application/json",
+        )
+        req.user = owner
+        with self.assertRaises(HttpError) as ctx:
+            factory_reset_request(req)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_non_superadmin_cannot_seed_demo(self):
+        from ninja.errors import HttpError
+
+        from apps.tenants.super_admin_api.platform import seed_demo_data
+
+        owner = make_user(tenant=Tenant.objects.create(
+            name="Owner Tenant 2", slug="owner-tenant-2", is_active=True, country="EC"
+        ), role=UserRole.OWNER)
+        req = RequestFactory().post(
+            "/api/v1/admin/platform/seed-demo-data/",
+            data=json.dumps({}),
+            content_type="application/json",
+        )
+        req.user = owner
+        with self.assertRaises(HttpError) as ctx:
+            seed_demo_data(req)
+        self.assertEqual(ctx.exception.status_code, 403)
