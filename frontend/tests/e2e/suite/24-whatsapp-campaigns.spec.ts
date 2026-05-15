@@ -42,7 +42,8 @@ test.describe('WhatsApp Campaigns — OWNER @owner', () => {
 
   test('2. WhatsApp section shown in settings', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    // Wait for settings page to finish loading (save button or WhatsApp section)
+    await page.locator('#save-settings-btn, #wa-integration-section').first().waitFor({ state: 'visible', timeout: 15000 });
 
     const waCard = page.locator('text=WhatsApp');
     const hasWaReference = (await waCard.count()) > 0;

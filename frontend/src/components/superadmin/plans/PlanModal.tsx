@@ -14,6 +14,21 @@ import {
 
 export type { PlanData };
 
+function StatusBadge({ status }: { status: PlanData['status'] }) {
+  const config = {
+    draft: { label: 'Borrador', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
+    published: { label: 'Publicado', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', dot: 'bg-green-500' },
+    archived: { label: 'Archivado', color: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400', dot: 'bg-surface-400' },
+  };
+  const c = config[status] || config.published;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${c.color}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+      {c.label}
+    </span>
+  );
+}
+
 interface PlanModalProps {
   selected: PlanData | null;
   showCreate: boolean;
@@ -35,6 +50,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
       setEditMode(false);
     } else if (selected) {
       setForm({
+        id: selected.id,
         name: selected.name,
         slug: selected.slug,
         description: selected.description,
@@ -56,6 +72,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
         max_api_calls_day: selected.max_api_calls_day || 0,
         max_exports_month: selected.max_exports_month || 5,
         features: selected.features || [],
+        status: selected.status || 'published',
         is_active: selected.is_active,
         is_featured: selected.is_featured,
         trial_days: selected.trial_days,
@@ -129,8 +146,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
             </h2>
             {selected && !editMode && !showCreate && (
               <div className="flex items-center gap-2 mt-1">
-                <span className={`w-2 h-2 rounded-full ${selected.is_active ? 'bg-green-500' : 'bg-red-400'}`} />
-                <span className="text-xs text-surface-400">{selected.is_active ? 'Activo' : 'Inactivo'}</span>
+                <StatusBadge status={selected.status} />
                 {selected.is_featured && (
                   <span className="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-semibold">Destacado</span>
                 )}
@@ -264,12 +280,12 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                 onClick={handleToggleActive}
                 disabled={saving}
                 className={`px-4 py-2.5 rounded-xl font-semibold text-sm border transition-all ${
-                  selected.is_active
+                  selected.status !== 'archived'
                     ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
                     : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200'
                 }`}
               >
-                {selected.is_active ? 'Desactivar' : 'Reactivar'}
+                {selected.status !== 'archived' ? 'Archivar' : 'Restaurar'}
               </button>
             </div>
           </div>
@@ -508,15 +524,18 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                 <FeatureTagInput features={form.features} onChange={(features) => setForm((f) => ({ ...f, features }))} />
 
                 <div className="space-y-2 pt-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.is_active}
-                      onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-                      className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-400"
-                    />
-                    <span className="text-sm text-surface-700 dark:text-surface-200 font-medium">🟢 Plan activo</span>
-                  </label>
+                  <div>
+                    <label className="text-xs font-semibold text-surface-500 mb-1 block">Estado del plan</label>
+                    <select
+                      value={form.status}
+                      onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as PlanData['status'], is_active: e.target.value !== 'archived' }))}
+                      className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
+                    >
+                      <option value="draft">📝 Borrador (solo visible en SuperAdmin)</option>
+                      <option value="published">🚀 Publicado (visible para todos)</option>
+                      <option value="archived">📦 Archivado (oculto)</option>
+                    </select>
+                  </div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"

@@ -176,10 +176,39 @@ def login(request, payload: LoginIn):
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
     if not user.check_password(payload.password):
         user.record_failed_login()
+        try:
+            from apps.audit.models import AuditAction
+            from apps.audit.service import log_action
+            log_action(
+                request=request,
+                action=AuditAction.LOGIN,
+                resource_type="user",
+                resource_id=str(user.id),
+                tenant_id=str(user.tenant_id) if user.tenant_id else None,
+                details={"method": "email", "reason": "invalid_password"},
+                status="denied",
+            )
+        except Exception:
+            pass
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
 
     user.reset_failed_login()
-    return issue_tokens(user)
+    tokens = issue_tokens(user)
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+        log_action(
+            request=request,
+            action=AuditAction.LOGIN,
+            resource_type="user",
+            resource_id=str(user.id),
+            tenant_id=str(user.tenant_id) if user.tenant_id else None,
+            details={"method": "email"},
+            status="success",
+        )
+    except Exception:
+        pass
+    return tokens
 
 
 @router.post("/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso")
@@ -226,6 +255,20 @@ def logout(request, payload: LogoutIn):
     RefreshToken.objects.filter(token_hash=token_hash, user=request.user, revoked_at__isnull=True).update(
         revoked_at=dj_timezone.now()
     )
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+        log_action(
+            request=request,
+            action=AuditAction.LOGOUT,
+            resource_type="user",
+            resource_id=str(request.user.id),
+            tenant_id=str(request.tenant.id) if hasattr(request, 'tenant') and request.tenant else None,
+            details={"method": "refresh_token_revocation"},
+            status="success",
+        )
+    except Exception:
+        pass
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
 
 

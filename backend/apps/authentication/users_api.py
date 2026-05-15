@@ -92,6 +92,20 @@ def change_password(request, payload: ChangePasswordIn):
         raise HttpError(400, get_message("AUTH_PASSWORD_WRONG"))
     u.set_password(payload.new_password)
     u.save(update_fields=["password", "updated_at"])
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="user_password",
+            resource_id=str(u.id),
+            tenant_id=str(request.tenant.id) if hasattr(request, 'tenant') and request.tenant else None,
+            details={"event": "password_changed"},
+            status="success",
+        )
+    except Exception:
+        pass
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
 

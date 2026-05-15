@@ -25,6 +25,7 @@ export interface PlanData {
   max_api_calls_day: number;
   max_exports_month: number;
   features: string[];
+  status: 'draft' | 'published' | 'archived';
   is_active: boolean;
   is_featured: boolean;
   trial_days: number;
@@ -46,7 +47,8 @@ export const PREDEFINED_FEATURES = [
   { id: 'data_export', label: 'Exportación de Datos', icon: '📤' },
 ] as const;
 
-export const emptyPlan = {
+export const emptyPlan: PlanData = {
+  id: '',
   name: '',
   slug: '',
   description: '',
@@ -67,7 +69,8 @@ export const emptyPlan = {
   max_ai_queries_month: 0,
   max_api_calls_day: 0,
   max_exports_month: 0,
-  features: [] as string[],
+  features: [],
+  status: 'draft',
   is_active: true,
   is_featured: false,
   trial_days: 14,

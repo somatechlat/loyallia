@@ -55,18 +55,19 @@ export default function SuperAdminPlans() {
     );
   }
 
-  const activePlans = plans.filter((p) => p.is_active);
-  const inactivePlans = plans.filter((p) => !p.is_active);
+  const published = plans.filter((p) => p.status === 'published' && p.is_active);
+  const drafts = plans.filter((p) => p.status === 'draft' && p.is_active);
+  const archived = plans.filter((p) => p.status === 'archived' || !p.is_active);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">
             Planes de Suscripción
           </h1>
           <p className="text-surface-500 mt-1">
-            {activePlans.length} activos · {inactivePlans.length} inactivos
+            {published.length} publicados · {drafts.length} borradores · {archived.length} archivados
           </p>
         </div>
         <button
@@ -80,19 +81,45 @@ export default function SuperAdminPlans() {
         </button>
       </div>
 
-      {/* Active Plan Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {activePlans.map((plan) => (
-          <PlanCard key={plan.id} plan={plan} onClick={() => openDetail(plan)} />
-        ))}
-      </div>
+      {/* Published Plans */}
+      {published.length > 0 && (
+        <section>
+          <h2 className="text-sm font-bold text-surface-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500" />
+            Publicados
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {published.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} onClick={() => openDetail(plan)} />
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Inactive Plans */}
-      {inactivePlans.length > 0 && (
-        <div>
-          <h2 className="text-lg font-bold text-surface-400 mb-3">Planes Inactivos</h2>
+      {/* Draft Plans */}
+      {drafts.length > 0 && (
+        <section>
+          <h2 className="text-sm font-bold text-surface-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            Borradores
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {drafts.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} onClick={() => openDetail(plan)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Archived Plans */}
+      {archived.length > 0 && (
+        <section>
+          <h2 className="text-sm font-bold text-surface-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-surface-400" />
+            Archivados
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {inactivePlans.map((plan) => (
+            {archived.map((plan) => (
               <div
                 key={plan.id}
                 onClick={() => openDetail(plan)}
@@ -100,12 +127,12 @@ export default function SuperAdminPlans() {
               >
                 <p className="font-bold text-surface-600">{plan.name}</p>
                 <p className="text-sm text-surface-400">
-                  ${plan.price_monthly}/mes — Desactivado
+                  ${plan.price_monthly}/mes — Archivado
                 </p>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       <PlanModal
@@ -119,6 +146,13 @@ export default function SuperAdminPlans() {
 }
 
 function PlanCard({ plan, onClick }: { plan: PlanData; onClick: () => void }) {
+  const statusConfig = {
+    published: { label: 'Publicado', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', dot: 'bg-green-500' },
+    draft: { label: 'Borrador', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
+    archived: { label: 'Archivado', color: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400', dot: 'bg-surface-400' },
+  };
+  const status = statusConfig[plan.status] || statusConfig.published;
+
   return (
     <div
       onClick={onClick}
@@ -127,11 +161,17 @@ function PlanCard({ plan, onClick }: { plan: PlanData; onClick: () => void }) {
       }`}
       style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.06)' }}
     >
-      {plan.is_featured && (
-        <span className="self-start bg-gradient-to-r from-brand-500 to-purple-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full mb-3">
-          RECOMENDADO
+      <div className="flex items-start justify-between mb-2">
+        {plan.is_featured && (
+          <span className="self-start bg-gradient-to-r from-brand-500 to-purple-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full">
+            RECOMENDADO
+          </span>
+        )}
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto ${status.color}`}>
+          <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${status.dot}`} />
+          {status.label}
         </span>
-      )}
+      </div>
       <h3 className="text-xl font-black text-surface-900 dark:text-white group-hover:text-brand-600 transition-colors">
         {plan.name}
       </h3>

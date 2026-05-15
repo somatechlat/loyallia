@@ -354,6 +354,7 @@ def create_plan(request, payload: PlanCreateIn):
         max_api_calls_day=payload.max_api_calls_day,
         max_exports_month=payload.max_exports_month,
         features=payload.features,
+        status=payload.status,
         is_featured=payload.is_featured,
         trial_days=payload.trial_days,
         sort_order=payload.sort_order,
@@ -385,7 +386,8 @@ def delete_plan(request, plan_id: str):
         )
 
     plan.is_active = False
-    plan.save(update_fields=["is_active", "updated_at"])
+    plan.status = SubscriptionPlan.Status.ARCHIVED
+    plan.save(update_fields=["is_active", "status", "updated_at"])
     return MessageOut(success=True, message=get_message("ADMIN_PLAN_DEACTIVATED"))
 
 
@@ -424,6 +426,7 @@ def update_plan(request, plan_id: str, payload: PlanUpdateIn):
         "max_exports_month",
         "features",
         "is_featured",
+        "status",
         "is_active",
         "trial_days",
         "sort_order",

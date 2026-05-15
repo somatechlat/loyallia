@@ -86,7 +86,7 @@ def list_plans(request: HttpRequest):
     tax_rate = Decimal(str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15))))
     trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
-    plans = SubscriptionPlan.objects.filter(is_active=True)
+    plans = SubscriptionPlan.objects.filter(is_active=True, status=SubscriptionPlan.Status.PUBLISHED)
     result = []
 
     for plan in plans:

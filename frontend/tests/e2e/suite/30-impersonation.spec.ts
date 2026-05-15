@@ -36,6 +36,8 @@ test.describe('SuperAdmin — Impersonation @superadmin', () => {
     expect(ownerTenant?.name, 'Owner tenant should be present in SuperAdmin list').toBeTruthy();
 
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });
+    // Wait for tenant table to load
+    await page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
     const ownerTenantRow = page.locator('table tbody tr', { hasText: ownerTenant.name }).first();
     await expect(ownerTenantRow).toBeVisible({ timeout: 15000 });
     await ownerTenantRow.click();
