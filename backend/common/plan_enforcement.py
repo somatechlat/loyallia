@@ -67,28 +67,24 @@ def get_tenant_limits(tenant) -> dict:
 
     plan = subscription.subscription_plan
     if not plan and subscription.is_trial_active:
-        from apps.billing.models import SubscriptionPlan
-
-        trial_plan = SubscriptionPlan.objects.filter(slug="trial").first()
-        if trial_plan:
-            return {
-                "customers": trial_plan.max_customers,
-                "programs": trial_plan.max_programs,
-                "locations": trial_plan.max_locations,
-                "users": trial_plan.max_users,
-                "notifications_month": trial_plan.max_notifications_month,
-                "transactions_month": trial_plan.max_transactions_month,
-                "whatsapp_day": trial_plan.max_whatsapp_day,
-                "emails_month": trial_plan.max_emails_month,
-                "sms_day": trial_plan.max_sms_day,
-                "wallet_pushes_month": trial_plan.max_wallet_pushes_month,
-                "automations": trial_plan.max_automations,
-                "automation_executions_day": trial_plan.max_automation_executions_day,
-                "ai_queries_month": trial_plan.max_ai_queries_month,
-                "api_calls_day": trial_plan.max_api_calls_day,
-                "exports_month": trial_plan.max_exports_month,
-            }
-        return {}
+        # Trial plan grants unlimited access (999999) for all resources
+        return {
+            "customers": 999999,
+            "programs": 999999,
+            "locations": 999999,
+            "users": 999999,
+            "notifications_month": 999999,
+            "transactions_month": 999999,
+            "whatsapp_day": 999999,
+            "emails_month": 999999,
+            "sms_day": 999999,
+            "wallet_pushes_month": 999999,
+            "automations": 999999,
+            "automation_executions_day": 999999,
+            "ai_queries_month": 999999,
+            "api_calls_day": 999999,
+            "exports_month": 999999,
+        }
 
     if not plan:
         return {}

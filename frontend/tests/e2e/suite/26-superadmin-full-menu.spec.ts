@@ -12,18 +12,22 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin', () => {
 
   test('1. Platform Overview (/superadmin) loads', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    const content = page.locator('h1, h2, [class*="stat"], [class*="overview"], [class*="card"]').first();
-    await expect(content).toBeVisible({ timeout: 10000 });
+    // Wait for the metrics API that drives the page content
+    await page.waitForResponse(
+      resp => resp.url().includes('/api/v1/admin/platform/metrics/') && resp.status() === 200,
+      { timeout: 15000 },
+    );
+    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
   });
 
   test('2. Tenants List (/superadmin/tenants) loads with data', async ({ page }) => {
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    const content = page.locator('table, [class*="tenant"], [class*="list"], [class*="card"]').first();
-    await expect(content).toBeVisible({ timeout: 10000 });
+    // Wait for the tenants API that populates the table
+    await page.waitForResponse(
+      resp => resp.url().includes('/api/v1/admin/tenants/') && resp.status() === 200,
+      { timeout: 15000 },
+    );
+    await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('3. Plans Management (/superadmin/plans) loads', async ({ page }) => {

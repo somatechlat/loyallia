@@ -7,7 +7,7 @@ status objects. It never returns raw secret values.
 import json
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -242,7 +242,7 @@ def _latest_backup(subdir: str, pattern: str) -> dict:
         latest = files[0]
         full = os.path.join(path, latest)
         mtime = os.path.getmtime(full)
-        age = (datetime.now(timezone.utc).timestamp() - mtime) / 3600
+        age = (datetime.now(datetime.UTC).timestamp() - mtime) / 3600
         return {
             "latest": latest,
             "age_hours": round(age, 1),

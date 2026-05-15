@@ -9,7 +9,8 @@ test.describe('SuperAdmin — Tenant Lifecycle @superadmin', () => {
   test('SA can suspend and reactivate a tenant', async ({ page }) => {
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });
 
-    const tenantRow = page.locator('table tbody tr', { hasText: 'Test Tenant' }).first();
+    // Suite 27 creates an 'E2E Tenant {timestamp}' — use partial match
+    const tenantRow = page.locator('table tbody tr', { hasText: 'E2E Tenant' }).first();
     await expect(tenantRow).toBeVisible({ timeout: 15000 });
     await tenantRow.click();
     await page.getByRole('button', { name: 'Acciones' }).click();
@@ -17,19 +18,19 @@ test.describe('SuperAdmin — Tenant Lifecycle @superadmin', () => {
     // Suspend
     page.once('dialog', dialog => dialog.accept());
     await page.getByRole('button', { name: /Suspender Negocio/i }).click();
-    await expect(page.locator('table tbody tr', { hasText: 'Test Tenant' }).first()).toContainText('Suspendido', { timeout: 15000 });
+    await expect(page.locator('table tbody tr', { hasText: 'E2E Tenant' }).first()).toContainText('Suspendido', { timeout: 15000 });
 
     // Reactivate
-    await page.locator('table tbody tr', { hasText: 'Test Tenant' }).first().click();
+    await page.locator('table tbody tr', { hasText: 'E2E Tenant' }).first().click();
     await page.getByRole('button', { name: 'Acciones' }).click();
     await page.getByRole('button', { name: /Reactivar Negocio/i }).click();
-    await expect(page.locator('table tbody tr', { hasText: 'Test Tenant' }).first()).toContainText('Activo', { timeout: 15000 });
+    await expect(page.locator('table tbody tr', { hasText: 'E2E Tenant' }).first()).toContainText('Activo', { timeout: 15000 });
   });
 
   test('SA tenant detail exposes actions and technical information', async ({ page }) => {
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });
 
-    const tenantRow = page.locator('table tbody tr', { hasText: 'Test Tenant' }).first();
+    const tenantRow = page.locator('table tbody tr', { hasText: 'E2E Tenant' }).first();
     await expect(tenantRow).toBeVisible({ timeout: 15000 });
     await tenantRow.click();
     await page.getByRole('button', { name: 'Acciones' }).click();

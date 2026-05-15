@@ -14,7 +14,7 @@ from ninja.errors import HttpError
 from apps.customers.models import Customer
 from apps.customers.schemas import CustomerOut
 from common.messages import get_message
-from common.permissions import jwt_auth
+from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -100,7 +100,9 @@ def _apply_segment_filter(queryset, segment_id: str):
 
 @router.get("/segments/", auth=jwt_auth, summary="Listar segmentos de clientes")
 def list_segments(request):
-    """List all available customer segments with their current member count."""
+    """List all available customer segments with their current member count. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     results = []
     base_queryset = Customer.objects.filter(tenant=request.tenant)
     for seg_id, seg_def in _BUILTIN_SEGMENTS.items():
@@ -119,7 +121,9 @@ def list_segments(request):
 
 @router.post("/segments/", auth=jwt_auth, summary="Crear segmento personalizado")
 def create_segment(request):
-    """Phase 9: Custom segments require a Segment model (not yet implemented)."""
+    """Phase 9: Custom segments require a Segment model (not yet implemented). MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     return {
         "message": get_message("SERVER_ERROR"),
         "available_segments": list(_BUILTIN_SEGMENTS.keys()),
@@ -131,7 +135,9 @@ def create_segment(request):
     "/segments/{segment_id}/members/", auth=jwt_auth, summary="Miembros del segmento"
 )
 def segment_members(request, segment_id: str, limit: int = 50, offset: int = 0):
-    """Returns members of a segment with pagination."""
+    """Returns members of a segment with pagination. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     if segment_id not in _BUILTIN_SEGMENTS:
         raise HttpError(404, get_message("NOT_FOUND"))
     base_queryset = Customer.objects.filter(tenant=request.tenant)
@@ -153,7 +159,9 @@ def segment_members(request, segment_id: str, limit: int = 50, offset: int = 0):
     "/segments/{segment_id}/export/", auth=jwt_auth, summary="Exportar segmento a CSV"
 )
 def export_segment(request, segment_id: str):
-    """CSV export of segment members."""
+    """CSV export of segment members. OWNER only."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     from django.http import StreamingHttpResponse
 
     if segment_id not in _BUILTIN_SEGMENTS:

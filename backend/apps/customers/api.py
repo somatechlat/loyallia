@@ -270,7 +270,9 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
 
 @router.get("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente")
 def get_customer(request, customer_id: str):
-    """Customer profile with pass and transaction history."""
+    """Customer profile with pass and transaction history. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
 
     log_action(
@@ -369,7 +371,9 @@ def delete_customer(request, customer_id: str):
     summary="Pases del cliente",
 )
 def get_customer_passes(request, customer_id: str):
-    """Get all passes for a customer."""
+    """Get all passes for a customer. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
     passes = CustomerPass.objects.filter(customer=customer).select_related("card")
     return [CustomerPassOut.from_model(pass_obj) for pass_obj in passes]

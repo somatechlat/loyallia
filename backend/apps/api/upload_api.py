@@ -15,7 +15,7 @@ from ninja.files import UploadedFile
 from PIL import Image, UnidentifiedImageError
 
 from common.messages import get_message
-from common.permissions import jwt_auth
+from common.permissions import is_manager_or_owner, jwt_auth
 from common.request import as_tenant_request
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,10 @@ def upload_file(request, file: UploadedFile):
     """
     Uploads an image (logo, strip) to cloud storage and returns the public URL.
     Only allows image files up to 5MB.
+    MANAGER+ only.
     """
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     request = as_tenant_request(request)
     filename = file.name or ""
     ext = os.path.splitext(filename)[1].lower()

@@ -215,7 +215,9 @@ def create_program(request, data: CardCreateIn):
 
 @router.get("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa")
 def get_program(request, program_id: str):
-    """Returns a single loyalty program."""
+    """Returns a single loyalty program. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
     return CardOut.from_model(card)
 
@@ -341,7 +343,9 @@ def delete_program(request, program_id: str):
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
 def program_stats(request, program_id: str):
-    """Returns program statistics."""
+    """Returns program statistics. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
 
     # Get enrollment count

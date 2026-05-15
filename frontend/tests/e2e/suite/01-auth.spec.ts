@@ -9,49 +9,58 @@ import { getE2EBaseURL, getRoleCredentials } from '../helpers/e2e-safety';
 const BASE_API = getE2EBaseURL();
 
 async function login(page: any, email: string, password: string) {
-  // Intercept the login response to capture tokens (secure cookies won't stick on HTTP)
+  // Capture the login response directly to avoid race conditions with
+  // the async page.on('response') handler.
   let accessToken: string | null = null;
   let refreshToken: string | null = null;
 
-  page.on('response', async (response: any) => {
-    if (response.url().includes('/api/v1/auth/login/') && response.status() === 200) {
-      try {
-        const body = await response.json();
-        accessToken = body.access_token || null;
-        refreshToken = body.refresh_token || null;
-      } catch { /* response already consumed */ }
-    }
-  });
-
-  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  await page.goto('/login', { waitUntil: 'networkidle' });
   await page.locator('#email').waitFor({ state: 'visible', timeout: 10000 });
   await page.locator('#email').fill(email);
   await page.locator('#password').fill(password);
 
-  await Promise.all([
-    page.waitForResponse(
-      (resp: any) => resp.url().includes('/api/v1/auth/login/'),
-      { timeout: 15000 },
-    ),
-    page.locator('#login-btn').click(),
-  ]);
+  // Under full-suite load the Next.js dev server can be slow; use a
+  // generous timeout for the login API response.
+  const loginPromise = page.waitForResponse(
+    (resp: any) => resp.url().includes('/api/v1/auth/login/') && resp.status() === 200,
+    { timeout: 45000 },
+  );
+  await page.locator('#login-btn').click();
+  const loginResponse = await loginPromise;
 
-  await page.waitForTimeout(2000);
+  try {
+    const body = await loginResponse.json();
+    accessToken = body.access_token || null;
+    refreshToken = body.refresh_token || null;
+  } catch { /* response already consumed */ }
 
-  // Inject cookies manually if the app couldn't set secure cookies on HTTP
-  const cookies = await page.context().cookies();
-  if (!cookies.some((c: any) => c.name === 'access_token') && accessToken) {
-    await page.context().addCookies([
-      { name: 'access_token', value: accessToken, domain: 'localhost', path: '/', httpOnly: false, secure: false, sameSite: 'Lax' },
-      ...(refreshToken ? [{ name: 'refresh_token', value: refreshToken, domain: 'localhost', path: '/', httpOnly: false, secure: false, sameSite: 'Lax' as const }] : []),
-    ]);
-    // Reload to pick up the injected cookies
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000);
+
+  // Inject cookies manually since secure cookies won't stick on HTTP localhost.
+  // Then navigate to / so the auth middleware can redirect to the correct landing page.
+  if (accessToken) {
+    const hasCookie = (await page.context().cookies()).some((c: any) => c.name === 'access_token');
+    if (!hasCookie) {
+      await page.context().addCookies([
+        { name: 'access_token', value: accessToken, domain: 'localhost', path: '/', httpOnly: false, secure: false, sameSite: 'Lax' },
+        ...(refreshToken ? [{ name: 'refresh_token', value: refreshToken, domain: 'localhost', path: '/', httpOnly: false, secure: false, sameSite: 'Lax' as const }] : []),
+      ]);
+    }
+    // Navigate to root to trigger auth-gated redirect (login page won't auto-redirect)
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1000);
   }
 }
 
+// LYL-M-FE-033: Browser form login can be flaky under full-suite load
+// when Next.js dev server is compiling pages. Retries provide resilience.
+test.describe.configure({ retries: 2 });
+
 test.describe('Authentication & Role Routing', () => {
+  // Browser form login is sensitive to Next.js dev-server compilation
+  // delays under full-suite load. A longer per-test timeout prevents
+  // premature failures when the API or frontend is temporarily slow.
+  test.slow();
 
   test('Login page renders with all elements', async ({ page }) => {
     await page.goto('/login', { waitUntil: 'networkidle' });

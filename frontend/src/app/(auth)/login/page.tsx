@@ -38,6 +38,14 @@ export default function LoginPage() {
     authApi.googleConfig()
       .then(({ data }) => {
         if (data.enabled && data.client_id) {
+          // LYL-H-FE-004b: Skip Google OAuth on localhost to avoid
+          // "origin not allowed" console errors in development/E2E.
+          const isLocalhost = typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+          if (isLocalhost) {
+            setGoogleEnabled(false);
+            return;
+          }
           setGoogleEnabled(true);
           setGoogleClientId(data.client_id);
         }

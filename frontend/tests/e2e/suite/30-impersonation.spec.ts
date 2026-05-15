@@ -47,6 +47,9 @@ test.describe('SuperAdmin — Impersonation @superadmin', () => {
     page.once('dialog', dialog => dialog.accept());
     await page.getByRole('button', { name: /Impersonar Propietario/ }).click();
 
+    // Impersonation triggers a full redirect to /; wait for navigation + layout mount
+    await page.waitForURL('/', { timeout: 15000 });
+    await page.waitForTimeout(2000);
     await expect(page.getByText('Modo impersonación activo')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('nav, aside').getByText(/Resumen|Programas|Clientes/).first()).toBeVisible({ timeout: 10000 });
 

@@ -17,7 +17,7 @@ from apps.automation.models import (
 )
 from apps.cards.models import Card
 from common.messages import get_message
-from common.permissions import jwt_auth
+from common.permissions import is_manager_or_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit
 from common.role_check import require_role
 
@@ -67,7 +67,9 @@ class UpdateAutomationSchema(BaseModel):
 # ============ Automation Analytics ============
 @router.get("/stats/", auth=jwt_auth, summary="Get automation statistics")
 def get_automation_stats(request):
-    """Get overall automation statistics."""
+    """Get overall automation statistics. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     automations = Automation.objects.filter(tenant=request.tenant)
 
     total_automations = automations.count()
@@ -100,7 +102,9 @@ def get_automation_stats(request):
 # ============ Automation Management ============
 @router.get("/", auth=jwt_auth, summary="List automations")
 def list_automations(request, active_only: bool = False):
-    """List all automations for the tenant."""
+    """List all automations for the tenant. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     query = Automation.objects.filter(tenant=request.tenant)
 
     if active_only:
@@ -310,9 +314,11 @@ def _get_automation_by_id_or_slug(automation_id: str, tenant) -> Automation:
 
 @router.get("/{automation_id}/", auth=jwt_auth, summary="Get automation details")
 def get_automation(request, automation_id: str):
-    """Get detailed information about an automation.
+    """Get detailed information about an automation. MANAGER+ only.
     LYL-M-API-022: Accepts both UUID and name-based identifiers.
     """
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
     return {
