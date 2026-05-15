@@ -549,4 +549,83 @@ Results:
 
 ---
 
-*End of handoff. 12 REQ items (12 resolved, 0 pending). Bootstrap idempotency verified. Mailjet LIVE in Vault since 2026-05-12T22:01Z. Plan seed overwrite fixed 2026-05-12T22:08Z. Mailjet webhook receiver implemented 2026-05-14. Platform Mode toggle banner implemented 2026-05-14.*
+---
+
+## 9. Post-Handoff Changes — 2026-05-15
+
+### 9.1 SuperAdmin Synchronous Tenant Hard-Delete
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-FEAT-001 |
+| **Status** | ✅ IMPLEMENTED |
+
+**Backend:**
+- `hard_delete_tenant()` extracted from Celery task for reuse
+- `DELETE /tenants/{id}/` performs synchronous cascade deletion
+- Requires `justification` (min 10 chars) in JSON body
+- Audit log entry created with actual SuperAdmin identity
+- Frontend: `ELIMINAR` confirmation phrase + `window.confirm()` double-check
+
+**Files:** `apps/tenants/tasks.py`, `apps/tenants/super_admin_api/tenants.py`, `frontend/src/app/(dashboard)/superadmin/tenants/page.tsx`
+
+### 9.2 PgBouncer Production-Identical Test Path
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-INFRA-001 |
+| **Status** | ✅ IMPLEMENTED |
+
+**Changes:**
+- `test.py`: `PgBouncerRouter` restored — router code now exercised in unit tests
+- `test_integration.py`: New settings using real PgBouncer (transaction mode, port 6432)
+- `integration_tests/test_pgbouncer_path.py`: 6 smoke tests through actual PgBouncer
+- `conftest.py` + `PgBouncerTestRunner`: Handle DDL via direct postgres, restore PgBouncer for queries
+- CI: New `integration` job runs PgBouncer path tests
+
+**Why:** Previously tests bypassed PgBouncer entirely. Now integration tests exercise the actual production connection path.
+
+### 9.3 E2E Modular Test Execution
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-TEST-002 |
+| **Status** | ✅ IMPLEMENTED |
+
+**Changes:**
+- All 32 spec files tagged with BOTH role (`@owner`/`@manager`/`@staff`/`@superadmin`) AND module (`@auth`/`@programs`/`@customers`/etc.)
+- 16 new `npm run test:e2e:<module>` scripts for selective execution
+- CI: New `e2e` job using single canonical stack; smoke tests run first, full suite follows
+- Local: Full suite ~20 min → single module ~1-2 min (using `--grep '@module'`), single stack
+
+**Module Tags:**
+| Tag | Tests | Command |
+|-----|-------|---------|
+| `@auth` | Login, registration, OAuth | `npm run test:e2e:auth` |
+| `@programs` | Program CRUD, wizard | `npm run test:e2e:programs` |
+| `@customers` | Customer list, import | `npm run test:e2e:customers` |
+| `@campaigns` | SMS, email, WhatsApp | `npm run test:e2e:campaigns` |
+| `@settings` | Settings, billing | `npm run test:e2e:settings` |
+| `@scanner` | QR scanner | `npm run test:e2e:scanner` |
+| `@analytics` | Dashboard KPIs | `npm run test:e2e:analytics` |
+| `@automation` | Automation rules | `npm run test:e2e:automation` |
+| `@wallet` | Wallet/pass lifecycle | `npm run test:e2e:wallet` |
+| `@whatsapp` | WhatsApp bridge | `npm run test:e2e:whatsapp` |
+| `@security` | SRS hardening | `npm run test:e2e:security` |
+| `@superadmin` | Platform admin | `npm run test:e2e:superadmin` |
+
+### 9.4 Deployment Consolidation
+
+| Property | Value |
+|---|---|
+| **ID** | LYL-INFRA-002 |
+| **Status** | ✅ IMPLEMENTED |
+
+- Removed `docker-compose.lan.yml`, `scripts/start-lan.sh`, `.env.example`
+- All 16 port bindings in `docker-compose.yml` use `${DOCKER_BIND_HOST:-127.0.0.1}`
+- Set `DOCKER_BIND_HOST=0.0.0.0` for LAN/mobile testing
+- Updated docs: `README.md`, `PORT_AUTHORITY.md`, `AGENT_ONBOARDING.md`, `DEPLOYMENT_GUIDE.md`
+
+---
+
+*End of handoff. 12 REQ items (12 resolved, 0 pending). Bootstrap idempotency verified. Mailjet LIVE in Vault since 2026-05-12T22:01Z. Plan seed overwrite fixed 2026-05-12T22:08Z. Mailjet webhook receiver implemented 2026-05-14. Platform Mode toggle banner implemented 2026-05-14. SuperAdmin hard-delete implemented 2026-05-15. PgBouncer integration tests implemented 2026-05-15. E2E modular execution implemented 2026-05-15.*

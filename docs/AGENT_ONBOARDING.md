@@ -95,6 +95,9 @@ certs/             Certificate files (real + dev)
 | Change | File | Why |
 |--------|------|-----|
 | **Configurable Ports** | `docker-compose.yml` | All port bindings use `${DOCKER_BIND_HOST:-127.0.0.1}`. Set `DOCKER_BIND_HOST=0.0.0.0` for LAN/mobile testing. |
+| **SuperAdmin Hard Delete** | `apps/tenants/super_admin_api/tenants.py`, `apps/tenants/tasks.py` | Synchronous tenant hard-delete with justification requirement (min 10 chars) and audit logging. Extracted `hard_delete_tenant()` for reuse by Celery task and API. |
+| **PgBouncer Test Path** | `common/test_runner.py`, `loyallia/settings/test.py`, `loyallia/settings/test_integration.py` | Unit tests exercise `PgBouncerRouter`; integration tests run through real PgBouncer transaction mode. |
+| **E2E Modular Tests** | `frontend/tests/e2e/suite/*.spec.ts`, `playwright.config.ts` | 32 spec files tagged with module + role tags. Run any module in isolation (~1-2 min). |
 
 ---
 
@@ -244,13 +247,23 @@ docker logs -f loyallia-api
 docker exec loyallia-api python manage.py migrate
 
 # Run backend tests
-docker exec loyallia-api python manage.py test
+docker exec loyallia-api python manage.py test --settings loyallia.settings.test
+
+# Run backend integration tests (through PgBouncer)
+docker exec loyallia-api python manage.py test integration_tests --settings loyallia.settings.test_integration
 
 # Frontend dev server (hot reload)
 cd frontend && npm run dev
 
 # Lint backend
 cd backend && ruff check .
+
+# E2E tests by module (instead of full 20-minute suite)
+cd frontend && npm run test:e2e:auth
+cd frontend && npm run test:e2e:programs
+cd frontend && npm run test:e2e:customers
+cd frontend && npm run test:e2e:settings
+cd frontend && npm run test:e2e:smoke
 ```
 
 ---

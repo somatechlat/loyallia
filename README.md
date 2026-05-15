@@ -164,9 +164,38 @@ To update credentials via UI:
 
 ### Running Tests
 
+#### Backend — Unit Tests
 ```bash
 docker compose up -d
-docker compose exec api python manage.py test
+docker compose exec api python manage.py test --settings loyallia.settings.test
+```
+
+#### Backend — Integration Tests (PgBouncer path)
+```bash
+docker compose exec api python manage.py test integration_tests --settings loyallia.settings.test_integration
+```
+
+#### E2E — By Module (~1-2 min each)
+```bash
+cd frontend
+npm run test:e2e:smoke         # Critical path only
+npm run test:e2e:auth          # Login, registration, OAuth
+npm run test:e2e:programs      # Program CRUD, wizard
+npm run test:e2e:customers     # Customer list, import, search
+npm run test:e2e:campaigns     # SMS, email, WhatsApp campaigns
+npm run test:e2e:settings      # Settings, billing
+npm run test:e2e:analytics     # Dashboard KPIs
+npm run test:e2e:automation    # Automation rules
+npm run test:e2e:scanner       # QR scanner (STAFF)
+npm run test:e2e:wallet        # Wallet/pass lifecycle
+npm run test:e2e:whatsapp      # WhatsApp bridge/campaigns
+npm run test:e2e:security      # SRS hardening, rate limits
+npm run test:e2e:superadmin    # Platform admin, tenant mgmt
+```
+
+#### E2E — Full Suite (~20 min)
+```bash
+cd frontend && npm run test:e2e
 ```
 
 ### Code Quality
