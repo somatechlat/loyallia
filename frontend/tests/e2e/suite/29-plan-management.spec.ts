@@ -7,7 +7,7 @@ import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
-test.describe('SuperAdmin — Plan Management @superadmin', () => {
+test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
 
   test('SA gets 409 conflict when deactivating a plan with active subscriptions', async ({ page, request }) => {
     const token = await loginRole(request, 'superadmin');

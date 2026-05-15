@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('SuperAdmin — Tenant Lifecycle @superadmin', () => {
+test.describe('SuperAdmin — Tenant Lifecycle @superadmin @superadmin', () => {
 
   test('SA can suspend and reactivate a tenant', async ({ page }) => {
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });

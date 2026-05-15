@@ -32,7 +32,7 @@ const BRIDGE_API_KEY = 'dev-bridge-key';
 // 1. BRIDGE HEALTH — Direct access to the whatsapp-bridge container
 // =============================================================================
 
-test.describe('Bridge Health — Direct @owner', () => {
+test.describe('Bridge Health — Direct @owner @whatsapp', () => {
 
   test('Bridge /health returns status ok', async ({ request }) => {
     const resp = await request.get(`${BRIDGE_URL}/health`);
@@ -59,7 +59,7 @@ test.describe('Bridge Health — Direct @owner', () => {
 // 2. BRIDGE AUTH — API key enforcement on protected endpoints
 // =============================================================================
 
-test.describe('Bridge Auth — Direct @owner', () => {
+test.describe('Bridge Auth — Direct @owner @whatsapp', () => {
 
   test('Bridge rejects /status without API key (401)', async ({ request }) => {
     const resp = await request.get(`${BRIDGE_URL}/status/any-tenant`, {
@@ -111,7 +111,7 @@ test.describe('Bridge Auth — Direct @owner', () => {
 // 3. BRIDGE SESSION — Status and QR via direct bridge access
 // =============================================================================
 
-test.describe('Bridge Session — Direct @owner', () => {
+test.describe('Bridge Session — Direct @owner @whatsapp', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();
@@ -179,7 +179,7 @@ test.describe('Bridge Session — Direct @owner', () => {
 // 4. BRIDGE SEND — Message validation (no real sending without paired session)
 // =============================================================================
 
-test.describe('Bridge Send Validation — Direct @owner', () => {
+test.describe('Bridge Send Validation — Direct @owner @whatsapp', () => {
 
   test('Send rejects missing tenant_id (400)', async ({ request }) => {
     const resp = await request.post(`${BRIDGE_URL}/send`, {
@@ -233,7 +233,7 @@ test.describe('Bridge Send Validation — Direct @owner', () => {
 // 5. BRIDGE QUEUE — Stats endpoint
 // =============================================================================
 
-test.describe('Bridge Queue Stats — Direct @owner', () => {
+test.describe('Bridge Queue Stats — Direct @owner @whatsapp', () => {
 
   test('Queue stats endpoint returns metrics', async ({ request }) => {
     const resp = await request.get(`${BRIDGE_URL}/queue/stats`, {
@@ -252,7 +252,7 @@ test.describe('Bridge Queue Stats — Direct @owner', () => {
 // 6. DJANGO API → BRIDGE — Full stack path (via nginx → api → bridge)
 // =============================================================================
 
-test.describe('Django→Bridge API — OWNER @owner', () => {
+test.describe('Django→Bridge API — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();
@@ -310,7 +310,7 @@ test.describe('Django→Bridge API — OWNER @owner', () => {
 // 7. RBAC — Role-based access control enforcement through Django
 // =============================================================================
 
-test.describe('Django WhatsApp RBAC — MANAGER blocked @manager', () => {
+test.describe('Django WhatsApp RBAC — MANAGER blocked @manager @whatsapp', () => {
 
   test('MANAGER cannot get WhatsApp status (403)', async ({ request }) => {
     const token = await loginRole(request, 'manager');
@@ -340,7 +340,7 @@ test.describe('Django WhatsApp RBAC — MANAGER blocked @manager', () => {
   });
 });
 
-test.describe('Django WhatsApp RBAC — STAFF blocked @staff', () => {
+test.describe('Django WhatsApp RBAC — STAFF blocked @staff @whatsapp', () => {
 
   test('STAFF cannot get WhatsApp status (403)', async ({ request }) => {
     const token = await loginRole(request, 'staff');
@@ -370,7 +370,7 @@ test.describe('Django WhatsApp RBAC — STAFF blocked @staff', () => {
   });
 });
 
-test.describe('Django WhatsApp RBAC — SUPERADMIN blocked @superadmin', () => {
+test.describe('Django WhatsApp RBAC — SUPERADMIN blocked @superadmin @whatsapp', () => {
 
   test('SUPERADMIN cannot get WhatsApp status (403)', async ({ request }) => {
     const token = await loginRole(request, 'superadmin');
@@ -393,7 +393,7 @@ test.describe('Django WhatsApp RBAC — SUPERADMIN blocked @superadmin', () => {
 // 8. CROSS-TENANT ISOLATION — OWNER cannot access another tenant's session
 // =============================================================================
 
-test.describe('Cross-Tenant Isolation @owner', () => {
+test.describe('Cross-Tenant Isolation @owner @security', () => {
 
   test('OWNER cannot access another tenant status (403)', async ({ request }) => {
     const { token } = await loginOwnerContext(request);
@@ -427,7 +427,7 @@ test.describe('Cross-Tenant Isolation @owner', () => {
 // 9. SESSION LIFECYCLE — Full start → status → disconnect → verify
 // =============================================================================
 
-test.describe('Session Lifecycle — Full cycle @owner', () => {
+test.describe('Session Lifecycle — Full cycle @owner @whatsapp', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();
@@ -475,7 +475,7 @@ test.describe('Session Lifecycle — Full cycle @owner', () => {
 // 10. SETTINGS UI — WhatsApp Wizard integration in Settings page
 // =============================================================================
 
-test.describe('Settings WhatsApp Wizard — OWNER @owner', () => {
+test.describe('Settings WhatsApp Wizard — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();
@@ -545,7 +545,7 @@ test.describe('Settings WhatsApp Wizard — OWNER @owner', () => {
   });
 });
 
-test.describe('Settings WhatsApp Wizard — MANAGER denied @manager', () => {
+test.describe('Settings WhatsApp Wizard — MANAGER denied @manager @whatsapp', () => {
 
   test('MANAGER does not see WhatsApp section', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });

@@ -10,7 +10,7 @@ import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
-test.describe('Owner Full Menu — Every Page Loads @owner', () => {
+test.describe('Owner Full Menu — Every Page Loads @owner @owner', () => {
 
   test('1. Dashboard (/) loads with KPI cards', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

@@ -7,7 +7,7 @@ import { getE2EBaseURL, loginOwnerContext, loginRole } from '../helpers/e2e-safe
 
 const BASE_API = getE2EBaseURL();
 
-test.describe('SuperAdmin — WhatsApp Override @superadmin', () => {
+test.describe('SuperAdmin — WhatsApp Override @superadmin @superadmin', () => {
 
   test('SA can configure and reset WhatsApp daily-limit override per tenant', async ({ page, request }) => {
     const owner = await loginOwnerContext(request);

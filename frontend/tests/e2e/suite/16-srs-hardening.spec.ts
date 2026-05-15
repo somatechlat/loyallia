@@ -12,7 +12,7 @@ const BASE_API = getE2EBaseURL();
 // PROGRAMS — BORRADORES SECTION
 // ═══════════════════════════════════════════════════════════════════════════
 
-test.describe('Programs Borradores — OWNER @owner', () => {
+test.describe('Programs Borradores — OWNER @owner @programs', () => {
 
   test('Programs page renders section structure @owner', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
@@ -44,7 +44,7 @@ test.describe('Programs Borradores — OWNER @owner', () => {
 // WIZARD — FORM BUILDER IN STEP 1
 // ═══════════════════════════════════════════════════════════════════════════
 
-test.describe('Wizard FormBuilder — OWNER @owner', () => {
+test.describe('Wizard FormBuilder — OWNER @owner @programs', () => {
 
   test('FormBuilder renders in Step 1 with default fields @owner', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
@@ -97,7 +97,7 @@ test.describe('Wizard FormBuilder — OWNER @owner', () => {
 // COUPON WIZARD — PUSH TITLE, IMAGE, EXPIRY REMINDER
 // ═══════════════════════════════════════════════════════════════════════════
 
-test.describe('Coupon Push Enhancements — OWNER @owner', () => {
+test.describe('Coupon Push Enhancements — OWNER @owner @programs', () => {
 
   test('Coupon wizard shows push title field @owner', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
@@ -166,7 +166,7 @@ test.describe('Coupon Push Enhancements — OWNER @owner', () => {
 // ENROLLMENT — DYNAMIC FIELDS + PRIVACY CONSENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-test.describe('Enrollment Page — Public Flow', () => {
+test.describe('Enrollment Page — Public Flow @programs', () => {
 
   test('Enrollment page loads for a valid card', async ({ page, request }) => {
     // Get a card ID from the API
@@ -240,7 +240,7 @@ test.describe('Enrollment Page — Public Flow', () => {
 // BACKEND API — COUPON VALIDATION
 // ═══════════════════════════════════════════════════════════════════════════
 
-test.describe('Coupon Validation API @owner', () => {
+test.describe('Coupon Validation API @owner @programs', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();

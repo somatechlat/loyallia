@@ -26,7 +26,7 @@ async function getOwnerToken(request: import('@playwright/test').APIRequestConte
   return loginRole(request, 'owner');
 }
 
-test.describe('Email Campaigns — OWNER @owner', () => {
+test.describe('Email Campaigns — OWNER @owner @campaigns', () => {
 
   test.beforeAll(async ({ request }) => {
     requireMutatingE2EAllowed();

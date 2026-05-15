@@ -204,6 +204,70 @@ jobs:
       - name: Playwright E2E configuration check
         run: npx playwright test --list
 
+  e2e:
+    name: E2E Tests (Modular)
+    runs-on: ubuntu-latest
+    needs: [docker]
+    defaults:
+      run:
+        working-directory: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - auth
+          - programs
+          - customers
+          - team
+          - locations
+          - analytics
+          - automation
+          - campaigns
+          - settings
+          - scanner
+          - superadmin
+          - wallet
+          - whatsapp
+          - security
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build and start stack
+        run: docker compose -f ../docker-compose.yml up -d
+
+      - name: Wait for API health
+        run: |
+          for i in {1..30}; do
+            curl -s http://localhost:33905/api/v1/health/ > /dev/null && echo "API ready" && break
+            sleep 2
+          done
+
+      - name: Run E2E module — ${{ matrix.module }}
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:33906
+          PLAYWRIGHT_OWNER_EMAIL: owner@e2e.test
+          PLAYWRIGHT_OWNER_PASSWORD: [REDACTED]
+          PLAYWRIGHT_MANAGER_EMAIL: manager@e2e.test
+          PLAYWRIGHT_MANAGER_PASSWORD: [REDACTED]
+          PLAYWRIGHT_STAFF_EMAIL: staff@e2e.test
+          PLAYWRIGHT_STAFF_PASSWORD: [REDACTED]
+          PLAYWRIGHT_SUPERADMIN_EMAIL: superadmin@e2e.test
+          PLAYWRIGHT_SUPERADMIN_PASSWORD: [REDACTED]
+        run: npx playwright test --grep '@${{ matrix.module }}'
+
   docker:
     name: Docker Build
     runs-on: ubuntu-latest

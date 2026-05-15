@@ -11,7 +11,7 @@ async function getToken(request: any) {
   return loginRole(request, 'owner');
 }
 
-test.describe('Phone Verification API', () => {
+test.describe('Phone Verification API @phone', () => {
 
   test.beforeAll(() => {
     requireExternalE2EAllowed('Twilio Verify');
@@ -74,7 +74,7 @@ test.describe('Phone Verification API', () => {
   });
 });
 
-test.describe('User Profile API — Phone Fields', () => {
+test.describe('User Profile API — Phone Fields @phone', () => {
 
   test('/me/ endpoint returns phone_number and is_phone_verified', async ({ request }) => {
     const token = await getToken(request);

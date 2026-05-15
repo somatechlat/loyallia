@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Role Isolation — MANAGER blocked routes @manager', () => {
+test.describe('Role Isolation — MANAGER blocked routes @manager @role-isolation', () => {
 
   test('MANAGER navigating to /team does not crash @manager', async ({ page }) => {
     await page.goto('/team', { waitUntil: 'domcontentloaded' });
@@ -41,7 +41,7 @@ test.describe('Role Isolation — MANAGER blocked routes @manager', () => {
 
 });
 
-test.describe('Role Isolation — STAFF blocked from dashboard @staff', () => {
+test.describe('Role Isolation — STAFF blocked from dashboard @staff @role-isolation', () => {
 
   test('STAFF navigating to / redirects to scanner @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -66,7 +66,7 @@ test.describe('Role Isolation — STAFF blocked from dashboard @staff', () => {
 
 });
 
-test.describe('Role Isolation — OWNER blocked from superadmin @owner', () => {
+test.describe('Role Isolation — OWNER blocked from superadmin @owner @role-isolation', () => {
 
   test('OWNER navigating to /superadmin does not show SA dashboard @owner', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });

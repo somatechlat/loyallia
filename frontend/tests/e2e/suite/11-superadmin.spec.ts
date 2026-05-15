@@ -17,7 +17,7 @@ const BASE_API = getE2EBaseURL();
 // PLATFORM DASHBOARD & NAVIGATION
 // =============================================================================
 
-test.describe('SuperAdmin — Platform Dashboard @superadmin', () => {
+test.describe('SuperAdmin — Platform Dashboard @superadmin @superadmin', () => {
 
   test('SA sees platform overview page @superadmin', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
@@ -83,7 +83,7 @@ test.describe('SuperAdmin — Platform Dashboard @superadmin', () => {
 // SUPERADMIN — PLAN CRUD
 // =============================================================================
 
-test.describe('SuperAdmin — Plan Management @superadmin', () => {
+test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
 
   test('SA sees plans page with active/inactive counts @superadmin', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
@@ -228,7 +228,7 @@ test.describe('SuperAdmin — Plan Management @superadmin', () => {
 // SUPERADMIN — SETTINGS & VAULT EDITING
 // =============================================================================
 
-test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
+test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin', () => {
 
   test('SA sees settings page with integrations @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
@@ -378,7 +378,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin', () => {
 // SUPERADMIN — PLATFORM INTEGRATIONS API
 // =============================================================================
 
-test.describe('SuperAdmin — Integration API @superadmin', () => {
+test.describe('SuperAdmin — Integration API @superadmin @superadmin', () => {
 
   test('GET /admin/platform/integrations/ returns all integrations @superadmin', async ({ request }) => {
     const token = await loginRole(request, 'superadmin');
@@ -444,7 +444,7 @@ test.describe('SuperAdmin — Integration API @superadmin', () => {
 // OWNER ISOLATION
 // =============================================================================
 
-test.describe('SuperAdmin — OWNER Isolation @owner', () => {
+test.describe('SuperAdmin — OWNER Isolation @owner @superadmin', () => {
 
   test('OWNER navigating to /superadmin is blocked @owner', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });

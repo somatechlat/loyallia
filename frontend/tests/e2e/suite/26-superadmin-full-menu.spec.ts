@@ -6,7 +6,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin', () => {
+test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin @superadmin', () => {
 
   test.use({ storageState: '.auth/superadmin.json' });
 

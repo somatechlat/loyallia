@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Locations — OWNER CRUD @owner', () => {
+test.describe('Locations — OWNER CRUD @owner @locations', () => {
 
   test('OWNER sees locations page with map @owner', async ({ page }) => {
     await page.goto('/locations', { waitUntil: 'domcontentloaded' });
@@ -32,7 +32,7 @@ test.describe('Locations — OWNER CRUD @owner', () => {
 
 });
 
-test.describe('Locations — MANAGER Read-Only @manager', () => {
+test.describe('Locations — MANAGER Read-Only @manager @locations', () => {
 
   test('MANAGER sees locations page @manager', async ({ page }) => {
     await page.goto('/locations', { waitUntil: 'domcontentloaded' });

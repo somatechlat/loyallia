@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 import { requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
-test.describe('Programs — OWNER CRUD @owner', () => {
+test.describe('Programs — OWNER CRUD @owner @programs', () => {
 
   test('OWNER sees programs list page @owner', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
@@ -92,7 +92,7 @@ test.describe('Programs — OWNER CRUD @owner', () => {
 
 });
 
-test.describe('Programs — MANAGER Read-Only @manager', () => {
+test.describe('Programs — MANAGER Read-Only @manager @programs', () => {
 
   test('MANAGER sees programs list @manager', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });

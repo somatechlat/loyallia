@@ -17,7 +17,7 @@ async function gotoPrograms(page: any) {
   await page.getByRole('heading', { name: 'Programas de fidelización' }).waitFor({ state: 'visible', timeout: 15000 });
 }
 
-test.describe('Program CRUD - Full Lifecycle @owner', () => {
+test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
   test.beforeAll(() => {
     requireMutatingE2EAllowed();
@@ -180,7 +180,7 @@ test.describe('Program CRUD - Full Lifecycle @owner', () => {
   });
 });
 
-test.describe('Program Dashboard Stats @owner', () => {
+test.describe('Program Dashboard Stats @owner @programs', () => {
   test('Programs page shows correct statistics @owner', async ({ page }) => {
     await gotoPrograms(page);
 

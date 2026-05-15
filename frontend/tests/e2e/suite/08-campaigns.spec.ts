@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Campaigns — OWNER @owner', () => {
+test.describe('Campaigns — OWNER @owner @campaigns', () => {
 
   test('OWNER sees campaigns page @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
@@ -22,7 +22,7 @@ test.describe('Campaigns — OWNER @owner', () => {
 
 });
 
-test.describe('Campaigns — MANAGER Isolation @manager', () => {
+test.describe('Campaigns — MANAGER Isolation @manager @campaigns', () => {
 
   test('MANAGER does NOT have "Campañas" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
