@@ -11,6 +11,12 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "test:e2e:fast": "playwright test --grep-invert '@slow|Phone Verification'",
+    "test:e2e:settings": "playwright test --grep '@settings'",
+    "test:e2e:whatsapp": "playwright test --grep '@whatsapp'",
+    "test:e2e:billing": "playwright test --grep '@billing'",
+    "test:e2e:scanner": "playwright test --grep '@scanner'",
+    "test:e2e:auth": "playwright test --project=auth-flow",
     "test:all": "npm run typecheck && npm run test:unit && npm run build && npm run test:e2e"
   },
   "dependencies": {

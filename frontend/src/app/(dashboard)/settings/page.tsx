@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import WhatsAppWizard from '@/components/settings/WhatsAppWizard';
 import DataPrivacySection from '@/components/settings/DataPrivacySection';
+import AuditLogSection from '@/components/settings/AuditLogSection';
 
 interface TenantProfile {
   id: string; name: string; slug: string; plan: string;
@@ -346,6 +347,9 @@ export default function SettingsPage() {
 
           {/* ═══════ LOPDP Data Privacy (LYL-FR-DPR-020/025) — OWNER Only ═══════ */}
           <DataPrivacySection userRole={user?.role} />
+
+          {/* ═══════ Audit Log — OWNER Only ═══════ */}
+          <AuditLogSection userRole={user?.role} />
         </div>
       </div>
     </div>

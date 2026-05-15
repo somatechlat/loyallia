@@ -6,10 +6,13 @@ All entries are immutable and comply with LOPDP/GDPR.
 
 
 import logging
+import uuid
 
 from django.http import HttpRequest
 
 from apps.audit.models import AuditAction, AuditLog, AuditStatus
+
+ANONYMOUS_UUID = uuid.UUID(int=0)  # Nil UUID for unauthenticated actors
 
 logger = logging.getLogger("loyallia.audit")
 
@@ -37,9 +40,10 @@ def log_action(
     Called from API endpoints and middleware.
     """
     user = getattr(request, "user", None)
-    actor_id = str(user.id) if user and hasattr(user, "id") else "anonymous"
-    actor_email = getattr(user, "email", "anonymous")
-    actor_role = getattr(user, "role", "unknown")
+    user_id = getattr(user, "id", None)
+    actor_id = user_id if user and user_id is not None else ANONYMOUS_UUID
+    actor_email = getattr(user, "email", "anonymous") or "anonymous"
+    actor_role = getattr(user, "role", "unknown") or "unknown"
 
     # Resolve tenant_id
     if tenant_id is None:

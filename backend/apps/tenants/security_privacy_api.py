@@ -125,6 +125,11 @@ def delete_account(request, payload: DeleteAccountIn):
     tenant.scheduled_deletion_at = timezone.now() + timedelta(hours=24)
     tenant.save(update_fields=["is_active", "scheduled_deletion_at", "updated_at"])
 
+    # Deactivate user and revoke all refresh tokens to prevent re-authentication
+    user.is_active = False
+    user.save(update_fields=["is_active", "updated_at"])
+    user.refresh_tokens.filter(revoked_at__isnull=True).update(revoked_at=timezone.now())
+
     try:
         from celery import current_app
 

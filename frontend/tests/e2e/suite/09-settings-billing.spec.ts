@@ -238,16 +238,12 @@ test.describe('Settings & Billing — MANAGER Isolation @manager', () => {
 
   test('MANAGER accessing /settings is redirected @manager', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    const url = page.url();
-    expect(url).not.toContain('/settings');
+    await page.waitForURL((url) => !url.toString().includes('/settings'), { timeout: 15000 });
   });
 
   test('MANAGER accessing /billing is redirected @manager', async ({ page }) => {
     await page.goto('/billing', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    const url = page.url();
-    expect(url).not.toContain('/billing');
+    await page.waitForURL((url) => !url.toString().includes('/billing'), { timeout: 15000 });
   });
 });
 
@@ -266,8 +262,6 @@ test.describe('Settings & Billing — STAFF Isolation @staff', () => {
 
   test('STAFF accessing /settings is redirected to scanner @staff', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    const url = page.url();
-    expect(url).not.toContain('/settings');
+    await page.waitForURL((url) => !url.toString().includes('/settings'), { timeout: 15000 });
   });
 });

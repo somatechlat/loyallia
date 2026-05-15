@@ -161,7 +161,19 @@ class SubscriptionPlan(TimestampedModel):
         help_text="List of PlanFeature flags: geo_fencing, automation, ai_assistant, etc.",
     )
 
-    # Status
+    # Status workflow
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Borrador"
+        PUBLISHED = "published", "Publicado"
+        ARCHIVED = "archived", "Archivado"
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PUBLISHED,
+        verbose_name="Estado",
+        help_text="draft=Borrador (solo visible en SuperAdmin), published=Publicado (visible para todos), archived=Archivado (oculto)",
+    )
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     is_featured = models.BooleanField(default=False, verbose_name="Plan recomendado")
     trial_days = models.PositiveIntegerField(default=5, verbose_name="Días de prueba")

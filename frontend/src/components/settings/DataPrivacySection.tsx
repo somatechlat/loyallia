@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Cookies from 'js-cookie';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -80,6 +81,10 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
 
       toast.success('Tu cuenta será eliminada en 24 horas. Se descargó una copia de todos tus datos.', { id: toastId, duration: 10000 });
       setShowDeleteModal(false);
+
+      // Clear auth cookies immediately so token refresh cannot re-authenticate
+      Cookies.remove('access_token');
+      Cookies.remove('refresh_token');
 
       // Redirect to login after short delay
       setTimeout(() => {

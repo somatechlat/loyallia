@@ -308,6 +308,7 @@ class PlanCreateIn(BaseModel):
     max_api_calls_day: int = 0
     max_exports_month: int = 0
     features: list[str] = Field(default_factory=list)
+    status: str = "published"
     is_featured: bool = False
     trial_days: int = 14
     sort_order: int = 0
@@ -343,6 +344,7 @@ class PlanUpdateIn(BaseModel):
     max_api_calls_day: int | None = None
     max_exports_month: int | None = None
     features: list[str] | None = None
+    status: str | None = None
     is_featured: bool | None = None
     is_active: bool | None = None
     trial_days: int | None = None
