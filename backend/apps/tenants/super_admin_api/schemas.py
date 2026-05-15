@@ -251,6 +251,7 @@ class PlanOut(BaseModel):
     features: list
     is_active: bool
     is_featured: bool
+    status: str
     trial_days: int
     sort_order: int
 
@@ -281,6 +282,7 @@ class PlanOut(BaseModel):
             features=p.features,
             is_active=p.is_active,
             is_featured=p.is_featured,
+            status=p.status,
             trial_days=p.trial_days,
             sort_order=p.sort_order,
         )

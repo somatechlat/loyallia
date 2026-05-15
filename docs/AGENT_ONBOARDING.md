@@ -69,26 +69,32 @@ certs/             Certificate files (real + dev)
 
 | Change | File(s) | Why |
 |--------|---------|-----|
-| **Rate Limit Fields** | `apps/billing/models.py`, `migrations/0007_add_rate_limit_fields` | 6 new columns on `SubscriptionPlan`: `max_automations`, `max_automation_executions_day`, `max_ai_queries_month`, `max_api_calls_day`, `max_exports_month`, `max_wallet_pushes_month` |
+| **Plan Status** | `apps/billing/models.py`, `migrations/0009_subscriptionplan_status` | `SubscriptionPlan` has `status` field: `draft`/`published`/`archived`. Tenant API filters published only. SuperAdmin archive on delete. |
+| **Audit Logging** | `apps/audit/service.py`, `apps/audit/api.py` | `AuditLog` model records actor, action, resource, timestamp. Anonymous actors use nil UUID. OWNER can view tenant-scoped logs. |
+| **Account Deletion** | `apps/tenants/security_privacy_api.py`, `apps/authentication/api.py` | `delete_account` sets `is_active=False`, revokes all refresh tokens, schedules cascade delete. Frontend clears cookies before redirect. |
+| **MANAGER+ Enforcement** | `apps/customers/api.py`, `apps/cards/api.py`, `apps/automation/api.py`, `apps/api/upload_api.py` | Multiple endpoints now reject STAFF and require MANAGER or OWNER role. |
 | **Plan Enforcement** | `common/plan_enforcement.py` | Decorators enforce limits; `_count_api_calls_day()` uses `AgentAPICallLog` |
-| **Agent API Logging** | `apps/agent_api/models.py`, migration | New `AgentAPICallLog` model logs every API call per tenant |
 | **Vault Write** | `common/vault.py` | `write_secret()` + `clear_cache()` for runtime secret updates |
 | **Integration Diagnostics** | `apps/tenants/super_admin_api/platform.py` | `platform_integrations()` returns per-service diagnostics with `errors` array |
 | **Vault Secret Endpoint** | `apps/tenants/super_admin_api/platform.py` | `PUT /integrations/{key}/secret/` — writes single key to Vault, validates against `ALLOWED_KEYS` |
-| **Env Validation Fix** | `common/env_validation.py` | Mailjet + Apple Wallet no longer hard-required. Mailjet only required if `mailjet_api_key` set. Apple only if `apple_wallet_enabled=true` |
-| **OAuth in ALLOWED_KEYS** | `apps/tenants/super_admin_api/platform.py` | `google_wallet` ALLOWED_KEYS now includes `google_oauth_client_id` + `google_oauth_client_secret` |
 
 ### Frontend Changes
 
 | Change | File | Why |
 |--------|------|-----|
-| **Settings Page** | `src/app/(dashboard)/superadmin/settings/page.tsx` | Inline Vault editor for ALL integrations (Google Wallet, Apple Wallet, Payment, Email) |
+| **Audit Log Viewer** | `src/components/settings/AuditLogSection.tsx` | New settings section showing tenant-scoped audit events with status badges |
+| **Data Privacy** | `src/components/settings/DataPrivacySection.tsx` | Account deletion UI with cookie clearing and ZIP export download |
+| **Plan Status UI** | `src/components/superadmin/plans/page.tsx`, `PlanModal.tsx` | 3-section layout (Published/Drafts/Archived) with status selector in modal |
+| **Password Toggles** | `src/app/(auth)/register/page.tsx`, `src/app/(auth)/reset-password/page.tsx` | Visibility toggle for password fields |
+| **Wallet Preview** | `src/components/programs/WalletCardPreview.tsx` | Black phone frames with rounded bezels and gradient styling |
+| **Settings Page** | `src/app/(dashboard)/superadmin/settings/page.tsx` | Inline Vault editor for ALL integrations |
 | **Plan Modal** | `src/components/superadmin/plans/PlanModal.tsx` | Full-screen modal, `is_active` toggle, reactivation flow |
-| **API Client** | `src/lib/api.ts` | `superAdminApi` object with typed endpoints |
 
-### Database Fix
-- Migration `billing.0007_add_rate_limit_fields` was recorded in `django_migrations` but columns were missing.
-- Fix: `ALTER TABLE` added 6 columns + CHECK constraints manually.
+### Infrastructure Changes
+
+| Change | File | Why |
+|--------|------|-----|
+| **Configurable Ports** | `docker-compose.yml` | All port bindings use `${DOCKER_BIND_HOST:-127.0.0.1}`. Set `DOCKER_BIND_HOST=0.0.0.0` for LAN/mobile testing. |
 
 ---
 
@@ -200,21 +206,6 @@ Expected output: all integrations show `configured` with empty `errors` arrays.
 ---
 
 ## 7. Common Issues & Fixes
-
-### Issue: 500 on `/superadmin/plans/`
-**Root cause:** Migration `0007` columns missing from DB table.
-**Fix:**
-```bash
-docker exec loyallia-postgres psql -U loyallia -d loyallia -c "
-ALTER TABLE loyallia_subscription_plans
-  ADD COLUMN IF NOT EXISTS max_automations integer NOT NULL DEFAULT 3,
-  ADD COLUMN IF NOT EXISTS max_automation_executions_day integer NOT NULL DEFAULT 100,
-  ADD COLUMN IF NOT EXISTS max_ai_queries_month integer NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS max_api_calls_day integer NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS max_exports_month integer NOT NULL DEFAULT 5,
-  ADD COLUMN IF NOT EXISTS max_wallet_pushes_month integer NOT NULL DEFAULT 0;
-"
-```
 
 ### Issue: Env validation fails on startup
 **Root cause:** `PRODUCTION_REQUIRED_VAULT_KEYS` too strict.

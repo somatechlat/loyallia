@@ -180,8 +180,9 @@ find . -name '*.py' | xargs wc -l | awk '$1>600'  # File size check
 
 ### Environment Variables
 
-All configuration is via environment variables. See `.env.example` for the full list.
-Never commit `.env` files. Secrets are managed through HashiCorp Vault in production.
+All configuration is via environment variables in your `.env` file.
+Set `DOCKER_BIND_HOST=0.0.0.0` to expose ports on all interfaces (LAN/mobile testing).
+Default is `127.0.0.1` (localhost-only). Secrets are managed through HashiCorp Vault.
 
 ---
 
