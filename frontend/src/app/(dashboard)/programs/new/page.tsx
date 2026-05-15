@@ -490,7 +490,7 @@ export default function NewProgramPage() {
           </div>
 
           {/* Right: Live Wallet Preview */}
-          <div className="sticky top-24 bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">
+          <div className="sticky top-24 self-start bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">
             <WalletCardPreview
               form={form}
               selectedType={selectedType}

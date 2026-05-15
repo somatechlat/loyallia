@@ -299,10 +299,14 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
 
             {/* Phone frame */}
             <div className="relative w-full max-w-[280px] mx-auto">
-              <div className="bg-gray-900 rounded-[2.5rem] p-2.5 shadow-2xl border-4 border-gray-800">
-                <div className="bg-gray-900 rounded-[2rem] overflow-hidden relative">
+              <div className="relative bg-black rounded-[40px] p-3 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-[3px] border-transparent bg-gradient-to-b from-gray-700 to-gray-800 bg-clip-padding ring-1 ring-white/20">
+                {/* Side buttons */}
+                <div className="absolute top-20 -left-[3px] w-[2px] h-7 bg-gray-600 rounded-l-sm" />
+                <div className="absolute top-32 -left-[3px] w-[2px] h-12 bg-gray-600 rounded-l-sm" />
+                <div className="absolute top-28 -right-[3px] w-[2px] h-14 bg-gray-600 rounded-r-sm" />
+                <div className="bg-black rounded-[36px] overflow-hidden relative">
                   <div className="bg-black/80 px-4 py-2.5 flex justify-center">
-                    <div className="w-14 h-1.5 bg-gray-700 rounded-full" />
+                    <div className="w-14 h-1.5 bg-gray-800 rounded-full" />
                   </div>
                   <div className="px-3 pb-4 pt-1">
                     <div

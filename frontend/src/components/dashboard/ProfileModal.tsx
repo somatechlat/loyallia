@@ -31,6 +31,8 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
   const [showPwChange, setShowPwChange] = useState(false);
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
 
   const handleSaveProfile = async () => {
@@ -106,7 +108,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="input-field w-full"
+                className="input w-full"
               />
             </div>
             <div>
@@ -115,7 +117,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="input-field w-full"
+                className="input w-full"
               />
             </div>
           </div>
@@ -168,23 +170,45 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
               <div className="mt-3 space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1">Contraseña actual</label>
-                  <input
-                    type="password"
-                    value={currentPw}
-                    onChange={(e) => setCurrentPw(e.target.value)}
-                    className="input-field w-full"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPw ? 'text' : 'password'}
+                      value={currentPw}
+                      onChange={(e) => setCurrentPw(e.target.value)}
+                      className="input w-full pr-10"
+                      placeholder="••••••••"
+                    />
+                    <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+                      aria-label={showCurrentPw ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                      {showCurrentPw ? (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      ) : (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1">Nueva contraseña</label>
-                  <input
-                    type="password"
-                    value={newPw}
-                    onChange={(e) => setNewPw(e.target.value)}
-                    className="input-field w-full"
-                    placeholder="Mínimo 8 caracteres"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPw ? 'text' : 'password'}
+                      value={newPw}
+                      onChange={(e) => setNewPw(e.target.value)}
+                      className="input w-full pr-10"
+                      placeholder="Mínimo 8 caracteres"
+                    />
+                    <button type="button" onClick={() => setShowNewPw(!showNewPw)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+                      aria-label={showNewPw ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                      {showNewPw ? (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      ) : (
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <button
                   onClick={handleChangePw}
