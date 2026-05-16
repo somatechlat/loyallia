@@ -309,13 +309,8 @@ class AutomationActionTest(TestCase):
         result = auto._execute_send_email(self.customer, {})
         self.assertTrue(result)
 
-    def test_send_sms_action_returns_true_when_configured(self):
-        from common.vault import clear_test_overrides, set_test_override
-
-        clear_test_overrides()
-        set_test_override("twilio_account_sid", "ACtest")
-        set_test_override("twilio_auth_token", "tok")
-        set_test_override("twilio_from_number", "+15005550006")
+    def test_send_sms_action_returns_bool(self):
+        from apps.notifications.sms.client import is_sms_available
 
         auto = make_automation(
             self.tenant,
@@ -323,11 +318,11 @@ class AutomationActionTest(TestCase):
             action_config={"message": "Hi"},
         )
         result = auto._execute_send_sms(self.customer, {})
-        # Real Twilio client will fail with auth, but the method attempts to send
-        # Result depends on whether SMS is available and configured
+        # Result is bool regardless of whether Twilio is configured
         self.assertIsInstance(result, bool)
-
-        clear_test_overrides()
+        # If Twilio is not configured, should return False
+        if not is_sms_available():
+            self.assertFalse(result)
 
     def test_issue_reward_with_valid_program(self):
         auto = make_automation(

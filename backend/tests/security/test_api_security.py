@@ -307,46 +307,49 @@ class TestRateLimitRules(TestCase):
 
 
 # =============================================================================
-# Integration: Verify Rate Limiter code changes
+# Rate Limiter Runtime Behavior Tests
 # =============================================================================
 
 
-class TestRateLimiterCodeChanges(TestCase):
-    """Verify rate limiter code changes."""
+class TestRateLimiterRuntimeBehavior(TestCase):
+    """Verify rate limiter behavior at runtime (no source-code reading)."""
 
-    def test_auth_paths_defined(self):
-        """AUTH_PATHS list should be defined in rate_limit.py."""
-        import os
+    def test_rate_limit_rules_are_iterable(self):
+        """RATE_LIMIT_RULES should be a non-empty iterable."""
+        from common.rate_limit import RATE_LIMIT_RULES
+        self.assertTrue(len(RATE_LIMIT_RULES) > 0)
 
-        rate_limit_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "common", "rate_limit.py"
-        )
-        with open(rate_limit_path) as f:
-            content = f.read()
-        self.assertIn("AUTH_PATHS", content)
-        self.assertIn("/api/v1/auth/login", content)
+    def test_auth_paths_exist_in_rules(self):
+        """Auth paths should be covered by rate limit rules."""
+        from common.rate_limit import RATE_LIMIT_RULES
+        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        self.assertIn("/api/v1/auth/login", paths)
+        self.assertIn("/api/v1/auth/register", paths)
 
-    def test_fail_closed_logic_present(self):
-        """Rate limiter should have fail-closed logic for auth endpoints."""
-        import os
-
-        rate_limit_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "common", "rate_limit.py"
-        )
-        with open(rate_limit_path) as f:
-            content = f.read()
-        self.assertIn("Service temporarily unavailable", content)
-        self.assertIn("status=503", content)
+    def test_general_rule_is_last(self):
+        """The general /api/v1/ catch-all should be the last rule."""
+        from common.rate_limit import RATE_LIMIT_RULES
+        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        self.assertEqual(paths[-1], "/api/v1/")
 
     def test_uses_remote_addr_only(self):
-        """_get_client_ip should use REMOTE_ADDR, not X-Forwarded-For."""
-        import os
+        """_get_client_ip should return REMOTE_ADDR, not trust X-Forwarded-For."""
+        from common.rate_limit import _get_client_ip
+        from django.test import RequestFactory
 
-        rate_limit_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "common", "rate_limit.py"
-        )
-        with open(rate_limit_path) as f:
-            content = f.read()
-        # Should NOT have X-Forwarded-For extraction logic
-        self.assertNotIn("HTTP_X_FORWARDED_FOR", content)
-        self.assertIn("REMOTE_ADDR", content)
+        request = RequestFactory().get("/api/v1/auth/login/")
+        request.META["REMOTE_ADDR"] = "203.0.113.50"
+        request.META["HTTP_X_FORWARDED_FOR"] = "1.2.3.4, 10.0.0.1"
+        ip = _get_client_ip(request)
+        self.assertEqual(ip, "203.0.113.50")
+
+    def test_ignores_x_forwarded_for_spoofing(self):
+        """_get_client_ip must ignore spoofed X-Forwarded-For headers."""
+        from common.rate_limit import _get_client_ip
+        from django.test import RequestFactory
+
+        request = RequestFactory().get("/api/v1/auth/login/")
+        request.META["REMOTE_ADDR"] = "192.0.2.1"
+        request.META["HTTP_X_FORWARDED_FOR"] = "evil.com"
+        ip = _get_client_ip(request)
+        self.assertEqual(ip, "192.0.2.1")

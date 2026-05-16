@@ -29,20 +29,13 @@ export function getE2EBaseURL(): string {
   return baseURL.replace(/\/$/, '');
 }
 
-// Re-export Vault credential helpers for backward compatibility during transition
-export {
-  getRoleCredentialsFromVault,
-  getAllRoleCredentialsFromVault,
-  loadVaultCredentials,
-  clearVaultCredentials,
-} from './vault-credentials';
-
 export async function loginRole(request: APIRequestContext, role: E2ERole): Promise<string> {
-  const { getRoleCredentialsFromVault } = await import('./vault-credentials');
+  const { getE2ESeedPassword, E2E_TEST_USERS } = await import('./e2e-test-config');
   const baseURL = getE2EBaseURL();
-  const credentials = await getRoleCredentialsFromVault(role);
+  const email = E2E_TEST_USERS[role].email;
+  const password = getE2ESeedPassword();
   const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
-    data: credentials,
+    data: { email, password },
   });
 
   expect(response.status(), `Login API should return 200 for ${role}`).toBe(200);
@@ -54,11 +47,12 @@ export async function loginRole(request: APIRequestContext, role: E2ERole): Prom
 export async function loginOwnerContext(
   request: APIRequestContext,
 ): Promise<{ token: string; tenantId: string }> {
-  const { getRoleCredentialsFromVault } = await import('./vault-credentials');
+  const { getE2ESeedPassword, E2E_TEST_USERS } = await import('./e2e-test-config');
   const baseURL = getE2EBaseURL();
-  const credentials = await getRoleCredentialsFromVault('owner');
+  const email = E2E_TEST_USERS.owner.email;
+  const password = getE2ESeedPassword();
   const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
-    data: credentials,
+    data: { email, password },
   });
 
   expect(response.status(), 'Owner login API should return 200').toBe(200);

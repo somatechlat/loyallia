@@ -6,24 +6,26 @@
  * then inject them as cookies. This bypasses the browser entirely for auth setup
  * and is the most reliable approach.
  *
- * ALL credentials are loaded from HashiCorp Vault via vault-credentials.ts.
- * No hardcoded passwords. No env-var fallbacks.
+ * Test users are created by the backend seed_test_data management command.
+ * Set LOYALLIA_SEED_PASSWORD to match the password used during seeding.
+ * NEVER hardcode passwords. NEVER fetch user passwords from Vault.
  */
 import { test as setup, expect } from '@playwright/test';
-import { getE2EBaseURL, getAllRoleCredentialsFromVault } from './e2e-safety';
+import { getE2EBaseURL } from './e2e-safety';
+import { E2E_TEST_USERS, getE2ESeedPassword } from './e2e-test-config';
 
 const BASE_URL = getE2EBaseURL();
 const COOKIE_DOMAIN = new URL(BASE_URL).hostname;
 const COOKIE_SECURE = BASE_URL.startsWith('https');
 
 setup('authenticate all roles', async ({ page, context, request }) => {
-  const allCreds = await getAllRoleCredentialsFromVault();
+  const password = getE2ESeedPassword();
 
   const users = [
-    { file: '.auth/owner.json', ...allCreds.owner },
-    { file: '.auth/manager.json', ...allCreds.manager },
-    { file: '.auth/staff.json', ...allCreds.staff },
-    { file: '.auth/superadmin.json', ...allCreds.superadmin },
+    { file: '.auth/owner.json', email: E2E_TEST_USERS.owner.email, password },
+    { file: '.auth/manager.json', email: E2E_TEST_USERS.manager.email, password },
+    { file: '.auth/staff.json', email: E2E_TEST_USERS.staff.email, password },
+    { file: '.auth/superadmin.json', email: E2E_TEST_USERS.superadmin.email, password },
   ];
 
   for (const user of users) {
