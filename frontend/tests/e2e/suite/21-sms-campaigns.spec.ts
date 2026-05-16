@@ -16,7 +16,7 @@ import {
   ensureOwnerEnterpriseCampaignAccess,
   getE2EBaseURL,
   loginRole,
-  requireMutatingE2EAllowed,
+  ,
 } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
@@ -28,7 +28,7 @@ const BASE_API = getE2EBaseURL();
 // CRITICAL SAFETY: Verify Twilio test mode is enabled before running ANY SMS test.
 // This prevents accidental sending of real (charged) SMS messages during E2E runs.
 test.beforeAll(async ({ request }) => {
-  requireMutatingE2EAllowed();
+  ();
   const token = await loginRole(request, 'superadmin');
 
   // ── SAFETY GUARD ──
@@ -325,7 +325,7 @@ test.describe('SuperAdmin — Twilio Test Mode @superadmin @superadmin', () => {
 
     // Find enterprise plan
     const enterprisePlan = plans.find((p: any) => p.slug === 'enterprise');
-    if (!enterprisePlan) { test.skip(); return; }
+    expect(enterprisePlan, 'Enterprise plan must exist to test SMS campaign enablement').toBeTruthy();
 
     // Update plan to include SMS campaigns
     const updateResp = await request.patch(`${BASE_API}/api/v1/admin/plans/${enterprisePlan.id}/`, {

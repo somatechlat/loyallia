@@ -6,7 +6,6 @@ Uses Django's TestCase with PostgreSQL.
 import uuid
 from datetime import timedelta
 from typing import cast
-from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
@@ -201,27 +200,19 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
             success=True,
         )
 
-        # Mock can_execute_for_customer to return True
-        with patch.object(
-            self.automation, "can_execute_for_customer", return_value=True
-        ), patch.object(
-            self.automation, "_execute_send_notification", return_value=True
-        ):
-            result = self.automation.execute(self.customer)
-            self.assertTrue(result)
+        # Real can_execute_for_customer checks cooldown (no prior execution for this customer = True)
+        # Real _execute_send_notification creates a notification
+        result = self.automation.execute(self.customer)
+        self.assertTrue(result)
 
     def test_no_limit_when_max_is_none(self):
         """When max_executions_per_day is None, no limit is enforced."""
         self.automation.max_executions_per_day = None
         self.automation.save(update_fields=["max_executions_per_day"])
 
-        with patch.object(
-            self.automation, "can_execute_for_customer", return_value=True
-        ), patch.object(
-            self.automation, "_execute_send_notification", return_value=True
-        ):
-            result = self.automation.execute(self.customer)
-            self.assertTrue(result)
+        # Real methods run without patches
+        result = self.automation.execute(self.customer)
+        self.assertTrue(result)
 
     def test_old_executions_not_counted(self):
         """Executions from yesterday should not count toward today's limit."""
@@ -240,11 +231,6 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
                 executed_at=yesterday
             )
 
-        # Should still be allowed today
-        with patch.object(
-            self.automation, "can_execute_for_customer", return_value=True
-        ), patch.object(
-            self.automation, "_execute_send_notification", return_value=True
-        ):
-            result = self.automation.execute(self.customer)
-            self.assertTrue(result)
+        # Should still be allowed today — real methods run
+        result = self.automation.execute(self.customer)
+        self.assertTrue(result)

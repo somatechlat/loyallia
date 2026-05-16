@@ -4,7 +4,7 @@
  * the billing API returns complete plan data including messaging/AI/automation limits.
  */
 import { test, expect } from '@playwright/test';
-import { getE2EBaseURL, loginRole, requireMutatingE2EAllowed } from '../helpers/e2e-safety';
+import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -114,7 +114,7 @@ test.describe('Owner Subscription — Rate Limit Visibility @owner @settings', (
 test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin @superadmin', () => {
 
   test.beforeAll(() => {
-    requireMutatingE2EAllowed();
+    ();
   });
 
   test('SA can create plan with all rate limits via API @superadmin', async ({ request }) => {

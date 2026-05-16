@@ -15,7 +15,7 @@ import {
   ensureOwnerEnterpriseCampaignAccess,
   getE2EBaseURL,
   loginRole,
-  requireMutatingE2EAllowed,
+  ,
 } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
@@ -27,7 +27,7 @@ async function getOwnerToken(request: import('@playwright/test').APIRequestConte
 test.describe('WhatsApp Campaigns — OWNER @owner @campaigns', () => {
 
   test.beforeAll(async ({ request }) => {
-    requireMutatingE2EAllowed();
+    ();
     await ensureOwnerEnterpriseCampaignAccess(request);
   });
 

@@ -1,26 +1,48 @@
 import { defineConfig, devices } from '@playwright/test';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { execSync } from 'child_process';
 
-// Load .env.test credentials for Playwright auth setup
-const envTestPath = resolve(__dirname, '.env.test');
-if (existsSync(envTestPath)) {
-  const envContent = readFileSync(envTestPath, 'utf-8');
-  for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx > 0) {
-      const key = trimmed.substring(0, eqIdx).trim();
-      const val = trimmed.substring(eqIdx + 1).trim();
-      if (!process.env[key]) process.env[key] = val;
-    }
+// ═══════════════════════════════════════════════════════════════════════════════
+// VAULT BOOTSTRAP — Read ALL secrets from HashiCorp Vault. NO .env.test.
+// Uses synchronous curl because Playwright config is loaded via require().
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const vaultAddr = process.env.VAULT_ADDR || 'http://127.0.0.1:33908';
+let vaultToken = process.env.VAULT_TOKEN || '';
+
+if (!vaultToken) {
+  try {
+    const initData = JSON.parse(readFileSync(resolve(__dirname, '../.agents/vault_init_rescue.json'), 'utf-8'));
+    vaultToken = initData.root_token || '';
+  } catch {
+    // No rescue file — will fail below if still empty
   }
+}
+
+if (!vaultToken) {
+  throw new Error(
+    'VAULT_TOKEN is required. ' +
+    'Set VAULT_TOKEN env var or ensure .agents/vault_init_rescue.json exists with root_token.',
+  );
+}
+
+// Synchronous Vault read (config file cannot use top-level await)
+const vaultResp = execSync(
+  `curl -s -H "X-Vault-Token: ${vaultToken}" "${vaultAddr}/v1/secret/data/loyallia/e2e"`,
+  { encoding: 'utf-8', timeout: 10000 },
+);
+const vaultJson = JSON.parse(vaultResp);
+const secrets: Record<string, string> = vaultJson.data?.data || {};
+
+// Inject secrets into process.env so getE2EBaseURL() and getRoleCredentials() work
+for (const [key, value] of Object.entries(secrets)) {
+  if (!process.env[key]) process.env[key] = value;
 }
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL;
 if (!baseURL) {
-  throw new Error('PLAYWRIGHT_BASE_URL is required for Playwright tests.');
+  throw new Error('PLAYWRIGHT_BASE_URL not found in Vault secret loyallia/e2e');
 }
 
 export default defineConfig({

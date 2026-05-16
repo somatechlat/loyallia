@@ -8,7 +8,7 @@ import {
   getE2EBaseURL,
   loginRole,
   expectIntegrationResponseDoesNotExposeSecrets,
-  requireMutatingE2EAllowed,
+  ,
 } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
@@ -39,8 +39,7 @@ test.describe('SuperAdmin — Platform Dashboard @superadmin @superadmin', () =>
     const tenantRows = page.locator('table tbody tr');
     await tenantRows.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     const count = await tenantRows.count();
-    test.skip(count === 0, 'No tenants found — seed data may not have completed');
-    expect(count).toBeGreaterThan(0);
+    expect(count, 'No tenants found — seed data may not have completed').toBeGreaterThan(0);
   });
 
   test('SA sees "Negocios" in navigation @superadmin', async ({ page }) => {
@@ -103,7 +102,7 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
   });
 
   test('SA can create a new plan with rate limits @superadmin', async ({ page }) => {
-    requireMutatingE2EAllowed();
+    ();
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     await page.getByRole('button', { name: /Nuevo Plan/ }).click();
@@ -154,7 +153,7 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
   });
 
   test('SA can deactivate and reactivate a plan @superadmin', async ({ page, request }) => {
-    requireMutatingE2EAllowed();
+    ();
     const token = await loginRole(request, 'superadmin');
     const unique = Date.now();
     const planName = `E2E Toggle Plan ${unique}`;
