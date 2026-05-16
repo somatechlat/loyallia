@@ -73,12 +73,10 @@ test.describe('Billing — OWNER @owner @settings', () => {
 // WHATSAPP BRIDGE ACTIVATION — OWNER (LYL-SRS-007)
 // =============================================================================
 // Complete E2E flow for WhatsApp Business Bridge activation.
-// Covers: toggle ON → checking → QR wizard → refresh → cancel → connected
-// dashboard → disconnect dialog → confirm/cancel.
+// Covers: toggle ON -> checking -> QR wizard -> refresh -> cancel.
 //
 // NOTE: The actual phone QR scan step cannot be automated (requires physical
-// device). We test up to the QR display and mock the connected state for
-// disconnect flow coverage.
+// device). We test through the real bridge/API path up to QR display.
 // =============================================================================
 
 test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {

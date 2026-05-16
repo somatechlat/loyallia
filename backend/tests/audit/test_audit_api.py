@@ -245,10 +245,10 @@ class AgentAPIFixTest(TestCase):
 
     def test_recent_transactions_returns_transaction_data(self):
         """Call the API and verify the response uses transaction_data field."""
-        from apps.agent_api.api import get_recent_transactions
         from django.test import RequestFactory
-        from apps.authentication.models import User, UserRole
 
+        from apps.agent_api.api import get_recent_transactions
+        from apps.authentication.models import User, UserRole
         from tests.vault_helper import get_test_password
         user = User.objects.create_user(
             email="agent@test.com",

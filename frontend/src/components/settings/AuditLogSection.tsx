@@ -45,9 +45,12 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
 
-  if (userRole !== 'OWNER') return null;
-
   useEffect(() => {
+    if (userRole !== 'OWNER') {
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       try {
         const { data } = await api.get('/api/v1/audit/');
@@ -59,7 +62,9 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [userRole]);
+
+  if (userRole !== 'OWNER') return null;
 
   const visible = showAll ? entries : entries.slice(0, 5);
 

@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PLAYWRIGHT CONFIGURATION — Loyallia E2E Tests
@@ -35,7 +35,7 @@ export default defineConfig({
     },
   },
   projects: [
-    // --- Setup: authenticate all roles via Vault ---
+    // --- Setup: authenticate all roles through the real login API ---
     {
       name: 'setup',
       testMatch: /auth\.setup\.ts/,

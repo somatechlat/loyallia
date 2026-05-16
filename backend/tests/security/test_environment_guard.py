@@ -32,6 +32,15 @@ def test_development_rejects_production_db_and_vault(monkeypatch):
 
 def test_production_accepts_production_db_and_vault(monkeypatch):
     monkeypatch.setenv("VAULT_SECRET_PATH", f"secret/data/{PRODUCTION_VAULT_MARKER}")
+    monkeypatch.setenv("DATABASE_URL", f"postgres://loyallia@postgres:5432/{PRODUCTION_DB_NAME}")
+    monkeypatch.setenv(
+        "DATABASE_DIRECT_URL",
+        f"postgres://loyallia@postgres:5432/{PRODUCTION_DB_NAME}",
+    )
+    monkeypatch.setenv(
+        "PGBOUNCER_URL",
+        f"postgres://loyallia@pgbouncer:6432/{PRODUCTION_DB_NAME}",
+    )
 
     errors = validate_settings_environment(mode="production", databases=_db(PRODUCTION_DB_NAME))
 
@@ -49,34 +58,23 @@ def test_production_rejects_development_db_and_vault(monkeypatch):
     }
 
 
-def test_production_database_state_rejects_e2e_users(monkeypatch, db):
-    from apps.authentication.models import User
-    import common.vault
+def test_production_database_state_rejects_e2e_users():
     from common import environment_guard
 
-    monkeypatch.setattr(common.vault, "fetch_vault_secrets", lambda: {})
-    User.objects.create_user(
-        email="e2e-owner@loyallia.test",
-        password="[REDACTED]",
-        role="OWNER",
-        is_active=True,
+    errors = environment_guard.validate_production_database_state(
+        secret_loader=lambda: {},
+        e2e_user_exists=lambda: True,
     )
-
-    errors = environment_guard.validate_production_database_state()
 
     assert any(error.code == "prod_contains_e2e_users" for error in errors)
 
 
-def test_production_database_state_rejects_user_password_vault_keys(monkeypatch, db):
-    import common.vault
+def test_production_database_state_rejects_user_password_vault_keys():
     from common import environment_guard
 
-    monkeypatch.setattr(
-        common.vault,
-        "fetch_vault_secrets",
-        lambda: {"test_owner_password": "not-allowed"},
+    errors = environment_guard.validate_production_database_state(
+        secret_loader=lambda: {"test_owner_password": "not-allowed"},
+        e2e_user_exists=lambda: False,
     )
-
-    errors = environment_guard.validate_production_database_state()
 
     assert any(error.code == "prod_contains_user_password_vault_key" for error in errors)

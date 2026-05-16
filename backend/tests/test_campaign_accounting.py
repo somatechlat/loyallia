@@ -6,7 +6,6 @@ from apps.notifications.models import (
     CampaignDeliveryLog,
     CampaignRun,
     CampaignStatus,
-    DeliveryStatus,
     NotificationChannel,
 )
 from common.plan_enforcement import get_current_usage

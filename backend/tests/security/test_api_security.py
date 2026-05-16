@@ -334,8 +334,9 @@ class TestRateLimiterRuntimeBehavior(TestCase):
 
     def test_uses_remote_addr_only(self):
         """_get_client_ip should return REMOTE_ADDR, not trust X-Forwarded-For."""
-        from common.rate_limit import _get_client_ip
         from django.test import RequestFactory
+
+        from common.rate_limit import _get_client_ip
 
         request = RequestFactory().get("/api/v1/auth/login/")
         request.META["REMOTE_ADDR"] = "203.0.113.50"
@@ -345,8 +346,9 @@ class TestRateLimiterRuntimeBehavior(TestCase):
 
     def test_ignores_x_forwarded_for_spoofing(self):
         """_get_client_ip must ignore spoofed X-Forwarded-For headers."""
-        from common.rate_limit import _get_client_ip
         from django.test import RequestFactory
+
+        from common.rate_limit import _get_client_ip
 
         request = RequestFactory().get("/api/v1/auth/login/")
         request.META["REMOTE_ADDR"] = "192.0.2.1"
