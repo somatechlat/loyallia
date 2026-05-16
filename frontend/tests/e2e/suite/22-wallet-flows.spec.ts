@@ -15,7 +15,7 @@ import {
   ensureOwnerEnterpriseCampaignAccess,
   getE2EBaseURL,
   loginRole,
-  requireMutatingE2EAllowed,
+  ,
 } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
@@ -44,7 +44,7 @@ let walletStatusUrl = '';
 test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', () => {
 
   test.beforeAll(async ({ request }) => {
-    requireMutatingE2EAllowed();
+    ();
     await ensureOwnerEnterpriseCampaignAccess(request);
   });
 
@@ -80,7 +80,7 @@ test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', 
   });
 
   test('2. Enroll a customer via public endpoint', async ({ request }) => {
-    test.skip(!createdCardId, 'Skipped: card was not created in test 1');
+    expect(createdCardId, 'Card must be created in test 1').toBeTruthy();
 
     const uniqueEmail = `e2e-wallet-${Date.now()}@test.loyallia.com`;
 
@@ -113,7 +113,7 @@ test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', 
   });
 
   test('3. Verify enrolled customer appears in customer list', async ({ request }) => {
-    test.skip(!createdCardId, 'Skipped: no card created');
+    expect(createdCardId, 'Card must be created').toBeTruthy();
     const token = await loginAsOwner(request);
 
     const resp = await request.get(`${BASE_API}/api/v1/customers/`, {
@@ -140,7 +140,7 @@ test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', 
 test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', () => {
 
   test('4. Wallet status shows both providers available', async ({ request }) => {
-    test.skip(!walletStatusUrl, 'Skipped: no wallet status URL from enrollment');
+    expect(walletStatusUrl, 'Wallet status URL must exist from enrollment').toBeTruthy();
 
     const resp = await request.get(`${BASE_API}${walletStatusUrl}`);
 
@@ -152,7 +152,7 @@ test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', 
   });
 
   test('5. Apple PKPass download returns valid file', async ({ request }) => {
-    test.skip(!walletAppleUrl, 'Skipped: no Apple wallet URL from enrollment');
+    expect(walletAppleUrl, 'Apple wallet URL must exist from enrollment').toBeTruthy();
 
     const resp = await request.get(`${BASE_API}${walletAppleUrl}`);
 
@@ -173,7 +173,7 @@ test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', 
   });
 
   test('6. Google Wallet returns valid save_url', async ({ request }) => {
-    test.skip(!walletGoogleUrl, 'Skipped: no Google wallet URL from enrollment');
+    expect(walletGoogleUrl, 'Google wallet URL must exist from enrollment').toBeTruthy();
 
     const resp = await request.get(`${BASE_API}${walletGoogleUrl}`);
 

@@ -4,7 +4,6 @@
  * WhatsApp activation flow, and owner-only route protection.
  */
 import { test, expect } from '@playwright/test';
-import { requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
 // =============================================================================
 // SETTINGS — OWNER
@@ -85,7 +84,7 @@ test.describe('Billing — OWNER @owner @settings', () => {
 test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    requireMutatingE2EAllowed();
+    ();
   });
 
   test('OWNER sees WhatsApp integration with active toggle @owner', async ({ page }) => {

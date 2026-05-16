@@ -8,10 +8,9 @@ For SSRF, rate limiting, OTP entropy, and password policy see test_security_fixe
 
 import uuid
 from typing import cast
-from unittest.mock import MagicMock
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 
 from apps.authentication.models import User, UserManager, UserRole
 from apps.tenants.models import validate_cedula, validate_ruc
@@ -29,7 +28,7 @@ class RequireRoleDecoratorTest(TestCase):
 
     def test_owner_can_access_owner_endpoint(self):
         user = make_user(role=UserRole.OWNER)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.user = user
 
         @require_role("OWNER")
@@ -40,7 +39,7 @@ class RequireRoleDecoratorTest(TestCase):
 
     def test_manager_cannot_access_owner_endpoint(self):
         user = make_user(role=UserRole.MANAGER)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.user = user
 
         @require_role("OWNER")
@@ -55,7 +54,7 @@ class RequireRoleDecoratorTest(TestCase):
 
     def test_staff_can_access_multi_role_endpoint(self):
         user = make_user(role=UserRole.STAFF)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.user = user
 
         @require_role("OWNER", "MANAGER", "STAFF")
@@ -65,7 +64,7 @@ class RequireRoleDecoratorTest(TestCase):
         self.assertEqual(view(request), "ok")
 
     def test_unauthenticated_raises_401(self):
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.user = None
 
         @require_role("OWNER")
@@ -80,7 +79,7 @@ class RequireRoleDecoratorTest(TestCase):
 
     def test_super_admin_can_access_owner_endpoint(self):
         user = make_user(role=UserRole.SUPER_ADMIN)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.user = user
 
         # SUPER_ADMIN is not explicitly in the role list
@@ -104,7 +103,8 @@ class RequireRoleDecoratorTest(TestCase):
         self.assertEqual(my_view.__doc__, "My docstring.")
 
     def test_request_without_user_attribute(self):
-        request = MagicMock(spec=[])  # no user attribute
+        request = RequestFactory().get("/")
+        del request.user
 
         @require_role("OWNER")
         def view(req):

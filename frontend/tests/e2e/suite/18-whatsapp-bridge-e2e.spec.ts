@@ -21,7 +21,7 @@ import {
   getE2EBaseURL,
   loginOwnerContext,
   loginRole,
-  requireMutatingE2EAllowed,
+  ,
 } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
@@ -114,7 +114,7 @@ test.describe('Bridge Auth — Direct @owner @whatsapp', () => {
 test.describe('Bridge Session — Direct @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    requireMutatingE2EAllowed();
+    ();
   });
 
   test('Status returns default for unknown tenant', async ({ request }) => {
@@ -255,7 +255,7 @@ test.describe('Bridge Queue Stats — Direct @owner @whatsapp', () => {
 test.describe('Django→Bridge API — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    requireMutatingE2EAllowed();
+    ();
   });
 
   test('OWNER gets WhatsApp status through Django API', async ({ request }) => {
@@ -430,7 +430,7 @@ test.describe('Cross-Tenant Isolation @owner @security', () => {
 test.describe('Session Lifecycle — Full cycle @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    requireMutatingE2EAllowed();
+    ();
   });
 
   test('Full lifecycle: QR → status shows session → disconnect → status clean', async ({ request }) => {
@@ -478,7 +478,7 @@ test.describe('Session Lifecycle — Full cycle @owner @whatsapp', () => {
 test.describe('Settings WhatsApp Wizard — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    requireMutatingE2EAllowed();
+    ();
   });
 
   test('Settings page renders Integraciones section', async ({ page }) => {

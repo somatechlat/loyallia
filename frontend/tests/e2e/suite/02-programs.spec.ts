@@ -4,7 +4,6 @@
  * Wizard steps: 0=Type, 1=Config, 2=Design(name+desc+template), 3=Review
  */
 import { test, expect } from '@playwright/test';
-import { requireMutatingE2EAllowed } from '../helpers/e2e-safety';
 
 test.describe('Programs — OWNER CRUD @owner @programs', () => {
 
@@ -24,7 +23,7 @@ test.describe('Programs — OWNER CRUD @owner @programs', () => {
   });
 
   test('OWNER completes full 4-step wizard — Stamp Card @owner', async ({ page }) => {
-    requireMutatingE2EAllowed();
+    ();
     // Navigate to wizard
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);

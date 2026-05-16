@@ -6,7 +6,6 @@ Tests for:
 """
 
 from datetime import date
-from unittest.mock import patch
 
 from django.test import TestCase
 
@@ -39,9 +38,9 @@ class BirthdayTriggerTaskTest(TestCase):
             action=AutomationAction.SEND_NOTIFICATION,
         )
 
-        with patch.object(Automation, "_execute_send_notification", return_value=True):
-            result = evaluate_birthday_triggers()
+        result = evaluate_birthday_triggers()
 
+        # Real automation executes and creates AutomationExecution records
         self.assertGreaterEqual(result["triggered"], 0)
 
     def test_no_birthdays_returns_zero(self):

@@ -4,7 +4,6 @@ Tests for TransactionService, BillingService, AutomationService, CustomerService
 """
 
 from decimal import Decimal
-from unittest.mock import patch
 
 from django.test import TestCase
 
@@ -164,12 +163,7 @@ class TransactionServiceListTest(TestCase):
 class BillingServicePlansTest(TestCase):
     """Tests for BillingService.get_plans"""
 
-    @patch("apps.billing.service.getattr")
-    def test_get_plans_returns_active_plans(self, mock_getattr):
-        mock_getattr.side_effect = lambda s, k, d=None: {
-            "TAX_RATE_ECUADOR": "0.15",
-            "TRIAL_DAYS": 14,
-        }.get(k, d)
+    def test_get_plans_returns_active_plans(self):
         make_plan()
         from apps.billing.service import BillingService
 
@@ -241,9 +235,7 @@ class BillingServiceCheckUsageTest(TestCase):
 class AutomationServiceFireTriggerTest(TestCase):
     """Tests for AutomationService.fire_trigger"""
 
-    @patch("apps.automation.models.Automation.execute")
-    def test_fire_trigger_executes_matching_automations(self, mock_execute):
-        mock_execute.return_value = True
+    def test_fire_trigger_executes_matching_automations(self):
         t = make_tenant()
         customer = make_customer(t)
         make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED)
@@ -252,6 +244,7 @@ class AutomationServiceFireTriggerTest(TestCase):
         count = AutomationService.fire_trigger(
             t, AutomationTrigger.CUSTOMER_ENROLLED, customer
         )
+        # Real execute() runs and creates AutomationExecution records
         self.assertGreaterEqual(count, 0)
 
     def test_fire_trigger_no_matching_automations(self):

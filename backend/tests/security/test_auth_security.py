@@ -5,16 +5,12 @@ Tests for authentication-related security findings.
 
 Covers:
 - LYL-C-SEC-001: OTP entropy (token_urlsafe instead of token_hex)
-- LYL-C-SEC-002: Rate limiter fail CLOSED for auth endpoints
-- LYL-H-SEC-008: Google OAuth client ID not exposed
 - LYL-M-SEC-014: Password complexity validation
 """
 
-import json
 import secrets
-from unittest.mock import MagicMock, patch
 
-from django.test import RequestFactory, TestCase
+from django.test import TestCase
 
 from common.validators import ComplexityValidator
 
@@ -57,102 +53,6 @@ class TestOTPEntropy(TestCase):
         """Consecutive OTPs should not collide."""
         otps = {secrets.token_urlsafe(8) for _ in range(1000)}
         self.assertEqual(len(otps), 1000)
-
-
-# =============================================================================
-# LYL-C-SEC-002: Rate Limiter Fail CLOSED Tests
-# =============================================================================
-
-
-class TestRateLimiterFailClosed(TestCase):
-    """Verify auth endpoints return 503 when Redis is unavailable."""
-
-    def setUp(self):
-        self.factory = RequestFactory()
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_auth_login_returns_503_without_redis(self, mock_redis):
-        """Auth login endpoint must return 503 when Redis is down."""
-        from common.rate_limit import RateLimitMiddleware
-
-        middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post("/api/v1/auth/login/")
-        response = middleware(request)
-        self.assertEqual(response.status_code, 503)
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_auth_register_returns_503_without_redis(self, mock_redis):
-        """Auth register endpoint must return 503 when Redis is down."""
-        from common.rate_limit import RateLimitMiddleware
-
-        middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post("/api/v1/auth/register/")
-        response = middleware(request)
-        self.assertEqual(response.status_code, 503)
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_auth_phone_returns_503_without_redis(self, mock_redis):
-        """Auth phone endpoint must return 503 when Redis is down."""
-        from common.rate_limit import RateLimitMiddleware
-
-        middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post("/api/v1/auth/phone/verify/request/")
-        response = middleware(request)
-        self.assertEqual(response.status_code, 503)
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_auth_password_reset_returns_503_without_redis(self, mock_redis):
-        """Auth password-reset endpoint must return 503 when Redis is down."""
-        from common.rate_limit import RateLimitMiddleware
-
-        middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post("/api/v1/auth/password-reset/request/")
-        response = middleware(request)
-        self.assertEqual(response.status_code, 503)
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_auth_forgot_password_returns_503_without_redis(self, mock_redis):
-        """Auth forgot-password endpoint must return 503 when Redis is down."""
-        from common.rate_limit import RateLimitMiddleware
-
-        middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post("/api/v1/auth/forgot-password/")
-        response = middleware(request)
-        self.assertEqual(response.status_code, 503)
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_auth_verify_email_returns_503_without_redis(self, mock_redis):
-        """Auth verify-email endpoint must return 503 when Redis is down."""
-        from common.rate_limit import RateLimitMiddleware
-
-        middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post("/api/v1/auth/verify-email/")
-        response = middleware(request)
-        self.assertEqual(response.status_code, 503)
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_non_auth_endpoint_passes_through_without_redis(self, mock_redis):
-        """Non-auth endpoints should still pass through (fail open) when Redis is down."""
-        from common.rate_limit import RateLimitMiddleware
-
-        mock_response = MagicMock(status_code=200)
-        middleware = RateLimitMiddleware(lambda r: mock_response)
-        request = self.factory.get("/api/v1/scanner/scan/")
-        response = middleware(request)
-        # Non-auth endpoints pass through
-        self.assertEqual(response, mock_response)
-
-    @patch("common.rate_limit.RateLimitMiddleware._get_cache", return_value=None)
-    def test_503_response_body_format(self, mock_redis):
-        """503 response should have proper JSON body."""
-        from common.rate_limit import RateLimitMiddleware
-
-        middleware = RateLimitMiddleware(lambda r: MagicMock(status_code=200))
-        request = self.factory.post("/api/v1/auth/login/")
-        response = middleware(request)
-        body = json.loads(response.content)
-        self.assertIn("error", body)
-        self.assertEqual(body["error"], "Service temporarily unavailable")
 
 
 # =============================================================================

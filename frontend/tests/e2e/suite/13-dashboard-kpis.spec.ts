@@ -40,20 +40,20 @@ test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
   test('Dashboard loads with welcome message @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     const title = page.locator('.page-title');
     await expect(title).toContainText('Bienvenido');
   });
 
   test('Dashboard shows all 4 stat cards @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time — dev runserver single-thread limitation');
+    expect(loaded, 'Dashboard API did not load in time').toBe(true);
     await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 10000 });
   });
 
   test('Date range selector shows expected filter options @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await expect(page.locator('#date-range-selector')).toBeVisible();
     await expect(page.locator('#date-range-1')).toBeVisible();
     await expect(page.locator('#date-range-7')).toBeVisible();
@@ -66,35 +66,35 @@ test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
   test('Clicking 7d filter reloads data @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#date-range-7').click();
     await expectDashboardStatsReloaded(page);
   });
 
   test('Clicking Hoy filter reloads data @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#date-range-1').click();
     await expectDashboardStatsReloaded(page);
   });
 
   test('Custom date picker appears on Periodo click @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#date-range-custom').click();
     await expect(page.locator('#custom-date-picker')).toBeVisible({ timeout: 5000 });
   });
 
   test('Ganancia/Visitas tab selector renders @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await expect(page.locator('#dash-tab-ganancia')).toBeVisible();
     await expect(page.locator('#dash-tab-visitas')).toBeVisible();
   });
 
   test('Clicking Visitas tab switches content @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#dash-tab-visitas').click();
     await page.waitForTimeout(500);
     await expect(page.getByText('Visitas totales').first()).toBeVisible({ timeout: 5000 });
@@ -102,7 +102,7 @@ test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
   test('Clicking Ganancia tab shows revenue KPIs @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#dash-tab-visitas').click();
     await page.waitForTimeout(500);
     await page.locator('#dash-tab-ganancia').click();
@@ -113,7 +113,7 @@ test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
   test('Chart tabs Ganancias/Visitas/Clientes render @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await expect(page.locator('#chart-tab-revenue')).toBeVisible();
     await expect(page.locator('#chart-tab-visits')).toBeVisible();
     await expect(page.locator('#chart-tab-customers')).toBeVisible();
@@ -121,7 +121,7 @@ test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
   test('Switching chart tabs works without errors @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#chart-tab-visits').click();
     await page.waitForTimeout(500);
     await page.locator('#chart-tab-customers').click();
@@ -133,26 +133,26 @@ test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
   test('Scanner button is visible @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await expect(page.locator('#open-scanner-btn')).toBeVisible();
   });
 
   test('Stat cards are present on dashboard @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     const statCards = page.locator('.stat-card');
     await expect(statCards).toHaveCount(4, { timeout: 10000 });
   });
 
   test('Dashboard has tooltip or info icons @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await expect(page.locator('.page-title')).toBeVisible();
   });
 
   test('Dashboard page-subtitle renders @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    test.skip(!loaded, 'Dashboard API did not load in time');
+    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await expect(page.locator('.page-subtitle')).toBeVisible();
   });
 });

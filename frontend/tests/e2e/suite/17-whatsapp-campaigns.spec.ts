@@ -121,7 +121,7 @@ test.describe('WhatsApp Session API — OWNER @owner @whatsapp', () => {
     expect(meResp.status()).toBe(200);
     const me = await meResp.json();
     const tenantId = me.tenant_id || me.tenant?.id;
-    if (!tenantId) { test.skip(); return; }
+    expect(tenantId, 'User must have a tenant_id').toBeTruthy();
 
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/status/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -141,7 +141,7 @@ test.describe('WhatsApp Session API — OWNER @owner @whatsapp', () => {
     });
     const me = await meResp.json();
     const tenantId = me.tenant_id || me.tenant?.id;
-    if (!tenantId) { test.skip(); return; }
+    expect(tenantId, 'User must have a tenant_id').toBeTruthy();
 
     const resp = await request.get(`${BASE_API}/api/v1/whatsapp/qr/${tenantId}/`, {
       headers: { Authorization: `Bearer ${token}` },

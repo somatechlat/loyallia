@@ -10,7 +10,7 @@ import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
-test.describe('Owner Full Menu — Every Page Loads @owner @owner', () => {
+test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('1. Dashboard (/) loads with KPI cards', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -43,8 +43,7 @@ test.describe('Owner Full Menu — Every Page Loads @owner @owner', () => {
     const programs = await programsResp.json();
     const items = programs.programs || programs.items || [];
 
-    test.skip(items.length === 0, 'No programs to test detail page');
-
+    expect(items.length, 'At least one program must exist for detail page test').toBeGreaterThan(0);
     const firstId = items[0].id;
     await page.goto(`/programs/${firstId}`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
@@ -70,8 +69,7 @@ test.describe('Owner Full Menu — Every Page Loads @owner @owner', () => {
     const customers = await customersResp.json();
     const items = customers.customers || customers.items || customers.results || [];
 
-    test.skip(items.length === 0, 'No customers to test detail page');
-
+    expect(items.length, 'At least one customer must exist for detail page test').toBeGreaterThan(0);
     const firstId = items[0].id;
     await page.goto(`/customers/${firstId}`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);

@@ -4,9 +4,7 @@ Tests for check_plan_limit, check_feature_access, get_tenant_limits,
 get_current_usage, and all enforcement decorators.
 """
 
-from unittest.mock import MagicMock
-
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from ninja.errors import HttpError
 
 from apps.billing.models import SubscriptionStatus
@@ -214,13 +212,10 @@ class CheckFeatureAccessTest(TestCase):
 class RequireActiveSubscriptionDecoratorTest(TestCase):
     """Tests for @require_active_subscription decorator."""
 
-    def setUp(self):
-        self.factory = MagicMock()
-
     def test_passes_with_active_subscription(self):
         t = make_tenant()
         make_subscription(t, status=SubscriptionStatus.ACTIVE)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @require_active_subscription
@@ -233,7 +228,7 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
     def test_raises_402_when_suspended(self):
         t = make_tenant()
         make_subscription(t, status=SubscriptionStatus.SUSPENDED)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @require_active_subscription
@@ -246,7 +241,7 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
 
     def test_raises_402_when_no_subscription(self):
         t = make_tenant()
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @require_active_subscription
@@ -263,7 +258,7 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
             t,
             status=SubscriptionStatus.TRIALING,
         )
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @require_active_subscription
@@ -281,7 +276,7 @@ class EnforceLimitDecoratorTest(TestCase):
         plan = make_plan(max_customers=100)
         t = make_tenant()
         make_subscription(t, plan=plan)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @enforce_limit("customers")
@@ -296,7 +291,7 @@ class EnforceLimitDecoratorTest(TestCase):
         t = make_tenant()
         make_subscription(t, plan=plan)
         make_customer(t, email="c@test.com")
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @enforce_limit("customers")
@@ -315,7 +310,7 @@ class RequireFeatureDecoratorTest(TestCase):
         plan = make_plan(features=["automation"])
         t = make_tenant()
         make_subscription(t, plan=plan)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @require_feature("automation")
@@ -329,7 +324,7 @@ class RequireFeatureDecoratorTest(TestCase):
         plan = make_plan(features=["automation"])
         t = make_tenant()
         make_subscription(t, plan=plan)
-        request = MagicMock()
+        request = RequestFactory().get("/")
         request.tenant = t
 
         @require_feature("ai_assistant")

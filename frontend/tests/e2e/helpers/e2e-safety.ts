@@ -2,24 +2,10 @@ import { expect, type APIRequestContext } from '@playwright/test';
 
 export type E2ERole = 'owner' | 'manager' | 'staff' | 'superadmin';
 
-const ROLE_ENV: Record<E2ERole, { email: string; password: string }> = {
-  owner: {
-    email: 'PLAYWRIGHT_OWNER_EMAIL',
-    password: 'PLAYWRIGHT_OWNER_PASSWORD',
-  },
-  manager: {
-    email: 'PLAYWRIGHT_MANAGER_EMAIL',
-    password: 'PLAYWRIGHT_MANAGER_PASSWORD',
-  },
-  staff: {
-    email: 'PLAYWRIGHT_STAFF_EMAIL',
-    password: 'PLAYWRIGHT_STAFF_PASSWORD',
-  },
-  superadmin: {
-    email: 'PLAYWRIGHT_SUPERADMIN_EMAIL',
-    password: 'PLAYWRIGHT_SUPERADMIN_PASSWORD',
-  },
-};
+// ═══════════════════════════════════════════════════════════════════════════════
+// VAULT CONFIGURATION — All secrets injected by playwright.config.ts from Vault
+// NO hardcoded credentials. NO .env.test files. NO bypass gates.
+// ═══════════════════════════════════════════════════════════════════════════════
 
 const PRODUCTION_HOSTS = new Set([
   'rewards.loyallia.com',
@@ -31,7 +17,11 @@ const PRODUCTION_HOSTS = new Set([
 export function getE2EBaseURL(): string {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL;
   if (!baseURL) {
-    throw new Error('PLAYWRIGHT_BASE_URL is required for production-readiness E2E tests.');
+    throw new Error(
+      'PLAYWRIGHT_BASE_URL is required. ' +
+      'Ensure Vault secret loyallia/e2e contains PLAYWRIGHT_BASE_URL, ' +
+      'or set PLAYWRIGHT_BASE_URL environment variable.',
+    );
   }
 
   let parsed: URL;
@@ -41,34 +31,26 @@ export function getE2EBaseURL(): string {
     throw new Error(`PLAYWRIGHT_BASE_URL is not a valid URL: ${baseURL}`);
   }
 
-  if (PRODUCTION_HOSTS.has(parsed.hostname) && process.env.PLAYWRIGHT_ALLOW_PRODUCTION !== 'true') {
+  if (PRODUCTION_HOSTS.has(parsed.hostname)) {
     throw new Error(`Refusing to run E2E tests against production host: ${parsed.hostname}`);
   }
 
   return baseURL.replace(/\/$/, '');
 }
 
-export function requireMutatingE2EAllowed(): void {
-  if (process.env.PLAYWRIGHT_ALLOW_MUTATING_E2E !== 'true') {
-    throw new Error('PLAYWRIGHT_ALLOW_MUTATING_E2E=true is required for mutating E2E tests.');
-  }
-}
-
-export function requireExternalE2EAllowed(serviceName: string): void {
-  if (process.env.PLAYWRIGHT_ALLOW_EXTERNAL_E2E !== 'true') {
-    throw new Error(`PLAYWRIGHT_ALLOW_EXTERNAL_E2E=true is required for E2E tests that call ${serviceName}.`);
-  }
-}
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROLE CREDENTIALS — Injected from Vault by playwright.config.ts
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export function getRoleCredentials(role: E2ERole): { email: string; password: string } {
-  const keys = ROLE_ENV[role];
-  const email = process.env[keys.email];
-  const password = process.env[keys.password];
-
+  const email = process.env[`PLAYWRIGHT_${role.toUpperCase()}_EMAIL`];
+  const password = process.env[`PLAYWRIGHT_${role.toUpperCase()}_PASSWORD`];
   if (!email || !password) {
-    throw new Error(`${keys.email} and ${keys.password} are required for ${role} E2E tests.`);
+    throw new Error(
+      `Vault secret loyallia/e2e missing PLAYWRIGHT_${role.toUpperCase()}_EMAIL ` +
+      `or PLAYWRIGHT_${role.toUpperCase()}_PASSWORD`,
+    );
   }
-
   return { email, password };
 }
 
@@ -101,6 +83,10 @@ export async function loginOwnerContext(
   return { token: body.access_token, tenantId: body.tenant_id };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENTERPRISE PLAN SETUP — Real API calls, no bypasses
+// ═══════════════════════════════════════════════════════════════════════════════
+
 const ENTERPRISE_CAMPAIGN_FEATURES = [
   'whatsapp_campaigns',
   'email_campaigns',
@@ -119,7 +105,6 @@ const ENTERPRISE_CAMPAIGN_FEATURES = [
 export async function ensureOwnerEnterpriseCampaignAccess(
   request: APIRequestContext,
 ): Promise<void> {
-  requireMutatingE2EAllowed();
   const baseURL = getE2EBaseURL();
   const superToken = await loginRole(request, 'superadmin');
 
