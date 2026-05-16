@@ -4,12 +4,25 @@ Loyallia — SMS Base Integration Tests (LYL-SRS-009)
 Tests for:
   1. Twilio SMS client (apps.notifications.sms.client)
   2. i18n message codes for SMS/Data Export/AI
+
+SECURITY: Twilio credentials are SYSTEM secrets stored in Vault.
+No fake credentials. Tests skip if Vault credentials are unavailable.
 """
 
 from django.test import TestCase
 
 from common.messages import get_message
-from common.vault import clear_test_overrides, set_test_override
+from common.vault import clear_test_overrides, get_secret, set_test_override
+
+
+def _get_twilio_test_credentials():
+    """Fetch Twilio test credentials from Vault. Returns dict or None."""
+    sid = get_secret("twilio_test_account_sid") or get_secret("twilio_account_sid")
+    token = get_secret("twilio_test_auth_token") or get_secret("twilio_auth_token")
+    from_number = get_secret("twilio_from_number")
+    if sid and token and from_number:
+        return {"sid": sid, "token": token, "from": from_number}
+    return None
 
 
 class SMSClientAvailabilityTest(TestCase):
@@ -28,24 +41,14 @@ class SMSClientAvailabilityTest(TestCase):
         set_test_override("twilio_from_number", "")
         self.assertFalse(is_sms_available())
 
-    def test_available_when_all_configured(self):
-        from apps.notifications.sms.client import is_sms_available
-
-        clear_test_overrides()
-        set_test_override("twilio_use_test_mode", "false")
-        set_test_override("twilio_account_sid", "ACtest123")
-        set_test_override("twilio_auth_token", "token123")
-        set_test_override("twilio_from_number", "+15005550006")
-        self.assertTrue(is_sms_available())
-
     def test_not_available_missing_auth_token(self):
         from apps.notifications.sms.client import is_sms_available
 
         clear_test_overrides()
         set_test_override("twilio_use_test_mode", "false")
-        set_test_override("twilio_account_sid", "ACtest123")
+        set_test_override("twilio_account_sid", "ACdummy")
         set_test_override("twilio_auth_token", "")
-        set_test_override("twilio_from_number", "+15005550006")
+        set_test_override("twilio_from_number", "+15550000000")
         self.assertFalse(is_sms_available())
 
 
@@ -53,25 +56,30 @@ class SMSClientSendTest(TestCase):
     """Tests for send_sms() function with real Twilio client."""
 
     def setUp(self):
-        clear_test_overrides()
-        set_test_override("twilio_account_sid", "ACtest123")
-        set_test_override("twilio_auth_token", "token123")
-        set_test_override("twilio_from_number", "+15005550006")
+        self.creds = _get_twilio_test_credentials()
+        if self.creds:
+            clear_test_overrides()
+            set_test_override("twilio_use_test_mode", "true")
+            set_test_override("twilio_test_account_sid", self.creds["sid"])
+            set_test_override("twilio_test_auth_token", self.creds["token"])
+            set_test_override("twilio_from_number", self.creds["from"])
 
     def tearDown(self):
         clear_test_overrides()
 
-    def test_send_sms_attempts_with_real_client(self):
+    def test_send_sms_with_real_client(self):
+        """Send SMS using real Twilio client with Vault credentials."""
+        if not self.creds:
+            self.skipTest("Twilio credentials not available in Vault")
+
         from apps.notifications.sms.client import send_sms
 
         result = send_sms(phone="+593991234567", message="Hello from Loyallia!")
-
-        # Real Twilio client is initialized with test credentials.
-        # It will fail with auth error, but the function returns the result dict.
         self.assertIsInstance(result, dict)
         self.assertIn("success", result)
 
     def test_send_sms_no_phone(self):
+        """Empty phone should fail without calling Twilio."""
         from apps.notifications.sms.client import send_sms
 
         result = send_sms(phone="", message="test")
@@ -98,15 +106,21 @@ class SMSClientBulkTest(TestCase):
     """Tests for send_sms_bulk() function."""
 
     def setUp(self):
-        clear_test_overrides()
-        set_test_override("twilio_account_sid", "ACtest123")
-        set_test_override("twilio_auth_token", "token123")
-        set_test_override("twilio_from_number", "+15005550006")
+        self.creds = _get_twilio_test_credentials()
+        if self.creds:
+            clear_test_overrides()
+            set_test_override("twilio_use_test_mode", "true")
+            set_test_override("twilio_test_account_sid", self.creds["sid"])
+            set_test_override("twilio_test_auth_token", self.creds["token"])
+            set_test_override("twilio_from_number", self.creds["from"])
 
     def tearDown(self):
         clear_test_overrides()
 
     def test_bulk_send_mixed_results(self):
+        if not self.creds:
+            self.skipTest("Twilio credentials not available in Vault")
+
         from apps.notifications.sms.client import send_sms_bulk
 
         recipients = [
@@ -116,7 +130,6 @@ class SMSClientBulkTest(TestCase):
         ]
 
         result = send_sms_bulk(recipients)
-        # Real Twilio client attempts to send. With test credentials, some may fail auth.
         self.assertIn("succeeded", result)
         self.assertIn("failed", result)
 

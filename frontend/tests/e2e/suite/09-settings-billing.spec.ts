@@ -84,7 +84,6 @@ test.describe('Billing — OWNER @owner @settings', () => {
 test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('OWNER sees WhatsApp integration with active toggle @owner', async ({ page }) => {

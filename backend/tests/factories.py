@@ -2,9 +2,13 @@
 Loyallia — Test Data Factories
 Reusable factory functions for creating test data across all test modules.
 Each factory creates minimal valid objects with sensible defaults.
+
+SECURITY: User passwords are generated securely by Django and attached to the
+user object as `_test_password` for test access. Vault is NOT used for user
+passwords — Vault stores SYSTEM secrets only (Twilio, Apple, Google, etc.).
 """
 
-
+import secrets
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -35,16 +39,17 @@ def make_tenant(**kwargs):
     return Tenant.objects.create(**defaults)
 
 
-import os
-
-
 def make_user(
     tenant=None,
     role: UserRole | str = UserRole.OWNER,
-    password=os.environ.get("TEST_USER_PASSWORD", "TestOnlyPass123!"),
+    password: str | None = None,
     **kwargs,
 ):
-    """Create a User with sensible defaults."""
+    """Create a User with sensible defaults.
+
+    The generated password is attached to the user object as `_test_password`
+    so tests can access it for login operations.
+    """
     role_value = UserRole(role) if isinstance(role, str) else role
     defaults = {
         "email": f"user-{uuid.uuid4().hex[:6]}@test.com",
@@ -55,8 +60,9 @@ def make_user(
         "is_email_verified": True,
     }
     defaults.update(kwargs)
-    pwd = defaults.pop("password", password)
+    pwd = defaults.pop("password", password) or secrets.token_urlsafe(16)
     user = cast(UserManager, User.objects).create_user(password=pwd, **defaults)
+    user._test_password = pwd  # type: ignore[attr-defined]
     if tenant:
         user.tenant = tenant
         user.save(update_fields=["tenant"])
@@ -295,6 +301,29 @@ def make_transaction(
     )
 
 
+# ── Explicit role factories ──────────────────────────────────────────────────
+
+
+def make_owner(tenant=None, **kwargs):
+    """Create an OWNER user."""
+    return make_user(tenant=tenant, role=UserRole.OWNER, **kwargs)
+
+
+def make_manager(tenant=None, **kwargs):
+    """Create a MANAGER user."""
+    return make_user(tenant=tenant, role=UserRole.MANAGER, **kwargs)
+
+
+def make_staff(tenant=None, **kwargs):
+    """Create a STAFF user."""
+    return make_user(tenant=tenant, role=UserRole.STAFF, **kwargs)
+
+
+def make_superadmin(**kwargs):
+    """Create a SUPER_ADMIN user (platform-level, no tenant)."""
+    return make_user(role=UserRole.SUPER_ADMIN, **kwargs)
+
+
 def make_full_stack(
     tenant=None,
     plan_kwargs=None,
@@ -306,7 +335,7 @@ def make_full_stack(
     Returns (tenant, user, subscription, card, customer, customer_pass).
     """
     tenant = tenant or make_tenant()
-    user = make_user(tenant=tenant, role=UserRole.OWNER)
+    user = make_owner(tenant=tenant)
     plan = make_plan(**(plan_kwargs or {}))
     subscription = make_subscription(tenant, plan=plan)
     card = make_card(tenant, card_type=card_type, **(card_kwargs or {}))

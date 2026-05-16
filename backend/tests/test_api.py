@@ -4,6 +4,7 @@ Tests for API endpoints via Django test client.
 """
 
 import json
+import secrets
 
 from django.test import TestCase
 from django.test.client import Client
@@ -20,8 +21,9 @@ from tests.factories import (
 )
 
 
-def _get_auth_header(user, password="[REDACTED]"):
+def _get_auth_header(user, password=None):
     """Get JWT auth header by logging in."""
+    password = password or user._test_password
     client = Client()
     resp = client.post(
         "/api/v1/auth/login/",
@@ -43,12 +45,13 @@ class AuthRegisterAPITest(TestCase):
     """Tests for POST /api/v1/auth/register/"""
 
     def test_register_success(self):
+        pwd = secrets.token_urlsafe(16)
         resp = self.client.post(
             "/api/v1/auth/register/",
             data=json.dumps(
                 {
                     "email": "new@test.com",
-                    "password": "[REDACTED]",
+                    "password": pwd,
                     "first_name": "Test",
                     "last_name": "User",
                     "business_name": "Test Business",
@@ -64,13 +67,14 @@ class AuthRegisterAPITest(TestCase):
 
     def test_register_duplicate_email_returns_success(self):
         """Security: duplicate email returns success to prevent user enumeration."""
-        make_user(email="dup@test.com", password="[REDACTED]")
+        pwd = secrets.token_urlsafe(16)
+        make_user(email="dup@test.com")
         resp = self.client.post(
             "/api/v1/auth/register/",
             data=json.dumps(
                 {
                     "email": "dup@test.com",
-                    "password": "[REDACTED]",
+                    "password": pwd,
                     "first_name": "Dup",
                     "last_name": "User",
                     "business_name": "Dup Business",
@@ -87,12 +91,12 @@ class AuthLoginAPITest(TestCase):
     """Tests for POST /api/v1/auth/login/"""
 
     def setUp(self):
-        self.user = make_user(email="login@test.com", password="[REDACTED]")
+        self.user = make_user(email="login@test.com")
 
     def test_login_success(self):
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps({"email": "login@test.com", "password": "[REDACTED]"}),
+            data=json.dumps({"email": "login@test.com", "password": self.user._test_password}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 200)
@@ -103,7 +107,7 @@ class AuthLoginAPITest(TestCase):
     def test_login_wrong_password(self):
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps({"email": "login@test.com", "password": "WrongPass123!@"}),
+            data=json.dumps({"email": "login@test.com", "password": self.user._test_password + "_wrong"}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 401)
@@ -111,7 +115,7 @@ class AuthLoginAPITest(TestCase):
     def test_login_nonexistent_user(self):
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps({"email": "nobody@test.com", "password": "Whatever123!@"}),
+            data=json.dumps({"email": "nobody@test.com", "password": secrets.token_urlsafe(16)}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 401)
@@ -121,7 +125,7 @@ class AuthLoginAPITest(TestCase):
         self.user.save(update_fields=["is_active"])
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps({"email": "login@test.com", "password": "[REDACTED]"}),
+            data=json.dumps({"email": "login@test.com", "password": self.user._test_password}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 401)
@@ -131,7 +135,7 @@ class AuthLoginAPITest(TestCase):
             self.user.record_failed_login()
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps({"email": "login@test.com", "password": "[REDACTED]"}),
+            data=json.dumps({"email": "login@test.com", "password": self.user._test_password}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 423)
@@ -141,11 +145,10 @@ class AuthRefreshAPITest(TestCase):
     """Tests for POST /api/v1/auth/refresh/"""
 
     def test_refresh_valid_token(self):
-        user = make_user(password="[REDACTED]")
-        # Get a refresh token via login
+        user = make_user()
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps({"email": user.email, "password": "[REDACTED]"}),
+            data=json.dumps({"email": user.email, "password": user._test_password}),
             content_type="application/json",
         )
         data = resp.json()
@@ -173,8 +176,8 @@ class AuthMeAPITest(TestCase):
     """Tests for GET /api/v1/auth/me/"""
 
     def test_me_authenticated(self):
-        user = make_user(password="[REDACTED]", first_name="Alice")
-        header = _get_auth_header(user, "[REDACTED]")
+        user = make_user(first_name="Alice")
+        header = _get_auth_header(user)
         resp = self.client.get(
             "/api/v1/auth/me/",
             HTTP_AUTHORIZATION=header,
@@ -191,7 +194,7 @@ class AuthPasswordResetAPITest(TestCase):
     """Tests for password reset flow."""
 
     def test_password_reset_request_returns_200(self):
-        make_user(email="reset@test.com", password="[REDACTED]")
+        make_user(email="reset@test.com")
         resp = self.client.post(
             "/api/v1/auth/password-reset/request/",
             data=json.dumps({"email": "reset@test.com"}),
@@ -214,7 +217,7 @@ class AuthForgotPasswordAPITest(TestCase):
     """Tests for POST /api/v1/auth/forgot-password/"""
 
     def test_forgot_password_returns_200(self):
-        make_user(email="forgot@test.com", password="[REDACTED]")
+        make_user(email="forgot@test.com")
         resp = self.client.post(
             "/api/v1/auth/forgot-password/",
             data=json.dumps({"email": "forgot@test.com"}),
@@ -227,8 +230,8 @@ class AuthProfileAPITest(TestCase):
     """Tests for PUT /api/v1/auth/profile/"""
 
     def test_update_profile(self):
-        user = make_user(password="[REDACTED]", first_name="Old")
-        header = _get_auth_header(user, "[REDACTED]")
+        user = make_user(first_name="Old")
+        header = _get_auth_header(user)
         resp = self.client.put(
             "/api/v1/auth/profile/",
             data=json.dumps({"first_name": "New"}),
@@ -244,14 +247,15 @@ class AuthChangePasswordAPITest(TestCase):
     """Tests for POST /api/v1/auth/change-password/"""
 
     def test_change_password_success(self):
-        user = make_user(password="[REDACTED]")
-        header = _get_auth_header(user, "[REDACTED]")
+        user = make_user()
+        header = _get_auth_header(user)
+        new_pwd = secrets.token_urlsafe(16)
         resp = self.client.post(
             "/api/v1/auth/change-password/",
             data=json.dumps(
                 {
-                    "current_password": "[REDACTED]",
-                    "new_password": "[REDACTED]",
+                    "current_password": user._test_password,
+                    "new_password": new_pwd,
                 }
             ),
             content_type="application/json",
@@ -260,14 +264,15 @@ class AuthChangePasswordAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def test_change_password_wrong_current(self):
-        user = make_user(password="[REDACTED]")
-        header = _get_auth_header(user, "[REDACTED]")
+        user = make_user()
+        header = _get_auth_header(user)
+        new_pwd = secrets.token_urlsafe(16)
         resp = self.client.post(
             "/api/v1/auth/change-password/",
             data=json.dumps(
                 {
-                    "current_password": "WrongPassword123!@",
-                    "new_password": "[REDACTED]",
+                    "current_password": user._test_password + "_wrong",
+                    "new_password": new_pwd,
                 }
             ),
             content_type="application/json",
@@ -282,7 +287,6 @@ class AuthGoogleConfigAPITest(TestCase):
     def test_google_config_returns_enabled_false(self):
         resp = self.client.get("/api/v1/auth/google/config/")
         self.assertEqual(resp.status_code, 200)
-        # When no GOOGLE_OAUTH_CLIENT_ID is set
         self.assertIn("enabled", resp.json())
 
 
@@ -291,31 +295,25 @@ class AuthUsersAPITest(TestCase):
 
     def test_list_users_owner_only(self):
         tenant = make_tenant()
-        owner = make_user(
-            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
+        owner = make_user(tenant=tenant, role=UserRole.OWNER)
         make_user(tenant=tenant, role=UserRole.STAFF)
-        header = _get_auth_header(owner, "[REDACTED]")
+        header = _get_auth_header(owner)
         resp = self.client.get("/api/v1/auth/users/", HTTP_AUTHORIZATION=header)
         self.assertEqual(resp.status_code, 200)
         self.assertIsInstance(resp.json(), list)
 
     def test_list_users_staff_forbidden(self):
         tenant = make_tenant()
-        staff = make_user(
-            tenant=tenant, role=UserRole.STAFF, password="[REDACTED]"
-        )
-        header = _get_auth_header(staff, "[REDACTED]")
+        staff = make_user(tenant=tenant, role=UserRole.STAFF)
+        header = _get_auth_header(staff)
         resp = self.client.get("/api/v1/auth/users/", HTTP_AUTHORIZATION=header)
         self.assertEqual(resp.status_code, 403)
 
     def test_deactivate_user(self):
         tenant = make_tenant()
-        owner = make_user(
-            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
+        owner = make_user(tenant=tenant, role=UserRole.OWNER)
         target = make_user(tenant=tenant, role=UserRole.STAFF)
-        header = _get_auth_header(owner, "[REDACTED]")
+        header = _get_auth_header(owner)
         resp = self.client.delete(
             f"/api/v1/auth/users/{target.id}/",
             HTTP_AUTHORIZATION=header,
@@ -326,10 +324,8 @@ class AuthUsersAPITest(TestCase):
 
     def test_deactivate_self_blocked(self):
         tenant = make_tenant()
-        owner = make_user(
-            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        header = _get_auth_header(owner, "[REDACTED]")
+        owner = make_user(tenant=tenant, role=UserRole.OWNER)
+        header = _get_auth_header(owner)
         resp = self.client.delete(
             f"/api/v1/auth/users/{owner.id}/",
             HTTP_AUTHORIZATION=header,
@@ -338,11 +334,9 @@ class AuthUsersAPITest(TestCase):
 
     def test_add_team_member_superadmin_blocked(self):
         tenant = make_tenant()
-        owner = make_user(
-            tenant=tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
+        owner = make_user(tenant=tenant, role=UserRole.OWNER)
         make_subscription(tenant)
-        header = _get_auth_header(owner, "[REDACTED]")
+        header = _get_auth_header(owner)
         resp = self.client.post(
             "/api/v1/tenants/team/",
             data=json.dumps({
@@ -358,10 +352,8 @@ class AuthUsersAPITest(TestCase):
 
     def test_manager_cannot_update_tenant_settings(self):
         tenant = make_tenant()
-        manager = make_user(
-            tenant=tenant, role=UserRole.MANAGER, password="[REDACTED]"
-        )
-        header = _get_auth_header(manager, "[REDACTED]")
+        manager = make_user(tenant=tenant, role=UserRole.MANAGER)
+        header = _get_auth_header(manager)
         resp = self.client.put(
             "/api/v1/tenants/settings/",
             data=json.dumps({"name": "Hacked Name"}),
@@ -381,11 +373,8 @@ class CustomersAPITest(TestCase):
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(
-            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        self.header = _get_auth_header(self.user, "[REDACTED]")
-        # Ensure subscription exists for plan enforcement
+        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER)
+        self.header = _get_auth_header(self.user)
         make_subscription(self.tenant)
 
     def test_list_customers(self):
@@ -450,10 +439,8 @@ class CardsAPITest(TestCase):
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(
-            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        self.header = _get_auth_header(self.user, "[REDACTED]")
+        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER)
+        self.header = _get_auth_header(self.user)
         make_subscription(self.tenant)
 
     def test_list_cards(self):
@@ -500,10 +487,8 @@ class TransactionsAPITest(TestCase):
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(
-            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        self.header = _get_auth_header(self.user, "[REDACTED]")
+        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER)
+        self.header = _get_auth_header(self.user)
         make_subscription(self.tenant)
 
     def test_list_transactions(self):
@@ -521,10 +506,8 @@ class BillingAPITest(TestCase):
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(
-            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        self.header = _get_auth_header(self.user, "[REDACTED]")
+        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER)
+        self.header = _get_auth_header(self.user)
 
     def test_list_plans(self):
         make_plan()
@@ -547,10 +530,8 @@ class TenantsAPITest(TestCase):
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(
-            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        self.header = _get_auth_header(self.user, "[REDACTED]")
+        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER)
+        self.header = _get_auth_header(self.user)
 
     def test_get_tenant_settings(self):
         resp = self.client.get(
@@ -578,10 +559,8 @@ class AutomationAPITest(TestCase):
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(
-            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        self.header = _get_auth_header(self.user, "[REDACTED]")
+        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER)
+        self.header = _get_auth_header(self.user)
         make_subscription(self.tenant)
 
     def test_list_automations(self):
@@ -599,10 +578,8 @@ class NotificationsAPITest(TestCase):
 
     def setUp(self):
         self.tenant = make_tenant()
-        self.user = make_user(
-            tenant=self.tenant, role=UserRole.OWNER, password="[REDACTED]"
-        )
-        self.header = _get_auth_header(self.user, "[REDACTED]")
+        self.user = make_user(tenant=self.tenant, role=UserRole.OWNER)
+        self.header = _get_auth_header(self.user)
 
     def test_list_notifications(self):
         resp = self.client.get("/api/v1/notifications/", HTTP_AUTHORIZATION=self.header)

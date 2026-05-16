@@ -169,15 +169,15 @@ real_twilio_api_secret = sys.argv[12] if len(sys.argv) > 12 else ""
 real_twilio_test_sid = sys.argv[13] if len(sys.argv) > 13 else ""
 real_twilio_test_token = sys.argv[14] if len(sys.argv) > 14 else ""
 
-# Use real credentials when available, otherwise generate secure placeholders
+# Use real credentials when available, otherwise leave empty for graceful degradation
 mailjet_api_key = real_mailjet_key if real_mailjet_key else password(16, string.ascii_uppercase + string.digits)
 mailjet_secret_key = real_mailjet_secret if real_mailjet_secret else token(32)
-twilio_account_sid = real_twilio_sid if real_twilio_sid else "AC_placeholder_account_sid"
-twilio_auth_token = real_twilio_token if real_twilio_token else token(32)
-twilio_api_key_sid = real_twilio_api_sid if real_twilio_api_sid else "SK_placeholder_api_key_sid"
-twilio_api_key_secret = real_twilio_api_secret if real_twilio_api_secret else token(32)
-twilio_test_account_sid = real_twilio_test_sid if real_twilio_test_sid else "AC_placeholder_test_sid"
-twilio_test_auth_token = real_twilio_test_token if real_twilio_test_token else token(32)
+twilio_account_sid = real_twilio_sid if real_twilio_sid else ""
+twilio_auth_token = real_twilio_token if real_twilio_token else ""
+twilio_api_key_sid = real_twilio_api_sid if real_twilio_api_sid else ""
+twilio_api_key_secret = real_twilio_api_secret if real_twilio_api_secret else ""
+twilio_test_account_sid = real_twilio_test_sid if real_twilio_test_sid else ""
+twilio_test_auth_token = real_twilio_test_token if real_twilio_test_token else ""
 
 data = {
     "_meta": {

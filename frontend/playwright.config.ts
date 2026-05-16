@@ -1,49 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { execSync } from 'child_process';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VAULT BOOTSTRAP — Read ALL secrets from HashiCorp Vault. NO .env.test.
-// Uses synchronous curl because Playwright config is loaded via require().
+// PLAYWRIGHT CONFIGURATION — Loyallia E2E Tests
+//
+// SECURITY: No hardcoded credentials. No env-var password fallbacks.
+// ALL credentials are loaded from HashiCorp Vault at runtime via
+// tests/e2e/helpers/vault-credentials.ts.
+//
+// VAULT_TOKEN must be exported before running tests.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const vaultAddr = process.env.VAULT_ADDR || 'http://127.0.0.1:33908';
-let vaultToken = process.env.VAULT_TOKEN || '';
-
-if (!vaultToken) {
-  try {
-    const initData = JSON.parse(readFileSync(resolve(__dirname, '../.agents/vault_init_rescue.json'), 'utf-8'));
-    vaultToken = initData.root_token || '';
-  } catch {
-    // No rescue file — will fail below if still empty
-  }
-}
-
-if (!vaultToken) {
-  throw new Error(
-    'VAULT_TOKEN is required. ' +
-    'Set VAULT_TOKEN env var or ensure .agents/vault_init_rescue.json exists with root_token.',
-  );
-}
-
-// Synchronous Vault read (config file cannot use top-level await)
-const vaultResp = execSync(
-  `curl -s -H "X-Vault-Token: ${vaultToken}" "${vaultAddr}/v1/secret/data/loyallia/e2e"`,
-  { encoding: 'utf-8', timeout: 10000 },
-);
-const vaultJson = JSON.parse(vaultResp);
-const secrets: Record<string, string> = vaultJson.data?.data || {};
-
-// Inject secrets into process.env so getE2EBaseURL() and getRoleCredentials() work
-for (const [key, value] of Object.entries(secrets)) {
-  if (!process.env[key]) process.env[key] = value;
-}
-
-const baseURL = process.env.PLAYWRIGHT_BASE_URL;
-if (!baseURL) {
-  throw new Error('PLAYWRIGHT_BASE_URL not found in Vault secret loyallia/e2e');
-}
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:33906';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -51,7 +18,7 @@ export default defineConfig({
   expect: { timeout: 15000 },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
@@ -70,71 +37,119 @@ export default defineConfig({
     },
   },
   projects: [
-    // --- Setup: authenticate all roles ---
+    // --- Setup: authenticate all roles via Vault ---
     {
       name: 'setup',
       testMatch: /auth\.setup\.ts/,
     },
 
-    // --- Owner tests ---
+    // --- Module-based projects ---
     {
-      name: 'owner',
-      testMatch: /suite\/.+\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/owner.json',
-      },
+      name: 'auth',
+      testMatch: /suite\/01-auth\.spec\.ts/,
       dependencies: ['setup'],
-      grep: /@owner/,
     },
-
-    // --- Manager tests ---
     {
-      name: 'manager',
-      testMatch: /suite\/.+\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/manager.json',
-      },
+      name: 'programs',
+      testMatch: /suite\/(02|14|16)-.*\.spec\.ts/,
       dependencies: ['setup'],
-      grep: /@manager/,
+      grep: /@programs/,
     },
-
-    // --- Staff tests ---
     {
-      name: 'staff',
-      testMatch: /suite\/.+\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/staff.json',
-      },
+      name: 'customers',
+      testMatch: /suite\/03-.*\.spec\.ts/,
       dependencies: ['setup'],
-      grep: /@staff/,
+      grep: /@customers/,
     },
-
-    // --- SuperAdmin tests ---
+    {
+      name: 'team',
+      testMatch: /suite\/04-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@team/,
+    },
+    {
+      name: 'locations',
+      testMatch: /suite\/05-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@locations/,
+    },
+    {
+      name: 'analytics',
+      testMatch: /suite\/(06|13)-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@analytics/,
+    },
+    {
+      name: 'automation',
+      testMatch: /suite\/07-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@automation/,
+    },
+    {
+      name: 'campaigns',
+      testMatch: /suite\/(08|17|19|21|23|24)-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@campaigns/,
+    },
+    {
+      name: 'settings-billing',
+      testMatch: /suite\/09-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@settings/,
+    },
+    {
+      name: 'scanner',
+      testMatch: /suite\/10-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@scanner/,
+    },
     {
       name: 'superadmin',
-      testMatch: /suite\/.+\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/superadmin.json',
-      },
+      testMatch: /suite\/(11|26|27|28|29|30|31)-.*\.spec\.ts/,
       dependencies: ['setup'],
       grep: /@superadmin/,
     },
-
     {
-      name: 'auth-flow',
-      testMatch: /suite\/01-auth\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      name: 'role-isolation',
+      testMatch: /suite\/12-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@role-isolation/,
     },
     {
-      name: 'public-flow',
-      testMatch: /.*\.spec\.ts/,
-      testIgnore: /suite\/01-auth\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'] },
-      grepInvert: /@owner|@manager|@staff|@superadmin/,
+      name: 'wallet',
+      testMatch: /suite\/22-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@wallet/,
+    },
+    {
+      name: 'security',
+      testMatch: /suite\/16-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@security/,
+    },
+    {
+      name: 'whatsapp',
+      testMatch: /suite\/(17|18|24|31)-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@whatsapp/,
+    },
+    {
+      name: 'phone',
+      testMatch: /suite\/15-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@phone/,
+    },
+    {
+      name: 'billing',
+      testMatch: /suite\/32-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@billing/,
+    },
+    // --- Full suite ---
+    {
+      name: 'full',
+      testMatch: /suite\/.*\.spec\.ts/,
+      dependencies: ['setup'],
     },
   ],
 });

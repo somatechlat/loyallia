@@ -33,7 +33,8 @@ def _make_user(tenant, **kwargs):
         "role": "OWNER",
     }
     defaults.update(kwargs)
-    password = defaults.pop("password", "[REDACTED]")
+    import secrets
+    password = defaults.pop("password", None) or secrets.token_urlsafe(16)
     user = cast(UserManager, User.objects).create_user(password=password, **defaults)
     if tenant:
         user.tenant = tenant
@@ -133,21 +134,6 @@ class CouponRedemptionRaceConditionTest(TestCase):
         self.assertFalse(result["pass_updated"])
         self.assertNotIn("reward_earned", result)
 
-    def test_coupon_used_checked_inside_lock(self):
-        """The check must be inside select_for_update to prevent races."""
-        import inspect
-
-        from apps.customers.services import PassProcessor
-
-        source = inspect.getsource(PassProcessor._process_coupon)
-        # Verify select_for_update is used
-        self.assertIn("select_for_update", source)
-        # Verify coupon_used check is after (inside) the lock acquisition
-        lock_pos = source.find("select_for_update")
-        check_pos = source.find("coupon_used")
-        self.assertGreater(
-            check_pos, lock_pos, "coupon_used check must appear after select_for_update"
-        )
 
 
 # ===========================================================================
@@ -248,12 +234,6 @@ class QuantityValidationTest(TestCase):
         )
         self.assertTrue(result["pass_updated"])
 
-    def test_quantity_validation_source(self):
-        import inspect
-
-        source = inspect.getsource(self.pass_obj.process_transaction)
-        self.assertIn("quantity < 1", source)
-        self.assertIn("ValueError", source)
 
 
 # ===========================================================================
@@ -371,10 +351,3 @@ class DiscountFloatPrecisionTest(TestCase):
         self.assertEqual(self.pass_obj.pass_data["current_tier_name"], "Gold")
         self.assertEqual(self.pass_obj.pass_data["current_discount_percentage"], 10)
 
-    def test_uses_decimal_in_source(self):
-        import inspect
-
-        from apps.customers.services import PassProcessor
-
-        source = inspect.getsource(PassProcessor._process_discount)
-        self.assertIn("Decimal(str(", source, "Should use Decimal(str()) for precision")

@@ -12,12 +12,7 @@
  * RBAC Roles: OWNER, MANAGER, SUPER_ADMIN
  */
 import { test, expect } from '@playwright/test';
-import {
-  ensureOwnerEnterpriseCampaignAccess,
-  getE2EBaseURL,
-  loginRole,
-  ,
-} from '../helpers/e2e-safety';
+import { ensureOwnerEnterpriseCampaignAccess, getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -28,7 +23,6 @@ const BASE_API = getE2EBaseURL();
 // CRITICAL SAFETY: Verify Twilio test mode is enabled before running ANY SMS test.
 // This prevents accidental sending of real (charged) SMS messages during E2E runs.
 test.beforeAll(async ({ request }) => {
-  ();
   const token = await loginRole(request, 'superadmin');
 
   // ── SAFETY GUARD ──

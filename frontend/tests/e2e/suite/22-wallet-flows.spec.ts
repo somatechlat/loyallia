@@ -11,12 +11,7 @@
  * Runs in the 'owner' project so auth cookies are pre-loaded.
  */
 import { test, expect } from '@playwright/test';
-import {
-  ensureOwnerEnterpriseCampaignAccess,
-  getE2EBaseURL,
-  loginRole,
-  ,
-} from '../helpers/e2e-safety';
+import { ensureOwnerEnterpriseCampaignAccess, getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -44,7 +39,6 @@ let walletStatusUrl = '';
 test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', () => {
 
   test.beforeAll(async ({ request }) => {
-    ();
     await ensureOwnerEnterpriseCampaignAccess(request);
   });
 

@@ -20,7 +20,6 @@ async function gotoPrograms(page: any) {
 test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('1. Create program with all customizations (logo, hero, icon, colors)', async ({ page }) => {

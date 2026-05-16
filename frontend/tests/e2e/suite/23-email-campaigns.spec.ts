@@ -10,12 +10,7 @@
  *   6. API: Invalid channel returns 400
  */
 import { test, expect } from '@playwright/test';
-import {
-  ensureOwnerEnterpriseCampaignAccess,
-  getE2EBaseURL,
-  loginRole,
-  ,
-} from '../helpers/e2e-safety';
+import { ensureOwnerEnterpriseCampaignAccess, getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -29,7 +24,6 @@ async function getOwnerToken(request: import('@playwright/test').APIRequestConte
 test.describe('Email Campaigns — OWNER @owner @campaigns', () => {
 
   test.beforeAll(async ({ request }) => {
-    ();
     await ensureOwnerEnterpriseCampaignAccess(request);
   });
 
