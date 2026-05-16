@@ -3,7 +3,6 @@ Loyallia — Tenant Security & Privacy API
 Handles owner security PIN, full tenant export, and account deletion.
 """
 
-
 import logging
 from datetime import datetime, timedelta
 
@@ -53,9 +52,7 @@ def set_security_pin(request, payload: SecurityPinIn):
     except ValueError:
         raise HttpError(400, get_message("SECURITY_PIN_INVALID_FORMAT"))
 
-    logger.info(
-        "OWNER %s set security PIN for tenant %s", user.email, request.tenant.name
-    )
+    logger.info("OWNER %s set security PIN for tenant %s", user.email, request.tenant.name)
     return {"success": True, "message": get_message("SECURITY_PIN_SET")}
 
 
@@ -91,9 +88,7 @@ def export_tenant_data(request):
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     response = HttpResponse(buf.getvalue(), content_type="application/zip")
-    response["Content-Disposition"] = (
-        f'attachment; filename="loyallia_datos_completos_{date_str}.zip"'
-    )
+    response["Content-Disposition"] = f'attachment; filename="loyallia_datos_completos_{date_str}.zip"'
     return response
 
 
@@ -168,7 +163,5 @@ def delete_account(request, payload: DeleteAccountIn):
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     response = HttpResponse(buf.getvalue(), content_type="application/zip")
-    response["Content-Disposition"] = (
-        f'attachment; filename="loyallia_datos_finales_{date_str}.zip"'
-    )
+    response["Content-Disposition"] = f'attachment; filename="loyallia_datos_finales_{date_str}.zip"'
     return response

@@ -141,9 +141,7 @@ class SubscriptionModelTest(TestCase):
     def test_activate_paid_annual_cycle(self):
         t = make_tenant()
         plan = make_plan()
-        sub = make_subscription(
-            t, plan=plan, status=SubscriptionStatus.TRIALING, billing_cycle="annual"
-        )
+        sub = make_subscription(t, plan=plan, status=SubscriptionStatus.TRIALING, billing_cycle="annual")
         sub.activate_paid()
         self.assertEqual(sub.status, SubscriptionStatus.ACTIVE)
 

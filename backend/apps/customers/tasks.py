@@ -43,9 +43,7 @@ def generate_qr_for_pass(self, customer_pass_id: str) -> dict:
     from apps.customers.pass_engine.qr_generator import generate_and_store_qr
 
     try:
-        pass_obj = CustomerPass.objects.select_related("customer", "card").get(
-            id=uuid.UUID(customer_pass_id)
-        )
+        pass_obj = CustomerPass.objects.select_related("customer", "card").get(id=uuid.UUID(customer_pass_id))
     except CustomerPass.DoesNotExist:
         logger.error("generate_qr_for_pass: pass %s not found", customer_pass_id)
         return {"success": False, "error": "Pass not found"}
@@ -92,9 +90,9 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
     from apps.notifications.service import NotificationService
 
     try:
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(id=uuid.UUID(customer_pass_id))
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(customer_pass_id)
+        )
     except CustomerPass.DoesNotExist:
         logger.error("trigger_pass_update: pass %s not found", customer_pass_id)
         return {"success": False, "error": "Pass not found"}
@@ -106,6 +104,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         # ── 1. Google Wallet: silently PATCH object data first ──
         try:
             from apps.customers.pass_engine.google_pass import update_wallet_object
+
             gw_result = update_wallet_object(pass_obj)
             if gw_result.get("success"):
                 logger.info("Google Wallet object updated for pass %s", customer_pass_id)
@@ -121,6 +120,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         # ── 2. Apple Wallet: send empty APNs background push ──
         try:
             from apps.customers.pass_engine.apple_push import notify_pass_updated
+
             apple_count = notify_pass_updated(pass_obj)
             if apple_count > 0:
                 logger.info(
@@ -177,9 +177,7 @@ def update_customer_analytics(self, customer_id: str) -> dict:
     from apps.customers.models import Customer
 
     try:
-        customer = Customer.objects.select_related("tenant").get(
-            id=uuid.UUID(customer_id)
-        )
+        customer = Customer.objects.select_related("tenant").get(id=uuid.UUID(customer_id))
     except Customer.DoesNotExist:
         logger.error("update_customer_analytics: customer %s not found", customer_id)
         return {"success": False}

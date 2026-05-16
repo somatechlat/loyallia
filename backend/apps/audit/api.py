@@ -62,7 +62,7 @@ def list_audit_logs(
     # OWNER scope: restrict to own tenant only
     is_sa = request.user.role == "SUPER_ADMIN"
     if not is_sa and is_owner(request):
-        own_tenant_id = str(request.tenant.id) if hasattr(request, 'tenant') and request.tenant else None
+        own_tenant_id = str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None
         if own_tenant_id:
             qs = qs.filter(tenant_id=own_tenant_id)
         else:
@@ -135,12 +135,9 @@ def audit_stats(request: HttpRequest):
     total = AuditLog.objects.count()
     today = AuditLog.objects.filter(created_at__gte=today_start).count()
 
-    actions_breakdown_rows = list(
-        AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count")
-    )
+    actions_breakdown_rows = list(AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count"))
     actions_breakdown = [
-        ActionBreakdownSchema(action=row["action"], count=row["count"])
-        for row in actions_breakdown_rows
+        ActionBreakdownSchema(action=row["action"], count=row["count"]) for row in actions_breakdown_rows
     ]
 
     thirty_days_ago = now - timedelta(days=30)
@@ -150,10 +147,7 @@ def audit_stats(request: HttpRequest):
         .annotate(count=Count("id"))
         .order_by("-count")[:10]
     )
-    top_actors = [
-        ActorBreakdownSchema(actor_email=row["actor_email"], count=row["count"])
-        for row in top_actors_rows
-    ]
+    top_actors = [ActorBreakdownSchema(actor_email=row["actor_email"], count=row["count"]) for row in top_actors_rows]
 
     return AuditStatsSchema(
         total_entries=total,

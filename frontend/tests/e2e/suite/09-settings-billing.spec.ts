@@ -217,6 +217,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 // =============================================================================
 
 test.describe('Settings & Billing — MANAGER Isolation @manager @settings', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER does NOT have "Configuración" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -248,6 +249,7 @@ test.describe('Settings & Billing — MANAGER Isolation @manager @settings', () 
 // =============================================================================
 
 test.describe('Settings & Billing — STAFF Isolation @staff @settings', () => {
+  test.use({ storageState: '.auth/staff.json' });
 
   test('STAFF does NOT have "Configuración" in navigation @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

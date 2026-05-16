@@ -8,7 +8,6 @@ SEC: API key sent via Authorization header on every request.
 PERF: Connection pooled via httpx.Client session.
 """
 
-
 import logging
 
 import httpx

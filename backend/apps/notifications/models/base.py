@@ -4,7 +4,6 @@ Loyallia — Notifications Base Models
 Shared enums and choices used across notification modules.
 """
 
-
 from django.db import models
 
 

@@ -84,15 +84,11 @@ class Transaction(models.Model):
         validators=[MinValueValidator(0)],
         verbose_name="Monto",
     )
-    quantity = models.PositiveIntegerField(
-        null=True, blank=True, verbose_name="Cantidad"
-    )
+    quantity = models.PositiveIntegerField(null=True, blank=True, verbose_name="Cantidad")
 
     # Transaction metadata
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
-    transaction_data = models.JSONField(
-        default=dict, verbose_name="Datos de transacción"
-    )
+    transaction_data = models.JSONField(default=dict, verbose_name="Datos de transacción")
 
     # Remote transaction flag
     is_remote = models.BooleanField(default=False, verbose_name="Transacción remota")
@@ -191,9 +187,7 @@ class Enrollment(models.Model):
 
     # Device info
     user_agent = models.TextField(blank=True, default="", verbose_name="User Agent")
-    ip_address = models.GenericIPAddressField(
-        null=True, blank=True, verbose_name="Dirección IP"
-    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="Dirección IP")
 
     # Timestamps
     enrolled_at = models.DateTimeField(auto_now_add=True)

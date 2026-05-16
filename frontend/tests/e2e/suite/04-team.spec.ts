@@ -39,6 +39,7 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
 });
 
 test.describe('Team — MANAGER Isolation @manager @team', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER does NOT have "Equipo" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

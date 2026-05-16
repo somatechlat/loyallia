@@ -72,9 +72,7 @@ class Command(BaseCommand):
         password = self._load_existing_password(password_file)
         if not password:
             if not options["generate"]:
-                raise CommandError(
-                    "No local E2E credential file exists. Re-run with --generate to create one."
-                )
+                raise CommandError("No local E2E credential file exists. Re-run with --generate to create one.")
             password = secrets.token_urlsafe(24)
 
         with transaction.atomic():
@@ -85,9 +83,7 @@ class Command(BaseCommand):
 
         self._write_credentials(password_file, credentials)
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Development RBAC E2E users are active. Credentials written to {password_file}."
-            )
+            self.style.SUCCESS(f"Development RBAC E2E users are active. Credentials written to {password_file}.")
         )
 
     def _load_existing_password(self, password_file: Path) -> str:

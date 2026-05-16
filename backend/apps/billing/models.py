@@ -4,7 +4,6 @@ Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
 
-
 from decimal import Decimal
 
 from django.conf import settings
@@ -88,20 +87,12 @@ class SubscriptionPlan(TimestampedModel):
     )
 
     # Usage Limits (enforced by plan_enforcement.py)
-    max_locations = models.PositiveIntegerField(
-        default=1, verbose_name="Máx. sucursales"
-    )
+    max_locations = models.PositiveIntegerField(default=1, verbose_name="Máx. sucursales")
     max_users = models.PositiveIntegerField(default=3, verbose_name="Máx. usuarios")
-    max_customers = models.PositiveIntegerField(
-        default=500, verbose_name="Máx. clientes"
-    )
+    max_customers = models.PositiveIntegerField(default=500, verbose_name="Máx. clientes")
     max_programs = models.PositiveIntegerField(default=1, verbose_name="Máx. programas")
-    max_notifications_month = models.PositiveIntegerField(
-        default=1000, verbose_name="Máx. notificaciones/mes"
-    )
-    max_transactions_month = models.PositiveIntegerField(
-        default=5000, verbose_name="Máx. transacciones/mes"
-    )
+    max_notifications_month = models.PositiveIntegerField(default=1000, verbose_name="Máx. notificaciones/mes")
+    max_transactions_month = models.PositiveIntegerField(default=5000, verbose_name="Máx. transacciones/mes")
 
     # Messaging channel quotas (LYL-SRS-008)
     # 0 = disabled (channel not available for this plan)
@@ -203,11 +194,7 @@ class SubscriptionPlan(TimestampedModel):
     def price_monthly_with_tax(self) -> Decimal:
         """Monthly price including Ecuador IVA tax."""
         tax_rate = Decimal(
-            str(
-                PlatformSetting.get_float(
-                    "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
-                )
-            )
+            str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
         )
         return (self.price_monthly * (1 + tax_rate)).quantize(Decimal("0.01"))
 
@@ -215,11 +202,7 @@ class SubscriptionPlan(TimestampedModel):
     def price_annual_with_tax(self) -> Decimal:
         """Annual price including Ecuador IVA tax."""
         tax_rate = Decimal(
-            str(
-                PlatformSetting.get_float(
-                    "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
-                )
-            )
+            str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
         )
         return (self.price_annual * (1 + tax_rate)).quantize(Decimal("0.01"))
 
@@ -308,38 +291,18 @@ class Subscription(TimestampedModel):
     )
 
     # Dates
-    trial_start = models.DateTimeField(
-        null=True, blank=True, verbose_name="Inicio del trial"
-    )
-    trial_end = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fin del trial"
-    )
-    current_period_start = models.DateTimeField(
-        null=True, blank=True, verbose_name="Inicio del período actual"
-    )
-    current_period_end = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fin del período actual"
-    )
-    cancel_at_period_end = models.BooleanField(
-        default=False, verbose_name="Cancelar al final del período"
-    )
-    canceled_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Cancelado en"
-    )
-    trial_extended_count = models.SmallIntegerField(
-        default=0, verbose_name="Extensiones de trial"
-    )
+    trial_start = models.DateTimeField(null=True, blank=True, verbose_name="Inicio del trial")
+    trial_end = models.DateTimeField(null=True, blank=True, verbose_name="Fin del trial")
+    current_period_start = models.DateTimeField(null=True, blank=True, verbose_name="Inicio del período actual")
+    current_period_end = models.DateTimeField(null=True, blank=True, verbose_name="Fin del período actual")
+    cancel_at_period_end = models.BooleanField(default=False, verbose_name="Cancelar al final del período")
+    canceled_at = models.DateTimeField(null=True, blank=True, verbose_name="Cancelado en")
+    trial_extended_count = models.SmallIntegerField(default=0, verbose_name="Extensiones de trial")
 
     # Payment failure tracking
-    failed_payment_count = models.SmallIntegerField(
-        default=0, verbose_name="Intentos de pago fallidos"
-    )
-    last_payment_error = models.TextField(
-        blank=True, default="", verbose_name="Último error de pago"
-    )
-    last_payment_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Último pago exitoso"
-    )
+    failed_payment_count = models.SmallIntegerField(default=0, verbose_name="Intentos de pago fallidos")
+    last_payment_error = models.TextField(blank=True, default="", verbose_name="Último error de pago")
+    last_payment_at = models.DateTimeField(null=True, blank=True, verbose_name="Último pago exitoso")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_subscriptions"
@@ -434,9 +397,7 @@ class Subscription(TimestampedModel):
         """Set trial period. Called on tenant registration."""
         from datetime import timedelta
 
-        trial_days = PlatformSetting.get_int(
-            "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
-        )
+        trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
         # Enforce trial extension limits (LYL-H-API-013)
         if self.trial_start is not None:
@@ -445,11 +406,7 @@ class Subscription(TimestampedModel):
             self.trial_extended_count += 1
 
             # Extend from current trial_end or from now if already expired
-            base_date = (
-                self.trial_end
-                if (self.trial_end and self.trial_end > timezone.now())
-                else timezone.now()
-            )
+            base_date = self.trial_end if (self.trial_end and self.trial_end > timezone.now()) else timezone.now()
             self.trial_end = base_date + timedelta(days=trial_days)
             self.status = SubscriptionStatus.TRIALING
             self.save(

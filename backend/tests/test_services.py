@@ -87,12 +87,8 @@ class TransactionServiceEnrollTest(TestCase):
         customer = make_customer(t)
         cp = TransactionService.enroll_customer(t, customer, card)
         self.assertIsNotNone(cp)
-        self.assertTrue(
-            CustomerPass.objects.filter(customer=customer, card=card).exists()
-        )
-        self.assertTrue(
-            Enrollment.objects.filter(customer=customer, card=card).exists()
-        )
+        self.assertTrue(CustomerPass.objects.filter(customer=customer, card=card).exists())
+        self.assertTrue(Enrollment.objects.filter(customer=customer, card=card).exists())
 
     def test_enroll_customer_already_enrolled_raises(self):
         t = make_tenant()
@@ -116,17 +112,13 @@ class TransactionServiceRemoteIssueTest(TestCase):
     def test_remote_issue_success(self):
         t, _, _, card, customer, cp = make_full_stack()
         staff = make_user(tenant=t, role=UserRole.STAFF)
-        result = TransactionService.remote_issue(
-            t, customer, card, quantity=3, staff=staff
-        )
+        result = TransactionService.remote_issue(t, customer, card, quantity=3, staff=staff)
         self.assertTrue(result["success"])
         self.assertTrue(result["pass_updated"])
 
     def test_remote_issue_creates_remote_transaction(self):
         t, _, _, card, customer, cp = make_full_stack()
-        TransactionService.remote_issue(
-            t, customer, card, quantity=2, notes="Manual reward"
-        )
+        TransactionService.remote_issue(t, customer, card, quantity=2, notes="Manual reward")
         txn = Transaction.objects.filter(customer_pass=cp, is_remote=True).first()
         self.assertIsNotNone(txn)
         assert txn is not None
@@ -241,9 +233,7 @@ class AutomationServiceFireTriggerTest(TestCase):
         make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED)
         from apps.automation.service import AutomationService
 
-        count = AutomationService.fire_trigger(
-            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
-        )
+        count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
         # Real execute() runs and creates AutomationExecution records
         self.assertGreaterEqual(count, 0)
 
@@ -252,9 +242,7 @@ class AutomationServiceFireTriggerTest(TestCase):
         customer = make_customer(t)
         from apps.automation.service import AutomationService
 
-        count = AutomationService.fire_trigger(
-            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
-        )
+        count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
         self.assertEqual(count, 0)
 
     def test_fire_trigger_inactive_automation_skipped(self):
@@ -263,9 +251,7 @@ class AutomationServiceFireTriggerTest(TestCase):
         make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED, is_active=False)
         from apps.automation.service import AutomationService
 
-        count = AutomationService.fire_trigger(
-            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
-        )
+        count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
         self.assertEqual(count, 0)
 
 

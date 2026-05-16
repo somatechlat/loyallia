@@ -437,6 +437,7 @@ test.describe('SuperAdmin — Integration API @superadmin @superadmin', () => {
 // =============================================================================
 
 test.describe('SuperAdmin — OWNER Isolation @owner @superadmin', () => {
+  test.use({ storageState: '.auth/owner.json' });
 
   test('OWNER navigating to /superadmin is blocked @owner', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });

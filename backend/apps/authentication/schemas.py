@@ -2,7 +2,6 @@
 Loyallia — Authentication API Schemas (Pydantic models)
 """
 
-
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, field_validator
@@ -187,9 +186,7 @@ class PhoneVerifyRequestIn(BaseModel):
         v = v.strip()
         # Accept E.164 format: +[country_code][number], 8-15 digits
         if not re.match(r"^\+[1-9]\d{7,14}$", v):
-            raise ValueError(
-                "Formato inválido. Usa formato internacional: +593991234567"
-            )
+            raise ValueError("Formato inválido. Usa formato internacional: +593991234567")
         return v
 
 
@@ -202,12 +199,14 @@ class PhoneVerifyConfirmIn(BaseModel):
 
 class PhoneVerifyStartIn(BaseModel):
     """Request to start phone verification."""
+
     phone: str
     channel: str = "sms"  # sms, whatsapp, voice, email, sna, auto
 
 
 class PhoneVerifyStartOut(BaseModel):
     """Response from phone verification start."""
+
     success: bool
     message: str
     sid: str = ""
@@ -217,6 +216,7 @@ class PhoneVerifyStartOut(BaseModel):
 
 class PhoneVerifyCheckIn(BaseModel):
     """Request to check phone verification code."""
+
     phone: str
     code: str
     sid: str = ""
@@ -224,6 +224,7 @@ class PhoneVerifyCheckIn(BaseModel):
 
 class PhoneVerifyCheckOut(BaseModel):
     """Response from phone verification check."""
+
     success: bool
     message: str
     valid: bool = False

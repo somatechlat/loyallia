@@ -60,28 +60,18 @@ class Automation(TimestampedModel):
     description = models.TextField(blank=True, default="", verbose_name="Descripción")
 
     # Trigger configuration
-    trigger = models.CharField(
-        max_length=30, choices=AutomationTrigger.choices, verbose_name="Disparador"
-    )
-    trigger_config = models.JSONField(
-        default=dict, verbose_name="Configuración del disparador"
-    )
+    trigger = models.CharField(max_length=30, choices=AutomationTrigger.choices, verbose_name="Disparador")
+    trigger_config = models.JSONField(default=dict, verbose_name="Configuración del disparador")
 
     # Action configuration
-    action = models.CharField(
-        max_length=30, choices=AutomationAction.choices, verbose_name="Acción"
-    )
-    action_config = models.JSONField(
-        default=dict, verbose_name="Configuración de la acción"
-    )
+    action = models.CharField(max_length=30, choices=AutomationAction.choices, verbose_name="Acción")
+    action_config = models.JSONField(default=dict, verbose_name="Configuración de la acción")
 
     # Targeting
     target_programs = models.ManyToManyField(
         Card, blank=True, related_name="automations", verbose_name="Programas objetivo"
     )
-    target_segments = models.JSONField(
-        default=list, verbose_name="Segmentos objetivo"
-    )  # List of segment names
+    target_segments = models.JSONField(default=list, verbose_name="Segmentos objetivo")  # List of segment names
 
     # Scheduling
     is_active = models.BooleanField(default=True, verbose_name="Activo")
@@ -100,12 +90,8 @@ class Automation(TimestampedModel):
     )
 
     # Analytics
-    total_executions = models.PositiveIntegerField(
-        default=0, verbose_name="Ejecuciones totales"
-    )
-    last_executed = models.DateTimeField(
-        null=True, blank=True, verbose_name="Última ejecución"
-    )
+    total_executions = models.PositiveIntegerField(default=0, verbose_name="Ejecuciones totales")
+    last_executed = models.DateTimeField(null=True, blank=True, verbose_name="Última ejecución")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_automations"
@@ -142,9 +128,7 @@ class Automation(TimestampedModel):
 
         # Check if customer is in target programs
         if self.target_programs.exists():
-            customer_programs = customer.passes.filter(
-                card__in=self.target_programs, is_active=True
-            )
+            customer_programs = customer.passes.filter(card__in=self.target_programs, is_active=True)
             if not customer_programs.exists():
                 return False
 
@@ -155,16 +139,12 @@ class Automation(TimestampedModel):
             from django.utils import timezone
 
             last_for_customer = (
-                AutomationExecution.objects.filter(
-                    automation=self, customer=customer, success=True
-                )
+                AutomationExecution.objects.filter(automation=self, customer=customer, success=True)
                 .order_by("-executed_at")
                 .first()
             )
             if last_for_customer:
-                cooldown_end = last_for_customer.executed_at + timedelta(
-                    hours=self.cooldown_hours
-                )
+                cooldown_end = last_for_customer.executed_at + timedelta(hours=self.cooldown_hours)
                 if timezone.now() < cooldown_end:
                     return False
 
@@ -184,18 +164,12 @@ class Automation(TimestampedModel):
         if self.max_executions_per_day is not None:
             from django.utils import timezone
 
-            today_start = timezone.now().replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            executions_today = AutomationExecution.objects.filter(
-                automation=self, executed_at__gte=today_start
-            ).count()
+            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            executions_today = AutomationExecution.objects.filter(automation=self, executed_at__gte=today_start).count()
             if executions_today >= self.max_executions_per_day:
                 return False
 
-        execution_context = {
-            k: v for k, v in (context or {}).items() if not str(k).startswith("_")
-        }
+        execution_context = {k: v for k, v in (context or {}).items() if not str(k).startswith("_")}
         try:
             success = False
 
@@ -252,9 +226,7 @@ class Automation(TimestampedModel):
 
         title = self.action_config.get("title", "Notificación automática")
         message = self.action_config.get("message", "")
-        notification_type = self.action_config.get(
-            "notification_type", NotificationType.SYSTEM
-        )
+        notification_type = self.action_config.get("notification_type", NotificationType.SYSTEM)
 
         notification = Notification.objects.create(
             tenant=self.tenant,
@@ -334,9 +306,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         except Exception as exc:
             import logging
 
-            logging.getLogger(__name__).error(
-                "Automation email failed for %s: %s", customer.id, exc
-            )
+            logging.getLogger(__name__).error("Automation email failed for %s: %s", customer.id, exc)
             return False
 
     def _execute_send_sms(self, customer, context) -> bool:
@@ -352,9 +322,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         if not is_sms_available():
             import logging
 
-            logging.getLogger(__name__).warning(
-                "Twilio SMS not configured — cannot send automation SMS"
-            )
+            logging.getLogger(__name__).warning("Twilio SMS not configured — cannot send automation SMS")
             return False
 
         title = self.action_config.get("title", "")
@@ -377,9 +345,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         if not is_bridge_available():
             import logging
 
-            logging.getLogger(__name__).warning(
-                "WhatsApp bridge not available — cannot send automation message"
-            )
+            logging.getLogger(__name__).warning("WhatsApp bridge not available — cannot send automation message")
             return False
 
         title = self.action_config.get("title", "")
@@ -396,9 +362,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         except Exception as exc:
             import logging
 
-            logging.getLogger(__name__).error(
-                "Automation WhatsApp failed for %s: %s", customer.id, exc
-            )
+            logging.getLogger(__name__).error("Automation WhatsApp failed for %s: %s", customer.id, exc)
             return False
 
     def _execute_send_wallet(self, customer, context) -> bool:
@@ -409,9 +373,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         """
         from apps.customers.models import CustomerPass
 
-        passes = CustomerPass.objects.filter(
-            customer=customer, is_active=True
-        ).select_related("card", "card__tenant")
+        passes = CustomerPass.objects.filter(customer=customer, is_active=True).select_related("card", "card__tenant")
 
         if not passes.exists():
             return False
@@ -442,17 +404,13 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                     )
 
                     action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
-                    result = send_push_notification(
-                        pass_obj, header=title, body=message, action_url=action_url
-                    )
+                    result = send_push_notification(pass_obj, header=title, body=message, action_url=action_url)
                     if result.get("success"):
                         push_sent = True
                 except Exception as exc:
                     import logging
 
-                    logging.getLogger(__name__).warning(
-                        "Google wallet push failed for pass %s: %s", pass_obj.id, exc
-                    )
+                    logging.getLogger(__name__).warning("Google wallet push failed for pass %s: %s", pass_obj.id, exc)
 
             # ── Apple Wallet ──
             if wallet_platform in ("apple", "both"):
@@ -465,9 +423,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 except Exception as exc:
                     import logging
 
-                    logging.getLogger(__name__).warning(
-                        "Apple wallet push failed for pass %s: %s", pass_obj.id, exc
-                    )
+                    logging.getLogger(__name__).warning("Apple wallet push failed for pass %s: %s", pass_obj.id, exc)
 
         return push_sent
 
@@ -523,9 +479,7 @@ class AutomationExecution(models.Model):
 
     # Execution details
     trigger_event = models.CharField(max_length=50, verbose_name="Evento disparador")
-    execution_context = models.JSONField(
-        default=dict, verbose_name="Contexto de ejecución"
-    )
+    execution_context = models.JSONField(default=dict, verbose_name="Contexto de ejecución")
     success = models.BooleanField(verbose_name="Éxito")
 
     # Timestamps
@@ -542,9 +496,7 @@ class AutomationExecution(models.Model):
         ]
 
     def __repr__(self) -> str:
-        return (
-            f"<AutomationExecution: {self.automation.name} → {self.customer.full_name}>"
-        )
+        return f"<AutomationExecution: {self.automation.name} → {self.customer.full_name}>"
 
     def __str__(self) -> str:
         return f"{self.automation.name} → {self.customer.full_name}"

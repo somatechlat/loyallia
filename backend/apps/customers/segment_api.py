@@ -78,22 +78,14 @@ def _apply_segment_filter(queryset, segment_id: str):
         )
     elif extra == "lost":
         cutoff = timezone.now() - timedelta(days=60)
-        return base.filter(
-            Q(last_visit__lt=cutoff) | Q(last_visit__isnull=True, created_at__lt=cutoff)
-        )
+        return base.filter(Q(last_visit__lt=cutoff) | Q(last_visit__isnull=True, created_at__lt=cutoff))
     elif extra == "vip":
         count = base.count()
         if count == 0:
             return base.none()
         threshold_index = max(0, int(count * 0.9))
-        sorted_spends = list(
-            base.order_by("total_spent").values_list("total_spent", flat=True)
-        )
-        threshold = (
-            sorted_spends[threshold_index]
-            if threshold_index < len(sorted_spends)
-            else sorted_spends[-1]
-        )
+        sorted_spends = list(base.order_by("total_spent").values_list("total_spent", flat=True))
+        threshold = sorted_spends[threshold_index] if threshold_index < len(sorted_spends) else sorted_spends[-1]
         return base.filter(total_spent__gte=threshold)
     return base
 
@@ -131,9 +123,7 @@ def create_segment(request):
     }
 
 
-@router.get(
-    "/segments/{segment_id}/members/", auth=jwt_auth, summary="Miembros del segmento"
-)
+@router.get("/segments/{segment_id}/members/", auth=jwt_auth, summary="Miembros del segmento")
 def segment_members(request, segment_id: str, limit: int = 50, offset: int = 0):
     """Returns members of a segment with pagination. MANAGER+ only."""
     if not is_manager_or_owner(request):
@@ -141,23 +131,17 @@ def segment_members(request, segment_id: str, limit: int = 50, offset: int = 0):
     if segment_id not in _BUILTIN_SEGMENTS:
         raise HttpError(404, get_message("NOT_FOUND"))
     base_queryset = Customer.objects.filter(tenant=request.tenant)
-    members = _apply_segment_filter(base_queryset, segment_id).order_by(
-        "-last_visit", "-created_at"
-    )
+    members = _apply_segment_filter(base_queryset, segment_id).order_by("-last_visit", "-created_at")
     total = members.count()
     return {
         "segment_id": segment_id,
         "segment_name": _BUILTIN_SEGMENTS[segment_id]["name"],
         "total": total,
-        "members": [
-            CustomerOut.from_model(c) for c in members[offset : offset + limit]
-        ],
+        "members": [CustomerOut.from_model(c) for c in members[offset : offset + limit]],
     }
 
 
-@router.get(
-    "/segments/{segment_id}/export/", auth=jwt_auth, summary="Exportar segmento a CSV"
-)
+@router.get("/segments/{segment_id}/export/", auth=jwt_auth, summary="Exportar segmento a CSV")
 def export_segment(request, segment_id: str):
     """CSV export of segment members. OWNER only."""
     if not is_owner(request):

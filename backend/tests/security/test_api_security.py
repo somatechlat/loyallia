@@ -193,6 +193,7 @@ class TestCrossTenantIsolation(TestCase):
 
     def _request(self, user):
         from django.test import RequestFactory
+
         req = RequestFactory().get("/api/v1/test/")
         req.user = user
         req.tenant = user.tenant
@@ -207,7 +208,7 @@ class TestCrossTenantIsolation(TestCase):
         req = self._request(self.owner_a)
         with self.assertRaises((HttpError, Http404)) as ctx:
             get_program(req, str(self.card_b.id))
-        if hasattr(ctx.exception, 'status_code'):
+        if hasattr(ctx.exception, "status_code"):
             self.assertIn(ctx.exception.status_code, (403, 404))
 
     def test_owner_b_cannot_access_tenant_a_program(self):
@@ -219,7 +220,7 @@ class TestCrossTenantIsolation(TestCase):
         req = self._request(self.owner_b)
         with self.assertRaises((HttpError, Http404)) as ctx:
             get_program(req, str(self.card_a.id))
-        if hasattr(ctx.exception, 'status_code'):
+        if hasattr(ctx.exception, "status_code"):
             self.assertIn(ctx.exception.status_code, (403, 404))
 
 
@@ -242,6 +243,7 @@ class TestRoleBoundariesAPI(TestCase):
 
     def _request(self, user):
         from django.test import RequestFactory
+
         req = RequestFactory().post("/api/v1/test/", data=b"{}", content_type="application/json")
         req.user = user
         req.tenant = self.tenant
@@ -281,26 +283,31 @@ class TestRateLimitRules(TestCase):
 
     def test_admin_rate_limit_exists(self):
         from common.rate_limit import RATE_LIMIT_RULES
+
         paths = [rule[0] for rule in RATE_LIMIT_RULES]
         self.assertIn("/api/v1/admin/", paths)
 
     def test_upload_rate_limit_exists(self):
         from common.rate_limit import RATE_LIMIT_RULES
+
         paths = [rule[0] for rule in RATE_LIMIT_RULES]
         self.assertIn("/api/v1/upload/", paths)
 
     def test_whatsapp_rate_limit_exists(self):
         from common.rate_limit import RATE_LIMIT_RULES
+
         paths = [rule[0] for rule in RATE_LIMIT_RULES]
         self.assertIn("/api/v1/whatsapp/", paths)
 
     def test_agent_rate_limit_exists(self):
         from common.rate_limit import RATE_LIMIT_RULES
+
         paths = [rule[0] for rule in RATE_LIMIT_RULES]
         self.assertIn("/api/v1/agent/", paths)
 
     def test_rules_ordered_most_specific_first(self):
         from common.rate_limit import RATE_LIMIT_RULES
+
         paths = [rule[0] for rule in RATE_LIMIT_RULES]
         general_index = paths.index("/api/v1/")
         self.assertEqual(general_index, len(paths) - 1)
@@ -317,11 +324,13 @@ class TestRateLimiterRuntimeBehavior(TestCase):
     def test_rate_limit_rules_are_iterable(self):
         """RATE_LIMIT_RULES should be a non-empty iterable."""
         from common.rate_limit import RATE_LIMIT_RULES
+
         self.assertTrue(len(RATE_LIMIT_RULES) > 0)
 
     def test_auth_paths_exist_in_rules(self):
         """Auth paths should be covered by rate limit rules."""
         from common.rate_limit import RATE_LIMIT_RULES
+
         paths = [rule[0] for rule in RATE_LIMIT_RULES]
         self.assertIn("/api/v1/auth/login", paths)
         self.assertIn("/api/v1/auth/register", paths)
@@ -329,6 +338,7 @@ class TestRateLimiterRuntimeBehavior(TestCase):
     def test_general_rule_is_last(self):
         """The general /api/v1/ catch-all should be the last rule."""
         from common.rate_limit import RATE_LIMIT_RULES
+
         paths = [rule[0] for rule in RATE_LIMIT_RULES]
         self.assertEqual(paths[-1], "/api/v1/")
 

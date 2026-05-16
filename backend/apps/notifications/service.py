@@ -3,7 +3,6 @@ Loyallia — Notification Service
 Handles sending push notifications, emails, and SMS.
 """
 
-
 import logging
 
 from django.core.mail import send_mail
@@ -52,9 +51,7 @@ class NotificationService:
         return notification
 
     @staticmethod
-    def send_reward_ready_notification(
-        customer_pass: CustomerPass, tenant: Tenant
-    ) -> Notification:
+    def send_reward_ready_notification(customer_pass: CustomerPass, tenant: Tenant) -> Notification:
         """Send notification when reward is ready for redemption."""
         card_name = customer_pass.card.name
         notification = Notification.objects.create(
@@ -75,9 +72,7 @@ class NotificationService:
         return notification
 
     @staticmethod
-    def send_reminder_notification(
-        customer: Customer, tenant: Tenant
-    ) -> Notification | None:
+    def send_reminder_notification(customer: Customer, tenant: Tenant) -> Notification | None:
         """Send reminder to visit a program."""
         programs = CustomerPass.objects.filter(customer=customer, is_active=True)
         if programs.exists():
@@ -95,9 +90,7 @@ class NotificationService:
                 action_url=f"/passes/{program.id}",
                 notification_data={
                     "days_since_last_visit": (
-                        (timezone.now() - customer.last_visit).days
-                        if customer.last_visit
-                        else -1
+                        (timezone.now() - customer.last_visit).days if customer.last_visit else -1
                     ),
                 },
             )
@@ -111,11 +104,7 @@ class NotificationService:
     def send_birthday_notification(customer, tenant) -> Notification | None:
         """Send birthday push to customer for any active loyalty pass they hold."""
         # Use any active pass for the notification context
-        active_pass = (
-            CustomerPass.objects.filter(customer=customer, is_active=True)
-            .select_related("card")
-            .first()
-        )
+        active_pass = CustomerPass.objects.filter(customer=customer, is_active=True).select_related("card").first()
         if not active_pass:
             logger.info(
                 "No active passes for birthday customer %s — skipping birthday push.",
@@ -131,9 +120,7 @@ class NotificationService:
             notification_type=NotificationType.BIRTHDAY,
             channel=NotificationChannel.PUSH,
             title=get_message("NOTIFICATION_BIRTHDAY_TITLE"),
-            message=get_message(
-                "NOTIFICATION_BIRTHDAY_MSG", program_name=active_pass.card.name
-            ),
+            message=get_message("NOTIFICATION_BIRTHDAY_MSG", program_name=active_pass.card.name),
             action_url=f"/passes/{active_pass.id}",
             notification_data={"offer_type": "birthday"},
         )
@@ -230,9 +217,7 @@ class NotificationService:
         try:
             phone = notification.customer.phone
             if not phone:
-                logger.warning(
-                    f"No phone number for customer {notification.customer.id}"
-                )
+                logger.warning(f"No phone number for customer {notification.customer.id}")
                 return False
 
             # In production, use Twilio or similar service
@@ -273,8 +258,6 @@ class NotificationService:
                 if NotificationService.send_notification(notification):
                     sent_count += 1
             except Exception as e:
-                logger.error(
-                    f"Failed to send notification to customer {customer.id}: {str(e)}"
-                )
+                logger.error(f"Failed to send notification to customer {customer.id}: {str(e)}")
 
         return sent_count

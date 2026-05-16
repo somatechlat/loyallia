@@ -23,6 +23,7 @@ test.describe('Campaigns — OWNER @owner @campaigns', () => {
 });
 
 test.describe('Campaigns — MANAGER Isolation @manager @campaigns', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER does NOT have "Campañas" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

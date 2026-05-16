@@ -11,9 +11,7 @@ from .base import _get_customer_or_403, router
 
 
 @router.get("/inbox/", auth=jwt_auth, summary="Get notification inbox")
-def get_notifications(
-    request, limit: int = 20, offset: int = 0, unread_only: bool = False
-):
+def get_notifications(request, limit: int = 20, offset: int = 0, unread_only: bool = False):
     """Get customer's notification inbox."""
     # Handle non-customer users (like Owner/Admin)
     if not hasattr(request.user, "customer") or not request.user.customer:
@@ -50,9 +48,7 @@ def get_notifications(
 
 
 @router.get("/", auth=jwt_auth, summary="Get notification inbox")
-def list_notifications(
-    request, limit: int = 20, offset: int = 0, unread_only: bool = False
-):
+def list_notifications(request, limit: int = 20, offset: int = 0, unread_only: bool = False):
     """Compatibility alias for notification inbox."""
     return get_notifications(request, limit, offset, unread_only)
 
@@ -95,9 +91,7 @@ def mark_notification_clicked(request, notification_id: str):
     return {"success": True, "message": "Notification action recorded"}
 
 
-@router.delete(
-    "/notifications/{notification_id}/", auth=jwt_auth, summary="Delete notification"
-)
+@router.delete("/notifications/{notification_id}/", auth=jwt_auth, summary="Delete notification")
 def delete_notification(request, notification_id: str):
     """Delete a notification."""
     customer = _get_customer_or_403(request)

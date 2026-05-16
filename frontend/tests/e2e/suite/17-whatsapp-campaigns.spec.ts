@@ -166,6 +166,7 @@ test.describe('WhatsApp Session API — OWNER @owner @whatsapp', () => {
 // =============================================================================
 
 test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager @whatsapp', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER cannot access campaign runs API (403) @manager', async ({ request }) => {
     const token = await loginRole(request, 'manager');
@@ -224,6 +225,7 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager @whatsapp'
 // =============================================================================
 
 test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff @whatsapp', () => {
+  test.use({ storageState: '.auth/staff.json' });
 
   test('STAFF cannot access campaign runs API (403) @staff', async ({ request }) => {
     const token = await loginRole(request, 'staff');
@@ -276,6 +278,7 @@ test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff @whatsapp', ()
 // =============================================================================
 
 test.describe('WhatsApp & Analytics RBAC — SUPERADMIN blocked @superadmin @whatsapp', () => {
+  test.use({ storageState: '.auth/superadmin.json' });
 
   test('SUPERADMIN cannot access campaign runs (no tenant, 403) @superadmin', async ({ request }) => {
     const token = await loginRole(request, 'superadmin');
@@ -421,6 +424,7 @@ test.describe('WhatsApp Settings Wizard — OWNER @owner @whatsapp', () => {
 });
 
 test.describe('WhatsApp Settings — MANAGER denied @manager @whatsapp', () => {
+  test.use({ storageState: '.auth/manager.json' });
   test('MANAGER cannot access settings page @manager', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);

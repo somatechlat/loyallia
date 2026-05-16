@@ -5,6 +5,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Role Isolation — MANAGER blocked routes @manager @role-isolation', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER navigating to /team does not crash @manager', async ({ page }) => {
     await page.goto('/team', { waitUntil: 'domcontentloaded' });
@@ -42,6 +43,7 @@ test.describe('Role Isolation — MANAGER blocked routes @manager @role-isolatio
 });
 
 test.describe('Role Isolation — STAFF blocked from dashboard @staff @role-isolation', () => {
+  test.use({ storageState: '.auth/staff.json' });
 
   test('STAFF navigating to / redirects to scanner @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -67,6 +69,7 @@ test.describe('Role Isolation — STAFF blocked from dashboard @staff @role-isol
 });
 
 test.describe('Role Isolation — OWNER blocked from superadmin @owner @role-isolation', () => {
+  test.use({ storageState: '.auth/owner.json' });
 
   test('OWNER navigating to /superadmin does not show SA dashboard @owner', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });

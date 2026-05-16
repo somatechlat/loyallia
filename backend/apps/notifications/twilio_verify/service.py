@@ -37,9 +37,9 @@ class VerifyServiceManager:
     """
 
     def __init__(self) -> None:
-        self._client: TwilioClient | None = None
+        self._client: Any = None
 
-    def _get_twilio_client(self) -> TwilioClient:
+    def _get_twilio_client(self) -> Any:
         if self._client is not None:
             return self._client
         if TwilioClient is None:
@@ -250,11 +250,11 @@ class VerifyServiceManager:
         service = self.create_service(friendly_name=friendly_name)
 
         # Store SID in Vault for automatic discovery
-        from common.vault import set_secret
+        from common.vault import put_secret
 
         sid = service.get("sid", "")
         if sid:
-            set_secret("twilio_verify_service_sid", sid)
+            put_secret("twilio_verify_service_sid", sid)
             logger.info("Stored Verify Service SID in Vault: %s", sid)
 
         return service

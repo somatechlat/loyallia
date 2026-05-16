@@ -95,12 +95,13 @@ def change_password(request, payload: ChangePasswordIn):
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
+
         log_action(
             request=request,
             action=AuditAction.UPDATE,
             resource_type="user_password",
             resource_id=str(u.id),
-            tenant_id=str(request.tenant.id) if hasattr(request, 'tenant') and request.tenant else None,
+            tenant_id=str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None,
             details={"event": "password_changed"},
             status="success",
         )

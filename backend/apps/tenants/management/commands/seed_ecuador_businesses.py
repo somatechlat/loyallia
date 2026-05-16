@@ -37,11 +37,7 @@ class Command(BaseCommand):
             self.stderr.write("ERROR: Seed commands can only run in DEBUG mode.")
             return
 
-        self.stdout.write(
-            self.style.WARNING(
-                "=== Seeding Loyallia with REAL Ecuadorian business data ==="
-            )
-        )
+        self.stdout.write(self.style.WARNING("=== Seeding Loyallia with REAL Ecuadorian business data ==="))
 
         data = self._load_data()
         if not data:
@@ -59,9 +55,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("\n=== Seed complete! ==="))
 
     def _load_data(self):
-        json_path = os.path.join(
-            os.path.dirname(__file__), "seed_data", "ecuador_businesses.json"
-        )
+        json_path = os.path.join(os.path.dirname(__file__), "seed_data", "ecuador_businesses.json")
         try:
             with open(json_path, encoding="utf-8") as f:
                 return json.load(f)
@@ -82,9 +76,7 @@ class Command(BaseCommand):
                 defaults=plan_data,
             )
             status = "CREATED" if created else "SKIPPED"
-            self.stdout.write(
-                f"  [{status}] Plan: {obj.name} — ${obj.price_monthly}/mes"
-            )
+            self.stdout.write(f"  [{status}] Plan: {obj.name} — ${obj.price_monthly}/mes")
 
     def _seed_businesses(self, businesses):
         self.stdout.write("\n--- Creating Ecuadorian Businesses ---")
@@ -120,9 +112,7 @@ class Command(BaseCommand):
                     plan="full",
                     is_active=True,
                 )
-                self.stdout.write(
-                    f"  [CREATED] Tenant: {tenant.name} (RUC: {tenant.ruc})"
-                )
+                self.stdout.write(f"  [CREATED] Tenant: {tenant.name} (RUC: {tenant.ruc})")
 
             plan_obj = SubscriptionPlan.objects.filter(slug=biz["plan_slug"]).first()
 
@@ -226,11 +216,7 @@ class Command(BaseCommand):
             tenant.email = update_data["email"]
             tenant.save()
 
-            if (
-                not Location.objects.filter(tenant=tenant)
-                .filter(latitude__isnull=False, is_active=True)
-                .exists()
-            ):
+            if not Location.objects.filter(tenant=tenant).filter(latitude__isnull=False, is_active=True).exists():
                 Location.objects.filter(tenant=tenant).update(is_active=False)
                 for loc in update_data["locations"]:
                     Location.objects.create(

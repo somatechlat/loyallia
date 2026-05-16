@@ -23,6 +23,7 @@ test.describe('Automation — OWNER @owner @automation', () => {
 });
 
 test.describe('Automation — MANAGER Isolation @manager @automation', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER does NOT have "Automatización" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

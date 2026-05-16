@@ -5,6 +5,7 @@ Inherits from base.py (NOT development.py).
 Ensures production-fidelity configuration.
 Django uses loyallia_dev as the test database template (--reuse-db recommended).
 """
+
 from .base import *  # noqa: F401, F403
 
 # =============================================================================

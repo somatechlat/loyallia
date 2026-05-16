@@ -7,7 +7,7 @@ status objects. It never returns raw secret values.
 import json
 import os
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -165,7 +165,9 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
 
     if key == "twilio_verify_service_sid":
         if not re.fullmatch(r"VA[a-fA-F0-9]{32}", normalized):
-            raise HttpError(400, "Invalid Twilio Verify Service SID. Expected format: VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)")
+            raise HttpError(
+                400, "Invalid Twilio Verify Service SID. Expected format: VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)"
+            )
         return normalized
 
     if key == "twilio_verify_default_channel":
@@ -176,12 +178,16 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
 
     if key == "twilio_api_key_sid":
         if normalized and not re.fullmatch(r"SK[a-fA-F0-9]{32}", normalized):
-            raise HttpError(400, "Invalid Twilio API Key SID. Expected format: SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)")
+            raise HttpError(
+                400, "Invalid Twilio API Key SID. Expected format: SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)"
+            )
         return normalized
 
     if key == "twilio_test_account_sid":
         if normalized and not re.fullmatch(r"AC[a-fA-F0-9]{32}", normalized):
-            raise HttpError(400, "Invalid Twilio Test Account SID. Expected format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)")
+            raise HttpError(
+                400, "Invalid Twilio Test Account SID. Expected format: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (34 chars)"
+            )
         return normalized
 
     if key == "vault_thresholds":
@@ -242,7 +248,7 @@ def _latest_backup(subdir: str, pattern: str) -> dict:
         latest = files[0]
         full = os.path.join(path, latest)
         mtime = os.path.getmtime(full)
-        age = (datetime.now(datetime.UTC).timestamp() - mtime) / 3600
+        age = (datetime.now(UTC).timestamp() - mtime) / 3600
         return {
             "latest": latest,
             "age_hours": round(age, 1),

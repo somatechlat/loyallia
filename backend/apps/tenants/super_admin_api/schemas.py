@@ -3,7 +3,6 @@ Loyallia — Super Admin API Schemas (Pydantic models)
 Used by all super_admin_api endpoint modules.
 """
 
-
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator

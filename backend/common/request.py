@@ -16,7 +16,6 @@ Performance (Rule 12):
 Called by: Every API endpoint and middleware that needs tenant-scoped data access.
 """
 
-
 from typing import TYPE_CHECKING, cast
 
 from django.http import HttpRequest

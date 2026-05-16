@@ -339,12 +339,14 @@ class AuthUsersAPITest(TestCase):
         header = _get_auth_header(owner)
         resp = self.client.post(
             "/api/v1/tenants/team/",
-            data=json.dumps({
-                "email": "hacker@test.com",
-                "first_name": "Hacker",
-                "last_name": "Admin",
-                "role": "SUPER_ADMIN",
-            }),
+            data=json.dumps(
+                {
+                    "email": "hacker@test.com",
+                    "first_name": "Hacker",
+                    "last_name": "Admin",
+                    "role": "SUPER_ADMIN",
+                }
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION=header,
         )
@@ -534,9 +536,7 @@ class TenantsAPITest(TestCase):
         self.header = _get_auth_header(self.user)
 
     def test_get_tenant_settings(self):
-        resp = self.client.get(
-            "/api/v1/tenants/settings/", HTTP_AUTHORIZATION=self.header
-        )
+        resp = self.client.get("/api/v1/tenants/settings/", HTTP_AUTHORIZATION=self.header)
         self.assertEqual(resp.status_code, 200)
 
     def test_update_tenant_settings(self):

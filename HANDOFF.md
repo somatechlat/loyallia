@@ -628,4 +628,119 @@ Results:
 
 ---
 
-*End of handoff. 12 REQ items (12 resolved, 0 pending). Bootstrap idempotency verified. Mailjet LIVE in Vault since 2026-05-12T22:01Z. Plan seed overwrite fixed 2026-05-12T22:08Z. Mailjet webhook receiver implemented 2026-05-14. Platform Mode toggle banner implemented 2026-05-14. SuperAdmin hard-delete implemented 2026-05-15. PgBouncer integration tests implemented 2026-05-15. E2E modular execution implemented 2026-05-15.*
+---
+
+## 10. Production Readiness Remediation — 2026-05-16
+
+### 10.1 Backend Quality Gates — ALL PASSING
+
+| Gate | Before | After |
+|---|---|---|
+| pytest | 540 passed, 2 failed | **542 passed, 0 failed** |
+| ruff check | 1 error (I001 unsorted imports) | **0 errors** |
+| ruff format | 122 files unformatted | **122 files reformatted** |
+| pyright | 7 errors, 32 warnings | **0 errors, 32 warnings** |
+
+**Warnings** are pre-existing type issues in `log_action()` tuple parameter signatures (32 occurrences across superadmin APIs). These are cosmetic and do not affect runtime.
+
+### 10.2 Test Fixes (2 failures → 0)
+
+| Test | Root Cause | Fix |
+|---|---|---|
+| `test_create_campaign_checks_plan_limit` | `make_subscription(status=ACTIVE)` uses `make_plan()` which lacks `email_campaigns` feature. Campaign defaults to `channel="email"` → `check_feature_access` raises 403. | Changed `setUp` to `make_subscription(status=TRIALING)`. Trial plan has ALL features. |
+| `test_enrollment_does_not_overwrite_customer_data` | Test re-enrolled same customer in **same card**. Real endpoint correctly returns 400 for duplicate pass. Test expected 200. | Changed test to enroll same customer in a **second card**, verifying `get_or_create` preserves original data (200 + data preserved). |
+
+### 10.3 Pyright Fixes (7 errors → 0)
+
+| Error | File | Fix |
+|---|---|---|
+| `Variable not allowed in type expression` (×4) | `twilio_verify/client.py`, `twilio_verify/service.py` | Changed `TwilioClient \| None` annotations to `Any` since `TwilioClient = None` on import failure. |
+| `"set_secret" is unknown import symbol` | `twilio_verify/service.py:253` | Changed `set_secret` → `put_secret` (correct Vault function name). |
+| `Cannot access attribute "UTC" for class "type[datetime]"` | `integration_config.py:245` | Changed `datetime.now(datetime.UTC)` → `datetime.now(UTC)` with `from datetime import UTC`. |
+| `Parameter "e2e_user_exists" is obscured` | `environment_guard.py:108` | Renamed inner function to `_default_e2e_user_exists()` and assigned to parameter variable. |
+
+### 10.4 Audit Logging Gaps Closed
+
+Added `log_action()` calls to modules that had **zero** audit coverage:
+
+| Module | Endpoints Now Audited |
+|---|---|
+| `apps/cards/api.py` | `create_program` (CREATE), `update_program` (UPDATE), `delete_program` (DELETE), `suspend_program` (UPDATE) |
+| `apps/customers/api.py` | `enroll_customer_public` (CREATE) with `enrollment_method: "qr_scan"` |
+| `apps/notifications/api/campaigns.py` | `create_campaign` (CREATE) for all 4 channels (email, wallet, whatsapp, sms) |
+| `apps/agent_api/api.py` | `get_recent_transactions` (READ) |
+| `apps/transactions/api.py` | `transact` (CREATE), `list_transactions` (READ), `get_transaction` (READ), `remote_issue` (CREATE) |
+
+### 10.5 File Size Remediation (650-line limit)
+
+| File | Before | After | Action |
+|---|---|---|---|
+| `apps/authentication/api.py` | 716 lines | **617 lines** | Extracted phone verification endpoints → `api_phone_verify.py` |
+| `apps/tenants/super_admin_api/platform.py` | 870 lines | **~470 lines** | Extracted plan CRUD → `platform_plans.py`; extracted seed_demo + factory_reset → `platform_reset.py` |
+| `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | 921 lines | **921 lines** | ❌ NOT YET SPLIT — still over limit. Extract IntegrationSettings and PlatformSettings components. |
+
+**Router registration:** `apps/api/router.py` now mounts `phone_verify_router`, `platform_plans_router`, and `platform_reset_router` alongside existing routers.
+
+**Test updates:** `tests/test_superadmin_flows.py` imports updated from `platform` → `platform_reset` for `seed_demo_data`, `factory_reset_request`, `factory_reset_confirm`.
+
+### 10.6 Remaining Issues for Next Agent
+
+| Issue | Priority | Details |
+|---|---|---|
+| **Playwright `getRoleCredentials` import bug** | 🔴 HIGH | `tests/e2e/suite/01-auth.spec.ts` and `30-impersonation.spec.ts` import `getRoleCredentials` from `e2e-safety.ts`, but that function does not exist. **Workaround added:** `getRoleCredentials()` re-export added to `e2e-safety.ts` (via `require('./e2e-test-config')`). Needs verification that full E2E suite passes. |
+| **Playwright test failures** | 🔴 HIGH | When running full suite, many tests timeout at 60s (default). Some tests fail on login/dashboard navigation. The auth setup project **passes** (all 4 roles authenticated). Individual test failures need investigation. Run: `cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --reporter=list` |
+| **Frontend settings page > 650 lines** | 🟡 MEDIUM | `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` is 921 lines. Split into: `IntegrationSettings.tsx`, `PlatformSettings.tsx`, `SysAdminOperations.tsx`. |
+| **Pyright warnings (32)** | 🟡 LOW | `log_action(action=AuditAction.UPDATE, ...)` — `AuditAction.UPDATE` is a tuple `(str, str)` but `log_action` expects `str`. Fix: either change `AuditAction` values to plain strings, or update `log_action` signature to accept `str \| tuple`. |
+
+### 10.7 Commands for Next Agent
+
+```bash
+# Backend tests (should be 542 passed, 0 failed)
+docker exec loyallia-api bash -c "cd /app && DJANGO_SETTINGS_MODULE=loyallia.settings.test python3 -m pytest -q"
+
+# Ruff check (should be 0 errors)
+cd backend && python3 -m ruff check .
+
+# Ruff format check (should be 0 files to reformat)
+cd backend && python3 -m ruff format --check .
+
+# Pyright (should be 0 errors, 32 warnings)
+cd backend && python3 -m pyright
+
+# Frontend typecheck (should pass)
+cd frontend && npm run typecheck
+
+# Frontend unit tests (should pass)
+cd frontend && npm run test:unit
+
+# Playwright auth setup (should pass)
+cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --project=setup
+
+# Playwright smoke tests
+cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --project=auth --project=programs --project=customers --project=analytics
+```
+
+### 10.8 Files Changed in This Session
+
+```
+backend/tests/audit/test_audit_api.py
+backend/apps/cards/api.py
+backend/apps/customers/api.py
+backend/apps/notifications/api/campaigns.py
+backend/apps/agent_api/api.py
+backend/apps/transactions/api.py
+backend/apps/notifications/twilio_verify/client.py
+backend/apps/notifications/twilio_verify/service.py
+backend/apps/tenants/super_admin_api/integration_config.py
+backend/common/environment_guard.py
+backend/apps/authentication/api.py
+backend/apps/authentication/api_phone_verify.py
+backend/apps/tenants/super_admin_api/platform.py
+backend/apps/tenants/super_admin_api/platform_plans.py
+backend/apps/tenants/super_admin_api/platform_reset.py
+backend/apps/api/router.py
+backend/tests/test_superadmin_flows.py
+frontend/tests/e2e/helpers/e2e-safety.ts
+```
+
+*End of handoff. 542 backend tests passing. 0 pyright errors. 0 ruff errors. 122 files reformatted. Audit logging added to 5 modules. 2 oversized backend files split. Playwright E2E has pre-existing `getRoleCredentials` import bug (workaround added). Frontend settings page still needs splitting.*

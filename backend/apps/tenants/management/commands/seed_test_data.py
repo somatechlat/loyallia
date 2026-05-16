@@ -70,9 +70,7 @@ class Command(BaseCommand):
 
         enforce_settings_environment(mode="development", databases=settings.DATABASES)
         if not settings.DEBUG:
-            raise CommandError(
-                "Refusing to seed test data outside DEBUG development mode."
-            )
+            raise CommandError("Refusing to seed test data outside DEBUG development mode.")
         if options["wipe"]:
             self.stdout.write(
                 self.style.WARNING("Wiping existing DEMO data only (operational infrastructure preserved)...")
@@ -150,9 +148,7 @@ class Command(BaseCommand):
 
         # Idempotency guard: skip if demo data already exists
         if Customer.objects.filter(tenant=tenant).exists():
-            self.stdout.write(
-                self.style.NOTICE("Demo data already exists for Café El Ritmo. Skipping seed.")
-            )
+            self.stdout.write(self.style.NOTICE("Demo data already exists for Café El Ritmo. Skipping seed."))
             return
 
         # =====================================================================

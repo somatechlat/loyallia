@@ -40,15 +40,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         reward = metadata.get("reward_description", "Recompensa")
         stamps_display = "\u2b1b" * current + "\u2b1c" * (total - current)
         return {
-            "headerFields": [
-                {"key": "stamps", "label": "SELLOS", "value": f"{current}/{total}"}
-            ],
-            "primaryFields": [
-                {"key": "reward", "label": "RECOMPENSA", "value": reward}
-            ],
-            "secondaryFields": [
-                {"key": "progress", "label": "PROGRESO", "value": stamps_display}
-            ],
+            "headerFields": [{"key": "stamps", "label": "SELLOS", "value": f"{current}/{total}"}],
+            "primaryFields": [{"key": "reward", "label": "RECOMPENSA", "value": reward}],
+            "secondaryFields": [{"key": "progress", "label": "PROGRESO", "value": stamps_display}],
             "backFields": [
                 {"key": "name", "label": "Cliente", "value": customer_name},
                 {"key": "program", "label": "Programa", "value": card.name},
@@ -72,30 +66,20 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "currencyCode": "USD",
                 }
             ],
-            "primaryFields": [
-                {"key": "program", "label": "PROGRAMA", "value": card.name}
-            ],
+            "primaryFields": [{"key": "program", "label": "PROGRAMA", "value": card.name}],
             "secondaryFields": [
                 {"key": "rate", "label": "% CASHBACK", "value": f"{pct}%"},
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
-            "backFields": [
-                {"key": "desc", "label": "Descripcion", "value": card.description or ""}
-            ],
+            "backFields": [{"key": "desc", "label": "Descripcion", "value": card.description or ""}],
         }
 
     elif card.card_type == "vip_membership":
         tier = pass_data.get("membership_tier", "VIP")
         return {
-            "headerFields": [
-                {"key": "tier", "label": "MEMBRESIA", "value": tier.upper()}
-            ],
-            "primaryFields": [
-                {"key": "name", "label": "MIEMBRO", "value": customer_name}
-            ],
-            "secondaryFields": [
-                {"key": "program", "label": "CLUB", "value": card.name}
-            ],
+            "headerFields": [{"key": "tier", "label": "MEMBRESIA", "value": tier.upper()}],
+            "primaryFields": [{"key": "name", "label": "MIEMBRO", "value": customer_name}],
+            "secondaryFields": [{"key": "program", "label": "CLUB", "value": card.name}],
             "backFields": [
                 {
                     "key": "perks",
@@ -115,9 +99,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "value": card.description or "Descuento especial",
                 }
             ],
-            "secondaryFields": [
-                {"key": "customer", "label": "CLIENTE", "value": customer_name}
-            ],
+            "secondaryFields": [{"key": "customer", "label": "CLIENTE", "value": customer_name}],
             "backFields": [],
         }
 
@@ -125,13 +107,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         referrals = pass_data.get("referrals_made", 0)
         ref_code = pass_data.get("referral_code", "N/A")
         return {
-            "headerFields": [
-                {"key": "refs", "label": "REFERIDOS", "value": str(referrals)}
-            ],
+            "headerFields": [{"key": "refs", "label": "REFERIDOS", "value": str(referrals)}],
             "primaryFields": [{"key": "code", "label": "TU CODIGO", "value": ref_code}],
-            "secondaryFields": [
-                {"key": "customer", "label": "EMBAJADOR", "value": customer_name}
-            ],
+            "secondaryFields": [{"key": "customer", "label": "EMBAJADOR", "value": customer_name}],
             "backFields": [
                 {
                     "key": "desc",
@@ -198,12 +176,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         member_since = pass_data.get("enrolled_date", "")
         affiliate_code = pass_data.get("affiliate_code", "N/A")
         return {
-            "headerFields": [
-                {"key": "program", "label": "PROGRAMA", "value": card.name}
-            ],
-            "primaryFields": [
-                {"key": "member", "label": "AFILIADO", "value": customer_name}
-            ],
+            "headerFields": [{"key": "program", "label": "PROGRAMA", "value": card.name}],
+            "primaryFields": [{"key": "member", "label": "AFILIADO", "value": customer_name}],
             "secondaryFields": [
                 {"key": "code", "label": "CÓDIGO", "value": affiliate_code},
                 {
@@ -216,9 +190,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {
                     "key": "benefits",
                     "label": "Beneficios",
-                    "value": ", ".join(metadata.get("benefits", []))
-                    or card.description
-                    or "",
+                    "value": ", ".join(metadata.get("benefits", [])) or card.description or "",
                 },
             ],
         }
@@ -237,9 +209,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "currencyCode": currency,
                 }
             ],
-            "primaryFields": [
-                {"key": "program", "label": "CERTIFICADO", "value": card.name}
-            ],
+            "primaryFields": [{"key": "program", "label": "CERTIFICADO", "value": card.name}],
             "secondaryFields": [
                 {"key": "recipient", "label": "BENEFICIARIO", "value": customer_name},
             ],
@@ -263,9 +233,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         discount_pct = pass_data.get("corporate_discount", "0")
         company = pass_data.get("company_name", metadata.get("company_name", card.name))
         return {
-            "headerFields": [
-                {"key": "discount", "label": "DESCUENTO", "value": f"{discount_pct}%"}
-            ],
+            "headerFields": [{"key": "discount", "label": "DESCUENTO", "value": f"{discount_pct}%"}],
             "primaryFields": [{"key": "company", "label": "EMPRESA", "value": company}],
             "secondaryFields": [
                 {"key": "employee", "label": "EMPLEADO", "value": customer_name},
@@ -292,9 +260,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "value": f"{remaining}/{bundle_size}",
                 }
             ],
-            "primaryFields": [
-                {"key": "bundle", "label": "MULTIPASE", "value": card.name}
-            ],
+            "primaryFields": [{"key": "bundle", "label": "MULTIPASE", "value": card.name}],
             "secondaryFields": [
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
@@ -315,16 +281,10 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     else:
         # Fallback for any future/unknown card types
         return {
-            "headerFields": [
-                {"key": "program", "label": "PROGRAMA", "value": card.name}
-            ],
-            "primaryFields": [
-                {"key": "customer", "label": "CLIENTE", "value": customer_name}
-            ],
+            "headerFields": [{"key": "program", "label": "PROGRAMA", "value": card.name}],
+            "primaryFields": [{"key": "customer", "label": "CLIENTE", "value": customer_name}],
             "secondaryFields": [],
-            "backFields": [
-                {"key": "desc", "label": "Descripcion", "value": card.description or ""}
-            ],
+            "backFields": [{"key": "desc", "label": "Descripcion", "value": card.description or ""}],
         }
 
 
@@ -362,9 +322,7 @@ def _hex_to_rgb(hex_color: str) -> str:
     return f"rgb({r}, {g}, {b})"
 
 
-def _generate_placeholder_icon(
-    name: str, bg_color: str = "#5660ff", size: int = 87
-) -> bytes:
+def _generate_placeholder_icon(name: str, bg_color: str = "#5660ff", size: int = 87) -> bytes:
     """Generate a simple icon PNG using a solid background with the first letter."""
     try:
         from PIL import Image, ImageDraw, ImageFont
@@ -373,9 +331,7 @@ def _generate_placeholder_icon(
         draw = ImageDraw.Draw(img)
         letter = name[0].upper() if name else "L"
         try:
-            font = ImageFont.truetype(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size // 2
-            )
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size // 2)
         except OSError:
             font = ImageFont.load_default()
         bbox = draw.textbbox((0, 0), letter, font=font)
@@ -398,11 +354,7 @@ def _minimal_png() -> bytes:
 
     def _chunk(chunk_type: bytes, data: bytes) -> bytes:
         raw = chunk_type + data
-        return (
-            struct.pack(">I", len(data))
-            + raw
-            + struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
-        )
+        return struct.pack(">I", len(data)) + raw + struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
 
     signature = b"\x89PNG\r\n\x1a\n"
     ihdr = _chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0))

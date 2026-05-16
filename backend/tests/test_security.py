@@ -261,6 +261,7 @@ class UserRoleTest(TestCase):
 
     def test_superuser_is_super_admin(self):
         import secrets
+
         admin = cast(UserManager, User.objects).create_superuser(
             email=f"admin-{uuid.uuid4().hex[:6]}@test.com",
             password=secrets.token_urlsafe(16),

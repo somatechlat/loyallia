@@ -75,16 +75,12 @@ class PassProcessor:
 
     def _process_stamp(self, amount: Decimal, quantity: int) -> dict:
         stamps_required = self.card.get_metadata_field("stamps_required", 10)
-        reward_description = self.card.get_metadata_field(
-            "reward_description", "Free item"
-        )
+        reward_description = self.card.get_metadata_field("reward_description", "Free item")
 
         with db_transaction.atomic():
             from apps.customers.models import CustomerPass
 
-            locked = CustomerPass.objects.select_for_update().get(
-                pk=self.customer_pass.pk
-            )
+            locked = CustomerPass.objects.select_for_update().get(pk=self.customer_pass.pk)
             current_stamps = locked.pass_data.get("stamp_count", 0)
             new_stamps = current_stamps + quantity
 
@@ -109,9 +105,7 @@ class PassProcessor:
         }
 
     def _process_cashback(self, amount: Decimal) -> dict:
-        percentage = Decimal(
-            str(self.card.get_metadata_field("cashback_percentage", 0))
-        )
+        percentage = Decimal(str(self.card.get_metadata_field("cashback_percentage", 0)))
         min_purchase = Decimal(str(self.card.get_metadata_field("minimum_purchase", 0)))
 
         if amount >= min_purchase:
@@ -120,18 +114,12 @@ class PassProcessor:
             with db_transaction.atomic():
                 from apps.customers.models import CustomerPass
 
-                locked = CustomerPass.objects.select_for_update().get(
-                    pk=self.customer_pass.pk
-                )
-                current_balance = Decimal(
-                    str(locked.pass_data.get("cashback_balance", "0"))
-                )
+                locked = CustomerPass.objects.select_for_update().get(pk=self.customer_pass.pk)
+                current_balance = Decimal(str(locked.pass_data.get("cashback_balance", "0")))
                 new_balance = current_balance + earned
                 locked.pass_data["cashback_balance"] = str(new_balance)
                 locked.cashback_balance = new_balance
-                locked.save(
-                    update_fields=["pass_data", "cashback_balance", "last_updated"]
-                )
+                locked.save(update_fields=["pass_data", "cashback_balance", "last_updated"])
 
             return {
                 "transaction_type": TransactionType.CASHBACK_EARNED,
@@ -149,9 +137,7 @@ class PassProcessor:
         with db_transaction.atomic():
             from apps.customers.models import CustomerPass
 
-            locked = CustomerPass.objects.select_for_update().get(
-                pk=self.customer_pass.pk
-            )
+            locked = CustomerPass.objects.select_for_update().get(pk=self.customer_pass.pk)
             if locked.pass_data.get("coupon_used", False):
                 return {
                     "transaction_type": TransactionType.COUPON_REDEEMED,
@@ -160,9 +146,7 @@ class PassProcessor:
             locked.pass_data["coupon_used"] = True
             locked.save(update_fields=["pass_data", "last_updated"])
 
-        reward_description = self.card.get_metadata_field(
-            "coupon_description", "Coupon redeemed"
-        )
+        reward_description = self.card.get_metadata_field("coupon_description", "Coupon redeemed")
         return {
             "transaction_type": TransactionType.COUPON_REDEEMED,
             "pass_updated": True,
@@ -182,9 +166,7 @@ class PassProcessor:
             with db_transaction.atomic():
                 from apps.customers.models import CustomerPass
 
-                locked = CustomerPass.objects.select_for_update().get(
-                    pk=self.customer_pass.pk
-                )
+                locked = CustomerPass.objects.select_for_update().get(pk=self.customer_pass.pk)
                 total_spent = locked.pass_data.get("total_spent_at_business", 0)
                 new_total = Decimal(str(total_spent)) + amount
 
@@ -193,14 +175,8 @@ class PassProcessor:
                     if new_total >= Decimal(str(tier.get("threshold", 0))):
                         applicable_tier = tier
 
-                discount_pct = (
-                    applicable_tier.get("discount_percentage", 0)
-                    if applicable_tier
-                    else 0
-                )
-                tier_name = (
-                    applicable_tier.get("tier_name", "") if applicable_tier else ""
-                )
+                discount_pct = applicable_tier.get("discount_percentage", 0) if applicable_tier else 0
+                tier_name = applicable_tier.get("tier_name", "") if applicable_tier else ""
 
                 locked.pass_data["total_spent_at_business"] = str(new_total)
                 locked.pass_data["current_discount_percentage"] = discount_pct
@@ -226,9 +202,7 @@ class PassProcessor:
         with db_transaction.atomic():
             from apps.customers.models import CustomerPass
 
-            locked = CustomerPass.objects.select_for_update().get(
-                pk=self.customer_pass.pk
-            )
+            locked = CustomerPass.objects.select_for_update().get(pk=self.customer_pass.pk)
             current_count = locked.pass_data.get("referral_count", 0)
 
             if max_referrals > 0 and current_count >= max_referrals:
@@ -286,9 +260,7 @@ class PassProcessor:
         with db_transaction.atomic():
             from apps.customers.models import CustomerPass
 
-            locked = CustomerPass.objects.select_for_update().get(
-                pk=self.customer_pass.pk
-            )
+            locked = CustomerPass.objects.select_for_update().get(pk=self.customer_pass.pk)
             current_balance = Decimal(str(locked.pass_data.get("gift_balance", "0")))
             if current_balance >= amount:
                 new_balance = current_balance - amount
@@ -310,9 +282,7 @@ class PassProcessor:
         with db_transaction.atomic():
             from apps.customers.models import CustomerPass
 
-            locked = CustomerPass.objects.select_for_update().get(
-                pk=self.customer_pass.pk
-            )
+            locked = CustomerPass.objects.select_for_update().get(pk=self.customer_pass.pk)
             remaining = locked.pass_data.get("multipass_remaining", 0)
             if remaining > 0:
                 new_remaining = remaining - 1

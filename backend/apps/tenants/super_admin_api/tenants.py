@@ -91,9 +91,7 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         }
         target_status = plan_status_map.get(plan)
         if target_status:
-            tenant_ids = Subscription.objects.filter(status=target_status).values_list(
-                "tenant_id", flat=True
-            )
+            tenant_ids = Subscription.objects.filter(status=target_status).values_list("tenant_id", flat=True)
             qs = qs.filter(id__in=tenant_ids)
         else:
             qs = qs.filter(plan=plan)
@@ -116,9 +114,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
     if User.objects.filter(email=payload.owner_email).exists():
         raise HttpError(
             400,
-            get_message(
-                "VALIDATION_ERROR", detail="Email ya registrado en la plataforma"
-            ),
+            get_message("VALIDATION_ERROR", detail="Email ya registrado en la plataforma"),
         )
 
     try:
@@ -178,7 +174,9 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 trial_start=dj_timezone.now() if is_trial else None,
                 trial_end=dj_timezone.now() + timedelta(days=trial_days) if is_trial else None,
                 current_period_start=dj_timezone.now() if not is_trial else None,
-                current_period_end=dj_timezone.now() + timedelta(days=365 if payload.billing_cycle == "annual" else 30) if not is_trial else None,
+                current_period_end=dj_timezone.now() + timedelta(days=365 if payload.billing_cycle == "annual" else 30)
+                if not is_trial
+                else None,
             )
             tenant.trial_end = sub.trial_end
             tenant.save(update_fields=["trial_end"])
@@ -202,9 +200,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                         fail_silently=False,
                     )
                 except Exception:
-                    logger.exception(
-                        "Failed to send owner welcome email to %s", owner.email
-                    )
+                    logger.exception("Failed to send owner welcome email to %s", owner.email)
 
             transaction.on_commit(_send_owner_welcome)
 
@@ -253,9 +249,7 @@ def update_tenant_admin(request, tenant_id: str):
         body = json.loads(request.body)
         payload = TenantAdminUpdateIn(**body)
     except Exception:
-        raise HttpError(
-            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
-        )
+        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
 
     update_fields = ["updated_at"]
     # LYL-H-ARCH-011: "plan" removed — use Subscription endpoints to change plan.
@@ -301,9 +295,7 @@ def update_tenant_admin(request, tenant_id: str):
 def list_tenant_locations(request, tenant_id: str):
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
-    return [
-        LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)
-    ]
+    return [LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)]
 
 
 @router.post(
@@ -415,6 +407,7 @@ def delete_tenant(request, tenant_id: str):
 
     # SYNCHRONOUS hard delete — data is gone before response returns
     from apps.tenants.tasks import hard_delete_tenant
+
     hard_delete_tenant(tenant_id_str)
 
     # Audit log with ACTUAL SuperAdmin identity
@@ -484,9 +477,9 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription and subscription.trial_start:
         max_trial_end = subscription.trial_start + timedelta(days=90)
-        proposed_end = max(
-            subscription.trial_end or dj_timezone.now(), dj_timezone.now()
-        ) + timedelta(days=payload.days)
+        proposed_end = max(subscription.trial_end or dj_timezone.now(), dj_timezone.now()) + timedelta(
+            days=payload.days
+        )
         if proposed_end > max_trial_end:
             raise HttpError(
                 400,
@@ -546,9 +539,7 @@ def set_whatsapp_override(request, tenant_id: str):
 
         payload = WhatsAppOverrideIn(**body)
     except Exception:
-        raise HttpError(
-            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
-        )
+        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
 
     if payload.daily_limit_override < 0 or payload.daily_limit_override > 200:
         raise HttpError(

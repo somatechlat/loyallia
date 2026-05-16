@@ -35,7 +35,9 @@ class BillingService:
         """
         from apps.tenants.models import PlatformSetting
 
-        tax_rate = Decimal(str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15))))
+        tax_rate = Decimal(
+            str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
+        )
         trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
         plans = SubscriptionPlan.objects.filter(is_active=True)
@@ -43,9 +45,7 @@ class BillingService:
 
         for plan in plans:
             annual_monthly = (
-                (plan.price_annual / 12).quantize(Decimal("0.01"))
-                if plan.price_annual > 0
-                else Decimal("0.00")
+                (plan.price_annual / 12).quantize(Decimal("0.01")) if plan.price_annual > 0 else Decimal("0.00")
             )
             result.append(
                 {
@@ -110,9 +110,7 @@ class BillingService:
 
         # Store payment method if provided
         if card_data and card_data.get("card_token"):
-            PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(
-                is_default=False
-            )
+            PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(is_default=False)
             PaymentMethod.objects.create(
                 tenant=tenant,
                 gateway_token=card_data.get("card_token", ""),
@@ -139,9 +137,7 @@ class BillingService:
             "status": subscription.status,
             "billing_cycle": subscription.billing_cycle,
             "current_period_end": (
-                subscription.current_period_end.isoformat()
-                if subscription.current_period_end
-                else None
+                subscription.current_period_end.isoformat() if subscription.current_period_end else None
             ),
         }
 
@@ -163,12 +159,8 @@ class BillingService:
         total_programs = Card.objects.filter(tenant=tenant).count()
         total_users = tenant.users.filter(is_active=True).count()
         total_locations = tenant.locations.count()
-        monthly_txns = Transaction.objects.filter(
-            tenant=tenant, created_at__gte=month_start
-        ).count()
-        monthly_notifs = Notification.objects.filter(
-            tenant=tenant, created_at__gte=month_start
-        ).count()
+        monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
+        monthly_notifs = Notification.objects.filter(tenant=tenant, created_at__gte=month_start).count()
 
         subscription = Subscription.objects.filter(tenant=tenant).first()
 

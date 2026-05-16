@@ -34,6 +34,7 @@ def _make_user(tenant, **kwargs):
     }
     defaults.update(kwargs)
     import secrets
+
     password = defaults.pop("password", None) or secrets.token_urlsafe(16)
     user = cast(UserManager, User.objects).create_user(password=password, **defaults)
     if tenant:
@@ -185,9 +186,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
                 trigger_event="customer_enrolled",
                 success=True,
             )
-            AutomationExecution.objects.filter(pk=exec_obj.pk).update(
-                executed_at=yesterday
-            )
+            AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=yesterday)
 
         # Should still be allowed today — real methods run
         result = self.automation.execute(self.customer)

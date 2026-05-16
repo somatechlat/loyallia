@@ -40,9 +40,7 @@ class RequestIDMiddleware:
 
     def __call__(self, request):
         # PERF: reuse upstream ID if present, otherwise generate (single uuid4 call)
-        request_id = request.META.get(
-            f"HTTP_{self.HEADER.upper().replace('-', '_')}", ""
-        )
+        request_id = request.META.get(f"HTTP_{self.HEADER.upper().replace('-', '_')}", "")
         if not request_id:
             request_id = uuid.uuid4().hex
 

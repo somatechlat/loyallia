@@ -79,15 +79,11 @@ def send_sms_campaign(
 
     from apps.customers.segment_api import _apply_segment_filter
 
-    base_qs = Customer.objects.filter(
-        tenant=tenant, is_active=True, phone__isnull=False, phone__gt=""
-    )
+    base_qs = Customer.objects.filter(tenant=tenant, is_active=True, phone__isnull=False, phone__gt="")
     audience = _apply_segment_filter(base_qs, segment_id)
     total = audience.count()
 
-    logger.info(
-        "SMS campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total
-    )
+    logger.info("SMS campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total)
 
     # Create CampaignRun record
     campaign_run = CampaignRun.objects.create(
@@ -141,9 +137,7 @@ def send_sms_campaign(
                     delivery_log.status = DeliveryStatus.SENT
                     delivery_log.sent_at = timezone.now()
                     delivery_log.external_message_id = result.get("sid", "")
-                    delivery_log.save(
-                        update_fields=["status", "sent_at", "external_message_id"]
-                    )
+                    delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
                     notification.mark_as_sent()
                     succeeded += 1
                 else:

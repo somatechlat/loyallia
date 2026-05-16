@@ -277,9 +277,7 @@ def make_enrollment(tenant, customer, card, **kwargs):
     """Create an Enrollment record."""
     defaults = {"enrollment_method": "manual"}
     defaults.update(kwargs)
-    return Enrollment.objects.create(
-        tenant=tenant, customer=customer, card=card, **defaults
-    )
+    return Enrollment.objects.create(tenant=tenant, customer=customer, card=card, **defaults)
 
 
 def make_transaction(
@@ -296,9 +294,7 @@ def make_transaction(
         "quantity": 1,
     }
     defaults.update(kwargs)
-    return Transaction.objects.create(
-        tenant=tenant, customer_pass=customer_pass, **defaults
-    )
+    return Transaction.objects.create(tenant=tenant, customer_pass=customer_pass, **defaults)
 
 
 # ── Explicit role factories ──────────────────────────────────────────────────

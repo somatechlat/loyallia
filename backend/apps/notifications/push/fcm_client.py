@@ -10,7 +10,6 @@ Endpoint: https://fcm.googleapis.com/v1/projects/{project_id}/messages:send
 Dependencies: google-auth, google-auth-httplib2 (already in requirements.txt)
 """
 
-
 import json
 import logging
 import os

@@ -1,4 +1,3 @@
-
 import contextlib
 import logging
 import uuid
@@ -26,9 +25,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
     Generates an asynchronous ZIP bundle containing all tenant data and
     delivers a download link via email to the authorized requester.
     """
-    logger.info(
-        f"Starting data export for tenant {tenant_id} requested by {user_email}"
-    )
+    logger.info(f"Starting data export for tenant {tenant_id} requested by {user_email}")
     try:
         tenant = Tenant.objects.get(id=tenant_id)
         user = User.objects.get(email=user_email)
@@ -38,15 +35,11 @@ def export_tenant_data(tenant_id: str, user_email: str):
         zip_filename = f"export_{tenant.id}_{uuid4().hex[:8]}.zip"
         storage_path = f"exports/{tenant.id}/{zip_filename}"
         export_buffer = generate_tenant_export(tenant)
-        saved_path = default_storage.save(
-            storage_path, ContentFile(export_buffer.getvalue())
-        )
+        saved_path = default_storage.save(storage_path, ContentFile(export_buffer.getvalue()))
 
         download_url = default_storage.url(saved_path)
         if not download_url.startswith("http"):
-            backend_url = getattr(
-                settings, "BACKEND_URL", "http://localhost:8000"
-            ).rstrip("/")
+            backend_url = getattr(settings, "BACKEND_URL", "http://localhost:8000").rstrip("/")
             download_url = f"{backend_url}{download_url}"
 
         from common.messages import get_message
@@ -58,9 +51,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
             body_html=body,
         )
 
-        logger.info(
-            f"Export successful for tenant {tenant_id}. Email sent to {user_email}."
-        )
+        logger.info(f"Export successful for tenant {tenant_id}. Email sent to {user_email}.")
 
     except Exception as e:
         logger.exception(f"Failed to export data for tenant {tenant_id}: {str(e)}")
@@ -170,9 +161,7 @@ def hard_delete_tenant(tenant_id: str) -> str:
     # 9. Delete Tenant
     tenant.delete()
 
-    logger.info(
-        "Hard deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id
-    )
+    logger.info("Hard deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id)
     return tenant_name
 
 
@@ -213,6 +202,4 @@ def delete_tenant_cascade(self, tenant_id: str):
             details={"deletion_type": "lopdp_art18_cascade", "tenant_name": tenant_name},
         )
 
-    logger.info(
-        "Cascade deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id
-    )
+    logger.info("Cascade deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id)

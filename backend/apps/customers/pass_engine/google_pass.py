@@ -10,7 +10,6 @@ According to Google Wallet API docs:
 Reference: https://developers.google.com/wallet/loyalty
 """
 
-
 import json
 import logging
 import time
@@ -49,9 +48,7 @@ def _load_service_account() -> dict | None:
         if sa_data and "private_key" in sa_data and "client_email" in sa_data:
             return sa_data
 
-        logger.warning(
-            "Google Service Account JSON in Vault is missing required fields"
-        )
+        logger.warning("Google Service Account JSON in Vault is missing required fields")
         return None
     except Exception as exc:
         logger.error("Failed to load Google Service Account from Vault: %s", exc)
@@ -212,9 +209,7 @@ def _get_access_token() -> str | None:
         return None
 
 
-def send_push_notification(
-    customer_pass, header: str, body: str, action_url: str = ""
-) -> dict:
+def send_push_notification(customer_pass, header: str, body: str, action_url: str = "") -> dict:
     """
     Send a push notification to a Google Wallet pass using the Add Message API.
     Reference: https://developers.google.com/wallet/generic/use-cases/trigger-push-notifications
@@ -276,9 +271,7 @@ def send_push_notification(
             timeout=10.0,
         )
         if response.status_code in (200, 201):
-            logger.info(
-                "Push notification sent to pass %s: %s", customer_pass.id, header
-            )
+            logger.info("Push notification sent to pass %s: %s", customer_pass.id, header)
             return {"success": True, "message_id": message_id}
         else:
             logger.error(
@@ -329,23 +322,17 @@ def update_loyalty_class(card) -> dict:
     }
 
     try:
-        patch_resp = httpx.patch(
-            f"{base_url}/{class_id}", json=payload, headers=headers, timeout=10.0
-        )
+        patch_resp = httpx.patch(f"{base_url}/{class_id}", json=payload, headers=headers, timeout=10.0)
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Class patched successfully: %s", class_id)
             return {"success": True, "action": "patch"}
         if patch_resp.status_code == 404:
             logger.info("Class %s not found — creating via POST", class_id)
-            post_resp = httpx.post(
-                base_url, json=payload, headers=headers, timeout=10.0
-            )
+            post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Class created: %s", class_id)
                 return {"success": True, "action": "create"}
-            logger.error(
-                "Failed to create Google Wallet Class %s: %s", class_id, post_resp.text
-            )
+            logger.error("Failed to create Google Wallet Class %s: %s", class_id, post_resp.text)
             return {"success": False, "error": post_resp.text}
         logger.error(
             "Unexpected response patching Google Wallet Class %s: %s",
@@ -401,18 +388,14 @@ def update_wallet_object(customer_pass) -> dict:
     }
 
     try:
-        patch_resp = httpx.patch(
-            f"{base_url}/{object_id}", json=payload, headers=headers, timeout=10.0
-        )
+        patch_resp = httpx.patch(f"{base_url}/{object_id}", json=payload, headers=headers, timeout=10.0)
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Object patched: %s", object_id)
             return {"success": True, "action": "patch", "object_id": object_id}
         if patch_resp.status_code == 404:
             # Object doesn't exist yet — create it
             logger.info("Object %s not found — creating via POST", object_id)
-            post_resp = httpx.post(
-                base_url, json=payload, headers=headers, timeout=10.0
-            )
+            post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Object created: %s", object_id)
                 return {"success": True, "action": "create", "object_id": object_id}
@@ -433,9 +416,7 @@ def update_wallet_object(customer_pass) -> dict:
         return {"success": False, "error": str(exc)}
 
 
-def send_push_notification_to_class(
-    card, header: str, body: str, action_url: str = ""
-) -> dict:
+def send_push_notification_to_class(card, header: str, body: str, action_url: str = "") -> dict:
     """Send a push notification to EVERYONE holding this card class."""
     import httpx
 

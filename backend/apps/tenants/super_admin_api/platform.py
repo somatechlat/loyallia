@@ -8,14 +8,13 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.mail import send_mass_mail
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone as dj_timezone
 from ninja import Router
 from ninja.errors import HttpError
 
-from apps.authentication.models import User, UserRole
+from apps.authentication.models import User
 from apps.billing.models import (
     Invoice,
     Subscription,
@@ -33,10 +32,7 @@ from apps.tenants.super_admin_api.plan_validation import (
     validate_plan_config,
 )
 from apps.tenants.super_admin_api.schemas import (
-    BroadcastIn,
-    FactoryResetConfirmIn,
     MessageOut,
-    PlanCreateIn,
     PlanOut,
     PlanUpdateIn,
     PlatformIntegrationOut,
@@ -45,7 +41,6 @@ from apps.tenants.super_admin_api.schemas import (
     PlatformModeToggleIn,
     PlatformSettingOut,
     PlatformSettingUpdateIn,
-    SeedDemoDataOut,
     VaultSecretUpdateIn,
 )
 from common.messages import get_message
@@ -81,10 +76,7 @@ def _is_production_environment() -> bool:
     then falls back to Django settings.ENVIRONMENT.
     """
     setting = PlatformSetting.objects.filter(key="PLATFORM_MODE").first()
-    return bool(
-        (setting and setting.value == "production")
-        or getattr(settings, "ENVIRONMENT", "") == "production"
-    )
+    return bool((setting and setting.value == "production") or getattr(settings, "ENVIRONMENT", "") == "production")
 
 
 def _is_sensitive_platform_setting_key(key: str) -> bool:
@@ -173,9 +165,7 @@ def platform_metrics(request):
             "name": t.name,
             "plan": (
                 t.subscription.subscription_plan.slug
-                if hasattr(t, "subscription")
-                and t.subscription
-                and t.subscription.subscription_plan
+                if hasattr(t, "subscription") and t.subscription and t.subscription.subscription_plan
                 else t.effective_plan
             ),
             "city": t.city,
@@ -319,47 +309,6 @@ def platform_integrations(request):
         ),
         *additional_integrations(),
     ]
-
-
-@router.get("/plans/", auth=jwt_auth, response=list[PlanOut])
-def list_plans(request):
-    _require_super_admin(request)
-    return [PlanOut.from_plan(p) for p in SubscriptionPlan.objects.all()]
-
-
-@router.post("/plans/", auth=jwt_auth, response=PlanOut)
-def create_plan(request, payload: PlanCreateIn):
-    _require_super_admin(request)
-    validate_plan_config(payload.model_dump())
-    plan = SubscriptionPlan.objects.create(
-        name=payload.name,
-        slug=payload.slug,
-        description=payload.description,
-        price_monthly=Decimal(str(payload.price_monthly)),
-        price_annual=Decimal(str(payload.price_annual)),
-        max_locations=payload.max_locations,
-        max_users=payload.max_users,
-        max_customers=payload.max_customers,
-        max_programs=payload.max_programs,
-        max_notifications_month=payload.max_notifications_month,
-        max_transactions_month=payload.max_transactions_month,
-        max_whatsapp_day=payload.max_whatsapp_day,
-        max_emails_month=payload.max_emails_month,
-        max_sms_day=payload.max_sms_day,
-        max_wallet_pushes_month=payload.max_wallet_pushes_month,
-        max_automations=payload.max_automations,
-        max_automation_executions_day=payload.max_automation_executions_day,
-        max_ai_queries_month=payload.max_ai_queries_month,
-        max_api_calls_day=payload.max_api_calls_day,
-        max_exports_month=payload.max_exports_month,
-        features=payload.features,
-        status=payload.status,
-        is_featured=payload.is_featured,
-        trial_days=payload.trial_days,
-        sort_order=payload.sort_order,
-    )
-    logger.info("SUPER_ADMIN %s created plan %s", request.user.email, plan.name)
-    return PlanOut.from_plan(plan)
 
 
 @router.delete("/plans/{plan_id}/", auth=jwt_auth, response=MessageOut)
@@ -555,34 +504,6 @@ def confirm_payment(request, invoice_id: str):
     return MessageOut(success=True, message=get_message("BILLING_SUBSCRIBED"))
 
 
-@router.post("/broadcast/", auth=jwt_auth, response=MessageOut)
-def broadcast_announcement(request, payload: BroadcastIn):
-    _require_super_admin(request)
-    if not payload.subject.strip() or not payload.message.strip():
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail="subject and message required"))
-
-    owner_emails = list(User.objects.filter(role=UserRole.OWNER, is_active=True).values_list("email", flat=True))
-    if not owner_emails:
-        return MessageOut(success=True, message=get_message("ADMIN_BROADCAST_NO_RECIPIENTS"))
-
-    messages = tuple((payload.subject, payload.message, "noreply@loyallia.com", [email]) for email in owner_emails)
-    try:
-        send_mass_mail(messages, fail_silently=True)
-    except Exception as exc:
-        logger.error("Broadcast email failed: %s", exc)
-
-    logger.info(
-        "SUPER_ADMIN %s broadcast to %d owners: %s",
-        request.user.email,
-        len(owner_emails),
-        payload.subject,
-    )
-    return MessageOut(
-        success=True,
-        message=get_message("CAMPAIGN_SENT", count=len(owner_emails)),
-    )
-
-
 @router.get("/platform/settings/", auth=jwt_auth, response=list[PlatformSettingOut])
 def list_platform_settings(request):
     """List all runtime-configurable platform settings.
@@ -649,227 +570,3 @@ def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn)
 # =============================================================================
 # SYSADMIN OPERATIONS (LYL-BOOT-001)
 # =============================================================================
-
-
-@router.post(
-    "/platform/seed-demo-data/",
-    auth=jwt_auth,
-    response=SeedDemoDataOut,
-    summary="Cargar datos de demostración",
-)
-def seed_demo_data(request):
-    """Load demo data (tenants, customers, transactions) for demonstration.
-
-    SUPER_ADMIN only. Calls the seed_test_data management command.
-    Demo data can be loaded at any time from the SysAdmin settings panel.
-    """
-    _require_super_admin(request)
-
-    if _is_production_environment():
-        raise HttpError(403, get_message("ADMIN_FACTORY_PRODUCTION_BLOCKED"))
-
-    from io import StringIO
-
-    from django.core.management import call_command
-
-    # Audit
-    try:
-        from apps.audit.models import AuditAction
-        from apps.audit.service import log_action
-
-        log_action(
-            request=request,
-            action=AuditAction.SEED_DEMO,
-            resource_type="platform",
-            resource_id="system",
-            details={"triggered_by": request.user.email},
-            status="success",
-        )
-    except Exception:
-        logger.warning("Failed to audit demo seed", exc_info=True)
-
-    output = StringIO()
-    call_command("seed_development_data", generate=True, stdout=output, stderr=output)
-
-    logger.info("SUPER_ADMIN %s triggered demo data seed", request.user.email)
-    return SeedDemoDataOut(
-        success=True,
-        message=get_message("ADMIN_DEMO_SEEDED"),
-        output=output.getvalue(),
-    )
-
-
-@router.post(
-    "/platform/factory-reset/request/",
-    auth=jwt_auth,
-    response=MessageOut,
-    summary="Solicitar código para restaurar de fábrica",
-)
-def factory_reset_request(request):
-    """Send OTP to SUPER_ADMIN for factory reset verification.
-
-    Step 1 of 2: Uses OTP strategy (Twilio Verify when enabled,
-    local OTP + Twilio SMS fallback otherwise). Sends via email
-    as secondary notification. Stores verification SID for confirmation.
-    """
-    _require_super_admin(request)
-
-    from apps.authentication.otp_service import send_otp
-
-    phone = getattr(request.user, "phone_number", "")
-    recipient = phone if phone else request.user.email
-
-    if not recipient:
-        raise HttpError(400, get_message("ADMIN_FACTORY_NO_CONTACT"))
-
-    result = send_otp(
-        recipient=recipient,
-        purpose="factory_reset",
-        custom_friendly_name="Loyallia Platform",
-    )
-
-    # Store verification SID in Redis for confirm step
-    from django.core.cache import cache
-
-    cache.set(f"factory_reset:sid:{request.user.email}", result.get("sid", ""), timeout=300)
-
-    # Secondary: Email notification (always sent, regardless of Verify)
-    from django.core.mail import send_mail
-
-    try:
-        strategy = result.get("strategy", "local")
-        if strategy == "verify":
-            msg_body = (
-                "Se ha enviado un código de verificación para restaurar de fábrica "
-                f"via {result.get('channel', 'SMS')}.\n\n"
-                "Ingrese el código recibido en la plataforma.\n\n"
-                "Expira en 5 minutos."
-            )
-        else:
-            msg_body = (
-                f"Su código de verificación es: {result.get('code', 'N/A')}\n\n"
-                "Expira en 5 minutos.\n\n"
-                "Si no solicitó esto, ignore este mensaje."
-            )
-
-        send_mail(
-            subject="Loyallia — Código de Verificación para Restaurar de Fábrica",
-            message=msg_body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[request.user.email],
-            fail_silently=True,
-        )
-    except Exception:
-        logger.error(
-            "Failed to send factory reset OTP email to %s",
-            request.user.email,
-            exc_info=True,
-        )
-
-    logger.warning(
-        "FACTORY RESET requested by %s (strategy=%s channel=%s)",
-        request.user.email,
-        result.get("strategy"),
-        result.get("channel", "email"),
-    )
-    return MessageOut(
-        success=True,
-        message=get_message("FACTORY_RESET_VERIFY_SENT", channel=result.get("channel", "SMS")),
-    )
-
-
-@router.post(
-    "/platform/factory-reset/confirm/",
-    auth=jwt_auth,
-    response=MessageOut,
-    summary="Confirmar restauración de fábrica con código OTP",
-)
-def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
-    """Verify OTP and execute factory reset. IRREVERSIBLE.
-
-    Step 2 of 2: Validates the OTP from step 1, then wipes ALL tenant data
-    in a single atomic transaction. Re-seeds vital boot data (plans, settings).
-    The SUPER_ADMIN user is preserved.
-    """
-    _require_super_admin(request)
-
-    if _is_production_environment():
-        raise HttpError(403, get_message("ADMIN_FACTORY_PRODUCTION_BLOCKED"))
-
-    from io import StringIO
-
-    from django.core.cache import cache
-
-    from apps.authentication.otp_service import check_otp
-
-    sid = cache.get(f"factory_reset:sid:{request.user.email}", "")
-    recipient = getattr(request.user, "phone_number", "") or request.user.email
-
-    if not check_otp(recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"):
-        raise HttpError(403, get_message("ADMIN_FACTORY_OTP_INVALID"))
-
-    # Audit BEFORE wipe (so the log entry is created before data is deleted)
-    try:
-        from apps.audit.models import AuditAction
-        from apps.audit.service import log_action
-
-        log_action(
-            request=request,
-            action=AuditAction.FACTORY_RESET,
-            resource_type="platform",
-            resource_id="system",
-            details={"triggered_by": request.user.email},
-            status="success",
-        )
-    except Exception:
-        logger.warning("Failed to audit factory reset", exc_info=True)
-
-    with transaction.atomic():
-        # Wipe order: deepest dependencies first to avoid FK violations
-        from apps.authentication.models import RefreshToken
-        from apps.automation.models import Automation, AutomationExecution
-        from apps.billing.models import Subscription
-        from apps.billing.payment_models import Invoice, WebhookEvent
-        from apps.cards.models import Card
-        from apps.customers.models import Customer, CustomerPass
-        from apps.notifications.models import CampaignDeliveryLog, CampaignRun
-        from apps.notifications.models.misc import Notification
-        from apps.transactions.models import Enrollment, Transaction
-
-        Notification.objects.all().delete()
-        CampaignDeliveryLog.objects.all().delete()
-        CampaignRun.objects.all().delete()
-        AutomationExecution.objects.all().delete()
-        Automation.objects.all().delete()
-        CustomerPass.objects.all().delete()
-        Enrollment.objects.all().delete()
-        Transaction.objects.all().delete()
-        Customer.objects.all().delete()
-        Card.objects.all().delete()
-        Invoice.objects.all().delete()
-        WebhookEvent.objects.all().delete()
-        Subscription.objects.all().delete()
-        RefreshToken.objects.all().delete()
-        Location.objects.all().delete()
-        User.objects.exclude(role=UserRole.SUPER_ADMIN).delete()
-        Tenant.objects.all().delete()
-
-    # Re-seed vital data (plans + settings)
-    from django.core.management import call_command
-
-    call_command("seed_subscription_plans", stdout=StringIO())
-    call_command("seed_platform_settings", stdout=StringIO())
-
-    # Flush Redis cache (kill all sessions)
-    from django.core.cache import cache
-
-    try:
-        cache.clear()
-    except Exception:
-        logger.warning("Failed to clear Redis cache during factory reset")
-
-    logger.critical("FACTORY RESET executed by %s", request.user.email)
-    return MessageOut(
-        success=True,
-        message=get_message("ADMIN_FACTORY_RESET_DONE"),
-    )
