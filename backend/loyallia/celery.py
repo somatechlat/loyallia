@@ -8,7 +8,7 @@ import os
 
 from celery import Celery
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.development")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.production")
 
 app = Celery("loyallia")  # type: ignore[operator]
 

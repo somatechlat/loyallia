@@ -104,7 +104,7 @@ class RequireRoleDecoratorTest(TestCase):
 
     def test_request_without_user_attribute(self):
         request = RequestFactory().get("/")
-        del request.user
+        # Bare WSGIRequest has no .user attribute
 
         @require_role("OWNER")
         def view(req):

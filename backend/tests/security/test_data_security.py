@@ -94,11 +94,15 @@ class TestHelpersRuntimeBehavior(TestCase):
     """Verify OTP helpers use salted hashing via runtime behavior."""
 
     def test_store_otp_generates_salt(self):
-        """store_otp should generate and return a salt alongside the hash."""
+        """store_otp should store a salted OTP hash in cache."""
+        from django.core.cache import cache
+
         from apps.authentication.helpers import store_otp
 
-        result = store_otp("[REDACTED]")
-        self.assertIn("otp_hash", result)
-        self.assertIn("otp_salt", result)
-        self.assertEqual(len(result["otp_hash"]), 64)  # SHA-256 hex
-        self.assertGreater(len(result["otp_salt"]), 0)  # Non-empty salt
+        store_otp("test@loyallia.com", "123456", "verify_email")
+        salt = cache.get("otp_salt:verify_email:test@loyallia.com")
+        self.assertIsNotNone(salt)
+        self.assertGreater(len(salt), 0)
+        otp_hash = cache.get("otp:verify_email:test@loyallia.com")
+        self.assertIsNotNone(otp_hash)
+        self.assertEqual(len(otp_hash), 64)  # SHA-256 hex

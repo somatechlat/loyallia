@@ -13,6 +13,8 @@
 import { test, expect } from '@playwright/test';
 import { ensureOwnerEnterpriseCampaignAccess, getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
+test.use({ storageState: '.auth/owner.json' });
+
 const BASE_API = getE2EBaseURL();
 
 /**
@@ -76,7 +78,7 @@ test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', 
   test('2. Enroll a customer via public endpoint', async ({ request }) => {
     expect(createdCardId, 'Card must be created in test 1').toBeTruthy();
 
-    const uniqueEmail = `e2e-wallet-${Date.now()}@test.loyallia.com`;
+    const uniqueEmail = `e2e-wallet-${Date.now()}@loyallia.com`;
 
     const resp = await request.post(
       `${BASE_API}/api/v1/customers/enroll/?card_id=${createdCardId}`,

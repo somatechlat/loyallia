@@ -126,6 +126,9 @@ class Automation(TimestampedModel):
         The cooldown is checked against the last execution for THIS customer,
         not the global last_executed timestamp.
         """
+        if not self.is_active:
+            return False
+
         from apps.analytics.models import CustomerAnalytics
 
         # Check if customer is in target segments

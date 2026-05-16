@@ -132,8 +132,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
     def test_create_program_checks_plan_limit(self):
         """create_program should check plan limits at runtime."""
-        from apps.cards.api import create_program
-        from apps.cards.schemas import CardCreateIn
+        from apps.cards.api import CardCreateIn, create_program
 
         req = self._request(self.owner)
         payload = CardCreateIn(name="Test Plan Check", card_type="stamp")
@@ -143,8 +142,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
     def test_create_campaign_checks_plan_limit(self):
         """create_campaign should check plan limits at runtime."""
-        from apps.notifications.api.campaigns import create_campaign
-        from apps.notifications.schemas import CampaignCreateIn
+        from apps.notifications.api.campaigns import CampaignCreateIn, create_campaign
 
         req = self._request(self.owner)
         payload = CampaignCreateIn(
@@ -184,12 +182,25 @@ class EnrollmentEndpointTest(TestCase):
 
     @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
     def test_rate_limiting_applied(self):
-        """Enrollment should be rate-limited to 10 per hour per IP."""
-        # Runtime verification: the rate limiter module should have enrollment rules
-        from common.rate_limit import RATE_LIMIT_RULES
+        """Enrollment endpoint should reject excessive requests with 429."""
+        import json
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
-        self.assertIn("/api/v1/customers/enroll/", paths)
+        # Make 11 rapid enrollment requests from the same IP
+        for i in range(11):
+            resp = self.client.post(
+                f"/api/v1/customers/enroll/?card_id={self.card.id}",
+                data=json.dumps(
+                    {
+                        "first_name": "Rate",
+                        "last_name": f"Limit{i}",
+                        "email": f"ratelimit{i}@loyallia.com",
+                        "phone": "+593991234567",
+                    }
+                ),
+                content_type="application/json",
+            )
+        # The 11th request should be rate-limited
+        self.assertEqual(resp.status_code, 429)
 
     def test_enrollment_does_not_overwrite_customer_data(self):
         """When a customer re-enrolls, existing profile data should NOT be overwritten."""
@@ -204,7 +215,7 @@ class EnrollmentEndpointTest(TestCase):
                 {
                     "first_name": "Original",
                     "last_name": "Name",
-                    "email": "re enroll@test.com",
+                    "email": "re-enroll@loyallia.com",
                     "phone": "+593991234567",
                 }
             ),
@@ -250,14 +261,17 @@ class AgentAPIFixTest(TestCase):
         from apps.agent_api.api import get_recent_transactions
         from apps.authentication.models import User, UserRole
         from tests.vault_helper import get_test_password
+        from tests.factories import make_tenant
+        tenant = make_tenant()
         user = User.objects.create_user(
-            email="agent@test.com",
+            email="agent@loyallia.com",
             password=get_test_password(),
             role=UserRole.SUPER_ADMIN,
+            tenant=tenant,
         )
         request = RequestFactory().get("/api/v1/agent/recent-transactions/")
         request.user = user
-        request.tenant = None
+        request.tenant = tenant
 
         # The API should not crash and should return a list
         result = get_recent_transactions(request)

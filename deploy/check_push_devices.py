@@ -1,7 +1,7 @@
 import os
 import sys
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.development")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.production")
 sys.path.insert(0, "/app")
 import django
 

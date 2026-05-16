@@ -124,9 +124,10 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
             tenant=self.tenant,
             name="Test Automation",
             trigger=AutomationTrigger.CUSTOMER_ENROLLED,
-            action=AutomationAction.SEND_NOTIFICATION,
-            action_config={"title": "Welcome!", "message": "Hello"},
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
             max_executions_per_day=2,
+            cooldown_hours=0,
             is_active=True,
         )
 
