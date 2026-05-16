@@ -3,7 +3,6 @@ Loyallia — Super Admin API: Platform metrics, locations map, broadcast, and pl
 """
 
 import logging
-import os
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -260,9 +259,9 @@ def platform_integrations(request):
 
     payment_enabled = bool(getattr(settings, "PAYMENT_GATEWAY_ENABLED", False))
     payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
-    mailjet_api_key = get_secret("mailjet_api_key", env_fallback="MAILJET_API_KEY", default="")
-    mailjet_secret_key = get_secret("mailjet_secret_key", env_fallback="MAILJET_SECRET_KEY", default="")
-    mailjet_sender_email = get_secret("mailjet_sender_email", env_fallback="MAILJET_SENDER_EMAIL", default="")
+    mailjet_api_key = get_secret("mailjet_api_key", default="")
+    mailjet_secret_key = get_secret("mailjet_secret_key", default="")
+    mailjet_sender_email = get_secret("mailjet_sender_email", default="")
     mailjet_configured = bool(mailjet_api_key and mailjet_secret_key and mailjet_sender_email)
 
     return [
@@ -689,18 +688,8 @@ def seed_demo_data(request):
     except Exception:
         logger.warning("Failed to audit demo seed", exc_info=True)
 
-    seed_password = os.environ.get("LOYALLIA_SEED_PASSWORD")
-    if not seed_password:
-        raise HttpError(
-            400,
-            get_message(
-                "VALIDATION_ERROR",
-                detail="LOYALLIA_SEED_PASSWORD is required to seed local demo users.",
-            ),
-        )
-
     output = StringIO()
-    call_command("seed_test_data", password=seed_password, stdout=output, stderr=output)
+    call_command("seed_development_data", generate=True, stdout=output, stderr=output)
 
     logger.info("SUPER_ADMIN %s triggered demo data seed", request.user.email)
     return SeedDemoDataOut(

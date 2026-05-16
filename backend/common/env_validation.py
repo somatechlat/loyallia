@@ -210,12 +210,10 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
 
     vars_to_check = REQUIRED_VARS.copy()
 
-    if is_production:
-        vars_to_check.extend(PRODUCTION_EXTRA_VARS)
-
     for var in vars_to_check:
-        # LYL-M-SEC-015: Check Vault with env fallback
-        value = get_secret(var.name.lower(), env_fallback=var.name)
+        # Secrets are validated from Vault only. Environment variables may carry
+        # non-secret routing/configuration, but not credential material.
+        value = get_secret(var.name.lower())
 
         if value is None:
             if var.default is not None:

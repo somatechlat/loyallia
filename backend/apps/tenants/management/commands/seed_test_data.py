@@ -1,4 +1,3 @@
-import os
 import random
 from datetime import timedelta
 from decimal import Decimal
@@ -61,7 +60,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--password",
             default=None,
-            help="Local-only password for generated demo tenant users. Can also be set with LOYALLIA_SEED_PASSWORD.",
+            help="Local-only password for generated demo tenant users.",
         )
 
     def handle(self, *args, **options):
@@ -113,11 +112,11 @@ class Command(BaseCommand):
 
         self.stdout.write("Starting massive data seed process (Ecuador context)...")
 
-        seed_password = options["password"] or os.environ.get("LOYALLIA_SEED_PASSWORD")
+        seed_password = options["password"]
         if not seed_password:
             raise CommandError(
-                "Set LOYALLIA_SEED_PASSWORD or pass --password for local demo users. "
-                "This command does not contain a hardcoded password."
+                "Pass --password for local demo users. This command does not contain "
+                "a hardcoded password and does not read user passwords from env or Vault."
             )
 
         with transaction.atomic():

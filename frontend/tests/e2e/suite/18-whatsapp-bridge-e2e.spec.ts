@@ -18,10 +18,11 @@
  */
 import { test, expect } from '@playwright/test';
 import { getE2EBaseURL, loginOwnerContext, loginRole } from '../helpers/e2e-safety';
+import { getLocalProviderSecret } from '../helpers/e2e-test-config';
 
 const BASE_API = getE2EBaseURL();
 const BRIDGE_URL = 'http://127.0.0.1:33914';
-const BRIDGE_API_KEY = 'dev-bridge-key';
+const bridgeApiKey = () => getLocalProviderSecret('whatsapp_bridge_api_key');
 
 // =============================================================================
 // 1. BRIDGE HEALTH — Direct access to the whatsapp-bridge container
@@ -96,7 +97,7 @@ test.describe('Bridge Auth — Direct @owner @whatsapp', () => {
 
   test('Bridge accepts correct API key', async ({ request }) => {
     const resp = await request.get(`${BRIDGE_URL}/status/any-tenant`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
     });
     expect(resp.status()).toBe(200);
   });
@@ -113,7 +114,7 @@ test.describe('Bridge Session — Direct @owner @whatsapp', () => {
 
   test('Status returns default for unknown tenant', async ({ request }) => {
     const resp = await request.get(`${BRIDGE_URL}/status/nonexistent-tenant-xyz`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
     });
     expect(resp.status()).toBe(200);
     const body = await resp.json();
@@ -125,7 +126,7 @@ test.describe('Bridge Session — Direct @owner @whatsapp', () => {
   test('QR endpoint starts session and returns QR base64 PNG', async ({ request }) => {
     const testTenant = `e2e-qr-test-${Date.now()}`;
     const resp = await request.get(`${BRIDGE_URL}/qr/${testTenant}`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
       timeout: 30000,
     });
     expect(resp.status()).toBe(200);
@@ -139,7 +140,7 @@ test.describe('Bridge Session — Direct @owner @whatsapp', () => {
     }
     // Cleanup: disconnect this test session
     await request.post(`${BRIDGE_URL}/disconnect/${testTenant}`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
     });
   });
 
@@ -147,13 +148,13 @@ test.describe('Bridge Session — Direct @owner @whatsapp', () => {
     const testTenant = `e2e-disconnect-${Date.now()}`;
     // Start a session
     await request.get(`${BRIDGE_URL}/qr/${testTenant}`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
       timeout: 30000,
     });
 
     // Disconnect
     const disconnectResp = await request.post(`${BRIDGE_URL}/disconnect/${testTenant}`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
     });
     expect(disconnectResp.status()).toBe(200);
     const dcBody = await disconnectResp.json();
@@ -161,7 +162,7 @@ test.describe('Bridge Session — Direct @owner @whatsapp', () => {
 
     // Verify status is clean after disconnect
     const statusResp = await request.get(`${BRIDGE_URL}/status/${testTenant}`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
     });
     const status = await statusResp.json();
     expect(status.connected).toBe(false);
@@ -177,7 +178,7 @@ test.describe('Bridge Send Validation — Direct @owner @whatsapp', () => {
 
   test('Send rejects missing tenant_id (400)', async ({ request }) => {
     const resp = await request.post(`${BRIDGE_URL}/send`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
       data: { phone: '+593991234567', message: 'test' },
     });
     expect(resp.status()).toBe(400);
@@ -187,7 +188,7 @@ test.describe('Bridge Send Validation — Direct @owner @whatsapp', () => {
 
   test('Send rejects missing phone (400)', async ({ request }) => {
     const resp = await request.post(`${BRIDGE_URL}/send`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
       data: { tenant_id: 'xxx', message: 'test' },
     });
     expect(resp.status()).toBe(400);
@@ -195,7 +196,7 @@ test.describe('Bridge Send Validation — Direct @owner @whatsapp', () => {
 
   test('Send rejects missing message (400)', async ({ request }) => {
     const resp = await request.post(`${BRIDGE_URL}/send`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
       data: { tenant_id: 'xxx', phone: '+593991234567' },
     });
     expect(resp.status()).toBe(400);
@@ -203,7 +204,7 @@ test.describe('Bridge Send Validation — Direct @owner @whatsapp', () => {
 
   test('Send rejects invalid phone number (400)', async ({ request }) => {
     const resp = await request.post(`${BRIDGE_URL}/send`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
       data: { tenant_id: 'xxx', phone: '123', message: 'test' },
     });
     expect(resp.status()).toBe(400);
@@ -213,7 +214,7 @@ test.describe('Bridge Send Validation — Direct @owner @whatsapp', () => {
 
   test('Send returns 409 when session not connected', async ({ request }) => {
     const resp = await request.post(`${BRIDGE_URL}/send`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
       data: { tenant_id: 'no-session-tenant', phone: '+593991234567', message: 'test' },
     });
     expect(resp.status()).toBe(409);
@@ -231,7 +232,7 @@ test.describe('Bridge Queue Stats — Direct @owner @whatsapp', () => {
 
   test('Queue stats endpoint returns metrics', async ({ request }) => {
     const resp = await request.get(`${BRIDGE_URL}/queue/stats`, {
-      headers: { Authorization: `Bearer ${BRIDGE_API_KEY}` },
+      headers: { Authorization: `Bearer ${bridgeApiKey()}` },
     });
     expect(resp.status()).toBe(200);
     const body = await resp.json();

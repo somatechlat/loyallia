@@ -15,12 +15,10 @@ from common.vault import get_secret
 # =============================================================================
 CELERY_BROKER_URL = get_secret(
     "celery_broker_url",
-    env_fallback="CELERY_BROKER_URL",
     default="redis://localhost:6379/1",
 )
 CELERY_RESULT_BACKEND = get_secret(
     "celery_result_backend",
-    env_fallback="CELERY_RESULT_BACKEND",
     default="redis://localhost:6379/2",
 )
 

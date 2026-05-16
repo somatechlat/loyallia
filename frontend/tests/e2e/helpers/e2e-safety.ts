@@ -30,10 +30,9 @@ export function getE2EBaseURL(): string {
 }
 
 export async function loginRole(request: APIRequestContext, role: E2ERole): Promise<string> {
-  const { getE2ESeedPassword, E2E_TEST_USERS } = await import('./e2e-test-config');
+  const { getE2ERoleCredential } = await import('./e2e-test-config');
   const baseURL = getE2EBaseURL();
-  const email = E2E_TEST_USERS[role].email;
-  const password = getE2ESeedPassword();
+  const { email, password } = getE2ERoleCredential(role);
   const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
     data: { email, password },
   });
@@ -47,10 +46,9 @@ export async function loginRole(request: APIRequestContext, role: E2ERole): Prom
 export async function loginOwnerContext(
   request: APIRequestContext,
 ): Promise<{ token: string; tenantId: string }> {
-  const { getE2ESeedPassword, E2E_TEST_USERS } = await import('./e2e-test-config');
+  const { getE2ERoleCredential } = await import('./e2e-test-config');
   const baseURL = getE2EBaseURL();
-  const email = E2E_TEST_USERS.owner.email;
-  const password = getE2ESeedPassword();
+  const { email, password } = getE2ERoleCredential('owner');
   const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
     data: { email, password },
   });

@@ -14,6 +14,7 @@ const { Queue, Worker } = require("bullmq");
 const Redis = require("ioredis");
 const pino = require("pino");
 const { sendMessage } = require("./socket-manager");
+const { getApiKey, getRedisUrl } = require("./config");
 
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
@@ -32,7 +33,7 @@ const PAUSE_MAX_MS = 60000;
 
 // Redis connection for BullMQ
 const redisConnection = new Redis(
-  process.env.REDIS_URL || "redis://localhost:6379/3",
+  getRedisUrl(),
   { maxRetriesPerRequest: null }
 );
 
@@ -269,7 +270,7 @@ async function notifySendResult(tenantId, metadata, messageId, status, error) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.API_KEY}`,
+        Authorization: `Bearer ${getApiKey()}`,
       },
       body: JSON.stringify({
         tenant_id: tenantId,
