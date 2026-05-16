@@ -51,7 +51,6 @@ test.describe('Phone Verification API @phone', () => {
     expect(body.valid).toBe(false);
   });
 
-
 });
 
 test.describe('User Profile API — Phone Fields @phone', () => {

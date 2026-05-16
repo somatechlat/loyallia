@@ -11,12 +11,7 @@
  * NOTE: Actual message delivery cannot be E2E tested (requires real phone/QR).
  */
 import { test, expect } from '@playwright/test';
-import {
-  ensureOwnerEnterpriseCampaignAccess,
-  getE2EBaseURL,
-  loginRole,
-  ,
-} from '../helpers/e2e-safety';
+import { ensureOwnerEnterpriseCampaignAccess, getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -27,7 +22,6 @@ async function getOwnerToken(request: import('@playwright/test').APIRequestConte
 test.describe('WhatsApp Campaigns — OWNER @owner @campaigns', () => {
 
   test.beforeAll(async ({ request }) => {
-    ();
     await ensureOwnerEnterpriseCampaignAccess(request);
   });
 

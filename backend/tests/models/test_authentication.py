@@ -22,9 +22,9 @@ class UserModelTest(TestCase):
     """Tests for User model."""
 
     def test_create_user(self):
-        user = make_user(password="[REDACTED]")
+        user = make_user()
         self.assertIsNotNone(user.id)
-        self.assertTrue(user.check_password("[REDACTED]"))
+        self.assertTrue(user.check_password(user._test_password))
 
     def test_user_str_shows_email_and_role(self):
         user = make_user(email="alice@test.com", role=UserRole.MANAGER)
@@ -82,8 +82,9 @@ class UserModelTest(TestCase):
         self.assertIsNone(user.locked_until)
 
     def test_create_superuser(self):
+        import secrets
         admin = cast(UserManager, User.objects).create_superuser(
-            email="admin@test.com", password="[REDACTED]"
+            email="admin@test.com", password=secrets.token_urlsafe(16)
         )
         self.assertTrue(admin.is_staff)
         self.assertTrue(admin.is_superuser)

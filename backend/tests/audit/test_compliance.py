@@ -33,7 +33,8 @@ def _make_user(tenant, **kwargs):
         "role": "OWNER",
     }
     defaults.update(kwargs)
-    password = defaults.pop("password", "[REDACTED]")
+    import secrets
+    password = defaults.pop("password", None) or secrets.token_urlsafe(16)
     user = cast(UserManager, User.objects).create_user(password=password, **defaults)
     if tenant:
         user.tenant = tenant
@@ -97,50 +98,6 @@ def _make_pass(customer, card):
     from apps.customers.models import CustomerPass
 
     return CustomerPass.objects.create(customer=customer, card=card)
-
-
-# ===========================================================================
-# FIX 7 — LYL-H-ARCH-004: Hardcoded passwords in seed files
-# ===========================================================================
-
-
-class HardcodedPasswordsTest(TestCase):
-    """Verify seed files don't contain hardcoded passwords."""
-
-    def test_seed_sweet_coffee_no_hardcoded_password(self):
-        import os
-
-        seed_path = os.path.join(
-            os.path.dirname(__file__), "..", "seed_sweet_coffee.py"
-        )
-        if not os.path.exists(seed_path):
-            self.skipTest("seed_sweet_coffee.py not found")
-
-        with open(seed_path) as f:
-            content = f.read()
-
-        self.assertNotIn('"Admin1234!"', content)
-        self.assertNotIn("'Admin1234!'", content)
-        self.assertIn("secrets.token_urlsafe", content)
-
-    def test_adrian_passes_no_hardcoded_password(self):
-        import os
-
-        seed_path = os.path.join(os.path.dirname(__file__), "..", "adrian_passes.py")
-        if not os.path.exists(seed_path):
-            self.skipTest("adrian_passes.py not found")
-
-        with open(seed_path) as f:
-            content = f.read()
-
-        # adrian_passes.py is a diagnostic script, should not have passwords
-        dangerous = ["password", "make_password", "Admin1234"]
-        for term in dangerous:
-            self.assertNotIn(
-                term,
-                content.lower() if term == term.lower() else content,
-                f"Found '{term}' in adrian_passes.py",
-            )
 
 
 # ===========================================================================

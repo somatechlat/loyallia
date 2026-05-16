@@ -3,12 +3,7 @@
  * Tests SuperAdmin impersonating an Owner.
  */
 import { test, expect } from '@playwright/test';
-import {
-  getE2EBaseURL,
-  getRoleCredentials,
-  loginOwnerContext,
-  loginRole,
-} from '../helpers/e2e-safety';
+import { getE2EBaseURL, getRoleCredentials, loginOwnerContext, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 

@@ -114,7 +114,6 @@ test.describe('Owner Subscription — Rate Limit Visibility @owner @settings', (
 test.describe('SuperAdmin — Plan Rate Limit CRUD @superadmin @superadmin', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('SA can create plan with all rate limits via API @superadmin', async ({ request }) => {

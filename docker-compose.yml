@@ -16,32 +16,32 @@
 # =============================================================================
 
 x-common-env: &common-env
-  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@postgres:5432/${POSTGRES_DB:-loyallia}
-  DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@postgres:5432/${POSTGRES_DB:-loyallia}
+  DATABASE_URL: postgres://loyallia:PASSWORD_REQUIRED@postgres:5432/loyallia
+  DATABASE_DIRECT_URL: postgres://loyallia:PASSWORD_REQUIRED@postgres:5432/loyallia
   # PgBouncer available at pgbouncer:6432 for connection pooling in production
-  PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@pgbouncer:6432/${POSTGRES_DB:-loyallia}
+  PGBOUNCER_URL: postgres://loyallia:PASSWORD_REQUIRED@pgbouncer:6432/loyallia
   MINIO_ENDPOINT: http://minio:9000
   MINIO_BUCKET_PASSES: passes
   MINIO_BUCKET_ASSETS: assets
   DJANGO_SETTINGS_MODULE: loyallia.settings.development
   DEBUG: "False"
-  ALLOWED_HOSTS: "${ALLOWED_HOSTS:-rewards.loyallia.com,localhost,127.0.0.1}"
-  CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:33906,http://localhost:33905}"
+  ALLOWED_HOSTS: "localhost,127.0.0.1"
+  CORS_ALLOWED_ORIGINS: "http://localhost:33906,http://localhost:33905"
   # Vault
-  VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+  VAULT_ADDR: http://vault:8200
   VAULT_TOKEN_FILE: /run/loyallia-vault/app-token
-  VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia/production}
+  VAULT_SECRET_PATH: secret/data/loyallia/production
   # Apple Wallet
   APPLE_WALLET_MODE: vault
   # Google Wallet
   GOOGLE_WALLET_MODE: vault
   # Payment Gateway (manual admin verification or disabled)
-  PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-manual}
-  PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-}
+  PAYMENT_GATEWAY_PROVIDER: manual
+  PAYMENT_GATEWAY_BASE_URL:  
   # Email
-  EMAIL_HOST: ${EMAIL_HOST:-in-v3.mailjet.com}
-  EMAIL_PORT: "${EMAIL_PORT:-587}"
-  EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
+  EMAIL_HOST: in-v3.mailjet.com
+  EMAIL_PORT: "587"
+  EMAIL_FROM: noreply@loyallia.com
   # ═══════════════════════════════════════════════════════════════════════
   # GOOGLE OAUTH 2.0 — LOCAL DEVELOPMENT MODE
   # ───────────────────────────────────────────────────────────────────────
@@ -51,12 +51,12 @@ x-common-env: &common-env
   #   Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
   # Then set in your local .env or Vault: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET
   # ═══════════════════════════════════════════════════════════════════════
-  GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:33905/api/v1/auth/google/callback/}
+  GOOGLE_OAUTH_REDIRECT_URI: http://localhost:33905/api/v1/auth/google/callback/
   # Sentry error tracking (B-013)
-  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_DSN:  
   # WhatsApp Bridge (LYL-SRS-006)
   WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:3001
-  WHATSAPP_BRIDGE_API_KEY: ${WHATSAPP_BRIDGE_API_KEY:-dev-bridge-key}
+  WHATSAPP_BRIDGE_API_KEY: dev-bridge-key
 services:
   # ---------------------------------------------------------------------------
   # POSTGRESQL 16 — Primary Database  → localhost:33900              [1.5GB]
@@ -69,8 +69,8 @@ services:
       vault-init:
         condition: service_completed_successfully
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-loyallia}
-      POSTGRES_USER: ${POSTGRES_USER:-loyallia}
+      POSTGRES_DB: loyallia
+      POSTGRES_USER: loyallia
       POSTGRES_PASSWORD_FILE: /run/loyallia-vault/postgres_password
       # Production-grade PostgreSQL tuning
       POSTGRES_INITDB_ARGS: "--data-checksums"
@@ -113,7 +113,7 @@ services:
       - ./deploy/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33900:5432"
+      - "127.0.0.1:33900:5432"
     networks:
       - backend-net
     restart: unless-stopped
@@ -154,9 +154,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-loyallia}
+      POSTGRES_USER: loyallia
       POSTGRES_PASSWORD_FILE: /run/loyallia-vault/postgres_password
-      PGUSER: ${POSTGRES_USER:-loyallia}
+      PGUSER: loyallia
       PGPASSWORD_FILE: /run/loyallia-vault/postgres_password
     command: sh /usr/local/bin/replica-entrypoint.sh
     volumes:
@@ -164,7 +164,7 @@ services:
       - ./deploy/postgres/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint.sh:ro
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33911:5432"
+      - "127.0.0.1:33911:5432"
     networks:
       - backend-net
     restart: unless-stopped
@@ -199,7 +199,7 @@ services:
     image: edoburu/pgbouncer:v1.23.1-p3
     container_name: loyallia-pgbouncer
     command: >
-      sh -c "export DATABASE_URL=postgres://${POSTGRES_USER:-loyallia}:$$(cat /run/loyallia-vault/postgres_password)@postgres:5432/${POSTGRES_DB:-loyallia} && exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini"
+      sh -c "export DATABASE_URL=postgres://loyallia:$$(cat /run/loyallia-vault/postgres_password)@postgres:5432/loyallia && exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini"
     environment:
       LISTEN_PORT: "6432"
       AUTH_TYPE: "scram-sha-256"
@@ -214,7 +214,7 @@ services:
       LOG_CONNECTIONS: "1"
       LOG_DISCONNECTIONS: "1"
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33901:6432"
+      - "127.0.0.1:33901:6432"
     depends_on:
       vault-init:
         condition: service_completed_successfully
@@ -261,7 +261,7 @@ services:
       - redis_data:/data
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33902:6379"
+      - "127.0.0.1:33902:6379"
     networks:
       - backend-net
     restart: unless-stopped
@@ -299,8 +299,8 @@ services:
       - minio_data:/data
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33903:9000"
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33904:9001"
+      - "127.0.0.1:33903:9000"
+      - "127.0.0.1:33904:9001"
     networks:
       - backend-net
     restart: unless-stopped
@@ -376,7 +376,7 @@ services:
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33905:8000"
+      - "127.0.0.1:33905:8000"
     stop_grace_period: 30s  # B-012: Graceful shutdown for in-flight requests
     depends_on:
       postgres:
@@ -433,15 +433,15 @@ services:
       target: development
     container_name: loyallia-web
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:33905}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:33906}
-      NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://api:8000}
+      NEXT_PUBLIC_API_URL: http://localhost:33905
+      NEXT_PUBLIC_APP_URL: http://localhost:33906
+      NEXT_INTERNAL_API_URL: http://api:8000
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
       HOST: "0.0.0.0"
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33906:3000"
+      - "127.0.0.1:33906:3000"
     stop_grace_period: 30s  # B-012: Graceful shutdown
     volumes:
       - ./frontend/src:/app/src
@@ -706,7 +706,7 @@ services:
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33907:5555"
+      - "127.0.0.1:33907:5555"
     depends_on:
       - redis
     networks:
@@ -738,7 +738,7 @@ services:
     command: >
       sh -c 'export REDIS_URL="redis://:$$(cat /run/loyallia-vault/redis_password)@redis:6379/3" && exec node src/index.js'
     environment:
-      API_KEY: ${WHATSAPP_BRIDGE_API_KEY:-dev-bridge-key}
+      API_KEY: dev-bridge-key
       DJANGO_WEBHOOK_URL: http://api:8000
       MAX_MESSAGES_PER_MINUTE: 8
       MAX_MESSAGES_PER_HOUR: 200
@@ -747,7 +747,7 @@ services:
     volumes:
       - vault_runtime:/run/loyallia-vault:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33914:3001"
+      - "127.0.0.1:33914:3001"
     depends_on:
       redis:
         condition: service_healthy
@@ -788,7 +788,7 @@ services:
       - ./deploy/vault.hcl:/vault/config/vault.hcl:ro
       - vault_data:/vault/file
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33908:8200"
+      - "127.0.0.1:33908:8200"
     networks:
       - backend-net
     restart: unless-stopped
@@ -816,7 +816,7 @@ services:
         condition: service_healthy
     environment:
       VAULT_ADDR: http://vault:8200
-      VAULT_APP_SECRET_PATH: ${VAULT_APP_SECRET_PATH:-loyallia/production}
+      VAULT_APP_SECRET_PATH: loyallia/production
       BOOTSTRAP_SECRETS_FILE: /vault/bootstrap/secrets.json
       # Zero-Secret: Secrets are injected via read-only volume mount
       # from .bootstrap_secrets.json. NO environment variables contain secrets.
@@ -843,8 +843,8 @@ services:
     image: nginx:1.25.4-alpine
     container_name: loyallia-nginx
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:80:80"
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:443:443"
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -892,7 +892,7 @@ services:
       - ./deploy/alerts:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33909:9090"
+      - "127.0.0.1:33909:9090"
     networks:
       - backend-net
     restart: unless-stopped
@@ -916,13 +916,13 @@ services:
     image: grafana/grafana:10.3.3
     container_name: loyallia-grafana
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - grafana_data:/var/lib/grafana
       - ./deploy/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./deploy/grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33910:3000"
+      - "127.0.0.1:33910:3000"
     depends_on:
       - prometheus
       - loki
@@ -954,7 +954,7 @@ services:
       - ./deploy/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki_data:/loki
     ports:
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:33912:3100"
+      - "127.0.0.1:33912:3100"
     networks:
       - monitoring-net
     restart: unless-stopped

@@ -2,11 +2,6 @@ import { expect, type APIRequestContext } from '@playwright/test';
 
 export type E2ERole = 'owner' | 'manager' | 'staff' | 'superadmin';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// VAULT CONFIGURATION — All secrets injected by playwright.config.ts from Vault
-// NO hardcoded credentials. NO .env.test files. NO bypass gates.
-// ═══════════════════════════════════════════════════════════════════════════════
-
 const PRODUCTION_HOSTS = new Set([
   'rewards.loyallia.com',
   'app.loyallia.com',
@@ -17,11 +12,7 @@ const PRODUCTION_HOSTS = new Set([
 export function getE2EBaseURL(): string {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL;
   if (!baseURL) {
-    throw new Error(
-      'PLAYWRIGHT_BASE_URL is required. ' +
-      'Ensure Vault secret loyallia/e2e contains PLAYWRIGHT_BASE_URL, ' +
-      'or set PLAYWRIGHT_BASE_URL environment variable.',
-    );
+    throw new Error('PLAYWRIGHT_BASE_URL is required for Playwright tests.');
   }
 
   let parsed: URL;
@@ -38,25 +29,18 @@ export function getE2EBaseURL(): string {
   return baseURL.replace(/\/$/, '');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ROLE CREDENTIALS — Injected from Vault by playwright.config.ts
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export function getRoleCredentials(role: E2ERole): { email: string; password: string } {
-  const email = process.env[`PLAYWRIGHT_${role.toUpperCase()}_EMAIL`];
-  const password = process.env[`PLAYWRIGHT_${role.toUpperCase()}_PASSWORD`];
-  if (!email || !password) {
-    throw new Error(
-      `Vault secret loyallia/e2e missing PLAYWRIGHT_${role.toUpperCase()}_EMAIL ` +
-      `or PLAYWRIGHT_${role.toUpperCase()}_PASSWORD`,
-    );
-  }
-  return { email, password };
-}
+// Re-export Vault credential helpers for backward compatibility during transition
+export {
+  getRoleCredentialsFromVault,
+  getAllRoleCredentialsFromVault,
+  loadVaultCredentials,
+  clearVaultCredentials,
+} from './vault-credentials';
 
 export async function loginRole(request: APIRequestContext, role: E2ERole): Promise<string> {
+  const { getRoleCredentialsFromVault } = await import('./vault-credentials');
   const baseURL = getE2EBaseURL();
-  const credentials = getRoleCredentials(role);
+  const credentials = await getRoleCredentialsFromVault(role);
   const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
     data: credentials,
   });
@@ -70,8 +54,9 @@ export async function loginRole(request: APIRequestContext, role: E2ERole): Prom
 export async function loginOwnerContext(
   request: APIRequestContext,
 ): Promise<{ token: string; tenantId: string }> {
+  const { getRoleCredentialsFromVault } = await import('./vault-credentials');
   const baseURL = getE2EBaseURL();
-  const credentials = getRoleCredentials('owner');
+  const credentials = await getRoleCredentialsFromVault('owner');
   const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
     data: credentials,
   });
@@ -82,10 +67,6 @@ export async function loginOwnerContext(
   expect(body.tenant_id, 'owner tenant_id should exist').toBeTruthy();
   return { token: body.access_token, tenantId: body.tenant_id };
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ENTERPRISE PLAN SETUP — Real API calls, no bypasses
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const ENTERPRISE_CAMPAIGN_FEATURES = [
   'whatsapp_campaigns',

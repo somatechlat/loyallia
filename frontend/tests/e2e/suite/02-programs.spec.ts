@@ -23,7 +23,6 @@ test.describe('Programs — OWNER CRUD @owner @programs', () => {
   });
 
   test('OWNER completes full 4-step wizard — Stamp Card @owner', async ({ page }) => {
-    ();
     // Navigate to wizard
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);

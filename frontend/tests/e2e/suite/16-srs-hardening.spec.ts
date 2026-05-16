@@ -234,7 +234,6 @@ test.describe('Enrollment Page — Public Flow @programs', () => {
 test.describe('Coupon Validation API @owner @programs', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('Card creation API accepts special_promo discount type @owner', async ({ request }) => {

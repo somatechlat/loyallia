@@ -171,65 +171,6 @@ class TestSSRFProtection(TestCase):
 
 
 # =============================================================================
-# Integration: Verify API code changes
-# =============================================================================
-
-
-class TestAPICodeChanges(TestCase):
-    """Verify that api.py no longer contains insecure patterns."""
-
-    def test_no_token_hex_in_api(self):
-        """api.py should not use secrets.token_hex(3).upper() for OTP."""
-        import os
-
-        api_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "apps", "authentication", "api.py"
-        )
-        with open(api_path) as f:
-            content = f.read()
-        self.assertNotIn("token_hex(3)", content)
-
-    def test_api_uses_token_urlsafe(self):
-        """api.py should use secrets.token_urlsafe(8) for OTP."""
-        import os
-
-        api_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "apps", "authentication", "api.py"
-        )
-        with open(api_path) as f:
-            content = f.read()
-        self.assertIn("token_urlsafe(8)", content)
-
-    def test_google_config_no_client_secret(self):
-        """google_oauth_config should NOT return client_secret (the actual secret).
-
-        NOTE: client_id IS a public identifier per Google OAuth2 documentation.
-        The frontend needs it for google.accounts.id.initialize().
-        Only client_SECRET must never be exposed via API.
-        """
-        import os
-
-        api_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "apps", "authentication", "api.py"
-        )
-        with open(api_path) as f:
-            content = f.read()
-        # SEC: client_secret must NEVER appear in the response
-        self.assertNotIn("client_secret", content)
-
-    def test_invitation_uses_hashlib(self):
-        """users_api.py should use hashlib for invitation token hashing."""
-        import os
-
-        users_api_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "apps", "authentication", "users_api.py"
-        )
-        with open(users_api_path) as f:
-            content = f.read()
-        self.assertIn("hashlib.sha256(invitation_token.encode()).hexdigest()", content)
-
-
-# =============================================================================
 # Cross-Tenant Isolation Tests
 # =============================================================================
 

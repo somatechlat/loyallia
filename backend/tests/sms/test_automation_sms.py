@@ -13,7 +13,7 @@ from apps.automation.models import (
     AutomationAction,
     AutomationTrigger,
 )
-from common.vault import clear_test_overrides, set_test_override
+from common.vault import clear_test_overrides, get_secret, set_test_override
 from tests.factories import (
     make_automation,
     make_card,
@@ -21,6 +21,15 @@ from tests.factories import (
     make_customer_pass,
     make_tenant,
 )
+
+
+def _get_twilio_test_credentials():
+    sid = get_secret("twilio_test_account_sid") or get_secret("twilio_account_sid")
+    token = get_secret("twilio_test_auth_token") or get_secret("twilio_auth_token")
+    from_number = get_secret("twilio_from_number")
+    if sid and token and from_number:
+        return {"sid": sid, "token": token, "from": from_number}
+    return None
 
 
 class AutomationSendEmailTest(TestCase):
@@ -74,23 +83,26 @@ class AutomationSendSMSTest(TestCase):
         self.customer = make_customer(self.tenant, phone="+593991234567")
         self.card = make_card(self.tenant)
         make_customer_pass(self.customer, self.card)
-        clear_test_overrides()
-        set_test_override("twilio_account_sid", "ACtest")
-        set_test_override("twilio_auth_token", "tok")
-        set_test_override("twilio_from_number", "+15005550006")
+        self.creds = _get_twilio_test_credentials()
+        if self.creds:
+            clear_test_overrides()
+            set_test_override("twilio_use_test_mode", "true")
+            set_test_override("twilio_test_account_sid", self.creds["sid"])
+            set_test_override("twilio_test_auth_token", self.creds["token"])
+            set_test_override("twilio_from_number", self.creds["from"])
 
     def tearDown(self):
         clear_test_overrides()
 
     def test_send_sms_action_success_attempt(self):
+        if not self.creds:
+            self.skipTest("Twilio credentials not available in Vault")
         auto = make_automation(
             self.tenant,
             action=AutomationAction.SEND_SMS,
             action_config={"title": "Promo", "message": "50% off today!"},
         )
         result = auto._execute_send_sms(self.customer, {})
-        # Real Twilio client attempts to send. With test credentials it will fail auth,
-        # but the method returns the result of the attempt.
         self.assertIsInstance(result, bool)
 
     def test_send_sms_no_phone_returns_false(self):

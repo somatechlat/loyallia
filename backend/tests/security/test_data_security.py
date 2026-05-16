@@ -90,27 +90,15 @@ class TestSaltedOTPHashing(TestCase):
 # =============================================================================
 
 
-class TestHelpersCodeChanges(TestCase):
-    """Verify that helpers.py uses salted hashing."""
-
-    def test_hash_otp_uses_salt(self):
-        """_hash_otp should accept a salt parameter."""
-        import os
-
-        helpers_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "apps", "authentication", "helpers.py"
-        )
-        with open(helpers_path) as f:
-            content = f.read()
-        self.assertIn("def _hash_otp(otp: str, salt: str)", content)
+class TestHelpersRuntimeBehavior(TestCase):
+    """Verify OTP helpers use salted hashing via runtime behavior."""
 
     def test_store_otp_generates_salt(self):
-        """store_otp should generate and store a salt."""
-        import os
+        """store_otp should generate and return a salt alongside the hash."""
+        from apps.authentication.helpers import store_otp
 
-        helpers_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "apps", "authentication", "helpers.py"
-        )
-        with open(helpers_path) as f:
-            content = f.read()
-        self.assertIn("otp_salt:", content)
+        result = store_otp("[REDACTED]")
+        self.assertIn("otp_hash", result)
+        self.assertIn("otp_salt", result)
+        self.assertEqual(len(result["otp_hash"]), 64)  # SHA-256 hex
+        self.assertGreater(len(result["otp_salt"]), 0)  # Non-empty salt

@@ -17,12 +17,7 @@
  * - PLAYWRIGHT_* role credentials configured for a real E2E tenant
  */
 import { test, expect } from '@playwright/test';
-import {
-  getE2EBaseURL,
-  loginOwnerContext,
-  loginRole,
-  ,
-} from '../helpers/e2e-safety';
+import { getE2EBaseURL, loginOwnerContext, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 const BRIDGE_URL = 'http://127.0.0.1:33914';
@@ -114,7 +109,6 @@ test.describe('Bridge Auth — Direct @owner @whatsapp', () => {
 test.describe('Bridge Session — Direct @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('Status returns default for unknown tenant', async ({ request }) => {
@@ -255,7 +249,6 @@ test.describe('Bridge Queue Stats — Direct @owner @whatsapp', () => {
 test.describe('Django→Bridge API — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('OWNER gets WhatsApp status through Django API', async ({ request }) => {
@@ -430,7 +423,6 @@ test.describe('Cross-Tenant Isolation @owner @security', () => {
 test.describe('Session Lifecycle — Full cycle @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('Full lifecycle: QR → status shows session → disconnect → status clean', async ({ request }) => {
@@ -478,7 +470,6 @@ test.describe('Session Lifecycle — Full cycle @owner @whatsapp', () => {
 test.describe('Settings WhatsApp Wizard — OWNER @owner @whatsapp', () => {
 
   test.beforeAll(() => {
-    ();
   });
 
   test('Settings page renders Integraciones section', async ({ page }) => {

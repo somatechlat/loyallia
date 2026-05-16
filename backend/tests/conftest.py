@@ -13,10 +13,13 @@ from tests.factories import (
     make_customer,
     make_customer_pass,
     make_full_stack,
+    make_manager,
+    make_owner,
     make_plan,
+    make_staff,
     make_subscription,
+    make_superadmin,
     make_tenant,
-    make_user,
 )
 
 
@@ -35,7 +38,25 @@ def tenant(db):
 @pytest.fixture
 def owner_user(tenant, db):
     """Create an OWNER user for the tenant."""
-    return make_user(tenant=tenant, role="OWNER")
+    return make_owner(tenant=tenant)
+
+
+@pytest.fixture
+def manager_user(tenant, db):
+    """Create a MANAGER user for the tenant."""
+    return make_manager(tenant=tenant)
+
+
+@pytest.fixture
+def staff_user(tenant, db):
+    """Create a STAFF user for the tenant."""
+    return make_staff(tenant=tenant)
+
+
+@pytest.fixture
+def superadmin_user(db):
+    """Create a SUPER_ADMIN user (platform-level, no tenant affiliation)."""
+    return make_superadmin()
 
 
 @pytest.fixture

@@ -260,9 +260,10 @@ class UserRoleTest(TestCase):
         self.assertEqual(user.role, UserRole.MANAGER)
 
     def test_superuser_is_super_admin(self):
+        import secrets
         admin = cast(UserManager, User.objects).create_superuser(
             email=f"admin-{uuid.uuid4().hex[:6]}@test.com",
-            password="[REDACTED]",
+            password=secrets.token_urlsafe(16),
         )
         self.assertEqual(admin.role, UserRole.SUPER_ADMIN)
         self.assertTrue(admin.is_staff)

@@ -4,12 +4,7 @@
  * settings Vault editing, broadcast, and non-SA isolation.
  */
 import { test, expect } from '@playwright/test';
-import {
-  getE2EBaseURL,
-  loginRole,
-  expectIntegrationResponseDoesNotExposeSecrets,
-  ,
-} from '../helpers/e2e-safety';
+import { getE2EBaseURL, loginRole, expectIntegrationResponseDoesNotExposeSecrets } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 
@@ -102,7 +97,6 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
   });
 
   test('SA can create a new plan with rate limits @superadmin', async ({ page }) => {
-    ();
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     await page.getByRole('button', { name: /Nuevo Plan/ }).click();
@@ -153,7 +147,6 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
   });
 
   test('SA can deactivate and reactivate a plan @superadmin', async ({ page, request }) => {
-    ();
     const token = await loginRole(request, 'superadmin');
     const unique = Date.now();
     const planName = `E2E Toggle Plan ${unique}`;
