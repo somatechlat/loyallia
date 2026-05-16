@@ -6,7 +6,7 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.development")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.production")
 
 # LYL-L-INFRA-034: Validate required environment variables on startup
 from common.env_validation import check_or_die

@@ -246,24 +246,44 @@ docker logs -f loyallia-api
 # Run migrations
 docker exec loyallia-api python manage.py migrate
 
-# Run backend tests
-docker exec loyallia-api python manage.py test --settings loyallia.settings.test
+# Run backend tests (inside container — resolves Docker hostnames)
+docker exec loyallia-api python3 -m pytest -q --reuse-db
 
 # Run backend integration tests (through PgBouncer)
-docker exec loyallia-api python manage.py test integration_tests --settings loyallia.settings.test_integration
+docker exec loyallia-api python3 -m pytest -q --ds=loyallia.settings.test_integration --reuse-db
 
 # Frontend dev server (hot reload)
 cd frontend && npm run dev
 
 # Lint backend
-cd backend && ruff check .
+cd backend && python3 -m ruff check .
+
+# Provision E2E test users (required before Playwright)
+docker compose exec api python manage.py provision_development_rbac_test_users --generate
 
 # E2E tests by module (instead of full 20-minute suite)
-cd frontend && npm run test:e2e:auth
-cd frontend && npm run test:e2e:programs
-cd frontend && npm run test:e2e:customers
-cd frontend && npm run test:e2e:settings
+cd frontend && export PLAYWRIGHT_BASE_URL=http://localhost:33906
+cd frontend && npx playwright test --project=wallet
 cd frontend && npm run test:e2e:smoke
+```
+
+### Host-side environment for local pytest (if needed)
+When running pytest on the host against the Docker cluster, export these first:
+```bash
+export PGBOUNCER_URL="postgres://loyallia@localhost:33901/loyallia_dev"
+export DATABASE_DIRECT_URL="postgres://loyallia@localhost:33900/loyallia_dev"
+export DATABASE_URL="postgres://loyallia@localhost:33900/loyallia_dev"
+export VAULT_ADDR="http://localhost:33908"
+export VAULT_TOKEN="<root-token-from-.agents/vault_init_rescue.json>"
+export VAULT_SECRET_PATH="secret/data/loyallia/development"
+export DEBUG="True"
+export DJANGO_SETTINGS_MODULE="loyallia.settings.test"
+```
+
+### Playwright mutating tests
+Tests that create or delete data require:
+```bash
+export PLAYWRIGHT_ALLOW_MUTATING_E2E=true
 ```
 
 ---

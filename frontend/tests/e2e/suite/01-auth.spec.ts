@@ -164,7 +164,7 @@ test.describe('Registration Form @auth', () => {
     await page.locator('#register-business_name').fill('TestBiz');
     await page.locator('#register-first_name').fill('Test');
     await page.locator('#register-last_name').fill('User');
-    await page.locator('#register-email').fill('test@example.com');
+    await page.locator('#register-email').fill('test@loyallia.com');
     await page.locator('#register-password').fill('short');
     await page.locator('#register-btn').click();
     await page.waitForTimeout(1000);

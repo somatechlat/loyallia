@@ -14,7 +14,7 @@ from common.environment_guard import enforce_settings_environment
 E2E_TENANT_SLUG = "e2e-development-tenant"
 E2E_USERS = {
     "owner": {
-        "email": "e2e-owner@loyallia.test",
+        "email": "e2e-owner@loyallia.com",
         "first_name": "E2E",
         "last_name": "Owner",
         "role": UserRole.OWNER,
@@ -22,7 +22,7 @@ E2E_USERS = {
         "phone_number": "+593991111111",
     },
     "manager": {
-        "email": "e2e-manager@loyallia.test",
+        "email": "e2e-manager@loyallia.com",
         "first_name": "E2E",
         "last_name": "Manager",
         "role": UserRole.MANAGER,
@@ -30,7 +30,7 @@ E2E_USERS = {
         "phone_number": "+593992222222",
     },
     "staff": {
-        "email": "e2e-staff@loyallia.test",
+        "email": "e2e-staff@loyallia.com",
         "first_name": "E2E",
         "last_name": "Staff",
         "role": UserRole.STAFF,
@@ -38,7 +38,7 @@ E2E_USERS = {
         "phone_number": "+593993333333",
     },
     "superadmin": {
-        "email": "e2e-superadmin@loyallia.test",
+        "email": "e2e-superadmin@loyallia.com",
         "first_name": "E2E",
         "last_name": "SuperAdmin",
         "role": UserRole.SUPER_ADMIN,
@@ -109,7 +109,7 @@ class Command(BaseCommand):
                 "city": "Quito",
                 "timezone": "America/Guayaquil",
                 "phone": "+593990000000",
-                "email": "e2e-tenant@loyallia.test",
+                "email": "e2e-tenant@loyallia.com",
                 "address": "E2E Development Address",
                 "primary_color": "#2563eb",
                 "secondary_color": "#16a34a",

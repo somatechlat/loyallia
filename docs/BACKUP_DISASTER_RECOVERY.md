@@ -651,6 +651,36 @@ docker compose logs -f --tail=100
 
 ---
 
+### 6.6 Test Environment Recovery
+
+**Use case:** Restore `loyallia_dev` from a production dump for local testing or disaster recovery verification.
+
+**WARNING:** Never restore E2E users into production.
+
+```bash
+# 1. Stop application containers to free connections
+docker compose stop api celery-beat celery-default celery-pass celery-push
+
+# 2. Drop and recreate loyallia_dev from a production dump
+docker compose exec postgres psql -U loyallia -d postgres -c "DROP DATABASE IF EXISTS loyallia_dev;"
+docker compose exec postgres psql -U loyallia -d postgres -c "CREATE DATABASE loyallia_dev;"
+docker compose exec -T postgres pg_restore -U loyallia -d loyallia_dev < /backups/loyallia_latest.dump
+
+# 3. Run migrations to catch any schema drift
+docker compose exec api python manage.py migrate
+
+# 4. Re-provision E2E users (they are lost when the DB is dropped)
+docker compose exec api python manage.py provision_development_rbac_test_users --generate
+
+# 5. Restart application containers
+docker compose start api celery-beat celery-default celery-pass celery-push
+
+# 6. Verify Playwright auth setup still works
+cd frontend && npx playwright test --project=setup
+```
+
+---
+
 ## 7. Monitoring & Alerting Setup
 
 ### 7.1 Health Check Endpoints

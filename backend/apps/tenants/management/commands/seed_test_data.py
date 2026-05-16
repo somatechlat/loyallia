@@ -66,11 +66,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from django.conf import settings
 
+        from common.environment_guard import enforce_settings_environment
+
+        enforce_settings_environment(mode="development", databases=settings.DATABASES)
         if not settings.DEBUG:
-            self.stdout.write(
-                self.style.WARNING(
-                    "NOTE: Running seed in non-DEBUG mode. Security is enforced by SUPER_ADMIN API gate."
-                )
+            raise CommandError(
+                "Refusing to seed test data outside DEBUG development mode."
             )
         if options["wipe"]:
             self.stdout.write(

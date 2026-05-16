@@ -145,6 +145,24 @@ passwords are normal Django password hashes. Vault stores system secrets only.
 | 5/7 | `bootstrap.sh` | Auto-export rescue files to `.agents/` | No |
 | 6/7 | `bootstrap.sh` | Start PostgreSQL, Redis, MinIO, API, workers, monitoring | No |
 | 7/7 | `bootstrap.sh` | Verify health, shred JSON, cleanup temp volume | No |
+| 8/8 | `provision_development_rbac_test_users` | Create E2E RBAC users + tenant for Playwright | No |
+
+---
+
+## 5. Post-Bootstrap E2E Provisioning
+
+After bootstrap completes, create the E2E test users required by Playwright:
+
+```bash
+docker compose exec api python manage.py provision_development_rbac_test_users --generate
+```
+
+This creates:
+- `e2e-development-tenant` with enterprise subscription
+- 4 RBAC users: OWNER, MANAGER, STAFF, SUPER_ADMIN
+- `frontend/.auth/e2e-credentials.json` (ignored by Git, mode 0600)
+
+Playwright auth setup reads this file to log in via the real API.
 
 ---
 

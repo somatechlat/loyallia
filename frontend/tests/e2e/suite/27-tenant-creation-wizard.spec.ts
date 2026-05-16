@@ -14,7 +14,7 @@ test.describe('SuperAdmin — Tenant Creation Wizard @superadmin @superadmin', (
     test.setTimeout(90000);
     const suffix = Date.now();
     const tenantName = `E2E Tenant ${suffix}`;
-    const ownerEmail = `e2e-owner-${suffix}@example.com`;
+    const ownerEmail = `e2e-owner-${suffix}@loyallia.com`;
 
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });
 
@@ -32,7 +32,7 @@ test.describe('SuperAdmin — Tenant Creation Wizard @superadmin @superadmin', (
     await page.locator('#wiz-name').fill(tenantName);
     await page.locator('#wiz-legal').fill(`${tenantName} S.A.`);
     await page.locator('#wiz-ruc').fill('1790000000001');
-    await page.locator('input[placeholder="info@empresa.com.ec"]').fill(`tenant-${suffix}@example.com`);
+    await page.locator('input[placeholder="info@empresa.com.ec"]').fill(`tenant-${suffix}@loyallia.com`);
     await page.locator('#wiz-next').click();
 
     // Step 3: Owner

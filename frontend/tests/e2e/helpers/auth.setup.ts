@@ -73,7 +73,7 @@ setup('authenticate all roles', async ({ page, context, request }) => {
     await page.evaluate(() => localStorage.setItem('loyallia_cookie_consent', 'true'));
 
     // Wait for page to stabilize after navigation
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
 
     // Verify we're NOT on the login page (auth succeeded)
     const url = page.url();

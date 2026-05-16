@@ -175,10 +175,10 @@ class AutomationExecuteTest(TestCase):
         auto = make_automation(
             self.tenant,
             trigger=AutomationTrigger.CUSTOMER_ENROLLED,
-            action=AutomationAction.SEND_NOTIFICATION,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
         )
         result = auto.execute(self.customer)
-        # Real _execute_send_notification creates a Notification record
         self.assertTrue(result)
 
     def test_execute_creates_execution_log(self):
@@ -191,22 +191,39 @@ class AutomationExecuteTest(TestCase):
         )
 
     def test_execute_increments_total(self):
-        auto = make_automation(self.tenant)
+        auto = make_automation(
+            self.tenant,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
+        )
         auto.execute(self.customer)
         auto.refresh_from_db()
         self.assertEqual(auto.total_executions, 1)
 
     def test_execute_updates_last_executed(self):
-        auto = make_automation(self.tenant)
+        auto = make_automation(
+            self.tenant,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
+        )
         auto.execute(self.customer)
         auto.refresh_from_db()
         self.assertIsNotNone(auto.last_executed)
 
     def test_execute_blocked_when_inactive(self):
-        make_automation(self.tenant, is_active=False)
-        # Inactive automation won't match in fire_trigger, but direct call
-        # should still respect can_execute
-        pass
+        auto = make_automation(
+            self.tenant,
+            trigger=AutomationTrigger.CUSTOMER_ENROLLED,
+            action=AutomationAction.SEND_NOTIFICATION,
+            is_active=False,
+        )
+        result = auto.execute(self.customer)
+        self.assertFalse(result)
+        self.assertFalse(
+            AutomationExecution.objects.filter(
+                automation=auto, customer=self.customer
+            ).exists()
+        )
 
     def test_execute_blocked_within_cooldown(self):
         auto = make_automation(self.tenant, cooldown_hours=24)
@@ -235,7 +252,13 @@ class AutomationDailyLimitsTest(TestCase):
         make_customer_pass(self.customer, self.card)
 
     def test_execution_blocked_at_daily_limit(self):
-        auto = make_automation(self.tenant, max_executions_per_day=2)
+        auto = make_automation(
+            self.tenant,
+            max_executions_per_day=2,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
+            cooldown_hours=0,
+        )
         # Create 2 executions today
         for _ in range(2):
             AutomationExecution.objects.create(
@@ -248,7 +271,13 @@ class AutomationDailyLimitsTest(TestCase):
         self.assertFalse(result)
 
     def test_execution_allowed_below_daily_limit(self):
-        auto = make_automation(self.tenant, max_executions_per_day=5)
+        auto = make_automation(
+            self.tenant,
+            max_executions_per_day=5,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
+            cooldown_hours=0,
+        )
         AutomationExecution.objects.create(
             automation=auto,
             customer=self.customer,
@@ -259,12 +288,24 @@ class AutomationDailyLimitsTest(TestCase):
         self.assertTrue(result)
 
     def test_no_limit_when_none(self):
-        auto = make_automation(self.tenant, max_executions_per_day=None)
+        auto = make_automation(
+            self.tenant,
+            max_executions_per_day=None,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
+            cooldown_hours=0,
+        )
         result = auto.execute(self.customer)
         self.assertTrue(result)
 
     def test_yesterday_executions_not_counted(self):
-        auto = make_automation(self.tenant, max_executions_per_day=2)
+        auto = make_automation(
+            self.tenant,
+            max_executions_per_day=2,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
+            cooldown_hours=0,
+        )
         # Create 2 executions yesterday
         for _ in range(2):
             exec_obj = AutomationExecution.objects.create(
@@ -280,7 +321,13 @@ class AutomationDailyLimitsTest(TestCase):
         self.assertTrue(result)
 
     def test_zero_daily_limit_blocks_all(self):
-        auto = make_automation(self.tenant, max_executions_per_day=0)
+        auto = make_automation(
+            self.tenant,
+            max_executions_per_day=0,
+            action=AutomationAction.UPDATE_SEGMENT,
+            action_config={"new_segment": "vip"},
+            cooldown_hours=0,
+        )
         result = auto.execute(self.customer)
         self.assertFalse(result)
 

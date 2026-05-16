@@ -115,14 +115,14 @@ DATABASES = {
     # Default: routed through PgBouncer (transaction pooling)
     "default": dj_database_url.config(
         env="PGBOUNCER_URL",
-        default="postgres://loyallia@pgbouncer:6432/loyallia_dev",
+        default="postgres://loyallia@pgbouncer:6432/loyallia",
         conn_max_age=0,  # REQUIRED for PgBouncer transaction mode
         conn_health_checks=False,  # PgBouncer manages health; skip Django checks
     ),
     # Direct: bypasses PgBouncer for migrations and schema operations
     "direct": dj_database_url.config(
         env="DATABASE_DIRECT_URL",
-        default="postgres://loyallia@postgres:5432/loyallia_dev",
+        default="postgres://loyallia@postgres:5432/loyallia",
         conn_max_age=0,
     ),
 }

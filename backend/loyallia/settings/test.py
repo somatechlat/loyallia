@@ -3,18 +3,22 @@ Loyallia Django Settings — Test
 
 Inherits from base.py (NOT development.py).
 Ensures production-fidelity configuration.
-Django automatically creates test_loyallia and destroys it after tests complete.
+Django uses loyallia_dev as the test database template (--reuse-db recommended).
 """
 from .base import *  # noqa: F401, F403
 
 # =============================================================================
 # TEST DATABASE ISOLATION
-# Django creates test_loyallia automatically and destroys it after tests.
+# Django creates test_loyallia_dev automatically and destroys it after tests.
+# Use --reuse-db to keep the test database across runs.
 # =============================================================================
-DATABASES["default"]["TEST"] = {"NAME": "test_loyallia"}  # noqa: F405
-
-# Keep PgBouncerRouter for production-identical query path.
-# Keep direct connection for DDL (CREATE DATABASE, migrations).
+# Bypass PgBouncer in tests — connection pooling is unnecessary and breaks
+# test DB creation/destruction. Route everything through direct PostgreSQL.
+if "direct" in DATABASES:  # noqa: F405
+    DATABASES["default"] = DATABASES["direct"].copy()  # noqa: F405
+    DATABASES["default"]["TEST"] = {"NAME": "test_loyallia_dev"}  # noqa: F405
+    del DATABASES["direct"]  # noqa: F405
+    DATABASE_ROUTERS = []  # noqa: F405
 
 # =============================================================================
 # DISABLE RATE LIMITING IN TESTS
@@ -36,7 +40,14 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
 # Celery runs synchronously in tests for deterministic behavior
 CELERY_TASK_ALWAYS_EAGER = True
-CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# Use in-memory cache to avoid requiring a live Redis on the host
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
 
 # Disable Sentry in tests to avoid polluting error tracking
 SENTRY_DSN = None
