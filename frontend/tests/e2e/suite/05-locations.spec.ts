@@ -33,6 +33,7 @@ test.describe('Locations — OWNER CRUD @owner @locations', () => {
 });
 
 test.describe('Locations — MANAGER Read-Only @manager @locations', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER sees locations page @manager', async ({ page }) => {
     await page.goto('/locations', { waitUntil: 'domcontentloaded' });

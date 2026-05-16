@@ -5,6 +5,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Scanner — STAFF @staff @scanner', () => {
+  test.use({ storageState: '.auth/staff.json' });
 
   test('STAFF lands on scanner page after login @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

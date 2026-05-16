@@ -3,7 +3,6 @@ Loyallia — Customer Models
 Customer profiles, passes, and enrollment management.
 """
 
-
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -32,17 +31,11 @@ class Customer(TimestampedModel):
     # Contact Information
     first_name = models.CharField(max_length=100, verbose_name="Nombre")
     last_name = models.CharField(max_length=100, verbose_name="Apellido")
-    email = models.EmailField(
-        validators=[EmailValidator()], verbose_name="Correo electrónico"
-    )
-    phone = models.CharField(
-        max_length=20, blank=True, default="", verbose_name="Teléfono"
-    )
+    email = models.EmailField(validators=[EmailValidator()], verbose_name="Correo electrónico")
+    phone = models.CharField(max_length=20, blank=True, default="", verbose_name="Teléfono")
 
     # Optional additional info
-    date_of_birth = models.DateField(
-        null=True, blank=True, verbose_name="Fecha de nacimiento"
-    )
+    date_of_birth = models.DateField(null=True, blank=True, verbose_name="Fecha de nacimiento")
     gender = models.CharField(
         max_length=1,
         choices=[("M", "Masculino"), ("F", "Femenino"), ("O", "Otro")],
@@ -67,9 +60,7 @@ class Customer(TimestampedModel):
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
 
     # Analytics
-    total_visits = models.PositiveIntegerField(
-        default=0, verbose_name="Total de visitas"
-    )
+    total_visits = models.PositiveIntegerField(default=0, verbose_name="Total de visitas")
     total_spent = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -77,9 +68,7 @@ class Customer(TimestampedModel):
         validators=[MinValueValidator(0)],
         verbose_name="Total gastado",
     )
-    last_visit = models.DateTimeField(
-        null=True, blank=True, verbose_name="Última visita"
-    )
+    last_visit = models.DateTimeField(null=True, blank=True, verbose_name="Última visita")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_customers"
@@ -144,9 +133,7 @@ class Customer(TimestampedModel):
         max_attempts = 20
 
         for _attempt in range(max_attempts):
-            code = "".join(
-                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
-            )
+            code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             if not Customer.objects.filter(referral_code=code).exists():
                 return code
 
@@ -178,29 +165,21 @@ class CustomerPass(models.Model):
         related_name="passes",
         verbose_name="Cliente",
     )
-    card = models.ForeignKey(
-        Card, on_delete=models.CASCADE, related_name="passes", verbose_name="Programa"
-    )
+    card = models.ForeignKey(Card, on_delete=models.CASCADE, related_name="passes", verbose_name="Programa")
 
     # Pass state stored as JSONB (Legacy/Dynamic)
     pass_data = models.JSONField(default=dict, verbose_name="Datos del pase")
 
     # Core metrics (Typed columns for integrity and indexing)
-    stamp_count = models.PositiveIntegerField(
-        default=0, verbose_name="Contador de sellos"
-    )
+    stamp_count = models.PositiveIntegerField(default=0, verbose_name="Contador de sellos")
     cashback_balance = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=0,
         verbose_name="Balance de cashback",
     )
-    referral_count = models.PositiveIntegerField(
-        default=0, verbose_name="Contador de referidos"
-    )
-    multipass_remaining = models.PositiveIntegerField(
-        default=0, verbose_name="Usos restantes multipase"
-    )
+    referral_count = models.PositiveIntegerField(default=0, verbose_name="Contador de referidos")
+    multipass_remaining = models.PositiveIntegerField(default=0, verbose_name="Usos restantes multipase")
     gift_balance = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -209,12 +188,8 @@ class CustomerPass(models.Model):
     )
 
     # Wallet pass identifiers
-    apple_pass_id = models.CharField(
-        max_length=100, blank=True, default="", verbose_name="Apple Pass ID"
-    )
-    google_pass_id = models.CharField(
-        max_length=100, blank=True, default="", verbose_name="Google Pass ID"
-    )
+    apple_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Apple Pass ID")
+    google_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Google Pass ID")
 
     # QR code for validation — indexed for O(log N) scan lookups
     qr_code = models.CharField(
@@ -228,12 +203,8 @@ class CustomerPass(models.Model):
 
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Pase activo")
-    enrolled_at = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha de inscripción"
-    )
-    last_updated = models.DateTimeField(
-        auto_now=True, verbose_name="Última actualización"
-    )
+    enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de inscripción")
+    last_updated = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
 
     class Meta:
         db_table = "loyallia_customer_passes"
@@ -293,11 +264,7 @@ class CustomerPass(models.Model):
     @property
     def stamp_count_val(self) -> int:
         """Current stamp count for stamp cards (prefers typed column)."""
-        return (
-            self.stamp_count
-            if self.stamp_count > 0
-            else self.get_pass_field("stamp_count", 0)
-        )
+        return self.stamp_count if self.stamp_count > 0 else self.get_pass_field("stamp_count", 0)
 
     @property
     def cashback_balance_val(self) -> Decimal:
@@ -321,11 +288,7 @@ class CustomerPass(models.Model):
     @property
     def gift_balance_val(self) -> Decimal:
         """Current gift certificate balance (prefers typed column)."""
-        return (
-            self.gift_balance
-            if self.gift_balance > 0
-            else Decimal(str(self.get_pass_field("gift_balance", "0")))
-        )
+        return self.gift_balance if self.gift_balance > 0 else Decimal(str(self.get_pass_field("gift_balance", "0")))
 
     @property
     def membership_expiry(self) -> datetime | None:
@@ -343,24 +306,16 @@ class CustomerPass(models.Model):
     @property
     def referral_count_val(self) -> int:
         """Number of successful referrals (prefers typed column)."""
-        return (
-            self.referral_count
-            if self.referral_count > 0
-            else self.get_pass_field("referral_count", 0)
-        )
+        return self.referral_count if self.referral_count > 0 else self.get_pass_field("referral_count", 0)
 
     @property
     def multipass_remaining_val(self) -> int:
         """Remaining prepaid stamps in multipass (prefers typed column)."""
         return (
-            self.multipass_remaining
-            if self.multipass_remaining > 0
-            else self.get_pass_field("multipass_remaining", 0)
+            self.multipass_remaining if self.multipass_remaining > 0 else self.get_pass_field("multipass_remaining", 0)
         )
 
-    def process_transaction(
-        self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1
-    ) -> dict:
+    def process_transaction(self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
         """
         Process a transaction for this pass based on card type.
         Delegates to apps.customers.services.PassProcessor.
@@ -383,9 +338,7 @@ class CustomerPass(models.Model):
 
         return PassProcessor(self)
 
-    def _process_stamp_transaction(
-        self, amount: Decimal = Decimal("0"), quantity: int = 1
-    ) -> dict:
+    def _process_stamp_transaction(self, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
         return self._processor()._process_stamp(amount, quantity)
 
     def _process_coupon_transaction(self) -> dict:

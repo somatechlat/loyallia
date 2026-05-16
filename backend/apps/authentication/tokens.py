@@ -13,7 +13,6 @@ multi-service architectures needing asymmetric key distribution. Key rotation
 invalidates existing tokens (acceptable given 60min access / 30d refresh TTLs).
 """
 
-
 import hashlib
 import logging
 import os
@@ -62,9 +61,7 @@ def _load_keys() -> tuple[str, str]:
 
                 _signing_key = get_secret("jwt_private_key")
             except Exception:
-                logger.warning(
-                    "RS256 configured but private key not found. Falling back to HS256."
-                )
+                logger.warning("RS256 configured but private key not found. Falling back to HS256.")
                 _signing_key = settings.JWT_SECRET_KEY
                 _verification_key = settings.JWT_SECRET_KEY
                 _keys_loaded = True
@@ -96,9 +93,7 @@ def _load_keys() -> tuple[str, str]:
 
     _keys_loaded = True
     if _signing_key is None or _verification_key is None:
-        raise RuntimeError(
-            "JWT key loading failed: signing or verification key is missing."
-        )
+        raise RuntimeError("JWT key loading failed: signing or verification key is missing.")
     return _signing_key, _verification_key
 
 
@@ -133,11 +128,7 @@ def create_access_token(user_id: str, tenant_id: str | None, role: str) -> str:
         "tenant_id": str(tenant_id) if tenant_id else None,
         "role": role,
         "iat": int(now.timestamp()),
-        "exp": int(
-            (
-                now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES)
-            ).timestamp()
-        ),
+        "exp": int((now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_LIFETIME_MINUTES)).timestamp()),
         "type": "access",
     }
     return jwt.encode(payload, _get_signing_key(), algorithm=settings.JWT_ALGORITHM)

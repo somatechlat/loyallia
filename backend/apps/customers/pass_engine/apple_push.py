@@ -15,7 +15,6 @@ Apple Wallet pass update pushes:
 Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
 """
 
-
 import contextlib
 import logging
 
@@ -73,9 +72,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
     cert_pem, key_pem = _get_pass_apns_auth()
     if not cert_pem or not key_pem:
-        logger.warning(
-            "Apple pass push: Not configured — skipping push to …%s", push_token[-8:]
-        )
+        logger.warning("Apple pass push: Not configured — skipping push to …%s", push_token[-8:])
         return False
 
     topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
@@ -101,15 +98,11 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
 
     try:
         # Create temporary PEM files for the SSL context
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".pem", delete=False
-        ) as cert_file:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as cert_file:
             cert_file.write(cert_pem)
             cert_path = cert_file.name
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".pem", delete=False
-        ) as key_file:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as key_file:
             key_file.write(key_pem)
             key_path = key_file.name
 
@@ -188,9 +181,7 @@ def notify_pass_updated(customer_pass) -> int:
     )
 
     if not registrations.exists():
-        logger.debug(
-            "Apple pass push: No registered devices for pass %s", customer_pass.id
-        )
+        logger.debug("Apple pass push: No registered devices for pass %s", customer_pass.id)
         return 0
 
     notified = 0
@@ -201,9 +192,7 @@ def notify_pass_updated(customer_pass) -> int:
         else:
             # Track failures — deactivate after repeated failures
             # (Similar to apns_client.py stale token handling)
-            logger.debug(
-                "Apple pass push: Failed for device …%s", reg.device_library_id[-8:]
-            )
+            logger.debug("Apple pass push: Failed for device …%s", reg.device_library_id[-8:])
 
     logger.info(
         "Apple pass push: Notified %d/%d devices for pass %s",
@@ -227,9 +216,7 @@ def notify_card_updated(card) -> int:
     """
     from apps.customers.models import ApplePassRegistration, CustomerPass
 
-    pass_ids = CustomerPass.objects.filter(card=card, is_active=True).values_list(
-        "id", flat=True
-    )
+    pass_ids = CustomerPass.objects.filter(card=card, is_active=True).values_list("id", flat=True)
 
     registrations = ApplePassRegistration.objects.filter(
         customer_pass_id__in=pass_ids,

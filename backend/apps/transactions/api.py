@@ -38,6 +38,7 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
+from apps.audit.service import log_action
 from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
 from common.messages import get_message
@@ -97,9 +98,9 @@ def validate_qr(request, data: ScanValidateIn):
     try:
         # PERF: single JOIN query for Pass + Customer + Card + Tenant
         # SEC: card__tenant=request.tenant ensures tenant isolation
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(qr_code=data.qr_code, is_active=True, card__tenant=request.tenant)
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            qr_code=data.qr_code, is_active=True, card__tenant=request.tenant
+        )
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
 
@@ -141,9 +142,9 @@ def transact(request, data: ScanTransactIn):
     try:
         # PERF: single JOIN for pass + customer + card + tenant
         # SEC: card__tenant isolates to the staff member's tenant
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(qr_code=data.qr_code, is_active=True, card__tenant=request.tenant)
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            qr_code=data.qr_code, is_active=True, card__tenant=request.tenant
+        )
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -229,6 +230,17 @@ def transact(request, data: ScanTransactIn):
                 exc_info=True,
             )
 
+    log_action(
+        request=request,
+        action="CREATE",
+        resource_type="transaction",
+        resource_id=str(transaction.id),
+        details={
+            "transaction_type": transaction.transaction_type,
+            "amount": str(amount_decimal) if amount_decimal else None,
+            "customer_id": str(pass_obj.customer.id),
+        },
+    )
     response_data = {
         "transaction_id": str(transaction.id),
         "success": True,
@@ -241,9 +253,7 @@ def transact(request, data: ScanTransactIn):
     return _serialize_json_value(response_data)
 
 
-@scanner_router.get(
-    "/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono"
-)
+@scanner_router.get("/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono")
 def search_customer(request, query: str):
     """Search customer by name/email/phone for remote stamp issuance.
 
@@ -326,13 +336,17 @@ def list_transactions(request, limit: int = 50, offset: int = 0):
                 "card_name": transaction.customer_pass.card.name,
                 "amount": str(transaction.amount) if transaction.amount else None,
                 "quantity": transaction.quantity,
-                "staff_name": (
-                    transaction.staff.get_full_name() if transaction.staff else None
-                ),
+                "staff_name": (transaction.staff.get_full_name() if transaction.staff else None),
                 "created_at": transaction.created_at.isoformat(),
             }
         )
 
+    log_action(
+        request=request,
+        action="READ",
+        resource_type="transaction",
+        details={"limit": limit, "offset": offset, "count": len(results)},
+    )
     return {"transactions": results}
 
 
@@ -345,10 +359,15 @@ def get_transaction(request, transaction_id: str):
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     # SEC: tenant=request.tenant prevents cross-tenant access
-    transaction = get_object_or_404(
-        Transaction, id=transaction_id, tenant=request.tenant
-    )
+    transaction = get_object_or_404(Transaction, id=transaction_id, tenant=request.tenant)
 
+    log_action(
+        request=request,
+        action="READ",
+        resource_type="transaction",
+        resource_id=str(transaction.id),
+        details={"transaction_type": transaction.transaction_type},
+    )
     return {
         "id": str(transaction.id),
         "transaction_type": transaction.transaction_type,
@@ -395,9 +414,7 @@ class RemoteIssueIn(BaseModel):
     notes: str = ""
 
 
-@router.post(
-    "/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota"
-)
+@router.post("/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota")
 def remote_issue(request, data: RemoteIssueIn):
     """Issue stamps/rewards remotely without a QR scan.
 
@@ -421,17 +438,15 @@ def remote_issue(request, data: RemoteIssueIn):
 
     # SEC: tenant-scoped customer lookup
     try:
-        customer = Customer.objects.get(
-            id=customer_uuid, tenant=request.tenant, is_active=True
-        )
+        customer = Customer.objects.get(id=customer_uuid, tenant=request.tenant, is_active=True)
     except Customer.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
     # SEC: tenant-scoped pass lookup via customer ownership
     try:
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(customer=customer, card_id=card_uuid, is_active=True)
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            customer=customer, card_id=card_uuid, is_active=True
+        )
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -456,12 +471,21 @@ def remote_issue(request, data: RemoteIssueIn):
         transaction_data=_serialize_json_value(result),
     )
 
+    log_action(
+        request=request,
+        action="CREATE",
+        resource_type="transaction",
+        resource_id=str(transaction.id),
+        details={
+            "transaction_type": transaction.transaction_type,
+            "is_remote": True,
+            "customer_id": str(customer.id),
+        },
+    )
     return {
         "transaction_id": str(transaction.id),
         "success": True,
-        "message": get_message(
-            "TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name
-        ),
+        "message": get_message("TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name),
         "pass_updated": result["pass_updated"],
         "reward_earned": result.get("reward_earned", False),
         "reward_description": result.get("reward_description", ""),

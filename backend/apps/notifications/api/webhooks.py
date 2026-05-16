@@ -14,16 +14,10 @@ def _update_campaign_run_counters(campaign_run: CampaignRun) -> None:
     Called after webhook events update individual logs.
     """
     logs = CampaignDeliveryLog.objects.filter(campaign_run=campaign_run)
-    campaign_run.delivered_count = logs.filter(
-        status__in=(DeliveryStatus.DELIVERED, DeliveryStatus.READ)
-    ).count()
+    campaign_run.delivered_count = logs.filter(status__in=(DeliveryStatus.DELIVERED, DeliveryStatus.READ)).count()
     campaign_run.read_count = logs.filter(status=DeliveryStatus.READ).count()
-    campaign_run.failed_count = logs.filter(
-        status__in=(DeliveryStatus.FAILED, DeliveryStatus.BOUNCED)
-    ).count()
-    campaign_run.save(
-        update_fields=["delivered_count", "read_count", "failed_count", "updated_at"]
-    )
+    campaign_run.failed_count = logs.filter(status__in=(DeliveryStatus.FAILED, DeliveryStatus.BOUNCED)).count()
+    campaign_run.save(update_fields=["delivered_count", "read_count", "failed_count", "updated_at"])
 
 
 def process_mailjet_event(event: dict[str, Any]) -> bool:
@@ -39,9 +33,7 @@ def process_mailjet_event(event: dict[str, Any]) -> bool:
         return False
 
     try:
-        log = CampaignDeliveryLog.objects.filter(
-            external_message_id=message_id
-        ).select_related("campaign_run").first()
+        log = CampaignDeliveryLog.objects.filter(external_message_id=message_id).select_related("campaign_run").first()
         if not log:
             return False
 
@@ -60,9 +52,7 @@ def process_mailjet_event(event: dict[str, Any]) -> bool:
             log.status = DeliveryStatus.BOUNCED
             log.failed_at = timezone.now()
             log.error_code = event_type
-            log.error_message = (
-                event.get("error", "") or event.get("error_related_to", "") or event_type
-            )[:500]
+            log.error_message = (event.get("error", "") or event.get("error_related_to", "") or event_type)[:500]
         else:
             # Unknown event — log but don't fail
             logger.debug("Unknown Mailjet event type: %s", event_type)
@@ -86,7 +76,5 @@ def process_mailjet_event(event: dict[str, Any]) -> bool:
         return True
 
     except Exception as e:
-        logger.error(
-            "Error processing mailjet webhook for message %s: %s", message_id, e
-        )
+        logger.error("Error processing mailjet webhook for message %s: %s", message_id, e)
         return False

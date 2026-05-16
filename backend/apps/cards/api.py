@@ -11,6 +11,7 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel, field_validator
 
+from apps.audit.service import log_action
 from apps.cards.models import Card, CardType
 from apps.customers.models import CustomerPass
 from apps.transactions.models import Enrollment
@@ -210,6 +211,13 @@ def create_program(request, data: CardCreateIn):
     except ValueError as exc:
         raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
 
+    log_action(
+        request=request,
+        action="CREATE",
+        resource_type="program",
+        resource_id=str(card.id),
+        details={"name": card.name, "card_type": card.card_type},
+    )
     return CardOut.from_model(card)
 
 
@@ -284,6 +292,14 @@ def update_program(request, program_id: str, data: CardUpdateIn):
         except ValueError as exc:
             raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
 
+        log_action(
+            request=request,
+            action="UPDATE",
+            resource_type="program",
+            resource_id=str(card.id),
+            details={"updated_fields": update_fields},
+        )
+
         # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
         try:
             from apps.customers.pass_engine.google_pass import update_loyalty_class
@@ -314,6 +330,14 @@ def suspend_program(request, program_id: str):
     card.is_active = not card.is_active  # Toggle status
     card.save(update_fields=["is_active", "updated_at"])
 
+    log_action(
+        request=request,
+        action="UPDATE",
+        resource_type="program",
+        resource_id=str(card.id),
+        details={"is_active": card.is_active},
+    )
+
     msg_code = "PROGRAM_REACTIVATED" if card.is_active else "PROGRAM_SUSPENDED"
     return MessageOut(
         success=True,
@@ -332,6 +356,14 @@ def delete_program(request, program_id: str):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
+
+    log_action(
+        request=request,
+        action="DELETE",
+        resource_type="program",
+        resource_id=str(card.id),
+        details={"name": card.name, "card_type": card.card_type},
+    )
 
     card.delete()
 

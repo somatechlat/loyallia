@@ -8,7 +8,6 @@ Providers are selected via settings.PAYMENT_GATEWAY_PROVIDER:
   - "disabled" → DisabledGateway (billing collection unavailable)
 """
 
-
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -100,7 +99,6 @@ class BasePaymentGateway(ABC):
     @abstractmethod
     def process_webhook(self, event_type: str, data: dict) -> dict:
         """Process a webhook event from the payment provider."""
-
 
 
 # =============================================================================
@@ -226,15 +224,12 @@ def get_payment_gateway() -> BasePaymentGateway:
     if gateway_class is None:
         logger.error("Unknown payment gateway provider: %s", provider)
         raise PaymentGatewayError(
-            message=f"Unknown payment provider: '{provider}'. "
-            f"Valid providers: {list(_GATEWAY_REGISTRY.keys())}",
+            message=f"Unknown payment provider: '{provider}'. Valid providers: {list(_GATEWAY_REGISTRY.keys())}",
             code="INVALID_PROVIDER",
         )
 
     _gateway_instance = gateway_class()
-    logger.info(
-        "Payment gateway initialized: %s (%s)", provider, gateway_class.__name__
-    )
+    logger.info("Payment gateway initialized: %s (%s)", provider, gateway_class.__name__)
     return _gateway_instance
 
 

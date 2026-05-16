@@ -55,6 +55,7 @@ test.describe('Customers — OWNER CRUD @owner @customers', () => {
 });
 
 test.describe('Customers — MANAGER Read-Only @manager @customers', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER sees customer list @manager', async ({ page }) => {
     await page.goto('/customers', { waitUntil: 'domcontentloaded' });

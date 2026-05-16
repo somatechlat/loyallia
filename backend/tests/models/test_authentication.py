@@ -83,6 +83,7 @@ class UserModelTest(TestCase):
 
     def test_create_superuser(self):
         import secrets
+
         admin = cast(UserManager, User.objects).create_superuser(
             email="admin@test.com", password=secrets.token_urlsafe(16)
         )

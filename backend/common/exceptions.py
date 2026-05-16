@@ -13,7 +13,6 @@ Performance (Rule 12):
 Called by: Customer list, Transaction list, Program list, and other paginated endpoints.
 """
 
-
 from typing import Any, Generic, TypeVar
 
 from django.db.models import QuerySet

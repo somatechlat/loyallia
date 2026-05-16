@@ -60,9 +60,7 @@ def upload_file(request, file: UploadedFile):
     if getattr(file, "content_type", "") not in ALLOWED_CONTENT_TYPES:
         raise HttpError(
             400,
-            get_message(
-                "VALIDATION_ERROR", detail="Tipo de contenido de imagen no permitido."
-            ),
+            get_message("VALIDATION_ERROR", detail="Tipo de contenido de imagen no permitido."),
         )
 
     try:
@@ -72,9 +70,7 @@ def upload_file(request, file: UploadedFile):
     except (UnidentifiedImageError, OSError, ValueError):
         raise HttpError(
             400,
-            get_message(
-                "VALIDATION_ERROR", detail="El archivo no es una imagen válida."
-            ),
+            get_message("VALIDATION_ERROR", detail="El archivo no es una imagen válida."),
         )
 
     try:

@@ -128,8 +128,10 @@ def validate_production_database_state(
     if e2e_user_exists is None:
         from apps.authentication.models import User
 
-        def e2e_user_exists():
+        def _default_e2e_user_exists():
             return User.objects.filter(email__startswith=E2E_EMAIL_PREFIX).exists()
+
+        e2e_user_exists = _default_e2e_user_exists
 
     if e2e_user_exists():
         errors.append(

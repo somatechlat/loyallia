@@ -116,12 +116,8 @@ def issue_tokens(user: User) -> dict:
         role=user.role,
     )
     refresh_str = create_refresh_token_string()
-    expires_at = dj_timezone.now() + timedelta(
-        days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS
-    )
-    RefreshToken.objects.create(
-        user=user, token_hash=hash_token(refresh_str), expires_at=expires_at
-    )
+    expires_at = dj_timezone.now() + timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS)
+    RefreshToken.objects.create(user=user, token_hash=hash_token(refresh_str), expires_at=expires_at)
     user.last_login = dj_timezone.now()
     user.save(update_fields=["last_login"])
     return {

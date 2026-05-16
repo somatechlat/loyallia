@@ -260,6 +260,18 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
             exc_info=True,
         )
 
+    log_action(
+        request=request,
+        action=AuditAction.CREATE,
+        resource_type="enrollment",
+        resource_id=str(pass_obj.id),
+        details={
+            "customer_id": str(customer.id),
+            "card_id": str(card.id),
+            "enrollment_method": "qr_scan",
+            "is_new_customer": created,
+        },
+    )
     return CustomerPassOut.from_model(pass_obj)
 
 

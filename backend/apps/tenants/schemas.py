@@ -2,7 +2,6 @@
 Loyallia — Tenants API Schemas (Pydantic models)
 """
 
-
 from pydantic import BaseModel, EmailStr
 
 from apps.tenants.models import Location, Tenant

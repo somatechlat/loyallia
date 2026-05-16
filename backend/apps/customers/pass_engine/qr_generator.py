@@ -11,7 +11,6 @@ The scanner validates: recomputes HMAC, checks timestamp age (≤ 24h by default
 The QR image itself is uploaded to MinIO under assets/qr/{pass_id}.png.
 """
 
-
 import hashlib
 import hmac
 import io
@@ -41,16 +40,12 @@ def generate_qr_token(serial: str, secret: str, timestamp: int | None = None) ->
         secret.encode("utf-8"),
         payload.encode("utf-8"),
         hashlib.sha256,
-    ).hexdigest()[
-        :16
-    ]  # 8 bytes → 16 hex chars — compact but secure enough for pass validation
+    ).hexdigest()[:16]  # 8 bytes → 16 hex chars — compact but secure enough for pass validation
 
     return f"{payload}:{sig}"
 
 
-def verify_qr_token(
-    token: str, secret: str, max_age_seconds: int = 86400
-) -> tuple[bool, str | None]:
+def verify_qr_token(token: str, secret: str, max_age_seconds: int = 86400) -> tuple[bool, str | None]:
     """
     Verify a QR token.
 

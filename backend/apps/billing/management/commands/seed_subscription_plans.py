@@ -128,12 +128,6 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f"  ✅ Created: {obj.name}"))
             else:
                 skipped_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(f"  ⏭️  Skipped: {obj.name} (already exists)")
-                )
+                self.stdout.write(self.style.NOTICE(f"  ⏭️  Skipped: {obj.name} (already exists)"))
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"\nDone: {created_count} created, {skipped_count} skipped."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"\nDone: {created_count} created, {skipped_count} skipped."))

@@ -53,17 +53,11 @@ class Command(BaseCommand):
                 },
             )
             if created:
-                self.stdout.write(
-                    self.style.SUCCESS(f"Created {setting.key} = {setting.value}")
-                )
+                self.stdout.write(self.style.SUCCESS(f"Created {setting.key} = {setting.value}"))
                 created_count += 1
             else:
-                self.stdout.write(
-                    self.style.NOTICE(f"Skipped {setting.key} (already exists)")
-                )
+                self.stdout.write(self.style.NOTICE(f"Skipped {setting.key} (already exists)"))
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"\nDone. {created_count} setting(s) created, {len(DEFAULTS) - created_count} skipped."
-            )
+            self.style.SUCCESS(f"\nDone. {created_count} setting(s) created, {len(DEFAULTS) - created_count} skipped.")
         )

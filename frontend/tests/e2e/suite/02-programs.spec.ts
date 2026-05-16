@@ -91,6 +91,7 @@ test.describe('Programs — OWNER CRUD @owner @programs', () => {
 });
 
 test.describe('Programs — MANAGER Read-Only @manager @programs', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER sees programs list @manager', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });

@@ -305,6 +305,7 @@ test.describe('Django→Bridge API — OWNER @owner @whatsapp', () => {
 // =============================================================================
 
 test.describe('Django WhatsApp RBAC — MANAGER blocked @manager @whatsapp', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER cannot get WhatsApp status (403)', async ({ request }) => {
     const token = await loginRole(request, 'manager');
@@ -335,6 +336,7 @@ test.describe('Django WhatsApp RBAC — MANAGER blocked @manager @whatsapp', () 
 });
 
 test.describe('Django WhatsApp RBAC — STAFF blocked @staff @whatsapp', () => {
+  test.use({ storageState: '.auth/staff.json' });
 
   test('STAFF cannot get WhatsApp status (403)', async ({ request }) => {
     const token = await loginRole(request, 'staff');
@@ -365,6 +367,7 @@ test.describe('Django WhatsApp RBAC — STAFF blocked @staff @whatsapp', () => {
 });
 
 test.describe('Django WhatsApp RBAC — SUPERADMIN blocked @superadmin @whatsapp', () => {
+  test.use({ storageState: '.auth/superadmin.json' });
 
   test('SUPERADMIN cannot get WhatsApp status (403)', async ({ request }) => {
     const token = await loginRole(request, 'superadmin');
@@ -538,6 +541,7 @@ test.describe('Settings WhatsApp Wizard — OWNER @owner @whatsapp', () => {
 });
 
 test.describe('Settings WhatsApp Wizard — MANAGER denied @manager @whatsapp', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER does not see WhatsApp section', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });

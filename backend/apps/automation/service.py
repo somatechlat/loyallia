@@ -174,9 +174,7 @@ class AutomationService:
 
         # Handle target programs separately (M2M)
         if "target_program_ids" in data and data["target_program_ids"] is not None:
-            programs = Card.objects.filter(
-                id__in=data["target_program_ids"], tenant=automation.tenant
-            )
+            programs = Card.objects.filter(id__in=data["target_program_ids"], tenant=automation.tenant)
             automation.target_programs.set(programs)
 
         if update_fields:
@@ -232,18 +230,10 @@ class AutomationService:
 
         total_executions = executions.count()
         successful_executions = executions.filter(success=True).count()
-        success_rate = (
-            (successful_executions / total_executions * 100)
-            if total_executions > 0
-            else 0
-        )
+        success_rate = (successful_executions / total_executions * 100) if total_executions > 0 else 0
 
-        trigger_stats = executions.values("automation__trigger").annotate(
-            count=Count("id")
-        )
-        action_stats = executions.values("automation__action").annotate(
-            count=Count("id")
-        )
+        trigger_stats = executions.values("automation__trigger").annotate(count=Count("id"))
+        action_stats = executions.values("automation__action").annotate(count=Count("id"))
 
         return {
             "total_automations": total_automations,
@@ -251,10 +241,6 @@ class AutomationService:
             "total_executions": total_executions,
             "successful_executions": successful_executions,
             "success_rate": success_rate,
-            "trigger_breakdown": {
-                item["automation__trigger"]: item["count"] for item in trigger_stats
-            },
-            "action_breakdown": {
-                item["automation__action"]: item["count"] for item in action_stats
-            },
+            "trigger_breakdown": {item["automation__trigger"]: item["count"] for item in trigger_stats},
+            "action_breakdown": {item["automation__action"]: item["count"] for item in action_stats},
         }

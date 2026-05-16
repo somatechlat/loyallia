@@ -13,7 +13,6 @@ According to Apple PassKit docs:
 https://developer.apple.com/documentation/walletpasses
 """
 
-
 import hashlib
 import io
 import json
@@ -115,13 +114,16 @@ def get_apple_wallet_diagnostics() -> dict:
         diagnostics["errors"].append("Missing APPLE_WWDR_CERT_PEM in Vault")
 
     # Only try crypto validation if all PEMs are present
-    if all([
-        diagnostics["cert_pem_present"],
-        diagnostics["cert_key_pem_present"],
-        diagnostics["wwdr_cert_pem_present"],
-    ]):
+    if all(
+        [
+            diagnostics["cert_pem_present"],
+            diagnostics["cert_key_pem_present"],
+            diagnostics["wwdr_cert_pem_present"],
+        ]
+    ):
         try:
             from OpenSSL import crypto
+
             crypto.load_certificate(crypto.FILETYPE_PEM, cert_pem.encode("utf-8"))
             crypto.load_privatekey(crypto.FILETYPE_PEM, key_pem.encode("utf-8"))
             crypto.load_certificate(crypto.FILETYPE_PEM, wwdr_pem.encode("utf-8"))
@@ -156,9 +158,7 @@ def _build_nfc_payload(card, customer_pass, barcode_value: str) -> dict | None:
 
     nfc_public_key = get_secret("apple_nfc_encryption_public_key", default="")
     if not nfc_public_key:
-        raise ValueError(
-            "Apple NFC is enabled but apple_nfc_encryption_public_key is missing"
-        )
+        raise ValueError("Apple NFC is enabled but apple_nfc_encryption_public_key is missing")
 
     message = str(apple_config.get("nfc_message") or barcode_value)
     if len(message.encode("utf-8")) > 64:
@@ -286,10 +286,7 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
 def generate_pkpass(customer_pass) -> bytes | None:
     """Generate a real .pkpass file (signed ZIP) for Apple Wallet."""
     if not _check_config_ready():
-        logger.warning(
-            "Apple Wallet configuration missing. "
-            "Provide: APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER"
-        )
+        logger.warning("Apple Wallet configuration missing. Provide: APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER")
         return None
 
     card = customer_pass.card
@@ -300,9 +297,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
     try:
         pass_json = _build_pass_json(customer_pass, card, customer, tenant)
     except ValueError as exc:
-        logger.error(
-            "Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc
-        )
+        logger.error("Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc)
         return None
     pass_json_bytes = json.dumps(pass_json, ensure_ascii=False).encode("utf-8")
 
@@ -320,17 +315,13 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
             import httpx
 
-            with httpx.Client(
-                timeout=10.0, follow_redirects=False, max_redirects=0
-            ) as client:
+            with httpx.Client(timeout=10.0, follow_redirects=False, max_redirects=0) as client:
                 resp = client.get(url)
                 if resp.status_code == 200:
                     # Enforce 5MB max size
                     content = resp.content
                     if len(content) > 5 * 1024 * 1024:
-                        logger.warning(
-                            "Image too large (%d bytes): %s", len(content), url
-                        )
+                        logger.warning("Image too large (%d bytes): %s", len(content), url)
                         return None
                     return content
         except SSRFError as exc:

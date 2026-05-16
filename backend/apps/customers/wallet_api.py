@@ -156,9 +156,9 @@ def download_apple_pass(request, pass_id: str):
     )
 
     try:
-        customer_pass = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(id=uuid.UUID(pass_id))
+        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(pass_id)
+        )
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -187,9 +187,7 @@ def download_apple_pass(request, pass_id: str):
         pkpass_bytes,
         content_type="application/vnd.apple.pkpass",
     )
-    response["Content-Disposition"] = (
-        f'attachment; filename="{customer_pass.card.name}.pkpass"'
-    )
+    response["Content-Disposition"] = f'attachment; filename="{customer_pass.card.name}.pkpass"'
     return response
 
 
@@ -219,9 +217,9 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     )
 
     try:
-        customer_pass = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(id=uuid.UUID(pass_id))
+        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(pass_id)
+        )
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -264,22 +262,16 @@ def get_wallet_status(request, pass_id: str):
     from apps.customers.pass_engine.google_pass import is_google_wallet_configured
 
     try:
-        customer_pass = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(id=uuid.UUID(pass_id))
+        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(pass_id)
+        )
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
     _validate_pass_is_accessible(customer_pass)
 
-    apple_available = (
-        _is_wallet_provider_enabled(customer_pass.card, "apple")
-        and is_apple_wallet_configured()
-    )
-    google_available = (
-        _is_wallet_provider_enabled(customer_pass.card, "google")
-        and is_google_wallet_configured()
-    )
+    apple_available = _is_wallet_provider_enabled(customer_pass.card, "apple") and is_apple_wallet_configured()
+    google_available = _is_wallet_provider_enabled(customer_pass.card, "google") and is_google_wallet_configured()
 
     getattr(request, "build_absolute_uri", lambda p: p)
 

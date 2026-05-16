@@ -258,6 +258,7 @@ test.describe('SMS Plan Features API — OWNER @owner @campaigns', () => {
 // =============================================================================
 
 test.describe('SMS Campaign RBAC — MANAGER blocked @manager @campaigns', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER cannot access campaign list API (403) @manager', async ({ request }) => {
     const token = await loginRole(request, 'manager');
@@ -294,6 +295,7 @@ test.describe('SMS Campaign RBAC — MANAGER blocked @manager @campaigns', () =>
 // =============================================================================
 
 test.describe('SuperAdmin — Twilio Test Mode @superadmin @superadmin', () => {
+  test.use({ storageState: '.auth/superadmin.json' });
 
   test('SA can view Twilio SMS integration settings @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });

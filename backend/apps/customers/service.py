@@ -152,32 +152,17 @@ class CustomerService:
         col_first = _find_col(["nombre", "first_name", "first", "name"])
         col_last = _find_col(["apellido", "last_name", "last", "surname"])
         col_email = _find_col(["email", "correo", "mail", "e-mail"])
-        col_phone = _find_col(
-            ["telefono", "teléfono", "phone", "cel", "movil", "móvil"]
-        )
-        col_dob = _find_col(
-            ["fecha_nac", "nacimiento", "birth", "dob", "fecha_de_nacimiento"]
-        )
+        col_phone = _find_col(["telefono", "teléfono", "phone", "cel", "movil", "móvil"])
+        col_dob = _find_col(["fecha_nac", "nacimiento", "birth", "dob", "fecha_de_nacimiento"])
         col_gender = _find_col(["genero", "género", "gender", "sexo"])
-        col_notes = _find_col(
-            ["notas", "notes", "nota", "observaciones", "comentarios"]
-        )
-        col_total_spent = _find_col(
-            ["gasto", "spent", "total_spent", "compras", "monto"]
-        )
-        col_total_visits = _find_col(
-            ["visitas", "visits", "total_visits", "frecuencia", "scan"]
-        )
+        col_notes = _find_col(["notas", "notes", "nota", "observaciones", "comentarios"])
+        col_total_spent = _find_col(["gasto", "spent", "total_spent", "compras", "monto"])
+        col_total_visits = _find_col(["visitas", "visits", "total_visits", "frecuencia", "scan"])
 
         if not col_first or not col_email:
-            raise ValueError(
-                f"File must have at least 'nombre' and 'email' columns. "
-                f"Detected: {list(df.columns)}"
-            )
+            raise ValueError(f"File must have at least 'nombre' and 'email' columns. Detected: {list(df.columns)}")
 
-        existing_emails = set(
-            Customer.objects.filter(tenant=tenant).values_list("email", flat=True)
-        )
+        existing_emails = set(Customer.objects.filter(tenant=tenant).values_list("email", flat=True))
 
         seen_in_file = set()
         customers_to_create = []
@@ -205,11 +190,7 @@ class CustomerService:
                 continue
 
             last_name = str(row.get(col_last, "")).strip().title() if col_last else ""
-            phone = (
-                re.sub(r"[^\d\+\- ]", "", str(row.get(col_phone, "")).strip())
-                if col_phone
-                else ""
-            )
+            phone = re.sub(r"[^\d\+\- ]", "", str(row.get(col_phone, "")).strip()) if col_phone else ""
             phone = phone[:20]
 
             date_of_birth = None
@@ -231,9 +212,7 @@ class CustomerService:
             total_spent = 0.0
             if col_total_spent:
                 try:
-                    spent_raw = re.sub(
-                        r"[^\d\.]", "", str(row.get(col_total_spent, "0"))
-                    )
+                    spent_raw = re.sub(r"[^\d\.]", "", str(row.get(col_total_spent, "0")))
                     total_spent = float(spent_raw) if spent_raw else 0.0
                 except ValueError:
                     pass
@@ -241,9 +220,7 @@ class CustomerService:
             total_visits = 0
             if col_total_visits:
                 try:
-                    visits_raw = re.sub(
-                        r"[^\d]", "", str(row.get(col_total_visits, "0"))
-                    )
+                    visits_raw = re.sub(r"[^\d]", "", str(row.get(col_total_visits, "0")))
                     total_visits = int(visits_raw) if visits_raw else 0
                 except ValueError:
                     pass
@@ -319,9 +296,7 @@ class CustomerService:
             ValueError: If already enrolled
         """
         if CustomerPass.objects.filter(customer=customer, card=card).exists():
-            raise ValueError(
-                f"Customer {customer.email} is already enrolled in {card.name}"
-            )
+            raise ValueError(f"Customer {customer.email} is already enrolled in {card.name}")
 
         pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 

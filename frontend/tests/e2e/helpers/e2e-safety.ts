@@ -2,6 +2,11 @@ import { expect, type APIRequestContext } from '@playwright/test';
 
 export type E2ERole = 'owner' | 'manager' | 'staff' | 'superadmin';
 
+export function getRoleCredentials(role: E2ERole): { email: string; password: string } {
+  const { getE2ERoleCredential } = require('./e2e-test-config');
+  return getE2ERoleCredential(role);
+}
+
 const PRODUCTION_HOSTS = new Set([
   'rewards.loyallia.com',
   'app.loyallia.com',

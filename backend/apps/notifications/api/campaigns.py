@@ -5,6 +5,7 @@ from typing import Any
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
+from apps.audit.service import log_action
 from apps.notifications.models import CampaignRun, Notification, NotificationType
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
@@ -129,6 +130,12 @@ def create_campaign(request, data: CampaignCreateIn):
             segment_id=data.segment_id,
             image_url=data.image_url or "",
         )
+        log_action(
+            request=request,
+            action="CREATE",
+            resource_type="campaign",
+            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
+        )
         return {
             "success": True,
             "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=data.segment_id),
@@ -147,6 +154,12 @@ def create_campaign(request, data: CampaignCreateIn):
             message=data.message,
             segment_id=data.segment_id,
             wallet_platform=data.wallet_platform,
+        )
+        log_action(
+            request=request,
+            action="CREATE",
+            resource_type="campaign",
+            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
         )
         return {
             "success": True,
@@ -167,11 +180,15 @@ def create_campaign(request, data: CampaignCreateIn):
             segment_id=data.segment_id,
             image_url=data.image_url or "",
         )
+        log_action(
+            request=request,
+            action="CREATE",
+            resource_type="campaign",
+            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
+        )
         return {
             "success": True,
-            "message": get_message(
-                "CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id
-            ),
+            "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id),
         }
     elif data.channel == "sms":
         # LYL-SRS-009: Gate SMS campaigns by plan feature + daily quota
@@ -187,11 +204,15 @@ def create_campaign(request, data: CampaignCreateIn):
             message=data.message,
             segment_id=data.segment_id,
         )
+        log_action(
+            request=request,
+            action="CREATE",
+            resource_type="campaign",
+            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
+        )
         return {
             "success": True,
-            "message": get_message(
-                "SMS_CAMPAIGN_STARTED", segment=data.segment_id
-            ),
+            "message": get_message("SMS_CAMPAIGN_STARTED", segment=data.segment_id),
         }
     else:
         raise HttpError(

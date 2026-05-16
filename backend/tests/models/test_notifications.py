@@ -233,6 +233,7 @@ class WhatsAppSessionModelTest(TestCase):
             features=["whatsapp_campaigns"],
         )
         from apps.billing.models import Subscription, SubscriptionStatus
+
         Subscription.objects.create(
             tenant=tenant,
             subscription_plan=plan,

@@ -197,7 +197,7 @@ class FactoryResetGuardrailsTest(TestCase):
         from ninja.errors import HttpError
 
         from apps.tenants.models import PlatformSetting
-        from apps.tenants.super_admin_api.platform import factory_reset_confirm
+        from apps.tenants.super_admin_api.platform_reset import factory_reset_confirm
         from apps.tenants.super_admin_api.schemas import FactoryResetConfirmIn
 
         PlatformSetting.objects.create(key="PLATFORM_MODE", value="production")
@@ -209,7 +209,7 @@ class FactoryResetGuardrailsTest(TestCase):
         from ninja.errors import HttpError
 
         from apps.tenants.models import PlatformSetting
-        from apps.tenants.super_admin_api.platform import seed_demo_data
+        from apps.tenants.super_admin_api.platform_reset import seed_demo_data
 
         PlatformSetting.objects.create(key="PLATFORM_MODE", value="production")
         with self.assertRaises(HttpError) as ctx:
@@ -219,11 +219,12 @@ class FactoryResetGuardrailsTest(TestCase):
     def test_non_superadmin_cannot_factory_reset(self):
         from ninja.errors import HttpError
 
-        from apps.tenants.super_admin_api.platform import factory_reset_request
+        from apps.tenants.super_admin_api.platform_reset import factory_reset_request
 
-        owner = make_user(tenant=Tenant.objects.create(
-            name="Owner Tenant", slug="owner-tenant", is_active=True, country="EC"
-        ), role=UserRole.OWNER)
+        owner = make_user(
+            tenant=Tenant.objects.create(name="Owner Tenant", slug="owner-tenant", is_active=True, country="EC"),
+            role=UserRole.OWNER,
+        )
         req = RequestFactory().post(
             "/api/v1/admin/platform/factory-reset/request/",
             data=json.dumps({}),
@@ -237,11 +238,12 @@ class FactoryResetGuardrailsTest(TestCase):
     def test_non_superadmin_cannot_seed_demo(self):
         from ninja.errors import HttpError
 
-        from apps.tenants.super_admin_api.platform import seed_demo_data
+        from apps.tenants.super_admin_api.platform_reset import seed_demo_data
 
-        owner = make_user(tenant=Tenant.objects.create(
-            name="Owner Tenant 2", slug="owner-tenant-2", is_active=True, country="EC"
-        ), role=UserRole.OWNER)
+        owner = make_user(
+            tenant=Tenant.objects.create(name="Owner Tenant 2", slug="owner-tenant-2", is_active=True, country="EC"),
+            role=UserRole.OWNER,
+        )
         req = RequestFactory().post(
             "/api/v1/admin/platform/seed-demo-data/",
             data=json.dumps({}),

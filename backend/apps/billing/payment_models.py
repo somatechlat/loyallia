@@ -34,31 +34,17 @@ class PaymentMethod(TimestampedModel):
     )
 
     # Payment gateway token (PCI-compliant — we never store raw card data)
-    gateway_token = models.CharField(
-        max_length=200, verbose_name="Token de pago (gateway)"
-    )
+    gateway_token = models.CharField(max_length=200, verbose_name="Token de pago (gateway)")
 
     # Display info only
-    card_brand = models.CharField(
-        max_length=20, blank=True, default="", verbose_name="Marca de tarjeta"
-    )
-    card_last_four = models.CharField(
-        max_length=4, blank=True, default="", verbose_name="Últimos 4 dígitos"
-    )
-    card_exp_month = models.PositiveSmallIntegerField(
-        null=True, blank=True, verbose_name="Mes de expiración"
-    )
-    card_exp_year = models.PositiveSmallIntegerField(
-        null=True, blank=True, verbose_name="Año de expiración"
-    )
-    cardholder_name = models.CharField(
-        max_length=200, blank=True, default="", verbose_name="Nombre del titular"
-    )
+    card_brand = models.CharField(max_length=20, blank=True, default="", verbose_name="Marca de tarjeta")
+    card_last_four = models.CharField(max_length=4, blank=True, default="", verbose_name="Últimos 4 dígitos")
+    card_exp_month = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Mes de expiración")
+    card_exp_year = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Año de expiración")
+    cardholder_name = models.CharField(max_length=200, blank=True, default="", verbose_name="Nombre del titular")
 
     # Status
-    is_default = models.BooleanField(
-        default=False, verbose_name="Método predeterminado"
-    )
+    is_default = models.BooleanField(default=False, verbose_name="Método predeterminado")
     is_active = models.BooleanField(default=True, verbose_name="Activo")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -110,9 +96,7 @@ class Invoice(TimestampedModel):
     )
 
     # Invoice number (sequential per tenant)
-    invoice_number = models.CharField(
-        max_length=50, unique=True, verbose_name="Número de factura"
-    )
+    invoice_number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
 
     # Amounts
     subtotal = models.DecimalField(
@@ -175,9 +159,7 @@ class Invoice(TimestampedModel):
     )
 
     # Additional data
-    invoice_data = models.JSONField(
-        default=dict, verbose_name="Datos adicionales de factura"
-    )
+    invoice_data = models.JSONField(default=dict, verbose_name="Datos adicionales de factura")
     pdf_url = models.URLField(blank=True, default="", verbose_name="URL del PDF")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -223,9 +205,7 @@ class Invoice(TimestampedModel):
         self.status = self.InvoiceStatus.PAID
         self.gateway_charge_id = gateway_charge_id
         self.paid_at = timezone.now()
-        self.save(
-            update_fields=["status", "gateway_charge_id", "paid_at", "updated_at"]
-        )
+        self.save(update_fields=["status", "gateway_charge_id", "paid_at", "updated_at"])
 
 
 # =============================================================================

@@ -4,7 +4,6 @@ Loyallia — Miscellaneous Notification Models
 Core notification records and WhatsApp session management.
 """
 
-
 import uuid
 
 from django.db import models
@@ -71,16 +70,10 @@ class Notification(models.Model):
     is_clicked = models.BooleanField(default=False, verbose_name="Clickeado")
 
     # Timestamps
-    created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha de creación"
-    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de envío")
-    read_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fecha de lectura"
-    )
-    clicked_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fecha de click"
-    )
+    read_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de lectura")
+    clicked_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de click")
 
     class Meta:
         db_table = "loyallia_notifications"
@@ -147,17 +140,11 @@ class WhatsAppSession(models.Model):
         verbose_name="Número de WhatsApp",
     )
     is_connected = models.BooleanField(default=False, verbose_name="Conectado")
-    last_qr_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Último QR generado"
-    )
+    last_qr_at = models.DateTimeField(null=True, blank=True, verbose_name="Último QR generado")
 
     # Rate limiting state
-    messages_sent_today = models.IntegerField(
-        default=0, verbose_name="Mensajes enviados hoy"
-    )
-    daily_limit = models.IntegerField(
-        default=200, verbose_name="Límite diario (legacy)"
-    )
+    messages_sent_today = models.IntegerField(default=0, verbose_name="Mensajes enviados hoy")
+    daily_limit = models.IntegerField(default=200, verbose_name="Límite diario (legacy)")
     warmup_day = models.IntegerField(
         default=0,
         verbose_name="Día de calentamiento",

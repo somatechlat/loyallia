@@ -4,7 +4,6 @@ Loyallia — Push Notification Models
 Device registration and push notification state.
 """
 
-
 import uuid
 
 from django.db import models
@@ -32,20 +31,12 @@ class PushDevice(models.Model):
         choices=[("ios", "iOS"), ("android", "Android"), ("web", "Web")],
         verbose_name="Tipo de dispositivo",
     )
-    device_token = models.CharField(
-        max_length=500, verbose_name="Token del dispositivo"
-    )
-    device_model = models.CharField(
-        max_length=100, blank=True, default="", verbose_name="Modelo del dispositivo"
-    )
+    device_token = models.CharField(max_length=500, verbose_name="Token del dispositivo")
+    device_model = models.CharField(max_length=100, blank=True, default="", verbose_name="Modelo del dispositivo")
 
     # Push service identifiers
-    apns_token = models.CharField(
-        max_length=500, blank=True, default="", verbose_name="Token APNS"
-    )
-    fcm_token = models.CharField(
-        max_length=500, blank=True, default="", verbose_name="Token FCM"
-    )
+    apns_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token APNS")
+    fcm_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token FCM")
 
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Dispositivo activo")
@@ -56,9 +47,7 @@ class PushDevice(models.Model):
     )
 
     # Timestamps
-    registered_at = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha de registro"
-    )
+    registered_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
     last_used = models.DateTimeField(null=True, blank=True, verbose_name="Último uso")
 
     class Meta:

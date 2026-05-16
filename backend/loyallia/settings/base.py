@@ -145,9 +145,7 @@ AUTH_USER_MODEL = "authentication.User"
 # SECURITY (LYL-M-SEC-014): 12+ chars with complexity requirements.
 # =============================================================================
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 12},
@@ -260,9 +258,7 @@ JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 # For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
 JWT_SECRET_KEY = get_secret("jwt_secret_key", default=SECRET_KEY)  # B-001: Separate from Django SECRET_KEY
-JWT_PRIVATE_KEY_PATH = config(
-    "JWT_PRIVATE_KEY_PATH", default=""
-)  # RS256 private key file
+JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 private key file
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
 
@@ -275,25 +271,17 @@ def vault_bool(key: str, env_name: str = "", default: bool = False) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
 
 
-APPLE_WALLET_ENABLED = vault_bool(
-    "apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False
-)
-GOOGLE_WALLET_ENABLED = vault_bool(
-    "google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True
-)
+APPLE_WALLET_ENABLED = vault_bool("apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False)
+GOOGLE_WALLET_ENABLED = vault_bool("google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True)
 
 APPLE_PASS_TYPE_IDENTIFIER = get_secret(
     "apple_pass_type_identifier",
     default="",
 )
-APPLE_TEAM_IDENTIFIER = get_secret(
-    "apple_team_identifier", default=""
-)
+APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", default="")
 APPLE_CERT_PATH = config("APPLE_CERT_PATH", default="/app/certs/apple_pass.pem")
 APPLE_CERT_KEY_PATH = config("APPLE_CERT_KEY_PATH", default="/app/certs/apple_pass.key")
-APPLE_WWDR_CERT_PATH = config(
-    "APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem"
-)
+APPLE_WWDR_CERT_PATH = config("APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem")
 PASS_HMAC_SECRET = get_secret("pass_hmac_secret", default="")
 # Apple Wallet webServiceURL — the base URL Apple Wallet calls for pass
 # registration, update checking, and pass re-download. Must be HTTPS in production.
@@ -306,42 +294,30 @@ PASS_WEB_SERVICE_URL = config(
 # APNs token-based auth (JWT) — for push notifications to iOS
 # Separate from the PassKit signing certificates above
 APPLE_APNS_KEY_ID = config("APPLE_APNS_KEY_ID", default="")
-APPLE_APNS_AUTH_KEY_PATH = config(
-    "APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8"
-)
+APPLE_APNS_AUTH_KEY_PATH = config("APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8")
 
 GOOGLE_SERVICE_ACCOUNT_FILE = config(
     "GOOGLE_SERVICE_ACCOUNT_FILE",
     default="/app/certs/google_wallet_service_account.json",
 )
-GOOGLE_WALLET_ISSUER_ID = get_secret(
-    "google_wallet_issuer_id", default=""
-)
+GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", default="")
 
 # =============================================================================
 # FIREBASE (Android Push)
 # =============================================================================
-FIREBASE_CREDENTIAL_FILE = config(
-    "FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json"
-)
+FIREBASE_CREDENTIAL_FILE = config("FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json")
 
 # =============================================================================
 # PAYMENT GATEWAY (Pluggable — Manual / Disabled)
 # =============================================================================
-PAYMENT_GATEWAY_ENABLED = vault_bool(
-    "payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False
-)
+PAYMENT_GATEWAY_ENABLED = vault_bool("payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False)
 PAYMENT_GATEWAY_PROVIDER = get_secret(
     "payment_gateway_provider",
     default="manual",
 )
 PAYMENT_GATEWAY_BASE_URL = config("PAYMENT_GATEWAY_BASE_URL", default="")
-PAYMENT_GATEWAY_LOGIN = get_secret(
-    "payment_gateway_login", default=""
-)
-PAYMENT_GATEWAY_TRAN_KEY = get_secret(
-    "payment_gateway_tran_key", default=""
-)
+PAYMENT_GATEWAY_LOGIN = get_secret("payment_gateway_login", default="")
+PAYMENT_GATEWAY_TRAN_KEY = get_secret("payment_gateway_tran_key", default="")
 PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
     "payment_gateway_webhook_secret",
     default="",
@@ -365,9 +341,7 @@ DEFAULT_FROM_EMAIL = get_secret(
 # =============================================================================
 # WHATSAPP BRIDGE (LYL-SRS-006)
 # =============================================================================
-WHATSAPP_BRIDGE_URL = config(
-    "WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001"
-)
+WHATSAPP_BRIDGE_URL = config("WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001")
 WHATSAPP_BRIDGE_API_KEY = get_secret(
     "whatsapp_bridge_api_key",
     default="",
@@ -378,43 +352,24 @@ WHATSAPP_MAX_PER_HOUR = config("WHATSAPP_MAX_PER_HOUR", default=200, cast=int)
 # =============================================================================
 # TWILIO SMS (LYL-SRS-009)
 # =============================================================================
-TWILIO_ACCOUNT_SID = get_secret(
-    "twilio_account_sid", default=""
-)
-TWILIO_AUTH_TOKEN = get_secret(
-    "twilio_auth_token", default=""
-)
-TWILIO_FROM_NUMBER = get_secret(
-    "twilio_from_number", default=""
-)
+TWILIO_ACCOUNT_SID = get_secret("twilio_account_sid", default="")
+TWILIO_AUTH_TOKEN = get_secret("twilio_auth_token", default="")
+TWILIO_FROM_NUMBER = get_secret("twilio_from_number", default="")
 TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 
 # -----------------------------------------------------------------------------
 # TWILIO VERIFY v2 (LYL-SRS-VERIFY-001)
 # -----------------------------------------------------------------------------
-TWILIO_VERIFY_SERVICE_SID = get_secret(
-    "twilio_verify_service_sid", default=""
-)
-TWILIO_VERIFY_ENABLED = (
-    get_secret("twilio_verify_enabled", default="false").lower()
-    == "true"
-)
+TWILIO_VERIFY_SERVICE_SID = get_secret("twilio_verify_service_sid", default="")
+TWILIO_VERIFY_ENABLED = get_secret("twilio_verify_enabled", default="false").lower() == "true"
 TWILIO_VERIFY_DEFAULT_CHANNEL = get_secret(
     "twilio_verify_default_channel",
     default="sms",
 )
-TWILIO_API_KEY_SID = get_secret(
-    "twilio_api_key_sid", default=""
-)
-TWILIO_API_KEY_SECRET = get_secret(
-    "twilio_api_key_secret", default=""
-)
-TWILIO_TEST_ACCOUNT_SID = get_secret(
-    "twilio_test_account_sid", default=""
-)
-TWILIO_TEST_AUTH_TOKEN = get_secret(
-    "twilio_test_auth_token", default=""
-)
+TWILIO_API_KEY_SID = get_secret("twilio_api_key_sid", default="")
+TWILIO_API_KEY_SECRET = get_secret("twilio_api_key_secret", default="")
+TWILIO_TEST_ACCOUNT_SID = get_secret("twilio_test_account_sid", default="")
+TWILIO_TEST_AUTH_TOKEN = get_secret("twilio_test_auth_token", default="")
 
 # =============================================================================
 # CORS
@@ -457,9 +412,7 @@ SESSION_COOKIE_SAMESITE = "Lax"
 TRIAL_DAYS = config("TRIAL_DAYS", default=5, cast=int)
 GEO_PUSH_COOLDOWN_HOURS = config("GEO_PUSH_COOLDOWN_HOURS", default=4, cast=int)
 GEO_FENCE_RADIUS_METERS = config("GEO_FENCE_RADIUS_METERS", default=100, cast=int)
-TAX_RATE_ECUADOR = config(
-    "TAX_RATE_ECUADOR", default=0.15, cast=float
-)  # Ecuador IVA 15%
+TAX_RATE_ECUADOR = config("TAX_RATE_ECUADOR", default=0.15, cast=float)  # Ecuador IVA 15%
 
 # =============================================================================
 # GOOGLE OAUTH 2.0 (Social Login) — Google Identity Services (GIS)
@@ -479,12 +432,8 @@ TAX_RATE_ECUADOR = config(
 # NEVER commit client_id/client_secret to any file. They live ONLY in Vault.
 # Get credentials from: https://console.cloud.google.com/apis/credentials
 # =============================================================================
-GOOGLE_OAUTH_CLIENT_ID = get_secret(
-    "google_oauth_client_id", default=""
-)
-GOOGLE_OAUTH_CLIENT_SECRET = get_secret(
-    "google_oauth_client_secret", default=""
-)
+GOOGLE_OAUTH_CLIENT_ID = get_secret("google_oauth_client_id", default="")
+GOOGLE_OAUTH_CLIENT_SECRET = get_secret("google_oauth_client_secret", default="")
 GOOGLE_OAUTH_REDIRECT_URI = config(
     "GOOGLE_OAUTH_REDIRECT_URI",
     default="http://localhost:33905/api/v1/auth/google/callback/",

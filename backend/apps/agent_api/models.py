@@ -47,9 +47,7 @@ class AgentAPIKey(models.Model):
 
     # Access control
     is_active = models.BooleanField(default=True, verbose_name="Activo")
-    last_used_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Último uso"
-    )
+    last_used_at = models.DateTimeField(null=True, blank=True, verbose_name="Último uso")
     expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Expira en")
 
     # Audit

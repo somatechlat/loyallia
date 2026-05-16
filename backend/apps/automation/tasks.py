@@ -2,7 +2,6 @@
 Loyallia — Automation Celery Tasks
 """
 
-
 import logging
 
 from celery import shared_task
@@ -34,9 +33,7 @@ def evaluate_trigger_for_customer(
     from apps.customers.models import Customer
 
     try:
-        customer = Customer.objects.select_related("tenant").get(
-            id=uuid.UUID(customer_id)
-        )
+        customer = Customer.objects.select_related("tenant").get(id=uuid.UUID(customer_id))
     except Customer.DoesNotExist:
         logger.error("evaluate_trigger: customer %s not found", customer_id)
         return {"success": False}

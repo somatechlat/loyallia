@@ -78,6 +78,7 @@ test.describe('Automation Actions — OWNER @owner @automation', () => {
 });
 
 test.describe('Automation — MANAGER Isolation @manager @automation', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER does NOT see automation creation controls @manager', async ({ page }) => {
     await page.goto('/automation', { waitUntil: 'domcontentloaded' });
@@ -112,6 +113,7 @@ test.describe('Settings — SMS Configuration @owner @settings', () => {
 });
 
 test.describe('SuperAdmin — Plans with SMS Feature @superadmin @superadmin', () => {
+  test.use({ storageState: '.auth/superadmin.json' });
 
   test('SA sees plan management page @superadmin', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });

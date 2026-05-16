@@ -24,7 +24,6 @@ Security (SEC):
 Called by: apps/transactions/api.py (transact), apps/customers/api.py (enroll).
 """
 
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -76,8 +75,7 @@ def fire_trigger(
     trigger_chain = (context or {}).get("_trigger_chain", [])
     if trigger in trigger_chain:
         logger.warning(
-            "fire_trigger: self-trigger loop detected — trigger=%s already in "
-            "chain %s for customer=%s. Skipping.",
+            "fire_trigger: self-trigger loop detected — trigger=%s already in chain %s for customer=%s. Skipping.",
             trigger,
             trigger_chain,
             customer.id,

@@ -17,6 +17,7 @@ test.describe('Analytics — OWNER @owner @analytics', () => {
 });
 
 test.describe('Analytics — MANAGER Read @manager @analytics', () => {
+  test.use({ storageState: '.auth/manager.json' });
 
   test('MANAGER sees analytics dashboard @manager', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });

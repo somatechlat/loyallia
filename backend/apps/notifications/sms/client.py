@@ -42,9 +42,7 @@ def _twilio_setting(key: str, env_name: str, setting_name: str) -> str:
 
 def _is_test_mode() -> bool:
     """Check if test credentials should be used (safe sandbox mode)."""
-    return _truthy(_twilio_setting(
-        "twilio_use_test_mode", "TWILIO_USE_TEST_MODE", "TWILIO_USE_TEST_MODE"
-    ))
+    return _truthy(_twilio_setting("twilio_use_test_mode", "TWILIO_USE_TEST_MODE", "TWILIO_USE_TEST_MODE"))
 
 
 def _truthy(value: str | None) -> bool:
@@ -66,23 +64,15 @@ def _get_twilio_client():
     from twilio.rest import Client
 
     if _is_test_mode():
-        account_sid = _twilio_setting(
-            "twilio_test_account_sid", "TWILIO_TEST_ACCOUNT_SID", "TWILIO_TEST_ACCOUNT_SID"
-        )
-        auth_token = _twilio_setting(
-            "twilio_test_auth_token", "TWILIO_TEST_AUTH_TOKEN", "TWILIO_TEST_AUTH_TOKEN"
-        )
+        account_sid = _twilio_setting("twilio_test_account_sid", "TWILIO_TEST_ACCOUNT_SID", "TWILIO_TEST_ACCOUNT_SID")
+        auth_token = _twilio_setting("twilio_test_auth_token", "TWILIO_TEST_AUTH_TOKEN", "TWILIO_TEST_AUTH_TOKEN")
         if account_sid and auth_token:
             logger.warning("Twilio SMS: using TEST credentials — NOT for production")
             return Client(account_sid, auth_token)
         logger.warning("Twilio SMS: test mode enabled but test credentials missing, falling back to production")
 
-    account_sid = _twilio_setting(
-        "twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID"
-    )
-    auth_token = _twilio_setting(
-        "twilio_auth_token", "TWILIO_AUTH_TOKEN", "TWILIO_AUTH_TOKEN"
-    )
+    account_sid = _twilio_setting("twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID")
+    auth_token = _twilio_setting("twilio_auth_token", "TWILIO_AUTH_TOKEN", "TWILIO_AUTH_TOKEN")
 
     if not account_sid or not auth_token:
         raise RuntimeError(
@@ -110,13 +100,9 @@ def send_sms(phone: str, message: str) -> dict:
     if not phone:
         return {"success": False, "error": "No recipient phone number provided"}
 
-    from_number = _twilio_setting(
-        "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
-    )
+    from_number = _twilio_setting("twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER")
     if not from_number:
-        raise RuntimeError(
-            "Twilio sender number not configured. Set twilio_from_number in Vault."
-        )
+        raise RuntimeError("Twilio sender number not configured. Set twilio_from_number in Vault.")
 
     client = _get_twilio_client()
 
@@ -152,13 +138,9 @@ def send_sms_bulk(recipients: list[dict]) -> dict:
     Returns:
         {"succeeded": int, "failed": int, "results": list[dict]}
     """
-    from_number = _twilio_setting(
-        "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
-    )
+    from_number = _twilio_setting("twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER")
     if not from_number:
-        raise RuntimeError(
-            "Twilio sender number not configured. Set twilio_from_number in Vault."
-        )
+        raise RuntimeError("Twilio sender number not configured. Set twilio_from_number in Vault.")
 
     client = _get_twilio_client()
     succeeded = 0
@@ -183,9 +165,7 @@ def send_sms_bulk(recipients: list[dict]) -> dict:
             results.append({"phone": phone[-4:], "success": True, "sid": msg.sid})
             succeeded += 1
         except Exception as exc:
-            results.append(
-                {"phone": phone[-4:], "success": False, "error": str(exc)[:200]}
-            )
+            results.append({"phone": phone[-4:], "success": False, "error": str(exc)[:200]})
             failed += 1
 
     logger.info("SMS bulk send: %d/%d succeeded", succeeded, len(recipients))
@@ -198,24 +178,12 @@ def is_sms_available() -> bool:
     When test mode is enabled, checks for test credentials instead.
     """
     if _is_test_mode():
-        account_sid = _twilio_setting(
-            "twilio_test_account_sid", "TWILIO_TEST_ACCOUNT_SID", "TWILIO_TEST_ACCOUNT_SID"
-        )
-        auth_token = _twilio_setting(
-            "twilio_test_auth_token", "TWILIO_TEST_AUTH_TOKEN", "TWILIO_TEST_AUTH_TOKEN"
-        )
-        from_number = _twilio_setting(
-            "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
-        )
+        account_sid = _twilio_setting("twilio_test_account_sid", "TWILIO_TEST_ACCOUNT_SID", "TWILIO_TEST_ACCOUNT_SID")
+        auth_token = _twilio_setting("twilio_test_auth_token", "TWILIO_TEST_AUTH_TOKEN", "TWILIO_TEST_AUTH_TOKEN")
+        from_number = _twilio_setting("twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER")
         return bool(account_sid and auth_token and from_number)
 
-    account_sid = _twilio_setting(
-        "twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID"
-    )
-    auth_token = _twilio_setting(
-        "twilio_auth_token", "TWILIO_AUTH_TOKEN", "TWILIO_AUTH_TOKEN"
-    )
-    from_number = _twilio_setting(
-        "twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER"
-    )
+    account_sid = _twilio_setting("twilio_account_sid", "TWILIO_ACCOUNT_SID", "TWILIO_ACCOUNT_SID")
+    auth_token = _twilio_setting("twilio_auth_token", "TWILIO_AUTH_TOKEN", "TWILIO_AUTH_TOKEN")
+    from_number = _twilio_setting("twilio_from_number", "TWILIO_FROM_NUMBER", "TWILIO_FROM_NUMBER")
     return bool(account_sid and auth_token and from_number)

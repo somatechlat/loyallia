@@ -4,7 +4,6 @@ Loyallia — Campaign Models
 Campaign execution tracking and per-recipient delivery logs.
 """
 
-
 import uuid
 
 from django.db import models
@@ -38,9 +37,7 @@ class CampaignRun(models.Model):
         verbose_name="Canal",
     )
     title = models.CharField(max_length=200, verbose_name="Título")
-    message_preview = models.TextField(
-        max_length=500, verbose_name="Vista previa del mensaje"
-    )
+    message_preview = models.TextField(max_length=500, verbose_name="Vista previa del mensaje")
     segment_id = models.CharField(max_length=50, default="all", verbose_name="Segmento")
     status = models.CharField(
         max_length=20,
@@ -50,26 +47,18 @@ class CampaignRun(models.Model):
     )
 
     # Aggregate counters (updated by Celery worker after each message)
-    total_recipients = models.IntegerField(
-        default=0, verbose_name="Total destinatarios"
-    )
+    total_recipients = models.IntegerField(default=0, verbose_name="Total destinatarios")
     sent_count = models.IntegerField(default=0, verbose_name="Enviados")
     delivered_count = models.IntegerField(default=0, verbose_name="Entregados")
     failed_count = models.IntegerField(default=0, verbose_name="Fallidos")
     read_count = models.IntegerField(default=0, verbose_name="Leídos")
 
     # Timing
-    started_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Inicio de envío"
-    )
-    completed_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fin de envío"
-    )
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name="Inicio de envío")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Fin de envío")
 
     # Error summary (if campaign-level failure)
-    error_summary = models.TextField(
-        blank=True, default="", verbose_name="Resumen de errores"
-    )
+    error_summary = models.TextField(blank=True, default="", verbose_name="Resumen de errores")
 
     # Sender domain used for this campaign
     sender_domain = models.CharField(
@@ -152,13 +141,9 @@ class CampaignDeliveryLog(models.Model):
     )
 
     # Denormalized recipient info for audit trail
-    recipient_phone = models.CharField(
-        max_length=20, blank=True, default="", verbose_name="Teléfono"
-    )
+    recipient_phone = models.CharField(max_length=20, blank=True, default="", verbose_name="Teléfono")
     recipient_email = models.EmailField(blank=True, default="", verbose_name="Email")
-    recipient_name = models.CharField(
-        max_length=200, blank=True, default="", verbose_name="Nombre"
-    )
+    recipient_name = models.CharField(max_length=200, blank=True, default="", verbose_name="Nombre")
 
     # Delivery tracking
     status = models.CharField(
@@ -177,12 +162,8 @@ class CampaignDeliveryLog(models.Model):
     )
 
     # Error details (if failed)
-    error_code = models.CharField(
-        max_length=50, blank=True, default="", verbose_name="Código de error"
-    )
-    error_message = models.TextField(
-        blank=True, default="", verbose_name="Mensaje de error"
-    )
+    error_code = models.CharField(max_length=50, blank=True, default="", verbose_name="Código de error")
+    error_message = models.TextField(blank=True, default="", verbose_name="Mensaje de error")
 
     # Timestamps for each state transition
     created_at = models.DateTimeField(auto_now_add=True)

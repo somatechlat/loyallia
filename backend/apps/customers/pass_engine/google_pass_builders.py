@@ -56,10 +56,7 @@ def _get_google_locations(card) -> list:
     for loc in tenant_locations:
         try:
             if loc.latitude and loc.longitude:
-                locations.append({
-                    "latitude": float(loc.latitude),
-                    "longitude": float(loc.longitude)
-                })
+                locations.append({"latitude": float(loc.latitude), "longitude": float(loc.longitude)})
         except (ValueError, TypeError):
             continue
     return locations
@@ -102,10 +99,7 @@ def _build_loyalty_class(card, tenant) -> dict:
     """Build the Google Wallet LoyaltyClass object (the template)."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.loyallia-{card.id}"
-    logo_uri = (
-        card.logo_url
-        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
-    )
+    logo_uri = card.logo_url or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -205,9 +199,7 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
     if hero_uri:
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
-            "contentDescription": {
-                "defaultValue": {"language": "es", "value": "Banner de " + card.name}
-            },
+            "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
         }
     if card.icon_url or card.logo_url:
         obj["imageModulesData"] = [
@@ -263,10 +255,7 @@ def _build_offer_class(card, tenant) -> dict:
     """Build a Google Wallet OfferClass for coupon/discount card types."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.offer-{card.id}"
-    logo_uri = (
-        card.logo_url
-        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
-    )
+    logo_uri = card.logo_url or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -274,9 +263,7 @@ def _build_offer_class(card, tenant) -> dict:
         "provider": tenant.name,
         "titleImage": {
             "sourceUri": {"uri": logo_uri},
-            "contentDescription": {
-                "defaultValue": {"language": "es", "value": card.name}
-            },
+            "contentDescription": {"defaultValue": {"language": "es", "value": card.name}},
         },
         "hexBackgroundColor": card.background_color or "#1A1A2E",
         "reviewStatus": "UNDER_REVIEW",
@@ -316,19 +303,14 @@ def _build_gift_card_class(card, tenant) -> dict:
     """Build a Google Wallet GiftCardClass for cashback/gift certificate types."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.giftcard-{card.id}"
-    logo_uri = (
-        card.logo_url
-        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
-    )
+    logo_uri = card.logo_url or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
         "merchantName": tenant.name,
         "programLogo": {
             "sourceUri": {"uri": logo_uri},
-            "contentDescription": {
-                "defaultValue": {"language": "es", "value": card.name}
-            },
+            "contentDescription": {"defaultValue": {"language": "es", "value": card.name}},
         },
         "hexBackgroundColor": card.background_color or "#1A1A2E",
         "reviewStatus": "UNDER_REVIEW",

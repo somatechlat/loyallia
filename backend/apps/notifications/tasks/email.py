@@ -62,15 +62,11 @@ def send_email_campaign(
 
     from apps.customers.segment_api import _apply_segment_filter
 
-    base_qs = Customer.objects.filter(
-        tenant=tenant, is_active=True, email__isnull=False, email__gt=""
-    )
+    base_qs = Customer.objects.filter(tenant=tenant, is_active=True, email__isnull=False, email__gt="")
     audience = _apply_segment_filter(base_qs, segment_id)
     total = audience.count()
 
-    logger.info(
-        "Email campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total
-    )
+    logger.info("Email campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total)
 
     campaign_run = CampaignRun.objects.create(
         tenant=tenant,
@@ -163,9 +159,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 import uuid as _uuid
 
                 message_id = f"{_uuid.uuid4().hex}@loyallia.com"
-                msg = EmailMultiAlternatives(
-                    subject=subject, from_email=from_email, to=[customer.email]
-                )
+                msg = EmailMultiAlternatives(subject=subject, from_email=from_email, to=[customer.email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.extra_headers["Message-ID"] = f"<{message_id}>"
                 msg.send(fail_silently=False)

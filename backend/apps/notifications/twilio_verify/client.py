@@ -110,8 +110,7 @@ class VerifyClient:
             return test_sid, test_token
 
         raise VerifyServiceError(
-            "Twilio credentials not configured. Set API Key (SK... + secret) "
-            "or Account SID + Auth Token in Vault.",
+            "Twilio credentials not configured. Set API Key (SK... + secret) or Account SID + Auth Token in Vault.",
             code=503,
         )
 
@@ -146,9 +145,9 @@ class VerifyClient:
     # ------------------------------------------------------------------
 
     def __init__(self) -> None:
-        self._client: TwilioClient | None = None
+        self._client: Any = None
 
-    def _get_twilio_client(self) -> TwilioClient:
+    def _get_twilio_client(self) -> Any:
         """Lazy-init the Twilio REST client.
 
         Raises:
@@ -388,9 +387,7 @@ class VerifyClient:
         sid = service_sid or self._get_service_sid()
 
         try:
-            verification = (
-                client.verify.v2.services(sid).verifications(verification_sid).update(status="canceled")
-            )
+            verification = client.verify.v2.services(sid).verifications(verification_sid).update(status="canceled")
         except Exception as exc:
             logger.error("Twilio Verify cancel failed: %s", exc)
             raise VerifyServiceError(
@@ -420,9 +417,7 @@ class VerifyClient:
         sid = service_sid or self._get_service_sid()
 
         try:
-            verification = (
-                client.verify.v2.services(sid).verifications(verification_sid).update(status="approved")
-            )
+            verification = client.verify.v2.services(sid).verifications(verification_sid).update(status="approved")
         except Exception as exc:
             logger.error("Twilio Verify approve failed: %s", exc)
             raise VerifyServiceError(
