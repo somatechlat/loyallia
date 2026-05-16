@@ -60,9 +60,7 @@ def _load_keys() -> tuple[str, str]:
             try:
                 from common.vault import get_secret
 
-                _signing_key = get_secret(
-                    "jwt_private_key", env_fallback="JWT_PRIVATE_KEY"
-                )
+                _signing_key = get_secret("jwt_private_key")
             except Exception:
                 logger.warning(
                     "RS256 configured but private key not found. Falling back to HS256."
@@ -82,9 +80,7 @@ def _load_keys() -> tuple[str, str]:
             try:
                 from common.vault import get_secret
 
-                _verification_key = get_secret(
-                    "jwt_public_key", env_fallback="JWT_PUBLIC_KEY"
-                )
+                _verification_key = get_secret("jwt_public_key")
             except Exception:
                 _verification_key = _signing_key
 

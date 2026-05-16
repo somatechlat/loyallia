@@ -10,7 +10,46 @@
 #   - No seed_test_data on startup
 # =============================================================================
 
+x-production-backend-env: &production-backend-env
+  DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}@postgres:5432/${POSTGRES_DB:-loyallia}
+  DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}@postgres:5432/${POSTGRES_DB:-loyallia}
+  PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}@pgbouncer:6432/${POSTGRES_DB:-loyallia}
+  MINIO_ENDPOINT: http://minio:9000
+  MINIO_BUCKET_PASSES: passes
+  MINIO_BUCKET_ASSETS: assets
+  DJANGO_SETTINGS_MODULE: loyallia.settings.production
+  DEBUG: "False"
+  ALLOWED_HOSTS: "${ALLOWED_HOSTS:-rewards.loyallia.com,api}"
+  CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-https://rewards.loyallia.com}"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+  VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+  VAULT_TOKEN_FILE: /run/loyallia-vault/app-token
+  VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia/production}
+  APPLE_WALLET_MODE: vault
+  GOOGLE_WALLET_MODE: vault
+  PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
+  PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
+  EMAIL_HOST: ${EMAIL_HOST:-in-v3.mailjet.com}
+  EMAIL_PORT: "${EMAIL_PORT:-587}"
+  EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
+  GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://rewards.loyallia.com/api/v1/auth/google/callback/}
+
 services:
+  postgres:
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-loyallia}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loyallia -d ${POSTGRES_DB:-loyallia}"]
+
+  postgres-replica:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loyallia -d ${POSTGRES_DB:-loyallia}"]
+
+  pgbouncer:
+    command: >
+      sh -c "export DATABASE_URL=postgres://loyallia:$$(cat /run/loyallia-vault/postgres_password)@postgres:5432/${POSTGRES_DB:-loyallia} && exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini"
+
   # ---------------------------------------------------------------------------
   # DJANGO API — Production: Gunicorn WSGI
   # ---------------------------------------------------------------------------
@@ -18,37 +57,12 @@ services:
     command: >-
       sh -c "python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
-      (python manage.py seed_subscription_plans 2>/dev/null || true) &&
+      (python manage.py seed_production_operational_data 2>/dev/null || true) &&
+      python manage.py validate_runtime_environment --mode production &&
       gunicorn loyallia.wsgi:application --bind 0.0.0.0:8000 --workers 8 --worker-class gthread --threads 4 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --log-level info --access-logfile - --error-logfile -"
 
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@postgres:5432/${POSTGRES_DB:-loyallia}
-      DATABASE_DIRECT_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@postgres:5432/${POSTGRES_DB:-loyallia}
-      PGBOUNCER_URL: postgres://${POSTGRES_USER:-loyallia}:PASSWORD_REQUIRED@pgbouncer:6432/${POSTGRES_DB:-loyallia}
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_BUCKET_PASSES: passes
-      MINIO_BUCKET_ASSETS: assets
-      DJANGO_SETTINGS_MODULE: loyallia.settings.production
-      DEBUG: "False"
-      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-rewards.loyallia.com,api}"
-      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-https://rewards.loyallia.com}"
-      PYTHONDONTWRITEBYTECODE: "1"
-      PYTHONUNBUFFERED: "1"
-      # Vault
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN_FILE: /run/loyallia-vault/app-token
-      VAULT_SECRET_PATH: ${VAULT_SECRET_PATH:-secret/data/loyallia/production}
-      # Apple Wallet
-      APPLE_WALLET_MODE: vault
-      # Google Wallet
-      GOOGLE_WALLET_MODE: vault
-      # Payment Gateway
-      PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-bendo}
-      PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-https://checkout.placetopay.com}
-      # Email
-      EMAIL_HOST: ${EMAIL_HOST:-in-v3.mailjet.com}
-      EMAIL_PORT: "${EMAIL_PORT:-587}"
-      EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
+      <<: *production-backend-env
       # ═══════════════════════════════════════════════════════════════════════
       # GOOGLE OAUTH 2.0 — PRODUCTION MODE
       # ───────────────────────────────────────────────────────────────────────
@@ -57,7 +71,6 @@ services:
       #   Authorized JS origins: https://rewards.loyallia.com
       #   Authorized redirect URIs: https://rewards.loyallia.com/api/v1/auth/google/callback/
       # ═══════════════════════════════════════════════════════════════════════
-      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-https://rewards.loyallia.com/api/v1/auth/google/callback/}
     volumes:
       - static_files:/app/staticfiles
       - media_files:/app/mediafiles
@@ -88,29 +101,33 @@ services:
   # ---------------------------------------------------------------------------
   celery-pass:
     environment:
-      DJANGO_SETTINGS_MODULE: loyallia.settings.production
-      DEBUG: "False"
+      <<: *production-backend-env
     volumes:
       - ./certs:/app/certs:ro
 
   celery-push:
     environment:
-      DJANGO_SETTINGS_MODULE: loyallia.settings.production
-      DEBUG: "False"
+      <<: *production-backend-env
     volumes:
       - ./certs:/app/certs:ro
 
   celery-default:
     environment:
-      DJANGO_SETTINGS_MODULE: loyallia.settings.production
-      DEBUG: "False"
+      <<: *production-backend-env
     volumes:
       - ./certs:/app/certs:ro
 
   celery-beat:
     environment:
-      DJANGO_SETTINGS_MODULE: loyallia.settings.production
-      DEBUG: "False"
+      <<: *production-backend-env
+
+  flower:
+    environment:
+      <<: *production-backend-env
+
+  vault-init:
+    environment:
+      VAULT_APP_SECRET_PATH: loyallia/production
 
   # ═══════════════════════════════════════════════════════════════════════
   # NGINX — Production: Host nginx handles 80/443, container has NO port bind

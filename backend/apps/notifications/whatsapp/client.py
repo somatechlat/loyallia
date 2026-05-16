@@ -30,12 +30,10 @@ def _get_client() -> httpx.Client:
     """
     base_url = get_secret(
         "whatsapp_bridge_url",
-        env_fallback="WHATSAPP_BRIDGE_URL",
         default=getattr(settings, "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
     )
     api_key = get_secret(
         "whatsapp_bridge_api_key",
-        env_fallback="WHATSAPP_BRIDGE_API_KEY",
         default=getattr(settings, "WHATSAPP_BRIDGE_API_KEY", ""),
     )
 

@@ -2,8 +2,8 @@
 
 **Document ID:** LYL-ARCH-BOOTSTRAP-001  
 **Classification:** Internal — Security Critical  
-**Version:** 2.0  
-**Last Updated:** 2026-05-14  
+**Version:** 2.1  
+**Last Updated:** 2026-05-16  
 
 ---
 
@@ -19,6 +19,8 @@
 | **Idempotency** | Re-running bootstrap detects existing Vault and aborts safely |
 | **Zero Trust** | No container trusts another; each reads its own credentials from Vault runtime files |
 | **Certificate auto-discovery** | Certificates from `certs/` are automatically read and injected into Vault |
+| **Environment separation** | Development/testing uses `loyallia/development`; production uses `loyallia/production` |
+| **User password boundary** | User passwords are Django DB hashes only, never Vault secrets |
 
 ---
 
@@ -119,6 +121,17 @@ After Vault is seeded, `vault-init` creates runtime files:
 
 All other containers mount `vault_runtime:/run/loyallia-vault:ro` and read secrets from these files. No container ever sees the bootstrap JSON.
 
+### 3.4 Environment Mapping
+
+| Mode | Database | Vault KV Path | Tests |
+|------|----------|---------------|-------|
+| Development / Testing | `loyallia_dev` | `secret/data/loyallia/development` | Allowed |
+| Production | `loyallia` | `secret/data/loyallia/production` | Forbidden |
+
+Testing uses the development database. There is no separate Playwright testing
+database. E2E users are real active Django users in `loyallia_dev`; their
+passwords are normal Django password hashes. Vault stores system secrets only.
+
 ---
 
 ## 4. Bootstrap Sequence (7 Steps)
@@ -160,7 +173,7 @@ After vault-init succeeds, `bootstrap.sh` automatically creates:
 | File | Source | Purpose |
 |------|--------|---------|
 | `.agents/vault_init_rescue.json` | `loyallia-vault:/vault/file/init.json` | Vault unseal key + root token |
-| `.agents/vault_secrets_rescue.json` | `vault kv get secret/loyallia/production` | All production secrets |
+| `.agents/vault_secrets_rescue.json` | active environment Vault path | All secrets for the active bootstrap mode |
 
 **Permissions:** `0600` on all rescue files  
 **Failure behavior:** If `.agents/` is not writable, bootstrap warns but does NOT abort.
@@ -214,6 +227,8 @@ The temporary Docker volume `loyallia_bootstrap_tmp` is also removed.
 | S-10 | No shell eval | JSON parsed with Python `json.load()` |
 | S-11 | Certificate auto-detect | Reads from `certs/` automatically |
 | S-12 | Feature auto-enable | Apple/Google Wallet auto-enabled if certificates present |
+| S-13 | No production testing | Playwright and development tests refuse production hosts, DB, and Vault path |
+| S-14 | No user passwords in Vault | E2E user passwords are Django DB hashes and local ignored operator credentials only |
 
 ---
 

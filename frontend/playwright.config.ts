@@ -3,11 +3,9 @@ import { defineConfig, devices } from '@playwright/test';
 // ═══════════════════════════════════════════════════════════════════════════════
 // PLAYWRIGHT CONFIGURATION — Loyallia E2E Tests
 //
-// SECURITY: No hardcoded credentials. No env-var password fallbacks.
-// ALL credentials are loaded from HashiCorp Vault at runtime via
-// tests/e2e/helpers/vault-credentials.ts.
-//
-// VAULT_TOKEN must be exported before running tests.
+// SECURITY: No hardcoded credentials. User passwords are not Vault secrets.
+// Auth setup reads the ignored local .auth/e2e-credentials.json file created
+// by the development RBAC provisioning command and logs in through the real API.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:33906';
@@ -144,6 +142,12 @@ export default defineConfig({
       testMatch: /suite\/32-.*\.spec\.ts/,
       dependencies: ['setup'],
       grep: /@billing/,
+    },
+    {
+      name: 'external-providers',
+      testMatch: /suite\/(15|18|21|22|23|24)-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@phone|@whatsapp|@wallet|@campaigns/,
     },
     // --- Full suite ---
     {

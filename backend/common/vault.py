@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 VAULT_ADDR = os.environ.get("VAULT_ADDR", "")
 VAULT_TOKEN = os.environ.get("VAULT_TOKEN", "")
 VAULT_TOKEN_FILE = os.environ.get("VAULT_TOKEN_FILE", "")
-VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia/production")
+VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia/development")
 
 # Cache TTL in seconds (default 300 = 5 minutes)
 VAULT_CACHE_TTL = int(os.environ.get("VAULT_CACHE_TTL", "300"))

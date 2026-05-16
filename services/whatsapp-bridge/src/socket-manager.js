@@ -20,6 +20,7 @@ const pino = require("pino");
 const { Boom } = require("@hapi/boom");
 const Redis = require("ioredis");
 const QRCode = require("qrcode");
+const { getApiKey, getRedisUrl } = require("./config");
 
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
@@ -31,7 +32,7 @@ let redis;
 
 function getRedis() {
   if (!redis) {
-    redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379/3");
+    redis = new Redis(getRedisUrl());
   }
   return redis;
 }
@@ -323,7 +324,7 @@ async function notifyDjango(tenantId, event, data = {}) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.API_KEY}`,
+        Authorization: `Bearer ${getApiKey()}`,
       },
       body: JSON.stringify({ tenant_id: tenantId, event, ...data }),
     });
@@ -350,7 +351,7 @@ async function notifyDeliveryStatus(tenantId, messageId, status) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.API_KEY}`,
+        Authorization: `Bearer ${getApiKey()}`,
       },
       body: JSON.stringify({
         tenant_id: tenantId,

@@ -1,7 +1,8 @@
 """
 Loyallia Django Settings — BASE
 All environments inherit from this.
-Production-sensitive values are loaded from environment variables via decouple.
+Production-sensitive values are loaded from Vault. Non-secret routing values may
+come from environment or compose configuration.
 """
 
 from pathlib import Path
@@ -18,8 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # =============================================================================
 SECRET_KEY = get_secret(
     "secret_key",
-    env_fallback="SECRET_KEY",
-    default="django-insecure-local-development-only-change-before-production",
+    default="",
 )
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
@@ -115,21 +115,19 @@ DATABASES = {
     # Default: routed through PgBouncer (transaction pooling)
     "default": dj_database_url.config(
         env="PGBOUNCER_URL",
-        default="postgres://loyallia:PASSWORD_REQUIRED@pgbouncer:6432/loyallia",
+        default="postgres://loyallia@pgbouncer:6432/loyallia_dev",
         conn_max_age=0,  # REQUIRED for PgBouncer transaction mode
         conn_health_checks=False,  # PgBouncer manages health; skip Django checks
     ),
     # Direct: bypasses PgBouncer for migrations and schema operations
     "direct": dj_database_url.config(
         env="DATABASE_DIRECT_URL",
-        default="postgres://loyallia:PASSWORD_REQUIRED@postgres:5432/loyallia",
+        default="postgres://loyallia@postgres:5432/loyallia_dev",
         conn_max_age=0,
     ),
 }
 
-_database_password = get_secret(
-    "postgres_password", env_fallback="POSTGRES_PASSWORD", default=""
-)
+_database_password = get_secret("postgres_password", default="")
 if _database_password:
     DATABASES["default"]["PASSWORD"] = _database_password
     DATABASES["direct"]["PASSWORD"] = _database_password
@@ -205,9 +203,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": get_secret(
-            "redis_url", env_fallback="REDIS_URL", default="redis://localhost:6379/0"
-        ),
+        "LOCATION": get_secret("redis_url", default="redis://localhost:6379/0"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -225,12 +221,8 @@ from loyallia.settings.celery_config import *  # noqa: F401,F403,E402
 # FILE STORAGE — MinIO (S3-compatible)
 # =============================================================================
 MINIO_ENDPOINT = config("MINIO_ENDPOINT", default="http://localhost:9000")
-MINIO_ACCESS_KEY = get_secret(
-    "minio_access_key", env_fallback="MINIO_ACCESS_KEY", default="minio_user"
-)
-MINIO_SECRET_KEY = get_secret(
-    "minio_secret_key", env_fallback="MINIO_SECRET_KEY", default="minio_password"
-)
+MINIO_ACCESS_KEY = get_secret("minio_access_key", default="")
+MINIO_SECRET_KEY = get_secret("minio_secret_key", default="")
 MINIO_BUCKET_PASSES = config("MINIO_BUCKET_PASSES", default="passes")
 MINIO_BUCKET_ASSETS = config("MINIO_BUCKET_ASSETS", default="assets")
 MINIO_USE_SSL = config("MINIO_USE_SSL", default=False, cast=bool)
@@ -267,9 +259,7 @@ JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 # LYL-H-SEC-005: Algorithm selection. HS256 (default) or RS256 (asymmetric).
 # For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
-JWT_SECRET_KEY = get_secret(
-    "jwt_secret_key", env_fallback="JWT_SECRET_KEY", default=SECRET_KEY
-)  # B-001: Separate from Django SECRET_KEY
+JWT_SECRET_KEY = get_secret("jwt_secret_key", default=SECRET_KEY)  # B-001: Separate from Django SECRET_KEY
 JWT_PRIVATE_KEY_PATH = config(
     "JWT_PRIVATE_KEY_PATH", default=""
 )  # RS256 private key file
@@ -279,9 +269,9 @@ JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public 
 # =============================================================================
 # PASS SIGNING
 # =============================================================================
-def vault_bool(key: str, env_name: str, default: bool = False) -> bool:
-    """Read a feature flag from Vault/env using explicit boolean strings."""
-    value = get_secret(key, env_fallback=env_name, default=str(default).lower())
+def vault_bool(key: str, env_name: str = "", default: bool = False) -> bool:
+    """Read a feature flag from Vault using explicit boolean strings."""
+    value = get_secret(key, default=str(default).lower())
     return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
 
 
@@ -294,20 +284,17 @@ GOOGLE_WALLET_ENABLED = vault_bool(
 
 APPLE_PASS_TYPE_IDENTIFIER = get_secret(
     "apple_pass_type_identifier",
-    env_fallback="APPLE_PASS_TYPE_IDENTIFIER",
     default="",
 )
 APPLE_TEAM_IDENTIFIER = get_secret(
-    "apple_team_identifier", env_fallback="APPLE_TEAM_IDENTIFIER", default=""
+    "apple_team_identifier", default=""
 )
 APPLE_CERT_PATH = config("APPLE_CERT_PATH", default="/app/certs/apple_pass.pem")
 APPLE_CERT_KEY_PATH = config("APPLE_CERT_KEY_PATH", default="/app/certs/apple_pass.key")
 APPLE_WWDR_CERT_PATH = config(
     "APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem"
 )
-PASS_HMAC_SECRET = get_secret(
-    "pass_hmac_secret", env_fallback="PASS_HMAC_SECRET", default=""
-)
+PASS_HMAC_SECRET = get_secret("pass_hmac_secret", default="")
 # Apple Wallet webServiceURL — the base URL Apple Wallet calls for pass
 # registration, update checking, and pass re-download. Must be HTTPS in production.
 # Set in pass.json as "webServiceURL". Defaults to APP_URL + /wallet/apple
@@ -328,7 +315,7 @@ GOOGLE_SERVICE_ACCOUNT_FILE = config(
     default="/app/certs/google_wallet_service_account.json",
 )
 GOOGLE_WALLET_ISSUER_ID = get_secret(
-    "google_wallet_issuer_id", env_fallback="GOOGLE_WALLET_ISSUER_ID", default=""
+    "google_wallet_issuer_id", default=""
 )
 
 # =============================================================================
@@ -346,19 +333,17 @@ PAYMENT_GATEWAY_ENABLED = vault_bool(
 )
 PAYMENT_GATEWAY_PROVIDER = get_secret(
     "payment_gateway_provider",
-    env_fallback="PAYMENT_GATEWAY_PROVIDER",
     default="manual",
 )
 PAYMENT_GATEWAY_BASE_URL = config("PAYMENT_GATEWAY_BASE_URL", default="")
 PAYMENT_GATEWAY_LOGIN = get_secret(
-    "payment_gateway_login", env_fallback="PAYMENT_GATEWAY_LOGIN", default=""
+    "payment_gateway_login", default=""
 )
 PAYMENT_GATEWAY_TRAN_KEY = get_secret(
-    "payment_gateway_tran_key", env_fallback="PAYMENT_GATEWAY_TRAN_KEY", default=""
+    "payment_gateway_tran_key", default=""
 )
 PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
     "payment_gateway_webhook_secret",
-    env_fallback="PAYMENT_GATEWAY_WEBHOOK_SECRET",
     default="",
 )
 
@@ -370,15 +355,10 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = config("EMAIL_HOST", default="in-v3.mailjet.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
-EMAIL_HOST_USER = get_secret(
-    "mailjet_api_key", env_fallback="MAILJET_API_KEY", default=""
-)
-EMAIL_HOST_PASSWORD = get_secret(
-    "mailjet_secret_key", env_fallback="MAILJET_SECRET_KEY", default=""
-)
+EMAIL_HOST_USER = get_secret("mailjet_api_key", default="")
+EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", default="")
 DEFAULT_FROM_EMAIL = get_secret(
     "mailjet_sender_email",
-    env_fallback="MAILJET_SENDER_EMAIL",
     default=config("EMAIL_FROM", default="noreply@loyallia.com"),
 )
 
@@ -390,7 +370,6 @@ WHATSAPP_BRIDGE_URL = config(
 )
 WHATSAPP_BRIDGE_API_KEY = get_secret(
     "whatsapp_bridge_api_key",
-    env_fallback="WHATSAPP_BRIDGE_API_KEY",
     default="",
 )
 WHATSAPP_MAX_PER_MINUTE = config("WHATSAPP_MAX_PER_MINUTE", default=8, cast=int)
@@ -400,13 +379,13 @@ WHATSAPP_MAX_PER_HOUR = config("WHATSAPP_MAX_PER_HOUR", default=200, cast=int)
 # TWILIO SMS (LYL-SRS-009)
 # =============================================================================
 TWILIO_ACCOUNT_SID = get_secret(
-    "twilio_account_sid", env_fallback="TWILIO_ACCOUNT_SID", default=""
+    "twilio_account_sid", default=""
 )
 TWILIO_AUTH_TOKEN = get_secret(
-    "twilio_auth_token", env_fallback="TWILIO_AUTH_TOKEN", default=""
+    "twilio_auth_token", default=""
 )
 TWILIO_FROM_NUMBER = get_secret(
-    "twilio_from_number", env_fallback="TWILIO_FROM_NUMBER", default=""
+    "twilio_from_number", default=""
 )
 TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 
@@ -414,30 +393,27 @@ TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 # TWILIO VERIFY v2 (LYL-SRS-VERIFY-001)
 # -----------------------------------------------------------------------------
 TWILIO_VERIFY_SERVICE_SID = get_secret(
-    "twilio_verify_service_sid", env_fallback="TWILIO_VERIFY_SERVICE_SID", default=""
+    "twilio_verify_service_sid", default=""
 )
 TWILIO_VERIFY_ENABLED = (
-    get_secret(
-        "twilio_verify_enabled", env_fallback="TWILIO_VERIFY_ENABLED", default="false"
-    ).lower()
+    get_secret("twilio_verify_enabled", default="false").lower()
     == "true"
 )
 TWILIO_VERIFY_DEFAULT_CHANNEL = get_secret(
     "twilio_verify_default_channel",
-    env_fallback="TWILIO_VERIFY_DEFAULT_CHANNEL",
     default="sms",
 )
 TWILIO_API_KEY_SID = get_secret(
-    "twilio_api_key_sid", env_fallback="TWILIO_API_KEY_SID", default=""
+    "twilio_api_key_sid", default=""
 )
 TWILIO_API_KEY_SECRET = get_secret(
-    "twilio_api_key_secret", env_fallback="TWILIO_API_KEY_SECRET", default=""
+    "twilio_api_key_secret", default=""
 )
 TWILIO_TEST_ACCOUNT_SID = get_secret(
-    "twilio_test_account_sid", env_fallback="TWILIO_TEST_ACCOUNT_SID", default=""
+    "twilio_test_account_sid", default=""
 )
 TWILIO_TEST_AUTH_TOKEN = get_secret(
-    "twilio_test_auth_token", env_fallback="TWILIO_TEST_AUTH_TOKEN", default=""
+    "twilio_test_auth_token", default=""
 )
 
 # =============================================================================
@@ -504,10 +480,10 @@ TAX_RATE_ECUADOR = config(
 # Get credentials from: https://console.cloud.google.com/apis/credentials
 # =============================================================================
 GOOGLE_OAUTH_CLIENT_ID = get_secret(
-    "google_oauth_client_id", env_fallback="GOOGLE_OAUTH_CLIENT_ID", default=""
+    "google_oauth_client_id", default=""
 )
 GOOGLE_OAUTH_CLIENT_SECRET = get_secret(
-    "google_oauth_client_secret", env_fallback="GOOGLE_OAUTH_CLIENT_SECRET", default=""
+    "google_oauth_client_secret", default=""
 )
 GOOGLE_OAUTH_REDIRECT_URI = config(
     "GOOGLE_OAUTH_REDIRECT_URI",

@@ -435,7 +435,6 @@ def ai_chat_proxy(request, payload: AIChatIn):
 
     agent_base_url = get_secret(
         "ai_agent_base_url",
-        env_fallback="AI_AGENT_BASE_URL",
         default=getattr(settings, "AI_AGENT_BASE_URL", "https://agente.ingelsi.com.ec"),
     )
 

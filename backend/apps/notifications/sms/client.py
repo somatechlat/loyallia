@@ -36,12 +36,8 @@ _MAX_SMS_LENGTH = 1600
 
 
 def _twilio_setting(key: str, env_name: str, setting_name: str) -> str:
-    """Read the current Vault-backed Twilio setting with env fallback."""
-    return get_secret(
-        key,
-        env_fallback=env_name,
-        default=getattr(settings, setting_name, ""),
-    )
+    """Read the current Vault-backed Twilio setting."""
+    return get_secret(key, default=getattr(settings, setting_name, ""))
 
 
 def _is_test_mode() -> bool:

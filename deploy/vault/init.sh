@@ -40,6 +40,10 @@ generate_basic_auth() {
     printf "loyallia:%s" "$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32)"
 }
 
+generate_secret() {
+    tr -dc A-Za-z0-9 </dev/urandom | head -c 40
+}
+
 set_secret() {
     key="$1"
     value="$2"
@@ -169,8 +173,12 @@ minio_secret_key="$(env_or_existing minio_secret_key "$(json_get minio_secret_ke
 jwt_secret_key="$(env_or_existing jwt_secret_key "$(json_get jwt_secret_key)")"
 pass_hmac_secret="$(env_or_existing pass_hmac_secret "$(json_get pass_hmac_secret)")"
 flower_basic_auth="$(env_or_existing flower_basic_auth "$(json_get flower_basic_auth)")"
+whatsapp_bridge_api_key="$(env_or_existing whatsapp_bridge_api_key "$(json_get whatsapp_bridge_api_key)")"
+grafana_admin_password="$(env_or_existing grafana_admin_password "$(json_get grafana_admin_password)")"
 
 [ -n "$flower_basic_auth" ] || flower_basic_auth="$(generate_basic_auth)"
+[ -n "$whatsapp_bridge_api_key" ] || whatsapp_bridge_api_key="$(generate_secret)"
+[ -n "$grafana_admin_password" ] || grafana_admin_password="$(generate_secret)"
 
 require_secret secret_key "$secret_key"
 require_secret postgres_password "$postgres_password"
@@ -193,6 +201,8 @@ set_secret minio_secret_key "$minio_secret_key"
 set_secret jwt_secret_key "$jwt_secret_key"
 set_secret pass_hmac_secret "$pass_hmac_secret"
 set_secret flower_basic_auth "$flower_basic_auth"
+set_secret whatsapp_bridge_api_key "$whatsapp_bridge_api_key"
+set_secret grafana_admin_password "$grafana_admin_password"
 
 # ─── Write certificates from JSON to Vault ──────────────────────────────────
 set_secret_from_env apple_cert_pem "$(json_get apple_cert_pem)"
@@ -242,7 +252,7 @@ set_secret_from_env mailjet_sender_name "$(json_get mailjet_sender_name)"
 
 # ─── WhatsApp Bridge ────────────────────────────────────────────────────────
 set_secret_from_env whatsapp_bridge_url "$(json_get whatsapp_bridge_url)"
-set_secret_from_env whatsapp_bridge_api_key "$(json_get whatsapp_bridge_api_key)"
+set_secret whatsapp_bridge_api_key "$whatsapp_bridge_api_key"
 
 # ─── Twilio (SMS + Verify) ──────────────────────────────────────────────────
 set_secret_from_env twilio_account_sid "$(json_get twilio_account_sid)"
@@ -293,8 +303,11 @@ printf "%s" "$postgres_password" >/vault/runtime/postgres_password
 printf "%s" "$redis_url" | sed -n 's|redis://:\([^@]*\)@.*|\1|p' >/vault/runtime/redis_password
 printf "%s" "$minio_access_key" >/vault/runtime/minio_root_user
 printf "%s" "$minio_secret_key" >/vault/runtime/minio_root_password
+printf "%s" "$whatsapp_bridge_api_key" >/vault/runtime/whatsapp_bridge_api_key
+printf "%s" "$grafana_admin_password" >/vault/runtime/grafana_admin_password
 chmod 0444 /vault/runtime/postgres_password /vault/runtime/redis_password \
-    /vault/runtime/minio_root_user /vault/runtime/minio_root_password
+    /vault/runtime/minio_root_user /vault/runtime/minio_root_password \
+    /vault/runtime/whatsapp_bridge_api_key /vault/runtime/grafana_admin_password
 
 # ─── Create/refresh loyallia-app policy and token ───────────────────────────
 printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\", \"patch\"]\n}\n" >/vault/runtime/loyallia-app.hcl

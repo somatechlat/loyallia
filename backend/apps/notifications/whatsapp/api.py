@@ -196,7 +196,6 @@ def _verify_bridge_api_key(request) -> None:
     """
     expected_key = get_secret(
         "whatsapp_bridge_api_key",
-        env_fallback="WHATSAPP_BRIDGE_API_KEY",
         default="",
     )
     if not expected_key:

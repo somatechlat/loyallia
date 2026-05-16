@@ -18,6 +18,10 @@ from .base import *  # noqa: F401, F403
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
+from common.environment_guard import enforce_settings_environment
+
+enforce_settings_environment(mode="development", databases=DATABASES)  # noqa: F405
+
 # Email to console in development
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 

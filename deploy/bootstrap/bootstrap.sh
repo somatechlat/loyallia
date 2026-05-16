@@ -6,6 +6,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SECRETS_FILE="${BOOTSTRAP_SECRETS_FILE:-$PROJECT_ROOT/.bootstrap_secrets.json}"
 RESCUE_DIR="$PROJECT_ROOT/.agents"
 BOOTSTRAP_VOL="loyallia_bootstrap_tmp"
+BOOTSTRAP_MODE="${LOYALLIA_BOOTSTRAP_MODE:-development}"
+VAULT_KV_PATH="loyallia/$BOOTSTRAP_MODE"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,6 +24,11 @@ check_prerequisites() {
     step "1/7 — Checking prerequisites"
 
     local missing=0
+
+    if [ "$BOOTSTRAP_MODE" != "development" ] && [ "$BOOTSTRAP_MODE" != "production" ]; then
+        err "LOYALLIA_BOOTSTRAP_MODE must be development or production."
+        missing=1
+    fi
 
     if ! command -v docker &>/dev/null; then
         err "docker not found. Install Docker first."
@@ -183,7 +190,7 @@ auto_create_rescue_files() {
     root_token="$(docker exec loyallia-vault sh -c 'cat /vault/file/init.json' | python3 -c 'import json,sys; print(json.load(sys.stdin)["root_token"])')"
 
     docker exec -e VAULT_TOKEN="$root_token" loyallia-vault \
-        vault kv get -mount=secret -format=json "loyallia/production" \
+        vault kv get -mount=secret -format=json "$VAULT_KV_PATH" \
         > "$RESCUE_DIR/vault_secrets_rescue.json" 2>/dev/null || {
         warn "Failed to export Vault secrets."
         return 1
@@ -277,6 +284,22 @@ migrate_and_seed() {
     if [ "$elapsed" -ge "$timeout" ]; then
         warn "API health check timed out. Checking logs..."
         docker compose logs api --tail=20
+    fi
+
+    if [ "$BOOTSTRAP_MODE" = "development" ]; then
+        log "Provisioning development RBAC E2E users..."
+        docker compose exec -T api python manage.py seed_development_data --generate \
+            --settings loyallia.settings.development || {
+            warn "Development RBAC user provisioning failed."
+            docker compose logs api --tail=20
+            return 1
+        }
+    else
+        log "Validating production runtime guardrails..."
+        docker compose exec -T api python manage.py seed_production_operational_data \
+            --settings loyallia.settings.production
+        docker compose exec -T api python manage.py validate_runtime_environment --mode production \
+            --settings loyallia.settings.production
     fi
 }
 
