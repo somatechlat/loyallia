@@ -1,9 +1,8 @@
 """
 Loyallia -- Vault Secret Client.
 
-Production callers must use strict Vault reads without env fallbacks. Development
-and test callers may pass env_fallback/default explicitly when a local workbench
-requires it.
+Production and development runtime callers read Vault through the mounted token
+file. User passwords are never Vault secrets.
 
 SECURITY (LYL-M-SEC-015): Cache has a configurable TTL (default 5 minutes) so
 secret rotation takes effect without requiring a process restart.
@@ -17,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 # Vault connection parameters from environment
 VAULT_ADDR = os.environ.get("VAULT_ADDR", "")
-VAULT_TOKEN = os.environ.get("VAULT_TOKEN", "")
 VAULT_TOKEN_FILE = os.environ.get("VAULT_TOKEN_FILE", "")
 VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia/development")
 
@@ -69,7 +67,7 @@ def _clear_cache_if_shared_version_changed() -> None:
 
 
 def _get_vault_token() -> str:
-    """Return the Vault token from a mounted secret file or explicit environment."""
+    """Return the Vault token from the mounted runtime secret file."""
     if VAULT_TOKEN_FILE:
         try:
             with open(VAULT_TOKEN_FILE, encoding="utf-8") as token_file:
@@ -78,7 +76,7 @@ def _get_vault_token() -> str:
                     return token
         except OSError as exc:
             logger.warning("Vault token file is not readable: %s", exc)
-    return VAULT_TOKEN
+    return ""
 
 
 def _fetch_vault_secrets() -> dict:

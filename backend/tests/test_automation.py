@@ -12,7 +12,6 @@ from django.utils import timezone
 
 from apps.analytics.models import CustomerAnalytics
 from apps.automation.models import (
-    Automation,
     AutomationAction,
     AutomationExecution,
     AutomationTrigger,

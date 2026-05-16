@@ -10,7 +10,6 @@ from datetime import date
 from django.test import TestCase
 
 from apps.automation.models import (
-    Automation,
     AutomationAction,
     AutomationTrigger,
 )

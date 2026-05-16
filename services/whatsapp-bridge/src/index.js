@@ -41,8 +41,7 @@ function authMiddleware(req, res, next) {
     req.headers["x-api-key"];
 
   if (!API_KEY) {
-    // No API key configured — dev mode, allow all
-    return next();
+    return res.status(503).json({ error: "Bridge API key is not configured" });
   }
 
   if (key !== API_KEY) {

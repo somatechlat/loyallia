@@ -102,13 +102,20 @@ def enforce_settings_environment(*, mode: str, databases: dict | None = None) ->
         raise EnvironmentGuardError(details)
 
 
-def validate_production_database_state() -> list[GuardError]:
+def validate_production_database_state(
+    *,
+    secret_loader=None,
+    e2e_user_exists=None,
+) -> list[GuardError]:
     """Validate production does not contain development-only users or Vault keys."""
     errors: list[GuardError] = []
 
-    from common.vault import fetch_vault_secrets
+    if secret_loader is None:
+        from common.vault import fetch_vault_secrets
 
-    secrets = fetch_vault_secrets()
+        secret_loader = fetch_vault_secrets
+
+    secrets = secret_loader()
     forbidden_keys = FORBIDDEN_PRODUCTION_VAULT_KEYS.intersection(secrets.keys())
     for key in sorted(forbidden_keys):
         errors.append(
@@ -118,9 +125,13 @@ def validate_production_database_state() -> list[GuardError]:
             )
         )
 
-    from apps.authentication.models import User
+    if e2e_user_exists is None:
+        from apps.authentication.models import User
 
-    if User.objects.filter(email__startswith=E2E_EMAIL_PREFIX).exists():
+        def e2e_user_exists():
+            return User.objects.filter(email__startswith=E2E_EMAIL_PREFIX).exists()
+
+    if e2e_user_exists():
         errors.append(
             GuardError(
                 "prod_contains_e2e_users",

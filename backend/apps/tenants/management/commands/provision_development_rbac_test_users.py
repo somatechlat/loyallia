@@ -11,7 +11,6 @@ from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStat
 from apps.tenants.models import Location, Plan, Tenant
 from common.environment_guard import enforce_settings_environment
 
-
 E2E_TENANT_SLUG = "e2e-development-tenant"
 E2E_USERS = {
     "owner": {
