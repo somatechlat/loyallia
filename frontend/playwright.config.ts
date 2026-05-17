@@ -25,6 +25,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
     ignoreHTTPSErrors: true,
+    actionTimeout: 15000,
     // Pre-accept cookie consent to prevent the banner from blocking clicks
     storageState: {
       cookies: [],
@@ -91,7 +92,7 @@ export default defineConfig({
     },
     {
       name: 'campaigns',
-      testMatch: /suite\/(08|17|19|21|23|24)-.*\.spec\.ts/,
+      testMatch: /suite\/(08|19|21|23)-.*\.spec\.ts/,
       dependencies: ['setup'],
       grep: /@campaigns/,
       use: { storageState: '.auth/owner.json' },
@@ -139,7 +140,7 @@ export default defineConfig({
     },
     {
       name: 'whatsapp',
-      testMatch: /suite\/(17|18|24|31)-.*\.spec\.ts/,
+      testMatch: /suite\/(17|18|31)-.*\.spec\.ts/,
       dependencies: ['setup'],
       grep: /@whatsapp/,
       use: { storageState: '.auth/owner.json' },
@@ -158,18 +159,12 @@ export default defineConfig({
       grep: /@billing/,
       use: { storageState: '.auth/owner.json' },
     },
-    {
-      name: 'external-providers',
-      testMatch: /suite\/(15|18|21|22|23|24)-.*\.spec\.ts/,
-      dependencies: ['setup'],
-      grep: /@phone|@whatsapp|@wallet|@campaigns/,
-      use: { storageState: '.auth/owner.json' },
-    },
     // --- Full suite ---
     {
       name: 'full',
       testMatch: /suite\/.*\.spec\.ts/,
       dependencies: ['setup'],
+      use: { storageState: '.auth/owner.json' },
     },
   ],
 });

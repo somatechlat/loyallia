@@ -17,6 +17,8 @@ import { getE2ECredentials } from './e2e-test-config';
 const BASE_URL = getE2EBaseURL();
 const COOKIE_DOMAIN = new URL(BASE_URL).hostname;
 const COOKIE_SECURE = BASE_URL.startsWith('https');
+// Use API port directly for login requests (frontend proxy can be unreliable under load)
+const API_URL = BASE_URL.replace(/:\d+/, ':33905');
 
 setup('authenticate all roles', async ({ page, context, request }) => {
   const credentials = getE2ECredentials();
@@ -33,7 +35,7 @@ setup('authenticate all roles', async ({ page, context, request }) => {
     await context.clearCookies();
 
     // Login via API directly (most reliable — no browser form interaction needed)
-    const loginResp = await request.post(`${BASE_URL}/api/v1/auth/login/`, {
+    const loginResp = await request.post(`${API_URL}/api/v1/auth/login/`, {
       data: { email: user.email, password: user.password },
     });
 

@@ -335,7 +335,7 @@ EMAIL_HOST_USER = get_secret("mailjet_api_key", default="")
 EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", default="")
 DEFAULT_FROM_EMAIL = get_secret(
     "mailjet_sender_email",
-    default=config("EMAIL_FROM", default="noreply@loyallia.com"),
+    default=str(config("EMAIL_FROM", default="noreply@loyallia.com")),
 )
 
 # =============================================================================

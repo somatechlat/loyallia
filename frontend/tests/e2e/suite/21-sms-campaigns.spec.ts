@@ -93,7 +93,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
   test('Campaign page loads with SMS channel button @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
 
     // Page heading visible
     await expect(page.getByRole('heading', { name: 'Campañas de Marketing' })).toBeVisible({ timeout: 10000 });
@@ -103,7 +103,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
   test('New campaign form opens and shows SMS channel selector @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
     await page.waitForTimeout(1000);
 
@@ -124,7 +124,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
   test('SMS channel shows info banner with Twilio details @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
     await page.waitForTimeout(1000);
 
@@ -140,7 +140,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
   test('SMS form has correct fields and max length @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
     await page.waitForTimeout(1000);
 
@@ -164,7 +164,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
   test('OWNER can create SMS campaign @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
 
     // Open form
     await page.click('#new-campaign-btn');
@@ -198,7 +198,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
   test('Cancel button closes campaign form @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
     await page.waitForTimeout(1000);
     await page.click('#cancel-campaign-btn');
@@ -387,7 +387,7 @@ test.describe('Campaign List — SMS Badge @owner @campaigns', () => {
 
   test('SMS campaigns display orange SMS badge @owner', async ({ page, request }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
 
     // Check UI for any existing SMS badges
     const smsBadges = page.locator('text=📱 SMS');
@@ -407,10 +407,18 @@ test.describe('Campaign List — SMS Badge @owner @campaigns', () => {
       });
       expect(resp.status(), 'Seeded owner enterprise plan should allow SMS badge campaign create').toBe(200);
 
-      // Wait for async Celery worker to create notification records
-      await page.waitForTimeout(8000);
+      // Poll campaigns API until the new campaign appears (max 10s)
+      for (let i = 0; i < 10; i++) {
+        const listResp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const listBody = await listResp.json();
+        const found = listBody.campaigns?.some((c: any) => c.title === `Badge Test ${Date.now()}`);
+        if (found) break;
+        await page.waitForTimeout(1000);
+      }
       await page.reload({ waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(3000);
+      await page.locator('text=📱 SMS').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
     }
 
     // Now verify at least one SMS badge exists

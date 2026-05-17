@@ -12,11 +12,13 @@ test.describe('SuperAdmin — Impersonation @superadmin @superadmin', () => {
   test('SA can impersonate an owner with PIN and return to SA', async ({ page, request }) => {
     const owner = await loginOwnerContext(request);
     const ownerCredentials = getRoleCredentials('owner');
+    // Generate a random 6-digit PIN for this test run — never hardcode credentials
+    const testPin = Math.floor(100000 + Math.random() * 900000).toString();
     const pinResp = await request.post(`${BASE_API}/api/v1/tenants/security-pin/`, {
       headers: { Authorization: `Bearer ${owner.token}` },
       data: {
         current_password: ownerCredentials.password,
-        pin: '[REDACTED]',
+        pin: testPin,
       },
     });
     expect(pinResp.status(), 'Owner security PIN setup should return 200').toBe(200);
@@ -38,7 +40,7 @@ test.describe('SuperAdmin — Impersonation @superadmin @superadmin', () => {
     await ownerTenantRow.click();
 
     await page.getByRole('button', { name: 'Acciones' }).click();
-    await page.getByLabel('PIN del propietario').fill('[REDACTED]');
+    await page.getByLabel('PIN del propietario').fill(testPin);
     await page.getByLabel('Justificación').fill('Soporte solicitado por el propietario en E2E');
 
     page.once('dialog', dialog => dialog.accept());

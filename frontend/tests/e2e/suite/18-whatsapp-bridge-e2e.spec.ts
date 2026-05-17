@@ -22,7 +22,33 @@ import { getLocalProviderSecret } from '../helpers/e2e-test-config';
 
 const BASE_API = getE2EBaseURL();
 const BRIDGE_URL = 'http://127.0.0.1:33914';
-const bridgeApiKey = () => getLocalProviderSecret('whatsapp_bridge_api_key');
+
+function bridgeApiKey(): string {
+  return getLocalProviderSecret('whatsapp_bridge_api_key');
+}
+
+
+
+// =============================================================================
+// 0. BRIDGE CONTAINER HEALTH GATE
+// =============================================================================
+
+test.beforeAll(async ({ request }) => {
+  try {
+    const resp = await request.get(`${BRIDGE_URL}/health`, { timeout: 5000 });
+    if (resp.status() !== 200) {
+      throw new Error(`WhatsApp bridge health returned ${resp.status()}`);
+    }
+  } catch (err: any) {
+    if (err.message?.includes('connect') || err.name === 'Error') {
+      throw new Error(
+        `WhatsApp bridge container not reachable at ${BRIDGE_URL}. ` +
+        `Start the bridge container before running @whatsapp tests.`
+      );
+    }
+    throw err;
+  }
+});
 
 // =============================================================================
 // 1. BRIDGE HEALTH — Direct access to the whatsapp-bridge container

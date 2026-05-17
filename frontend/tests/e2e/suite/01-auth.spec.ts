@@ -52,9 +52,8 @@ async function login(page: any, email: string, password: string) {
   }
 }
 
-// LYL-M-FE-033: Browser form login can be flaky under full-suite load
-// when Next.js dev server is compiling pages. Retries provide resilience.
-test.describe.configure({ retries: 2 });
+// Login helper uses networkidle + manual cookie injection for reliability.
+// test.slow() below provides extra timeout; retries are not needed.
 
 test.describe('Authentication & Role Routing @auth', () => {
   // Browser form login is sensitive to Next.js dev-server compilation
