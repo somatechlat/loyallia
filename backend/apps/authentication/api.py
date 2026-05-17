@@ -612,6 +612,3 @@ def google_login(request, payload: GoogleTokenIn):
 
     logger.info("Google OAuth register: new user %s, tenant %s", email, tenant.slug)
     return issue_tokens(user)
-
-
-

@@ -12,9 +12,13 @@
  * RBAC Roles: OWNER, MANAGER, STAFF, SUPER_ADMIN
  */
 import { test, expect } from '@playwright/test';
-import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
+import { ensureOwnerEnterpriseCampaignAccess, getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
+
+test.beforeAll(async ({ request }) => {
+  await ensureOwnerEnterpriseCampaignAccess(request);
+});
 
 // =============================================================================
 // OWNER — UI Tests
@@ -58,6 +62,45 @@ test.describe('WhatsApp Campaign UI — OWNER @owner @campaigns', () => {
     await page.waitForTimeout(500);
     // Form should be closed — send button no longer visible
     await expect(page.locator('#send-campaign-btn')).toHaveCount(0);
+  });
+});
+
+// =============================================================================
+// OWNER — Campaign API Tests (dispatch + history)
+// =============================================================================
+
+test.describe('WhatsApp Campaign API — OWNER @owner @campaigns', () => {
+
+  test('POST /campaigns/ creates WhatsApp campaign @owner', async ({ request }) => {
+    const token = await loginRole(request, 'owner');
+    const resp = await request.post(`${BASE_API}/api/v1/notifications/campaigns/`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        title: `E2E WA Test ${Date.now()}`,
+        message: 'Automated E2E WhatsApp campaign test. Please ignore.',
+        channel: 'whatsapp',
+        segment_id: 'all',
+        image_url: '',
+      },
+    });
+    // WhatsApp campaign may return 200 (queued) or 503 (bridge disconnected)
+    const status = resp.status();
+    expect([200, 503]).toContain(status);
+    if (status === 200) {
+      const body = await resp.json();
+      expect(body.success, 'Campaign should report success').toBe(true);
+    }
+  });
+
+  test('GET /campaigns/ returns campaign history @owner', async ({ request }) => {
+    const token = await loginRole(request, 'owner');
+    const resp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(resp.status(), 'Campaigns list should return 200').toBe(200);
+    const body = await resp.json();
+    expect(body.campaigns, 'Should have campaigns array').toBeDefined();
+    expect(body.total, 'Should report total count').toBeDefined();
   });
 });
 

@@ -10,29 +10,54 @@ import uuid
 from django.db import models
 
 
-class AuditAction(models.TextChoices):
+class AuditAction:
     """Auditable action types."""
 
-    CREATE = "CREATE", "Crear"
-    READ = "READ", "Leer"
-    UPDATE = "UPDATE", "Actualizar"
-    DELETE = "DELETE", "Eliminar"
-    EXPORT = "EXPORT", "Exportar"
-    IMPORT = "IMPORT", "Importar"
-    IMPERSONATE = "IMPERSONATE", "Suplantación"
-    LOGIN = "LOGIN", "Inicio de sesión"
-    LOGOUT = "LOGOUT", "Cierre de sesión"
-    API_ACCESS = "API_ACCESS", "Acceso API"
-    FACTORY_RESET = "FACTORY_RESET", "Restauración de fábrica"
-    SEED_DEMO = "SEED_DEMO", "Carga de datos demo"
+    CREATE = "CREATE"
+    READ = "READ"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+    EXPORT = "EXPORT"
+    IMPORT = "IMPORT"
+    IMPERSONATE = "IMPERSONATE"
+    LOGIN = "LOGIN"
+    LOGOUT = "LOGOUT"
+    API_ACCESS = "API_ACCESS"
+    FACTORY_RESET = "FACTORY_RESET"
+    SEED_DEMO = "SEED_DEMO"
+
+    @classmethod
+    def choices(cls):
+        return [
+            (cls.CREATE, "Crear"),
+            (cls.READ, "Leer"),
+            (cls.UPDATE, "Actualizar"),
+            (cls.DELETE, "Eliminar"),
+            (cls.EXPORT, "Exportar"),
+            (cls.IMPORT, "Importar"),
+            (cls.IMPERSONATE, "Suplantación"),
+            (cls.LOGIN, "Inicio de sesión"),
+            (cls.LOGOUT, "Cierre de sesión"),
+            (cls.API_ACCESS, "Acceso API"),
+            (cls.FACTORY_RESET, "Restauración de fábrica"),
+            (cls.SEED_DEMO, "Carga de datos demo"),
+        ]
 
 
-class AuditStatus(models.TextChoices):
+class AuditStatus:
     """Audit entry status."""
 
-    SUCCESS = "success", "Exitoso"
-    DENIED = "denied", "Denegado"
-    ERROR = "error", "Error"
+    SUCCESS = "success"
+    DENIED = "denied"
+    ERROR = "error"
+
+    @classmethod
+    def choices(cls):
+        return [
+            (cls.SUCCESS, "Exitoso"),
+            (cls.DENIED, "Denegado"),
+            (cls.ERROR, "Error"),
+        ]
 
 
 class AuditLog(models.Model):
@@ -52,7 +77,7 @@ class AuditLog(models.Model):
     # WHAT
     action = models.CharField(
         max_length=20,
-        choices=AuditAction.choices,
+        choices=AuditAction.choices(),
         verbose_name="Acción",
     )
     resource_type = models.CharField(max_length=50, verbose_name="Tipo de recurso")
@@ -70,9 +95,7 @@ class AuditLog(models.Model):
         db_index=True,
         verbose_name="ID del negocio",
     )
-    ip_address = models.GenericIPAddressField(
-        null=True, blank=True, verbose_name="Dirección IP"
-    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="Dirección IP")
     user_agent = models.TextField(blank=True, default="", verbose_name="User Agent")
     justification = models.TextField(
         blank=True,
@@ -85,15 +108,13 @@ class AuditLog(models.Model):
     details = models.JSONField(default=dict, verbose_name="Detalles")
     status = models.CharField(
         max_length=20,
-        choices=AuditStatus.choices,
+        choices=AuditStatus.choices(),
         default=AuditStatus.SUCCESS,
         verbose_name="Estado",
     )
 
     # WHEN (immutable)
-    created_at = models.DateTimeField(
-        auto_now_add=True, db_index=True, verbose_name="Fecha"
-    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Fecha")
 
     class Meta:
         db_table = "loyallia_audit_log"
@@ -108,10 +129,7 @@ class AuditLog(models.Model):
         ]
 
     def __str__(self) -> str:
-        return (
-            f"[{self.created_at:%Y-%m-%d %H:%M}] "
-            f"{self.actor_email} {self.action} {self.resource_type}"
-        )
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.actor_email} {self.action} {self.resource_type}"
 
     def save(self, *args, **kwargs):
         """Prevent updates to existing entries (immutability)."""

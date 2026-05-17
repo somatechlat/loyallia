@@ -8,8 +8,10 @@ from django.db import transaction
 
 from apps.authentication.models import User, UserRole
 from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
+from apps.billing.management.commands.seed_subscription_plans import Command as SeedPlansCommand
 from apps.tenants.models import Location, Plan, Tenant
 from common.environment_guard import enforce_settings_environment
+from common.vault import put_secret
 
 E2E_TENANT_SLUG = "e2e-development-tenant"
 E2E_USERS = {
@@ -76,10 +78,17 @@ class Command(BaseCommand):
             password = secrets.token_urlsafe(24)
 
         with transaction.atomic():
+            # Seed all 4 default plans (trial, starter, professional, enterprise)
+            seed_cmd = SeedPlansCommand(stdout=self.stdout, stderr=self.stderr)
+            seed_cmd.handle()
+
             tenant = self._ensure_tenant()
             self._ensure_subscription(tenant)
             self._ensure_location(tenant)
             credentials = self._ensure_users(tenant, password)
+
+        # Set Twilio test mode in Vault so SMS E2E tests can run safely
+        put_secret("twilio_use_test_mode", "true")
 
         self._write_credentials(password_file, credentials)
         self.stdout.write(
@@ -187,8 +196,14 @@ class Command(BaseCommand):
 
     def _write_credentials(self, password_file: Path, credentials: dict) -> None:
         password_file.parent.mkdir(parents=True, exist_ok=True)
+        # Read whatsapp bridge API key from shared runtime file if available
+        provider_secrets = {}
+        bridge_key_file = Path("/run/loyallia-vault/whatsapp_bridge_api_key")
+        if bridge_key_file.exists():
+            provider_secrets["whatsapp_bridge_api_key"] = bridge_key_file.read_text(encoding="utf-8").strip()
+        output = {**credentials, "provider_secrets": provider_secrets}
         password_file.write_text(
-            json.dumps(credentials, indent=2, sort_keys=True) + "\n",
+            json.dumps(output, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
         password_file.chmod(0o600)

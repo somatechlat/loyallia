@@ -75,9 +75,9 @@ test.describe('Programs — OWNER CRUD @owner @programs', () => {
   test('Program detail page loads with QR @owner', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(5000);
-    // Click the "Ver detalles" (eye icon) link inside a program card
-    // The link pattern is <a href="/programs/{uuid}" title="Ver detalles">
-    const detailLink = page.locator('#programs-view a[href*="/programs/"][title="Ver detalles"]').first();
+    // Click the "Editar programa" link inside a program card
+    // The link pattern is <a href="/programs/{uuid}" title="Editar programa">
+    const detailLink = page.locator('#programs-view a[href*="/programs/"][title="Editar programa"]').first();
     await expect(detailLink).toBeVisible({ timeout: 10000 });
     await detailLink.click();
     await page.waitForTimeout(3000);

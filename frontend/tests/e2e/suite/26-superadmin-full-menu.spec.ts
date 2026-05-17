@@ -12,11 +12,13 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin @superadmin
 
   test('1. Platform Overview (/superadmin) loads', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    // Wait for the metrics API that drives the page content
-    await page.waitForResponse(
-      resp => resp.url().includes('/api/v1/admin/platform/metrics/') && resp.status() === 200,
+    // Wait for the metrics API — tolerate empty data; page load is the goal
+    const metricsResp = await page.waitForResponse(
+      resp => resp.url().includes('/api/v1/admin/platform/metrics/'),
       { timeout: 15000 },
     );
+    // Metrics may return 200 with empty data in a fresh E2E tenant
+    expect([200, 204]).toContain(metricsResp.status());
     await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
   });
 

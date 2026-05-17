@@ -10,50 +10,50 @@ const BASE_API = getE2EBaseURL();
 
 /**
  * Navigates to the dashboard and waits for data to finish loading.
- * The dashboard shows a skeleton pulse while loading, then renders
- * the full content once API responses arrive.
+ * First waits for skeleton pulse to disappear, then polls for the
+ * date-range selector. Clicks retry if an error state appears.
  */
 async function gotoLoadedDashboard(page: any): Promise<boolean> {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  // Wait for the h1 heading — renders once loading=false (success OR error)
-  const headingVisible = await page.getByRole('heading', { level: 1 }).first()
-    .waitFor({ state: 'visible', timeout: 45000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!headingVisible) return false;
-  // If dashboard hit error state, click "Reintentar" to retry API calls
-  const retryBtn = page.getByRole('button', { name: 'Reintentar' });
-  if (await retryBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await retryBtn.click();
-    await page.waitForTimeout(5000);
+
+  // Wait up to 15s for skeleton to disappear
+  const skeleton = page.locator('.animate-pulse').first();
+  try {
+    await skeleton.waitFor({ state: 'detached', timeout: 15000 });
+  } catch {
+    // Skeleton may not exist if page loads instantly — continue
   }
-  // Check if data loaded (date-range-selector appears on success)
-  const dataLoaded = await page.locator('#date-range-selector').isVisible({ timeout: 15000 }).catch(() => false);
-  return dataLoaded;
+
+  // Poll for data-loaded indicator up to 15s
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const selectorVisible = await page.locator('#date-range-selector').isVisible({ timeout: 500 }).catch(() => false);
+    if (selectorVisible) return true;
+
+    const retryBtn = page.getByRole('button', { name: 'Reintentar' });
+    if (await retryBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+      await retryBtn.click();
+      await page.waitForTimeout(3000);
+      continue;
+    }
+
+    await page.waitForTimeout(500);
+  }
+  return false;
 }
 
 async function expectDashboardStatsReloaded(page: any) {
-  await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 45000 });
+  await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 15000 });
 }
 
 test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
 
-  test('Dashboard loads with welcome message @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    const title = page.locator('.page-title');
-    await expect(title).toContainText('Bienvenido');
-  });
-
-  test('Dashboard shows all 4 stat cards @owner', async ({ page }) => {
+  test('Dashboard loads with all structural elements @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
     expect(loaded, 'Dashboard API did not load in time').toBe(true);
-    await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 10000 });
-  });
 
-  test('Date range selector shows expected filter options @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
+    await expect(page.locator('.page-title')).toContainText('Bienvenido');
+    await expect(page.locator('.page-subtitle')).toBeVisible();
+    await expect(page.locator('.stat-card')).toHaveCount(4, { timeout: 10000 });
     await expect(page.locator('#date-range-selector')).toBeVisible();
     await expect(page.locator('#date-range-1')).toBeVisible();
     await expect(page.locator('#date-range-7')).toBeVisible();
@@ -62,98 +62,47 @@ test.describe('Dashboard KPIs — OWNER @owner @analytics', () => {
     await expect(page.locator('#date-range-365')).toBeAttached();
     await expect(page.locator('#date-range-mtd')).toBeAttached();
     await expect(page.locator('#date-range-custom')).toBeAttached();
+    await expect(page.locator('#dash-tab-ganancia')).toBeVisible();
+    await expect(page.locator('#dash-tab-visitas')).toBeVisible();
+    await expect(page.locator('#chart-tab-revenue')).toBeVisible();
+    await expect(page.locator('#chart-tab-visits')).toBeVisible();
+    await expect(page.locator('#chart-tab-customers')).toBeVisible();
+    await expect(page.locator('#open-scanner-btn')).toBeVisible();
   });
 
-  test('Clicking 7d filter reloads data @owner', async ({ page }) => {
+  test('Date range filters reload dashboard data @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
+    expect(loaded, 'Dashboard API did not load in time').toBe(true);
+
     await page.locator('#date-range-7').click();
     await expectDashboardStatsReloaded(page);
-  });
 
-  test('Clicking Hoy filter reloads data @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#date-range-1').click();
     await expectDashboardStatsReloaded(page);
-  });
 
-  test('Custom date picker appears on Periodo click @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#date-range-custom').click();
     await expect(page.locator('#custom-date-picker')).toBeVisible({ timeout: 5000 });
   });
 
-  test('Ganancia/Visitas tab selector renders @owner', async ({ page }) => {
+  test('Ganancia/Visitas tab switching works @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    await expect(page.locator('#dash-tab-ganancia')).toBeVisible();
-    await expect(page.locator('#dash-tab-visitas')).toBeVisible();
-  });
+    expect(loaded, 'Dashboard API did not load in time').toBe(true);
 
-  test('Clicking Visitas tab switches content @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#dash-tab-visitas').click();
-    await page.waitForTimeout(500);
     await expect(page.getByText('Visitas totales').first()).toBeVisible({ timeout: 5000 });
-  });
 
-  test('Clicking Ganancia tab shows revenue KPIs @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    await page.locator('#dash-tab-visitas').click();
-    await page.waitForTimeout(500);
     await page.locator('#dash-tab-ganancia').click();
-    await page.waitForTimeout(500);
-    const panel = page.locator('#dash-panel-ganancia');
-    await expect(panel).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#dash-panel-ganancia')).toBeVisible({ timeout: 5000 });
   });
 
-  test('Chart tabs Ganancias/Visitas/Clientes render @owner', async ({ page }) => {
+  test('Chart tabs switch without errors @owner', async ({ page }) => {
     const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    await expect(page.locator('#chart-tab-revenue')).toBeVisible();
-    await expect(page.locator('#chart-tab-visits')).toBeVisible();
-    await expect(page.locator('#chart-tab-customers')).toBeVisible();
-  });
+    expect(loaded, 'Dashboard API did not load in time').toBe(true);
 
-  test('Switching chart tabs works without errors @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
     await page.locator('#chart-tab-visits').click();
-    await page.waitForTimeout(500);
     await page.locator('#chart-tab-customers').click();
-    await page.waitForTimeout(500);
     await page.locator('#chart-tab-revenue').click();
-    await page.waitForTimeout(500);
     await expect(page.locator('.page-title')).toBeVisible();
-  });
-
-  test('Scanner button is visible @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    await expect(page.locator('#open-scanner-btn')).toBeVisible();
-  });
-
-  test('Stat cards are present on dashboard @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    const statCards = page.locator('.stat-card');
-    await expect(statCards).toHaveCount(4, { timeout: 10000 });
-  });
-
-  test('Dashboard has tooltip or info icons @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    await expect(page.locator('.page-title')).toBeVisible();
-  });
-
-  test('Dashboard page-subtitle renders @owner', async ({ page }) => {
-    const loaded = await gotoLoadedDashboard(page);
-    expect(loaded, "Dashboard API did not load in time").toBe(true);
-    await expect(page.locator('.page-subtitle')).toBeVisible();
   });
 });
 
@@ -161,7 +110,6 @@ test.describe('Dashboard API Endpoints @analytics', () => {
 
   test('Analytics overview API returns valid structure', async ({ request }) => {
     const access_token = await loginRole(request, 'owner');
-
     const resp = await request.get(`${BASE_API}/api/v1/analytics/overview/`, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
@@ -175,7 +123,6 @@ test.describe('Dashboard API Endpoints @analytics', () => {
 
   test('Analytics trends API returns daily_data', async ({ request }) => {
     const access_token = await loginRole(request, 'owner');
-
     const resp = await request.get(`${BASE_API}/api/v1/analytics/trends/?days=30`, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
@@ -186,7 +133,6 @@ test.describe('Dashboard API Endpoints @analytics', () => {
 
   test('Visit metrics API returns unregistered_visits key', async ({ request }) => {
     const access_token = await loginRole(request, 'owner');
-
     const resp = await request.get(`${BASE_API}/api/v1/analytics/visits/?days=30`, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
@@ -199,7 +145,6 @@ test.describe('Dashboard API Endpoints @analytics', () => {
 
   test('Revenue breakdown API returns loyalty/referral/non_loyalty', async ({ request }) => {
     const access_token = await loginRole(request, 'owner');
-
     const resp = await request.get(`${BASE_API}/api/v1/analytics/revenue-breakdown/?days=30`, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
