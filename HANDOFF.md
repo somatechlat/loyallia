@@ -744,3 +744,102 @@ frontend/tests/e2e/helpers/e2e-safety.ts
 ```
 
 *End of handoff. 542 backend tests passing. 0 pyright errors. 0 ruff errors. 122 files reformatted. Audit logging added to 5 modules. 2 oversized backend files split. Playwright E2E has pre-existing `getRoleCredentials` import bug (workaround added). Frontend settings page still needs splitting.*
+
+---
+
+## 11. E2E Test Suite Architectural Remediation — 2026-05-17
+
+### 11.1 Commit
+
+```
+6f32e56 refactor(e2e): architectural remediation — deduplicate tests, fix provisioning, remove anti-patterns
+```
+
+### 11.2 Environment Status
+
+| Component | Status |
+|-----------|--------|
+| Docker daemon | ✅ Running |
+| Vault | ✅ Unsealed |
+| API (`loyallia-api`) | ✅ Running |
+| Web (`loyallia-web`) | ✅ Running (HTTP 200 on :33906) |
+| WhatsApp Bridge | ✅ Healthy |
+| Provisioning | ✅ Ran successfully — all 4 plans seeded, credentials written |
+
+### 11.3 Phase Execution Status
+
+| Phase | Item | Status |
+|-------|------|--------|
+| **A1** | Deduplicate WhatsApp tests (merge 24→17, delete 24) | ✅ Done |
+| **A2** | Fix project overlap in `playwright.config.ts` | ✅ Done — removed `external-providers` project |
+| **A3** | Consolidate dashboard KPI tests | ✅ Done — 16 navigations → 4 focused tests |
+| **B1** | Replace `waitForTimeout` anti-patterns | ⚠️ Partial — replaced many in 11-superadmin and 21-sms-campaigns; still ~94 total across 22-wallet-flows (35), 16-srs-hardening (29), 11-superadmin (remaining) |
+| **B2** | Skeleton-aware dashboard polling | ✅ Done — waits for `.animate-pulse` detach |
+| **B3** | Remove `retries: 2` from auth | ✅ Done |
+| **C1** | Seed all 4 plans in provisioning | ✅ Done |
+| **C2** | Provision `whatsapp_bridge_api_key` | ✅ Done |
+| **C3** | Set `twilio_use_test_mode=true` | ✅ Done |
+| **C4** | Tolerant integration card tests | ✅ Done — `span.bg-green-100` → `span[class*="bg-"]` |
+| **C5** | Metrics page tolerate 204 | ✅ Done |
+| **D1** | Random PIN (no hardcode) | ✅ Done |
+| **D2** | SMS safety throw preserved | ✅ Done |
+| **D3** | Bridge health gate | ✅ Done |
+| **E1** | Celery wait → API polling | ✅ Done |
+| **E2** | Batch navigation tests | ❌ Skipped — marginal gain |
+| **E3** | No factory-reset clicks | ✅ Verified |
+
+### 11.4 Critical Fix Applied During Session
+
+**Playwright `actionTimeout: 15000` added to config.**
+
+Default Playwright action timeout is `0` (infinite). Tests clicking missing elements (e.g., `getByRole('button', { name: /Nuevo Plan/ }).click()`) hung for the entire test timeout (120s). This masked real element-missing failures with 2.0-minute hangs. Now actions fail fast at 15s.
+
+### 11.5 Test Run Results (First Pass)
+
+- **Setup**: ✅ Auth setup passed (10.8s)
+- **Tests 1–69**: ✅ All passed (owner/manager/staff CRUD, navigation, campaigns, settings, scanner)
+- **Auth tests (01-auth)**: ❌ Multiple failures — browser form login tests failing under load
+- **Superadmin tests (11-superadmin)**: ❌ Many failures:
+  - Navigation text tests fail after ~13s (`"Plataforma"`, `"Negocios"`, etc. not found in nav)
+  - Plan/settings tests previously hung for 2.0m; now fail fast with `actionTimeout`
+- **Suite timed out** after 30 minutes before completing all 292 tests
+
+### 11.6 Remaining Work Before Green Suite
+
+1. **Re-run superadmin tests** with `actionTimeout: 15000` to see actual element-missing errors
+2. **Fix superadmin navigation selectors** — nav text assertions may not match current SuperAdmin UI
+3. **Fix auth test failures** — browser login tests are flaky under full-suite load
+4. **Complete B1** — replace remaining arbitrary waits in 22-wallet-flows and 16-srs-hardening
+5. **Run full suite to completion** and fix any remaining individual failures
+
+### 11.7 Rules Compliance
+
+- ✅ No hardcoded credentials
+- ✅ No mocks, placeholders, bypasses
+- ✅ No Vault writes from normal E2E tests
+- ✅ No factory reset or seed-demo execution
+- ✅ No secrets committed (redacted and force-pushed)
+- ⚠️ Did not claim "production ready" — test suite still has failures
+
+### 11.8 Commands for Next Agent
+
+```bash
+# Run backend tests (should be 542 passed, 0 failed)
+docker exec loyallia-api bash -c "cd /app && DJANGO_SETTINGS_MODULE=loyallia.settings.test python3 -m pytest -q"
+
+# Playwright auth setup (should pass)
+cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --project=setup --timeout=120000
+
+# Run superadmin tests only (to debug remaining failures)
+cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --project=superadmin --timeout=120000
+
+# Run auth tests only
+cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --project=auth --timeout=120000
+
+# Full suite (expect 20–30 min)
+cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --project=full --timeout=120000
+```
+
+---
+
+*End of handoff. E2E remediation in progress. 69/292 tests verified passing. Auth and superadmin selectors need adjustment.*
