@@ -400,6 +400,39 @@ class PlatformSettingsSummaryOut(BaseModel):
     settings: list[PlatformSettingOut]
 
 
+class PlatformSettingsBulkUpdateItem(BaseModel):
+    """Single setting update item for bulk update."""
+
+    key: str
+    value: str
+
+
+class PlatformSettingsBulkUpdateIn(BaseModel):
+    """Bulk update multiple platform settings at once."""
+
+    settings: list[PlatformSettingsBulkUpdateItem]
+
+
+class PlatformSettingsBulkUpdateOut(BaseModel):
+    """Response from a bulk update operation."""
+
+    success: bool
+    message: str
+    updated: int
+    skipped: int
+    errors: list[str] = Field(default_factory=list)
+
+
+class PlatformSettingsRefreshCacheOut(BaseModel):
+    """Response from cache refresh operation."""
+
+    success: bool
+    message: str
+    refreshed: int
+    failed: int
+    total: int
+
+
 # PLATFORM MODE (LYL-SRS-MODE-001)
 
 

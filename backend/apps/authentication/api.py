@@ -336,7 +336,8 @@ def forgot_password(request, payload: ForgotPasswordIn):
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    app_url = settings.FRONTEND_URL
+    from apps.tenants.models import PlatformSetting
+    app_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
     reset_link = f"{app_url}/reset-password?uid={uid}&token={token}"
 
     try:

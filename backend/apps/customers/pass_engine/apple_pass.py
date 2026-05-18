@@ -218,6 +218,9 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         pass_json["nfc"] = nfc_payload
 
     web_service_url = getattr(settings, "PASS_WEB_SERVICE_URL", "")
+    if not web_service_url:
+        from apps.tenants.models import PlatformSetting
+        web_service_url = PlatformSetting.get("wallet_web_service_url", "")
     if web_service_url:
         pass_json["webServiceURL"] = web_service_url
         pass_json["authenticationToken"] = str(customer_pass.id).replace("-", "")

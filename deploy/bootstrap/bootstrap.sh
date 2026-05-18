@@ -21,7 +21,7 @@ err() { echo -e "${RED}[error]${NC} $*" >&2; }
 step() { echo ""; echo -e "${CYAN}════════════════════════════════════════════════════════════${NC}"; echo -e "${CYAN}  STEP $1${NC}"; echo -e "${CYAN}════════════════════════════════════════════════════════════${NC}"; }
 
 check_prerequisites() {
-    step "1/7 — Checking prerequisites"
+    step "1/9 — Checking prerequisites"
 
     local missing=0
 
@@ -69,7 +69,7 @@ check_existing_data() {
 }
 
 generate_or_load_secrets() {
-    step "2/7 — Loading or generating secrets"
+    step "2/9 — Loading or generating secrets"
 
     if [ -f "$SECRETS_FILE" ]; then
         log "Found existing secrets file: $SECRETS_FILE"
@@ -92,7 +92,7 @@ generate_or_load_secrets() {
 }
 
 prepare_bootstrap_volume() {
-    step "3/7 — Preparing secure bootstrap volume"
+    step "3/9 — Preparing secure bootstrap volume"
 
     # Docker Compose prefixes volume names with project name (loyallia_)
     local compose_vol="loyallia_${BOOTSTRAP_VOL}"
@@ -114,7 +114,7 @@ prepare_bootstrap_volume() {
 }
 
 start_vault() {
-    step "4/7 — Starting Vault + vault-init"
+    step "4/9 — Starting Vault + vault-init"
 
     log "Starting Vault..."
     docker compose up -d vault
@@ -172,7 +172,23 @@ start_vault() {
 }
 
 auto_create_rescue_files() {
-    step "5/7 — Creating rescue files"
+    step "5/9 — Creating rescue files"
+
+    # --- Rescue file detection: redirect to DR if rescue files already exist ---
+    if [ -f "$RESCUE_DIR/vault_init_rescue.json" ] && [ -f "$RESCUE_DIR/vault_secrets_rescue.json" ]; then
+        warn ""
+        warn "╔══════════════════════════════════════════════════════════════════════╗"
+        warn "║  RESCUE FILES ALREADY EXIST                                         ║"
+        warn "║                                                                     ║"
+        warn "║  vault_init_rescue.json and vault_secrets_rescue.json found.        ║"
+        warn "║  This is a DISASTER RECOVERY scenario, not a fresh bootstrap.       ║"
+        warn "║                                                                     ║"
+        warn "║  To recover, run:                                                   ║"
+        warn "║    ./deploy/bootstrap/disaster_recovery/recover_from_rescue.sh      ║"
+        warn "╚══════════════════════════════════════════════════════════════════════╝"
+        warn ""
+        exit 1
+    fi
 
     mkdir -p "$RESCUE_DIR"
     chmod 0700 "$RESCUE_DIR"
@@ -208,7 +224,7 @@ auto_create_rescue_files() {
 }
 
 start_stateful_services() {
-    step "6/7 — Starting stateful services"
+    step "6/9 — Starting stateful services"
 
     log "Starting PostgreSQL, Redis, MinIO..."
     docker compose up -d postgres redis minio minio-init
@@ -264,7 +280,7 @@ start_stateful_services() {
 }
 
 migrate_and_seed() {
-    step "6/7 — Running migrations + seeds"
+    step "7/9 — Running migrations + seeds"
 
     log "Starting API container for migrations..."
     docker compose up -d api --no-deps
@@ -300,11 +316,23 @@ migrate_and_seed() {
             --settings loyallia.settings.production
         docker compose exec -T api python manage.py validate_runtime_environment --mode production \
             --settings loyallia.settings.production
+
+        log "Seeding platform settings..."
+        docker compose exec -T api python manage.py seed_platform_settings --mode="$BOOTSTRAP_MODE" \
+            --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
+            warn "seed_platform_settings not available — skipping"
+        }
+
+        log "Seeding subscription plans..."
+        docker compose exec -T api python manage.py seed_subscription_plans \
+            --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
+            warn "seed_subscription_plans not available — skipping"
+        }
     fi
 }
 
 start_workers_and_proxy() {
-    step "6/7 — Starting workers, monitoring, proxy"
+    step "8/9 — Starting workers, monitoring, proxy"
 
     log "Starting Celery workers..."
     docker compose up -d celery-pass celery-push celery-default celery-beat
@@ -320,6 +348,23 @@ start_workers_and_proxy() {
 
     log "Starting monitoring stack..."
     docker compose up -d prometheus grafana loki
+
+    log "Starting Alertmanager..."
+    docker compose up -d alertmanager 2>/dev/null || warn "Alertmanager not configured — skipping"
+}
+
+start_redis_sentinel() {
+    step "9/9 — Starting Redis Sentinel"
+
+    log "Checking for Redis Sentinel configuration..."
+    if [ -f "$PROJECT_ROOT/deploy/redis/sentinel.conf" ]; then
+        log "Starting Redis Sentinel..."
+        docker compose up -d redis-sentinel 2>/dev/null || {
+            warn "Redis Sentinel service not defined — skipping"
+        }
+    else
+        warn "No sentinel.conf found — Redis Sentinel not started"
+    fi
 }
 
 secure_delete() {
@@ -335,7 +380,7 @@ secure_delete() {
 }
 
 cleanup_bootstrap() {
-    step "7/7 — Secure cleanup"
+    step "Final — Secure cleanup"
 
     local compose_vol="loyallia_${BOOTSTRAP_VOL}"
 
@@ -433,7 +478,8 @@ main() {
     if [ "$existing" -eq 1 ]; then
         warn "Vault data volume already exists with init.json!"
         warn "If this is a REBOOT (not first bootstrap), use: docker compose up -d"
-        warn "If you want to RECOVER from disaster, use: deploy/disaster_recovery/recover_from_rescue.sh"
+
+        warn "If you want to RECOVER from disaster, use: deploy/bootstrap/disaster_recovery/recover_from_rescue.sh"
         echo ""
         local answer
         read -r -p "Continue with fresh bootstrap anyway? [y/N]: " answer
@@ -443,6 +489,22 @@ main() {
         fi
     fi
 
+    # --- Rescue file detection: redirect to DR if rescue files exist ---
+    if [ -f "$RESCUE_DIR/vault_init_rescue.json" ] && [ -f "$RESCUE_DIR/vault_secrets_rescue.json" ]; then
+        warn ""
+        warn "╔══════════════════════════════════════════════════════════════════════╗"
+        warn "║  RESCUE FILES DETECTED                                              ║"
+        warn "║                                                                     ║"
+        warn "║  vault_init_rescue.json and vault_secrets_rescue.json found.        ║"
+        warn "║  This is a DISASTER RECOVERY scenario, not a fresh bootstrap.       ║"
+        warn "║                                                                     ║"
+        warn "║  To recover, run:                                                   ║"
+        warn "║    ./deploy/bootstrap/disaster_recovery/recover_from_rescue.sh      ║"
+        warn "╚══════════════════════════════════════════════════════════════════════╝"
+        warn ""
+        exit 1
+    fi
+
     generate_or_load_secrets
     prepare_bootstrap_volume
     start_vault
@@ -450,10 +512,11 @@ main() {
     start_stateful_services
     migrate_and_seed
     start_workers_and_proxy
+    start_redis_sentinel
     cleanup_bootstrap
     verify_bootstrap
 
     log "Zero Trust bootstrap sequence complete."
 }
 
-main
+main "$@"

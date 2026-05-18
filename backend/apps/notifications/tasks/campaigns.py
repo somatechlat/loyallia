@@ -99,7 +99,9 @@ def send_wallet_notification_campaign(
 
             active_cards = Card.objects.filter(tenant=tenant, is_active=True)
             for card in active_cards:
-                broadcast_url = f"{settings.FRONTEND_URL}/enroll/{str(card.id)}"
+                from apps.tenants.models import PlatformSetting
+                dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
+                broadcast_url = f"{dashboard_url}/enroll/{str(card.id)}"
 
                 if wallet_platform in ("google", "both"):
  # Google Wallet broadcast
@@ -155,7 +157,7 @@ def send_wallet_notification_campaign(
  # Send individual push only if NOT a broadcast segment (to avoid double notification)
                 if segment_id != "all":
                     for pass_obj in passes:
-                        action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
+                        action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
                         if wallet_platform in ("google", "both"):
  # Google Wallet individual push
                             result = send_push_notification(

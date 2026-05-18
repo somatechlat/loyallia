@@ -40,6 +40,9 @@ from apps.tenants.super_admin_api.schemas import (
     PlatformModeOut,
     PlatformModeToggleIn,
     PlatformSettingOut,
+    PlatformSettingsBulkUpdateIn,
+    PlatformSettingsBulkUpdateOut,
+    PlatformSettingsRefreshCacheOut,
     PlatformSettingUpdateIn,
     VaultSecretUpdateIn,
 )
@@ -512,6 +515,129 @@ def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn)
         msg += " (restart required for full effect)"
 
     return MessageOut(success=True, message=msg)
+
+
+@router.get("/platform/settings/{key}/", auth=jwt_auth, response=PlatformSettingOut)
+def get_platform_setting(request, key: str):
+    """Get a single platform setting by key.
+
+    Returns the current value from cache or database.
+    Sensitive values (secrets, tokens, passwords) are redacted.
+    """
+    _require_super_admin(request)
+
+    try:
+        setting = PlatformSetting.objects.get(key=key)
+    except PlatformSetting.DoesNotExist:
+        raise HttpError(404, get_message("NOT_FOUND"))
+
+    return PlatformSettingOut(
+        key=setting.key,
+        value="<redacted>" if _is_sensitive_platform_setting_key(setting.key) else setting.value,
+        description=setting.description,
+        category=setting.category,
+        requires_restart=setting.requires_restart,
+        updated_at=setting.updated_at,
+    )
+
+
+@router.post("/platform/settings/bulk-update/", auth=jwt_auth, response=PlatformSettingsBulkUpdateOut)
+def bulk_update_platform_settings(request, payload: PlatformSettingsBulkUpdateIn):
+    """Update multiple platform settings at once.
+
+    Each item is processed individually. Partial failures are tracked.
+    Settings are written to DB and Redis cache is updated for each.
+    SEC: SUPER_ADMIN only. Secret-like keys are rejected.
+    """
+    _require_super_admin(request)
+
+    updated_count = 0
+    skipped_count = 0
+    errors: list[str] = []
+
+    for item in payload.settings:
+        if _is_sensitive_platform_setting_key(item.key):
+            errors.append(
+                f"Key '{item.key}' rejected: secret-like settings must be stored via Vault integration endpoint."
+            )
+            skipped_count += 1
+            continue
+
+        try:
+            setting, created = PlatformSetting.objects.get_or_create(
+                key=item.key,
+                defaults={
+                    "value": item.value,
+                    "description": "",
+                    "category": "general",
+                },
+            )
+            if not created:
+                setting.value = item.value
+                setting.save()
+            updated_count += 1
+        except Exception as exc:
+            errors.append(f"Key '{item.key}' failed: {str(exc)}")
+            skipped_count += 1
+            continue
+
+    logger.info(
+        "SUPER_ADMIN %s bulk-updated %d setting(s), skipped %d",
+        request.user.email,
+        updated_count,
+        skipped_count,
+    )
+
+    # Audit log
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="platform_settings_bulk",
+            resource_id="bulk",
+            details={"updated": updated_count, "skipped": skipped_count},
+            status="success",
+        )
+    except Exception:
+        logger.warning("Failed to audit bulk settings update", exc_info=True)
+
+    return PlatformSettingsBulkUpdateOut(
+        success=updated_count > 0,
+        message=f"{updated_count} setting(s) updated, {skipped_count} skipped.",
+        updated=updated_count,
+        skipped=skipped_count,
+        errors=errors,
+    )
+
+
+@router.post("/platform/settings/refresh-cache/", auth=jwt_auth, response=PlatformSettingsRefreshCacheOut)
+def refresh_platform_settings_cache(request):
+    """Invalidate and refresh the entire settings Redis cache from the database.
+
+    Use this after manual DB edits or when cache inconsistency is suspected.
+    SEC: SUPER_ADMIN only.
+    """
+    _require_super_admin(request)
+
+    result = PlatformSetting.refresh_cache()
+
+    logger.info(
+        "SUPER_ADMIN %s refreshed settings cache: %d refreshed, %d failed",
+        request.user.email,
+        result["refreshed"],
+        result["failed"],
+    )
+
+    return PlatformSettingsRefreshCacheOut(
+        success=True,
+        message=f"Cache refreshed: {result['refreshed']} setting(s) reloaded.",
+        refreshed=result["refreshed"],
+        failed=result["failed"],
+        total=result["total"],
+    )
 
 
 # SYSADMIN OPERATIONS (LYL-BOOT-001)

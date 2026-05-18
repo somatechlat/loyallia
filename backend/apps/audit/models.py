@@ -25,6 +25,8 @@ class AuditAction:
     API_ACCESS = "API_ACCESS"
     FACTORY_RESET = "FACTORY_RESET"
     SEED_DEMO = "SEED_DEMO"
+    BACKUP = "BACKUP"
+    RESTORE = "RESTORE"
 
     @classmethod
     def choices(cls):
@@ -41,6 +43,8 @@ class AuditAction:
             (cls.API_ACCESS, "Acceso API"),
             (cls.FACTORY_RESET, "Restauración de fábrica"),
             (cls.SEED_DEMO, "Carga de datos demo"),
+            (cls.BACKUP, "Respaldo"),
+            (cls.RESTORE, "Restauración"),
         ]
 
 

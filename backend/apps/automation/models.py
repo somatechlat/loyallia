@@ -407,7 +407,9 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                         send_push_notification,
                     )
 
-                    action_url = f"{settings.FRONTEND_URL}/enroll/{str(pass_obj.card.id)}"
+                    from apps.tenants.models import PlatformSetting
+                    dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
+                    action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
                     result = send_push_notification(pass_obj, header=title, body=message, action_url=action_url)
                     if result.get("success"):
                         push_sent = True

@@ -32,6 +32,7 @@ from apps.notifications.whatsapp.api import router as whatsapp_router
 from apps.tenants.api import router as tenants_router
 from apps.tenants.security_privacy_api import router as tenant_security_privacy_router
 from apps.tenants.super_admin_api import router as super_admin_router
+from apps.backup.api import router as backup_router
 from apps.tenants.super_admin_api.platform_plans import router as platform_plans_router
 from apps.tenants.super_admin_api.platform_reset import router as platform_reset_router
 from apps.transactions.api import router as transactions_router
@@ -162,6 +163,7 @@ api.add_router("/", wallet_router, tags=["Wallet"])
 api.add_router("/upload/", upload_router, tags=["Uploads"])
 api.add_router("/agent/", agent_api_router, tags=["Agent API"])
 api.add_router("/admin/audit/", audit_router, tags=["Audit"])
+api.add_router("/admin/backups/", backup_router, tags=["Backup & Restore"])
 
 
 # Mailjet webhook receiver mounted at root so URL is /api/v1/webhooks/mailjet/

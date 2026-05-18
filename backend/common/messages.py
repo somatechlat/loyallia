@@ -283,6 +283,18 @@ _MESSAGES_ES: dict[str, str] = {
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Contraseña incorrecta. La eliminación no fue procesada.",
     "ACCOUNT_DELETION_COMPLETED": "Cuenta y todos los datos asociados eliminados permanentemente.",
     "ACCOUNT_DELETION_ALREADY_SCHEDULED": "La eliminación de tu cuenta ya fue programada.",
+    # Backup & Restore
+    "BACKUP_TRIGGERED": "Respaldo iniciado exitosamente.",
+    "BACKUP_TRIGGER_FAILED": "Error al iniciar el respaldo: {detail}",
+    "BACKUP_VERIFY_INVALID_STATE": "No se puede verificar un respaldo en estado '{status}'. Debe estar completado.",
+    "BACKUP_RESTORE_CONFIRM_REQUIRED": "Se requiere confirmación explícita (confirm=true) para restaurar.",
+    "BACKUP_RESTORE_NOT_VERIFIED": "Solo se pueden restaurar respaldos verificados.",
+    "BACKUP_RESTORE_STARTED": "Restauración iniciada. Este proceso puede tardar varios minutos.",
+    "BACKUP_RESTORE_FAILED": "Error al iniciar la restauración: {detail}",
+    "BACKUP_CLEANUP_STARTED": "Limpieza de respaldos antiguos iniciada.",
+    "BACKUP_CLEANUP_FAILED": "Error al iniciar la limpieza: {detail}",
+    "BACKUP_SETTINGS_UPDATED": "Configuración de respaldo actualizada.",
+    "BACKUP_FREQUENCY_INVALID": "Frecuencia inválida. Use: hourly, daily, weekly, disabled.",
 }
 
 
@@ -499,6 +511,18 @@ _MESSAGES_EN: dict[str, str] = {
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Incorrect password. Deletion was not processed.",
     "ACCOUNT_DELETION_COMPLETED": "Account and all associated data permanently deleted.",
     "ACCOUNT_DELETION_ALREADY_SCHEDULED": "Account deletion has already been scheduled.",
+    # Backup & Restore
+    "BACKUP_TRIGGERED": "Backup started successfully.",
+    "BACKUP_TRIGGER_FAILED": "Failed to start backup: {detail}",
+    "BACKUP_VERIFY_INVALID_STATE": "Cannot verify a backup in status '{status}'. Must be completed.",
+    "BACKUP_RESTORE_CONFIRM_REQUIRED": "Explicit confirmation (confirm=true) is required to restore.",
+    "BACKUP_RESTORE_NOT_VERIFIED": "Only verified backups can be restored.",
+    "BACKUP_RESTORE_STARTED": "Restore started. This process may take several minutes.",
+    "BACKUP_RESTORE_FAILED": "Failed to start restore: {detail}",
+    "BACKUP_CLEANUP_STARTED": "Old backup cleanup started.",
+    "BACKUP_CLEANUP_FAILED": "Failed to start cleanup: {detail}",
+    "BACKUP_SETTINGS_UPDATED": "Backup settings updated.",
+    "BACKUP_FREQUENCY_INVALID": "Invalid frequency. Use: hourly, daily, weekly, disabled.",
 }
 
 
