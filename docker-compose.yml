@@ -255,7 +255,7 @@ services:
       vault-init:
         condition: service_completed_successfully
     command: >
-      sh -c 'redis-server --dir /data --requirepass "$$(cat /run/loyallia-vault/redis_password)" --appendonly yes --appendfsync everysec --maxmemory 400mb --maxmemory-policy noeviction --save 900 1 --save 300 10 --save 60 10000 --tcp-keepalive 300 --timeout 300'
+      sh -c 'redis-server --dir /data --requirepass "$$(cat /run/loyallia-vault/redis_password)" --appendonly yes --appendfsync everysec --maxmemory 400mb --maxmemory-policy allkeys-lru --save 900 1 --save 300 10 --save 60 10000 --tcp-keepalive 300 --timeout 300'
     volumes:
       - redis_data:/data
       - vault_runtime:/run/loyallia-vault:ro
@@ -680,7 +680,11 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "celery -A loyallia inspect ping --timeout 10 2>&1 | grep -q pong || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -718,7 +722,10 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      disable: true
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5555"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -777,7 +784,6 @@ services:
   vault:
     image: hashicorp/vault:1.15.6
     container_name: loyallia-vault
-    user: "0:0"
     command: vault server -config=/vault/config/vault.hcl
     cap_add:
       - IPC_LOCK
@@ -786,6 +792,7 @@ services:
     volumes:
       - ./deploy/vault.hcl:/vault/config/vault.hcl:ro
       - vault_data:/vault/file
+      - ./certs:/vault/certs:ro
     ports:
       - "127.0.0.1:33908:8200"
     networks:
@@ -809,7 +816,6 @@ services:
   vault-init:
     image: hashicorp/vault:1.15.6
     container_name: loyallia-vault-init
-    user: "0:0"
     depends_on:
       vault:
         condition: service_healthy
