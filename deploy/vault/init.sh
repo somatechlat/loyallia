@@ -97,6 +97,15 @@ except Exception:
 
 wait_for_vault
 
+# Generate self-signed TLS certificate if none exists
+if [ ! -f /vault/certs/vault.crt ]; then
+    mkdir -p /vault/certs
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout /vault/certs/vault.key \
+        -out /vault/certs/vault.crt \
+        -subj "/CN=vault" 2>/dev/null || true
+fi
+
 # Support rescue injection: copy VAULT_RESCUE_INIT_JSON into place if provided
 if [ -n "${VAULT_RESCUE_INIT_JSON:-}" ] && [ -f "$VAULT_RESCUE_INIT_JSON" ]; then
     cp "$VAULT_RESCUE_INIT_JSON" /vault/file/init.json
