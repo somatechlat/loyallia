@@ -140,6 +140,12 @@ def create_tenant(request, payload: CreateTenantWizardIn):
             trial_days = plan_obj.trial_days
             plan_slug = plan_obj.slug
 
+            if payload.billing_cycle not in ["monthly", "annual"]:
+                raise HttpError(
+                    400,
+                    get_message("VALIDATION_ERROR", detail="billing_cycle must be 'monthly' or 'annual'"),
+                )
+
             tenant = Tenant.objects.create(
                 name=payload.name,
                 legal_name=payload.legal_name,
@@ -234,7 +240,6 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 tenant_id=str(tenant.id),
                 owner_id=str(owner.id),
                 owner_email=owner.email,
-                temp_password=temp_password,
             )
     except Exception as e:
         logger.error("Tenant creation failed: %s", e)

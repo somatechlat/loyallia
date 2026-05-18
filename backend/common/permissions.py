@@ -72,26 +72,16 @@ class OptionalJWTAuth(HttpBearer):
 
     Used on endpoints like enrollment pages where auth is optional.
     Returns None (not 401) when token is missing or invalid.
+
+    Thin wrapper around JWTAuth: catches AuthenticationError and returns None.
     """
 
     def authenticate(self, request: HttpRequest, token: str) -> Any:
-        tenant_request = as_tenant_request(request)
         if not token:
             return None
-        payload = decode_access_token(token)
-        if payload is None:
-            return None
-        from apps.authentication.models import User
-
         try:
-            user = User.objects.select_related("tenant").get(
-                id=payload["user_id"],
-                is_active=True,
-            )
-            tenant_request.user = user
-            tenant_request.tenant = user.tenant
-            return user
-        except User.DoesNotExist:
+            return JWTAuth().authenticate(request, token)
+        except Exception:
             return None
 
 

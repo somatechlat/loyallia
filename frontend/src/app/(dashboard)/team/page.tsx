@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { UserRole } from '@/types';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -16,12 +17,12 @@ export default function TeamPage() {
   const [inviting, setInviting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ role: '', is_active: true });
-  const [form, setForm] = useState({ email: '', first_name: '', last_name: '', role: 'MANAGER', send_email: true });
+  const [form, setForm] = useState({ email: '', first_name: '', last_name: '', role: UserRole.MANAGER, send_email: true });
   const [createdPassword, setCreatedPassword] = useState<string | null>(null);
 
   const fetchTeam = () => {
     api.get('/api/v1/tenants/team/')
-      .then(({ data }) => setMembers((data || []).filter((m: TeamMember) => m.role !== 'SUPER_ADMIN')))
+      .then(({ data }) => setMembers((data || []).filter((m: TeamMember) => m.role !== UserRole.SUPER_ADMIN)))
       .catch(() => {
         /* silently handle error — loading state cleared in finally */
       })
@@ -31,7 +32,7 @@ export default function TeamPage() {
   useEffect(() => { fetchTeam(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isOwner = user?.role === 'OWNER';
+  const isOwner = user?.role === UserRole.OWNER;
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +42,7 @@ export default function TeamPage() {
       toast.success('Miembro creado exitosamente', { id: toastId });
       setCreatedPassword(data.temp_password || null);
       setInviting(false);
-      setForm({ email: '', first_name: '', last_name: '', role: 'MANAGER', send_email: true });
+      setForm({ email: '', first_name: '', last_name: '', role: UserRole.MANAGER, send_email: true });
       fetchTeam();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al invitar';
@@ -150,8 +151,8 @@ export default function TeamPage() {
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1">Rol</label>
               <select className="input" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
-                <option value="MANAGER">Gerente (Manager)</option>
-                <option value="STAFF">Personal / Cajero (Staff)</option>
+                <option value={UserRole.MANAGER}>Gerente (Manager)</option>
+                <option value={UserRole.STAFF}>Personal / Cajero (Staff)</option>
               </select>
             </div>
             <div className="col-span-2">
@@ -191,7 +192,7 @@ export default function TeamPage() {
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
               <p className="text-xs text-amber-700">
-                <strong>⚠️ Importante:</strong> Guarda esta contraseña. El miembro debe cambiarla al iniciar sesión por primera vez.
+                <strong>Importante:</strong> Guarda esta contraseña. El miembro debe cambiarla al iniciar sesión por primera vez.
               </p>
             </div>
             <button onClick={() => setCreatedPassword(null)} className="btn-primary w-full">
@@ -230,8 +231,8 @@ export default function TeamPage() {
                   {editingId === m.id ? (
                     <select className="input text-xs py-1 w-28" value={editForm.role}
                       onChange={e => setEditForm({ ...editForm, role: e.target.value })}>
-                      <option value="MANAGER">Gerente</option>
-                      <option value="STAFF">Personal</option>
+                      <option value={UserRole.MANAGER}>Gerente</option>
+                      <option value={UserRole.STAFF}>Personal</option>
                     </select>
                   ) : (
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${roleBadge(m.role)}`}>{roleLabel(m.role)}</span>

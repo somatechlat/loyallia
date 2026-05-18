@@ -68,11 +68,6 @@ class LogoutIn(BaseModel):
     refresh_token: str
 
 
-class MessageOut(BaseModel):
-    success: bool
-    message: str
-
-
 class VerifyEmailIn(BaseModel):
     email: EmailStr
     otp: str

@@ -76,19 +76,21 @@ class CSPNonceMiddleware:
  # Build CSP header with nonce
  # LYL-H-SEC-010: Covers Google Identity Services domains to prevent
  # CSP violations when Google OAuth is enabled.
-        csp_directives = [
-            "default-src 'self'",
-            f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com",
-            f"style-src 'self' 'nonce-{nonce}' https://accounts.google.com",
-            "img-src 'self' data: https: blob:",
-            "font-src 'self' https://fonts.gstatic.com",
-            "connect-src 'self' https://oauth2.googleapis.com https://accounts.google.com https://apis.google.com",
-            "frame-src 'self' https://accounts.google.com",
-            "base-uri 'self'",
-            "form-action 'self'",
-            "frame-ancestors 'self'",
-        ]
-        response["Content-Security-Policy"] = "; ".join(csp_directives)
+        response_content_type = response.get("Content-Type", "")
+        if "application/json" not in response_content_type:
+            csp_directives = [
+                "default-src 'self'",
+                f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com",
+                f"style-src 'self' 'nonce-{nonce}' https://accounts.google.com",
+                "img-src 'self' data: https: blob:",
+                "font-src 'self' https://fonts.gstatic.com",
+                "connect-src 'self' https://oauth2.googleapis.com https://accounts.google.com https://apis.google.com",
+                "frame-src 'self' https://accounts.google.com",
+                "base-uri 'self'",
+                "form-action 'self'",
+                "frame-ancestors 'self'",
+            ]
+            response["Content-Security-Policy"] = "; ".join(csp_directives)
         return response
 
 

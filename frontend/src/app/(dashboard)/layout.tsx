@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
+import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 
@@ -14,9 +15,10 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LOYALLIA_LOGO, LOYALLIA_LOGO_DARK } from '@/lib/loyalliaLogo';
 import Cookies from 'js-cookie';
 
+import { APP_CONFIG } from '@/lib/constants';
+
 /** SEC-009: Banner shown when superadmin is impersonating a tenant.
  *  Auto-expires after 1 hour. Backs up admin token in sessionStorage. */
-const MAX_IMPERSONATION_MS = 60 * 60 * 1000; // 1 hour
 
 function ImpersonationBanner() {
   const [isImpersonating, setIsImpersonating] = useState(false);
@@ -30,7 +32,7 @@ function ImpersonationBanner() {
       const startedAt = sessionStorage.getItem('impersonation_started_at');
       if (startedAt) {
         const elapsed = Date.now() - parseInt(startedAt, 10);
-        if (elapsed >= MAX_IMPERSONATION_MS) {
+        if (elapsed >= APP_CONFIG.MAX_IMPERSONATION_MS) {
           // Auto-expire: restore admin session
           const isProd = process.env.NODE_ENV === 'production';
           Cookies.set('access_token', adminToken, { expires: 1 / 24, secure: isProd, sameSite: 'strict' });
@@ -39,12 +41,12 @@ function ImpersonationBanner() {
           window.location.href = '/superadmin/tenants';
           return;
         }
-        setTimeLeftMs(MAX_IMPERSONATION_MS - elapsed);
+        setTimeLeftMs(APP_CONFIG.MAX_IMPERSONATION_MS - elapsed);
       }
       setIsImpersonating(true);
     };
     check();
-    const interval = setInterval(check, 30000);
+    const interval = setInterval(check, APP_CONFIG.NAV_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 
@@ -148,9 +150,9 @@ const ROLE_LABELS_NAV: Record<string, string> = {
 
 function getNavForRole(role: string) {
   switch (role) {
-    case 'SUPER_ADMIN': return SUPER_ADMIN_NAV;
-    case 'OWNER': return OWNER_NAV;
-    case 'MANAGER': return MANAGER_NAV;
+    case UserRole.SUPER_ADMIN: return SUPER_ADMIN_NAV;
+    case UserRole.OWNER: return OWNER_NAV;
+    case UserRole.MANAGER: return MANAGER_NAV;
     default: return [];
   }
 }
@@ -269,7 +271,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   /* Fetch tenant logo for sidebar branding */
   useEffect(() => {
-    if (!user || user.role === 'SUPER_ADMIN') return;
+    if (!user || user.role === UserRole.SUPER_ADMIN) return;
     fetch('/api/v1/tenants/me/')
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.logo_url) setTenantLogo(data.logo_url); })
@@ -278,24 +280,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // RBAC redirects — consolidated into single useEffect (BUG-001/002 fix)
   const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation'];
-  const isRestrictedRoute = user && user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN'
+  const isRestrictedRoute = user && user.role !== UserRole.OWNER && user.role !== UserRole.SUPER_ADMIN
     && OWNER_ONLY_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
 
   useEffect(() => {
     if (loading || !user) return;
 
     // STAFF → scanner only
-    if (user.role === 'STAFF' && !pathname.startsWith('/scanner')) {
+    if (user.role === UserRole.STAFF && !pathname.startsWith('/scanner')) {
       router.replace('/scanner/scan');
       return;
     }
     // SUPER_ADMIN → superadmin only
-    if (user.role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) {
+    if (user.role === UserRole.SUPER_ADMIN && !pathname.startsWith('/superadmin')) {
       router.replace('/superadmin');
       return;
     }
     // Non-superadmin → block superadmin routes
-    if (user.role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) {
+    if (user.role !== UserRole.SUPER_ADMIN && pathname.startsWith('/superadmin')) {
       router.replace('/');
       return;
     }
@@ -316,11 +318,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null;
 
   // STAFF: render nothing while redirect happens
-  if (user.role === 'STAFF') return null;
+  if (user.role === UserRole.STAFF) return null;
 
   // Block rendering for wrong role paths (redirect is in-flight)
-  if (user.role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) return null;
-  if (user.role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) return null;
+  if (user.role === UserRole.SUPER_ADMIN && !pathname.startsWith('/superadmin')) return null;
+  if (user.role !== UserRole.SUPER_ADMIN && pathname.startsWith('/superadmin')) return null;
   if (isRestrictedRoute) return null;
 
   const handleLogout = async () => {
@@ -329,7 +331,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const nav = getNavForRole(user.role);
-  const sidebarTitle = user.role === 'SUPER_ADMIN' ? 'Plataforma SaaS' : user.tenant_name;
+  const sidebarTitle = user.role === UserRole.SUPER_ADMIN ? 'Plataforma SaaS' : user.tenant_name;
   const logoSrc = theme === 'dark' ? LOYALLIA_LOGO_DARK : LOYALLIA_LOGO;
 
   return (

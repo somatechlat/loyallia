@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { automationApi, programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { UserRole } from '@/types';
+import { APP_CONFIG } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import WalletPlatformSelector from '@/components/notifications/WalletPlatformSelector';
 import WalletNotificationPreview from '@/components/notifications/WalletNotificationPreview';
@@ -150,12 +152,12 @@ function ActionIcon({ action, className = 'w-5 h-5' }: { action: string; classNa
 const EMPTY_FORM: AutomationForm = {
   name: '', description: '', trigger: 'customer_enrolled', action: 'send_notification',
   trigger_config: {}, action_config: { title: '', message: '' },
-  cooldown_hours: 24, max_executions_per_day: null,
+  cooldown_hours: APP_CONFIG.DEFAULT_COOLDOWN_HOURS, max_executions_per_day: null,
 };
 
 export default function AutomationPage() {
   const { user } = useAuth();
-  const isOwner = user?.role === 'OWNER';
+  const isOwner = user?.role === UserRole.OWNER;
 
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [programs, setPrograms] = useState<ProgramOption[]>([]);
@@ -200,7 +202,7 @@ export default function AutomationPage() {
         action: preset.action,
         trigger_config: {},
         action_config: preset.action_config,
-        cooldown_hours: 24,
+        cooldown_hours: APP_CONFIG.DEFAULT_COOLDOWN_HOURS,
         max_executions_per_day: null,
       });
     } else {
@@ -278,7 +280,7 @@ export default function AutomationPage() {
       {/* Preset Templates - Quick Start */}
       {isOwner && (
         <div className="card p-6">
-          <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-4">⚡ Inicio rápido - Plantillas predefinidas</h2>
+          <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-4">Inicio rápido - Plantillas predefinidas</h2>
           <p className="text-sm text-surface-500 mb-4">Crea automatizaciones en un clic usando estas plantillas:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {PRESET_TEMPLATES.map(preset => (

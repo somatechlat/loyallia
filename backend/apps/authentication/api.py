@@ -51,7 +51,6 @@ from apps.authentication.schemas import (
     ForgotPasswordIn,
     LoginIn,
     LogoutIn,
-    MessageOut,
     RefreshIn,
     RefreshOut,
     RegisterIn,
@@ -60,6 +59,7 @@ from apps.authentication.schemas import (
     TokenOut,
     VerifyEmailIn,
 )
+from common.schemas import MessageOut
 from apps.authentication.tokens import (
     hash_token,
 )

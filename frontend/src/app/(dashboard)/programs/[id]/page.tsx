@@ -2,13 +2,15 @@
 import { useState, useEffect } from 'react';
 import { programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
+import { APP_CONFIG } from '@/lib/constants';
 import { adjustColor } from '@/components/programs/constants';
 import EditProgramModal, { type ProgramData } from '@/components/programs/EditProgramModal';
 import PremiumQrSvg from '@/components/programs/PremiumQrSvg';
 
 /** Premium styled QR code URL */
-function styledQrUrl(data: string, size = 280): string {
+function styledQrUrl(data: string, size = APP_CONFIG.QR_CODE_SIZE): string {
   return `https://quickchart.io/qr?text=${encodeURIComponent(data)}&size=${size}&margin=2&dark=1a1a2e&light=ffffff&ecLevel=M&format=png`;
 }
 
@@ -43,7 +45,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
   const id = params.id;
   const { user } = useAuth();
-  const isOwner = user?.role === 'OWNER';
+  const isOwner = user?.role === UserRole.OWNER;
 
   const [program, setProgram] = useState<ProgramData | null>(null);
   const [stats, setStats] = useState<ProgramStats | null>(null);
@@ -179,7 +181,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           </p>
           <div className="flex justify-center mb-4">
             <img
-              src={styledQrUrl(`${resolvedAppUrl}/enroll/${id}`, 280)}
+              src={styledQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
               alt="QR de inscripción"
               className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-[#ffffff] shadow-lg"
               id="enrollment-qr-img"

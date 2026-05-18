@@ -1,10 +1,17 @@
+export enum UserRole {
+  OWNER = 'OWNER',
+  MANAGER = 'MANAGER',
+  STAFF = 'STAFF',
+  SUPER_ADMIN = 'SUPER_ADMIN',
+}
+
 export interface User {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
   full_name: string;
-  role: string;
+  role: UserRole;
   tenant_id: string;
   tenant_name: string;
   date_joined: string;

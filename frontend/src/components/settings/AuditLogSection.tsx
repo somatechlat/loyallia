@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
 
 interface AuditEntry {
@@ -46,7 +47,7 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
-    if (userRole !== 'OWNER') {
+    if (userRole !== UserRole.OWNER) {
       setLoading(false);
       return;
     }
@@ -64,7 +65,7 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
     })();
   }, [userRole]);
 
-  if (userRole !== 'OWNER') return null;
+  if (userRole !== UserRole.OWNER) return null;
 
   const visible = showAll ? entries : entries.slice(0, 5);
 
