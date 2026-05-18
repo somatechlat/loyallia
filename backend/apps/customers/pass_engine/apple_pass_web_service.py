@@ -54,6 +54,22 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
     return provided_token == expected_token
 
 
+def _require_device_registered(device_library_id: str, serial_number: str) -> bool:
+    """
+    Verify the device is registered for the specific pass.
+
+    Apple sends the device_library_id in the URL and the Authorization header
+    with the pass token. This confirms the device was previously registered
+    via register_device for this pass.
+    """
+    from apps.customers.models import ApplePassRegistration
+
+    return ApplePassRegistration.objects.filter(
+        device_library_id=device_library_id,
+        customer_pass_id=serial_number,
+    ).exists()
+
+
 def _get_customer_pass(pass_type_id: str, serial_number: str):
     """
     Look up a CustomerPass by serial number (UUID) and validate pass type ID.
@@ -168,6 +184,15 @@ def unregister_device(
     if not _validate_apple_auth(request, serial_number):
         return HttpResponse(status=401)
 
+    # Verify device is registered for this pass before allowing unregistration
+    if not _require_device_registered(device_library_id, serial_number):
+        logger.warning(
+            "Apple Web Service: Device not registered for pass  device=%s, pass=%s",
+            device_library_id[-8:],
+            serial_number,
+        )
+        return HttpResponse(status=401)
+
     from apps.customers.models import ApplePassRegistration
 
     deleted_count, _ = ApplePassRegistration.objects.filter(
@@ -208,7 +233,23 @@ def list_updated_passes(
 
     Returns: {"serialNumbers": ["uuid1", "uuid2"], "lastUpdated": "<tag>"}
     """
+    # Validate Authorization header is present and well-formed
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not auth_header.startswith("ApplePass "):
+        logger.warning(
+            "Apple Web Service: Missing or invalid Authorization header for list_updated_passes"
+        )
+        return HttpResponse(status=401)
+
     from apps.customers.models import ApplePassRegistration
+
+    # Verify the device is registered for at least one pass
+    if not ApplePassRegistration.objects.filter(device_library_id=device_library_id).exists():
+        logger.warning(
+            "Apple Web Service: Device not registered  device=%s",
+            device_library_id[-8:],
+        )
+        return HttpResponse(status=401)
 
     configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
     if not configured_pass_type:
@@ -282,6 +323,16 @@ def get_updated_pass(
     Returns the regenerated .pkpass file with Content-Type: application/vnd.apple.pkpass.
     """
     if not _validate_apple_auth(request, serial_number):
+        return HttpResponse(status=401)
+
+    # Verify at least one device is registered for this pass
+    from apps.customers.models import ApplePassRegistration
+
+    if not ApplePassRegistration.objects.filter(customer_pass_id=serial_number).exists():
+        logger.warning(
+            "Apple Web Service: Pass has no registered devices  serial=%s",
+            serial_number,
+        )
         return HttpResponse(status=401)
 
     customer_pass = _get_customer_pass(pass_type_id, serial_number)

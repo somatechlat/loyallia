@@ -24,7 +24,7 @@ from apps.billing.models import (
     SubscriptionPlan,
     SubscriptionStatus,
 )
-from apps.tenants.models import Location, Tenant
+from apps.tenants.models import Location, PlatformSetting, Tenant
 from apps.tenants.super_admin_api.schemas import (
     CreateTenantOut,
     CreateTenantWizardIn,
@@ -116,8 +116,29 @@ def create_tenant(request, payload: CreateTenantWizardIn):
     try:
         with transaction.atomic():
             plan_obj = SubscriptionPlan.objects.filter(slug=payload.plan_slug).first()
-            trial_days = plan_obj.trial_days if plan_obj else 14
-            plan_slug = plan_obj.slug if plan_obj else "trial"
+            if plan_obj is None:
+                raise HttpError(
+                    400,
+                    get_message("VALIDATION_ERROR", detail=f"Plan '{payload.plan_slug}' no encontrado"),
+                )
+            if not plan_obj.is_active:
+                raise HttpError(
+                    400,
+                    get_message("VALIDATION_ERROR", detail="Plan seleccionado no está activo"),
+                )
+            # SEC-H5: Validate plan capacity — prevent over-subscription
+            active_sub_count = Subscription.objects.filter(
+                subscription_plan=plan_obj,
+                status__in=[SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE],
+            ).count()
+            plan_capacity = PlatformSetting.get_int(f"PLAN_CAPACITY_{plan_obj.slug.upper()}", 0)
+            if plan_capacity > 0 and active_sub_count >= plan_capacity:
+                raise HttpError(
+                    400,
+                    get_message("VALIDATION_ERROR", detail=f"Capacidad máxima alcanzada para plan '{plan_obj.name}'"),
+                )
+            trial_days = plan_obj.trial_days
+            plan_slug = plan_obj.slug
 
             tenant = Tenant.objects.create(
                 name=payload.name,

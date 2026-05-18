@@ -22,7 +22,7 @@ Performance (Rule 12):
 
 Security (SEC):
     - SEC: select_for_update prevents race condition on limit checks.
-    - SEC: Trial tenants get high-but-finite limits (999999), not infinity.
+    - SEC: Trial tenants get generous but finite limits, not infinity.
 
 Usage:
     @require_active_subscription
@@ -65,23 +65,24 @@ def get_tenant_limits(tenant) -> dict:
 
     plan = subscription.subscription_plan
     if not plan and subscription.is_trial_active:
- # Trial plan grants unlimited access (999999) for all resources
+        # SEC: Trial tenants get generous but finite limits — not infinity.
+        # Prevents trial tenants from exhausting database storage (C4/H4).
         return {
-            "customers": 999999,
-            "programs": 999999,
-            "locations": 999999,
-            "users": 999999,
-            "notifications_month": 999999,
-            "transactions_month": 999999,
-            "whatsapp_day": 999999,
-            "emails_month": 999999,
-            "sms_day": 999999,
-            "wallet_pushes_month": 999999,
-            "automations": 999999,
-            "automation_executions_day": 999999,
-            "ai_queries_month": 999999,
-            "api_calls_day": 999999,
-            "exports_month": 999999,
+            "customers": 500,
+            "programs": 50,
+            "locations": 10,
+            "users": 10,
+            "notifications_month": 1000,
+            "transactions_month": 5000,
+            "whatsapp_day": 100,
+            "emails_month": 500,
+            "sms_day": 50,
+            "wallet_pushes_month": 200,
+            "automations": 10,
+            "automation_executions_day": 100,
+            "ai_queries_month": 500,
+            "api_calls_day": 1000,
+            "exports_month": 10,
         }
 
     if not plan:
