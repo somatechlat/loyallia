@@ -98,11 +98,11 @@ export const authApi = {
   register: (data: Record<string, unknown>) =>
     api.post('/api/v1/auth/register/', data),
   logout: () => api.post('/api/v1/auth/logout/'),
-  me: () => api.get('/api/v1/auth/me/'),
+  me: () => api.get('/api/v1/auth/users/me/'),
   updateProfile: (data: { first_name?: string; last_name?: string }) =>
-    api.put('/api/v1/auth/profile/', data),
+    api.put('/api/v1/auth/users/profile/', data),
   changePassword: (data: { current_password: string; new_password: string }) =>
-    api.post('/api/v1/auth/change-password/', data),
+    api.post('/api/v1/auth/users/change-password/', data),
   googleConfig: () => api.get('/api/v1/auth/google/config/'),
   googleLogin: (credential: string, business_name?: string, is_login_only: boolean = false) =>
     api.post('/api/v1/auth/google/login/', { credential, business_name: business_name || '', is_login_only }),
