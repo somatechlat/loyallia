@@ -299,8 +299,37 @@ with open(output_path, 'w') as f:
 print(f"Final secret count: {len(data['secrets'])}")
 PYEOF
 
+    # Convert JSON secrets to flat .env file for Vault init container (Alpine, no Python3)
+    python3 - "$OUTPUT_FILE" << 'PYEOF'
+import json
+import base64
+import sys
+
+json_path = sys.argv[1]
+env_path = json_path.replace('.json', '.env')
+
+with open(json_path) as f:
+    data = json.load(f)
+
+secrets = data.get('secrets', {})
+
+with open(env_path, 'w') as f:
+    for key, value in secrets.items():
+        val = str(value)
+        # Base64-encode multiline or very long values (certs, JSON)
+        if '\n' in val or len(val) > 500:
+            encoded = base64.b64encode(val.encode('utf-8')).decode('ascii')
+            f.write(f"{key}_b64={encoded}\n")
+        else:
+            f.write(f"{key}={val}\n")
+
+print(f"Wrote {len(secrets)} secrets to flat env file: {env_path}")
+PYEOF
+
     chmod 0600 "$OUTPUT_FILE"
+    chmod 0600 "${OUTPUT_FILE%.json}.env"
     log "Secrets written to: $OUTPUT_FILE (permissions: 600)"
+    log "Flat env written to: ${OUTPUT_FILE%.json}.env (permissions: 600)"
 
     if [ -n "$AGE_PUBLIC_KEY" ]; then
         log "Age public key: $AGE_PUBLIC_KEY"
