@@ -119,7 +119,7 @@ def get_campaign_results(request, campaign_run_id: str):
 
     run = get_object_or_404(CampaignRun, id=campaign_run_id, tenant=request.tenant)
 
-    # Aggregate errors by type
+ # Aggregate errors by type
     error_counts = (
         CampaignDeliveryLog.objects.filter(
             campaign_run=run,

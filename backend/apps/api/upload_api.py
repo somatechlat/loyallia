@@ -1,5 +1,5 @@
 """
-Loyallia — File Upload API
+Loyallia  File Upload API
 Handles direct image uploads (logos, etc.) to MinIO/S3 and returns public URLs.
 """
 
@@ -74,14 +74,14 @@ def upload_file(request, file: UploadedFile):
         )
 
     try:
-        # Generate random unique filename to prevent collisions and path traversal
+ # Generate random unique filename to prevent collisions and path traversal
         tenant_dirname = str(request.tenant.id) if request.tenant else "platform"
         filename = f"uploads/{tenant_dirname}/{uuid.uuid4().hex}{ext}"
 
-        # Save to S3/MinIO
+ # Save to S3/MinIO
         path = default_storage.save(filename, file)
 
-        # Retrieve the public URL
+ # Retrieve the public URL
         public_url = default_storage.url(path)
 
         return {"success": True, "url": public_url}

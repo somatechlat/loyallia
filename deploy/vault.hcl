@@ -1,4 +1,4 @@
-# Production Vault Configuration
+# Vault configuration
 # LYL-SEC-001: TLS enabled, mlock enabled, hardened listener
 
 storage "file" {

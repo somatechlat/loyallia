@@ -1,4 +1,4 @@
-# Generated manually — adds status workflow to SubscriptionPlan
+# Generated manually adds status workflow to SubscriptionPlan
 
 from django.db import migrations, models
 

@@ -1,5 +1,5 @@
 """
-Loyallia Django Settings — BASE
+Loyallia Django Settings  BASE
 All environments inherit from this.
 Production-sensitive values are loaded from Vault. Non-secret routing values may
 come from environment or compose configuration.
@@ -14,9 +14,8 @@ from common.vault import get_secret
 # Base directory of the Django project (backend/)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# =============================================================================
 # SECURITY
-# =============================================================================
+
 SECRET_KEY = get_secret(
     "secret_key",
     default="",
@@ -24,9 +23,8 @@ SECRET_KEY = get_secret(
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
-# =============================================================================
 # APPLICATIONS
-# =============================================================================
+
 DJANGO_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -60,9 +58,8 @@ LOCAL_APPS = [
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
-# =============================================================================
 # MIDDLEWARE
-# =============================================================================
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -82,9 +79,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "loyallia.urls"
 
-# =============================================================================
 # TEMPLATES
-# =============================================================================
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -104,22 +100,21 @@ TEMPLATES = [
 WSGI_APPLICATION = "loyallia.wsgi.application"
 ASGI_APPLICATION = "loyallia.asgi.application"
 
-# =============================================================================
-# DATABASE — PostgreSQL via PgBouncer connection pool
+# DATABASE PostgreSQL via PgBouncer connection pool
 # conn_max_age=0 is MANDATORY for PgBouncer transaction-mode pooling.
 # Non-zero values cause "server connection was reset" under concurrent load.
-# =============================================================================
+
 import dj_database_url
 
 DATABASES = {
-    # Default: routed through PgBouncer (transaction pooling)
+ # Default: routed through PgBouncer (transaction pooling)
     "default": dj_database_url.config(
         env="PGBOUNCER_URL",
         default="postgres://loyallia@pgbouncer:6432/loyallia",
         conn_max_age=0,  # REQUIRED for PgBouncer transaction mode
         conn_health_checks=False,  # PgBouncer manages health; skip Django checks
     ),
-    # Direct: bypasses PgBouncer for migrations and schema operations
+ # Direct: bypasses PgBouncer for migrations and schema operations
     "direct": dj_database_url.config(
         env="DATABASE_DIRECT_URL",
         default="postgres://loyallia@postgres:5432/loyallia",
@@ -135,15 +130,13 @@ if _database_password:
 # Database router: send migrations to 'direct', everything else to 'default' (PgBouncer)
 DATABASE_ROUTERS = ["common.db_routers.PgBouncerRouter"]
 
-# =============================================================================
 # CUSTOM USER MODEL
-# =============================================================================
+
 AUTH_USER_MODEL = "authentication.User"
 
-# =============================================================================
 # PASSWORD VALIDATION
 # SECURITY (LYL-M-SEC-014): 12+ chars with complexity requirements.
-# =============================================================================
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
@@ -163,9 +156,8 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",  # fallback
 ]
 
-# =============================================================================
 # INTERNATIONALIZATION (REQ-I18N-001)
-# =============================================================================
+
 LANGUAGE_CODE = "es"
 TIME_ZONE = "UTC"  # All timestamps stored in UTC; converted per-tenant in display
 USE_I18N = True
@@ -185,9 +177,8 @@ LOCALE_PATHS = [
     BASE_DIR / "locale",
 ]
 
-# =============================================================================
 # STATIC & MEDIA FILES
-# =============================================================================
+
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
@@ -195,9 +186,8 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# =============================================================================
-# CACHE — Redis
-# =============================================================================
+# CACHE Redis
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -210,14 +200,12 @@ CACHES = {
     }
 }
 
-# =============================================================================
-# CELERY CONFIGURATION — Extracted to celery_config.py (Rule 245)
-# =============================================================================
+# CELERY CONFIGURATION Extracted to celery_config.py (Rule 245)
+
 from loyallia.settings.celery_config import *  # noqa: F401,F403,E402
 
-# =============================================================================
-# FILE STORAGE — MinIO (S3-compatible)
-# =============================================================================
+# FILE STORAGE MinIO (S3-compatible)
+
 MINIO_ENDPOINT = config("MINIO_ENDPOINT", default="http://localhost:9000")
 MINIO_ACCESS_KEY = get_secret("minio_access_key", default="")
 MINIO_SECRET_KEY = get_secret("minio_secret_key", default="")
@@ -249,9 +237,8 @@ STORAGES = {
     },
 }
 
-# =============================================================================
 # JWT / AUTH TOKENS
-# =============================================================================
+
 JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 60  # FR-008: 60 minutes per spec
 JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 # LYL-H-SEC-005: Algorithm selection. HS256 (default) or RS256 (asymmetric).
@@ -262,9 +249,8 @@ JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 priva
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
 
-# =============================================================================
 # PASS SIGNING
-# =============================================================================
+
 def vault_bool(key: str, env_name: str = "", default: bool = False) -> bool:
     """Read a feature flag from Vault using explicit boolean strings."""
     value = get_secret(key, default=str(default).lower())
@@ -283,7 +269,7 @@ APPLE_CERT_PATH = config("APPLE_CERT_PATH", default="/app/certs/apple_pass.pem")
 APPLE_CERT_KEY_PATH = config("APPLE_CERT_KEY_PATH", default="/app/certs/apple_pass.key")
 APPLE_WWDR_CERT_PATH = config("APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem")
 PASS_HMAC_SECRET = get_secret("pass_hmac_secret", default="")
-# Apple Wallet webServiceURL — the base URL Apple Wallet calls for pass
+# Apple Wallet webServiceURL the base URL Apple Wallet calls for pass
 # registration, update checking, and pass re-download. Must be HTTPS in production.
 # Set in pass.json as "webServiceURL". Defaults to APP_URL + /wallet/apple
 PASS_WEB_SERVICE_URL = config(
@@ -291,7 +277,7 @@ PASS_WEB_SERVICE_URL = config(
     default="",  # Computed in production.py from APP_URL
 )
 
-# APNs token-based auth (JWT) — for push notifications to iOS
+# APNs token-based auth (JWT) for push notifications to iOS
 # Separate from the PassKit signing certificates above
 APPLE_APNS_KEY_ID = config("APPLE_APNS_KEY_ID", default="")
 APPLE_APNS_AUTH_KEY_PATH = config("APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8")
@@ -302,14 +288,12 @@ GOOGLE_SERVICE_ACCOUNT_FILE = config(
 )
 GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", default="")
 
-# =============================================================================
 # FIREBASE (Android Push)
-# =============================================================================
+
 FIREBASE_CREDENTIAL_FILE = config("FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json")
 
-# =============================================================================
-# PAYMENT GATEWAY (Pluggable — Manual / Disabled)
-# =============================================================================
+# PAYMENT GATEWAY (Pluggable Manual / Disabled)
+
 PAYMENT_GATEWAY_ENABLED = vault_bool("payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False)
 PAYMENT_GATEWAY_PROVIDER = get_secret(
     "payment_gateway_provider",
@@ -324,9 +308,8 @@ PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
 )
 
 
-# =============================================================================
 # EMAIL
-# =============================================================================
+
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = config("EMAIL_HOST", default="in-v3.mailjet.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
@@ -338,9 +321,8 @@ DEFAULT_FROM_EMAIL = get_secret(
     default=str(config("EMAIL_FROM", default="noreply@loyallia.com")),
 )
 
-# =============================================================================
 # WHATSAPP BRIDGE (LYL-SRS-006)
-# =============================================================================
+
 WHATSAPP_BRIDGE_URL = config("WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001")
 WHATSAPP_BRIDGE_API_KEY = get_secret(
     "whatsapp_bridge_api_key",
@@ -349,17 +331,15 @@ WHATSAPP_BRIDGE_API_KEY = get_secret(
 WHATSAPP_MAX_PER_MINUTE = config("WHATSAPP_MAX_PER_MINUTE", default=8, cast=int)
 WHATSAPP_MAX_PER_HOUR = config("WHATSAPP_MAX_PER_HOUR", default=200, cast=int)
 
-# =============================================================================
 # TWILIO SMS (LYL-SRS-009)
-# =============================================================================
+
 TWILIO_ACCOUNT_SID = get_secret("twilio_account_sid", default="")
 TWILIO_AUTH_TOKEN = get_secret("twilio_auth_token", default="")
 TWILIO_FROM_NUMBER = get_secret("twilio_from_number", default="")
 TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 
-# -----------------------------------------------------------------------------
 # TWILIO VERIFY v2 (LYL-SRS-VERIFY-001)
-# -----------------------------------------------------------------------------
+
 TWILIO_VERIFY_SERVICE_SID = get_secret("twilio_verify_service_sid", default="")
 TWILIO_VERIFY_ENABLED = get_secret("twilio_verify_enabled", default="false").lower() == "true"
 TWILIO_VERIFY_DEFAULT_CHANNEL = get_secret(
@@ -371,27 +351,25 @@ TWILIO_API_KEY_SECRET = get_secret("twilio_api_key_secret", default="")
 TWILIO_TEST_ACCOUNT_SID = get_secret("twilio_test_account_sid", default="")
 TWILIO_TEST_AUTH_TOKEN = get_secret("twilio_test_auth_token", default="")
 
-# =============================================================================
 # CORS
-# =============================================================================
+
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:3000",
     cast=Csv(),
 )
 CORS_ALLOW_CREDENTIALS = True
-CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours — reduce preflight overhead
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours reduce preflight overhead
 
-# =============================================================================
 # SECURITY HEADERS (enforced in production settings)
-# =============================================================================
+
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "SAMEORIGIN"
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
-# Content-Security-Policy — set via custom middleware or Nginx in production
+# Content-Security-Policy set via custom middleware or Nginx in production
 # Default CSP header (can be overridden in production settings)
 # LYL-H-SEC-010: CSP is now set via CSPNonceMiddleware with per-request nonces.
 # These settings are kept as documentation; the middleware generates the actual header.
@@ -405,33 +383,31 @@ CSP_FRAME_SRC = "'self' https://accounts.google.com"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 
-# =============================================================================
 # BUSINESS RULES CONFIGURATION
 # Limits are DB-driven via SubscriptionPlan. These are fallback defaults.
-# =============================================================================
+
 TRIAL_DAYS = config("TRIAL_DAYS", default=5, cast=int)
 GEO_PUSH_COOLDOWN_HOURS = config("GEO_PUSH_COOLDOWN_HOURS", default=4, cast=int)
 GEO_FENCE_RADIUS_METERS = config("GEO_FENCE_RADIUS_METERS", default=100, cast=int)
 TAX_RATE_ECUADOR = config("TAX_RATE_ECUADOR", default=0.15, cast=float)  # Ecuador IVA 15%
 
-# =============================================================================
-# GOOGLE OAUTH 2.0 (Social Login) — Google Identity Services (GIS)
-# ─────────────────────────────────────────────────────────────────────────────
+# GOOGLE OAUTH 2.0 (Social Login) Google Identity Services (GIS)
+
 # Loyallia uses GIS (modern "Sign in with Google" button), NOT traditional
 # OAuth 2.0 redirect flow. The frontend gets an ID token directly from Google
 # and sends it to POST /api/v1/auth/google/login/ for verification.
 #
 # ENVIRONMENT SEPARATION:
-#   • LOCAL DEV:  Create a separate OAuth client for localhost:
-#                 Authorized JS origins: http://localhost:3000
-#                 Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
-#   • PRODUCTION: Use the live rewards.loyallia.com client:
-#                 Authorized JS origins: https://rewards.loyallia.com
-#                 Authorized redirect URIs: https://rewards.loyallia.com/api/v1/auth/google/callback/
+# LOCAL DEV: Create a separate OAuth client for localhost:
+# Authorized JS origins: http://localhost:3000
+# Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
+# PRODUCTION: Use the live rewards.loyallia.com client:
+# Authorized JS origins: https://rewards.loyallia.com
+# Authorized redirect URIs: https://rewards.loyallia.com/api/v1/auth/google/callback/
 #
 # NEVER commit client_id/client_secret to any file. They live ONLY in Vault.
 # Get credentials from: https://console.cloud.google.com/apis/credentials
-# =============================================================================
+
 GOOGLE_OAUTH_CLIENT_ID = get_secret("google_oauth_client_id", default="")
 GOOGLE_OAUTH_CLIENT_SECRET = get_secret("google_oauth_client_secret", default="")
 GOOGLE_OAUTH_REDIRECT_URI = config(
@@ -442,9 +418,8 @@ GOOGLE_OAUTH_REDIRECT_URI = config(
 APP_URL = config("APP_URL", default="http://localhost")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
 
-# =============================================================================
-# SENTRY — Error Tracking (B-013)
-# =============================================================================
+# SENTRY Error Tracking (B-013)
+
 SENTRY_DSN = str(config("SENTRY_DSN", default=""))
 if SENTRY_DSN:
     import sentry_sdk
@@ -458,9 +433,8 @@ if SENTRY_DSN:
         environment=str(config("SENTRY_ENVIRONMENT", default="production")),
     )
 
-# =============================================================================
-# LOGGING — Structured JSON for production log aggregation (ELK / CloudWatch)
-# =============================================================================
+# LOGGING Structured JSON for production log aggregation (ELK / CloudWatch)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

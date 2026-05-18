@@ -1,5 +1,5 @@
 """
-Loyallia — Data Migration: Ensure SUPER_ADMIN User (REQ-BOOT-001)
+Loyallia  Data Migration: Ensure SUPER_ADMIN User (REQ-BOOT-001)
 
 Creates or corrects the platform-level SUPER_ADMIN user on first migration.
 This guarantees the system boots to a usable state regardless of DEBUG mode.
@@ -10,7 +10,7 @@ Idempotent:
       (legacy from old seed scripts) → corrects them.
     - If already correct → no-op.
 
-Reverse: noop (user remains on rollback — intentional for safety).
+Reverse: noop (user remains on rollback  intentional for safety).
 
 Called by: `python manage.py migrate --noinput` (automatic on every deploy).
 """
@@ -32,7 +32,7 @@ def ensure_superadmin(apps, schema_editor):
     admin = User.objects.filter(role="SUPER_ADMIN").first()
 
     if admin is None:
-        # Create fresh SUPER_ADMIN
+ # Create fresh SUPER_ADMIN
         User.objects.create(
             id=uuid.uuid4(),
             email="admin@loyallia.com",
@@ -47,7 +47,7 @@ def ensure_superadmin(apps, schema_editor):
         )
         return
 
-    # Fix legacy SUPER_ADMIN that may have been altered by old seed scripts
+ # Fix legacy SUPER_ADMIN that may have been altered by old seed scripts
     needs_save = False
     if admin.tenant_id is not None:
         admin.tenant_id = None
@@ -67,7 +67,7 @@ def ensure_superadmin(apps, schema_editor):
 
 
 def noop(apps, schema_editor):
-    """Reverse migration is a no-op — SUPER_ADMIN user stays on rollback."""
+    """Reverse migration is a no-op  SUPER_ADMIN user stays on rollback."""
     pass
 
 

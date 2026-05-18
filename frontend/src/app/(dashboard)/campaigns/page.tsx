@@ -26,7 +26,7 @@ export default function CampaignsPage() {
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Plan Features (LYL-SRS-008) ---
+  // Plan Features (LYL-SRS-008)
   const [planFeatures, setPlanFeatures] = useState<string[]>([]);
   const [planLimits, setPlanLimits] = useState<Record<string, number>>({});
   const [planUsage, setPlanUsage] = useState<Record<string, number>>({});
@@ -53,7 +53,7 @@ export default function CampaignsPage() {
 
   useEffect(() => { load(); }, []);
 
-  // --- Plan Features: Fetch on mount (LYL-SRS-008) ---
+  // Fetch plan features on mount (LYL-SRS-008)
   useEffect(() => {
     (async () => {
       try {

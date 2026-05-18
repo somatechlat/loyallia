@@ -1,5 +1,5 @@
 """
-Loyallia — Birthday SMS Integration Tests (LYL-SRS-009)
+Loyallia  Birthday SMS Integration Tests (LYL-SRS-009)
 
 Tests for:
   1. Birthday trigger task (apps.automation.tasks.evaluate_birthday_triggers)
@@ -37,13 +37,13 @@ class BirthdayTriggerTaskTest(TestCase):
 
         result = evaluate_birthday_triggers()
 
-        # Real automation executes and creates AutomationExecution records
+ # Real automation executes and creates AutomationExecution records
         self.assertGreaterEqual(result["triggered"], 0)
 
     def test_no_birthdays_returns_zero(self):
         from apps.automation.tasks import evaluate_birthday_triggers
 
         make_tenant()
-        # No customers with birthday today
+ # No customers with birthday today
         result = evaluate_birthday_triggers()
         self.assertEqual(result["triggered"], 0)

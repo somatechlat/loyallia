@@ -1,7 +1,7 @@
 """
-Loyallia — Wallet API (Public Endpoints)
+Loyallia  Wallet API (Public Endpoints)
 Serves Apple Wallet .pkpass files and Google Wallet save URLs.
-These endpoints are PUBLIC (no auth) — customers call them after enrollment.
+These endpoints are PUBLIC (no auth)  customers call them after enrollment.
 
 Endpoints:
   GET /api/v1/wallet/apple/{pass_id}/  → Download .pkpass file
@@ -24,13 +24,11 @@ logger = logging.getLogger(__name__)
 router = Router(tags=["wallet"])
 
 
-# =============================================================================
 # SCHEMAS
-# =============================================================================
 
 
 class PublicCardOut(Schema):
-    """Public card info for enrollment page — no sensitive data."""
+    """Public card info for enrollment page  no sensitive data."""
 
     id: str
     name: str
@@ -93,9 +91,7 @@ def _validate_pass_is_accessible(customer_pass):
         raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
 
 
-# =============================================================================
 # PUBLIC CARD INFO
-# =============================================================================
 
 
 @router.get(
@@ -106,7 +102,7 @@ def _validate_pass_is_accessible(customer_pass):
 )
 def get_public_card(request, card_id: str):
     """
-    Public endpoint — returns card info for the customer enrollment page.
+    Public endpoint  returns card info for the customer enrollment page.
     No authentication required.
     """
     from apps.cards.models import Card
@@ -133,9 +129,7 @@ def get_public_card(request, card_id: str):
     )
 
 
-# =============================================================================
 # APPLE WALLET (PKPASS DOWNLOAD)
-# =============================================================================
 
 
 @router.get(
@@ -170,7 +164,7 @@ def download_apple_pass(request, pass_id: str):
     if not is_apple_wallet_configured():
         raise HttpError(503, get_message("PASS_APPLE_NOT_CONFIGURED"))
 
-    # Cache the heavily CPU/Network bound .pkpass generation
+ # Cache the heavily CPU/Network bound .pkpass generation
     from django.core.cache import cache
 
     cache_key = f"pkpass:{pass_id}:{customer_pass.last_updated.timestamp()}"
@@ -180,7 +174,7 @@ def download_apple_pass(request, pass_id: str):
         pkpass_bytes = generate_pkpass(customer_pass)
         if pkpass_bytes is None:
             raise HttpError(500, get_message("PASS_APPLE_GEN_ERROR"))
-        # Cache for 24 hours (it will auto-invalidate if last_updated changes)
+ # Cache for 24 hours (it will auto-invalidate if last_updated changes)
         cache.set(cache_key, pkpass_bytes, timeout=86400)
 
     response = HttpResponse(
@@ -191,9 +185,7 @@ def download_apple_pass(request, pass_id: str):
     return response
 
 
-# =============================================================================
 # GOOGLE WALLET (SAVE URL)
-# =============================================================================
 
 
 @router.get(
@@ -241,9 +233,7 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     return GoogleWalletOut(save_url=save_url)
 
 
-# =============================================================================
 # WALLET STATUS (CHECK AVAILABILITY)
-# =============================================================================
 
 
 @router.get(

@@ -1,5 +1,5 @@
 # SOFTWARE CODE AUDIT REPORT — FULL SYSTEM
-## Loyallia — Intelligent Digital Loyalty Platform
+## Loyallia — Digital Loyalty Platform
 **Document ID:** LYL-AUDIT-FULL-2026-001  
 **Version:** 1.0.0  
 **Status:** FINAL  
@@ -8,16 +8,12 @@
 **Parent SRS:** LOYALLIA-SRS-001 v1.0.0  
 **Classification:** Internal — Confidential  
 
----
-
 ## DOCUMENT CONTROL
 
 | Version | Date | Author | Change |
 |---------|------|--------|--------|
 | 0.1 | 2026-04-29 | 6-Agent Audit System | Initial draft — all agents complete |
 | 1.0 | 2026-04-29 | 6-Agent Audit System | Final release — 167 findings documented |
-
----
 
 ## TABLE OF CONTENTS
 
@@ -43,15 +39,11 @@
 20. Annex B — Tooling and Environment
 21. Annex C — Normative References
 
----
-
 ## 1. INTRODUCTION
 
-This document presents the complete findings of a comprehensive security, architecture, and production-readiness audit of the Loyallia platform. The audit was conducted on 2026-04-29 using 6 specialized agents performing line-by-line analysis of the entire codebase (~53,000 lines across 307 files).
+This document presents the complete findings of a complete security, architecture, and production-readiness audit of the Loyallia platform. The audit was conducted on 2026-04-29 using 6 specialized agents performing line-by-line analysis of the entire codebase (~53,000 lines across 307 files).
 
 The audit covers the Django 5 backend (Django Ninja REST API), the Next.js 14 frontend, Docker infrastructure, CI/CD pipeline, and backup/disaster recovery readiness.
-
----
 
 ## 2. PURPOSE & SCOPE
 
@@ -70,8 +62,6 @@ This document serves as the authoritative audit report for all defects, security
 - Mobile scanner app (React Native) — separate audit required
 - Third-party service internals (Apple, Google, payment gateways)
 - Penetration testing (static analysis only)
-
----
 
 ## 3. DEFINITIONS, ACRONYMS & ABBREVIATIONS
 
@@ -99,8 +89,6 @@ This document serves as the authoritative audit report for all defects, security
 | CWE | Common Weakness Enumeration |
 | CVSS | Common Vulnerability Scoring System |
 
----
-
 ## 4. REFERENCES
 
 | Reference | Standard / URL |
@@ -118,8 +106,6 @@ This document serves as the authoritative audit report for all defects, security
 | WCAG 2.1 Level AA | Web Content Accessibility Guidelines |
 | Parent SRS | LOYALLIA-SRS-001 v1.0.0 |
 | Hardening SRS | LOYALLIA-SRS-HARDENING-001 v1.0.0 |
-
----
 
 ## 5. AUDIT METHODOLOGY
 
@@ -145,13 +131,11 @@ This document serves as the authoritative audit report for all defects, security
 | Agent 5 | Infrastructure & DevOps | Docker, CI/CD, config | 36 |
 | Agent 6 | Backup & DR | Volumes, persistence, DR | 7+ |
 
----
-
 ## 6. EXECUTIVE SUMMARY
 
 ### 6.1 Total Findings: 167+ issues across 6 domains
 
-| Domain | 🔴 CRITICAL | 🟠 HIGH | 🟡 MEDIUM | 🔵 LOW | TOTAL |
+| Domain | CRITICAL | HIGH | MEDIUM | LOW | TOTAL |
 |--------|-------------|---------|-----------|--------|-------|
 | Security | 3 | 7 | 8 | 5 | **23** |
 | Backend Architecture | 4 | 12 | 18 | 9 | **43** |
@@ -165,20 +149,18 @@ This document serves as the authoritative audit report for all defects, security
 
 | Quality Characteristic | Rating | Key Issues |
 |----------------------|--------|------------|
-| Functional Suitability | ⚠️ FAIR | Plan enforcement dead code, race conditions in transactions |
-| Performance Efficiency | ⚠️ FAIR | N+1 queries, missing pagination, no query optimization |
-| Compatibility | ✅ GOOD | Multi-browser, i18n support, responsive design |
-| Usability | ✅ GOOD | Dashboard UX, scanner PWA, enrollment flow |
-| Reliability | ❌ POOR | No backups, no HA, race conditions, fail-open rate limiter |
-| Security | ❌ POOR | 24 critical/high security findings, SSRF, OTP brute-force |
-| Maintainability | ❌ POOR | No service layer, massive duplication, ~15 tests |
-| Portability | ✅ GOOD | Docker-based, cloud-agnostic |
+| Functional Suitability | FAIR | Plan enforcement dead code, race conditions in transactions |
+| Performance Efficiency | FAIR | N+1 queries, missing pagination, no query optimization |
+| Compatibility | GOOD | Multi-browser, i18n support, responsive design |
+| Usability | GOOD | Dashboard UX, scanner PWA, enrollment flow |
+| Reliability | POOR | No backups, no HA, race conditions, fail-open rate limiter |
+| Security | POOR | 24 critical/high security findings, SSRF, OTP brute-force |
+| Maintainability | POOR | No service layer, massive duplication, ~15 tests |
+| Portability | GOOD | Docker-based, cloud-agnostic |
 
-### 6.3 Verdict: 🔴 NOT PRODUCTION-READY
+### 6.3 Verdict: NOT PRODUCTION-READY
 
 The system has **24 critical issues** that must be resolved before any production deployment with real customer data.
-
----
 
 ## 7. REQUIREMENT CLASSIFICATION & PRIORITY SCHEME
 
@@ -201,11 +183,9 @@ DOMAIN: SEC = Security, ARCH = Architecture, API = API/Logic, FE = Frontend, INF
 NNN: Sequential number (001-999)
 ```
 
----
-
 ## 8. MODULE 1 — SECURITY FINDINGS
 
-### 8.1 🔴 CRITICAL Security Findings
+### 8.1 CRITICAL Security Findings
 
 #### LYL-C-SEC-001: OTP Brute-Force via Weak Entropy + Rate Limiter Fail-Open
 
@@ -233,8 +213,6 @@ if self._redis_available is False:
 2. Change rate limiter to fail-closed for auth endpoints (return 503)
 3. Use SHA-256 with salt for OTP hashing
 4. Invalidate OTP after first successful verification (already done)
-
----
 
 #### LYL-C-SEC-002: Rate Limiter Fails Open — Complete Bypass When Redis Unavailable
 
@@ -269,8 +247,6 @@ if redis is None and request.path.startswith('/api/v1/auth/'):
     return JsonResponse({"error": "Service temporarily unavailable"}, status=503)
 ```
 
----
-
 #### LYL-C-SEC-003: No Webhook Replay Protection
 
 **File:** `apps/billing/payment_api.py`, `apps/billing/payment_gateway.py`
@@ -284,9 +260,7 @@ if redis is None and request.path.startswith('/api/v1/auth/'):
 2. Store webhook idempotency keys with TTL
 3. Verify webhook signature on every request
 
----
-
-### 8.2 🟠 HIGH Security Findings
+### 8.2 HIGH Security Findings
 
 #### LYL-H-SEC-004: X-Forwarded-For Spoofing Bypasses Rate Limits
 
@@ -297,8 +271,6 @@ if redis is None and request.path.startswith('/api/v1/auth/'):
 
 **Remediation:** Use `REMOTE_ADDR` for rate limiting. Only trust `X-Forwarded-For` from known reverse proxy IPs.
 
----
-
 #### LYL-H-SEC-005: HS256 JWT with Shared Secret
 
 **File:** `apps/authentication/tokens.py`, `loyallia/settings/base.py`
@@ -307,8 +279,6 @@ if redis is None and request.path.startswith('/api/v1/auth/'):
 **Impact:** HS256 uses a symmetric shared secret. If the secret is compromised, any party can forge valid JWT tokens. RS256 (asymmetric) is recommended for multi-component systems.
 
 **Remediation:** Migrate to RS256 (asymmetric) JWT signing. Store private key in Vault, distribute public key to services.
-
----
 
 #### LYL-H-SEC-006: Hardcoded Database Credentials in docker-compose.yml
 
@@ -324,8 +294,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 
 **Remediation:** Remove all functional defaults for secrets. Use `CHANGE_ME_BEFORE_DEPLOYMENT` placeholders.
 
----
-
 #### LYL-H-SEC-007: Plaintext Invitation Tokens in Database
 
 **File:** `apps/authentication/api.py:267`
@@ -339,8 +307,6 @@ invitation_token = secrets.token_urlsafe(32)
 **Impact:** If database is compromised, all invitation tokens are immediately usable.
 
 **Remediation:** Store SHA-256 hash of invitation token. Compare hashes on acceptance.
-
----
 
 #### LYL-H-SEC-008: Google OAuth Client ID Exposure
 
@@ -357,8 +323,6 @@ def google_oauth_config(request):
 
 **Remediation:** Only expose `enabled` boolean. Frontend should already have the client ID via environment variable.
 
----
-
 #### LYL-H-SEC-009: SSRF in Apple Pass Image Fetcher
 
 **File:** `apps/customers/pass_engine/apple_pass_builders.py`
@@ -367,8 +331,6 @@ def google_oauth_config(request):
 **Impact:** Pass builder fetches external images from user-supplied URLs without validating the target. Attacker could supply `http://169.254.169.254/latest/meta-data/` to access cloud metadata.
 
 **Remediation:** Validate URLs against blocklist of internal/private IP ranges. Use URL allowlist for image sources.
-
----
 
 #### LYL-H-SEC-010: CSP Allows unsafe-inline Scripts
 
@@ -382,8 +344,6 @@ CSP_SCRIPT_SRC = "'self' 'unsafe-inline' https://accounts.google.com https://api
 **Impact:** `unsafe-inline` negates CSP protection against XSS.
 
 **Remediation:** Use nonce-based CSP. Remove `unsafe-inline`.
-
----
 
 #### LYL-H-SEC-011: DEBUG Mode Returns OTP in API Response
 
@@ -402,9 +362,7 @@ if settings.DEBUG:
 
 **Remediation:** Never return OTP in API response, even in DEBUG. Log it only.
 
----
-
-### 8.3 🟡 MEDIUM Security Findings
+### 8.3 MEDIUM Security Findings
 
 | ID | Finding | File | CWE |
 |----|---------|------|-----|
@@ -417,7 +375,7 @@ if settings.DEBUG:
 | LYL-M-SEC-018 | No CSRF protection for non-API routes | middleware.py | CWE-352 |
 | LYL-M-SEC-019 | Session cookie not HttpOnly in all configurations | auth.tsx | CWE-1004 |
 
-### 8.4 🔵 LOW Security Findings
+### 8.4 LOW Security Findings
 
 | ID | Finding | File | CWE |
 |----|---------|------|-----|
@@ -426,11 +384,9 @@ if settings.DEBUG:
 | LYL-L-SEC-022 | Missing security headers in development mode | base.py | CWE-693 |
 | LYL-L-SEC-023 | No rate limit on Google OAuth login endpoint | api.py | CWE-307 |
 
----
-
 ## 9. MODULE 2 — BACKEND ARCHITECTURE FINDINGS
 
-### 9.1 🔴 CRITICAL Architecture Findings
+### 9.1 CRITICAL Architecture Findings
 
 #### LYL-C-ARCH-001: JSONField Overuse — Business Data in Untyped Blobs
 
@@ -448,15 +404,11 @@ pass_data = models.JSONField(default=dict)
 
 **Remediation:** Add typed columns for common fields. Keep JSON only for truly extensible data.
 
----
-
 #### LYL-C-ARCH-002: Impersonation Endpoint Missing Audit Justification
 
 **File:** `apps/tenants/super_admin_api/tenants.py`
 
 `log_impersonation()` function exists but is never called from the impersonation endpoint. Super admins can impersonate tenants without audit trail.
-
----
 
 #### LYL-C-ARCH-003: Agent API References Non-Existent Field
 
@@ -464,17 +416,13 @@ pass_data = models.JSONField(default=dict)
 
 References `txn.metadata` field that doesn't exist on the Transaction model. Will crash at runtime.
 
----
-
 #### LYL-C-ARCH-004: Hardcoded Seed Passwords
 
 **Files:** `backend/seed_sweet_coffee.py`, `backend/adrian_passes.py`
 
 Management commands contain hardcoded passwords for test data. If run in production, creates accounts with known credentials.
 
----
-
-### 9.2 🟠 HIGH Architecture Findings
+### 9.2 HIGH Architecture Findings
 
 | ID | Finding | File | Impact |
 |----|---------|------|--------|
@@ -491,7 +439,7 @@ Management commands contain hardcoded passwords for test data. If run in product
 | LYL-H-ARCH-015 | Dead code files (seed_sweet_coffee.py, adrian_passes.py) | backend/ | Confusion |
 | LYL-H-ARCH-016 | Inconsistent atomicity in pass transactions | models.py | Data integrity |
 
-### 9.3 🟡 MEDIUM Architecture Findings
+### 9.3 MEDIUM Architecture Findings
 
 | ID | Finding | File |
 |----|---------|------|
@@ -514,7 +462,7 @@ Management commands contain hardcoded passwords for test data. If run in product
 | LYL-M-ARCH-033 | Missing health check endpoint for Celery workers | — |
 | LYL-M-ARCH-034 | No database connection pooling monitoring | — |
 
-### 9.4 🔵 LOW Architecture Findings
+### 9.4 LOW Architecture Findings
 
 | ID | Finding |
 |----|---------|
@@ -528,11 +476,9 @@ Management commands contain hardcoded passwords for test data. If run in product
 | LYL-L-ARCH-042 | Missing model validation in clean() methods |
 | LYL-L-ARCH-034 | No database migration rollback strategy |
 
----
-
 ## 10. MODULE 3 — API & BUSINESS LOGIC FINDINGS
 
-### 10.1 🔴 CRITICAL API/Logic Findings
+### 10.1 CRITICAL API/Logic Findings
 
 #### LYL-C-API-001: Coupon Double-Redemption Race Condition
 
@@ -548,8 +494,6 @@ def _process_coupon_transaction(self) -> dict:
 
 **Remediation:** Move check inside `select_for_update` block.
 
----
-
 #### LYL-C-API-002: Plan Enforcement Decorators Never Applied
 
 **File:** `common/plan_enforcement.py`
@@ -563,15 +507,11 @@ def _process_coupon_transaction(self) -> dict:
 
 **Impact:** Every tenant can exceed all plan limits. Billing system is decorative.
 
----
-
 #### LYL-C-API-003: Public Enrollment Endpoint Can Overwrite Customer Profiles
 
 **File:** `apps/customers/api.py`
 
 Unauthenticated, no rate limit, overwrites existing customer profile data.
-
----
 
 #### LYL-C-API-004: Referral Max Never Enforced
 
@@ -579,9 +519,7 @@ Unauthenticated, no rate limit, overwrites existing customer profile data.
 
 `max_referrals_per_customer` field exists but is never checked.
 
----
-
-### 10.2 🟠 HIGH API/Logic Findings
+### 10.2 HIGH API/Logic Findings
 
 | ID | Finding | File | Impact |
 |----|---------|------|--------|
@@ -598,7 +536,7 @@ Unauthenticated, no rate limit, overwrites existing customer profile data.
 | LYL-H-API-015 | Silent failure on discount card errors | models.py | Data loss |
 | LYL-H-API-016 | Automation daily limit field ignored | models.py | Resource abuse |
 
-### 10.3 🟡 MEDIUM API/Logic Findings
+### 10.3 MEDIUM API/Logic Findings
 
 | ID | Finding | File |
 |----|---------|------|
@@ -612,17 +550,15 @@ Unauthenticated, no rate limit, overwrites existing customer profile data.
 | LYL-M-API-024 | Plan limit TOCTOU race | plan_enforcement.py |
 | LYL-M-API-025 | fire_trigger tenant override parameter | engine.py |
 
-### 10.4 🔵 LOW API/Logic Findings
+### 10.4 LOW API/Logic Findings
 
 | ID | Finding |
 |----|---------|
 | LYL-L-API-026 | Inconsistent HTTP status code usage |
 
----
-
 ## 11. MODULE 4 — FRONTEND ARCHITECTURE FINDINGS
 
-### 11.1 🔴 CRITICAL Frontend Findings
+### 11.1 CRITICAL Frontend Findings
 
 #### LYL-C-FE-001: Duplicate Token Refresh Logic — Race Conditions
 
@@ -632,8 +568,6 @@ Both files implement independent token refresh mechanisms. Proactive timer in `a
 
 **Remediation:** Consolidate into single `TokenManager` class.
 
----
-
 #### LYL-C-FE-002: Mega-Components — 400+ Lines with 14 useState Hooks
 
 **Files:** `frontend/src/app/(dashboard)/page.tsx`, `frontend/src/app/(dashboard)/locations/page.tsx`, `frontend/src/components/programs/TypeConfig.tsx`
@@ -642,9 +576,7 @@ Dashboard page has 400+ lines with 14 `useState` hooks. Locations page has 500+ 
 
 **Remediation:** Decompose into smaller, focused components with proper state management.
 
----
-
-### 11.2 🟠 HIGH Frontend Findings
+### 11.2 HIGH Frontend Findings
 
 | ID | Finding | File | Impact |
 |----|---------|------|--------|
@@ -663,7 +595,7 @@ Dashboard page has 400+ lines with 14 `useState` hooks. Locations page has 500+ 
 | LYL-H-FE-015 | No SSR/SSG optimization | Multiple | Performance |
 | LYL-H-FE-016 | Missing meta tags for SEO | layout.tsx | SEO |
 
-### 11.3 🟡 MEDIUM Frontend Findings
+### 11.3 MEDIUM Frontend Findings
 
 | ID | Finding | File |
 |----|---------|------|
@@ -686,7 +618,7 @@ Dashboard page has 400+ lines with 14 `useState` hooks. Locations page has 500+ 
 | LYL-M-FE-033 | No retry logic for failed API calls | api.ts |
 | LYL-M-FE-034 | Missing offline handling | Multiple |
 
-### 11.4 🔵 LOW Frontend Findings
+### 11.4 LOW Frontend Findings
 
 | ID | Finding |
 |----|---------|
@@ -701,11 +633,9 @@ Dashboard page has 400+ lines with 14 `useState` hooks. Locations page has 500+ 
 | LYL-L-FE-043 | Inconsistent error toast messages |
 | LYL-L-FE-044 | Missing analytics event tracking |
 
----
-
 ## 12. MODULE 5 — INFRASTRUCTURE & DEVOPS FINDINGS
 
-### 12.1 🔴 CRITICAL Infrastructure Findings
+### 12.1 CRITICAL Infrastructure Findings
 
 #### LYL-C-INFRA-001: Redis Exposed Without Authentication
 
@@ -714,8 +644,6 @@ Dashboard page has 400+ lines with 14 `useState` hooks. Locations page has 500+ 
 Redis runs with zero password. Any container on `loyallia-net` can read/write task queues and cache.
 
 **Remediation:** Add `--requirepass ${REDIS_PASSWORD}`. Update all connection strings.
-
----
 
 #### LYL-C-INFRA-002: Vault Running in Dev Mode with Hardcoded Root Token
 
@@ -727,8 +655,6 @@ VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-loyallia-vault-root-token}
 
 Dev mode = no seal/unseal, no audit logging, in-memory storage.
 
----
-
 #### LYL-C-INFRA-003: MinIO Default Credentials
 
 **File:** `docker-compose.yml`, `.env.example`
@@ -738,8 +664,6 @@ MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
 MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
 ```
 
----
-
 #### LYL-C-INFRA-004: Hardcoded SECRET_KEY Default
 
 **File:** `docker-compose.yml`
@@ -748,9 +672,7 @@ MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
 SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 ```
 
----
-
-### 12.2 🟠 HIGH Infrastructure Findings
+### 12.2 HIGH Infrastructure Findings
 
 | ID | Finding | File | Impact |
 |----|---------|------|--------|
@@ -767,7 +689,7 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | LYL-H-INFRA-015 | No backup encryption | — | Compliance |
 | LYL-H-INFRA-016 | No secret rotation procedures | — | Security |
 
-### 12.3 🟡 MEDIUM Infrastructure Findings
+### 12.3 MEDIUM Infrastructure Findings
 
 | ID | Finding | File |
 |----|---------|------|
@@ -786,7 +708,7 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | LYL-M-INFRA-029 | Missing PostgreSQL WAL archiving | docker-compose.yml |
 | LYL-M-INFRA-030 | No Redis persistence monitoring | — |
 
-### 12.4 🔵 LOW Infrastructure Findings
+### 12.4 LOW Infrastructure Findings
 
 | ID | Finding |
 |----|---------|
@@ -797,11 +719,9 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | LYL-L-INFRA-035 | Missing Docker layer caching optimization |
 | LYL-L-INFRA-036 | No container resource monitoring |
 
----
-
 ## 13. MODULE 6 — BACKUP & DISASTER RECOVERY
 
-### 13.1 🔴 CRITICAL DR Gaps
+### 13.1 CRITICAL DR Gaps
 
 | ID | Finding | Impact |
 |----|---------|--------|
@@ -817,11 +737,11 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 
 | Scenario | RTO | RPO | Current Capability |
 |----------|-----|-----|-------------------|
-| Single container failure | < 1 min | 0 (stateless) | ✅ Achievable |
-| Data corruption | 15-30 min | Last backup | ❌ No backups |
-| Full server failure | 30-60 min | Last backup | ❌ No backups |
-| Ransomware attack | 2-4 hours | Last backup | ❌ No backups |
-| Region outage | 4-8 hours | Last backup | ❌ No backups |
+| Single container failure | < 1 min | 0 (stateless) | Achievable |
+| Data corruption | 15-30 min | Last backup | No backups |
+| Full server failure | 30-60 min | Last backup | No backups |
+| Ransomware attack | 2-4 hours | Last backup | No backups |
+| Region outage | 4-8 hours | Last backup | No backups |
 
 ### 13.3 Recommended Backup Schedule
 
@@ -834,18 +754,16 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | MinIO | mc mirror | Daily 4 AM | 30 days |
 | Vault | vault snapshot | Daily 5 AM | 30 days |
 
----
-
 ## 14. CONSOLIDATED FINDINGS MATRIX
 
 ### 14.1 By Severity
 
 | Severity | Total | Security | Architecture | API/Logic | Frontend | Infrastructure | DR |
 |----------|-------|----------|-------------|-----------|----------|---------------|-----|
-| 🔴 CRITICAL | 24 | 3 | 4 | 4 | 2 | 4 | 7 |
-| 🟠 HIGH | 57 | 7 | 12 | 12 | 14 | 12 | — |
-| 🟡 MEDIUM | 67 | 8 | 18 | 9 | 18 | 14 | — |
-| 🔵 LOW | 31 | 5 | 9 | 1 | 10 | 6 | — |
+| CRITICAL | 24 | 3 | 4 | 4 | 2 | 4 | 7 |
+| HIGH | 57 | 7 | 12 | 12 | 14 | 12 | — |
+| MEDIUM | 67 | 8 | 18 | 9 | 18 | 14 | — |
+| LOW | 31 | 5 | 9 | 1 | 10 | 6 | — |
 | **TOTAL** | **167+** | **23** | **43** | **26** | **44** | **36** | **7+** |
 
 ### 14.2 By Quality Characteristic (ISO 25010)
@@ -857,10 +775,8 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | Security | 38 | OTP brute-force, SSRF, no webhook protection |
 | Performance Efficiency | 22 | N+1 queries, missing pagination, no caching |
 | Maintainability | 31 | No service layer, duplication, ~15 tests |
-| Portability | 3 | Docker-based, cloud-agnostic ✅ |
+| Portability | 3 | Docker-based, cloud-agnostic |
 | Usability | 10 | Mega-components, missing error boundaries |
-
----
 
 ## 15. RISK ASSESSMENT
 
@@ -868,14 +784,14 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 
 | Risk | Likelihood | Impact | Rating |
 |------|-----------|--------|--------|
-| Data loss (no backups) | High | Critical | 🔴 EXTREME |
-| Account takeover (OTP brute-force) | Medium | Critical | 🔴 EXTREME |
-| Financial loss (coupon double-spend) | Medium | High | 🟠 HIGH |
-| Service disruption (fail-open rate limiter) | High | High | 🟠 HIGH |
-| Data breach (Redis no auth) | Medium | High | 🟠 HIGH |
-| Compliance violation (no DR plan) | High | High | 🟠 HIGH |
-| Performance degradation (N+1 queries) | High | Medium | 🟡 MEDIUM |
-| Developer velocity (no tests, duplication) | High | Medium | 🟡 MEDIUM |
+| Data loss (no backups) | High | Critical | EXTREME |
+| Account takeover (OTP brute-force) | Medium | Critical | EXTREME |
+| Financial loss (coupon double-spend) | Medium | High | HIGH |
+| Service disruption (fail-open rate limiter) | High | High | HIGH |
+| Data breach (Redis no auth) | Medium | High | HIGH |
+| Compliance violation (no DR plan) | High | High | HIGH |
+| Performance degradation (N+1 queries) | High | Medium | MEDIUM |
+| Developer velocity (no tests, duplication) | High | Medium | MEDIUM |
 
 ### 15.2 Business Impact Assessment
 
@@ -887,8 +803,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | Revenue (billing) | Plan enforcement dead | P0 |
 | Reputation | Security incidents | P1 |
 | Developer productivity | Architecture debt | P2 |
-
----
 
 ## 16. REMEDIATION PLAN
 
@@ -918,7 +832,7 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | 15 | Deduplicate code patterns | 2 days | Backend |
 | 16 | Add database indexes | 1 day | Backend |
 | 17 | Fix N+1 queries | 1 day | Backend |
-| 18 | Add comprehensive test suite | 2 weeks | Backend |
+| 18 | Add complete test suite | 2 weeks | Backend |
 | 19 | Consolidate token refresh | 1 day | Frontend |
 | 20 | Break up mega-components | 1 week | Frontend |
 | 21 | Add monitoring stack | 2 days | DevOps |
@@ -951,8 +865,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | Phase 3 (P2) | 3 weeks | 2 developers |
 | **Total** | **~9 weeks** | **2-3 developers** |
 
----
-
 ## 17. TRACEABILITY MATRIX
 
 | SRS Requirement | Audit Finding | Remediation |
@@ -965,8 +877,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | REQ-REL-001 (Availability) | LYL-C-INFRA-001, LYL-C-INFRA-002 | Fix Redis, Vault |
 | REQ-MAINT-001 (Code Quality) | LYL-H-ARCH-005 through 016 | Service layer, tests |
 | REQ-COMP-001 (LOPDP) | LYL-M-SEC-016, LYL-L-ARCH-036 | Data minimization |
-
----
 
 ## 18. VERIFICATION & ACCEPTANCE CRITERIA
 
@@ -999,8 +909,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 - [x] CSP without unsafe-inline
 - [ ] Data retention policies implemented
 - [x] Backup encryption enabled
-
----
 
 ## 19. ANNEX A — FILES AUDITED
 
@@ -1054,8 +962,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | docs/BACKUP_DISASTER_RECOVERY.md | ~500 |
 | docs/COMPLIANCE_CHECKLIST.md | ~300 |
 
----
-
 ## 20. ANNEX B — TOOLING AND ENVIRONMENT
 
 ### 20.1 Application Stack
@@ -1088,8 +994,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | ISO 25010 | Quality assessment |
 | OWASP Top 10 | Security assessment |
 
----
-
 ## 21. ANNEX C — NORMATIVE REFERENCES
 
 | ID | Standard | Title | Year |
@@ -1106,8 +1010,6 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | [N-10] | NIST SP 800-63B | Digital Identity Guidelines | 2020 |
 | [N-11] | WCAG 2.1 | Web Content Accessibility Guidelines | 2018 |
 
----
-
 ## DOCUMENT CONTROL
 
 | Version | Date | Author | Reviewed By | Approved By | Changes |
@@ -1115,16 +1017,12 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 | 0.1 | 2026-04-29 | 6-Agent Audit System | — | — | Initial draft |
 | 1.0 | 2026-04-29 | 6-Agent Audit System | — | — | Final — 167 findings across 6 domains |
 
----
-
 **END OF DOCUMENT**
 
 **Document ID:** LYL-AUDIT-FULL-2026-001  
 **Classification:** Internal — Confidential  
 **Total Pages:** —  
 **Total Findings:** 167+
-
----
 
 # IMPLEMENTATION PLAN — Loyallia Production Readiness
 **Document ID:** LYL-IMPL-2026-001  
@@ -1135,15 +1033,11 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 **Standard:** ISO/IEC/IEEE 29148:2018  
 **Status:** PENDING APPROVAL  
 
----
-
 ## DOCUMENT CONTROL
 
 | Version | Date | Author | Change |
 |---------|------|--------|--------|
 | 1.0.0 | 2026-04-29 | Engineering Team | Initial implementation plan from audit findings |
-
----
 
 ## TABLE OF CONTENTS
 
@@ -1159,11 +1053,9 @@ SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
 10. Quality Gates
 11. Rollback Procedures
 
----
-
 ## 1. INTRODUCTION
 
-This implementation plan provides a structured, phased approach to remediating all 167+ findings from the comprehensive audit of the Loyallia platform (LYL-AUDIT-FULL-2026-001). Each phase is designed to be independently deployable and verifiable.
+This implementation plan provides a structured, phased approach to remediating all 167+ findings from the complete audit of the Loyallia platform (LYL-AUDIT-FULL-2026-001). Each phase is designed to be independently deployable and verifiable.
 
 ### 1.1 Guiding Principles
 - **Safety first**: Backup before any change
@@ -1171,8 +1063,6 @@ This implementation plan provides a structured, phased approach to remediating a
 - **Test-driven**: Every fix must have a corresponding test
 - **Zero downtime**: Changes must not require service interruption where possible
 - **Rollback-ready**: Every change must have a documented rollback procedure
-
----
 
 ## 2. EXECUTION STRATEGY
 
@@ -1200,8 +1090,6 @@ Phase 1 (P0) ──→ Phase 2 (P1) ──→ Phase 3 (P2) ──→ Phase 4 (P3
    └─ Vault prod      ├─ Monitoring      └─ Data retention   └─ Code splitting
                       └─ N+1 fixes
 ```
-
----
 
 ## 3. PHASE 1 — CRITICAL (P0) — WEEKS 1-2
 
@@ -1427,8 +1315,6 @@ def _process_coupon_transaction(self) -> dict:
 - [x] All Docker images pinned
 - [ ] All tests passing
 
----
-
 ## 4. PHASE 2 — HIGH (P1) — WEEKS 3-4
 
 **Goal:** Establish proper architecture, fix performance issues, add monitoring.
@@ -1482,7 +1368,7 @@ def _process_coupon_transaction(self) -> dict:
 
 ### Week 4: Testing & Monitoring
 
-#### Day 16-19: Comprehensive Test Suite
+#### Day 16-19: Complete Test Suite
 **Agent:** QA Agent  
 **Effort:** 4 days
 
@@ -1540,8 +1426,6 @@ def _process_coupon_transaction(self) -> dict:
 - [x] API/web bound to 127.0.0.1
 - [ ] All tests passing
 
----
-
 ## 5. PHASE 3 — MEDIUM (P2) — WEEKS 5-6
 
 **Goal:** Compliance, security hardening, frontend improvements.
@@ -1575,8 +1459,6 @@ def _process_coupon_transaction(self) -> dict:
 - [x] Shared types eliminate all duplicates
 - [ ] All mega-components decomposed
 
----
-
 ## 6. PHASE 4 — LOW (P3) — WEEKS 7-9
 
 **Goal:** Developer experience, documentation, optimization.
@@ -1593,8 +1475,6 @@ def _process_coupon_transaction(self) -> dict:
 | Add JSDoc documentation | 2 days | Backend |
 | Optimize Docker layers | 1 day | DevOps |
 
----
-
 ## 7. AGENT EXECUTION MATRIX
 
 | Phase | Security | Backend | Frontend | DevOps | QA | DR |
@@ -1606,8 +1486,6 @@ def _process_coupon_transaction(self) -> dict:
 | P2 W5 | SAST/DAST | CSRF, Retention | CSP | Encryption, Rotation | — | — |
 | P2 W6 | — | — | Types, Forms, Components | — | — | — |
 | P3 W7-9 | — | Docs | Storybook, PWA, i18n | Blue-green, Monitoring | — | — |
-
----
 
 ## 8. RESOURCE REQUIREMENTS
 
@@ -1632,8 +1510,6 @@ def _process_coupon_transaction(self) -> dict:
 | Domain + SSL | rewards.loyallia.com | ~$15/year |
 | **Total** | | **~$105/month** |
 
----
-
 ## 9. RISK MITIGATION
 
 | Risk | Probability | Impact | Mitigation |
@@ -1644,8 +1520,6 @@ def _process_coupon_transaction(self) -> dict:
 | Monitoring adds overhead | Low | Low | Lightweight exporters, sampling |
 | Migration conflicts | Medium | Medium | Test migrations on staging first |
 
----
-
 ## 10. QUALITY GATES
 
 ### Phase Transition Criteria
@@ -1654,14 +1528,12 @@ Each phase must meet ALL criteria before proceeding:
 
 | Criterion | P0 | P1 | P2 | P3 |
 |-----------|-----|-----|-----|-----|
-| All tests passing | ✅ | ✅ | ✅ | ✅ |
-| No CRITICAL findings open | ✅ | ✅ | ✅ | ✅ |
-| No HIGH findings open | — | ✅ | ✅ | ✅ |
-| Code coverage ≥ 80% | — | ✅ | ✅ | ✅ |
-| Security scan clean | — | — | ✅ | ✅ |
-| Performance benchmarks met | — | — | — | ✅ |
-
----
+| All tests passing | PASS | PASS | PASS | PASS |
+| No CRITICAL findings open | PASS | PASS | PASS | PASS |
+| No HIGH findings open | — | PASS | PASS | PASS |
+| Code coverage ≥ 80% | — | PASS | PASS | PASS |
+| Security scan clean | — | — | PASS | PASS |
+| Performance benchmarks met | — | — | — | PASS |
 
 ## 11. ROLLBACK PROCEDURES
 
@@ -1689,21 +1561,15 @@ docker compose down
 docker compose up -d
 ```
 
----
-
 **END OF DOCUMENT**
 
 **Document ID:** LYL-IMPL-2026-001  
 **Status:** PENDING APPROVAL
 
----
-
 # TODO — Loyallia Production Readiness
 **Based on:** LYL-AUDIT-FULL-2026-001 (167 findings)  
 **Date:** 2026-04-29  
 **Status:** ACTIVE  
-
----
 
 ## PHASE 1 — CRITICAL (P0) — Weeks 1-2
 
@@ -1756,8 +1622,6 @@ docker compose up -d
 - [x] \*\*LYL-H-INFRA-008\*\* Pin vault to `hashicorp/vault:1.15.6`
 - [x] \*\*LYL-H-INFRA-008\*\* Pin pgbouncer to specific version
 - [x] \*\*LYL-H-INFRA-009\*\* Change Flower default credentials
-
----
 
 ## PHASE 2 — HIGH (P1) — Weeks 3-4
 
@@ -1823,8 +1687,6 @@ docker compose up -d
 - [x] \*\*LYL-H-SEC-008\*\* Remove Google OAuth client ID from public endpoint
 - [x] **LYL-H-SEC-010** Evaluate nonce-based CSP (remove unsafe-inline)
 
----
-
 ## PHASE 3 — MEDIUM (P2) — Weeks 5-6
 
 ### Security Hardening
@@ -1886,8 +1748,6 @@ docker compose up -d
 - [x] **LYL-M-ARCH-030** Verify Celery task idempotency
 - [x] **LYL-M-ARCH-031** Add retry logic for transient task failures
 - [x] **LYL-M-ARCH-034** Implement database migration rollback strategy
-
----
 
 ## PHASE 4 — LOW (P3) — Weeks 7-9
 
@@ -1951,8 +1811,6 @@ docker compose up -d
 - [x] **LYL-M-API-025** Fix fire_trigger tenant override
 - [x] **LYL-L-API-026** Standardize HTTP status codes
 
----
-
 ## PROGRESS TRACKING
 
 | Phase | Total Tasks | Completed | Remaining | % Done |
@@ -1962,7 +1820,5 @@ docker compose up -d
 | Phase 3 (P2) | 48 | 0 | 48 | 0% |
 | Phase 4 (P3) | 48 | 0 | 48 | 0% |
 | **TOTAL** | **180** | **0** | **180** | **0%** |
-
----
 
 **END OF DOCUMENT**

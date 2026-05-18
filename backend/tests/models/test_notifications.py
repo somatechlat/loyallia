@@ -1,5 +1,5 @@
 """
-Loyallia — Notification Model Tests
+Loyallia  Notification Model Tests
 
 Tests for CampaignRun, CampaignDeliveryLog, PushDevice, and WhatsAppSession.
 """
@@ -38,7 +38,7 @@ class CampaignRunModelTest(TestCase):
         self.assertEqual(run.failed_count, 0)
         self.assertEqual(run.read_count, 0)
         self.assertEqual(run.total_recipients, 0)
-        self.assertEqual(str(run), "Test Campaign (email) — queued")
+        self.assertEqual(str(run), "Test Campaign (email)  queued")
 
     def test_delivery_rate_zero_sent(self):
         tenant = make_tenant()
@@ -116,7 +116,7 @@ class CampaignDeliveryLogModelTest(TestCase):
         )
         self.assertEqual(log.status, DeliveryStatus.QUEUED)
         self.assertEqual(log.external_message_id, "")
-        self.assertEqual(str(log), "Test User — queued")
+        self.assertEqual(str(log), "Test User  queued")
 
     def test_status_transitions(self):
         tenant = make_tenant()
@@ -155,7 +155,7 @@ class CampaignDeliveryLogModelTest(TestCase):
             recipient_name="Anonymous",
         )
         self.assertIsNone(log.customer)
-        self.assertEqual(str(log), "Anonymous — queued")
+        self.assertEqual(str(log), "Anonymous  queued")
 
 
 class PushDeviceModelTest(TestCase):
@@ -218,7 +218,7 @@ class WhatsAppSessionModelTest(TestCase):
     def test_connected_str(self):
         tenant = make_tenant()
         session = WhatsAppSession.objects.create(tenant=tenant, is_connected=True, phone_number="+593991111111")
-        self.assertIn("🟢", str(session))
+        self.assertIn("[ON]", str(session))
         self.assertIn("+593991111111", str(session))
 
     def test_plan_daily_limit_override(self):
@@ -250,7 +250,7 @@ class WhatsAppSessionModelTest(TestCase):
     def test_effective_daily_limit_warmup(self):
         tenant = make_tenant()
         session = WhatsAppSession.objects.create(tenant=tenant, daily_limit_override=200, warmup_day=0)
-        # base=20, ceiling=200, warmup_day=0 -> min(200, 20) = 20
+ # base=20, ceiling=200, warmup_day=0 -> min(200, 20) = 20
         self.assertEqual(session.effective_daily_limit, 20)
 
     def test_effective_daily_limit_fully_warmed(self):

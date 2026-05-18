@@ -1,5 +1,5 @@
 """
-Loyallia — Apple Wallet Pass Web Service
+Loyallia  Apple Wallet Pass Web Service
 
 Implements the 4 mandatory Apple PassKit web service endpoints required for
 pass registration, unregistration, update checking, and pass re-download.
@@ -11,10 +11,10 @@ an empty APNs push notification.
 Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
 
 Endpoints:
-    POST   /v1/devices/{deviceId}/registrations/{passTypeId}/{serial}  — Register device
-    DELETE /v1/devices/{deviceId}/registrations/{passTypeId}/{serial}  — Unregister device
-    GET    /v1/devices/{deviceId}/registrations/{passTypeId}           — List updated passes
-    GET    /v1/passes/{passTypeId}/{serial}                           — Download updated .pkpass
+    POST   /v1/devices/{deviceId}/registrations/{passTypeId}/{serial}   Register device
+    DELETE /v1/devices/{deviceId}/registrations/{passTypeId}/{serial}   Unregister device
+    GET    /v1/devices/{deviceId}/registrations/{passTypeId}            List updated passes
+    GET    /v1/passes/{passTypeId}/{serial}                            Download updated .pkpass
 
 Authentication: Apple sends `Authorization: ApplePass <authenticationToken>`
 where authenticationToken is the value we set in pass.json.
@@ -32,9 +32,7 @@ logger = logging.getLogger(__name__)
 router = Router(tags=["Apple Wallet Web Service"])
 
 
-# =============================================================================
 # AUTH HELPER
-# =============================================================================
 
 
 def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
@@ -51,7 +49,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
 
     provided_token = auth_header[len("ApplePass ") :]
 
-    # authenticationToken is the pass serial (UUID) without dashes
+ # authenticationToken is the pass serial (UUID) without dashes
     expected_token = serial_number.replace("-", "")
     return provided_token == expected_token
 
@@ -85,9 +83,7 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
 
-# =============================================================================
 # ENDPOINT 1: Register Device
-# =============================================================================
 
 
 @router.post(
@@ -138,22 +134,20 @@ def register_device(
 
     if created:
         logger.info(
-            "Apple Web Service: Device registered — device=…%s, pass=%s",
+            "Apple Web Service: Device registered  device=%s, pass=%s",
             device_library_id[-8:],
             serial_number,
         )
         return HttpResponse(status=201)
     else:
         logger.debug(
-            "Apple Web Service: Device re-registered (token updated) — device=…%s",
+            "Apple Web Service: Device re-registered (token updated)  device=%s",
             device_library_id[-8:],
         )
         return HttpResponse(status=200)
 
 
-# =============================================================================
 # ENDPOINT 2: Unregister Device
-# =============================================================================
 
 
 @router.delete(
@@ -183,22 +177,20 @@ def unregister_device(
 
     if deleted_count > 0:
         logger.info(
-            "Apple Web Service: Device unregistered — device=…%s, pass=%s",
+            "Apple Web Service: Device unregistered  device=%s, pass=%s",
             device_library_id[-8:],
             serial_number,
         )
     else:
         logger.debug(
-            "Apple Web Service: Unregister called but no registration found — device=…%s",
+            "Apple Web Service: Unregister called but no registration found  device=%s",
             device_library_id[-8:],
         )
 
     return HttpResponse(status=200)
 
 
-# =============================================================================
 # ENDPOINT 3: List Updated Passes for Device
-# =============================================================================
 
 
 @router.get(
@@ -231,7 +223,7 @@ def list_updated_passes(
     if not registrations.exists():
         return HttpResponse(status=204)
 
-    # Parse the "passesUpdatedSince" query parameter
+ # Parse the "passesUpdatedSince" query parameter
     updated_since_tag = request.GET.get("passesUpdatedSince", "")
 
     serial_numbers = []
@@ -241,7 +233,7 @@ def list_updated_passes(
         cp = reg.customer_pass
         last_updated = cp.last_updated
 
-        # Filter by update timestamp if tag provided
+ # Filter by update timestamp if tag provided
         if updated_since_tag:
             try:
                 from django.utils.dateparse import parse_datetime
@@ -260,7 +252,7 @@ def list_updated_passes(
     if not serial_numbers:
         return HttpResponse(status=204)
 
-    # Format the lastUpdated tag as ISO timestamp
+ # Format the lastUpdated tag as ISO timestamp
     last_updated_tag = ""
     if latest_update:
         last_updated_tag = latest_update.astimezone(UTC).isoformat()
@@ -273,9 +265,7 @@ def list_updated_passes(
     )
 
 
-# =============================================================================
 # ENDPOINT 4: Download Updated Pass
-# =============================================================================
 
 
 @router.get(
@@ -315,14 +305,14 @@ def get_updated_pass(
     )
     response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
 
-    # Set Last-Modified header so Apple can use If-Modified-Since
+ # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:
         from django.utils.http import http_date
 
         response["Last-Modified"] = http_date(customer_pass.last_updated.timestamp())
 
     logger.info(
-        "Apple Web Service: Pass downloaded — serial=%s, size=%d bytes",
+        "Apple Web Service: Pass downloaded  serial=%s, size=%d bytes",
         serial_number,
         len(pkpass_bytes),
     )

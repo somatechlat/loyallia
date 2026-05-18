@@ -1,5 +1,5 @@
 """
-Loyallia — SMS Campaign Celery Task (LYL-SRS-009)
+Loyallia  SMS Campaign Celery Task (LYL-SRS-009)
 
 Extracted from tasks.py for Rule 245 compliance (600-line limit).
 Real SMS delivery via Twilio with per-message tracking using
@@ -15,7 +15,7 @@ Performance (Rule 12):
 
 Security (SEC):
     - SEC: Audience scoped by tenant_id.
-    - SEC: Twilio credentials from Vault — never exposed.
+    - SEC: Twilio credentials from Vault  never exposed.
 """
 
 import logging
@@ -72,7 +72,7 @@ def send_sms_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    # Check Twilio availability
+ # Check Twilio availability
     if not is_sms_available():
         logger.error("SMS campaign: Twilio not configured for tenant %s", tenant_id)
         return {"success": False, "error": "Twilio SMS not configured"}
@@ -85,7 +85,7 @@ def send_sms_campaign(
 
     logger.info("SMS campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total)
 
-    # Create CampaignRun record
+ # Create CampaignRun record
     campaign_run = CampaignRun.objects.create(
         tenant=tenant,
         channel=NotificationChannel.SMS,
@@ -97,7 +97,7 @@ def send_sms_campaign(
         started_at=timezone.now(),
     )
 
-    # Build SMS body: title + message
+ # Build SMS body: title + message
     sms_body = f"{title}: {message}" if title else message
 
     succeeded = 0
@@ -105,12 +105,12 @@ def send_sms_campaign(
 
     try:
         for customer in audience.iterator(chunk_size=50):
-            # Defensive: skip customers without a valid phone number
+ # Defensive: skip customers without a valid phone number
             if not customer.phone:
                 failed += 1
                 continue
 
-            # Create delivery log row (status=QUEUED)
+ # Create delivery log row (status=QUEUED)
             delivery_log = CampaignDeliveryLog.objects.create(
                 campaign_run=campaign_run,
                 customer=customer,
@@ -120,7 +120,7 @@ def send_sms_campaign(
                 status=DeliveryStatus.QUEUED,
             )
 
-            # Create notification record upfront for campaign list visibility (LYL-SRS-009)
+ # Create notification record upfront for campaign list visibility (LYL-SRS-009)
             notification = Notification.objects.create(
                 tenant=tenant,
                 customer=customer,
@@ -171,7 +171,7 @@ def send_sms_campaign(
                 )
                 failed += 1
     finally:
-        # Always finalize campaign run so it never stays stuck IN_PROGRESS
+ # Always finalize campaign run so it never stays stuck IN_PROGRESS
         campaign_run.sent_count = succeeded
         campaign_run.delivered_count = succeeded  # For SMS, sent is effectively delivered to carrier
         campaign_run.failed_count = failed

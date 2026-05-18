@@ -1,5 +1,5 @@
 """
-Loyallia — Miscellaneous Notification Models
+Loyallia  Miscellaneous Notification Models
 
 Core notification records and WhatsApp session management.
 """
@@ -42,7 +42,7 @@ class Notification(models.Model):
         verbose_name="Pase del cliente",
     )
 
-    # Notification details
+ # Notification details
     notification_type = models.CharField(
         max_length=30,
         choices=NotificationType.choices,
@@ -55,21 +55,21 @@ class Notification(models.Model):
         verbose_name="Canal",
     )
 
-    # Content
+ # Content
     title = models.CharField(max_length=200, verbose_name="Título")
     message = models.TextField(verbose_name="Mensaje")
     image_url = models.URLField(blank=True, default="", verbose_name="URL de imagen")
     action_url = models.URLField(blank=True, default="", verbose_name="URL de acción")
 
-    # Metadata
+ # Metadata
     notification_data = models.JSONField(default=dict, verbose_name="Datos adicionales")
 
-    # Delivery status
+ # Delivery status
     is_sent = models.BooleanField(default=False, verbose_name="Enviado")
     is_read = models.BooleanField(default=False, verbose_name="Leído")
     is_clicked = models.BooleanField(default=False, verbose_name="Clickeado")
 
-    # Timestamps
+ # Timestamps
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de envío")
     read_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de lectura")
@@ -122,7 +122,7 @@ class WhatsAppSession(models.Model):
     Tracks the connection status of the business owner's WhatsApp
     number paired via QR code through the Baileys bridge service.
 
-    SEC: No WhatsApp credentials stored here — auth state lives in Redis
+    SEC: No WhatsApp credentials stored here  auth state lives in Redis
     on the bridge container. This model only mirrors the session status.
     """
 
@@ -142,7 +142,7 @@ class WhatsAppSession(models.Model):
     is_connected = models.BooleanField(default=False, verbose_name="Conectado")
     last_qr_at = models.DateTimeField(null=True, blank=True, verbose_name="Último QR generado")
 
-    # Rate limiting state
+ # Rate limiting state
     messages_sent_today = models.IntegerField(default=0, verbose_name="Mensajes enviados hoy")
     daily_limit = models.IntegerField(default=200, verbose_name="Límite diario (legacy)")
     warmup_day = models.IntegerField(
@@ -151,8 +151,8 @@ class WhatsAppSession(models.Model):
         help_text="0=new number, 7=fully warmed up. Limit scales linearly.",
     )
 
-    # LYL-SRS-008: Tenant override — set by SuperAdmin per-tenant
-    # When set (> 0), overrides the plan's max_whatsapp_day for this tenant.
+ # LYL-SRS-008: Tenant override set by SuperAdmin per-tenant
+ # When set (> 0), overrides the plan's max_whatsapp_day for this tenant.
     daily_limit_override = models.PositiveIntegerField(
         default=0,
         verbose_name="Override límite diario",
@@ -168,8 +168,8 @@ class WhatsAppSession(models.Model):
         verbose_name_plural = "Sesiones de WhatsApp"
 
     def __str__(self) -> str:
-        status = "🟢" if self.is_connected else "🔴"
-        return f"{status} {self.tenant.name} — {self.phone_number or 'sin vincular'}"
+        status = "[ON]" if self.is_connected else ""
+        return f"{status} {self.tenant.name}  {self.phone_number or 'sin vincular'}"
 
     @property
     def plan_daily_limit(self) -> int:
@@ -190,7 +190,7 @@ class WhatsAppSession(models.Model):
             plan = subscription.subscription_plan
             if plan and plan.max_whatsapp_day > 0:
                 return plan.max_whatsapp_day
-            # Trial users: use legacy daily_limit (200)
+ # Trial users: use legacy daily_limit (200)
             if subscription.is_trial_active:
                 return self.daily_limit
 

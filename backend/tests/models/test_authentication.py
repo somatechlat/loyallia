@@ -1,5 +1,5 @@
 """
-Loyallia — Authentication Model Unit Tests
+Loyallia  Authentication Model Unit Tests
 Tests for User, OTP, Token, and related authentication models.
 """
 
@@ -13,9 +13,7 @@ from django.utils import timezone
 from apps.authentication.models import RefreshToken, User, UserManager, UserRole
 from tests.factories import make_user
 
-# =============================================================================
 # Authentication Model Tests
-# =============================================================================
 
 
 class UserModelTest(TestCase):

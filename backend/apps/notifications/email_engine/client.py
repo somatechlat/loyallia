@@ -1,5 +1,5 @@
 """
-Loyallia — Mailjet email client (LYL-SRS-006)
+Loyallia  Mailjet email client (LYL-SRS-006)
 
 Mass email is sent through Django SMTP using Mailjet credentials from Vault.
 No credential values are logged or returned.

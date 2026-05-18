@@ -1,5 +1,5 @@
 """
-Loyallia — Transaction Service Layer
+Loyallia  Transaction Service Layer
 Extracted business logic from API views for testability and reuse.
 """
 
@@ -50,7 +50,7 @@ class TransactionService:
         if not qr_code:
             raise ValueError("QR code is required")
 
-        # Find pass by QR code with tenant isolation
+ # Find pass by QR code with tenant isolation
         pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             qr_code=qr_code,
             is_active=True,
@@ -66,7 +66,7 @@ class TransactionService:
                 quantity=quantity,
             )
 
-            # Serialize transaction data
+ # Serialize transaction data
             transaction_data = TransactionService._serialize_result(result)
             transaction_data["qr_code"] = qr_code
             transaction_data["amount"] = float(amount)
@@ -83,7 +83,7 @@ class TransactionService:
                 transaction_data=transaction_data,
             )
 
-            # Update customer stats atomically
+ # Update customer stats atomically
             from django.db.models import F
 
             Customer.objects.filter(pk=pass_obj.customer.pk).update(

@@ -1,5 +1,5 @@
 """
-Loyallia — Notifications Base Models
+Loyallia  Notifications Base Models
 
 Shared enums and choices used across notification modules.
 """

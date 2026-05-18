@@ -1,5 +1,5 @@
 """
-Loyallia — Super Admin API: Platform metrics, locations map, broadcast, and plan CRUD
+Loyallia  Super Admin API: Platform metrics, locations map, broadcast, and plan CRUD
 """
 
 import logging
@@ -119,7 +119,7 @@ def toggle_platform_mode(request, payload: PlatformModeToggleIn):
         setting.value = payload.mode
         setting.save(update_fields=["value", "updated_at"])
 
-    # Audit
+ # Audit
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -426,7 +426,7 @@ def update_integration_secret(request, integration_key: str, payload: VaultSecre
     if not success:
         raise HttpError(500, get_message("SERVER_ERROR"))
 
-    # SEC: Audit log for Vault secret writes (who changed what)
+ # SEC: Audit log for Vault secret writes (who changed what)
     from apps.audit.models import AuditAction, AuditStatus
     from apps.audit.service import log_action
 
@@ -477,7 +477,7 @@ def confirm_payment(request, invoice_id: str):
         subscription.status = SubscriptionStatus.ACTIVE
         subscription.save(update_fields=["status", "updated_at"])
 
-        # SEC: Audit log manual payment confirmation
+ # SEC: Audit log manual payment confirmation
         try:
             from apps.audit.models import AuditAction, AuditStatus
             from apps.audit.service import log_action
@@ -509,7 +509,7 @@ def list_platform_settings(request):
     """List all runtime-configurable platform settings.
 
     Returns every PlatformSetting row grouped by category.
-    Values take effect immediately — no container restart required
+    Values take effect immediately  no container restart required
     (unless `requires_restart` is true for a specific setting).
     """
     _require_super_admin(request)
@@ -567,6 +567,5 @@ def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn)
     return MessageOut(success=True, message=msg)
 
 
-# =============================================================================
 # SYSADMIN OPERATIONS (LYL-BOOT-001)
-# =============================================================================
+

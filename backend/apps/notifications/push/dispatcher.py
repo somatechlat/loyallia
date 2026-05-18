@@ -1,5 +1,5 @@
 """
-Loyallia — Push Notification Dispatcher
+Loyallia  Push Notification Dispatcher
 
 Central entry point for all push delivery.
 Dispatches to APNs (iOS) or FCM (Android) based on device type.
@@ -33,7 +33,7 @@ def dispatch_push(notification: "Notification") -> int:
 
     if not devices.exists():
         logger.info(
-            "No active devices for customer %s — skipping push for notification %s",
+            "No active devices for customer %s  skipping push for notification %s",
             customer.id,
             notification.id,
         )
@@ -79,7 +79,7 @@ def dispatch_push(notification: "Notification") -> int:
         if success:
             delivered += 1
         elif device.device_type in ("ios", "android"):
-            # Increment failure counter; deactivate device after 5 consecutive failures
+ # Increment failure counter; deactivate device after 5 consecutive failures
             device.push_failures = getattr(device, "push_failures", 0) + 1
             if device.push_failures >= 5:
                 device.is_active = False

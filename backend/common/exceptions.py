@@ -1,11 +1,11 @@
 """
-Loyallia — Pagination Utilities (common/exceptions.py — actually pagination)
+Loyallia  Pagination Utilities (common/exceptions.py  actually pagination)
 
 Standard page-based pagination for all Django Ninja list endpoints.
 Provides a generic PaginatedResponse envelope and a paginate_queryset() helper.
 
 Performance (Rule 12):
-    - paginate_queryset() uses QuerySet slicing (SQL LIMIT/OFFSET) — only the
+    - paginate_queryset() uses QuerySet slicing (SQL LIMIT/OFFSET)  only the
       requested page of rows is loaded into Python memory.
     - MAX_PAGE_SIZE (100) caps memory usage per request.
     - count() query runs separately from the data query (Django ORM limitation).

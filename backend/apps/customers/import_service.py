@@ -1,5 +1,5 @@
 """
-Loyallia — Customer Import Service
+Loyallia  Customer Import Service
 Handles parsing, normalization, and bulk ingestion of customer data from external files.
 Decoupled from api.py per Rule 245.
 """
@@ -22,11 +22,11 @@ logger = logging.getLogger(__name__)
 class CustomerImportService:
     """Service to handle customer database imports."""
 
-    # AGENT.md business rule: max import file size 10MB, max 50,000 rows.
+ # AGENT.md business rule: max import file size 10MB, max 50,000 rows.
     MAX_FILE_SIZE = 10 * 1024 * 1024
     MAX_ROWS = 50_000
 
-    # Supported gender mappings for normalization
+ # Supported gender mappings for normalization
     GENDER_MAP = {
         "m": "M",
         "masculino": "M",
@@ -41,7 +41,7 @@ class CustomerImportService:
         "other": "O",
     }
 
-    # Email regex for basic validation before DB hit
+ # Email regex for basic validation before DB hit
     EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
     def __init__(self, tenant):
@@ -86,7 +86,7 @@ class CustomerImportService:
                 ),
             }
 
-        # Normalize column names
+ # Normalize column names
         df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
 
         col_map = self._detect_columns(df)
@@ -156,7 +156,7 @@ class CustomerImportService:
                 skipped_invalid += 1
                 continue
 
-            # Normalized data extraction
+ # Normalized data extraction
             last_name = str(row.get(col_map["last_name"], "")).strip().title() if col_map["last_name"] else ""
             phone = re.sub(r"[^\d\+\- ]", "", str(row.get(col_map["phone"], "")))[:20] if col_map["phone"] else ""
 

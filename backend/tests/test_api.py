@@ -1,5 +1,5 @@
 """
-Loyallia — API Integration Tests
+Loyallia  API Integration Tests
 Tests for API endpoints via Django test client.
 """
 
@@ -36,9 +36,7 @@ def _get_auth_header(user, password=None):
     return ""
 
 
-# =============================================================================
 # Authentication API Tests
-# =============================================================================
 
 
 class AuthRegisterAPITest(TestCase):
@@ -365,9 +363,7 @@ class AuthUsersAPITest(TestCase):
         self.assertEqual(resp.status_code, 403)
 
 
-# =============================================================================
 # Customers API Tests
-# =============================================================================
 
 
 class CustomersAPITest(TestCase):
@@ -431,9 +427,7 @@ class CustomersAPITest(TestCase):
         self.assertIn(resp.status_code, [200, 204])
 
 
-# =============================================================================
 # Cards API Tests
-# =============================================================================
 
 
 class CardsAPITest(TestCase):
@@ -479,9 +473,7 @@ class CardsAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-# =============================================================================
 # Transactions API Tests
-# =============================================================================
 
 
 class TransactionsAPITest(TestCase):
@@ -498,9 +490,7 @@ class TransactionsAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-# =============================================================================
 # Billing API Tests
-# =============================================================================
 
 
 class BillingAPITest(TestCase):
@@ -522,9 +512,7 @@ class BillingAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-# =============================================================================
 # Tenants API Tests
-# =============================================================================
 
 
 class TenantsAPITest(TestCase):
@@ -549,9 +537,7 @@ class TenantsAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-# =============================================================================
 # Automation API Tests
-# =============================================================================
 
 
 class AutomationAPITest(TestCase):
@@ -568,9 +554,7 @@ class AutomationAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-# =============================================================================
 # Notifications API Tests
-# =============================================================================
 
 
 class NotificationsAPITest(TestCase):
@@ -586,9 +570,7 @@ class NotificationsAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-# =============================================================================
 # Health Check Test
-# =============================================================================
 
 
 class HealthCheckTest(TestCase):

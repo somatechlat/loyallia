@@ -1,5 +1,5 @@
 """
-Loyallia — Notification Service
+Loyallia  Notification Service
 Handles sending push notifications, emails, and SMS.
 """
 
@@ -46,7 +46,7 @@ class NotificationService:
             },
         )
 
-        # Send immediately
+ # Send immediately
         NotificationService.send_notification(notification)
         return notification
 
@@ -103,11 +103,11 @@ class NotificationService:
     @staticmethod
     def send_birthday_notification(customer, tenant) -> Notification | None:
         """Send birthday push to customer for any active loyalty pass they hold."""
-        # Use any active pass for the notification context
+ # Use any active pass for the notification context
         active_pass = CustomerPass.objects.filter(customer=customer, is_active=True).select_related("card").first()
         if not active_pass:
             logger.info(
-                "No active passes for birthday customer %s — skipping birthday push.",
+                "No active passes for birthday customer %s  skipping birthday push.",
                 customer.id,
             )
             return None
@@ -127,7 +127,7 @@ class NotificationService:
 
         NotificationService.send_notification(notification)
 
-        # Also try to send via Google Wallet Push API
+ # Also try to send via Google Wallet Push API
         try:
             from apps.customers.pass_engine.google_pass import send_push_notification
 
@@ -156,7 +156,7 @@ class NotificationService:
             elif notification.channel == NotificationChannel.SMS:
                 return NotificationService._send_sms_notification(notification)
             elif notification.channel == NotificationChannel.IN_APP:
-                # In-app notifications don't need external sending
+ # In-app notifications don't need external sending
                 notification.mark_as_sent()
                 return True
         except Exception as e:
@@ -176,8 +176,8 @@ class NotificationService:
             notification.mark_as_sent()
             return True
 
-        # No devices reached — mark as sent anyway to avoid re-dispatch loops
-        # (the dispatcher logs specific reasons)
+ # No devices reached mark as sent anyway to avoid re-dispatch loops
+ # (the dispatcher logs specific reasons)
         notification.mark_as_sent()
         return False
 
@@ -220,7 +220,7 @@ class NotificationService:
                 logger.warning(f"No phone number for customer {notification.customer.id}")
                 return False
 
-            # In production, use Twilio or similar service
+ # In production, use Twilio or similar service
             logger.info(f"Would send SMS to {phone}: {notification.message}")
 
             notification.mark_as_sent()

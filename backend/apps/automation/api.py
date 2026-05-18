@@ -1,5 +1,5 @@
 """
-Loyallia — Automation API router
+Loyallia  Automation API router
 Campaign automation and workflow management.
 """
 
@@ -24,7 +24,7 @@ from common.role_check import require_role
 router = Router()
 
 
-# ============ Pydantic Schemas ============
+# Pydantic Schemas
 class AutomationSchema(BaseModel):
     id: str
     name: str
@@ -64,7 +64,7 @@ class UpdateAutomationSchema(BaseModel):
     is_active: bool | None = None
 
 
-# ============ Automation Analytics ============
+# Automation Analytics
 @router.get("/stats/", auth=jwt_auth, summary="Get automation statistics")
 def get_automation_stats(request):
     """Get overall automation statistics. MANAGER+ only."""
@@ -75,17 +75,17 @@ def get_automation_stats(request):
     total_automations = automations.count()
     active_automations = automations.filter(is_active=True).count()
 
-    # Execution stats
+ # Execution stats
     executions = AutomationExecution.objects.filter(automation__tenant=request.tenant)
 
     total_executions = executions.count()
     successful_executions = executions.filter(success=True).count()
     success_rate = (successful_executions / total_executions * 100) if total_executions > 0 else 0
 
-    # By trigger type
+ # By trigger type
     trigger_stats = executions.values("automation__trigger").annotate(count=Count("id"))
 
-    # By action type
+ # By action type
     action_stats = executions.values("automation__action").annotate(count=Count("id"))
 
     return {
@@ -99,7 +99,7 @@ def get_automation_stats(request):
     }
 
 
-# ============ Automation Management ============
+# Automation Management
 @router.get("/", auth=jwt_auth, summary="List automations")
 def list_automations(request, active_only: bool = False):
     """List all automations for the tenant. MANAGER+ only."""
@@ -134,14 +134,14 @@ def create_automation(request, data: CreateAutomationSchema):
     """Create a new automation. OWNER only."""
     check_plan_limit(request.tenant, "automations")
 
-    # Validate trigger and action
+ # Validate trigger and action
     if data.trigger not in [choice[0] for choice in AutomationTrigger.choices]:
         raise HttpError(400, get_message("AUTOMATION_INVALID_TRIGGER", trigger=data.trigger))
 
     if data.action not in [choice[0] for choice in AutomationAction.choices]:
         raise HttpError(400, get_message("AUTOMATION_INVALID_ACTION", action=data.action))
 
-    # Create automation
+ # Create automation
     automation = Automation.objects.create(
         tenant=request.tenant,
         name=data.name,
@@ -155,12 +155,12 @@ def create_automation(request, data: CreateAutomationSchema):
         cooldown_hours=data.cooldown_hours,
     )
 
-    # Set target programs
+ # Set target programs
     if data.target_program_ids:
         programs = Card.objects.filter(id__in=data.target_program_ids, tenant=request.tenant)
         automation.target_programs.set(programs)
 
-    # Set target segments
+ # Set target segments
     automation.target_segments = data.target_segments
     automation.save()
 
@@ -181,7 +181,7 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
     """
     automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
-    # Update fields
+ # Update fields
     update_fields = []
     if data.name is not None:
         automation.name = data.name
@@ -215,12 +215,12 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
         automation.is_active = data.is_active
         update_fields.append("is_active")
 
-    # Update target programs
+ # Update target programs
     if data.target_program_ids is not None:
         programs = Card.objects.filter(id__in=data.target_program_ids, tenant=request.tenant)
         automation.target_programs.set(programs)
 
-    # Update target segments
+ # Update target segments
     if data.target_segments is not None:
         automation.target_segments = data.target_segments
         update_fields.append("target_segments")
@@ -240,7 +240,7 @@ def delete_automation(request, automation_id: str):
     """
     import uuid
 
-    # LYL-M-API-022: Try UUID first, then slug
+ # LYL-M-API-022: Try UUID first, then slug
     try:
         uuid.UUID(automation_id)
         automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
@@ -249,7 +249,7 @@ def delete_automation(request, automation_id: str):
 
     automation.delete()
 
-    # LYL-M-API-023: Return 204 No Content
+ # LYL-M-API-023: Return 204 No Content
     from django.http import HttpResponse
 
     return HttpResponse(status=204)
@@ -270,7 +270,7 @@ def toggle_automation(request, automation_id: str):
     return {"message": get_message(status_key, name=automation.name)}
 
 
-# ============ Manual Execution ============
+# Manual Execution
 @router.post("/{automation_id}/execute/", auth=jwt_auth, summary="Execute automation manually")
 @require_role("OWNER")
 def execute_automation_manually(request, automation_id: str, customer_id: str):
@@ -283,10 +283,10 @@ def execute_automation_manually(request, automation_id: str, customer_id: str):
 
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
 
-    # Execute automation
+ # Execute automation
     success = automation.execute(customer, {"manual": True})
 
-    # Log execution
+ # Log execution
     AutomationExecution.objects.create(
         automation=automation,
         customer=customer,

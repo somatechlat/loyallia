@@ -1,5 +1,5 @@
 """
-Loyallia Django Settings — DEVELOPMENT
+Loyallia Django Settings  DEVELOPMENT
 Inherits from base. Enables DEBUG, relaxed CORS, console email.
 
 LOCAL GOOGLE OAUTH SETUP:
@@ -40,6 +40,6 @@ if "django_extensions" not in INSTALLED_APPS:  # noqa: F405
 # Use local file storage instead of MinIO in development (optional)
 # Uncomment to use local files instead of MinIO:
 # STORAGES = {
-#     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-#     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+# "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+# "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 # }

@@ -67,7 +67,7 @@ set_secret_default_if_missing() {
     set_secret "$key" "$default_value"
 }
 
-# ─── JSON bootstrap file reader ─────────────────────────────────────────────
+# JSON bootstrap file reader
 BOOTSTRAP_FILE="${BOOTSTRAP_SECRETS_FILE:-/vault/bootstrap/secrets.json}"
 
 # Install python3 if missing (Alpine-based vault image)
@@ -169,7 +169,7 @@ else
     vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true
 fi
 
-# ─── Read secrets from JSON bootstrap file ──────────────────────────────────
+# Read secrets from JSON bootstrap file
 # Priority: JSON file values first, then existing Vault values (idempotency)
 
 secret_key="$(env_or_existing secret_key "$(json_get secret_key)")"
@@ -199,7 +199,7 @@ require_secret minio_secret_key "$minio_secret_key"
 require_secret jwt_secret_key "$jwt_secret_key"
 require_secret pass_hmac_secret "$pass_hmac_secret"
 
-# ─── Write core secrets to Vault ────────────────────────────────────────────
+# Write core secrets to Vault
 set_secret secret_key "$secret_key"
 set_secret postgres_password "$postgres_password"
 set_secret redis_url "$redis_url"
@@ -213,7 +213,7 @@ set_secret flower_basic_auth "$flower_basic_auth"
 set_secret whatsapp_bridge_api_key "$whatsapp_bridge_api_key"
 set_secret grafana_admin_password "$grafana_admin_password"
 
-# ─── Write certificates from JSON to Vault ──────────────────────────────────
+# Write certificates from JSON to Vault
 set_secret_from_env apple_cert_pem "$(json_get apple_cert_pem)"
 set_secret_from_env apple_cert_key_pem "$(json_get apple_cert_key_pem)"
 set_secret_from_env apple_wwdr_cert_pem "$(json_get apple_wwdr_cert_pem)"
@@ -221,7 +221,7 @@ set_secret_from_env google_service_account_json "$(json_get google_service_accou
 set_secret_from_env google_oauth_client_id "$(json_get google_oauth_client_id)"
 set_secret_from_env google_oauth_client_secret "$(json_get google_oauth_client_secret)"
 
-# ─── Auto-enable wallet features if certificates present ────────────────────
+# Auto-enable wallet features if certificates present
 # Priority: explicit JSON value first, then auto-detect from certs
 apple_wallet_enabled_json="$(json_get apple_wallet_enabled)"
 if [ -n "$apple_wallet_enabled_json" ]; then
@@ -243,27 +243,27 @@ else
     set_secret_default_if_missing google_wallet_enabled "false"
 fi
 
-# ─── Wallet identifiers (placeholders if not configured) ────────────────────
+# Wallet identifiers (placeholders if not configured)
 set_secret_from_env google_wallet_issuer_id "$(json_get google_wallet_issuer_id)"
 set_secret_from_env apple_pass_type_identifier "$(json_get apple_pass_type_identifier)"
 set_secret_from_env apple_team_identifier "$(json_get apple_team_identifier)"
 
-# ─── Payment Gateway ────────────────────────────────────────────────────────
+# Payment Gateway
 set_secret_from_env payment_gateway_login "$(json_get payment_gateway_login)"
 set_secret_from_env payment_gateway_tran_key "$(json_get payment_gateway_tran_key)"
 set_secret_from_env payment_gateway_webhook_secret "$(json_get payment_gateway_webhook_secret)"
 
-# ─── Email / Mailjet ────────────────────────────────────────────────────────
+# Email / Mailjet
 set_secret_from_env mailjet_api_key "$(json_get mailjet_api_key)"
 set_secret_from_env mailjet_secret_key "$(json_get mailjet_secret_key)"
 set_secret_from_env mailjet_sender_email "$(json_get mailjet_sender_email)"
 set_secret_from_env mailjet_sender_name "$(json_get mailjet_sender_name)"
 
-# ─── WhatsApp Bridge ────────────────────────────────────────────────────────
+# WhatsApp Bridge
 set_secret_from_env whatsapp_bridge_url "$(json_get whatsapp_bridge_url)"
 set_secret whatsapp_bridge_api_key "$whatsapp_bridge_api_key"
 
-# ─── Twilio (SMS + Verify) ──────────────────────────────────────────────────
+# Twilio (SMS + Verify)
 set_secret_from_env twilio_account_sid "$(json_get twilio_account_sid)"
 set_secret_from_env twilio_auth_token "$(json_get twilio_auth_token)"
 set_secret_from_env twilio_from_number "$(json_get twilio_from_number)"
@@ -276,24 +276,24 @@ set_secret_from_env twilio_test_account_sid "$(json_get twilio_test_account_sid)
 set_secret_from_env twilio_test_auth_token "$(json_get twilio_test_auth_token)"
 set_secret_from_env twilio_use_test_mode "$(json_get twilio_use_test_mode)"
 
-# ─── Apple NFC ──────────────────────────────────────────────────────────────
+# Apple NFC
 set_secret_from_env apple_nfc_enabled "$(json_get apple_nfc_enabled)"
 set_secret_from_env apple_nfc_encryption_public_key "$(json_get apple_nfc_encryption_public_key)"
 
-# ─── AI Agent ───────────────────────────────────────────────────────────────
+# AI Agent
 set_secret_from_env ai_agent_base_url "$(json_get ai_agent_base_url)"
 set_secret_from_env ai_agent_api_key "$(json_get ai_agent_api_key)"
 
-# ─── System / Backup ────────────────────────────────────────────────────────
+# System / Backup
 set_secret_from_env system_mode "$(json_get system_mode)"
 set_secret_from_env backup_frequency "$(json_get backup_frequency)"
 set_secret_from_env backup_retention "$(json_get backup_retention)"
 set_secret_from_env cron_hour "$(json_get cron_hour)"
 
-# ─── Age encryption ─────────────────────────────────────────────────────────
+# Age encryption
 set_secret_from_env age_public_key "$(json_get age_public_key)"
 
-# ─── Defaults for feature toggles (only on first write) ─────────────────────
+# Defaults for feature toggles (only on first write)
 set_secret_default_if_missing google_wallet_enabled "true"
 set_secret_default_if_missing apple_wallet_enabled "false"
 set_secret_default_if_missing payment_gateway_enabled "false"
@@ -306,7 +306,7 @@ set_secret_default_if_missing backup_frequency "15days"
 set_secret_default_if_missing backup_retention "31"
 set_secret_default_if_missing cron_hour "5"
 
-# ─── Export infrastructure secrets to runtime files ─────────────────────────
+# Export infrastructure secrets to runtime files
 mkdir -p /vault/runtime
 printf "%s" "$postgres_password" >/vault/runtime/postgres_password
 printf "%s" "$redis_url" | sed -n 's|redis://:\([^@]*\)@.*|\1|p' >/vault/runtime/redis_password
@@ -318,7 +318,7 @@ chmod 0444 /vault/runtime/postgres_password /vault/runtime/redis_password \
     /vault/runtime/minio_root_user /vault/runtime/minio_root_password \
     /vault/runtime/whatsapp_bridge_api_key /vault/runtime/grafana_admin_password
 
-# ─── Create/refresh loyallia-app policy and token ───────────────────────────
+# Create or refresh loyallia-app policy and token
 printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\", \"patch\"]\n}\n" >/vault/runtime/loyallia-app.hcl
 vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null 2>&1 || echo "Policy write skipped (non-root token — policy already exists)"
 if ! [ -f /vault/runtime/app-token ] || ! [ -s /vault/runtime/app-token ]; then

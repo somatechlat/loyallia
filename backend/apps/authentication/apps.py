@@ -1,5 +1,5 @@
 """
-Loyallia — Authentication App Configuration
+Loyallia  Authentication App Configuration
 """
 
 from django.apps import AppConfig

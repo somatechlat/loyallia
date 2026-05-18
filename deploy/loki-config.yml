@@ -1,7 +1,5 @@
-# =============================================================================
-# Loki Configuration — Log Aggregation (LYL-H-INFRA-012)
+# Loki log aggregation configuration (LYL-H-INFRA-012)
 # Minimal config for Docker-based Loki deployment
-# =============================================================================
 auth_enabled: false
 
 server:

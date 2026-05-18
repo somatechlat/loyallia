@@ -1,8 +1,8 @@
 """
-Loyallia — WhatsApp Bridge HTTP Client (LYL-SRS-006)
+Loyallia  WhatsApp Bridge HTTP Client (LYL-SRS-006)
 
 Communicates with the whatsapp-bridge Node.js sidecar via REST API.
-All operations are synchronous (using httpx) — async handled by Celery.
+All operations are synchronous (using httpx)  async handled by Celery.
 
 SEC: API key sent via Authorization header on every request.
 PERF: Connection pooled via httpx.Client session.

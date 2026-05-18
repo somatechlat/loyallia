@@ -1,5 +1,5 @@
 """
-Loyallia — Push Notification Models
+Loyallia  Push Notification Models
 
 Device registration and push notification state.
 """
@@ -25,7 +25,7 @@ class PushDevice(models.Model):
         verbose_name="Cliente",
     )
 
-    # Device information
+ # Device information
     device_type = models.CharField(
         max_length=10,
         choices=[("ios", "iOS"), ("android", "Android"), ("web", "Web")],
@@ -34,11 +34,11 @@ class PushDevice(models.Model):
     device_token = models.CharField(max_length=500, verbose_name="Token del dispositivo")
     device_model = models.CharField(max_length=100, blank=True, default="", verbose_name="Modelo del dispositivo")
 
-    # Push service identifiers
+ # Push service identifiers
     apns_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token APNS")
     fcm_token = models.CharField(max_length=500, blank=True, default="", verbose_name="Token FCM")
 
-    # Status
+ # Status
     is_active = models.BooleanField(default=True, verbose_name="Dispositivo activo")
     push_failures = models.PositiveSmallIntegerField(
         default=0,
@@ -46,7 +46,7 @@ class PushDevice(models.Model):
         help_text="Incremented per failed push; device deactivated at 5",
     )
 
-    # Timestamps
+ # Timestamps
     registered_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
     last_used = models.DateTimeField(null=True, blank=True, verbose_name="Último uso")
 

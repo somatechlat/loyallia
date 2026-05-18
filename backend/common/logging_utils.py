@@ -1,9 +1,9 @@
 """
-Loyallia — Logging Utilities
+Loyallia  Logging Utilities
 Structured JSON log formatter for production log aggregation.
 Falls back to standard text formatting if JSON dependencies are unavailable.
 
-LYL-L-ARCH-036: PII masking — email addresses and phone numbers are redacted
+LYL-L-ARCH-036: PII masking  email addresses and phone numbers are redacted
 in log output to comply with LOPDP (Ecuador data protection) requirements.
 LYL-M-ARCH-021: JSON format in production, verbose in dev (configured in settings).
 """
@@ -28,7 +28,7 @@ def mask_pii(text: str) -> str:
     Phones: +593***1234 (keep first 3 + last 4 digits)
     """
 
-    # Mask emails: show first char + @domain
+ # Mask emails: show first char + @domain
     def _mask_email(match: re.Match) -> str:
         addr = match.group(0)
         local, _, domain = addr.partition("@")
@@ -38,7 +38,7 @@ def mask_pii(text: str) -> str:
 
     text = _EMAIL_RE.sub(_mask_email, text)
 
-    # Mask phone numbers: keep first 3 and last 4 digits
+ # Mask phone numbers: keep first 3 and last 4 digits
     def _mask_phone(match: re.Match) -> str:
         phone = match.group(0)
         digits = re.sub(r"[^\d]", "", phone)
@@ -78,12 +78,12 @@ class JsonFormatter(logging.Formatter):
             "thread": record.thread,
         }
 
-        # Include exception info if present (also mask PII)
+ # Include exception info if present (also mask PII)
         if record.exc_info and record.exc_info[0] is not None:
             exc_text = traceback.format_exception(*record.exc_info)
             log_entry["exc_info"] = [mask_pii(line) for line in exc_text]
 
-        # Include extra fields if any
+ # Include extra fields if any
         for key in ("request_id", "tenant_id", "user_id", "ip", "path"):
             if hasattr(record, key):
                 log_entry[key] = getattr(record, key)

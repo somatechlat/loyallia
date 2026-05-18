@@ -1,5 +1,5 @@
 """
-Loyallia — Customer Service Layer
+Loyallia  Customer Service Layer
 Extracted business logic from customer API views.
 """
 
@@ -57,7 +57,7 @@ class CustomerService:
         if not first_name:
             raise ValueError("First name is required")
 
-        # Check for existing customer
+ # Check for existing customer
         if Customer.objects.filter(tenant=tenant, email=email).exists():
             raise ValueError(f"Customer with email {email} already exists")
 
@@ -175,7 +175,7 @@ class CustomerService:
             email_raw = str(row.get(col_email, "")).strip().lower()
 
             if not email_raw or not EMAIL_RE.match(email_raw):
-                errors.append(f"Row {lineno}: invalid email '{email_raw}' — skipped.")
+                errors.append(f"Row {lineno}: invalid email '{email_raw}'  skipped.")
                 skipped_invalid += 1
                 continue
 
@@ -185,7 +185,7 @@ class CustomerService:
 
             first_name = str(row.get(col_first, "")).strip().title()
             if not first_name:
-                errors.append(f"Row {lineno}: empty 'nombre' — skipped.")
+                errors.append(f"Row {lineno}: empty 'nombre'  skipped.")
                 skipped_invalid += 1
                 continue
 

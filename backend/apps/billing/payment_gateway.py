@@ -1,5 +1,5 @@
 """
-Loyallia — Payment Gateway Abstraction (LYL-FR-PAY-010)
+Loyallia  Payment Gateway Abstraction (LYL-FR-PAY-010)
 Pluggable payment gateway interface. Supports multiple providers via factory.
 Default provider: Manual (admin-verified payments).
 
@@ -18,9 +18,7 @@ from django.conf import settings
 logger = logging.getLogger("loyallia.billing.gateway")
 
 
-# =============================================================================
 # DATA CLASSES
-# =============================================================================
 
 
 @dataclass
@@ -43,9 +41,7 @@ class PaymentStatusResult:
     gateway_data: dict
 
 
-# =============================================================================
 # EXCEPTIONS
-# =============================================================================
 
 
 class PaymentGatewayError(Exception):
@@ -58,9 +54,7 @@ class PaymentGatewayError(Exception):
         super().__init__(message)
 
 
-# =============================================================================
 # ABSTRACT INTERFACE
-# =============================================================================
 
 
 class BasePaymentGateway(ABC):
@@ -101,9 +95,7 @@ class BasePaymentGateway(ABC):
         """Process a webhook event from the payment provider."""
 
 
-# =============================================================================
 # MANUAL GATEWAY (Admin-Verified Payments)
-# =============================================================================
 
 
 class ManualGateway(BasePaymentGateway):
@@ -143,7 +135,7 @@ class ManualGateway(BasePaymentGateway):
         )
 
     def cancel_subscription(self, subscription_id: str) -> dict:
-        """Manual cancellation — just logs."""
+        """Manual cancellation  just logs."""
         logger.info(
             "ManualGateway: subscription %s marked for cancellation",
             subscription_id,
@@ -195,9 +187,8 @@ class DisabledGateway(BasePaymentGateway):
         return {"status": "disabled"}
 
 
-# =============================================================================
 # FACTORY
-# =============================================================================
+
 
 _GATEWAY_REGISTRY: dict[str, type[BasePaymentGateway]] = {
     "manual": ManualGateway,

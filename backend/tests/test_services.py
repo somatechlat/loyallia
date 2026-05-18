@@ -1,5 +1,5 @@
 """
-Loyallia — Service Layer Tests
+Loyallia  Service Layer Tests
 Tests for TransactionService, BillingService, AutomationService, CustomerService.
 """
 
@@ -26,9 +26,7 @@ from tests.factories import (
     make_user,
 )
 
-# =============================================================================
 # TransactionService Tests
-# =============================================================================
 
 
 class TransactionServiceScanQRTest(TestCase):
@@ -147,9 +145,7 @@ class TransactionServiceListTest(TestCase):
         self.assertLessEqual(len(result), 3)
 
 
-# =============================================================================
 # BillingService Tests
-# =============================================================================
 
 
 class BillingServicePlansTest(TestCase):
@@ -219,9 +215,7 @@ class BillingServiceCheckUsageTest(TestCase):
         self.assertEqual(usage["customers"]["percentage"], 50.0)
 
 
-# =============================================================================
 # AutomationService Tests
-# =============================================================================
 
 
 class AutomationServiceFireTriggerTest(TestCase):
@@ -234,7 +228,7 @@ class AutomationServiceFireTriggerTest(TestCase):
         from apps.automation.service import AutomationService
 
         count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
-        # Real execute() runs and creates AutomationExecution records
+ # Real execute() runs and creates AutomationExecution records
         self.assertGreaterEqual(count, 0)
 
     def test_fire_trigger_no_matching_automations(self):
@@ -362,9 +356,7 @@ class AutomationServiceGetStatsTest(TestCase):
         self.assertEqual(stats["active_automations"], 2)
 
 
-# =============================================================================
 # CustomerService Tests
-# =============================================================================
 
 
 class CustomerServiceCreateTest(TestCase):
@@ -520,9 +512,7 @@ class CustomerServiceEnrollTest(TestCase):
             CustomerService.enroll_in_program(t, customer, card)
 
 
-# =============================================================================
 # TransactionService._serialize_result Tests
-# =============================================================================
 
 
 class SerializeResultTest(TestCase):

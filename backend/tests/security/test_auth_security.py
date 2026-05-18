@@ -1,5 +1,5 @@
 """
-Loyallia — Authentication Security Tests
+Loyallia  Authentication Security Tests
 
 Tests for authentication-related security findings.
 
@@ -14,9 +14,7 @@ from django.test import TestCase
 
 from common.validators import ComplexityValidator
 
-# =============================================================================
 # LYL-C-SEC-001: OTP Entropy Tests
-# =============================================================================
 
 
 class TestOTPEntropy(TestCase):
@@ -26,7 +24,7 @@ class TestOTPEntropy(TestCase):
         """token_urlsafe(8) produces URL-safe base64 characters."""
         for _ in range(100):
             otp = secrets.token_urlsafe(8)
-            # token_urlsafe uses base64url encoding: [A-Za-z0-9_-]
+ # token_urlsafe uses base64url encoding: [A-Za-z0-9_-]
             self.assertRegex(otp, r"^[A-Za-z0-9_-]+$")
 
     def test_otp_length_sufficient(self):
@@ -37,14 +35,14 @@ class TestOTPEntropy(TestCase):
 
     def test_otp_entropy_bits(self):
         """token_urlsafe(8) provides 64 bits of entropy (8 * 8)."""
-        # 8 bytes = 64 bits. Previous was token_hex(3) = 3 bytes = 24 bits.
-        # This is a 2.67x improvement in entropy.
+ # 8 bytes = 64 bits. Previous was token_hex(3) = 3 bytes = 24 bits.
+ # This is a 2.67x improvement in entropy.
         otp = secrets.token_urlsafe(8)
-        # Decode from base64url to get raw bytes
+ # Decode from base64url to get raw bytes
         import base64
 
         padded = otp.replace("-", "+").replace("_", "/")
-        # Add padding if needed
+ # Add padding if needed
         padded += "=" * (-len(padded) % 4)
         raw = base64.b64decode(padded)
         self.assertGreaterEqual(len(raw), 8)
@@ -55,9 +53,7 @@ class TestOTPEntropy(TestCase):
         self.assertEqual(len(otps), 1000)
 
 
-# =============================================================================
 # LYL-H-SEC-008: Google OAuth Client ID Not Exposed Tests
-# =============================================================================
 
 
 class TestGoogleOAuthConfig(TestCase):
@@ -65,7 +61,7 @@ class TestGoogleOAuthConfig(TestCase):
 
     def test_config_returns_only_enabled(self):
         """The response should only contain 'enabled', not 'client_id'."""
-        # We can test the logic directly
+ # We can test the logic directly
         client_id = "test-client-id-12345"
         result = {"enabled": bool(client_id)}
         self.assertIn("enabled", result)
@@ -84,9 +80,7 @@ class TestGoogleOAuthConfig(TestCase):
         self.assertFalse(result["enabled"])
 
 
-# =============================================================================
 # LYL-M-SEC-014: Password Complexity Tests
-# =============================================================================
 
 
 class TestPasswordComplexity(TestCase):
@@ -147,9 +141,7 @@ class TestPasswordComplexity(TestCase):
         self.assertIn("especial", help_text)
 
 
-# =============================================================================
 # Integration: Password Policy Code Changes
-# =============================================================================
 
 
 class TestPasswordPolicyCodeChanges(TestCase):

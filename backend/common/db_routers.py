@@ -1,5 +1,5 @@
 """
-Loyallia — Database Router for PgBouncer
+Loyallia  Database Router for PgBouncer
 Routes migrations/schema operations to 'direct' (bypasses PgBouncer).
 All other queries go through 'default' (PgBouncer transaction pooling).
 

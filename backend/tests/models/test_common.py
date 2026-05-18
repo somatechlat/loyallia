@@ -1,5 +1,5 @@
 """
-Loyallia — Common / Miscellaneous Model Unit Tests
+Loyallia  Common / Miscellaneous Model Unit Tests
 Tests for Transaction, Automation, Audit, and other remaining models.
 """
 
@@ -16,9 +16,7 @@ from tests.factories import (
     make_transaction,
 )
 
-# =============================================================================
 # Transaction Model Tests
-# =============================================================================
 
 
 class TransactionModelTest(TestCase):
@@ -40,9 +38,7 @@ class TransactionModelTest(TestCase):
             self.assertIsInstance(tt_val, str)
 
 
-# =============================================================================
 # Automation Model Tests
-# =============================================================================
 
 
 class AutomationModelTest(TestCase):
@@ -68,9 +64,7 @@ class AutomationModelTest(TestCase):
             self.assertIsInstance(action_val, str)
 
 
-# =============================================================================
 # Audit Model Tests
-# =============================================================================
 
 
 class AuditLogModelTest(TestCase):

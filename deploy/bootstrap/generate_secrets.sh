@@ -27,10 +27,10 @@ read_cert_file() {
 }
 
 main() {
-    log "Generating ALL Loyallia secrets (52 keys)..."
+    log "Generating Loyallia secrets (52 keys)..."
     echo ""
 
-    # ─── Certificate discovery ────────────────────────────────────────────────
+    # Certificate discovery
     log "Discovering certificates in $CERTS_DIR..."
 
     local APPLE_CERT_PEM APPLE_KEY_PEM APPLE_WWDR_PEM
@@ -76,7 +76,7 @@ main() {
         GOOGLE_WALLET_ENABLED="false"
     fi
 
-    # ─── Age keypair for backup encryption ────────────────────────────────────
+    # Age keypair for backup encryption
     local AGE_PUBLIC_KEY=""
     if command -v age-keygen &>/dev/null; then
         mkdir -p "$AGE_KEY_DIR"
@@ -99,7 +99,7 @@ main() {
         warn "  macOS:  brew install age"
     fi
 
-    # ─── Load real integration credentials if present ─────────────────────────
+    # Load real integration credentials if present
     local INTEGRATION_JSON="$CERTS_DIR/integration_credentials.json"
     local REAL_GOOGLE_ID="" REAL_GOOGLE_SECRET=""
     local REAL_MAILJET_KEY="" REAL_MAILJET_SECRET=""
@@ -120,7 +120,7 @@ main() {
         REAL_TWILIO_TEST_TOKEN="$(python3 -c "import json; d=json.load(open('$INTEGRATION_JSON')); print(d.get('twilio',{}).get('test_auth_token',''), end='')" 2>/dev/null)"
     fi
 
-    # ─── Generate ALL secrets via Python (clean JSON, no shell escaping hell) ─
+    # Generate all secrets via Python (produces clean JSON without shell escaping)
     log "Writing bootstrap secrets to $OUTPUT_FILE ..."
 
     python3 - "$OUTPUT_FILE" "$APPLE_WALLET_ENABLED" "$GOOGLE_WALLET_ENABLED" "$AGE_PUBLIC_KEY" \
@@ -187,7 +187,7 @@ data = {
         "note": "ALL 52 secrets generated. Real integration credentials loaded from certs/integration_credentials.json when present."
     },
     "secrets": {
-        # ─── Core infrastructure (10) ──────────────────────────────────────
+        # Core infrastructure
         "secret_key": django_secret(),
         "postgres_password": password(40),
         "redis_url": f"redis://:{redis_password}@redis:6379/0",
@@ -199,7 +199,7 @@ data = {
         "pass_hmac_secret": token(32),
         "flower_basic_auth": f"loyallia:{token(16)}",
 
-        # ─── Apple Wallet (6) ──────────────────────────────────────────────
+        # Apple Wallet
         "apple_cert_pem": "",          # filled from certs below
         "apple_cert_key_pem": "",      # filled from certs below
         "apple_wwdr_cert_pem": "",     # filled from certs below
@@ -207,31 +207,31 @@ data = {
         "apple_team_identifier": "PLACEHOLDER_TEAM_ID",
         "apple_wallet_enabled": apple_wallet_enabled,
 
-        # ─── Google Wallet (5) ─────────────────────────────────────────────
+        # Google Wallet
         "google_service_account_json": "",  # filled from certs below
         "google_oauth_client_id": real_google_id,
         "google_oauth_client_secret": real_google_secret,
         "google_wallet_issuer_id": "PLACEHOLDER_ISSUER_ID",
         "google_wallet_enabled": google_wallet_enabled,
 
-        # ─── Payment Gateway (5) ───────────────────────────────────────────
+        # Payment Gateway
         "payment_gateway_enabled": "false",
         "payment_gateway_provider": "manual",
         "payment_gateway_login": "placeholder_login",
         "payment_gateway_tran_key": "placeholder_tran_key",
         "payment_gateway_webhook_secret": token(32),
 
-        # ─── Email / Mailjet (4) ───────────────────────────────────────────
+        # Email / Mailjet
         "mailjet_api_key": mailjet_api_key,
         "mailjet_secret_key": mailjet_secret_key,
         "mailjet_sender_email": "noreply@loyallia.com",
         "mailjet_sender_name": "Loyallia",
 
-        # ─── WhatsApp Bridge (2) ───────────────────────────────────────────
+        # WhatsApp Bridge
         "whatsapp_bridge_url": "http://whatsapp-bridge:3001",
         "whatsapp_bridge_api_key": token(32),
 
-        # ─── Twilio (11) ───────────────────────────────────────────────────
+        # Twilio
         "twilio_account_sid": twilio_account_sid,
         "twilio_auth_token": twilio_auth_token,
         "twilio_from_number": "+15555555555",
@@ -244,21 +244,21 @@ data = {
         "twilio_test_auth_token": twilio_test_auth_token,
         "twilio_use_test_mode": "false",
 
-        # ─── Apple NFC (2) ─────────────────────────────────────────────────
+        # Apple NFC
         "apple_nfc_enabled": "false",
         "apple_nfc_encryption_public_key": "",
 
-        # ─── AI Agent (2) ──────────────────────────────────────────────────
+        # AI Agent
         "ai_agent_base_url": "http://ai-agent:8000",
         "ai_agent_api_key": token(32),
 
-        # ─── System / Backup (4) ───────────────────────────────────────────
+        # System / Backup
         "system_mode": "development",
         "backup_frequency": "15days",
         "backup_retention": "31",
         "cron_hour": "5",
 
-        # ─── Age encryption (1) ────────────────────────────────────────────
+        # Age encryption
         "age_public_key": age_public_key,
     }
 }
@@ -269,7 +269,7 @@ with open(output_path, 'w') as f:
 print(f"Wrote {len(data['secrets'])} secrets to bootstrap file")
 PYEOF
 
-    # ─── Inject certificate content into JSON ─────────────────────────────────
+    # Inject certificate content into JSON
     python3 - "$OUTPUT_FILE" "$APPLE_CERT_PEM" "$APPLE_KEY_PEM" "$APPLE_WWDR_PEM" "$GOOGLE_SA_JSON" << 'PYEOF'
 import json
 import sys
@@ -304,21 +304,15 @@ PYEOF
 
     if [ -n "$AGE_PUBLIC_KEY" ]; then
         log "Age public key: $AGE_PUBLIC_KEY"
-        warn "╔══════════════════════════════════════════════════════════════════╗"
-        warn "║  CRITICAL: Store the PRIVATE key OFFLINE now!                  ║"
-        warn "║  Without it, encrypted backups CANNOT be decrypted.            ║"
-        warn "╚══════════════════════════════════════════════════════════════════╝"
+        warn "CRITICAL: Store the Age private key offline."
+        warn "Without it, encrypted backups cannot be decrypted."
     fi
 
     echo ""
-    log "╔══════════════════════════════════════════════════════════════════════╗"
-    log "║  BOOTSTRAP SECRETS GENERATED (52 keys)                             ║"
-    log "║                                                                     ║"
-    log "║  Next: run bootstrap.sh to start the full bootstrap sequence        ║"
-    log "║                                                                     ║"
-    log "║  CRITICAL: After bootstrap, rescue files auto-save to .agents/      ║"
-    log "║            and .bootstrap_secrets.json is securely shredded.        ║"
-    log "╚══════════════════════════════════════════════════════════════════════╝"
+    log "Bootstrap secrets generated (52 keys)"
+    log "Next: run bootstrap.sh to start the full bootstrap sequence"
+    log "CRITICAL: After bootstrap, rescue files auto-save to .agents/"
+    log "          and .bootstrap_secrets.json is securely shredded."
 }
 
 main

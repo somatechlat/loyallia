@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Plan Features (LYL-SRS-008) ---
+  // Plan Features (LYL-SRS-008)
   const [planFeatures, setPlanFeatures] = useState<string[]>([]);
   const [planLimits, setPlanLimits] = useState<Record<string, number>>({});
   const [, setPlanUsage] = useState<Record<string, number>>({});
@@ -71,7 +71,7 @@ export default function SettingsPage() {
 
   useEffect(() => { loadTenant(); }, [loadTenant]);
 
-  // --- Plan Features: Fetch on mount (LYL-SRS-008) ---
+  // Fetch plan features on mount (LYL-SRS-008)
   useEffect(() => {
     (async () => {
       try {
@@ -261,7 +261,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* ═══════ WhatsApp Integration (LYL-SRS-007) — Extracted Component ═══════ */}
+          {/* WhatsApp integration (LYL-SRS-007) */}
           <WhatsAppWizard
             tenantId={user?.tenant_id}
             planFeatures={planFeatures}
@@ -345,10 +345,10 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* ═══════ LOPDP Data Privacy (LYL-FR-DPR-020/025) — OWNER Only ═══════ */}
+          {/* LOPDP data privacy (LYL-FR-DPR-020/025) - OWNER only */}
           <DataPrivacySection userRole={user?.role} />
 
-          {/* ═══════ Audit Log — OWNER Only ═══════ */}
+          {/* Audit log - OWNER only */}
           <AuditLogSection userRole={user?.role} />
         </div>
       </div>

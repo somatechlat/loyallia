@@ -1,10 +1,8 @@
 # LOYALLIA — ARCHITECTURE, SEQUENCE & FLOWCHART DIAGRAMS
-**Document ID:** LOYALLIA-ARCH-001  
-**Version:** 1.0.0  
-**Date:** 2026-04-05  
-**Reference:** SRS LOYALLIA-SRS-001  
-
----
+**Document ID:** LOYALLIA-ARCH-001
+**Version:** 1.0.0
+**Date:** 2026-04-05
+**Reference:** SRS LOYALLIA-SRS-001
 
 ## IMPORTANT CLARIFICATION — SCANNER APP ARCHITECTURE
 
@@ -15,10 +13,8 @@ The system has TWO distinct QR scanning flows. This is critical to understand:
 | Customer | Business poster QR | Normal phone camera | Enrollment → browser opens → saves pass to Wallet |
 | Staff | Customer's Wallet pass QR | **Loyallia Scanner PWA** | Records stamp/cashback/redemption in database |
 
-**Scanner App Decision: PWA (v1.0)**  
+**Scanner App Decision: PWA (v1.0)**
 The staff scanner is implemented as a **Progressive Web App** hosted on the same Django/Next.js stack. Staff open `https://app.loyallia.com/scanner` on their phone browser, log in once, and the browser camera API handles QR scanning. No app store required. React Native is deferred to v2.0 if offline demands require it.
-
----
 
 ## DIAGRAM 1 — FULL SYSTEM ARCHITECTURE
 
@@ -110,8 +106,6 @@ graph TB
     CEL -->|"Pass updates"| FCM
 ```
 
----
-
 ## DIAGRAM 2 — MULTI-TENANT DATA ISOLATION MODEL
 
 ```mermaid
@@ -138,8 +132,6 @@ graph LR
     style T3 fill:#ff6b6b
     style T1 fill:#51cf66
 ```
-
----
 
 ## DIAGRAM 3 — SEQUENCE: CUSTOMER ENROLLMENT FLOW
 
@@ -193,13 +185,11 @@ sequenceDiagram
 
     Browser-->>Customer: "Add to Wallet" button (Apple or Google)
     Customer->>Browser: Taps "Add to Wallet"
-    Browser-->>Customer: Pass saved to Apple/Google Wallet ✅
+    Browser-->>Customer: Pass saved to Apple/Google Wallet [OK]
 
     CEL->>APN: Send welcome push notification
     APN-->>Customer: Push: "Welcome! Your [Program] card is ready."
 ```
-
----
 
 ## DIAGRAM 4 — SEQUENCE: STAFF QR SCAN TRANSACTION (STAMP CARD)
 
@@ -240,20 +230,18 @@ sequenceDiagram
         API->>RD: Queue: update_wallet_pass(pass_id)
         API-->>PWA: 201 Created + new_balance: 5
 
-        PWA-->>Staff: "✅ Stamp added. 5/9"
+        PWA-->>Staff: "[OK] Stamp added. 5/9"
 
         CEL->>DB: Fetch updated pass data
         CEL->>CEL: Re-generate updated PKPass / Google JWT
         CEL->>APN: Send pass update + push
-        APN-->>Wallet: Pass updates in Wallet (5/9 stamps) ✅
+        APN-->>Wallet: Pass updates in Wallet (5/9 stamps) [OK]
 
     else Pass is INVALID / EXPIRED / FRAUD
         API-->>PWA: 400/403 + reason
         PWA-->>Staff: RED indicator + "Invalid pass: [reason]"
     end
 ```
-
----
 
 ## DIAGRAM 5 — SEQUENCE: GEO-FENCING PUSH NOTIFICATION
 
@@ -267,14 +255,12 @@ sequenceDiagram
 
     Wallet->>Wallet: Device detects customer enters 100m radius
     Wallet->>APN: Trigger location-based notification
-    APN-->>Wallet: Show lock-screen notification<br/>"You're near [Business Name]! 🎁"
+    APN-->>Wallet: Show lock-screen notification<br/>"You're near [Business Name]!"
 
     Note over CEL,APN: Android path (Firebase Geofencing):
     Note over CEL,APN: Pass installation registers<br/>geofence via Firebase SDK
     Note over CEL,APN: Android OS fires geofence → FCM push
 ```
-
----
 
 ## DIAGRAM 6 — SEQUENCE: AUTOMATION RULE EXECUTION
 
@@ -307,10 +293,8 @@ sequenceDiagram
 
     RD->>CEL: Dequeue push jobs
     CEL->>APN: Deliver pushes
-    APN-->>Customers: "We miss you! Here's a bonus stamp 🎁"
+    APN-->>Customers: "We miss you! Here's a bonus stamp"
 ```
-
----
 
 ## DIAGRAM 7 — SEQUENCE: TENANT SUBSCRIPTION BILLING
 
@@ -329,7 +313,7 @@ sequenceDiagram
     API->>GWY: Create session + process payment
     GWY-->>API: gateway_subscription_id + status: active
     API->>DB: Update Tenant (plan, gateway_subscription_id)
-    API-->>DASH: Subscription active ✅
+    API-->>DASH: Subscription active [OK]
 
     Note over BEAT,GWY: Monthly/Annual recurring billing
     GWY->>API: Webhook: payment.approved
@@ -344,8 +328,6 @@ sequenceDiagram
     CEL->>SMTP: "Payment failed — please update billing"
     Note over API: After 3 retries (7 days): suspend tenant
 ```
-
----
 
 ## DIAGRAM 8 — FLOWCHART: COMPLETE ENROLLMENT FLOW
 
@@ -371,15 +353,13 @@ flowchart TD
     Q --> R[Update pass status = ACTIVE]
     R --> S[Show Download Wallet Pass page]
     S --> T[Customer taps Add to Wallet]
-    T --> U[Pass saved to Wallet ✅]
+    T --> U[Pass saved to Wallet [OK]]
     U --> V[Send welcome push notification]
     V --> W([Enrollment Complete])
 
     E --> X[Resend pass link to email]
     X --> W
 ```
-
----
 
 ## DIAGRAM 9 — FLOWCHART: SCANNER APP VALIDATION
 
@@ -406,10 +386,10 @@ flowchart TD
     P -->|No| R[Keep in queue]
 
     H --> S{API Response}
-    S -->|Valid| T[GREEN ✅ Show customer name + balance]
+    S -->|Valid| T[GREEN [OK] Show customer name + balance]
     S -->|Invalid| K
-    S -->|Expired| U[YELLOW ⚠ Pass Expired]
-    S -->|Fraud| V[RED 🚫 Fraud Alert]
+    S -->|Expired| U[YELLOW [WARN] Pass Expired]
+    S -->|Fraud| V[RED [BLOCKED] Fraud Alert]
 
     T --> W{Card type action}
     W -->|Stamp| X[Tap to add stamp + confirm]
@@ -420,10 +400,8 @@ flowchart TD
 
     X & Y & Z & AA & BB --> CC[POST /api/v1/transactions/]
     CC --> DD[DB updated + Wallet pass updated ≤30s]
-    DD --> EE([Transaction Complete ✅])
+    DD --> EE([Transaction Complete [OK]])
 ```
-
----
 
 ## DIAGRAM 10 — FLOWCHART: PUSH CAMPAIGN DELIVERY
 
@@ -462,8 +440,6 @@ flowchart TD
 
     U --> X([Campaign Complete — Show open rate in Dashboard])
 ```
-
----
 
 ## DIAGRAM 11 — DEPLOYMENT DIAGRAM (DOCKER COMPOSE)
 
@@ -506,8 +482,6 @@ graph TB
     style MIO fill:#c72c48,color:#fff
     style NX fill:#009639,color:#fff
 ```
-
----
 
 ## DIAGRAM 12 — ENTITY RELATIONSHIP DIAGRAM (CORE TABLES)
 
@@ -643,14 +617,9 @@ erDiagram
     Location ||--o{ Transaction : "at"
 ```
 
-
----
-
 ## APPENDIX A — Recent Architecture Changes (2026-05-06)
 
 This appendix documents all backend, frontend, and infrastructure changes made during the 2026-05-06 configuration session. Agents MUST read this before modifying any of the affected subsystems.
-
----
 
 ### A.1 Subscription Plan Rate Limits
 
@@ -671,8 +640,6 @@ This appendix documents all backend, frontend, and infrastructure changes made d
 **Database Fix Note:**
 If migration `0007` is recorded in `django_migrations` but columns are missing from `loyallia_subscription_plans`, apply the fix in `docs/AGENT_ONBOARDING.md` §7 (Common Issues).
 
----
-
 ### A.2 Agent API Call Logging
 
 **Motivation:** Need to enforce `max_api_calls_day` plan limit accurately.
@@ -690,8 +657,6 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
   ```
 - Migration created and applied
 - `plan_enforcement._count_api_calls_day()` uses this model for per-tenant daily counts
-
----
 
 ### A.3 Vault Write API
 
@@ -741,8 +706,6 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
 ],
 ```
 
----
-
 ### A.4 Integration Diagnostics
 
 **Motivation:** SuperAdmin settings page needed to show WHY an integration was failing.
@@ -763,8 +726,6 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
 - `apple_pass.py` — `get_apple_wallet_diagnostics()` checks all PEMs are present and cryptographically valid via `OpenSSL.crypto`
 - `platform.py` integration endpoint — no secrets exposed in response
 
----
-
 ### A.5 Environment Validation Fix
 
 **Motivation:** API container crashed on startup when email or Apple Wallet credentials were not configured.
@@ -778,8 +739,6 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
   - `payment_gateway` fields only validated if `payment_gateway_enabled` is truthy
 
 This allows the system to boot with a subset of integrations configured.
-
----
 
 ### A.6 Frontend Settings Page
 
@@ -799,8 +758,6 @@ This allows the system to boot with a subset of integrations configured.
   - Reactivation flow for inactive plans
   - Plan deactivation guard (shows 409 if active subscribers exist)
 
----
-
 ### A.7 SuperAdmin API Security Fixes
 
 **Motivation:** Integration endpoint was leaking secrets.
@@ -809,8 +766,6 @@ This allows the system to boot with a subset of integrations configured.
 - Removed `GOOGLE_WALLET_ISSUER_ID` from `detail` field (was exposed in API response)
 - `EMAIL_HOST_PASSWORD` now read via `get_secret()` instead of direct env access
 - Integration diagnostics object added — no secrets in response body
-
----
 
 ### A.8 Certificate File Audit (`certs/`)
 
@@ -833,8 +788,6 @@ This allows the system to boot with a subset of integrations configured.
 openssl x509 -in certs/passNew.cer -inform DER -pubkey -noout | openssl rsa -pubin -modulus -noout
 openssl rsa -in certs/apple_pass_new.key -pubout | openssl rsa -pubin -modulus -noout
 ```
-
----
 
 ### A.9 Documentation Created/Updated
 

@@ -1,7 +1,7 @@
 """
-Loyallia — Agent API Models (REQ-AGENT-001)
+Loyallia  Agent API Models (REQ-AGENT-001)
 API key management for external AI agent access.
-Keys are SHA-256 hashed — raw key shown only once at creation.
+Keys are SHA-256 hashed  raw key shown only once at creation.
 """
 
 import hashlib
@@ -16,7 +16,7 @@ from apps.tenants.models import Tenant
 class AgentAPIKey(models.Model):
     """
     API key for external AI agent access.
-    SHA-256 hashed — raw key returned only at creation.
+    SHA-256 hashed  raw key returned only at creation.
     Enterprise plan feature only.
     """
 
@@ -33,7 +33,7 @@ class AgentAPIKey(models.Model):
         help_text="Descriptive name for this key (e.g., 'SOMA Agent Production')",
     )
 
-    # Key storage (hashed — never store raw key)
+ # Key storage (hashed never store raw key)
     key_hash = models.CharField(
         max_length=64,
         unique=True,
@@ -45,12 +45,12 @@ class AgentAPIKey(models.Model):
         help_text="First 8 characters for identification",
     )
 
-    # Access control
+ # Access control
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     last_used_at = models.DateTimeField(null=True, blank=True, verbose_name="Último uso")
     expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Expira en")
 
-    # Audit
+ # Audit
     created_by_id = models.UUIDField(verbose_name="Creado por (user_id)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

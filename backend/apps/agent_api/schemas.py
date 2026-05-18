@@ -1,5 +1,5 @@
 """
-Loyallia — Agent API Response Schemas (Django Ninja / Pydantic)
+Loyallia  Agent API Response Schemas (Django Ninja / Pydantic)
 Typed response models for serialization performance at scale.
 """
 
@@ -44,13 +44,13 @@ class ContextResponseSchema(Schema):
 
 
 class CustomersSummarySchema(Schema):
-    """Aggregated customer summary — no PII."""
+    """Aggregated customer summary  no PII."""
 
     total_customers: int
     active_customers: int
     inactive_customers: int
     vip_customers: int
-    data_privacy: str = "No PII exposed — aggregated counts only."
+    data_privacy: str = "No PII exposed  aggregated counts only."
 
 
 class ProgramSchema(Schema):
@@ -98,4 +98,4 @@ class TransactionsResponseSchema(Schema):
 
     count: int
     transactions: list[TransactionSchema]
-    data_privacy: str = "Customer PII redacted — transaction metadata only."
+    data_privacy: str = "Customer PII redacted  transaction metadata only."

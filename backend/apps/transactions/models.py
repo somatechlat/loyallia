@@ -1,5 +1,5 @@
 """
-Loyallia — Transaction Models
+Loyallia  Transaction Models
 All loyalty program transactions, validations, and reward issuances.
 """
 
@@ -42,7 +42,7 @@ class Transaction(models.Model):
         related_name="transactions",
         verbose_name="Negocio",
     )
-    # LYL-H-ARCH-012: SET_NULL instead of CASCADE to preserve transaction history
+ # LYL-H-ARCH-012: SET_NULL instead of CASCADE to preserve transaction history
     customer_pass = models.ForeignKey(
         CustomerPass,
         on_delete=models.SET_NULL,
@@ -52,7 +52,7 @@ class Transaction(models.Model):
         verbose_name="Pase del cliente",
     )
 
-    # Who performed the transaction
+ # Who performed the transaction
     staff = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -70,7 +70,7 @@ class Transaction(models.Model):
         verbose_name="Ubicación",
     )
 
-    # Transaction details
+ # Transaction details
     transaction_type = models.CharField(
         max_length=30,
         choices=TransactionType.choices,
@@ -86,14 +86,14 @@ class Transaction(models.Model):
     )
     quantity = models.PositiveIntegerField(null=True, blank=True, verbose_name="Cantidad")
 
-    # Transaction metadata
+ # Transaction metadata
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
     transaction_data = models.JSONField(default=dict, verbose_name="Datos de transacción")
 
-    # Remote transaction flag
+ # Remote transaction flag
     is_remote = models.BooleanField(default=False, verbose_name="Transacción remota")
 
-    # Timestamps
+ # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -105,7 +105,7 @@ class Transaction(models.Model):
             models.Index(fields=["tenant", "created_at"]),
             models.Index(fields=["customer_pass", "created_at"]),
             models.Index(fields=["transaction_type"]),
-            # Compound indexes for production query patterns
+ # Compound indexes for production query patterns
             models.Index(
                 fields=["tenant", "customer_pass", "created_at"],
                 name="idx_txn_tenant_pass_date",
@@ -159,7 +159,7 @@ class Enrollment(models.Model):
         verbose_name="Programa",
     )
 
-    # Enrollment method
+ # Enrollment method
     enrollment_method = models.CharField(
         max_length=20,
         choices=[
@@ -172,10 +172,10 @@ class Enrollment(models.Model):
         verbose_name="Método de inscripción",
     )
 
-    # Referral tracking
+ # Referral tracking
     referral_code_used = models.CharField(max_length=20, blank=True, default="")
 
-    # Source location (if applicable)
+ # Source location (if applicable)
     location = models.ForeignKey(
         Location,
         on_delete=models.SET_NULL,
@@ -185,11 +185,11 @@ class Enrollment(models.Model):
         verbose_name="Ubicación",
     )
 
-    # Device info
+ # Device info
     user_agent = models.TextField(blank=True, default="", verbose_name="User Agent")
     ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="Dirección IP")
 
-    # Timestamps
+ # Timestamps
     enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -200,7 +200,7 @@ class Enrollment(models.Model):
         indexes = [
             models.Index(fields=["tenant", "enrolled_at"]),
             models.Index(fields=["card", "enrolled_at"]),
-            # Compound index for tenant-scoped enrollment lookups
+ # Compound index for tenant-scoped enrollment lookups
             models.Index(
                 fields=["tenant", "customer", "card"],
                 name="idx_enroll_tnt_cust_card",

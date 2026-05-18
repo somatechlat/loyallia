@@ -1,5 +1,5 @@
 """
-Loyallia — Data Security Tests
+Loyallia  Data Security Tests
 
 Tests for data isolation and storage security findings.
 
@@ -13,9 +13,7 @@ import secrets
 
 from django.test import TestCase
 
-# =============================================================================
 # LYL-H-SEC-007: Invitation Token Hashing Tests
-# =============================================================================
 
 
 class TestInvitationTokenHashing(TestCase):
@@ -48,9 +46,7 @@ class TestInvitationTokenHashing(TestCase):
         self.assertNotEqual(hash1, hash2)
 
 
-# =============================================================================
 # LYL-M-SEC-012: Salted OTP Hashing Tests
-# =============================================================================
 
 
 class TestSaltedOTPHashing(TestCase):
@@ -85,9 +81,7 @@ class TestSaltedOTPHashing(TestCase):
         self.assertEqual(hash1, hash2)
 
 
-# =============================================================================
 # Integration: Verify Helpers code changes
-# =============================================================================
 
 
 class TestHelpersRuntimeBehavior(TestCase):

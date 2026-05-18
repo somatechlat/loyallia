@@ -1,5 +1,5 @@
 """
-Loyallia — Audit API Endpoints (REQ-DPR-003)
+Loyallia  Audit API Endpoints (REQ-DPR-003)
 Super Admin audit dashboard using Django Ninja with typed schemas.
 Self-auditing: viewing the audit log creates an audit entry.
 """
@@ -59,7 +59,7 @@ def list_audit_logs(
     offset = max(0, offset)
     qs = AuditLog.objects.all()
 
-    # OWNER scope: restrict to own tenant only
+ # OWNER scope: restrict to own tenant only
     is_sa = request.user.role == "SUPER_ADMIN"
     if not is_sa and is_owner(request):
         own_tenant_id = str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None
@@ -76,7 +76,7 @@ def list_audit_logs(
         qs = qs.filter(resource_type=resource_type)
     if actor_email:
         qs = qs.filter(actor_email__icontains=actor_email)
-    # Only SUPER_ADMIN can filter by arbitrary tenant_id; OWNER is already scoped
+ # Only SUPER_ADMIN can filter by arbitrary tenant_id; OWNER is already scoped
     if tenant_id and is_sa:
         qs = qs.filter(tenant_id=tenant_id)
     if status:
@@ -89,7 +89,7 @@ def list_audit_logs(
     total = qs.count()
     entries = list(qs[offset : offset + limit])
 
-    # Self-audit
+ # Self-audit
     log_action(
         request=request,
         action=AuditAction.READ,

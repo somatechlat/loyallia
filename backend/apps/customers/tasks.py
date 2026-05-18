@@ -1,5 +1,5 @@
 """
-Loyallia — Customers Celery Tasks (apps/customers/tasks.py)
+Loyallia  Customers Celery Tasks (apps/customers/tasks.py)
 
 Async pass generation, wallet update notifications, and customer analytics recalculation.
 
@@ -101,7 +101,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         tenant = pass_obj.card.tenant
         customer = pass_obj.customer
 
-        # ── 1. Google Wallet: silently PATCH object data first ──
+        # 1. Google Wallet: silently PATCH object data first
         try:
             from apps.customers.pass_engine.google_pass import update_wallet_object
 
@@ -117,7 +117,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         except Exception as exc:
             logger.warning("Google Wallet object update error for pass %s: %s", customer_pass_id, exc)
 
-        # ── 2. Apple Wallet: send empty APNs background push ──
+        # 2. Apple Wallet: send empty APNs background push
         try:
             from apps.customers.pass_engine.apple_push import notify_pass_updated
 
@@ -131,7 +131,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         except Exception as exc:
             logger.warning("Apple Wallet push error for pass %s: %s", customer_pass_id, exc)
 
-        # ── 3. In-app push notification (secondary channel) ──
+        # 3. In-app push notification (secondary channel)
         notification = Notification.objects.create(
             tenant=tenant,
             customer=customer,

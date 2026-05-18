@@ -1,7 +1,7 @@
 """
-Loyallia — Google Wallet Pass Builders
+Loyallia  Google Wallet Pass Builders
 Internal builder functions for Google Wallet class/object payloads.
-Not imported directly from outside pass_engine — used by google_pass.py.
+Not imported directly from outside pass_engine  used by google_pass.py.
 """
 
 import logging
@@ -50,7 +50,7 @@ def _resolve_gw_type(card_type: str) -> str:
 def _get_google_locations(card) -> list:
     """Build location array from tenant locations for Google Wallet geo-push."""
     locations = []
-    # Locations belong to the Tenant
+ # Locations belong to the Tenant
     tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
 
     for loc in tenant_locations:
@@ -124,7 +124,7 @@ def _build_loyalty_class(card, tenant) -> dict:
     payload["textModulesData"] = [
         {
             "header": "",
-            "body": "Powered by Loyallia — Intelligent Rewards",
+            "body": "Powered by Loyallia  Intelligent Rewards",
             "id": "loyallia_branding",
         }
     ]
@@ -176,7 +176,7 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
             {"header": "Programa", "body": card.name, "id": "program_name"},
             {
                 "header": "",
-                "body": "Powered by Loyallia — Intelligent Rewards",
+                "body": "Powered by Loyallia  Intelligent Rewards",
                 "id": "loyallia_branding",
             },
         ],

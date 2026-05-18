@@ -1,10 +1,10 @@
 """
-Loyallia — Data Migration: Seed Platform Settings (REQ-BOOT-001)
+Loyallia  Data Migration: Seed Platform Settings (REQ-BOOT-001)
 
 Seeds the default runtime-configurable platform settings that the system
 requires to operate (trial duration, tax rate, timezone).
 
-Idempotent: Uses get_or_create — NEVER overwrites existing user-modified values.
+Idempotent: Uses get_or_create  NEVER overwrites existing user-modified values.
 Reverse: noop (settings remain on rollback).
 
 Called by: `python manage.py migrate --noinput` (automatic on every deploy).

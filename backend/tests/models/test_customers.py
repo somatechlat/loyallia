@@ -1,5 +1,5 @@
 """
-Loyallia — Customer, Card & Enrollment Model Unit Tests
+Loyallia  Customer, Card & Enrollment Model Unit Tests
 Tests for Customer, Card, Enrollment, and related models.
 """
 
@@ -17,9 +17,7 @@ from tests.factories import (
     make_tenant,
 )
 
-# =============================================================================
 # Card Model Tests
-# =============================================================================
 
 
 class CardModelTest(TestCase):
@@ -155,9 +153,7 @@ class CardModelTest(TestCase):
             make_card(t, name="Unique Card")
 
 
-# =============================================================================
 # Customer Model Tests
-# =============================================================================
 
 
 class CustomerModelTest(TestCase):
@@ -344,9 +340,7 @@ class CustomerPassModelTest(TestCase):
         self.assertEqual(cp.pass_data["extra"], "data")
 
 
-# =============================================================================
 # Enrollment Model Tests
-# =============================================================================
 
 
 class EnrollmentModelTest(TestCase):

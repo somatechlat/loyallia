@@ -32,9 +32,8 @@ from apps.notifications.models import (
     WhatsAppSession,
 )
 
-# =============================================================================
 # Authentic Ecuadorian / Latin American Name Pools
-# =============================================================================
+
 # Phone prefixes for Ecuador
 from apps.tenants.management.commands.seed_constants import (
     EC_FIRST_NAMES_F,
@@ -75,12 +74,12 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING("Wiping existing DEMO data only (operational infrastructure preserved)...")
             )
-            # Operational identifiers that must NEVER be deleted
+ # Operational identifiers that must NEVER be deleted
             OPERATIONAL_PLAN_SLUGS = {"trial", "starter", "professional", "enterprise"}
             SUPERADMIN_EMAIL = "admin@loyallia.com"
 
             with transaction.atomic():
-                # Child records with FK dependencies first
+ # Child records with FK dependencies first
                 superadmin = User.objects.filter(email=SUPERADMIN_EMAIL).first()
                 superadmin_id = superadmin.id if superadmin else None
                 if superadmin_id:
@@ -99,13 +98,13 @@ class Command(BaseCommand):
                 Invoice.objects.all().delete()
                 PaymentMethod.objects.all().delete()
                 Subscription.objects.all().delete()
-                # Tenant-scoped entities
+ # Tenant-scoped entities
                 Customer.objects.all().delete()
                 Card.objects.all().delete()
                 Location.objects.all().delete()
                 User.objects.exclude(email=SUPERADMIN_EMAIL).delete()
                 Tenant.objects.all().delete()
-                # Non-operational subscription plans (E2E test pollution)
+ # Non-operational subscription plans (E2E test pollution)
                 SubscriptionPlan.objects.exclude(slug__in=OPERATIONAL_PLAN_SLUGS).delete()
             self.stdout.write(self.style.SUCCESS("Demo data wiped. Operational infrastructure preserved."))
 
@@ -129,9 +128,8 @@ class Command(BaseCommand):
     def _seed_data(self, seed_password: str):
         now = timezone.now()
 
-        # =====================================================================
-        # 1. Tenant — Café El Ritmo (Quito, Ecuador)
-        # =====================================================================
+ # 1. Tenant Café El Ritmo (Quito, Ecuador)
+
         tenant, _ = Tenant.objects.get_or_create(
             slug="cafe-el-ritmo",
             defaults={
@@ -146,14 +144,13 @@ class Command(BaseCommand):
             },
         )
 
-        # Idempotency guard: skip if demo data already exists
+ # Idempotency guard: skip if demo data already exists
         if Customer.objects.filter(tenant=tenant).exists():
             self.stdout.write(self.style.NOTICE("Demo data already exists for Café El Ritmo. Skipping seed."))
             return
 
-        # =====================================================================
-        # 2. SuperAdmin
-        # =====================================================================
+ # 2. SuperAdmin
+
         admin, admin_created = User.objects.get_or_create(
             email="admin@loyallia.com",
             defaults={
@@ -166,7 +163,7 @@ class Command(BaseCommand):
                 "is_superuser": True,
             },
         )
-        # SUPER_ADMIN operates at platform level — tenant must be None
+ # SUPER_ADMIN operates at platform level tenant must be None
         admin_needs_save = False
         admin_update_fields = []
         if admin_created:
@@ -187,9 +184,8 @@ class Command(BaseCommand):
         if admin_created or admin_needs_save:
             admin.save(update_fields=[*admin_update_fields, "updated_at"])
 
-        # =====================================================================
-        # 3. Staff Users (Ecuadorian names)
-        # =====================================================================
+ # 3. Staff Users (Ecuadorian names)
+
         users_data = [
             ("owner@example.com", "Carlos", "Andrade Pacheco", UserRole.OWNER),
             (
@@ -216,9 +212,8 @@ class Command(BaseCommand):
             u.set_password(seed_password)
             u.save()
 
-        # =====================================================================
-        # 4. Locations (Real Quito landmarks)
-        # =====================================================================
+ # 4. Locations (Real Quito landmarks)
+
         locations = []
         locations_data = [
             (
@@ -254,9 +249,8 @@ class Command(BaseCommand):
             )
             locations.append(loc)
 
-        # =====================================================================
-        # 5. Billing — Active Enterprise subscription
-        # =====================================================================
+ # 5. Billing Active Enterprise subscription
+
         enterprise_plan = SubscriptionPlan.objects.filter(slug="enterprise", is_active=True).first()
         sub, _ = Subscription.objects.get_or_create(
             tenant=tenant,
@@ -287,12 +281,11 @@ class Command(BaseCommand):
             ]
         )
 
-        # =====================================================================
-        # 6. Loyalty Programs (4 real-world programs)
-        # =====================================================================
+ # 6. Loyalty Programs (4 real-world programs)
+
         c_stamp, _ = Card.objects.get_or_create(
             tenant=tenant,
-            name="Café Frecuente ☕",
+            name="Café Frecuente",
             defaults={
                 "card_type": CardType.STAMP,
                 "description": "Compra 6 cafés y el 7mo es GRATIS. Válido en todas las sucursales.",
@@ -308,7 +301,7 @@ class Command(BaseCommand):
         )
         c_points, _ = Card.objects.get_or_create(
             tenant=tenant,
-            name="Puntos Ritmo 🎯",
+            name="Puntos Ritmo",
             defaults={
                 "card_type": CardType.CASHBACK,
                 "description": "Acumula el 10% de cada compra como crédito. Canjeable en cualquier producto.",
@@ -324,7 +317,7 @@ class Command(BaseCommand):
         )
         c_vip, _ = Card.objects.get_or_create(
             tenant=tenant,
-            name="Club VIP El Ritmo 👑",
+            name="Club VIP El Ritmo ",
             defaults={
                 "card_type": CardType.VIP_MEMBERSHIP,
                 "description": "Membresía exclusiva con 15% de descuento permanente, prioridad y eventos VIP.",
@@ -348,7 +341,7 @@ class Command(BaseCommand):
         )
         c_referral, _ = Card.objects.get_or_create(
             tenant=tenant,
-            name="Refiere y Gana 🤝",
+            name="Refiere y Gana ",
             defaults={
                 "card_type": CardType.REFERRAL_PASS,
                 "description": "Invita a un amigo y ambos reciben $3 de crédito.",
@@ -363,9 +356,8 @@ class Command(BaseCommand):
             },
         )
 
-        # =====================================================================
-        # 7. Mass Customers — 200 with authentic Ecuadorian names
-        # =====================================================================
+ # 7. Mass Customers 200 with authentic Ecuadorian names
+
         self.stdout.write("  -> Generando 200+ clientes ecuatorianos...")
         customers = []
         all_first_names = EC_FIRST_NAMES_M + EC_FIRST_NAMES_F
@@ -399,14 +391,14 @@ class Command(BaseCommand):
             Customer.objects.filter(id=c.id).update(created_at=c_date)
             customers.append(c)
 
-            # Enroll in stamp program (everyone)
+ # Enroll in stamp program (everyone)
             CustomerPass.objects.create(
                 customer=c,
                 card=c_stamp,
                 pass_data={"stamp_count": random.randint(0, 5)},
                 enrolled_at=c_date,
             )
-            # 60% also enroll in cashback
+ # 60% also enroll in cashback
             if random.random() > 0.4:
                 CustomerPass.objects.create(
                     customer=c,
@@ -414,7 +406,7 @@ class Command(BaseCommand):
                     pass_data={"cashback_balance": str(Decimal(random.randint(2, 45)))},
                     enrolled_at=c_date + timedelta(days=random.randint(0, 5)),
                 )
-            # 20% VIP
+ # 20% VIP
             if random.random() > 0.8:
                 CustomerPass.objects.create(
                     customer=c,
@@ -422,7 +414,7 @@ class Command(BaseCommand):
                     pass_data={"membership_tier": "gold", "discount_active": True},
                     enrolled_at=c_date + timedelta(days=random.randint(1, 10)),
                 )
-            # 15% referral
+ # 15% referral
             if random.random() > 0.85:
                 CustomerPass.objects.create(
                     customer=c,
@@ -434,9 +426,8 @@ class Command(BaseCommand):
                     enrolled_at=c_date + timedelta(days=random.randint(0, 7)),
                 )
 
-        # =====================================================================
-        # 8. Mass Transactions — 2000+
-        # =====================================================================
+ # 8. Mass Transactions 2000+
+
         self.stdout.write("  -> Generando 2000+ transacciones...")
         cashier = User.objects.get(email="staff@example.com")
         passes = list(CustomerPass.objects.all())
@@ -476,7 +467,7 @@ class Command(BaseCommand):
 
         Transaction.objects.bulk_create(transactions_to_create)
 
-        # Distribute dates
+ # Distribute dates
         all_tx = list(Transaction.objects.all())
         for tx in all_tx:
             random_date = now - timedelta(days=int(random.expovariate(0.03)))
@@ -484,9 +475,8 @@ class Command(BaseCommand):
                 random_date = now - timedelta(days=random.randint(0, 90))
             Transaction.objects.filter(id=tx.id).update(created_at=random_date)
 
-        # =====================================================================
-        # 9. Rolling DailyAnalytics (90 days)
-        # =====================================================================
+ # 9. Rolling DailyAnalytics (90 days)
+
         self.stdout.write("  -> Hidratando analítica de series de tiempo (90 días)...")
         for day_offset in range(90, -1, -1):
             target_date = (now - timedelta(days=day_offset)).date()
@@ -522,9 +512,8 @@ class Command(BaseCommand):
                 },
             )
 
-        # =====================================================================
-        # 10. Customer & Program Analytics Segments
-        # =====================================================================
+ # 10. Customer & Program Analytics Segments
+
         self.stdout.write("  -> Calculando segmentación de clientes...")
         for c in Customer.objects.filter(tenant=tenant):
             analytics, _ = CustomerAnalytics.objects.get_or_create(customer=c, tenant=tenant)
@@ -534,9 +523,8 @@ class Command(BaseCommand):
             analytics, _ = ProgramAnalytics.objects.get_or_create(card=p, tenant=tenant)
             analytics.update_metrics()
 
-        # =====================================================================
-        # 11. Automation Rules
-        # =====================================================================
+ # 11. Automation Rules
+
         self.stdout.write("  -> Creando reglas de automatización...")
         automations_data = [
             (
@@ -579,39 +567,38 @@ class Command(BaseCommand):
                 total_executions=execs,
             )
 
-        # =====================================================================
-        # 12. Campaign Notifications (simulated via Marketing notifications)
-        # =====================================================================
+ # 12. Campaign Notifications (simulated via Marketing notifications)
+
         self.stdout.write("  -> Creando campañas de notificación push...")
         campaign_customers = list(Customer.objects.filter(tenant=tenant)[:60])
 
         campaigns = [
             {
-                "title": "🎯 ¡Doble de puntos este fin de semana!",
+                "title": "¡Doble de puntos este fin de semana!",
                 "message": "Visítanos en Café El Ritmo este sábado y domingo. Todas tus compras suman el doble de puntos Ritmo.",
                 "days_ago": 3,
                 "recipients": campaign_customers,
             },
             {
-                "title": "☕ Tu café gratis te espera",
+                "title": "Tu café gratis te espera",
                 "message": "Vimos que no has venido en 15 días, ¡te extrañamos! Pasa por cualquier sucursal y disfruta un latte de cortesía.",
                 "days_ago": 1,
                 "recipients": campaign_customers[:20],
             },
             {
-                "title": "🎉 Aniversario Café El Ritmo — 3 Años",
+                "title": "Aniversario Café El Ritmo - 3 Años",
                 "message": "¡Estamos de aniversario! Del 1 al 7 de abril, todas las bebidas de especialidad al 2x1. Celebra con nosotros.",
                 "days_ago": 5,
                 "recipients": campaign_customers[:50],
             },
             {
-                "title": "👑 Nuevo: Club VIP El Ritmo",
+                "title": "Nuevo: Club VIP El Ritmo",
                 "message": "Únete a nuestro club VIP y obtén 15% de descuento permanente, acceso a eventos exclusivos y prioridad en fila.",
                 "days_ago": 10,
                 "recipients": campaign_customers[:40],
             },
             {
-                "title": "🤝 Refiere un amigo y gana $3",
+                "title": "Refiere un amigo y gana $3",
                 "message": "Invita a un amigo a Café El Ritmo. Cuando se registre, ambos reciben $3 de crédito para su próxima compra.",
                 "days_ago": 7,
                 "recipients": campaign_customers[:30],
@@ -643,3 +630,4 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas")
         )
+)

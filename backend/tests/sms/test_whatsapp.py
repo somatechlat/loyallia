@@ -1,5 +1,5 @@
 """
-Loyallia — WhatsApp Integration Tests (LYL-SRS-009)
+Loyallia  WhatsApp Integration Tests (LYL-SRS-009)
 
 Tests for:
   1. Automation action hardening for WhatsApp (send_whatsapp)
@@ -35,13 +35,13 @@ class AutomationSendWhatsAppTest(TestCase):
             action_config={"title": "Promo", "message": "Visit us today!"},
         )
         result = auto._execute_send_whatsapp(self.customer, {})
-        # Real is_bridge_available() checks the bridge health.
-        # If bridge is not configured, it returns False and method returns False.
+ # Real is_bridge_available() checks the bridge health.
+ # If bridge is not configured, it returns False and method returns False.
         self.assertIsInstance(result, bool)
 
     def test_send_whatsapp_bridge_unavailable(self):
-        # When bridge is not configured, is_bridge_available() returns False
-        # and _execute_send_whatsapp returns False
+ # When bridge is not configured, is_bridge_available() returns False
+ # and _execute_send_whatsapp returns False
         auto = make_automation(
             self.tenant,
             action=AutomationAction.SEND_WHATSAPP,

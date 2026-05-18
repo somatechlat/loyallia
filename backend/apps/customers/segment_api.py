@@ -1,5 +1,5 @@
 """
-Loyallia — Customer Segment API
+Loyallia  Customer Segment API
 Handles: built-in segmentation, segment listing, segment members, CSV export.
 Split from customers/api.py per the 600-line architectural limit.
 """
@@ -20,9 +20,8 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-# =============================================================================
 # BUILT-IN SEGMENTS
-# =============================================================================
+
 
 _BUILTIN_SEGMENTS = {
     "all": {

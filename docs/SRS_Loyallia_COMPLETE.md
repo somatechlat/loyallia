@@ -1,5 +1,5 @@
 # SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
-## Loyallia — Intelligent Digital Loyalty Platform
+## Loyallia — Digital Loyalty Platform
 **Document ID:** LOYALLIA-SRS-001  
 **Version:** 1.0.0  
 **Status:** APPROVED FOR DEVELOPMENT  
@@ -7,15 +7,11 @@
 **Standard:** ISO/IEC 29148:2018 — Requirements Engineering  
 **Engine:** Loyallia  
 
----
-
 ## DOCUMENT CONTROL
 
 | Version | Date | Author | Change |
 |---------|------|--------|--------|
 | 1.0.0 | 2026-04-05 | Engineering Team | Initial SRS from product brief + Loyallia website |
-
----
 
 ## TABLE OF CONTENTS
 
@@ -28,7 +24,7 @@
 7. Module 3 — Scanner App (Mobile iOS + Android)  
 8. Module 4 — Business Dashboard (Web)  
 9. Module 5 — Push Notification & Geo-Fencing System  
-10. Module 6 — Intelligent Automation Engine  
+10. Module 6 — Automation Engine  
 11. Module 7 — Customer Segment & Retargeting  
 12. Module 8 — Analytics & KPI Reporting  
 13. Module 9 — Referral Program Engine  
@@ -42,17 +38,15 @@
 21. Constraints & Assumptions  
 22. Verification & Acceptance Criteria  
 
----
-
 ## 1. INTRODUCTION
 
 ### 1.1 Purpose
-This SRS defines the complete functional, non-functional, security, and integration requirements for **Loyallia** — an intelligent digital loyalty SaaS platform. This document is the authoritative reference for all design, development, QA, and DevOps activities.
+This SRS defines the complete functional, non-functional, security, and integration requirements for **Loyallia** — a digital loyalty SaaS platform. This document is the authoritative reference for all design, development, QA, and DevOps activities.
 
 ### 1.2 Scope
 
 **System Name:** Loyallia  
-**Tagline:** Plataforma inteligente de fidelización digital.  
+**Tagline:** Plataforma de fidelización digital.  
 **Underlying Engine:** Loyallia  
 **Market Claim:** Aumenta un 30% las ventas y duplica la tasa de retorno de clientes.
 
@@ -99,8 +93,6 @@ Loyallia enables businesses to create, deploy, and manage digital loyalty progra
 
 ### 1.5 Overview
 Sections 5–17 describe each module with requirements numbered `LYL-FR-<MOD>-<NNN>`. Section 18 covers non-functional requirements (`LYL-NFR-<NNN>`). Sections 19–22 cover data, constraints, and verification.
-
----
 
 ## 2. OVERALL DESCRIPTION
 
@@ -156,8 +148,6 @@ Loyallia is a standalone, cloud-native, multi-tenant SaaS platform. It integrate
 | Email | SMTP via configured provider |
 | Maps / Geo | OpenStreetMap + Leaflet (dashboard) |
 
----
-
 ## 3. STAKEHOLDERS & USER CLASSES
 
 ### 3.1 Stakeholder Registry
@@ -168,7 +158,7 @@ Loyallia is a standalone, cloud-native, multi-tenant SaaS platform. It integrate
 | STK-02 | Business Owner (Tenant) | Primary Paying Customer | Customer retention, revenue increase |
 | STK-03 | Business Manager | Operational User | Campaign results, customer data |
 | STK-04 | In-Store Staff / Cashier | Scanner App User | Fast, reliable pass scanning |
-| STK-05 | End Customer | Beneficiary | Seamless rewards, no app install |
+| STK-05 | End Customer | Beneficiary | Automated rewards, no app install |
 | STK-06 | System Integrators | API Consumer | Stable API, documentation |
 | STK-07 | Regulatory Bodies | Compliance | LOPDP, SRI/IVA compliance |
 
@@ -188,8 +178,6 @@ Loyallia is a standalone, cloud-native, multi-tenant SaaS platform. It integrate
 - Goal: Earn rewards without friction
 - Pain: "Another app to download"
 - Success: Scans QR from poster → fills name/email → card appears in Wallet. No download.
-
----
 
 ## 4. SYSTEM ARCHITECTURE OVERVIEW
 
@@ -222,8 +210,6 @@ Multi-tenant SaaS with strict per-tenant data isolation (`tenant_id` FK on all b
 | MinIO | 9000 / 9001 | 9000 / 9001 |
 | Nginx | 80 / 443 | 80 / 443 |
 | Flower (Celery monitor) | 5555 | 5555 |
-
----
 
 ## 5. MODULE 1 — AUTHENTICATION & MULTI-TENANT MANAGEMENT
 
@@ -275,8 +261,6 @@ Manage tenant onboarding, user authentication, role-based access control, and te
 | LYL-FR-AUTH-031 | System SHALL support multiple physical locations per tenant with separate addresses and geo-coordinates | MUST |
 | LYL-FR-AUTH-032 | Each location SHALL have its own QR code for customer enrollment | MUST |
 | LYL-FR-AUTH-033 | System SHALL allow tenants to configure up to 10 active loyalty programs simultaneously | MUST |
-
----
 
 ## 6. MODULE 2 — DIGITAL CARD ENGINE (10 CARD TYPES)
 
@@ -443,8 +427,6 @@ Every card type shares these base properties:
 | LYL-FR-CARD-106 | System SHALL support NFC tap validation (Apple Pay NFC passthrough) where available | COULD |
 | LYL-FR-CARD-107 | System SHALL ensure each QR code is cryptographically signed to prevent forgery | MUST |
 
----
-
 ## 7. MODULE 3 — SCANNER APP (MOBILE — iOS & ANDROID)
 
 ### 7.1 Module Purpose
@@ -513,8 +495,6 @@ The Scanner App is the in-store operational tool for business staff. It validate
 | LYL-FR-SCAN-051 | App SHALL show customer visit history upon scan (last 5 visits) | SHOULD |
 | LYL-FR-SCAN-052 | App SHALL support multiple language: Spanish (default), English | SHOULD |
 | LYL-FR-SCAN-053 | App SHALL update to new versions silently via OTA update (CodePush or EAS Update) | SHOULD |
-
----
 
 ## 8. MODULE 4 — BUSINESS DASHBOARD (WEB)
 
@@ -610,9 +590,6 @@ The Business Dashboard is the primary management interface for Business Owners a
 | LYL-FR-DASH-077 | Google Wallet endpoint SHALL return 404 if wallet_provider is "apple" | MUST |
 | LYL-FR-DASH-078 | Existing cards (created before wallet provider feature) SHALL default to "both" providers for backward compatibility | MUST |
 
-
----
-
 ## 9. MODULE 5 — PUSH NOTIFICATION & GEO-FENCING SYSTEM
 
 ### 9.1 Module Purpose
@@ -655,8 +632,6 @@ Deliver targeted push notifications directly to customer lock screens via Apple 
 | LYL-FR-PUSH-022 | System SHALL automatically send push for win-back: customer inactive for N days (configurable, default 30 days) | SHOULD |
 | LYL-FR-PUSH-023 | All automated push messages SHALL be configurable per message template | SHOULD |
 
----
-
 ## 10. MODULE 6 — INTELLIGENT AUTOMATION ENGINE
 
 ### 10.1 Module Purpose
@@ -695,8 +670,6 @@ Every automation rule has:
 | Big Spender | total_spend >= $500 | issue_coupon("VIP20") |
 | Stamp Rush | stamp_earned, visits_in_week >= 3 | issue_stamp(1) bonus |
 
----
-
 ## 11. MODULE 7 — CUSTOMER SEGMENTATION & RETARGETING
 
 ### 11.1 Module Purpose
@@ -715,8 +688,6 @@ Allow businesses to group customers by behavioral and demographic criteria for t
 | LYL-FR-SEG-007 | Segments SHALL be selectable as targets for automation rules | MUST |
 | LYL-FR-SEG-008 | Dashboard SHALL allow export of any segment as CSV | MUST |
 | LYL-FR-SEG-009 | System SHALL provide pre-built segments: All Customers, Active (visited in 30 days), At-Risk (31-60 days inactive), Lost (>60 days inactive), VIP (top 10% by spend) | SHOULD |
-
----
 
 ## 12. MODULE 8 — ANALYTICS & KPI REPORTING
 
@@ -767,8 +738,6 @@ Provide real-time and historical insights into program performance, customer beh
 | LYL-FR-ANA-040 | All analytics data SHALL be exportable as CSV | MUST |
 | LYL-FR-ANA-041 | Transaction history SHALL be exportable as CSV or PDF | MUST |
 
----
-
 ## 13. MODULE 9 — REFERRAL PROGRAM ENGINE
 
 ### 13.1 Module Purpose
@@ -787,8 +756,6 @@ Enable viral customer acquisition by allowing enrolled customers to refer new cu
 | LYL-FR-REF-007 | Referee reward SHALL be included in their new pass upon enrollment | MUST |
 | LYL-FR-REF-008 | System SHALL detect self-referral (same email/device) and reject with error | MUST |
 | LYL-FR-REF-009 | Dashboard SHALL display referral analytics: total referrals, conversion rate, top referrers | MUST |
-
----
 
 ## 14. MODULE 10 — SUBSCRIPTION & BILLING MANAGEMENT
 
@@ -821,8 +788,6 @@ Manage tenant subscription lifecycle: free trial, plan selection, payment, invoi
 | LYL-FR-BILL-010 | Dashboard SHALL display: current plan, next billing date, payment history, invoices | MUST |
 | LYL-FR-BILL-011 | Tenant SHALL be able to add additional POS locations at $10/month each | MUST |
 | LYL-FR-BILL-012 | System SHALL support annual billing with discount (to be configured by Super Admin) | SHOULD |
-
----
 
 ## 15. MODULE 11 — CUSTOMER WALLET EXPERIENCE
 
@@ -873,8 +838,6 @@ Define the end-to-end customer-facing flow: from QR discovery to wallet pass. Th
 | LYL-FR-WALL-029 | Phone preview in dashboard SHALL render with visible contrast regardless of light/dark theme | MUST |
 | LYL-FR-WALL-030 | Phone preview SHALL display accurate platform-specific UI: Dynamic Island for iPhone, center pill for Android | MUST |
 
----
-
 ## 16. MODULE 12 — REST API & INTEGRATION LAYER
 
 ### 16.1 Module Purpose
@@ -908,8 +871,6 @@ Provide a documented, versioned REST API for third-party integrations (POS syste
 | `/api/v1/notifications/send/` | POST | Send push notification |
 | `/api/v1/webhooks/` | GET/POST | Manage webhook subscriptions |
 
----
-
 ## 17. MODULE 13 — SUPER-ADMIN PANEL
 
 ### 17.1 Module Purpose
@@ -928,8 +889,6 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | LYL-FR-SADM-007 | Super Admin panel SHALL display system health: API response times, queue depth, error rate | MUST |
 | LYL-FR-SADM-008 | Super Admin SHALL be able to broadcast a system notification to all tenants | SHOULD |
 | LYL-FR-SADM-009 | All Super Admin actions SHALL be logged in an immutable audit log | MUST |
-
----
 
 ## 18. NON-FUNCTIONAL REQUIREMENTS
 
@@ -983,8 +942,6 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | LYL-NFR-042 | All deployments SHALL use Docker Compose (development/staging) |
 | LYL-NFR-043 | API documentation SHALL be automatically generated and always current |
 
----
-
 ## 19. SECURITY REQUIREMENTS
 
 | Req ID | Requirement | Priority |
@@ -1007,8 +964,6 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | LYL-SEC-030 | Super Admin impersonation SHALL require the Owner's 6-digit numeric security PIN (Argon2 hashed). 3 failed attempts SHALL trigger 15-minute lockout via Redis TTL counter. Every attempt SHALL be audit-logged with status (success/denied). | MUST |
 | LYL-SEC-031 | Owner SHALL set security PIN via `POST /tenants/security-pin/` with current password verification. PIN format: exactly 6 numeric digits. | MUST |
 | LYL-SEC-032 | All Mailjet SMTP credentials SHALL be stored in HashiCorp Vault KV v2 (keys: `mailjet_api_key`, `mailjet_secret_key`, `mailjet_sender_email`). NEVER in code or Git. | MUST |
-
----
 
 ## 19.2 LOPDP DATA RIGHTS (Ecuador — Ley Orgánica de Protección de Datos Personales)
 
@@ -1076,8 +1031,6 @@ Platform-wide management interface accessible only to Loyallia operations team (
 |--------|-------------|----------|
 | LYL-NFR-ARCH-040 | Settings page (`settings/page.tsx`) SHALL be modularized: WhatsApp wizard extracted to `WhatsAppWizard.tsx`, LOPDP section to `DataPrivacySection.tsx`. No file SHALL exceed 600 lines. | MUST |
 
----
-
 ## 20. DATA REQUIREMENTS
 
 ### 20.1 Core Entity Model
@@ -1107,8 +1060,6 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | Audit logs | 7 years |
 | Database backups | 30 days rolling |
 
----
-
 ## 21. CONSTRAINTS & ASSUMPTIONS
 
 ### 21.1 Technical Constraints
@@ -1133,8 +1084,6 @@ Platform-wide management interface accessible only to Loyallia operations team (
 3. All push notification device tokens are collected upon pass installation.
 4. Manual payment verification is the default; pluggable gateway architecture supports future providers (e.g., PayPhone, Kushki) when available in Ecuador/LATAM.
 5. Email delivery depends on a configured SMTP provider (e.g., SendGrid, Mailjet).
-
----
 
 ## 22. VERIFICATION & ACCEPTANCE CRITERIA
 
@@ -1166,8 +1115,6 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | 10,000 push notifications | Celery benchmark | All delivered ≤ 5 minutes |
 | 100 simultaneous QR enrollments | k6 | All passes generated ≤ 5 seconds each |
 | Dashboard cold load | Lighthouse | LCP ≤ 2 seconds |
-
----
 
 *End of SRS Document — LOYALLIA-SRS-001 v1.0.0*  
 *Next Document: LOYALLIA-ARCH-001 — Architecture, Sequence & Flowchart Diagrams*
@@ -1209,17 +1156,12 @@ Current SuperAdmin impersonation allows access without secondary authentication,
    - **Security Lockout:** Implement a Redis-backed counter (`impersonate_fails:{user_id}`). Terminate request with HTTP 429 if failed attempts >= 3 within 900 seconds (15 minutes).
    - **Audit Trail:** Transcribe `justification` to `AuditLog`. Record status as `SUCCESS` or `DENIED` depending on PIN validation outcome.
 
-
----
-
 ## 24. MODULE 14 — TWILIO COMMUNICATIONS STACK (Verify v2 + SMS)
 
 > **Document ID:** LOYALLIA-SRS-VERIFY-001  
 > **Status:** APPROVED FOR DEVELOPMENT  
 > **Date:** 2026-05-09  
 > **Parent Document:** LOYALLIA-SRS-001 v1.0.0  
-
----
 
 ### 24.1 Purpose & Scope
 
@@ -1229,8 +1171,6 @@ This module defines the complete integration of the **Twilio Communications Stac
 2. **Twilio Verify v2** (NEW) — Multi-channel OTP, identity verification, Silent Network Authentication (SNA), TOTP, and Push
 
 ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the SysAdmin Settings panel. No hardcoded credentials. No environment-variable-only secrets.
-
----
 
 ### 24.2 Definitions
 
@@ -1244,8 +1184,6 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 | Verification SID | Unique verification attempt identifier (`VExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`) |
 | Friendly Name | Human-readable Verify service label in message templates |
 | Custom Code | Pre-generated verification code (4-10 digits) instead of random |
-
----
 
 ### 24.3 Architecture & Flowcharts
 
@@ -1399,21 +1337,19 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 └─────────┘      │
 ```
 
----
-
 ### 24.4 Functional Requirements
 
 #### 24.4.1 Twilio SMS (Existing — LYL-SRS-009)
 
 | Req ID | Requirement | Priority | Status |
 |--------|-------------|----------|--------|
-| LYL-FR-SMS-001 | System SHALL send single SMS via `POST /notifications/send-sms/` | MUST | ✅ |
-| LYL-FR-SMS-002 | System SHALL execute mass SMS campaigns via Celery task `send_sms_campaign` | MUST | ✅ |
-| LYL-FR-SMS-003 | Campaigns SHALL be gated by `sms_campaigns` plan feature | MUST | ✅ |
-| LYL-FR-SMS-004 | Campaigns SHALL be gated by `sms_day` plan limit | MUST | ✅ |
-| LYL-FR-SMS-005 | Each message delivery SHALL be tracked in `CampaignDeliveryLog` | MUST | ✅ |
-| LYL-FR-SMS-006 | Twilio credentials SHALL be read from Vault | MUST | ✅ |
-| LYL-FR-SMS-007 | Campaign API (`POST /campaigns/`) SHALL accept `channel="sms"` | MUST | ✅ |
+| LYL-FR-SMS-001 | System SHALL send single SMS via `POST /notifications/send-sms/` | MUST | PASS |
+| LYL-FR-SMS-002 | System SHALL execute mass SMS campaigns via Celery task `send_sms_campaign` | MUST | PASS |
+| LYL-FR-SMS-003 | Campaigns SHALL be gated by `sms_campaigns` plan feature | MUST | PASS |
+| LYL-FR-SMS-004 | Campaigns SHALL be gated by `sms_day` plan limit | MUST | PASS |
+| LYL-FR-SMS-005 | Each message delivery SHALL be tracked in `CampaignDeliveryLog` | MUST | PASS |
+| LYL-FR-SMS-006 | Twilio credentials SHALL be read from Vault | MUST | PASS |
+| LYL-FR-SMS-007 | Campaign API (`POST /campaigns/`) SHALL accept `channel="sms"` | MUST | PASS |
 
 #### 24.4.2 Twilio Verify v2 (NEW)
 
@@ -1438,7 +1374,7 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 | LYL-FR-VRF-017 | System SHALL support custom message templates (`templateSid`) per verification | SHOULD |
 | LYL-FR-VRF-018 | System SHALL support locale override for international customers | SHOULD |
 | LYL-FR-VRF-019 | System SHALL support rate limits per unique key (e.g., per phone, per IP) | SHOULD |
-| LYL-FR-VRF-020 | System SHALL support SNA (Silent Network Auth) for seamless verification | SHOULD |
+| LYL-FR-VRF-020 | System SHALL support SNA (Silent Network Auth) for automated verification | SHOULD |
 | LYL-FR-VRF-021 | System SHALL support `auto` channel (SNA fallback to SMS) | SHOULD |
 | LYL-FR-VRF-022 | System SHALL support TOTP registration and validation | SHOULD |
 | LYL-FR-VRF-023 | System SHALL support email verification via Twilio SendGrid integration | SHOULD |
@@ -1465,8 +1401,6 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 | LYL-FR-REG-005 | Max 3 verification attempts per phone number per hour (Redis rate limit) | MUST |
 | LYL-FR-REG-006 | Verified phone SHALL set `Customer.phone_verified_at` timestamp | MUST |
 
----
-
 ### 24.5 SysAdmin Configuration Panel — All Editable Parameters
 
 #### 24.5.1 Requirement
@@ -1487,8 +1421,6 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 | `twilio_api_key_secret` | API Key | Yes | Min 32 chars | password |
 | `twilio_test_account_sid` | Test | No | `^AC[a-f0-9]{32}$` | text |
 | `twilio_test_auth_token` | Test | Yes | Min 32 chars | password |
-
----
 
 ### 24.6 Backend Implementation Plan
 
@@ -1511,8 +1443,6 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 | `backend/apps/api/management/commands/check_vault_config.py` | Add new key groups |
 | `backend/common/messages.py` | Add i18n messages for Verify flows |
 
----
-
 ### 24.7 Security Requirements
 
 | Req ID | Requirement | Priority |
@@ -1527,8 +1457,6 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 | LYL-SEC-VRF-008 | SNA URLs SHALL have 10-minute TTL and single-use enforcement | MUST |
 | LYL-SEC-VRF-009 | Custom codes SHALL be between 4-10 digits inclusive | MUST |
 | LYL-SEC-VRF-010 | PSD2 transaction parameters SHALL be validated when `psd2_enabled=true` | SHOULD |
-
----
 
 ### 24.8 Testing & Acceptance Criteria
 
@@ -1547,8 +1475,6 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 | VRF-E2E-002 | Factory reset with Verify enabled sends OTP via configured channel |
 | VRF-E2E-003 | Factory reset with Verify disabled uses local OTP + direct SMS |
 | VRF-E2E-004 | Registration with phone verification creates verified customer |
-
----
 
 ### 24.9 Implementation Roadmap
 
@@ -1585,8 +1511,6 @@ ALL configuration parameters SHALL be editable at runtime by SUPER_ADMIN via the
 - Run full Django test suite
 - Run Playwright e2e suite
 - Update documentation
-
----
 
 *End of Module 14 — Twilio Communications Stack*
 *Updated: 2026-05-09 — Added LYL-SRS-VERIFY-001*

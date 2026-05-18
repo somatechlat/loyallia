@@ -1,5 +1,5 @@
 """
-Loyallia — Celery Configuration
+Loyallia  Celery Configuration
 Extracted from base.py for Rule 245 compliance.
 All Celery settings are imported via `from loyallia.settings.celery_config import *`
 """
@@ -10,9 +10,8 @@ from celery.schedules import crontab
 
 from common.vault import get_secret
 
-# =============================================================================
 # CELERY BROKER & RESULT BACKEND
-# =============================================================================
+
 CELERY_BROKER_URL = get_secret(
     "celery_broker_url",
     default="redis://localhost:6379/1",
@@ -22,9 +21,8 @@ CELERY_RESULT_BACKEND = get_secret(
     default="redis://localhost:6379/2",
 )
 
-# =============================================================================
 # SERIALIZATION & TIMING
-# =============================================================================
+
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -40,9 +38,8 @@ CELERY_ACKS_LATE = True  # Acknowledge after completion (prevents task loss)
 CELERY_TASK_ALWAYS_EAGER = "test" in sys.argv
 CELERY_TASK_EAGER_PROPAGATES = "test" in sys.argv
 
-# =============================================================================
-# TASK ROUTING — matches actual task names in apps.*.tasks
-# =============================================================================
+# TASK ROUTING matches actual task names in apps.*.tasks
+
 CELERY_TASK_ROUTES = {
     "apps.customers.tasks.generate_qr_for_pass": {"queue": "pass_generation"},
     "apps.customers.tasks.trigger_pass_update": {"queue": "pass_generation"},
@@ -59,9 +56,8 @@ CELERY_TASK_ROUTES = {
     "*": {"queue": "default"},
 }
 
-# =============================================================================
 # BEAT SCHEDULER
-# =============================================================================
+
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 CELERY_BEAT_SCHEDULE = {

@@ -1,5 +1,5 @@
 """
-Loyallia — Analytics Celery Tasks (apps/analytics/tasks.py)
+Loyallia  Analytics Celery Tasks (apps/analytics/tasks.py)
 
 Asynchronous calculation of business intelligence metrics.
 Triggered after every transaction to keep materialized analytics tables fresh.
@@ -57,13 +57,13 @@ def update_tenant_analytics(self, tenant_id: str) -> dict:
         logger.error("update_tenant_analytics: tenant %s not found", tenant_id)
         return {"success": False}
 
-    # 1. Update Program Analytics
+ # 1. Update Program Analytics
     programs = Card.objects.filter(tenant=tenant)
     for program in programs:
         analytics, _ = ProgramAnalytics.objects.get_or_create(card=program, defaults={"tenant": tenant})
         analytics.update_metrics()
 
-    # 2. Update Daily Analytics for the last 7 days to catch late syncs
+ # 2. Update Daily Analytics for the last 7 days to catch late syncs
     today = timezone.localdate()
     for days_ago in range(7):
         target_date = today - timedelta(days=days_ago)

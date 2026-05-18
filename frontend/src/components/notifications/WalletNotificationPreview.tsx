@@ -29,7 +29,7 @@ export default function WalletNotificationPreview({
 
   return (
     <div className={`grid gap-4 ${showApple && showGoogle ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-      {/* ── Apple Wallet Preview ── */}
+      {/* Apple Wallet preview */}
       {showApple && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -110,7 +110,7 @@ export default function WalletNotificationPreview({
         </div>
       )}
 
-      {/* ── Google Wallet Preview ── */}
+      {/* Google Wallet preview */}
       {showGoogle && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">

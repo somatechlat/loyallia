@@ -1,5 +1,5 @@
 """
-Loyallia — Audit API Response Schemas (Django Ninja / Pydantic)
+Loyallia  Audit API Response Schemas (Django Ninja / Pydantic)
 Typed response models for audit log endpoints.
 """
 

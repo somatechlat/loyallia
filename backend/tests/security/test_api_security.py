@@ -1,5 +1,5 @@
 """
-Loyallia — API Security Tests
+Loyallia  API Security Tests
 
 Tests for API-level security findings.
 
@@ -15,9 +15,7 @@ from django.test import RequestFactory, TestCase
 
 from common.url_validator import BLOCKED_NETWORKS, SSRFError, validate_external_url
 
-# =============================================================================
 # LYL-H-SEC-004: X-Forwarded-For Spoofing Tests
-# =============================================================================
 
 
 class TestClientIPExtraction(TestCase):
@@ -43,7 +41,7 @@ class TestClientIPExtraction(TestCase):
         request.META["REMOTE_ADDR"] = "203.0.113.50"
         request.META["HTTP_X_FORWARDED_FOR"] = "1.2.3.4, 10.0.0.1"
         ip = _get_client_ip(request)
-        # Must use REMOTE_ADDR, not the spoofed XFF
+ # Must use REMOTE_ADDR, not the spoofed XFF
         self.assertEqual(ip, "203.0.113.50")
 
     def test_defaults_to_unknown(self):
@@ -57,9 +55,7 @@ class TestClientIPExtraction(TestCase):
         self.assertEqual(ip, "unknown")
 
 
-# =============================================================================
 # LYL-H-SEC-003: Webhook Replay Protection Tests
-# =============================================================================
 
 
 class TestWebhookReplayProtection(TestCase):
@@ -67,7 +63,7 @@ class TestWebhookReplayProtection(TestCase):
 
     def test_fresh_webhook_accepted(self):
         """Webhook with current timestamp should be accepted."""
-        # This tests the timestamp logic conceptually
+ # This tests the timestamp logic conceptually
         timestamp = time.time()
         self.assertLess(abs(time.time() - timestamp), 300)
 
@@ -97,9 +93,7 @@ class TestWebhookReplayProtection(TestCase):
         self.assertIn("processed_at", field_names)
 
 
-# =============================================================================
 # LYL-H-SEC-009: SSRF Protection Tests
-# =============================================================================
 
 
 class TestSSRFProtection(TestCase):
@@ -107,7 +101,7 @@ class TestSSRFProtection(TestCase):
 
     def test_valid_public_url_passes(self):
         """Public URLs should pass validation."""
-        # This test may fail without network — skip if DNS fails
+ # This test may fail without network skip if DNS fails
         try:
             result = validate_external_url("https://example.com/image.png")
             self.assertEqual(result, "https://example.com/image.png")
@@ -170,9 +164,7 @@ class TestSSRFProtection(TestCase):
         self.assertTrue(issubclass(SSRFError, ValueError))
 
 
-# =============================================================================
 # Cross-Tenant Isolation Tests
-# =============================================================================
 
 
 class TestCrossTenantIsolation(TestCase):
@@ -224,9 +216,7 @@ class TestCrossTenantIsolation(TestCase):
             self.assertIn(ctx.exception.status_code, (403, 404))
 
 
-# =============================================================================
 # Role Boundary API Tests
-# =============================================================================
 
 
 class TestRoleBoundariesAPI(TestCase):
@@ -273,9 +263,7 @@ class TestRoleBoundariesAPI(TestCase):
         self.assertEqual(ctx.exception.status_code, 403)
 
 
-# =============================================================================
 # Rate Limit Rule Coverage Tests
-# =============================================================================
 
 
 class TestRateLimitRules(TestCase):
@@ -313,9 +301,7 @@ class TestRateLimitRules(TestCase):
         self.assertEqual(general_index, len(paths) - 1)
 
 
-# =============================================================================
 # Rate Limiter Runtime Behavior Tests
-# =============================================================================
 
 
 class TestRateLimiterRuntimeBehavior(TestCase):

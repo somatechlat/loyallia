@@ -1,5 +1,5 @@
 """
-Loyallia — Super Admin API: Tenant + Location + Invoice endpoints
+Loyallia  Super Admin API: Tenant + Location + Invoice endpoints
 """
 
 import json
@@ -44,9 +44,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-# =============================================================================
 # HELPERS
-# =============================================================================
 
 
 def _require_super_admin(request) -> None:
@@ -61,9 +59,7 @@ def _get_tenant_or_404(tenant_id: str) -> Tenant:
         raise HttpError(404, get_message("NOT_FOUND"))
 
 
-# =============================================================================
 # TENANT CRUD
-# =============================================================================
 
 
 @router.get(
@@ -80,7 +76,7 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         .prefetch_related("users", "locations")
         .order_by("-created_at")
     )
-    # LYL-H-ARCH-011: Filter by Subscription status instead of denormalized Tenant.plan
+ # LYL-H-ARCH-011: Filter by Subscription status instead of denormalized Tenant.plan
     if plan:
         from apps.billing.models import Subscription, SubscriptionStatus
 
@@ -97,7 +93,7 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
             qs = qs.filter(plan=plan)
     if is_active is not None:
         qs = qs.filter(is_active=is_active)
-    # Hide tenants scheduled for deletion (cascade delete in progress)
+ # Hide tenants scheduled for deletion (cascade delete in progress)
     qs = qs.filter(scheduled_deletion_at__isnull=True)
     return [TenantAdminOut.from_tenant(t) for t in qs]
 
@@ -252,8 +248,8 @@ def update_tenant_admin(request, tenant_id: str):
         raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
 
     update_fields = ["updated_at"]
-    # LYL-H-ARCH-011: "plan" removed — use Subscription endpoints to change plan.
-    # Tenant.plan is a denormalized cache; Subscription is authoritative.
+ # LYL-H-ARCH-011: "plan" removed use Subscription endpoints to change plan.
+ # Tenant.plan is a denormalized cache; Subscription is authoritative.
     for field in [
         "name",
         "legal_name",
@@ -281,9 +277,7 @@ def update_tenant_admin(request, tenant_id: str):
     return TenantAdminOut.from_tenant(tenant)
 
 
-# =============================================================================
 # LOCATIONS
-# =============================================================================
 
 
 @router.get(
@@ -320,9 +314,7 @@ def add_tenant_location(request, tenant_id: str, payload: LocationIn):
     return LocationOut.from_location(loc)
 
 
-# =============================================================================
 # INVOICES
-# =============================================================================
 
 
 @router.get(
@@ -352,20 +344,18 @@ def list_tenant_invoices(request, tenant_id: str):
     ]
 
 
-# =============================================================================
 # TENANT ACTIONS (Suspend, Reactivate, Extend Trial, Impersonate)
-# =============================================================================
 
 
 @router.post("/tenants/{tenant_id}/suspend/", auth=jwt_auth, response=MessageOut)
 def suspend_tenant(request, tenant_id: str):
-    """LYL-H-ARCH-011: Suspend tenant — Subscription is authoritative source."""
+    """LYL-H-ARCH-011: Suspend tenant  Subscription is authoritative source."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     tenant.is_active = False
     tenant.save(update_fields=["is_active", "updated_at"])
 
-    # Update Subscription as authoritative plan state
+ # Update Subscription as authoritative plan state
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription:
         subscription.status = SubscriptionStatus.SUSPENDED
@@ -386,11 +376,11 @@ def delete_tenant(request, tenant_id: str):
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
 
-    # Prevent deleting tenants already scheduled for deletion
+ # Prevent deleting tenants already scheduled for deletion
     if tenant.scheduled_deletion_at is not None:
         raise HttpError(400, get_message("VALIDATION_ERROR", detail="El negocio ya está programado para eliminación"))
 
-    # Require justification
+ # Require justification
     try:
         body = json.loads(request.body) if request.body else {}
     except Exception:
@@ -405,12 +395,12 @@ def delete_tenant(request, tenant_id: str):
     tenant_name = tenant.name
     tenant_id_str = str(tenant.id)
 
-    # SYNCHRONOUS hard delete — data is gone before response returns
+ # SYNCHRONOUS hard delete data is gone before response returns
     from apps.tenants.tasks import hard_delete_tenant
 
     hard_delete_tenant(tenant_id_str)
 
-    # Audit log with ACTUAL SuperAdmin identity
+ # Audit log with ACTUAL SuperAdmin identity
     try:
         from apps.audit.models import AuditAction, AuditStatus
         from apps.audit.service import log_action
@@ -438,13 +428,13 @@ def delete_tenant(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/reactivate/", auth=jwt_auth, response=MessageOut)
 def reactivate_tenant(request, tenant_id: str):
-    """LYL-H-ARCH-011: Reactivate tenant — Subscription is authoritative source."""
+    """LYL-H-ARCH-011: Reactivate tenant  Subscription is authoritative source."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     tenant.is_active = True
     tenant.save(update_fields=["is_active", "updated_at"])
 
-    # Update Subscription as authoritative plan state
+ # Update Subscription as authoritative plan state
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription:
         subscription.status = SubscriptionStatus.ACTIVE
@@ -461,7 +451,7 @@ def reactivate_tenant(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/extend-trial/", auth=jwt_auth, response=MessageOut)
 def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
-    """LYL-H-ARCH-011: Extend trial — Subscription is authoritative source.
+    """LYL-H-ARCH-011: Extend trial  Subscription is authoritative source.
     LYL-H-API-013: Limit total trial extensions to prevent unlimited trials.
     """
     _require_super_admin(request)
@@ -472,8 +462,8 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
         )
     tenant = _get_tenant_or_404(tenant_id)
 
-    # LYL-H-API-013: Prevent unlimited trial extensions
-    # Cap total trial period at 90 days from first trial start
+ # LYL-H-API-013: Prevent unlimited trial extensions
+ # Cap total trial period at 90 days from first trial start
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription and subscription.trial_start:
         max_trial_end = subscription.trial_start + timedelta(days=90)
@@ -498,7 +488,7 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     tenant.is_active = True
     tenant.save(update_fields=["trial_end", "is_active", "updated_at"])
 
-    # Update Subscription trial_end
+ # Update Subscription trial_end
     if subscription:
         subscription.trial_end = new_trial_end
         subscription.status = SubscriptionStatus.TRIALING
@@ -510,9 +500,7 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     )
 
 
-# =============================================================================
 # WHATSAPP OVERRIDE (LYL-SRS-008)
-# =============================================================================
 
 
 @router.patch(

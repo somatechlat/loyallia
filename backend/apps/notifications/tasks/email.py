@@ -1,5 +1,5 @@
 """
-Loyallia — Email Notification Celery Tasks (apps/notifications/tasks/email.py)
+Loyallia  Email Notification Celery Tasks (apps/notifications/tasks/email.py)
 
 Email campaign delivery task with rich HTML templates and per-customer tracking.
 """
@@ -148,14 +148,14 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
   {html_body}
 </div>
 <div class="footer">
-  <p>Powered by <a href="https://loyallia.com">Loyallia</a> — Intelligent Rewards</p>
+  <p>Powered by <a href="https://loyallia.com">Loyallia</a>  Intelligent Rewards</p>
   <p style="margin-top:4px;">© 2024 {tenant.name}. Todos los derechos reservados.</p>
   <p style="margin-top:8px; font-size:10px;">¿No quieres recibir más correos? Visita tu perfil para gestionar tus preferencias.</p>
 </div>
 </div>
 </body></html>"""
 
-                # Generate a stable Message-ID for webhook correlation
+ # Generate a stable Message-ID for webhook correlation
                 import uuid as _uuid
 
                 message_id = f"{_uuid.uuid4().hex}@loyallia.com"

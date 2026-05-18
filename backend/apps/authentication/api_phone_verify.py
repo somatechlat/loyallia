@@ -1,5 +1,5 @@
 """
-Loyallia — Phone Verification API Endpoints (LYL-SRS-VERIFY-001)
+Loyallia  Phone Verification API Endpoints (LYL-SRS-VERIFY-001)
 
 PUBLIC endpoints for phone verification via Twilio Verify or local OTP fallback.
 No authentication required. Rate limited.
@@ -34,7 +34,7 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
     """
     from django.core.cache import cache
 
-    # Rate limit: max 5 starts per phone per 10 minutes
+ # Rate limit: max 5 starts per phone per 10 minutes
     rate_key = f"verify_phone_start:{payload.phone}"
     try:
         count = cache.incr(rate_key)

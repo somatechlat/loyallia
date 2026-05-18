@@ -1,7 +1,7 @@
 """
-Loyallia — Authentication Celery Tasks
+Loyallia  Authentication Celery Tasks
 
-LYL-M-ARCH-030: All tasks are idempotent — safe to re-execute.
+LYL-M-ARCH-030: All tasks are idempotent  safe to re-execute.
 LYL-M-ARCH-031: Retry logic for transient failures.
 """
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def cleanup_expired_tokens(self) -> dict:
     """Delete expired refresh tokens to prevent database bloat.
 
-    LYL-M-ARCH-030: Idempotent — deleting already-deleted rows is a no-op.
+    LYL-M-ARCH-030: Idempotent  deleting already-deleted rows is a no-op.
     LYL-M-ARCH-031: Retries on transient DB failures.
     """
     from django.utils import timezone

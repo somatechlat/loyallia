@@ -1,5 +1,5 @@
 """
-Loyallia — Tenants App Configuration
+Loyallia  Tenants App Configuration
 """
 
 from django.apps import AppConfig

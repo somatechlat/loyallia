@@ -1,5 +1,5 @@
 """
-Loyallia Django Settings — Test
+Loyallia Django Settings  Test
 
 Inherits from base.py (NOT development.py).
 Ensures production-fidelity configuration.
@@ -8,12 +8,11 @@ Django uses loyallia_dev as the test database template (--reuse-db recommended).
 
 from .base import *  # noqa: F401, F403
 
-# =============================================================================
 # TEST DATABASE ISOLATION
 # Django creates test_loyallia_dev automatically and destroys it after tests.
 # Use --reuse-db to keep the test database across runs.
-# =============================================================================
-# Bypass PgBouncer in tests — connection pooling is unnecessary and breaks
+
+# Bypass PgBouncer in tests connection pooling is unnecessary and breaks
 # test DB creation/destruction. Route everything through direct PostgreSQL.
 if "direct" in DATABASES:  # noqa: F405
     DATABASES["default"] = DATABASES["direct"].copy()  # noqa: F405
@@ -21,19 +20,17 @@ if "direct" in DATABASES:  # noqa: F405
     del DATABASES["direct"]  # noqa: F405
     DATABASE_ROUTERS = []  # noqa: F405
 
-# =============================================================================
 # DISABLE RATE LIMITING IN TESTS
 # Tests must not be blocked by Redis-backed rate limiting.
-# =============================================================================
+
 MIDDLEWARE = [  # noqa: F405
     m
     for m in MIDDLEWARE  # noqa: F405
     if m != "common.rate_limit.RateLimitMiddleware"
 ]
 
-# =============================================================================
 # PRODUCTION-FIDELITY TEST SETTINGS
-# =============================================================================
+
 DEBUG = False
 
 # Email captured in-memory for test assertions and isolation
@@ -63,9 +60,8 @@ CORS_ALLOWED_ORIGINS = [
 # MinIO test bucket to avoid polluting dev/prod buckets
 AWS_STORAGE_BUCKET_NAME = "loyallia-test"
 
-# =============================================================================
-# LOGGING — quieter in tests
-# =============================================================================
+# LOGGING quieter in tests
+
 import logging
 
 logging.getLogger("django.db.backends").setLevel(logging.WARNING)

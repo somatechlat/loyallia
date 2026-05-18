@@ -23,11 +23,11 @@ class Command(BaseCommand):
         errors = validate_environment(is_production=is_production)
 
         if not errors:
-            self.stdout.write(self.style.SUCCESS("✓ All environment variables are valid"))
+            self.stdout.write(self.style.SUCCESS(" All environment variables are valid"))
             return
 
-        self.stderr.write(self.style.ERROR(f"✗ Found {len(errors)} validation error(s):"))
+        self.stderr.write(self.style.ERROR(f" Found {len(errors)} validation error(s):"))
         for err in errors:
-            self.stderr.write(f"  • {err.message}")
+            self.stderr.write(f"   {err.message}")
 
         raise SystemExit(1)

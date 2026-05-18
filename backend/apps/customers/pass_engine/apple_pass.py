@@ -1,13 +1,13 @@
 """
-Loyallia — Apple Wallet PKPass Generator
+Loyallia  Apple Wallet PKPass Generator
 Generates real .pkpass files for Apple Wallet (iOS).
 
 A .pkpass file is a signed ZIP archive containing:
-- pass.json   — Card layout, colors, barcode, fields
-- manifest.json — SHA1 hashes of all included files
+- pass.json    Card layout, colors, barcode, fields
+- manifest.json  SHA1 hashes of all included files
 - signature    — PKCS#7 detached signature of manifest.json
-- icon.png / icon@2x.png — Card icon (required)
-- logo.png / logo@2x.png — Business logo (optional)
+- icon.png / icon@2x.png  Card icon (required)
+- logo.png / logo@2x.png  Business logo (optional)
 
 According to Apple PassKit docs:
 https://developer.apple.com/documentation/walletpasses
@@ -113,7 +113,7 @@ def get_apple_wallet_diagnostics() -> dict:
     if not diagnostics["wwdr_cert_pem_present"]:
         diagnostics["errors"].append("Missing APPLE_WWDR_CERT_PEM in Vault")
 
-    # Only try crypto validation if all PEMs are present
+ # Only try crypto validation if all PEMs are present
     if all(
         [
             diagnostics["cert_pem_present"],
@@ -136,14 +136,14 @@ def get_apple_wallet_diagnostics() -> dict:
 
 # Mapping from Card.barcode_type to Apple PKBarcodeFormat constants.
 # Per Apple docs: QR, Aztec, Code128, PDF417 are valid on iOS 9+.
-# Code128 is NOT supported on watchOS — Apple auto-falls back.
+# Code128 is NOT supported on watchOS Apple auto-falls back.
 # DataMatrix has no Apple equivalent; we fall back to QR.
 APPLE_BARCODE_FORMATS = {
     "qr_code": "PKBarcodeFormatQR",
     "aztec": "PKBarcodeFormatAztec",
     "code_128": "PKBarcodeFormatCode128",
     "pdf417": "PKBarcodeFormatPDF417",
-    "data_matrix": "PKBarcodeFormatQR",  # No Apple DataMatrix — fallback
+    "data_matrix": "PKBarcodeFormatQR",  # No Apple DataMatrix fallback
 }
 
 
@@ -231,7 +231,7 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
     Uses the `cryptography` library's PKCS7SignatureBuilder (stable API).
     The old pyOpenSSL _lib.PKCS7_sign was removed in pyOpenSSL 23.0+.
 
-    PERF: Certificates are loaded from Vault (cached 5min) — no filesystem I/O.
+    PERF: Certificates are loaded from Vault (cached 5min)  no filesystem I/O.
     SEC: Private key never touches disk; loaded from Vault PEM string directly.
     """
     from common.vault import get_secret
@@ -250,17 +250,17 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         from cryptography.hazmat.primitives.serialization import Encoding
         from cryptography.hazmat.primitives.serialization import pkcs7 as pkcs7_module
 
-        # Load the signing certificate
+ # Load the signing certificate
         cert = x509.load_pem_x509_certificate(cert_pem.encode("utf-8"))
 
-        # Load the private key (no passphrase)
+ # Load the private key (no passphrase)
         key = serialization.load_pem_private_key(key_pem.encode("utf-8"), password=None)
 
-        # Load the WWDR intermediate certificate
+ # Load the WWDR intermediate certificate
         wwdr = x509.load_pem_x509_certificate(wwdr_pem.encode("utf-8"))
 
-        # Build the PKCS#7 detached signature using the stable API
-        # Apple requires: SHA256 hash, DER encoding, detached + binary flags
+ # Build the PKCS#7 detached signature using the stable API
+ # Apple requires: SHA256 hash, DER encoding, detached + binary flags
         signature = (
             pkcs7_module.PKCS7SignatureBuilder()
             .set_data(manifest_json)
@@ -276,7 +276,7 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         )
         return signature
     except ImportError:
-        logger.error("cryptography library not installed — cannot sign Apple passes")
+        logger.error("cryptography library not installed  cannot sign Apple passes")
         return None
     except Exception as exc:
         logger.error("Failed to sign Apple pass manifest: %s", exc)
@@ -318,7 +318,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
             with httpx.Client(timeout=10.0, follow_redirects=False, max_redirects=0) as client:
                 resp = client.get(url)
                 if resp.status_code == 200:
-                    # Enforce 5MB max size
+ # Enforce 5MB max size
                     content = resp.content
                     if len(content) > 5 * 1024 * 1024:
                         logger.warning("Image too large (%d bytes): %s", len(content), url)
@@ -336,7 +336,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
     from PIL import Image
 
-    # Default fallbacks
+ # Default fallbacks
     icon_29 = _generate_placeholder_icon(card.name, bg_color, 29)
     icon_58 = _generate_placeholder_icon(card.name, bg_color, 58)
     logo_87 = _generate_placeholder_icon(card.name, bg_color, 87)
@@ -369,14 +369,14 @@ def generate_pkpass(customer_pass) -> bytes | None:
     if strip_bytes:
         try:
             img = Image.open(io.BytesIO(strip_bytes)).convert("RGBA")
-            # Per Apple docs: strip.png is only valid for storeCard and coupon.
-            # generic passes use thumbnail.png instead (90×90pt, up to 3:2 aspect).
+ # Per Apple docs: strip.png is only valid for storeCard and coupon.
+ # generic passes use thumbnail.png instead (90×90pt, up to 3:2 aspect).
             if pass_style in ("storeCard", "coupon"):
-                # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
+ # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
                 files["strip.png"] = _resize_image(img, 375, 123)
                 files["strip@2x.png"] = _resize_image(img, 750, 246)
             elif pass_style == "generic":
-                # Apple Wallet thumbnail: 90x90 (@1x), 180x180 (@2x)
+ # Apple Wallet thumbnail: 90x90 (@1x), 180x180 (@2x)
                 files["thumbnail.png"] = _resize_image(img, 90, 90)
                 files["thumbnail@2x.png"] = _resize_image(img, 180, 180)
         except Exception as exc:

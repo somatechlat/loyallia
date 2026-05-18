@@ -17,7 +17,7 @@ def register_device(request, data: PushDeviceSchema):
     """Register a device for push notifications."""
     customer = _get_customer_or_403(request)
 
-    # Get or create device
+ # Get or create device
     device, created = PushDevice.objects.update_or_create(
         customer=customer,
         device_token=data.device_token,
@@ -43,7 +43,7 @@ def unregister_device(request, device_id: str):
     LYL-H-API-012: Device queries are tenant-scoped via customer relationship.
     """
     customer = _get_customer_or_403(request)
-    # LYL-H-API-012: Scope device query to customer's devices (tenant isolation)
+ # LYL-H-API-012: Scope device query to customer's devices (tenant isolation)
     device = get_object_or_404(PushDevice, id=device_id, customer=customer)
 
     device.is_active = False

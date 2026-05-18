@@ -1,5 +1,5 @@
 """
-Loyallia — Billing Service Layer
+Loyallia  Billing Service Layer
 Extracted business logic from billing API views.
 """
 
@@ -108,7 +108,7 @@ class BillingService:
         subscription.subscription_plan = plan
         subscription.billing_cycle = billing_cycle
 
-        # Store payment method if provided
+ # Store payment method if provided
         if card_data and card_data.get("card_token"):
             PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(is_default=False)
             PaymentMethod.objects.create(
@@ -122,7 +122,7 @@ class BillingService:
                 is_default=True,
             )
 
-        # Activate subscription
+ # Activate subscription
         subscription.activate_paid()
         logger.info(
             "Tenant %s subscribed to plan %s (%s)",
