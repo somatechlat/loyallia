@@ -1,84 +1,57 @@
 #!/bin/sh
 set -eu
 
+# =============================================================================
+# LOYALLIA VAULT INITIALIZATION & SECRET SEEDING
+# =============================================================================
+# This script runs inside the vault-init container.
+# It initializes Vault (if needed), unseals it, enables KV v2,
+# and seeds all application secrets from the bootstrap JSON file.
+#
+# Design: Secrets are read from a read-only volume mount.
+#         NO secrets are ever passed via environment variables.
+# =============================================================================
+
+# --- Logging helpers ---------------------------------------------------------
+LOG_PREFIX="[vault-init]"
+log_info()  { echo "$LOG_PREFIX [INFO]  $*"; }
+log_warn()  { echo "$LOG_PREFIX [WARN]  $*" >&2; }
+log_error() { echo "$LOG_PREFIX [ERROR] $*" >&2; }
+
+# --- Wait for Vault API to be reachable --------------------------------------
 wait_for_vault() {
+    log_info "Waiting for Vault API at $VAULT_ADDR ..."
     i=0
-    until wget --spider --quiet "$VAULT_ADDR/v1/sys/seal-status"; do
+    until wget --spider --quiet --no-check-certificate \
+        "$VAULT_ADDR/v1/sys/seal-status" 2>/dev/null; do
         i=$((i + 1))
-        [ "$i" -lt 60 ] || {
-            echo "vault-init timeout waiting for vault api"
+        if [ "$i" -ge 60 ]; then
+            log_error "Timeout waiting for Vault API after 60 seconds"
             exit 1
-        }
+        fi
         sleep 1
     done
+    log_info "Vault API is reachable."
 }
 
+# --- Read a field from existing Vault secret (for idempotency) ---------------
 existing_field() {
     vault kv get -mount=secret -field="$1" "$VAULT_APP_SECRET_PATH" 2>/dev/null || true
 }
 
-env_or_existing() {
-    key="$1"
-    value="$2"
-    if [ -n "$value" ]; then
-        printf "%s" "$value"
-        return
-    fi
-    existing_field "$key"
-}
-
-require_secret() {
-    key="$1"
-    value="$2"
-    if [ -z "$value" ]; then
-        echo "missing required Vault bootstrap value for $key"
-        exit 1
-    fi
-}
-
-generate_basic_auth() {
-    printf "loyallia:%s" "$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32)"
-}
-
-generate_secret() {
-    tr -dc A-Za-z0-9 </dev/urandom | head -c 40
-}
-
-set_secret() {
-    key="$1"
-    value="$2"
-    [ -n "$value" ] || return 0
-    # Use stdin (=-) to avoid Vault CLI interpreting @ as file prefix
-    printf '%s' "$value" | vault kv patch -mount=secret "$VAULT_APP_SECRET_PATH" "$key=-" >/dev/null 2>&1 || \
-        printf '%s' "$value" | vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" "$key=-" >/dev/null
-}
-
-set_secret_from_env() {
-    key="$1"
-    value="$2"
-    [ -n "$value" ] || return 0
-    set_secret "$key" "$value"
-}
-
-set_secret_default_if_missing() {
-    key="$1"
-    default_value="$2"
-    [ -n "$(existing_field "$key")" ] && return 0
-    set_secret "$key" "$default_value"
-}
-
-# JSON bootstrap file reader
+# --- JSON bootstrap file reader ----------------------------------------------
 BOOTSTRAP_FILE="${BOOTSTRAP_SECRETS_FILE:-/vault/bootstrap/secrets.json}"
 
 # Install python3 if missing (Alpine-based vault image)
 if ! command -v python3 &>/dev/null; then
-    echo "Installing python3 for JSON parsing..."
+    log_info "Installing python3 for JSON parsing..."
     apk add --no-cache python3 >/dev/null 2>&1 || {
-        echo "ERROR: Cannot install python3. Bootstrap secrets JSON requires Python."
+        log_error "Cannot install python3. Bootstrap secrets JSON requires Python."
         exit 1
     }
 fi
 
+# --- Read value from bootstrap JSON ------------------------------------------
 json_get() {
     key="$1"
     if [ -f "$BOOTSTRAP_FILE" ]; then
@@ -95,33 +68,62 @@ except Exception:
     fi
 }
 
+# --- Generate secrets if needed ----------------------------------------------
+generate_basic_auth() {
+    printf "loyallia:%s" "$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32)"
+}
+
+generate_secret() {
+    tr -dc A-Za-z0-9 </dev/urandom | head -c 40
+}
+
+# =============================================================================
+# MAIN EXECUTION
+# =============================================================================
+
 wait_for_vault
 
-# Generate self-signed TLS certificate if none exists
+# --- Generate self-signed TLS certificate if none exists (local dev) ---------
 if [ ! -f /vault/certs/vault.crt ]; then
+    log_info "No TLS certificates found — generating self-signed cert for local dev..."
     mkdir -p /vault/certs
+    apk add --no-cache openssl >/dev/null 2>&1 || true
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout /vault/certs/vault.key \
+        -out /vault/certs/vault.crt \
+        -subj "/CN=vault" \
+        -addext "subjectAltName = DNS:vault,DNS:localhost,IP:127.0.0.1,IP:0.0.0.0" 2>/dev/null || \
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout /vault/certs/vault.key \
         -out /vault/certs/vault.crt \
         -subj "/CN=vault" 2>/dev/null || true
 fi
 
-# Support rescue injection: copy VAULT_RESCUE_INIT_JSON into place if provided
+# --- Support rescue injection ------------------------------------------------
 if [ -n "${VAULT_RESCUE_INIT_JSON:-}" ] && [ -f "$VAULT_RESCUE_INIT_JSON" ]; then
     cp "$VAULT_RESCUE_INIT_JSON" /vault/file/init.json
-    echo "Injected rescue init.json from $VAULT_RESCUE_INIT_JSON"
+    log_info "Injected rescue init.json from $VAULT_RESCUE_INIT_JSON"
 fi
 
-# Determine if Vault is already initialized
-VAULT_INIT_STATUS="$(vault status -format=json 2>/dev/null || true)"
-VAULT_ALREADY_INIT="$(printf "%s" "$VAULT_INIT_STATUS" | grep -c '"initialized":[ ]*true' || true)"
+# --- Determine if Vault is already initialized -------------------------------
+log_info "Checking Vault initialization status..."
+VAULT_INIT_STATUS=""
+VAULT_ALREADY_INIT=0
+
+if wget --quiet --no-check-certificate -O - "$VAULT_ADDR/v1/sys/seal-status" 2>/dev/null > /tmp/seal_status.json; then
+    if [ -s /tmp/seal_status.json ]; then
+        VAULT_INIT_STATUS="$(cat /tmp/seal_status.json)"
+        VAULT_ALREADY_INIT="$(printf "%s" "$VAULT_INIT_STATUS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(1 if d.get('initialized') else 0)" 2>/dev/null || echo 0)"
+    fi
+fi
+
+UNSEAL_KEY=""
+ROOT_TOKEN=""
 
 if [ "$VAULT_ALREADY_INIT" -gt 0 ]; then
-    echo "Vault already initialized."
-    UNSEAL_KEY=""
-    ROOT_TOKEN=""
+    log_info "Vault already initialized."
 
-    # Decrypt init.json.gpg if present (GPG-encrypted unseal keys)
+    # Decrypt init.json.gpg if present
     if [ -f /vault/file/init.json.gpg ]; then
         if command -v gpg &>/dev/null && [ -n "${VAULT_INIT_PASSPHRASE:-}" ]; then
             gpg --batch --yes --passphrase "$VAULT_INIT_PASSPHRASE" \
@@ -129,241 +131,368 @@ if [ "$VAULT_ALREADY_INIT" -gt 0 ]; then
         fi
     fi
 
+    # Extract credentials from init.json
     if [ -s /vault/file/init.json ]; then
         if command -v jq &>/dev/null; then
-            UNSEAL_KEY="$(jq -r '.unseal_keys_b64[0]' /vault/file/init.json)"
+            UNSEAL_KEY="$(jq -r '.unseal_keys_b64[0]' /vault/file/init.json 2>/dev/null || true)"
+            ROOT_TOKEN="$(jq -r '.root_token' /vault/file/init.json 2>/dev/null || true)"
         else
-            UNSEAL_KEY="$(python3 -c "import json; print(json.load(open('/vault/file/init.json'))['unseal_keys_b64'][0])" 2>/dev/null || true)"
+            UNSEAL_KEY="$(python3 -c "import json; d=json.load(open('/vault/file/init.json')); print(d.get('unseal_keys_b64',[''])[0])" 2>/dev/null || true)"
+            ROOT_TOKEN="$(python3 -c "import json; d=json.load(open('/vault/file/init.json')); print(d.get('root_token',''))" 2>/dev/null || true)"
         fi
-        ROOT_TOKEN="$(awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
     fi
 
+    # Fallback: try runtime app-token
     if [ -z "$ROOT_TOKEN" ] && [ -f /vault/runtime/app-token ]; then
         ROOT_TOKEN="$(cat /vault/runtime/app-token 2>/dev/null || true)"
-        echo "Using runtime app-token as VAULT_TOKEN (init.json was empty)."
+        log_info "Using runtime app-token as VAULT_TOKEN."
     fi
 
-    if [ -z "$ROOT_TOKEN" ] && [ -f /vault/runtime/app-token ]; then
-        APP_TOKEN="$(cat /vault/runtime/app-token 2>/dev/null || true)"
-        if [ -n "$APP_TOKEN" ]; then
-            ROOT_TOKEN="$(VAULT_TOKEN="$APP_TOKEN" vault token create -policy=loyallia-app -field=token 2>/dev/null || true)"
-            [ -n "$ROOT_TOKEN" ] && echo "Generated new app token as fallback."
-        fi
-    fi
-
-    [ -n "$ROOT_TOKEN" ] || {
-        echo "CRITICAL: Cannot obtain any Vault token. Vault is initialized but unreachable."
+    if [ -z "$ROOT_TOKEN" ]; then
+        log_error "Cannot obtain any Vault token. Vault is initialized but unreachable."
         exit 1
-    }
+    fi
 
     export VAULT_TOKEN="$ROOT_TOKEN"
 
-    VAULT_SEALED="$(printf "%s" "$VAULT_INIT_STATUS" | grep -c '"sealed":[ ]*true' || true)"
+    # Check if sealed and unseal if needed
+    VAULT_SEALED="$(printf "%s" "$VAULT_INIT_STATUS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(1 if d.get('sealed') else 0)" 2>/dev/null || echo 0)"
     if [ "$VAULT_SEALED" -gt 0 ]; then
         if [ -n "$UNSEAL_KEY" ]; then
-            vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || true
+            log_info "Vault is sealed — unsealing..."
+            vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || {
+                log_warn "Unseal with key 0 failed, trying remaining keys..."
+            }
         else
-            echo "WARNING: Vault sealed but no unseal key available. Cannot auto-unseal."
+            log_warn "Vault sealed but no unseal key available. Cannot auto-unseal."
         fi
     fi
+
 else
-    echo "Vault not initialized. Performing first-time initialization..."
-    vault operator init -key-shares=5 -key-threshold=3 -format=json >/vault/file/init.json
-    # Extract unseal keys using jq or python3 (handles JSON array properly)
+    # ===================================================================
+    # FIRST-TIME INITIALIZATION
+    # ===================================================================
+    log_info "Vault not initialized. Performing first-time initialization..."
+
+    vault operator init -key-shares=5 -key-threshold=3 -format=json > /vault/file/init.json
+
     if command -v jq &>/dev/null; then
         UNSEAL_KEY="$(jq -r '.unseal_keys_b64[0]' /vault/file/init.json)"
     else
-        UNSEAL_KEY="$(python3 -c "import json; print(json.load(open('/vault/file/init.json'))['unseal_keys_b64'][0])")"
+        UNSEAL_KEY="$(python3 -c "import json; d=json.load(open('/vault/file/init.json')); print(d['unseal_keys_b64'][0])")"
     fi
-    ROOT_TOKEN="$(awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
+    ROOT_TOKEN="$(python3 -c "import json; d=json.load(open('/vault/file/init.json')); print(d['root_token'])" 2>/dev/null || \
+                awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
+
+    [ -n "$UNSEAL_KEY" ] || { log_error "Missing unseal key after init"; exit 1; }
+    [ -n "$ROOT_TOKEN" ] || { log_error "Missing root token after init"; exit 1; }
+
+    log_info "Vault initialized (5 shares, 3 threshold)."
 
     # Encrypt init.json to protect unseal keys at rest
     if command -v gpg &>/dev/null; then
-        gpg --batch --yes --passphrase "${VAULT_INIT_PASSPHRASE:-$(openssl rand -base64 32)}" \
+        GPG_PASS="${VAULT_INIT_PASSPHRASE:-$(openssl rand -base64 32)}"
+        gpg --batch --yes --passphrase "$GPG_PASS" \
             --symmetric --cipher-algo AES256 --output /vault/file/init.json.gpg /vault/file/init.json
         rm -f /vault/file/init.json
-        echo "Unseal keys encrypted with AES256-GPG. Passphrase stored in Vault env only."
+        log_info "Unseal keys encrypted with AES256-GPG."
     fi
 
-    [ -n "$UNSEAL_KEY" ] || { echo "missing unseal key"; exit 1; }
-    [ -n "$ROOT_TOKEN" ] || { echo "missing root token"; exit 1; }
-
+    # Unseal with the first key
+    log_info "Unsealing Vault..."
     vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || true
+
     export VAULT_TOKEN="$ROOT_TOKEN"
 
-    vault secrets enable -path=secret kv-v2 >/dev/null 2>&1 || true
+    # Enable KV v2 secrets engine
+    log_info "Enabling KV v2 secrets engine at 'secret/' ..."
+    vault secrets enable -path=secret kv-v2 2>/dev/null || {
+        log_info "KV v2 engine may already be enabled — continuing..."
+    }
 fi
 
-# Read secrets from JSON bootstrap file
-# Priority: JSON file values first, then existing Vault values (idempotency)
+# --- Verify Vault is unsealed and we have a valid token ----------------------
+log_info "Verifying Vault status..."
+vault status -format=json > /tmp/vault_status_final.json 2>/dev/null || {
+    log_error "Cannot connect to Vault with current token."
+    exit 1
+}
 
-secret_key="$(env_or_existing secret_key "$(json_get secret_key)")"
-postgres_password="$(env_or_existing postgres_password "$(json_get postgres_password)")"
-redis_url="$(env_or_existing redis_url "$(json_get redis_url)")"
-celery_broker_url="$(env_or_existing celery_broker_url "$(json_get celery_broker_url)")"
-celery_result_backend="$(env_or_existing celery_result_backend "$(json_get celery_result_backend)")"
-minio_access_key="$(env_or_existing minio_access_key "$(json_get minio_access_key)")"
-minio_secret_key="$(env_or_existing minio_secret_key "$(json_get minio_secret_key)")"
-jwt_secret_key="$(env_or_existing jwt_secret_key "$(json_get jwt_secret_key)")"
-pass_hmac_secret="$(env_or_existing pass_hmac_secret "$(json_get pass_hmac_secret)")"
-flower_basic_auth="$(env_or_existing flower_basic_auth "$(json_get flower_basic_auth)")"
-whatsapp_bridge_api_key="$(env_or_existing whatsapp_bridge_api_key "$(json_get whatsapp_bridge_api_key)")"
-grafana_admin_password="$(env_or_existing grafana_admin_password "$(json_get grafana_admin_password)")"
+SEALED_CHECK="$(python3 -c "import json; d=json.load(open('/tmp/vault_status_final.json')); print('true' if d.get('sealed') else 'false')")"
+if [ "$SEALED_CHECK" = "true" ]; then
+    log_error "Vault is still sealed after unseal attempts."
+    exit 1
+fi
 
+log_info "Vault is unsealed and token is valid."
+
+# =============================================================================
+# READ ALL SECRETS FROM BOOTSTRAP JSON
+# =============================================================================
+
+log_info "Reading secrets from bootstrap file: $BOOTSTRAP_FILE"
+
+if [ ! -f "$BOOTSTRAP_FILE" ]; then
+    log_error "Bootstrap secrets file not found: $BOOTSTRAP_FILE"
+    exit 1
+fi
+
+# --- Core infrastructure secrets ---------------------------------------------
+secret_key="$(json_get secret_key)"
+postgres_password="$(json_get postgres_password)"
+redis_url="$(json_get redis_url)"
+celery_broker_url="$(json_get celery_broker_url)"
+celery_result_backend="$(json_get celery_result_backend)"
+minio_access_key="$(json_get minio_access_key)"
+minio_secret_key="$(json_get minio_secret_key)"
+jwt_secret_key="$(json_get jwt_secret_key)"
+pass_hmac_secret="$(json_get pass_hmac_secret)"
+flower_basic_auth="$(json_get flower_basic_auth)"
+whatsapp_bridge_api_key="$(json_get whatsapp_bridge_api_key)"
+grafana_admin_password="$(json_get grafana_admin_password)"
+
+# --- Fallbacks for generated values ------------------------------------------
 [ -n "$flower_basic_auth" ] || flower_basic_auth="$(generate_basic_auth)"
 [ -n "$whatsapp_bridge_api_key" ] || whatsapp_bridge_api_key="$(generate_secret)"
 [ -n "$grafana_admin_password" ] || grafana_admin_password="$(generate_secret)"
 
-require_secret secret_key "$secret_key"
-require_secret postgres_password "$postgres_password"
-require_secret redis_url "$redis_url"
-require_secret celery_broker_url "$celery_broker_url"
-require_secret celery_result_backend "$celery_result_backend"
-require_secret minio_access_key "$minio_access_key"
-require_secret minio_secret_key "$minio_secret_key"
-require_secret jwt_secret_key "$jwt_secret_key"
-require_secret pass_hmac_secret "$pass_hmac_secret"
+# --- Validate required secrets -----------------------------------------------
+log_info "Validating required secrets..."
+MISSING=0
+for key_name in secret_key postgres_password redis_url celery_broker_url \
+                celery_result_backend minio_access_key minio_secret_key \
+                jwt_secret_key pass_hmac_secret; do
+    eval "val=\$$key_name"
+    if [ -z "$val" ]; then
+        log_error "Missing required secret: $key_name"
+        MISSING=$((MISSING + 1))
+    fi
+done
 
-# Write core secrets to Vault
-set_secret secret_key "$secret_key"
-set_secret postgres_password "$postgres_password"
-set_secret redis_url "$redis_url"
-set_secret celery_broker_url "$celery_broker_url"
-set_secret celery_result_backend "$celery_result_backend"
-set_secret minio_access_key "$minio_access_key"
-set_secret minio_secret_key "$minio_secret_key"
-set_secret jwt_secret_key "$jwt_secret_key"
-set_secret pass_hmac_secret "$pass_hmac_secret"
-set_secret flower_basic_auth "$flower_basic_auth"
-set_secret whatsapp_bridge_api_key "$whatsapp_bridge_api_key"
-set_secret grafana_admin_password "$grafana_admin_password"
-
-# Write certificates from JSON to Vault
-set_secret_from_env apple_cert_pem "$(json_get apple_cert_pem)"
-set_secret_from_env apple_cert_key_pem "$(json_get apple_cert_key_pem)"
-set_secret_from_env apple_wwdr_cert_pem "$(json_get apple_wwdr_cert_pem)"
-set_secret_from_env google_service_account_json "$(json_get google_service_account_json)"
-set_secret_from_env google_oauth_client_id "$(json_get google_oauth_client_id)"
-set_secret_from_env google_oauth_client_secret "$(json_get google_oauth_client_secret)"
-
-# Auto-enable wallet features if certificates present
-# Priority: explicit JSON value first, then auto-detect from certs
-apple_wallet_enabled_json="$(json_get apple_wallet_enabled)"
-if [ -n "$apple_wallet_enabled_json" ]; then
-    set_secret apple_wallet_enabled "$apple_wallet_enabled_json"
-elif [ -n "$(json_get apple_cert_pem)" ] && [ -n "$(json_get apple_cert_key_pem)" ]; then
-    set_secret_default_if_missing apple_wallet_enabled "true"
-    echo "Apple Wallet: certificates detected — auto-enabled"
-else
-    set_secret_default_if_missing apple_wallet_enabled "false"
+if [ "$MISSING" -gt 0 ]; then
+    log_error "$MISSING required secret(s) missing. Aborting."
+    exit 1
 fi
 
-google_wallet_enabled_json="$(json_get google_wallet_enabled)"
-if [ -n "$google_wallet_enabled_json" ]; then
-    set_secret google_wallet_enabled "$google_wallet_enabled_json"
-elif [ -n "$(json_get google_service_account_json)" ]; then
-    set_secret_default_if_missing google_wallet_enabled "true"
-    echo "Google Wallet: service account detected — auto-enabled"
+log_info "All required secrets present."
+
+# =============================================================================
+# BUILD SINGLE BULK KV PUT COMMAND (avoids overwrite issues)
+# =============================================================================
+# KV v2 "vault kv put" REPLACES all data at the path.
+# Individual "kv put" calls would overwrite each other.
+# Solution: Build ONE command with ALL key=value pairs.
+# =============================================================================
+
+log_info "Building secret payload..."
+
+# Build key=value pairs for the bulk put
+# We write to a temp file and use vault kv put with @file syntax
+python3 - "$BOOTSTRAP_FILE" "$flower_basic_auth" "$whatsapp_bridge_api_key" "$grafana_admin_password" << 'PYEOF'
+import json
+import sys
+
+bootstrap_file = sys.argv[1]
+flower_auth = sys.argv[2]
+whatsapp_key = sys.argv[3]
+grafana_pass = sys.argv[4]
+
+with open(bootstrap_file) as f:
+    data = json.load(f)
+
+secrets = data.get('secrets', {})
+
+# Override generated fallbacks
+if not secrets.get('flower_basic_auth'):
+    secrets['flower_basic_auth'] = flower_auth
+if not secrets.get('whatsapp_bridge_api_key'):
+    secrets['whatsapp_bridge_api_key'] = whatsapp_key
+if not secrets.get('grafana_admin_password'):
+    secrets['grafana_admin_password'] = grafana_pass
+
+# Remove empty certificate values
+for k in ['apple_cert_pem', 'apple_cert_key_pem', 'apple_wwdr_cert_pem', 'google_service_account_json']:
+    if k in secrets and not secrets[k]:
+        del secrets[k]
+
+# Ensure all values are strings
+for k, v in secrets.items():
+    if not isinstance(v, str):
+        secrets[k] = str(v)
+
+# Write the payload for vault kv put
+with open('/tmp/vault_secrets_payload.json', 'w') as f:
+    json.dump({"data": secrets}, f)
+
+print(f"Prepared {len(secrets)} secrets for bulk upload")
+PYEOF
+
+log_info "Writing all secrets to Vault in a single atomic operation..."
+
+# Use the payload file approach for KV v2
+# First check if the path already exists
+EXISTS="$(vault kv list -mount=secret "$VAULT_APP_SECRET_PATH" 2>/dev/null | grep -c "^$" || echo 0)" || true
+
+if vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" @/tmp/vault_secrets_payload.json 2>/tmp/vault_put_error.log; then
+    log_info "All secrets written to Vault successfully."
 else
-    set_secret_default_if_missing google_wallet_enabled "false"
-fi
-
-# Wallet identifiers (placeholders if not configured)
-set_secret_from_env google_wallet_issuer_id "$(json_get google_wallet_issuer_id)"
-set_secret_from_env apple_pass_type_identifier "$(json_get apple_pass_type_identifier)"
-set_secret_from_env apple_team_identifier "$(json_get apple_team_identifier)"
-
-# Payment Gateway
-set_secret_from_env payment_gateway_login "$(json_get payment_gateway_login)"
-set_secret_from_env payment_gateway_tran_key "$(json_get payment_gateway_tran_key)"
-set_secret_from_env payment_gateway_webhook_secret "$(json_get payment_gateway_webhook_secret)"
-
-# Email / Mailjet
-set_secret_from_env mailjet_api_key "$(json_get mailjet_api_key)"
-set_secret_from_env mailjet_secret_key "$(json_get mailjet_secret_key)"
-set_secret_from_env mailjet_sender_email "$(json_get mailjet_sender_email)"
-set_secret_from_env mailjet_sender_name "$(json_get mailjet_sender_name)"
-
-# WhatsApp Bridge
-set_secret_from_env whatsapp_bridge_url "$(json_get whatsapp_bridge_url)"
-set_secret whatsapp_bridge_api_key "$whatsapp_bridge_api_key"
-
-# Twilio (SMS + Verify)
-set_secret_from_env twilio_account_sid "$(json_get twilio_account_sid)"
-set_secret_from_env twilio_auth_token "$(json_get twilio_auth_token)"
-set_secret_from_env twilio_from_number "$(json_get twilio_from_number)"
-set_secret_from_env twilio_verify_enabled "$(json_get twilio_verify_enabled)"
-set_secret_from_env twilio_verify_service_sid "$(json_get twilio_verify_service_sid)"
-set_secret_from_env twilio_verify_default_channel "$(json_get twilio_verify_default_channel)"
-set_secret_from_env twilio_api_key_sid "$(json_get twilio_api_key_sid)"
-set_secret_from_env twilio_api_key_secret "$(json_get twilio_api_key_secret)"
-set_secret_from_env twilio_test_account_sid "$(json_get twilio_test_account_sid)"
-set_secret_from_env twilio_test_auth_token "$(json_get twilio_test_auth_token)"
-set_secret_from_env twilio_use_test_mode "$(json_get twilio_use_test_mode)"
-
-# Apple NFC
-set_secret_from_env apple_nfc_enabled "$(json_get apple_nfc_enabled)"
-set_secret_from_env apple_nfc_encryption_public_key "$(json_get apple_nfc_encryption_public_key)"
-
-# AI Agent
-set_secret_from_env ai_agent_base_url "$(json_get ai_agent_base_url)"
-set_secret_from_env ai_agent_api_key "$(json_get ai_agent_api_key)"
-
-# System / Backup
-set_secret_from_env system_mode "$(json_get system_mode)"
-set_secret_from_env backup_frequency "$(json_get backup_frequency)"
-set_secret_from_env backup_retention "$(json_get backup_retention)"
-set_secret_from_env cron_hour "$(json_get cron_hour)"
-
-# Age encryption
-set_secret_from_env age_public_key "$(json_get age_public_key)"
-
-# Defaults for feature toggles (only on first write)
-set_secret_default_if_missing google_wallet_enabled "true"
-set_secret_default_if_missing apple_wallet_enabled "false"
-set_secret_default_if_missing payment_gateway_enabled "false"
-set_secret_default_if_missing payment_gateway_provider "manual"
-set_secret_default_if_missing apple_nfc_enabled "false"
-set_secret_default_if_missing twilio_verify_enabled "false"
-set_secret_default_if_missing twilio_use_test_mode "false"
-set_secret_default_if_missing system_mode "development"
-set_secret_default_if_missing backup_frequency "15days"
-set_secret_default_if_missing backup_retention "31"
-set_secret_default_if_missing cron_hour "5"
-
-# Export infrastructure secrets to runtime files
-mkdir -p /vault/runtime
-printf "%s" "$postgres_password" >/vault/runtime/postgres_password
-printf "%s" "$redis_url" | sed -n 's|redis://:\([^@]*\)@.*|\1|p' >/vault/runtime/redis_password
-printf "%s" "$minio_access_key" >/vault/runtime/minio_root_user
-printf "%s" "$minio_secret_key" >/vault/runtime/minio_root_password
-printf "%s" "$whatsapp_bridge_api_key" >/vault/runtime/whatsapp_bridge_api_key
-printf "%s" "$grafana_admin_password" >/vault/runtime/grafana_admin_password
-chmod 0600 /vault/runtime/postgres_password /vault/runtime/redis_password \
-    /vault/runtime/minio_root_user /vault/runtime/minio_root_password \
-    /vault/runtime/whatsapp_bridge_api_key /vault/runtime/grafana_admin_password
-
-# Create or refresh loyallia-app policy and token
-mkdir -p /vault/policies
-# Copy bundled policy file to runtime location (idempotent)
-if [ -f /vault/policies/app-policy.hcl ]; then
-    cp /vault/policies/app-policy.hcl /vault/runtime/loyallia-app.hcl
-else
-    printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\", \"patch\"]\n}\n" >/vault/runtime/loyallia-app.hcl
-fi
-vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null 2>&1 || echo "Policy write skipped (non-root token — policy already exists)"
-# Save root token for revocation after app token creation
-root_token="${ROOT_TOKEN:-}"
-if ! [ -f /vault/runtime/app-token ] || ! [ -s /vault/runtime/app-token ]; then
-    vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token 2>/dev/null || true
-    chmod 0600 /vault/runtime/app-token 2>/dev/null || true
-
-    # Revoke root token after successful app token creation
-    if [ -s /vault/runtime/app-token ] && [ -n "$root_token" ]; then
-        echo "INFO: Revoking root token..."
-        vault token revoke "$root_token" >/dev/null 2>&1 || echo "WARN: Failed to revoke root token"
+    # Try alternate format: extract data field
+    log_warn "Bulk put with @file failed, trying alternate format..."
+    if python3 -c "
+import json, subprocess, sys
+with open('/tmp/vault_secrets_payload.json') as f:
+    payload = json.load(f)
+data = payload.get('data', payload)
+# Build key=value pairs
+pairs = []
+for k, v in data.items():
+    pairs.append(f'{k}={v}')
+cmd = ['vault', 'kv', 'put', '-mount=secret', '$VAULT_APP_SECRET_PATH'] + pairs
+result = subprocess.run(cmd, capture_output=True, text=True)
+print(result.stdout)
+if result.returncode != 0:
+    print(result.stderr, file=sys.stderr)
+    sys.exit(1)
+"; then
+        log_info "All secrets written via alternate format."
+    else
+        log_error "Failed to write secrets to Vault. Error:"
+        cat /tmp/vault_put_error.log >&2 || true
+        exit 1
     fi
 fi
 
-echo "Vault initialized, unsealed, and secrets seeded successfully"
+# Verify: count secrets in Vault
+SECRETS_COUNT="$(vault kv get -mount=secret -format=json "$VAULT_APP_SECRET_PATH" 2>/dev/null | \
+    python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('data',{}).get('data',{})))" 2>/dev/null || echo 0)"
+log_info "Verified: $SECRETS_COUNT secrets stored in Vault at secret/$VAULT_APP_SECRET_PATH"
+
+if [ "$SECRETS_COUNT" -lt 10 ]; then
+    log_error "Only $SECRETS_COUNT secrets in Vault — expected 30+. Something went wrong."
+    exit 1
+fi
+
+# =============================================================================
+# WRITE DEFAULT/FEATURE TOGGLE VALUES (idempotent — only if missing)
+# =============================================================================
+
+log_info "Setting default feature toggle values..."
+
+# These only apply if the field doesn't already exist in Vault
+set_default_if_missing() {
+    key="$1"
+    default_value="$2"
+    current="$(vault kv get -mount=secret -field="$key" "$VAULT_APP_SECRET_PATH" 2>/dev/null || true)"
+    if [ -z "$current" ]; then
+        log_info "  Setting default: $key=$default_value"
+        vault kv patch -mount=secret "$VAULT_APP_SECRET_PATH" "$key=$default_value" 2>/dev/null || \
+            log_warn "    Failed to set default for $key"
+    fi
+}
+
+set_default_if_missing google_wallet_enabled "false"
+set_default_if_missing apple_wallet_enabled "false"
+set_default_if_missing payment_gateway_enabled "false"
+set_default_if_missing payment_gateway_provider "manual"
+set_default_if_missing apple_nfc_enabled "false"
+set_default_if_missing twilio_verify_enabled "false"
+set_default_if_missing twilio_use_test_mode "false"
+set_default_if_missing system_mode "development"
+set_default_if_missing backup_frequency "15days"
+set_default_if_missing backup_retention "31"
+set_default_if_missing cron_hour "5"
+
+# =============================================================================
+# EXPORT INFRASTRUCTURE SECRETS TO RUNTIME FILES
+# =============================================================================
+
+log_info "Exporting infrastructure secrets to runtime files..."
+mkdir -p /vault/runtime
+
+printf "%s" "$postgres_password" > /vault/runtime/postgres_password
+# Extract Redis password from redis_url: redis://:PASSWORD@host:port/db
+printf "%s" "$redis_url" | sed -n 's|redis://:\([^@]*\)@.*|\1|p' > /vault/runtime/redis_password
+printf "%s" "$minio_access_key" > /vault/runtime/minio_root_user
+printf "%s" "$minio_secret_key" > /vault/runtime/minio_root_password
+printf "%s" "$secret_key" > /vault/runtime/secret_key
+printf "%s" "$jwt_secret_key" > /vault/runtime/jwt_secret_key
+printf "%s" "$pass_hmac_secret" > /vault/runtime/pass_hmac_secret
+printf "%s" "$whatsapp_bridge_api_key" > /vault/runtime/whatsapp_bridge_api_key
+printf "%s" "$grafana_admin_password" > /vault/runtime/grafana_admin_password
+printf "%s" "$flower_basic_auth" > /vault/runtime/flower_basic_auth
+
+chmod 0600 /vault/runtime/postgres_password \
+    /vault/runtime/redis_password \
+    /vault/runtime/minio_root_user \
+    /vault/runtime/minio_root_password \
+    /vault/runtime/secret_key \
+    /vault/runtime/jwt_secret_key \
+    /vault/runtime/pass_hmac_secret \
+    /vault/runtime/whatsapp_bridge_api_key \
+    /vault/runtime/grafana_admin_password \
+    /vault/runtime/flower_basic_auth
+
+# Also write Redis URLs
+printf "%s" "$redis_url" > /vault/runtime/redis_url
+printf "%s" "$celery_broker_url" > /vault/runtime/celery_broker_url
+printf "%s" "$celery_result_backend" > /vault/runtime/celery_result_backend
+chmod 0600 /vault/runtime/redis_url /vault/runtime/celery_broker_url /vault/runtime/celery_result_backend
+
+log_info "Runtime files created."
+
+# =============================================================================
+# CREATE APP POLICY AND TOKEN
+# =============================================================================
+
+log_info "Creating loyallia-app policy..."
+mkdir -p /vault/policies /vault/runtime
+
+# Write the policy file
+cat > /vault/runtime/loyallia-app.hcl << 'POLICYEOF'
+path "secret/data/loyallia/*" {
+  capabilities = ["read"]
+}
+
+path "secret/data/loyallia" {
+  capabilities = ["read"]
+}
+POLICYEOF
+
+vault policy write loyallia-app /vault/runtime/loyallia-app.hcl 2>/dev/null || {
+    log_warn "Policy write skipped (may already exist or non-root token)"
+}
+
+# Create app token (save root token for revocation)
+root_token="${ROOT_TOKEN:-}"
+if ! [ -f /vault/runtime/app-token ] || ! [ -s /vault/runtime/app-token ]; then
+    log_info "Creating app token..."
+    if vault token create -policy=loyallia-app -field=token > /vault/runtime/app-token 2>/dev/null; then
+        chmod 0600 /vault/runtime/app-token
+        log_info "App token created."
+
+        # Revoke root token after successful app token creation
+        if [ -n "$root_token" ]; then
+            log_info "Revoking root token for security..."
+            vault token revoke "$root_token" >/dev/null 2>&1 || \
+                log_warn "Failed to revoke root token"
+        fi
+    else
+        log_warn "App token creation failed — root token retained for recovery"
+    fi
+else
+    log_info "App token already exists."
+fi
+
+# --- Cleanup sensitive temp files --------------------------------------------
+rm -f /tmp/vault_secrets_payload.json /tmp/seal_status.json /tmp/vault_status_final.json /tmp/vault_put_error.log
+
+log_info "============================================================"
+log_info "VAULT INITIALIZATION COMPLETE"
+log_info "============================================================"
+log_info "Secrets stored: $SECRETS_COUNT at secret/$VAULT_APP_SECRET_PATH"
+log_info "App policy: loyallia-app (read-only)"
+log_info "App token: /vault/runtime/app-token"
+log_info "Runtime files: /vault/runtime/ (10 files)"
+log_info "============================================================"
+
 exit 0
