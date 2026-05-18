@@ -135,6 +135,10 @@ export default function SuperAdminTenants() {
   const [impersonationPin, setImpersonationPin] = useState('');
   const [impersonationJustification, setImpersonationJustification] = useState('');
   const [impersonating, setImpersonating] = useState(false);
+  const [deleteJustification, setDeleteJustification] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmPhrase, setDeleteConfirmPhrase] = useState('');
+  const [deletingTenant, setDeletingTenant] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -198,6 +202,9 @@ export default function SuperAdminTenants() {
     setImpersonationJustification('');
     setImpersonating(false);
     setDeleteJustification('');
+    setDeleteConfirmOpen(false);
+    setDeleteConfirmPhrase('');
+    setDeletingTenant(false);
   };
   const saveDetail = async () => {
     if (!dt) return;
@@ -206,7 +213,15 @@ export default function SuperAdminTenants() {
   };
   const doSuspend = async () => { if (!dt || !confirm(`¿Suspender "${dt.name}"?`)) return; await api(`/tenants/${dt.id}/suspend/`, { method: 'POST' }); toast.success('Suspendido'); closeDetail(); fetchData(); };
   const doReactivate = async () => { if (!dt) return; await api(`/tenants/${dt.id}/reactivate/`, { method: 'POST' }); toast.success('Reactivado'); closeDetail(); fetchData(); };
-  const [deleteJustification, setDeleteJustification] = useState('');
+  const openDeleteConfirm = () => {
+    if (!dt) return;
+    if (deleteJustification.trim().length < 10) {
+      toast.error('Ingresa una justificación de al menos 10 caracteres');
+      return;
+    }
+    setDeleteConfirmPhrase('');
+    setDeleteConfirmOpen(true);
+  };
   const doDelete = async () => {
     if (!dt) return;
     const justification = deleteJustification.trim();
@@ -214,16 +229,23 @@ export default function SuperAdminTenants() {
       toast.error('Ingresa una justificación de al menos 10 caracteres');
       return;
     }
-    const confirmPhrase = window.prompt(`Para eliminar permanentemente "${dt.name}", escribe ELIMINAR:`);
-    if (confirmPhrase !== 'ELIMINAR') {
+    if (deleteConfirmPhrase !== 'ELIMINAR') {
       toast.error('Frase de confirmación incorrecta. No se eliminó el negocio.');
       return;
     }
-    if (!confirm(`¿ESTÁS SEGURO? Esta acción NO se puede deshacer. Se eliminarán TODOS los datos de "${dt.name}" incluyendo clientes, transacciones, campañas y passes de wallet.`)) return;
-    await api(`/tenants/${dt.id}/`, { method: 'DELETE', body: JSON.stringify({ justification }) });
-    toast.success('Negocio eliminado permanentemente');
-    closeDetail();
-    fetchData();
+    const tenantName = dt.name;
+    setDeletingTenant(true);
+    try {
+      await api(`/tenants/${dt.id}/`, { method: 'DELETE', body: JSON.stringify({ justification }) });
+      toast.success(`"${tenantName}" fue eliminado permanentemente`);
+      closeDetail();
+      fetchData();
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'No se pudo eliminar el negocio';
+      toast.error(message);
+    } finally {
+      setDeletingTenant(false);
+    }
   };
   const doImpersonate = async () => {
     if (!dt) return;
@@ -556,7 +578,7 @@ export default function SuperAdminTenants() {
                         className="w-full px-3 py-2 rounded-xl border border-red-200 dark:border-red-800 bg-white/60 backdrop-blur-sm text-sm text-red-900 dark:text-red-100"
                       />
                     </div>
-                    <button onClick={doDelete} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.x} Eliminar Permanentemente</button>
+                    <button onClick={openDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.x} Eliminar Permanentemente</button>
                   </div>
                   <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
                     <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">Impersonar</h4>
@@ -602,6 +624,49 @@ export default function SuperAdminTenants() {
                 </div>
               )}
             </div>
+            {deleteConfirmOpen && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-surface-950/55 backdrop-blur-sm" onClick={() => !deletingTenant && setDeleteConfirmOpen(false)} />
+                <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-surface-900 border border-red-200 dark:border-red-900/50 shadow-2xl p-5">
+                  <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center mb-3">{IC.x}</div>
+                  <h3 className="text-lg font-black text-surface-900 dark:text-white">Eliminar permanentemente</h3>
+                  <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
+                    Se eliminará <span className="font-semibold">{dt.name}</span> y sus datos asociados. Esta acción no se puede deshacer.
+                  </p>
+                  <div className="mt-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 p-3">
+                    <p className="text-xs font-semibold text-red-800 dark:text-red-200">Justificación</p>
+                    <p className="text-xs text-red-700 dark:text-red-300 mt-1">{deleteJustification}</p>
+                  </div>
+                  <label htmlFor="delete-confirm-phrase" className="text-xs font-semibold text-surface-500 mt-4 mb-1 block">
+                    Escribe ELIMINAR para confirmar
+                  </label>
+                  <input
+                    id="delete-confirm-phrase"
+                    value={deleteConfirmPhrase}
+                    onChange={e => setDeleteConfirmPhrase(e.target.value)}
+                    disabled={deletingTenant}
+                    className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-950 text-sm font-mono"
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2 mt-5">
+                    <button
+                      onClick={() => setDeleteConfirmOpen(false)}
+                      disabled={deletingTenant}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-surface-100 text-surface-700 hover:bg-surface-200 disabled:opacity-60"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={doDelete}
+                      disabled={deletingTenant || deleteConfirmPhrase !== 'ELIMINAR'}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white"
+                    >
+                      {deletingTenant ? 'Eliminando...' : 'Eliminar definitivamente'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

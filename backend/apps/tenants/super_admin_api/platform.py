@@ -3,9 +3,7 @@ Loyallia  Super Admin API: Platform metrics, locations map, broadcast, and plan 
 """
 
 import logging
-import uuid
 from datetime import timedelta
-from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
@@ -18,7 +16,6 @@ from apps.authentication.models import User
 from apps.billing.models import (
     Invoice,
     Subscription,
-    SubscriptionPlan,
     SubscriptionStatus,
 )
 from apps.tenants.models import Location, PlatformSetting, Tenant
@@ -27,14 +24,8 @@ from apps.tenants.super_admin_api.integration_config import (
     additional_integrations,
     normalize_and_validate_vault_secret,
 )
-from apps.tenants.super_admin_api.plan_validation import (
-    plan_to_config,
-    validate_plan_config,
-)
 from apps.tenants.super_admin_api.schemas import (
     MessageOut,
-    PlanOut,
-    PlanUpdateIn,
     PlatformIntegrationOut,
     PlatformMetricsOut,
     PlatformModeOut,
@@ -314,91 +305,6 @@ def platform_integrations(request):
     ]
 
 
-@router.delete("/plans/{plan_id}/", auth=jwt_auth, response=MessageOut)
-def delete_plan(request, plan_id: str):
-    _require_super_admin(request)
-    try:
-        plan = SubscriptionPlan.objects.get(id=uuid.UUID(plan_id))
-    except (SubscriptionPlan.DoesNotExist, ValueError):
-        raise HttpError(404, get_message("NOT_FOUND"))
-
-    active_subs = Subscription.objects.filter(
-        subscription_plan=plan,
-        status__in=[SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE],
-    ).count()
-    if active_subs > 0:
-        raise HttpError(
-            409,
-            get_message(
-                "ADMIN_PLAN_HAS_SUBSCRIPTIONS",
-                name=plan.name,
-                count=active_subs,
-            ),
-        )
-
-    plan.is_active = False
-    plan.status = SubscriptionPlan.Status.ARCHIVED
-    plan.save(update_fields=["is_active", "status", "updated_at"])
-    return MessageOut(success=True, message=get_message("ADMIN_PLAN_DEACTIVATED"))
-
-
-@router.patch("/plans/{plan_id}/", auth=jwt_auth, response=PlanOut)
-def update_plan(request, plan_id: str, payload: PlanUpdateIn):
-    """Updates an existing subscription plan."""
-    _require_super_admin(request)
-    try:
-        plan = SubscriptionPlan.objects.get(id=uuid.UUID(plan_id))
-    except (SubscriptionPlan.DoesNotExist, ValueError):
-        raise HttpError(404, get_message("NOT_FOUND"))
-
-    updates = payload.model_dump(exclude_none=True)
-    candidate = plan_to_config(plan)
-    candidate.update(updates)
-    validate_plan_config(candidate, changed_fields=set(updates))
-
-    update_fields = ["updated_at"]
-    for field in [
-        "name",
-        "description",
-        "max_locations",
-        "max_users",
-        "max_customers",
-        "max_programs",
-        "max_notifications_month",
-        "max_transactions_month",
-        "max_whatsapp_day",
-        "max_emails_month",
-        "max_sms_day",
-        "max_wallet_pushes_month",
-        "max_automations",
-        "max_automation_executions_day",
-        "max_ai_queries_month",
-        "max_api_calls_day",
-        "max_exports_month",
-        "features",
-        "is_featured",
-        "status",
-        "is_active",
-        "trial_days",
-        "sort_order",
-    ]:
-        value = getattr(payload, field, None)
-        if value is not None:
-            setattr(plan, field, value)
-            update_fields.append(field)
-
-    if payload.price_monthly is not None:
-        plan.price_monthly = Decimal(str(payload.price_monthly))
-        update_fields.append("price_monthly")
-    if payload.price_annual is not None:
-        plan.price_annual = Decimal(str(payload.price_annual))
-        update_fields.append("price_annual")
-
-    plan.save(update_fields=update_fields)
-    logger.info("SUPER_ADMIN %s updated plan %s", request.user.email, plan.name)
-    return PlanOut.from_plan(plan)
-
-
 @router.put(
     "/platform/integrations/{integration_key}/secret/",
     auth=jwt_auth,
@@ -641,4 +547,3 @@ def refresh_platform_settings_cache(request):
 
 
 # SYSADMIN OPERATIONS (LYL-BOOT-001)
-

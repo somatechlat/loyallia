@@ -33,7 +33,6 @@ from apps.tenants.api import router as tenants_router
 from apps.tenants.security_privacy_api import router as tenant_security_privacy_router
 from apps.tenants.super_admin_api import router as super_admin_router
 from apps.backup.api import router as backup_router
-from apps.tenants.super_admin_api.platform_plans import router as platform_plans_router
 from apps.tenants.super_admin_api.platform_reset import router as platform_reset_router
 from apps.transactions.api import router as transactions_router
 from apps.transactions.api import scanner_router
@@ -157,7 +156,6 @@ api.add_router("/analytics/", analytics_router, tags=["Analytics"])
 api.add_router("/billing/", billing_router, tags=["Billing"])
 api.add_router("/billing/payments/", billing_payment_router, tags=["Billing - Payments"])
 api.add_router("/admin/", super_admin_router, tags=["Super Admin"])
-api.add_router("/admin/plans/", platform_plans_router, tags=["Super Admin"])
 api.add_router("/admin/reset/", platform_reset_router, tags=["Super Admin"])
 api.add_router("/", wallet_router, tags=["Wallet"])
 api.add_router("/upload/", upload_router, tags=["Uploads"])
