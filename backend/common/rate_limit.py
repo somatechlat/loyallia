@@ -259,3 +259,91 @@ class RateLimitMiddleware:
             break
 
         return self.get_response(request)
+
+
+# =============================================================================
+# Endpoint-level rate limit decorator
+# =============================================================================
+
+import functools
+from typing import Callable, TypeVar
+
+F = TypeVar("F", bound=Callable)
+
+
+def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Callable[[F], F]:
+    """Decorator for endpoint-level rate limiting using Django cache.
+
+    Uses Redis INCR + EXPIRE (sliding window) for atomic counting.
+    Falls open (allows request) when cache is unavailable.
+
+    Args:
+        key_prefix: Unique prefix for the rate limit key (e.g., "stripe_webhook").
+        max_requests: Maximum number of requests allowed in the window.
+        window_seconds: Time window in seconds.
+
+    Example:
+        @rate_limit(key_prefix="stripe_webhook", max_requests=100, window_seconds=60)
+        def payment_webhook(request: HttpRequest):
+            ...
+    """
+
+    def decorator(func: F) -> F:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Django Ninja passes request as the first positional arg
+            request = args[0] if args else None
+            if request is None:
+                # Cannot rate limit without a request — pass through
+                return func(*args, **kwargs)
+
+            client_ip = _get_client_ip(request)
+            rate_key = f"rl:{key_prefix}:ip:{client_ip}"
+
+            try:
+                from django.core.cache import cache
+
+                current_count = cache.get(rate_key)
+                if current_count is None:
+                    cache.set(rate_key, 1, window_seconds)
+                    current_count = 1
+                else:
+                    try:
+                        current_count = cache.incr(rate_key)
+                    except ValueError:
+                        cache.set(rate_key, 1, window_seconds)
+                        current_count = 1
+
+                if current_count > max_requests:
+                    ttl = window_seconds
+                    try:
+                        ttl = cache.ttl(rate_key) if hasattr(cache, "ttl") else window_seconds
+                    except Exception:
+                        pass
+
+                    logger.warning(
+                        "Rate limit exceeded: key_prefix=%s ip=%s count=%d limit=%d",
+                        key_prefix,
+                        client_ip,
+                        current_count,
+                        max_requests,
+                    )
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "error": "RATE_LIMIT_EXCEEDED",
+                            "message": get_message("RATE_LIMIT_EXCEEDED"),
+                            "retry_after": ttl,
+                        },
+                        status=429,
+                        headers={"Retry-After": str(ttl)},
+                    )
+            except Exception:
+                # Cache error — fail open
+                logger.warning("Rate limiter: Cache error for %s. Failing open.", key_prefix)
+
+            return func(*args, **kwargs)
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator

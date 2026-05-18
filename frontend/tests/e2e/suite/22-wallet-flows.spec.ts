@@ -193,14 +193,12 @@ test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', 
 test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => {
 
   test('7. Campaigns page shows wallet type with platform selector', async ({ page }) => {
-    await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/campaigns', { waitUntil: 'networkidle' });
 
     // Click "Nueva campaña" button
     const newCampaignBtn = page.locator('#new-campaign-btn');
     await expect(newCampaignBtn).toBeVisible({ timeout: 10000 });
     await newCampaignBtn.click();
-    await page.waitForTimeout(1000);
 
     // Verify the campaign form is visible
     const formHeading = page.getByText('Nueva campaña de marketing');
@@ -210,7 +208,6 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
     const walletTypeBtn = page.locator('button[aria-pressed]').filter({ hasText: 'Wallet' });
     if (await walletTypeBtn.count() > 0) {
       await walletTypeBtn.click();
-      await page.waitForTimeout(500);
     }
 
     // WalletPlatformSelector should be visible with label "Plataforma de Wallet"
@@ -223,64 +220,53 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
   });
 
   test('8. Platform selector toggles correctly', async ({ page }) => {
-    await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/campaigns', { waitUntil: 'networkidle' });
 
     // Open campaign form
     await page.locator('#new-campaign-btn').click();
-    await page.waitForTimeout(1000);
 
     // Select Wallet type
     const walletTypeBtn = page.locator('button[aria-pressed]').filter({ hasText: 'Wallet' });
     if (await walletTypeBtn.count() > 0) {
       await walletTypeBtn.click();
-      await page.waitForTimeout(500);
     }
 
     // Click "Apple Wallet" — should get active class
     const appleBtn = page.getByRole('button', { name: 'Apple Wallet' });
     await appleBtn.click();
-    await page.waitForTimeout(300);
-    await expect(appleBtn).toHaveClass(/border-brand-500/);
+    await expect(appleBtn).toHaveClass(/border-brand-500/, { timeout: 3000 });
 
     // Click "Google Wallet" — should get active class, Apple should lose it
     const googleBtn = page.getByRole('button', { name: 'Google Wallet' });
     await googleBtn.click();
-    await page.waitForTimeout(300);
-    await expect(googleBtn).toHaveClass(/border-brand-500/);
+    await expect(googleBtn).toHaveClass(/border-brand-500/, { timeout: 3000 });
     await expect(appleBtn).not.toHaveClass(/border-brand-500/);
 
     // Click "Ambos" — should get active class
     const bothBtn = page.getByRole('button', { name: 'Ambos' });
     await bothBtn.click();
-    await page.waitForTimeout(300);
-    await expect(bothBtn).toHaveClass(/border-brand-500/);
+    await expect(bothBtn).toHaveClass(/border-brand-500/, { timeout: 3000 });
     await expect(googleBtn).not.toHaveClass(/border-brand-500/);
   });
 
   test('9. Notification preview renders with character limits', async ({ page }) => {
-    await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/campaigns', { waitUntil: 'networkidle' });
 
     // Open campaign form
     await page.locator('#new-campaign-btn').click();
-    await page.waitForTimeout(1000);
 
     // Ensure wallet is selected
     const walletTypeBtn = page.locator('button[aria-pressed]').filter({ hasText: 'Wallet' });
     if (await walletTypeBtn.count() > 0) {
       await walletTypeBtn.click();
-      await page.waitForTimeout(500);
     }
 
     // Select "Ambos" to show both previews
     await page.getByRole('button', { name: 'Ambos' }).click();
-    await page.waitForTimeout(300);
 
     // Fill in title and message
     await page.locator('#campaign-title').fill('Promo Especial');
     await page.locator('#campaign-msg').fill('Gana puntos dobles esta semana');
-    await page.waitForTimeout(500);
 
     // Preview section should be visible
     const previewSection = page.getByText('Vista previa de la notificación');
@@ -300,26 +286,21 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
   });
 
   test('10. Title over 40 chars triggers Apple limit warning', async ({ page }) => {
-    await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/campaigns', { waitUntil: 'networkidle' });
 
     await page.locator('#new-campaign-btn').click();
-    await page.waitForTimeout(1000);
 
     // Ensure wallet + Ambos selected
     const walletTypeBtn = page.locator('button[aria-pressed]').filter({ hasText: 'Wallet' });
     if (await walletTypeBtn.count() > 0) {
       await walletTypeBtn.click();
-      await page.waitForTimeout(500);
     }
     await page.getByRole('button', { name: 'Ambos' }).click();
-    await page.waitForTimeout(300);
 
     // Fill title with >40 characters
     const longTitle = 'Esta es una promoción especial que excede cuarenta caracteres del límite';
     await page.locator('#campaign-title').fill(longTitle);
     await page.locator('#campaign-msg').fill('Mensaje corto');
-    await page.waitForTimeout(500);
 
     // Apple title counter should turn red (text-red-500 class)
     const appleTitleCounter = page.locator('span').filter({ hasText: /Título: \d+\/40/ }).first();
@@ -333,22 +314,18 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
   });
 
   test('11. Send wallet campaign (Both platforms) succeeds', async ({ page }) => {
-    await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/campaigns', { waitUntil: 'networkidle' });
 
     await page.locator('#new-campaign-btn').click();
-    await page.waitForTimeout(1000);
 
     // Select Wallet type
     const walletTypeBtn = page.locator('button[aria-pressed]').filter({ hasText: 'Wallet' });
     if (await walletTypeBtn.count() > 0) {
       await walletTypeBtn.click();
-      await page.waitForTimeout(500);
     }
 
     // Select "Ambos"
     await page.getByRole('button', { name: 'Ambos' }).click();
-    await page.waitForTimeout(300);
 
     // Fill form
     await page.locator('#campaign-title').fill('E2E Wallet Test Campaign');
@@ -367,7 +344,11 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
 
     // Wait for success toast OR error (both confirm the button works)
     // The campaign may fail if no customers exist, but the form submission itself should work
-    await page.waitForTimeout(5000);
+    // Wait for API response instead of fixed timeout
+    await page.waitForResponse(
+      (resp) => resp.url().includes('/api/v1/campaigns/'),
+      { timeout: 15000 },
+    ).catch(() => {});
 
     // Verify form closed (showForm toggled off) or toast appeared
     const toastOrFormGone = page.locator('.go2072408551').or(page.locator('#new-campaign-btn'));
@@ -382,19 +363,15 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
 test.describe.serial('Wallet Lifecycle — Phase 4: Program Wizard @owner @wallet', () => {
 
   test('12. Program wizard Step 2 shows WalletProviderSelector', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     // Step 0: Select stamp card type
     await expect(page.getByText('Tarjeta de Sellos')).toBeVisible({ timeout: 10000 });
     await page.getByText('Tarjeta de Sellos').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 1: Config — use defaults, click Next
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 2: Design — WalletProviderSelector should be visible
     // The component renders in a card with title "Plataforma de Wallet"
@@ -406,30 +383,23 @@ test.describe.serial('Wallet Lifecycle — Phase 4: Program Wizard @owner @walle
   });
 
   test('13. Wallet provider toggle persists to review step', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     // Step 0: Select stamp
     await page.getByText('Tarjeta de Sellos').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 1: Next
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 2: Select "Google Wallet" provider
     await page.getByRole('button', { name: 'Google Wallet' }).click();
-    await page.waitForTimeout(300);
 
     // Fill required name field
     await page.locator('#program-name').fill('E2E Wallet Provider Test');
-    await page.waitForTimeout(300);
 
     // Click Next to Step 3 (Review)
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Review step should show Google Wallet selection
     await expect(page.getByText('Google Wallet').first()).toBeVisible({ timeout: 5000 });

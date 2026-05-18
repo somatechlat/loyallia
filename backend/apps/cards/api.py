@@ -6,6 +6,7 @@ Phase 3 implementation of all program CRUD endpoints.
 import logging
 
 from django.db.models import Count
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -155,7 +156,7 @@ class CardListOut(BaseModel):
 
 
 @router.get("/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización")
-def list_programs(request):
+def list_programs(request: HttpRequest) -> CardListOut:
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     tenant = require_tenant(request)
     if not is_manager_or_owner(request):
@@ -179,7 +180,7 @@ def list_programs(request):
 
 @router.post("/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización")
 @require_active_subscription
-def create_program(request, data: CardCreateIn):
+def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
     """Create a new loyalty program. OWNER only."""
     from common.permissions import is_owner
 
@@ -222,7 +223,7 @@ def create_program(request, data: CardCreateIn):
 
 
 @router.get("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa")
-def get_program(request, program_id: str):
+def get_program(request: HttpRequest, program_id: str) -> CardOut:
     """Returns a single loyalty program. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -231,7 +232,7 @@ def get_program(request, program_id: str):
 
 
 @router.patch("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa")
-def update_program(request, program_id: str, data: CardUpdateIn):
+def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) -> CardOut:
     """Update a loyalty program. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -321,7 +322,7 @@ def update_program(request, program_id: str, data: CardUpdateIn):
     response=MessageOut,
     summary="Suspender programa",
 )
-def suspend_program(request, program_id: str):
+def suspend_program(request: HttpRequest, program_id: str) -> MessageOut:
     """Suspend a loyalty program (soft delete). OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -351,7 +352,7 @@ def suspend_program(request, program_id: str):
     response=MessageOut,
     summary="Eliminar programa permanentemente",
 )
-def delete_program(request, program_id: str):
+def delete_program(request: HttpRequest, program_id: str) -> HttpResponse:
     """Delete a loyalty program PERMANENTLY. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -368,13 +369,11 @@ def delete_program(request, program_id: str):
     card.delete()
 
     # LYL-M-API-023: Return 204 No Content on successful delete
-    from django.http import HttpResponse
-
     return HttpResponse(status=204)
 
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
-def program_stats(request, program_id: str):
+def program_stats(request: HttpRequest, program_id: str) -> dict:
     """Returns program statistics. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -403,7 +402,7 @@ def program_stats(request, program_id: str):
 
 
 @router.get("/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)")
-def public_program(request, slug: str):
+def public_program(request: HttpRequest, slug: str) -> dict:
     """
     Public program info for the enrollment page. No authentication required.
     Resolves by tenant slug + program slug (name-based).

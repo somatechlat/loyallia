@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from django.http import HttpRequest
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
@@ -39,7 +40,7 @@ class CampaignCreateIn(BaseModel):
 
 
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
-def list_campaigns(request):
+def list_campaigns(request: HttpRequest) -> dict:
     """List all push campaigns."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -102,7 +103,7 @@ def list_campaigns(request):
 
 
 @router.post("/campaigns/", auth=jwt_auth, response=dict, summary="Crear campaña")
-def create_campaign(request, data: CampaignCreateIn):
+def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     """Send an email, wallet, or WhatsApp notification campaign to customers in a segment.
 
     OWNER only. Supports four channels:

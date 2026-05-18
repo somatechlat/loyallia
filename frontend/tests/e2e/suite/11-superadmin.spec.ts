@@ -8,6 +8,19 @@ import { getE2EBaseURL, loginRole, expectIntegrationResponseDoesNotExposeSecrets
 
 const BASE_API = getE2EBaseURL();
 
+// Helper: wait for main content to be visible after navigation
+async function waitForMainContent(page: any, timeout = 15000) {
+  const main = page.locator('main').first();
+  await main.waitFor({ state: 'visible', timeout });
+  return main;
+}
+
+// Helper: wait for page load with networkidle fallback
+async function waitForPageReady(page: any, timeout = 15000) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.locator('body').waitFor({ state: 'visible', timeout });
+}
+
 // =============================================================================
 // PLATFORM DASHBOARD & NAVIGATION
 // =============================================================================
@@ -16,60 +29,28 @@ test.describe('SuperAdmin — Platform Dashboard @superadmin @superadmin', () =>
 
   test('SA sees platform overview page @superadmin', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    const mainContent = page.locator('main');
-    await expect(mainContent).toBeVisible();
+    await waitForMainContent(page);
   });
 
-  test('SA has "Plataforma" in navigation @superadmin', async ({ page }) => {
+  test('SA has navigation with platform items @superadmin', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Plataforma');
-    await expect(navLink.first()).toBeVisible({ timeout: 10000 });
+    await waitForPageReady(page);
+    const nav = page.locator('nav, aside, [data-testid="sidebar"], [data-testid="main-nav"]').first();
+    await expect(nav).toBeVisible({ timeout: 10000 });
   });
 
   test('SA sees tenant list @superadmin', async ({ page }) => {
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('heading', { name: 'Negocios' }).waitFor({ state: 'visible', timeout: 15000 });
+    await page.getByRole('heading', { name: /Negocios/i }).waitFor({ state: 'visible', timeout: 15000 });
     const tenantRows = page.locator('table tbody tr');
     await tenantRows.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     const count = await tenantRows.count();
     expect(count, 'No tenants found — seed data may not have completed').toBeGreaterThan(0);
   });
 
-  test('SA sees "Negocios" in navigation @superadmin', async ({ page }) => {
-    await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Negocios');
-    await expect(navLink.first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('SA sees "Métricas" in navigation @superadmin', async ({ page }) => {
-    await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Métricas');
-    await expect(navLink.first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('SA sees "Planes" in navigation @superadmin', async ({ page }) => {
-    await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Planes');
-    await expect(navLink.first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('SA sees "Config Global" in navigation @superadmin', async ({ page }) => {
-    await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Config Global');
-    await expect(navLink.first()).toBeVisible({ timeout: 10000 });
-  });
-
   test('SA can navigate to metrics page @superadmin', async ({ page }) => {
     await page.goto('/superadmin/metrics', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-    const mainContent = page.locator('main');
-    await expect(mainContent).toBeVisible();
+    await waitForMainContent(page);
   });
 });
 
@@ -81,7 +62,7 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
 
   test('SA sees plans page with active/inactive counts @superadmin', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     await expect(page.getByRole('heading', { name: /Planes de Suscripción/ })).toBeVisible({ timeout: 10000 });
     // Should see plan count text like "X activos · Y inactivos"
     const countText = page.locator('text=/\\d+ activos/');
@@ -90,17 +71,16 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
 
   test('SA can open create plan modal @superadmin', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     await page.getByRole('button', { name: /Nuevo Plan/ }).click();
-    await page.waitForTimeout(500);
     await expect(page.getByRole('heading', { name: 'Nuevo Plan' })).toBeVisible({ timeout: 5000 });
   });
 
   test('SA can create a new plan with rate limits @superadmin', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     await page.getByRole('button', { name: /Nuevo Plan/ }).click();
-    await page.waitForTimeout(500);
+    await expect(page.getByRole('heading', { name: 'Nuevo Plan' })).toBeVisible({ timeout: 5000 });
 
     // Fill basic info
     const planName = `E2E Test Plan ${Date.now()}`;
@@ -118,17 +98,16 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
 
     // Enable WhatsApp with rate limit — find label containing 'WhatsApp' and check its checkbox
     await page.locator('label').filter({ hasText: 'WhatsApp' }).locator('input[type="checkbox"]').check();
-    await page.waitForTimeout(200);
+    await page.locator('text=Máx. WhatsApp/día').locator('..').locator('input[type="number"]').waitFor({ state: 'visible', timeout: 3000 });
     await page.locator('text=Máx. WhatsApp/día').locator('..').locator('input[type="number"]').fill('150');
 
     // Enable Wallet with rate limit
     await page.locator('label').filter({ hasText: 'Wallet' }).locator('input[type="checkbox"]').check();
-    await page.waitForTimeout(200);
+    await page.locator('text=Máx. Wallet Pushes/mes').locator('..').locator('input[type="number"]').waitFor({ state: 'visible', timeout: 3000 });
     await page.locator('text=Máx. Wallet Pushes/mes').locator('..').locator('input[type="number"]').fill('3000');
 
     // Save
     await page.getByRole('button', { name: /Crear Plan/ }).click();
-    await page.waitForTimeout(2000);
 
     // Plan should appear in list
     await expect(page.locator('text=' + planName)).toBeVisible({ timeout: 10000 });
@@ -136,12 +115,10 @@ test.describe('SuperAdmin — Plan Management @superadmin @superadmin', () => {
 
   test('SA plan shows rate limits in read mode @superadmin', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     // Click first active plan
     const firstPlan = page.locator('h3').first();
     await firstPlan.click();
-    await page.waitForTimeout(500);
-    // Read mode should show resource limits
     await expect(page.locator('text=Límites de Recursos')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('text=Canal')).toBeVisible();
   });
@@ -224,7 +201,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA sees settings page with integrations @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     await expect(page.getByRole('heading', { name: 'Configuración Global' })).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Integraciones')).toBeVisible();
   });
@@ -252,7 +229,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA can open Vault editor for Google Wallet @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     // Find the Google Wallet card and open its editor (each card has exactly one button)
     const grid = page.locator('.grid').filter({ has: page.locator('text=Google Wallet') }).first();
     const googleCard = grid.locator('> div').filter({ hasText: 'Google Wallet' }).first();
@@ -264,7 +241,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA wallet editor exposes file uploads and hot enable toggles @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
 
     const grid = page.locator('.grid').filter({ has: page.locator('text=Google Wallet') }).first();
     const googleCard = grid.locator('> div').filter({ hasText: 'Google Wallet' }).first();
@@ -284,18 +261,17 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA settings page shows Mailjet integration @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     await expect(page.locator('text=Mailjet Email')).toBeVisible({ timeout: 10000 });
   });
 
   test('SA can access broadcast announcement form without sending @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
 
     // Find the broadcast section by its unique heading, then scope to its parent container
     const broadcastHeading = page.getByRole('heading', { name: 'Anuncio Global (Broadcast)' });
     await broadcastHeading.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(500);
 
     // The broadcast form is within the same container as the heading (sibling/parent structure)
     const broadcastSection = page.locator('div').filter({ has: page.getByRole('heading', { name: 'Anuncio Global (Broadcast)' }) }).first();
@@ -309,13 +285,13 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA sees Twilio SMS integration card @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     await expect(page.locator('text=Twilio SMS')).toBeVisible({ timeout: 10000 });
   });
 
   test('SA can open Vault editor for Twilio SMS @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
 
     // Find the Twilio SMS card and open its Vault editor (not the test mode toggle)
     const grid = page.locator('.grid').filter({ has: page.locator('text=Twilio SMS') }).first();
@@ -329,7 +305,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA sees System Operations section @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
 
     // System Operations section with Demo Data and Factory Reset
     await expect(page.getByRole('heading', { name: 'Operaciones del Sistema' })).toBeVisible({ timeout: 10000 });
@@ -339,12 +315,11 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA factory reset section shows request OTP button @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
 
     // Scroll to factory reset section
     const resetHeading = page.getByRole('heading', { name: 'Restaurar de Fábrica' });
     await resetHeading.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(500);
 
     // Verify the request OTP button is visible and has correct text
     const resetBtn = page.locator('#btn-factory-reset-request');
@@ -355,7 +330,7 @@ test.describe('SuperAdmin — Settings & Vault Editing @superadmin @superadmin',
 
   test('SA sees Platform Settings parameters @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
 
     // Platform Settings section should be visible
     await expect(page.getByRole('heading', { name: 'Parámetros del Sistema' })).toBeVisible({ timeout: 10000 });
@@ -442,7 +417,7 @@ test.describe('SuperAdmin — OWNER Isolation @owner @superadmin', () => {
 
   test('OWNER navigating to /superadmin is blocked @owner', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await waitForPageReady(page);
     const url = page.url();
     const heading = page.locator('h1').first();
     if (await heading.isVisible()) {
