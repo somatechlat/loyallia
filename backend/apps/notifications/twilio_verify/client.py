@@ -1,5 +1,5 @@
 """
-Loyallia — Twilio Verify v2 Production Client (LYL-SRS-VERIFY-001)
+Loyallia  Twilio Verify v2 Production Client (LYL-SRS-VERIFY-001)
 
 REAL PRODUCTION CODE. NO MOCKS. NO BYPASSES.
 
@@ -20,7 +20,7 @@ Features:
 
 Architecture:
     - Lazy Twilio client initialization (created on first use)
-    - Credentials from Vault KV v2 only — NEVER hardcoded
+    - Credentials from Vault KV v2 only  NEVER hardcoded
     - API Key auth preferred over Account SID + Auth Token
     - Graceful degradation when Verify is not configured
 
@@ -43,7 +43,7 @@ try:
     from twilio.rest import Client as TwilioClient
 except ImportError as exc:  # pragma: no cover
     TwilioClient = None  # type: ignore[misc,assignment]
-    logger.warning("twilio SDK not installed — Verify client unavailable: %s", exc)
+    logger.warning("twilio SDK not installed  Verify client unavailable: %s", exc)
 
 
 class VerifyServiceError(Exception):
@@ -56,16 +56,15 @@ class VerifyServiceError(Exception):
 
 
 class VerifyClient:
-    """Twilio Verify v2 service client — REAL production implementation.
+    """Twilio Verify v2 service client  REAL production implementation.
 
     SEC: Credentials are read from Vault on every call. No caching.
     SEC: OTP codes are NEVER logged.
     PERF: Twilio client is lazily initialized and reused per instance.
     """
 
-    # ------------------------------------------------------------------
-    # Credential resolution
-    # ------------------------------------------------------------------
+ # Credential resolution
+
 
     @staticmethod
     def _get_credentials() -> tuple[str, str]:
@@ -73,9 +72,9 @@ class VerifyClient:
 
         Priority:
             1. Test credentials (if twilio_use_test_mode=true)
-            2. API Key (SK... + secret) — Twilio-recommended for production
-            3. Account SID + Auth Token — fallback for legacy
-            4. Test credentials — last resort (even if mode not explicitly enabled)
+            2. API Key (SK... + secret)  Twilio-recommended for production
+            3. Account SID + Auth Token  fallback for legacy
+            4. Test credentials  last resort (even if mode not explicitly enabled)
 
         Returns:
             (username, password) tuple.
@@ -106,7 +105,7 @@ class VerifyClient:
         test_sid = get_secret("twilio_test_account_sid", default="")
         test_token = get_secret("twilio_test_auth_token", default="")
         if test_sid and test_token:
-            logger.warning("Using Twilio TEST credentials — NOT for production")
+            logger.warning("Using Twilio TEST credentials  NOT for production")
             return test_sid, test_token
 
         raise VerifyServiceError(
@@ -140,9 +139,8 @@ class VerifyClient:
             return False
         return bool(username and password and sid and enabled)
 
-    # ------------------------------------------------------------------
-    # Twilio client lifecycle
-    # ------------------------------------------------------------------
+ # Twilio client lifecycle
+
 
     def __init__(self) -> None:
         self._client: Any = None
@@ -166,9 +164,8 @@ class VerifyClient:
         self._client = TwilioClient(username, password)
         return self._client
 
-    # ------------------------------------------------------------------
-    # Core Verify operations
-    # ------------------------------------------------------------------
+ # Core Verify operations
+
 
     def start_verification(
         self,
@@ -304,7 +301,7 @@ class VerifyClient:
         client = self._get_twilio_client()
         sid = service_sid or self._get_service_sid()
 
-        # SEC: Never log the code itself
+ # SEC: Never log the code itself
         try:
             check = client.verify.v2.services(sid).verification_checks.create(
                 to=to,
@@ -404,7 +401,7 @@ class VerifyClient:
     ) -> dict[str, Any]:
         """Manually approve a verification by SID.
 
-        REAL API CALL. Use with caution — bypasses code check.
+        REAL API CALL. Use with caution  bypasses code check.
 
         Args:
             verification_sid: The VE... SID to approve.
@@ -427,9 +424,8 @@ class VerifyClient:
 
         return self._verification_to_dict(verification)
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
+ # Helpers
+
 
     @staticmethod
     def _verification_to_dict(verification) -> dict[str, Any]:

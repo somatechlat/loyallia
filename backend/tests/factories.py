@@ -1,11 +1,11 @@
 """
-Loyallia — Test Data Factories
+Loyallia  Test Data Factories
 Reusable factory functions for creating test data across all test modules.
 Each factory creates minimal valid objects with sensible defaults.
 
 SECURITY: User passwords are generated securely by Django and attached to the
 user object as `_test_password` for test access. Vault is NOT used for user
-passwords — Vault stores SYSTEM secrets only (Twilio, Apple, Google, etc.).
+passwords  Vault stores SYSTEM secrets only (Twilio, Apple, Google, etc.).
 """
 
 import secrets
@@ -297,7 +297,7 @@ def make_transaction(
     return Transaction.objects.create(tenant=tenant, customer_pass=customer_pass, **defaults)
 
 
-# ── Explicit role factories ──────────────────────────────────────────────────
+# Explicit role factories
 
 
 def make_owner(tenant=None, **kwargs):

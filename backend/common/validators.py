@@ -1,5 +1,5 @@
 """
-Loyallia — Custom Validators
+Loyallia  Custom Validators
 Reusable Django validators for authentication and data integrity.
 """
 

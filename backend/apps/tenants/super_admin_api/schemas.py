@@ -1,5 +1,5 @@
 """
-Loyallia — Super Admin API Schemas (Pydantic models)
+Loyallia  Super Admin API Schemas (Pydantic models)
 Used by all super_admin_api endpoint modules.
 """
 
@@ -11,9 +11,7 @@ from apps.authentication.models import User
 from apps.billing.models import PlanFeature, SubscriptionPlan
 from apps.tenants.models import Location, Tenant
 
-# =============================================================================
 # TENANT SCHEMAS
-# =============================================================================
 
 
 class TenantAdminOut(BaseModel):
@@ -104,7 +102,7 @@ class LocationOut(BaseModel):
 class CreateTenantWizardIn(BaseModel):
     """Full 4-step wizard payload for creating a tenant."""
 
-    # Step 1 — Entity Type + Company Data
+ # Step 1 Entity Type + Company Data
     entity_type: str = "juridica"
     name: str
     legal_name: str = ""
@@ -117,14 +115,14 @@ class CreateTenantWizardIn(BaseModel):
     phone: str = ""
     email: str = ""
     website: str = ""
-    # Step 2 — Owner
+ # Step 2 Owner
     owner_email: EmailStr
     owner_first_name: str
     owner_last_name: str
     owner_cedula: str = ""
-    # Step 3 — Locations
+ # Step 3 Locations
     locations: list[LocationIn] = []
-    # Step 4 — Plan
+ # Step 4 Plan
     plan_slug: str = "starter"
     billing_cycle: str = "monthly"
 
@@ -140,13 +138,11 @@ class TenantAdminUpdateIn(BaseModel):
     phone: str | None = None
     email: str | None = None
     website: str | None = None
-    # LYL-H-ARCH-011: plan removed — use Subscription endpoints to change plan
+ # LYL-H-ARCH-011: plan removed use Subscription endpoints to change plan
     is_active: bool | None = None
 
 
-# =============================================================================
 # COMMON SCHEMAS
-# =============================================================================
 
 
 class CreateTenantOut(BaseModel):
@@ -220,9 +216,7 @@ class InvoiceOut(BaseModel):
     created_at: datetime
 
 
-# =============================================================================
 # PLAN SCHEMAS
-# =============================================================================
 
 
 class PlanOut(BaseModel):
@@ -363,9 +357,7 @@ class PlanUpdateIn(BaseModel):
         return list(dict.fromkeys(value))
 
 
-# =============================================================================
 # WHATSAPP OVERRIDE (LYL-SRS-008)
-# =============================================================================
 
 
 class WhatsAppOverrideIn(BaseModel):
@@ -381,9 +373,7 @@ class VaultSecretUpdateIn(BaseModel):
     value: str
 
 
-# =============================================================================
-# PLATFORM SETTINGS — Runtime configuration without restart
-# =============================================================================
+# PLATFORM SETTINGS Runtime configuration without restart
 
 
 class PlatformSettingOut(BaseModel):
@@ -410,9 +400,7 @@ class PlatformSettingsSummaryOut(BaseModel):
     settings: list[PlatformSettingOut]
 
 
-# =============================================================================
 # PLATFORM MODE (LYL-SRS-MODE-001)
-# =============================================================================
 
 
 class PlatformModeOut(BaseModel):
@@ -435,9 +423,7 @@ class PlatformModeToggleIn(BaseModel):
         return value
 
 
-# =============================================================================
 # SYSADMIN OPERATIONS (LYL-BOOT-001)
-# =============================================================================
 
 
 class FactoryResetConfirmIn(BaseModel):

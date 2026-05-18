@@ -1,5 +1,5 @@
 """
-Loyallia — Cards (Loyalty Programs) API router.
+Loyallia  Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
 
@@ -26,9 +26,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-# =============================================================================
 # SCHEMAS
-# =============================================================================
 
 
 class CardCreateIn(BaseModel):
@@ -145,9 +143,7 @@ class MessageOut(BaseModel):
     message: str
 
 
-# =============================================================================
 # ENDPOINTS
-# =============================================================================
 
 
 class CardListOut(BaseModel):
@@ -190,7 +186,7 @@ def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
 
     check_plan_limit(tenant, "programs")
 
-    # Check for duplicate name
+ # Check for duplicate name
     if Card.objects.filter(tenant=tenant, name=data.name).exists():
         raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
 
@@ -238,10 +234,10 @@ def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) ->
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
-    # Update fields if provided
+ # Update fields if provided
     update_fields = []
     if data.name is not None:
-        # Check for duplicate name (excluding current card)
+ # Check for duplicate name (excluding current card)
         if Card.objects.filter(tenant=request.tenant, name=data.name).exclude(id=card.id).exists():
             raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
         card.name = data.name
@@ -301,7 +297,7 @@ def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) ->
             details={"updated_fields": update_fields},
         )
 
-        # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
+ # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
         try:
             from apps.customers.pass_engine.google_pass import update_loyalty_class
 
@@ -368,7 +364,7 @@ def delete_program(request: HttpRequest, program_id: str) -> HttpResponse:
 
     card.delete()
 
-    # LYL-M-API-023: Return 204 No Content on successful delete
+ # LYL-M-API-023: Return 204 No Content on successful delete
     return HttpResponse(status=204)
 
 
@@ -379,13 +375,13 @@ def program_stats(request: HttpRequest, program_id: str) -> dict:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
 
-    # Get enrollment count
+ # Get enrollment count
     enrollment_count = Enrollment.objects.filter(card=card).count()
 
-    # Get active passes count
+ # Get active passes count
     active_passes = CustomerPass.objects.filter(card=card, is_active=True).count()
 
-    # Get transaction count for this program
+ # Get transaction count for this program
     from apps.transactions.models import Transaction
 
     transaction_count = Transaction.objects.filter(customer_pass__card=card).count()

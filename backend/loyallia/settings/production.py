@@ -1,12 +1,12 @@
 """
-Loyallia Django Settings — PRODUCTION
+Loyallia Django Settings  PRODUCTION
 Inherits from base. Enforces HTTPS, strict security headers.
 All sensitive secrets are fetched via Vault (no env fallback).
 """
 
 from decouple import Csv, config
 
-# Import Vault client — all production secrets go through Vault first
+# Import Vault client all production secrets go through Vault first
 from common.vault import get_secret
 
 from .base import *  # noqa: F401, F403
@@ -18,10 +18,9 @@ from common.environment_guard import enforce_settings_environment
 
 enforce_settings_environment(mode="production", databases=DATABASES)  # noqa: F405
 
-# =============================================================================
-# SECURITY — HTTPS enforcement via Nginx reverse proxy
-# =============================================================================
-# Nginx sets X-Forwarded-Proto: https — Django uses this to detect SSL
+# SECURITY HTTPS enforcement via Nginx reverse proxy
+
+# Nginx sets X-Forwarded-Proto: https Django uses this to detect SSL
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000  # 1 year
@@ -40,9 +39,8 @@ AWS_S3_VERIFY = True
 # Trust the Nginx proxy for host validation
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="rewards.loyallia.com", cast=Csv())
 
-# =============================================================================
 # SECRETS VIA VAULT (STRICT MODE: Vault or fail)
-# =============================================================================
+
 SECRET_KEY = get_secret("secret_key", strict=True)
 
 # Redis / Celery URLs from Vault.
@@ -51,7 +49,7 @@ CELERY_BROKER_URL = get_secret("celery_broker_url", strict=True)
 CELERY_RESULT_BACKEND = get_secret("celery_result_backend", strict=True)
 CACHES["default"]["LOCATION"] = REDIS_URL  # noqa: F405
 
-# Database — override password from Vault (Strict)
+# Database override password from Vault (Strict)
 _pg_password = get_secret("postgres_password", strict=True)
 if _pg_password:
     DATABASES["default"]["PASSWORD"] = _pg_password  # noqa: F405
@@ -66,7 +64,7 @@ AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
 STORAGES["default"]["OPTIONS"]["access_key"] = MINIO_ACCESS_KEY  # noqa: F405
 STORAGES["default"]["OPTIONS"]["secret_key"] = MINIO_SECRET_KEY  # noqa: F405
 
-# JWT / Auth tokens — separate key from SECRET_KEY (Vault Only)
+# JWT / Auth tokens separate key from SECRET_KEY (Vault Only)
 JWT_SECRET_KEY = get_secret("jwt_secret_key", strict=True)
 
 # Pass HMAC signing
@@ -78,7 +76,7 @@ APPLE_WALLET_ENABLED = vault_bool("apple_wallet_enabled", "APPLE_WALLET_ENABLED"
 if APPLE_WALLET_ENABLED:
     APPLE_PASS_TYPE_IDENTIFIER = get_secret("apple_pass_type_identifier", strict=True)
     APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", strict=True)
-    # Apple Wallet webServiceURL — derive from APP_URL if not explicitly set
+ # Apple Wallet webServiceURL derive from APP_URL if not explicitly set
     if not PASS_WEB_SERVICE_URL:  # noqa: F405
         PASS_WEB_SERVICE_URL = f"{config('APP_URL', default='https://rewards.loyallia.com')}/wallet/apple"
 

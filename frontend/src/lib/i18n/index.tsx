@@ -21,7 +21,7 @@ import en from "./locales/en.json";
 import es from "./locales/es.json";
 import fr from "./locales/fr.json";
 
-// ---- Types ----
+// Types
 export type SupportedLocale = "es" | "en" | "fr" | "de";
 
 const LOCALES: Record<SupportedLocale, Record<string, unknown>> = {
@@ -41,7 +41,7 @@ const LOCALE_NAMES: Record<SupportedLocale, string> = {
 const STORAGE_KEY = "loyallia_lang";
 const DEFAULT_LOCALE: SupportedLocale = "es";
 
-// ---- Nested key lookup ----
+// Nested key lookup
 export function getNestedValue(obj: Record<string, unknown>, path: string): string {
   const keys = path.split(".");
   let current: unknown = obj;
@@ -55,7 +55,7 @@ export function getNestedValue(obj: Record<string, unknown>, path: string): stri
   return typeof current === "string" ? current : path;
 }
 
-// ---- Context ----
+// Context
 interface I18nContextValue {
   locale: SupportedLocale;
   setLocale: (locale: SupportedLocale) => void;
@@ -72,7 +72,7 @@ const I18nContext = createContext<I18nContextValue>({
   supportedLocales: Object.keys(LOCALES) as SupportedLocale[],
 });
 
-// ---- Provider ----
+// Provider
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<SupportedLocale>(() => {
     if (typeof window !== 'undefined') {
@@ -137,7 +137,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ---- Hook ----
+// Hook
 export function useI18n() {
   return useContext(I18nContext);
 }

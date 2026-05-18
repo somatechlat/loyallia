@@ -51,9 +51,8 @@ from apps.notifications.models import (
 from apps.tenants.models import Location, PlatformSetting, Tenant
 from apps.transactions.models import Transaction
 
-# =============================================================================
 # Operational identifiers (NEVER delete these)
-# =============================================================================
+
 OPERATIONAL_PLAN_SLUGS = {"trial", "starter", "professional", "enterprise"}
 SUPERADMIN_EMAIL = "admin@loyallia.com"
 
@@ -63,7 +62,7 @@ def delete_model_qs(qs, description):
     count = qs.count()
     if count:
         qs.delete()
-        print(f"  ✓ Deleted {count} {description}")
+        print(f"   Deleted {count} {description}")
         return count
     else:
         print(f"  - No {description} to delete")
@@ -80,88 +79,87 @@ def main():
     superadmin_id = User.objects.filter(email=SUPERADMIN_EMAIL).values_list("id", flat=True).first()
 
     with transaction.atomic():
-        # =====================================================================
-        # Phase 1: Delete child records with FK dependencies FIRST
-        # =====================================================================
+
+ # Phase 1: Delete child records with FK dependencies FIRST
+
         print("[Phase 1] Deleting child records with foreign key dependencies...")
         print()
 
-        # 1. RefreshToken → FK to User
+ # 1. RefreshToken → FK to User
         total_deleted += delete_model_qs(RefreshToken.objects.exclude(user_id=superadmin_id), "refresh tokens")
 
-        # 2. CampaignDeliveryLog → FK to CampaignRun, Customer
+ # 2. CampaignDeliveryLog → FK to CampaignRun, Customer
         total_deleted += delete_model_qs(CampaignDeliveryLog.objects.all(), "campaign delivery logs")
 
-        # 3. Notification → FK to Customer, Tenant
+ # 3. Notification → FK to Customer, Tenant
         total_deleted += delete_model_qs(Notification.objects.all(), "notifications")
 
-        # 4. CampaignRun → FK to Tenant
+ # 4. CampaignRun → FK to Tenant
         total_deleted += delete_model_qs(CampaignRun.objects.all(), "campaign runs")
 
-        # 5. WhatsAppSession → OneToOne to Tenant
+ # 5. WhatsAppSession → OneToOne to Tenant
         total_deleted += delete_model_qs(WhatsAppSession.objects.all(), "WhatsApp sessions")
 
-        # 6. Transaction → FK to CustomerPass, Location, User
+ # 6. Transaction → FK to CustomerPass, Location, User
         total_deleted += delete_model_qs(Transaction.objects.all(), "transactions")
 
-        # 7. CustomerPass → FK to Customer, Card
+ # 7. CustomerPass → FK to Customer, Card
         total_deleted += delete_model_qs(CustomerPass.objects.all(), "customer passes")
 
-        # 8. CustomerAnalytics → FK to Customer, Tenant
+ # 8. CustomerAnalytics → FK to Customer, Tenant
         total_deleted += delete_model_qs(CustomerAnalytics.objects.all(), "customer analytics")
 
-        # 9. ProgramAnalytics → FK to Card, Tenant
+ # 9. ProgramAnalytics → FK to Card, Tenant
         total_deleted += delete_model_qs(ProgramAnalytics.objects.all(), "program analytics")
 
-        # 10. DailyAnalytics → FK to Tenant
+ # 10. DailyAnalytics → FK to Tenant
         total_deleted += delete_model_qs(DailyAnalytics.objects.all(), "daily analytics")
 
-        # 11. Automation → FK to Tenant
+ # 11. Automation → FK to Tenant
         total_deleted += delete_model_qs(Automation.objects.all(), "automations")
 
-        # 12. AuditLog (has tenant_id UUID but no FK constraint)
+ # 12. AuditLog (has tenant_id UUID but no FK constraint)
         total_deleted += delete_model_qs(AuditLog.objects.all(), "audit logs")
 
-        # 13. Invoice → FK to Subscription
+ # 13. Invoice → FK to Subscription
         total_deleted += delete_model_qs(Invoice.objects.all(), "invoices")
 
-        # 14. PaymentMethod → FK to Subscription
+ # 14. PaymentMethod → FK to Subscription
         total_deleted += delete_model_qs(PaymentMethod.objects.all(), "payment methods")
 
-        # 15. Subscription → FK to Tenant, SubscriptionPlan
+ # 15. Subscription → FK to Tenant, SubscriptionPlan
         total_deleted += delete_model_qs(Subscription.objects.all(), "subscriptions")
 
         print()
         print("[Phase 2] Deleting tenant-scoped entities...")
         print()
 
-        # 16. Customer → FK to Tenant
+ # 16. Customer → FK to Tenant
         total_deleted += delete_model_qs(Customer.objects.all(), "customers")
 
-        # 17. Card → FK to Tenant
+ # 17. Card → FK to Tenant
         total_deleted += delete_model_qs(Card.objects.all(), "cards/programs")
 
-        # 18. Location → FK to Tenant
+ # 18. Location → FK to Tenant
         total_deleted += delete_model_qs(Location.objects.all(), "locations")
 
-        # 19. User (non-SUPER_ADMIN) → FK to Tenant (nullable)
+ # 19. User (non-SUPER_ADMIN) → FK to Tenant (nullable)
         total_deleted += delete_model_qs(User.objects.exclude(email=SUPERADMIN_EMAIL), "non-SUPER_ADMIN users")
 
-        # 20. Tenant
+ # 20. Tenant
         total_deleted += delete_model_qs(Tenant.objects.all(), "tenants")
 
         print()
         print("[Phase 3] Deleting non-operational subscription plans...")
         print()
 
-        # 21. Non-operational SubscriptionPlans
+ # 21. Non-operational SubscriptionPlans
         total_deleted += delete_model_qs(
             SubscriptionPlan.objects.exclude(slug__in=OPERATIONAL_PLAN_SLUGS), "non-operational subscription plans"
         )
 
-    # =====================================================================
-    # Verification
-    # =====================================================================
+ # Verification
+
     print()
     print("=" * 70)
     print("VERIFICATION: Remaining data after cleanup")
@@ -197,7 +195,7 @@ def main():
     print("Cleanup complete. Total record groups deleted: verified above")
     print("=" * 70)
 
-    # Final health check
+ # Final health check
     errors = []
     if users.count() != 1:
         errors.append(f"Expected 1 user, found {users.count()}")
@@ -216,11 +214,11 @@ def main():
         print()
         print("ERRORS:")
         for e in errors:
-            print(f"  ✗ {e}")
+            print(f"   {e}")
         sys.exit(1)
     else:
         print()
-        print("✅ System is clean. Only operational infrastructure remains.")
+        print(" System is clean. Only operational infrastructure remains.")
         sys.exit(0)
 
 

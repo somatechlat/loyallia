@@ -68,13 +68,13 @@ def list_campaigns(request: HttpRequest) -> dict:
         tenant=request.tenant, notification_type=NotificationType.MARKETING
     ).order_by("-created_at")[:50]
 
-    # Group notifications by campaign (using created_at date as grouping key)
+ # Group notifications by campaign (using created_at date as grouping key)
     campaigns_dict = {}
     for n in notifications:
-        # Use title + date as unique campaign key
+ # Use title + date as unique campaign key
         campaign_key = f"{n.title}_{n.created_at.date() if n.created_at else 'unknown'}"
         if campaign_key not in campaigns_dict:
-            # Determine status based on is_sent and is_read (sent = delivered to at least one)
+ # Determine status based on is_sent and is_read (sent = delivered to at least one)
             if n.is_sent and n.is_read:
                 status = "delivered"
             elif n.is_sent:
@@ -82,7 +82,7 @@ def list_campaigns(request: HttpRequest) -> dict:
             else:
                 status = "pending"
 
-            # Determine campaign type from channel
+ # Determine campaign type from channel
             channel = n.channel if n.channel else "email"
 
             campaigns_dict[campaign_key] = {
@@ -109,7 +109,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     OWNER only. Supports four channels:
     - 'email': Rich HTML email with images
     - 'wallet': Creates notifications that appear when customers check their wallet cards
-    - 'whatsapp': WhatsApp campaign via Baileys bridge — messages queued with Gaussian jitter anti-ban
+    - 'whatsapp': WhatsApp campaign via Baileys bridge  messages queued with Gaussian jitter anti-ban
     - 'sms': SMS campaign via Twilio with per-message delivery tracking
     """
     if not is_owner(request):
@@ -117,7 +117,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     check_plan_limit(request.tenant, "notifications_month")
 
     if data.channel == "email":
-        # LYL-SRS-008: Gate email campaigns by plan feature + monthly quota
+ # LYL-SRS-008: Gate email campaigns by plan feature + monthly quota
         check_feature_access(request.tenant, "email_campaigns")
         check_plan_limit(request.tenant, "emails_month")
 
@@ -142,7 +142,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=data.segment_id),
         }
     elif data.channel == "wallet":
-        # LYL-SRS-008: Gate wallet campaigns by plan feature + monthly quota
+ # LYL-SRS-008: Gate wallet campaigns by plan feature + monthly quota
         check_feature_access(request.tenant, "wallet_campaigns")
         check_plan_limit(request.tenant, "wallet_pushes_month")
 
@@ -167,7 +167,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_WALLET_STARTED", segment=data.segment_id),
         }
     elif data.channel == "whatsapp":
-        # LYL-SRS-008: Gate WhatsApp campaigns by plan feature + daily quota
+ # LYL-SRS-008: Gate WhatsApp campaigns by plan feature + daily quota
         check_feature_access(request.tenant, "whatsapp_campaigns")
         check_plan_limit(request.tenant, "whatsapp_day")
 
@@ -192,7 +192,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id),
         }
     elif data.channel == "sms":
-        # LYL-SRS-009: Gate SMS campaigns by plan feature + daily quota
+ # LYL-SRS-009: Gate SMS campaigns by plan feature + daily quota
         check_feature_access(request.tenant, "sms_campaigns")
         check_plan_limit(request.tenant, "sms_day")
 

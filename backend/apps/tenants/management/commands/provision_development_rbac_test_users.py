@@ -78,7 +78,7 @@ class Command(BaseCommand):
             password = secrets.token_urlsafe(24)
 
         with transaction.atomic():
-            # Seed all 4 default plans (trial, starter, professional, enterprise)
+ # Seed all 4 default plans (trial, starter, professional, enterprise)
             seed_cmd = SeedPlansCommand(stdout=self.stdout, stderr=self.stderr)
             seed_cmd.handle()
 
@@ -87,7 +87,7 @@ class Command(BaseCommand):
             self._ensure_location(tenant)
             credentials = self._ensure_users(tenant, password)
 
-        # Set Twilio test mode in Vault so SMS E2E tests can run safely
+ # Set Twilio test mode in Vault so SMS E2E tests can run safely
         put_secret("twilio_use_test_mode", "true")
 
         self._write_credentials(password_file, credentials)
@@ -196,7 +196,7 @@ class Command(BaseCommand):
 
     def _write_credentials(self, password_file: Path, credentials: dict) -> None:
         password_file.parent.mkdir(parents=True, exist_ok=True)
-        # Read whatsapp bridge API key from shared runtime file if available
+ # Read whatsapp bridge API key from shared runtime file if available
         provider_secrets = {}
         bridge_key_file = Path("/run/loyallia-vault/whatsapp_bridge_api_key")
         if bridge_key_file.exists():

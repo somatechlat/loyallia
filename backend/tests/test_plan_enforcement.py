@@ -1,5 +1,5 @@
 """
-Loyallia — Plan Enforcement Tests
+Loyallia  Plan Enforcement Tests
 Tests for check_plan_limit, check_feature_access, get_tenant_limits,
 get_current_usage, and all enforcement decorators.
 """
@@ -26,9 +26,7 @@ from tests.factories import (
     make_user,
 )
 
-# =============================================================================
 # get_tenant_limits Tests
-# =============================================================================
 
 
 class GetTenantLimitsTest(TestCase):
@@ -75,9 +73,7 @@ class GetTenantLimitsTest(TestCase):
         self.assertEqual(limits, {})
 
 
-# =============================================================================
 # get_current_usage Tests
-# =============================================================================
 
 
 class GetCurrentUsageTest(TestCase):
@@ -111,9 +107,7 @@ class GetCurrentUsageTest(TestCase):
         self.assertEqual(get_current_usage(t, "nonexistent_resource"), 0)
 
 
-# =============================================================================
 # check_plan_limit Tests
-# =============================================================================
 
 
 class CheckPlanLimitTest(TestCase):
@@ -170,9 +164,7 @@ class CheckPlanLimitTest(TestCase):
         self.assertEqual(ctx.exception.status_code, 403)
 
 
-# =============================================================================
 # check_feature_access Tests
-# =============================================================================
 
 
 class CheckFeatureAccessTest(TestCase):
@@ -204,9 +196,7 @@ class CheckFeatureAccessTest(TestCase):
         check_feature_access(t, "any_feature")  # Should not raise
 
 
-# =============================================================================
 # Decorator Tests
-# =============================================================================
 
 
 class RequireActiveSubscriptionDecoratorTest(TestCase):

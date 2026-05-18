@@ -1,7 +1,7 @@
 """
-Loyallia — Apple Wallet Pass Builders
+Loyallia  Apple Wallet Pass Builders
 Internal builder functions for Apple PKPass field layouts.
-Used by apple_pass.py — not imported directly from outside pass_engine.
+Used by apple_pass.py  not imported directly from outside pass_engine.
 """
 
 import logging
@@ -9,9 +9,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# =============================================================================
 # PASS TYPE STYLE MAPPING
-# =============================================================================
+
 
 APPLE_PASS_STYLES = {
     "stamp": "storeCard",
@@ -120,8 +119,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "discount":
-        # Discount cards use tiered progression from card.metadata["tiers"]
-        # pass_data stores "discount_tier" (current tier name) and "total_spent"
+ # Discount cards use tiered progression from card.metadata["tiers"]
+ # pass_data stores "discount_tier" (current tier name) and "total_spent"
         tiers = metadata.get("tiers", [])
         current_tier = pass_data.get("discount_tier", "")
         current_discount = 0
@@ -172,7 +171,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "affiliate":
-        # Affiliate/membership card — generic Apple style with member info
+ # Affiliate/membership card generic Apple style with member info
         member_since = pass_data.get("enrolled_date", "")
         affiliate_code = pass_data.get("affiliate_code", "N/A")
         return {
@@ -183,7 +182,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {
                     "key": "since",
                     "label": "MIEMBRO DESDE",
-                    "value": member_since or "—",
+                    "value": member_since or "",
                 },
             ],
             "backFields": [
@@ -196,8 +195,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "gift_certificate":
-        # Gift certificate — storeCard style showing balance
-        # Prefers typed column gift_balance, falls back to pass_data
+ # Gift certificate storeCard style showing balance
+ # Prefers typed column gift_balance, falls back to pass_data
         balance = pass_data.get("gift_balance", "0")
         currency = metadata.get("currency", "USD")
         return {
@@ -228,8 +227,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "corporate_discount":
-        # Corporate discount — generic Apple style
-        # pass_data stores "corporate_discount" percentage and "company_name"
+ # Corporate discount generic Apple style
+ # pass_data stores "corporate_discount" percentage and "company_name"
         discount_pct = pass_data.get("corporate_discount", "0")
         company = pass_data.get("company_name", metadata.get("company_name", card.name))
         return {
@@ -248,8 +247,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "multipass":
-        # Multipass — storeCard style showing remaining uses
-        # Prefers typed column multipass_remaining, falls back to pass_data
+ # Multipass storeCard style showing remaining uses
+ # Prefers typed column multipass_remaining, falls back to pass_data
         bundle_size = metadata.get("bundle_size", 10)
         remaining = pass_data.get("multipass_remaining", bundle_size)
         return {
@@ -268,7 +267,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {
                     "key": "price",
                     "label": "Precio del paquete",
-                    "value": f"${metadata.get('bundle_price', '—')}",
+                    "value": f"${metadata.get('bundle_price', '')}",
                 },
                 {
                     "key": "desc",
@@ -279,7 +278,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     else:
-        # Fallback for any future/unknown card types
+ # Fallback for any future/unknown card types
         return {
             "headerFields": [{"key": "program", "label": "PROGRAMA", "value": card.name}],
             "primaryFields": [{"key": "customer", "label": "CLIENTE", "value": customer_name}],
@@ -292,7 +291,7 @@ def _build_locations(card) -> list:
     """Build location array from tenant locations for geo-push."""
     locations = []
 
-    # Locations belong to the Tenant, not the Card
+ # Locations belong to the Tenant, not the Card
     tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
 
     if not tenant_locations:
@@ -343,7 +342,7 @@ def _generate_placeholder_icon(name: str, bg_color: str = "#5660ff", size: int =
         img.save(buf, format="PNG")
         return buf.getvalue()
     except ImportError:
-        logger.warning("Pillow not installed — returning minimal 1x1 PNG for icon")
+        logger.warning("Pillow not installed  returning minimal 1x1 PNG for icon")
         return _minimal_png()
 
 

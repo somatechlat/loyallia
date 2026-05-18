@@ -1,5 +1,5 @@
 """
-Loyallia — Shared Role-Check Decorator
+Loyallia  Shared Role-Check Decorator
 Replaces inline role checks scattered across api.py files.
 """
 

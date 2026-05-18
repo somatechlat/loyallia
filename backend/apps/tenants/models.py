@@ -1,5 +1,5 @@
 """
-Loyallia — Tenant & Location Models
+Loyallia  Tenant & Location Models
 Core multi-tenant entity. All business data ties to Tenant.
 Ecuadorian business fields for SRI compliance.
 """
@@ -14,9 +14,7 @@ from django.utils import timezone
 
 from common.models import TimestampedModel
 
-# =============================================================================
-# VALIDATORS — Ecuadorian Identity Documents
-# =============================================================================
+# VALIDATORS Ecuadorian Identity Documents
 
 
 def validate_ruc(value: str) -> None:
@@ -40,7 +38,7 @@ def validate_cedula(value: str) -> None:
     province = int(value[:2])
     if province < 1 or province > 24:
         raise ValidationError(f"Los primeros 2 dígitos ({value[:2]}) no corresponden a una provincia válida.")
-    # Module-10 verification
+ # Module-10 verification
     coefficients = [2, 1, 2, 1, 2, 1, 2, 1, 2]
     total = 0
     for i in range(9):
@@ -51,9 +49,7 @@ def validate_cedula(value: str) -> None:
         raise ValidationError("El dígito verificador de la cédula no es válido.")
 
 
-# =============================================================================
 # ENUMS
-# =============================================================================
 
 
 class Plan(models.TextChoices):
@@ -108,9 +104,7 @@ class EntityType(models.TextChoices):
     JURIDICA = "juridica", "Persona Jurídica (Empresa)"
 
 
-# =============================================================================
 # TENANT MODEL
-# =============================================================================
 
 
 class Tenant(TimestampedModel):
@@ -122,13 +116,13 @@ class Tenant(TimestampedModel):
 
     name = models.CharField(max_length=200, verbose_name="Nombre comercial")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
-    # DEPRECATED (LYL-H-ARCH-011): plan is a denormalized cache of Subscription.status.
-    # Use effective_plan property or Subscription directly as the source of truth.
-    # This field will be removed in a future migration once all reads are migrated.
+ # DEPRECATED (LYL-H-ARCH-011): plan is a denormalized cache of Subscription.status.
+ # Use effective_plan property or Subscription directly as the source of truth.
+ # This field will be removed in a future migration once all reads are migrated.
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
     is_active = models.BooleanField(default=True)
 
-    # Entity classification (Ecuador: natural vs jurídica)
+ # Entity classification (Ecuador: natural vs jurídica)
     entity_type = models.CharField(
         max_length=10,
         choices=EntityType.choices,
@@ -145,7 +139,7 @@ class Tenant(TimestampedModel):
         help_text="Cédula del propietario (solo persona natural, 10 dígitos)",
     )
 
-    # Ecuadorian Legal Entity
+ # Ecuadorian Legal Entity
     legal_name = models.CharField(
         max_length=300,
         blank=True,
@@ -168,7 +162,7 @@ class Tenant(TimestampedModel):
         verbose_name="Industria",
     )
 
-    # Legal Representative
+ # Legal Representative
     legal_rep_name = models.CharField(max_length=200, blank=True, default="", verbose_name="Representante legal")
     legal_rep_cedula = models.CharField(
         max_length=10,
@@ -178,15 +172,15 @@ class Tenant(TimestampedModel):
         validators=[validate_cedula],
     )
 
-    # Trial
+ # Trial
     trial_end = models.DateTimeField(null=True, blank=True)
 
-    # Branding
+ # Branding
     logo_url = models.URLField(blank=True, default="")
     primary_color = models.CharField(max_length=7, default="#1a1a2e")  # HEX
     secondary_color = models.CharField(max_length=7, default="#16213e")
 
-    # Business info
+ # Business info
     country = models.CharField(max_length=2, default="EC")  # ISO 3166-1 alpha-2
     province = models.CharField(
         max_length=30,
@@ -202,7 +196,7 @@ class Tenant(TimestampedModel):
     website = models.URLField(blank=True, default="")
     address = models.TextField(blank=True, default="")
 
-    # i18n — tenant default language (REQ-I18N-001)
+ # i18n tenant default language (REQ-I18N-001)
     default_language = models.CharField(
         max_length=5,
         default="es",
@@ -210,7 +204,7 @@ class Tenant(TimestampedModel):
         help_text="ISO 639-1: es, en, fr, de. Set at tenant registration.",
     )
 
-    # LOPDP Art. 18 — Scheduled account deletion (LYL-FR-DPR-025.8)
+ # LOPDP Art. 18 Scheduled account deletion (LYL-FR-DPR-025.8)
     scheduled_deletion_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -280,7 +274,7 @@ class Tenant(TimestampedModel):
         if subscription is not None:
             return subscription.is_trial_active
 
-        # Fallback to denormalized field
+ # Fallback to denormalized field
         if self.plan != Plan.TRIAL:
             return False
         if self.trial_end is None:
@@ -325,7 +319,7 @@ class Tenant(TimestampedModel):
         if subscription is not None:
             return subscription.is_access_allowed
 
-        # Fallback
+ # Fallback
         return self.plan == Plan.FULL or self.is_trial_active
 
     def activate_trial(self) -> None:
@@ -342,12 +336,12 @@ class Tenant(TimestampedModel):
             days=PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
         )
 
-        # Sync denormalized field (backward compat)
+ # Sync denormalized field (backward compat)
         self.trial_end = trial_end
         self.plan = Plan.TRIAL
         self.save(update_fields=["trial_end", "plan", "updated_at"])
 
-        # Update authoritative Subscription
+ # Update authoritative Subscription
         subscription = Subscription.objects.filter(tenant=self).first()
         if subscription:
             subscription.trial_end = trial_end
@@ -369,7 +363,7 @@ class Location(TimestampedModel):
     city = models.CharField(max_length=100, blank=True, default="")
     country = models.CharField(max_length=2, default="EC")
 
-    # Geo-coordinates for geo-fencing push notifications
+ # Geo-coordinates for geo-fencing push notifications
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
@@ -384,10 +378,10 @@ class Location(TimestampedModel):
         ordering = ["-is_primary", "name"]
 
     def __repr__(self) -> str:
-        return f"<Location: {self.tenant.name} — {self.name}>"
+        return f"<Location: {self.tenant.name}  {self.name}>"
 
     def __str__(self) -> str:
-        return f"{self.tenant.name} — {self.name}"
+        return f"{self.tenant.name}  {self.name}"
 
     def clean(self) -> None:
         """Validate location data."""
@@ -402,9 +396,8 @@ class Location(TimestampedModel):
         return self.latitude is not None and self.longitude is not None
 
 
-# =============================================================================
-# PLATFORM SETTINGS — Runtime-configurable without restart
-# =============================================================================
+# PLATFORM SETTINGS Runtime-configurable without restart
+
 
 from django.core.cache import cache
 

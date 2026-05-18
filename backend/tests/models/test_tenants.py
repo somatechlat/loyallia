@@ -1,5 +1,5 @@
 """
-Loyallia — Tenant & Location Model Unit Tests
+Loyallia  Tenant & Location Model Unit Tests
 Tests for Tenant, Location, and related models.
 """
 
@@ -14,9 +14,7 @@ from django.utils import timezone
 from apps.tenants.models import Location, Plan, validate_cedula, validate_ruc
 from tests.factories import make_tenant
 
-# =============================================================================
 # Tenant Model Tests
-# =============================================================================
 
 
 class TenantModelTest(TestCase):
@@ -84,7 +82,7 @@ class TenantModelTest(TestCase):
         self.assertTrue(t.trial_end > timezone.now())
 
     def test_validate_ruc_valid(self):
-        # Province 17 (Pichincha), valid 13-digit RUC
+ # Province 17 (Pichincha), valid 13-digit RUC
         validate_ruc("1790012345001")  # Should not raise
 
     def test_validate_ruc_invalid_length(self):
@@ -92,7 +90,7 @@ class TenantModelTest(TestCase):
             validate_ruc("12345")
 
     def test_validate_cedula_valid_format(self):
-        # Province 01, 10 digits — module-10 check may fail but format is valid
+ # Province 01, 10 digits module-10 check may fail but format is valid
         with suppress(ValidationError):
             validate_cedula("0102030405")
 

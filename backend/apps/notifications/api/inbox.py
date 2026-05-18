@@ -13,7 +13,7 @@ from .base import _get_customer_or_403, router
 @router.get("/inbox/", auth=jwt_auth, summary="Get notification inbox")
 def get_notifications(request, limit: int = 20, offset: int = 0, unread_only: bool = False):
     """Get customer's notification inbox."""
-    # Handle non-customer users (like Owner/Admin)
+ # Handle non-customer users (like Owner/Admin)
     if not hasattr(request.user, "customer") or not request.user.customer:
         return {"total": 0, "count": 0, "notifications": []}
 
@@ -63,7 +63,7 @@ def mark_notification_read(request, notification_id: str):
     customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
-    # Verify ownership
+ # Verify ownership
     if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
@@ -82,7 +82,7 @@ def mark_notification_clicked(request, notification_id: str):
     customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
-    # Verify ownership
+ # Verify ownership
     if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
@@ -97,13 +97,13 @@ def delete_notification(request, notification_id: str):
     customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
-    # Verify ownership
+ # Verify ownership
     if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
     notification.delete()
 
-    # LYL-M-API-023: Return 204 No Content on successful delete
+ # LYL-M-API-023: Return 204 No Content on successful delete
     from django.http import HttpResponse
 
     return HttpResponse(status=204)

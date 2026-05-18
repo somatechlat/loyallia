@@ -1,5 +1,5 @@
 """
-Loyallia — Centralized i18n Message Registry (common/messages.py)
+Loyallia  Centralized i18n Message Registry (common/messages.py)
 
 All user-facing text is defined here with translations for ES, EN, FR, DE.
 Messages are retrieved via get_message(code, lang=None, **kwargs).
@@ -17,7 +17,7 @@ Language resolution order (get_message_for_request):
     4. Django LANGUAGE_CODE (settings)
 
 Performance (Rule 12):
-    - PERF: All catalogs are module-level dicts — O(1) lookup by code.
+    - PERF: All catalogs are module-level dicts  O(1) lookup by code.
     - PERF: No database queries. No file I/O. No Django translation machinery.
     - PERF: str.format(**kwargs) used for interpolation (fastest Python option).
 
@@ -29,21 +29,19 @@ from typing import Any
 
 from django.conf import settings
 
-# =============================================================================
 # SUPPORTED LANGUAGES
-# =============================================================================
+
 SUPPORTED_LANGUAGES = ("es", "en", "fr", "de")
 DEFAULT_LANGUAGE = "es"
 
 
-# =============================================================================
 # MESSAGE CATALOGS
 # Each language is a separate dict keyed by message code.
 # Spanish (es) is the canonical/primary language.
-# =============================================================================
+
 
 _MESSAGES_ES: dict[str, str] = {
-    # --- Authentication ---
+ # Authentication
     "AUTH_REGISTER_SUCCESS": "Cuenta creada exitosamente. Por favor verifica tu correo electrónico.",
     "AUTH_LOGIN_SUCCESS": "Inicio de sesión exitoso.",
     "AUTH_LOGOUT_SUCCESS": "Sesión cerrada exitosamente.",
@@ -73,7 +71,7 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTH_PHONE_VERIFIED": "Número telefónico verificado exitosamente.",
     "AUTH_PHONE_OTP_INVALID": "El código de verificación es inválido o ha expirado.",
     "AUTH_USER_NOT_FOUND_REGISTER": "Cuenta no encontrada. Por favor, regístrate primero para acceder o disfrutar del periodo de prueba.",
-    # --- Tenant ---
+ # Tenant
     "TENANT_CREATED": "Negocio registrado. Tu prueba gratuita de {days} días ha comenzado.",
     "TENANT_WELCOME_EMAIL_SUBJECT": "Bienvenido a Loyallia",
     "TENANT_WELCOME_EMAIL_BODY": "Hola {name},\n\nTu negocio {tenant} fue creado en Loyallia.\n\nURL de acceso: {login_url}\nEmail: {email}\nContraseña temporal: {password}\nPrueba: {trial_days} días\n\nCambia esta contraseña al iniciar sesión.",
@@ -83,12 +81,12 @@ _MESSAGES_ES: dict[str, str] = {
     "TENANT_TRIAL_EXPIRING": "Tu prueba gratuita vence en {days} días. Suscríbete para continuar.",
     "TENANT_TRIAL_EXPIRED": "Tu período de prueba ha terminado. Suscríbete para continuar usando Loyallia.",
     "TENANT_MAX_PROGRAMS": "Has alcanzado el límite de {max} programas de fidelización.",
-    # --- Location ---
+ # Location
     "LOCATION_CREATED": "Ubicación '{name}' creada exitosamente.",
     "LOCATION_UPDATED": "Ubicación actualizada exitosamente.",
     "LOCATION_DELETED": "Ubicación eliminada exitosamente.",
     "LOCATION_NOT_FOUND": "Ubicación no encontrada.",
-    # --- Loyalty Programs ---
+ # Loyalty Programs
     "PROGRAM_CREATED": "Programa de fidelización '{name}' creado exitosamente.",
     "PROGRAM_UPDATED": "Programa actualizado exitosamente.",
     "PROGRAM_DEACTIVATED": "Programa desactivado. Los pases existentes no se verán afectados.",
@@ -98,12 +96,12 @@ _MESSAGES_ES: dict[str, str] = {
     "PROGRAM_DELETED": "Programa de fidelización eliminado permanentemente.",
     "PROGRAM_SUSPENDED": "Programa de fidelización suspendido exitosamente.",
     "PROGRAM_REACTIVATED": "Programa de fidelización reactivado exitosamente.",
-    # --- Enrollment ---
+ # Enrollment
     "ENROLLMENT_SUCCESS": "¡Bienvenido a {program_name}! Tu tarjeta está lista.",
     "ENROLLMENT_DUPLICATE": "Ya estás registrado en este programa. ¿Deseas reenviar tu tarjeta a {email}?",
     "ENROLLMENT_PASS_GENERATING": "Generando tu tarjeta de fidelidad...",
     "ENROLLMENT_PASS_READY": "¡Tu tarjeta está lista! Agrégala a tu Wallet.",
-    # --- Pass ---
+ # Pass
     "PASS_NOT_FOUND": "Tarjeta no encontrada.",
     "PASS_NOT_FOUND_INACTIVE": "Pase no encontrado o inactivo.",
     "PASS_EXPIRED": "Esta tarjeta ha expirado.",
@@ -119,7 +117,7 @@ _MESSAGES_ES: dict[str, str] = {
     "PASS_WALLET_PROVIDER_DISABLED": "Esta billetera no está habilitada para la tarjeta.",
     "PASS_QR_INVALID_SIGNATURE": "Firma del código QR inválida.",
     "PASS_QR_EXPIRED": "El código QR ha expirado. Abre tu tarjeta para actualizar el código.",
-    # --- Transactions ---
+ # Transactions
     "TRANSACTION_STAMP_ADDED": "{count} sello(s) agregado(s). Total: {current}/{required}.",
     "TRANSACTION_REWARD_READY": "¡Felicidades! Has ganado tu recompensa: {reward}.",
     "TRANSACTION_REWARD_REDEEMED": "Recompensa canjeada exitosamente.",
@@ -133,7 +131,7 @@ _MESSAGES_ES: dict[str, str] = {
     "TRANSACTION_INVALID_AMOUNT": "El monto de la transacción debe ser mayor a cero.",
     "TRANSACTION_REMOTE_ISSUED": "Recompensa emitida remotamente a {customer_name}.",
     "TRANSACTION_SEARCH_MIN_CHARS": "Búsqueda debe tener al menos 2 caracteres.",
-    # --- Push Notifications ---
+ # Push Notifications
     "CAMPAIGN_CREATED": "Campaña '{title}' creada exitosamente.",
     "CAMPAIGN_SENT": "Campaña enviada a {count} clientes.",
     "CAMPAIGN_SCHEDULED": "Campaña programada para {datetime}.",
@@ -141,13 +139,13 @@ _MESSAGES_ES: dict[str, str] = {
     "CAMPAIGN_EMAIL_STARTED": "Campaña de EMAIL iniciada para segmento '{segment}'. Los clientes recibirán un correo electrónico.",
     "CAMPAIGN_WALLET_STARTED": "Campaña de WALLET iniciada para segmento '{segment}'. Los clientes recibirán una notificación en sus tarjetas.",
     "CAMPAIGN_WHATSAPP_STARTED": "Campaña de WhatsApp iniciada para segmento '{segment}'. Los mensajes se enviarán de forma progresiva (~8 por minuto).",
-    # --- Automation ---
+ # Automation
     "RULE_CREATED": "Regla de automatización '{name}' creada.",
     "RULE_UPDATED": "Regla actualizada.",
     "RULE_ACTIVATED": "Regla '{name}' activada.",
     "RULE_DEACTIVATED": "Regla '{name}' desactivada.",
     "RULE_NOT_FOUND": "Regla de automatización no encontrada.",
-    # --- Billing ---
+ # Billing
     "BILLING_SUBSCRIBED": "Suscripción activada. Bienvenido a Loyallia FULL.",
     "BILLING_CANCELLED": "Suscripción cancelada. Tu acceso continúa hasta el {end_date}.",
     "BILLING_PAYMENT_FAILED": "El pago falló. Por favor actualiza tu método de pago.",
@@ -167,12 +165,12 @@ _MESSAGES_ES: dict[str, str] = {
     "BILLING_INVALID_SIGNATURE": "Firma inválida.",
     "BILLING_INVALID_PAYLOAD": "Payload JSON inválido.",
     "BILLING_PAYMENT_CONFIRMATION_REQUIRED": "No se pudo confirmar el pago. La suscripción no fue activada.",
-    # --- Generic ---
+ # Generic
     "NOT_FOUND": "Recurso no encontrado.",
     "VALIDATION_ERROR": "Error de validación: {detail}",
     "SERVER_ERROR": "Error interno del servidor. Por favor intenta nuevamente.",
     "RATE_LIMITED": "Demasiadas solicitudes. Por favor espera antes de intentar nuevamente.",
-    # --- Devices ---
+ # Devices
     "DEVICE_REGISTERED": "Dispositivo registrado exitosamente.",
     "DEVICE_NOT_FOUND": "Dispositivo no encontrado.",
     "NOTIFICATION_SENT": "Notificación enviada exitosamente.",
@@ -181,7 +179,7 @@ _MESSAGES_ES: dict[str, str] = {
     "NOTIFICATION_BIRTHDAY_MSG": "Te deseamos un excelente día. ¡Visita {program_name} y reclama tu regalo especial!",
     "NOTIFICATION_REMINDER_TITLE": "¿Nos extranas?",
     "NOTIFICATION_REMINDER_MSG": "Tienes puntos esperando en {program_name}. ¡Ven a visitarnos!",
-    # --- Customers ---
+ # Customers
     "CUSTOMER_CREATED": "Cliente creado exitosamente.",
     "CUSTOMER_UPDATED": "Cliente actualizado exitosamente.",
     "CUSTOMER_NOT_FOUND": "Cliente no encontrado.",
@@ -189,9 +187,9 @@ _MESSAGES_ES: dict[str, str] = {
     "CUSTOMER_IMPORT_INVALID_FORMAT": "Formato no soportado. Sube un archivo CSV, XLS o XLSX.",
     "CUSTOMER_IMPORT_FILE_CORRUPT": "El archivo está dañado o tiene un formato inválido.",
     "CUSTOMER_IMPORT_FILE_EMPTY": "El archivo está vacío.",
-    # --- Segments ---
+ # Segments
     "SEGMENT_NOT_FOUND": "Segmento no encontrado.",
-    # --- Automation extended ---
+ # Automation extended
     "AUTOMATION_CREATED": "Automatización '{name}' creada exitosamente.",
     "AUTOMATION_UPDATED": "Automatización actualizada exitosamente.",
     "AUTOMATION_DELETED": "Automatización eliminada exitosamente.",
@@ -202,26 +200,26 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTOMATION_INVALID_TRIGGER": "Disparador inválido: {trigger}",
     "AUTOMATION_INVALID_ACTION": "Acción inválida: {action}",
     "AUTOMATION_NOT_FOUND": "Automatización no encontrada.",
-    # --- Team ---
+ # Team
     "TEAM_MEMBER_ADDED": "Miembro del equipo agregado exitosamente.",
     "TEAM_MEMBER_UPDATED": "Miembro del equipo actualizado exitosamente.",
     "TEAM_MEMBER_REMOVED": "Miembro del equipo eliminado exitosamente.",
     "TEAM_CANNOT_EDIT_SELF": "No puedes modificar tu propia cuenta desde esta pantalla.",
     "TEAM_CANNOT_DELETE_SELF": "No puedes eliminar tu propia cuenta.",
-    # --- Users ---
+ # Users
     "USER_NOT_FOUND": "Usuario no encontrado.",
-    # --- Rate Limiting ---
+ # Rate Limiting
     "RATE_LIMIT_EXCEEDED": "Demasiadas solicitudes. Intente de nuevo en un momento.",
-    # --- Plan Enforcement ---
+ # Plan Enforcement
     "PLAN_LIMIT_EXCEEDED": "Has alcanzado el límite de tu plan para {resource} ({limit}). Actualiza tu plan para continuar.",
     "PLAN_FEATURE_UNAVAILABLE": "Esta función no está disponible en tu plan actual. Actualiza para acceder.",
     "PLAN_TRIAL_EXPIRED": "Tu período de prueba ha terminado. Suscríbete para continuar usando Loyallia.",
     "PLAN_UPGRADE_REQUIRED": "Se requiere un plan superior para esta funcionalidad.",
-    # --- Audit ---
+ # Audit
     "AUDIT_ENTRY_CREATED": "Registro de auditoría creado.",
     "AUDIT_IMPERSONATION_REQUIRES_JUSTIFICATION": "Se requiere una justificación para acceder al entorno del negocio.",
     "AUDIT_EXPORT_LOGGED": "Exportación de datos registrada en auditoría.",
-    # --- SuperAdmin ---
+ # SuperAdmin
     "ADMIN_PLAN_CREATED": "Plan '{name}' creado exitosamente.",
     "ADMIN_PLAN_UPDATED": "Plan '{name}' actualizado exitosamente.",
     "ADMIN_PLAN_DEACTIVATED": "Plan desactivado exitosamente.",
@@ -229,30 +227,30 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "No se puede desactivar el plan '{name}' porque tiene {count} suscripción(es) activa(s).",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No hay propietarios activos para enviar el anuncio.",
     "ADMIN_TENANT_CREATION_FAILED": "Error al crear el negocio: {detail}",
-    "ADMIN_WA_OVERRIDE_REMOVED": "Override removido — usando límite del plan.",
+    "ADMIN_WA_OVERRIDE_REMOVED": "Override removido  usando límite del plan.",
     "ADMIN_WA_OVERRIDE_SET": "Override WA establecido: {limit} msgs/día.",
-    # --- SysAdmin Operations (LYL-BOOT-001) ---
+ # SysAdmin Operations (LYL-BOOT-001)
     "ADMIN_DEMO_SEEDED": "Datos de demostración cargados exitosamente.",
     "ADMIN_FACTORY_OTP_SENT": "Código de verificación enviado a su email y teléfono.",
     "ADMIN_FACTORY_OTP_INVALID": "Código inválido o expirado. Intente de nuevo.",
     "ADMIN_FACTORY_NO_CONTACT": "No hay número de teléfono ni email configurado para enviar el código.",
     "ADMIN_FACTORY_RESET_DONE": "Sistema restaurado a estado de fábrica exitosamente.",
     "ADMIN_FACTORY_PRODUCTION_BLOCKED": "Operación bloqueada en modo producción.",
-    # --- Agent API ---
+ # Agent API
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
     "AGENT_KEY_REVOKED": "Clave de API del agente revocada.",
-    # --- WhatsApp Bridge (LYL-SRS-006) ---
+ # WhatsApp Bridge (LYL-SRS-006)
     "WHATSAPP_BRIDGE_UNAVAILABLE": "El servicio de WhatsApp no está disponible en este momento. Intente más tarde.",
     "WHATSAPP_SESSION_NOT_CONNECTED": "La sesión de WhatsApp no está conectada. Escanea el código QR primero.",
     "WHATSAPP_BRIDGE_ERROR": "Error al enviar mensaje de WhatsApp: {detail}",
-    # --- SMS / Twilio (LYL-SRS-009) ---
+ # SMS / Twilio (LYL-SRS-009)
     "SMS_CAMPAIGN_STARTED": "Campaña de SMS iniciada para segmento '{segment}'. Los mensajes se enviarán via Twilio.",
     "SMS_SEND_FAILED": "Error al enviar SMS a {phone}: {detail}",
     "SMS_NOT_CONFIGURED": "El servicio de SMS (Twilio) no está configurado. Configure las credenciales en Vault.",
     "TWILIO_TEST_SENT": "SMS de prueba enviado exitosamente a {phone}.",
     "TWILIO_TEST_FAILED": "Error al enviar SMS de prueba: {detail}",
-    # --- Twilio Verify (LYL-SRS-VERIFY-001) ---
+ # Twilio Verify (LYL-SRS-VERIFY-001)
     "VERIFY_OTP_SENT": "Código de verificación enviado via {channel}.",
     "VERIFY_OTP_FAILED": "Error al enviar código de verificación: {detail}",
     "VERIFY_OTP_INVALID": "Código de verificación inválido o expirado.",
@@ -260,7 +258,7 @@ _MESSAGES_ES: dict[str, str] = {
     "VERIFY_NOT_CONFIGURED": "Twilio Verify no está configurado. Configure el Service SID en la integración.",
     "VERIFY_RATE_LIMITED": "Demasiados intentos de verificación. Espere {minutes} minutos.",
     "FACTORY_RESET_VERIFY_SENT": "Código de verificación para restauración de fábrica enviado via {channel}.",
-    # --- Data Export (LYL-SRS-009 / LOPDP Art.17) ---
+ # Data Export (LYL-SRS-009 / LOPDP Art.17)
     "DATA_EXPORT_STARTED": "Exportación de datos iniciada. Se descargará un archivo ZIP con toda la información del negocio.",
     "DATA_EXPORT_FAILED": "Error al exportar datos: {detail}",
     "DATA_EXPORT_EMPTY": "No hay datos para exportar.",
@@ -268,18 +266,18 @@ _MESSAGES_ES: dict[str, str] = {
     "DATA_EXPORT_EMAIL_BODY": "<p>Hola,</p><p>Tu solicitud de exportación de datos (Art. 17 LOPDP) ha sido completada.</p><p>Puedes descargar el archivo aquí: <a href='{download_url}'>Descargar Datos</a></p><p>Este enlace expirará por razones de seguridad.</p>",
     "DATA_EXPORT_ERROR_SUBJECT": "Error en exportación de datos / Data export error",
     "DATA_EXPORT_ERROR_BODY": "<p>Ocurrió un error al procesar tu solicitud de exportación de datos. Por favor, intenta nuevamente más tarde o contacta a soporte.</p>",
-    # --- AI Assistant (LYL-SRS-009) ---
+ # AI Assistant (LYL-SRS-009)
     "AI_ASSISTANT_UNAVAILABLE": "El asistente de IA no está disponible en este momento. Intente más tarde.",
     "AI_ASSISTANT_NOT_CONFIGURED": "El asistente de IA no está configurado. Configure la clave API en Vault.",
     "AI_CHAT_ERROR": "Error al procesar mensaje de IA: {detail}",
-    # --- Security PIN (LYL-FR-SEC-030/031) ---
+ # Security PIN (LYL-FR-SEC-030/031)
     "IMPERSONATION_PIN_REQUIRED": "Se requiere el PIN de seguridad del propietario para impersonar.",
     "IMPERSONATION_PIN_INVALID": "PIN de seguridad incorrecto.",
     "IMPERSONATION_PIN_LOCKED": "Impersonación bloqueada por {minutes} minutos tras múltiples intentos fallidos.",
     "SECURITY_PIN_SET": "PIN de seguridad establecido exitosamente.",
     "SECURITY_PIN_INVALID_FORMAT": "El PIN debe ser exactamente 6 dígitos numéricos.",
     "SECURITY_PIN_NOT_SET": "El propietario no tiene un PIN de seguridad configurado. Debe establecerlo primero.",
-    # --- Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18) ---
+ # Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18)
     "ACCOUNT_DELETION_SCHEDULED": "Tu cuenta será eliminada permanentemente en 24 horas. Se ha generado un respaldo de todos tus datos.",
     "ACCOUNT_DELETION_WRONG_PHRASE": "Frase incorrecta. Escriba exactamente: ACEPTO ELIMINACIÓN COMPLETA",
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Contraseña incorrecta. La eliminación no fue procesada.",
@@ -446,9 +444,9 @@ _MESSAGES_EN: dict[str, str] = {
     "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "Cannot deactivate plan '{name}' because it has {count} active subscription(s).",
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No active owners to broadcast to.",
     "ADMIN_TENANT_CREATION_FAILED": "Error creating tenant: {detail}",
-    "ADMIN_WA_OVERRIDE_REMOVED": "Override removed — using plan default.",
+    "ADMIN_WA_OVERRIDE_REMOVED": "Override removed  using plan default.",
     "ADMIN_WA_OVERRIDE_SET": "WA override set: {limit} msgs/day.",
-    # --- SysAdmin Operations (LYL-BOOT-001) ---
+ # SysAdmin Operations (LYL-BOOT-001)
     "ADMIN_DEMO_SEEDED": "Demo data loaded successfully.",
     "ADMIN_FACTORY_OTP_SENT": "Verification code sent to your email and phone.",
     "ADMIN_FACTORY_OTP_INVALID": "Invalid or expired code. Try again.",
@@ -458,17 +456,17 @@ _MESSAGES_EN: dict[str, str] = {
     "AGENT_KEY_INVALID": "Agent API key is invalid or has expired.",
     "AGENT_KEY_CREATED": "Agent API key created successfully.",
     "AGENT_KEY_REVOKED": "Agent API key revoked.",
-    # --- WhatsApp Bridge (LYL-SRS-006) ---
+ # WhatsApp Bridge (LYL-SRS-006)
     "WHATSAPP_BRIDGE_UNAVAILABLE": "WhatsApp service is not available at this time. Please try later.",
     "WHATSAPP_SESSION_NOT_CONNECTED": "WhatsApp session is not connected. Scan the QR code first.",
     "WHATSAPP_BRIDGE_ERROR": "Error sending WhatsApp message: {detail}",
-    # --- SMS / Twilio (LYL-SRS-009) ---
+ # SMS / Twilio (LYL-SRS-009)
     "SMS_CAMPAIGN_STARTED": "SMS campaign started for segment '{segment}'. Messages will be sent via Twilio.",
     "SMS_SEND_FAILED": "Error sending SMS to {phone}: {detail}",
     "SMS_NOT_CONFIGURED": "SMS service (Twilio) is not configured. Set credentials in Vault.",
     "TWILIO_TEST_SENT": "Test SMS sent successfully to {phone}.",
     "TWILIO_TEST_FAILED": "Error sending test SMS: {detail}",
-    # --- Twilio Verify (LYL-SRS-VERIFY-001) ---
+ # Twilio Verify (LYL-SRS-VERIFY-001)
     "VERIFY_OTP_SENT": "Verification code sent via {channel}.",
     "VERIFY_OTP_FAILED": "Error sending verification code: {detail}",
     "VERIFY_OTP_INVALID": "Invalid or expired verification code.",
@@ -476,7 +474,7 @@ _MESSAGES_EN: dict[str, str] = {
     "VERIFY_NOT_CONFIGURED": "Twilio Verify is not configured. Set the Service SID in the integration.",
     "VERIFY_RATE_LIMITED": "Too many verification attempts. Wait {minutes} minutes.",
     "FACTORY_RESET_VERIFY_SENT": "Factory reset verification code sent via {channel}.",
-    # --- Data Export (LYL-SRS-009 / LOPDP Art.17) ---
+ # Data Export (LYL-SRS-009 / LOPDP Art.17)
     "DATA_EXPORT_STARTED": "Data export started. A ZIP file with all business data will be downloaded.",
     "DATA_EXPORT_FAILED": "Error exporting data: {detail}",
     "DATA_EXPORT_EMPTY": "No data to export.",
@@ -484,18 +482,18 @@ _MESSAGES_EN: dict[str, str] = {
     "DATA_EXPORT_EMAIL_BODY": "<p>Hello,</p><p>Your data export request (Art. 17 LOPDP) has been completed.</p><p>You can download the file here: <a href='{download_url}'>Download Data</a></p><p>This link will expire for security reasons.</p>",
     "DATA_EXPORT_ERROR_SUBJECT": "Data export error / Error en exportación de datos",
     "DATA_EXPORT_ERROR_BODY": "<p>An error occurred while processing your data export request. Please try again later or contact support.</p>",
-    # --- AI Assistant (LYL-SRS-009) ---
+ # AI Assistant (LYL-SRS-009)
     "AI_ASSISTANT_UNAVAILABLE": "AI assistant is not available at this time. Please try later.",
     "AI_ASSISTANT_NOT_CONFIGURED": "AI assistant is not configured. Set the API key in Vault.",
     "AI_CHAT_ERROR": "Error processing AI message: {detail}",
-    # --- Security PIN (LYL-FR-SEC-030/031) ---
+ # Security PIN (LYL-FR-SEC-030/031)
     "IMPERSONATION_PIN_REQUIRED": "Owner security PIN is required for impersonation.",
     "IMPERSONATION_PIN_INVALID": "Invalid security PIN.",
     "IMPERSONATION_PIN_LOCKED": "Impersonation locked for {minutes} minutes after multiple failed attempts.",
     "SECURITY_PIN_SET": "Security PIN set successfully.",
     "SECURITY_PIN_INVALID_FORMAT": "PIN must be exactly 6 numeric digits.",
     "SECURITY_PIN_NOT_SET": "Owner has no security PIN configured. They must set it first.",
-    # --- Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18) ---
+ # Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18)
     "ACCOUNT_DELETION_SCHEDULED": "Your account will be permanently deleted in 24 hours. A backup of all your data has been generated.",
     "ACCOUNT_DELETION_WRONG_PHRASE": "Incorrect phrase. Type exactly: ACEPTO ELIMINACIÓN COMPLETA",
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Incorrect password. Deletion was not processed.",
@@ -531,9 +529,8 @@ _MESSAGES_DE: dict[str, str] = {
 }
 
 
-# =============================================================================
 # CATALOG REGISTRY
-# =============================================================================
+
 _CATALOGS: dict[str, dict[str, str]] = {
     "es": _MESSAGES_ES,
     "en": _MESSAGES_EN,
@@ -542,9 +539,7 @@ _CATALOGS: dict[str, dict[str, str]] = {
 }
 
 
-# =============================================================================
 # PUBLIC API
-# =============================================================================
 
 
 def get_message(code: str, lang: str | None = None, **kwargs: Any) -> str:
@@ -564,14 +559,14 @@ def get_message(code: str, lang: str | None = None, **kwargs: Any) -> str:
         configured_lang = getattr(settings, "LANGUAGE_CODE", DEFAULT_LANGUAGE)
         lang = str(configured_lang) if configured_lang is not None else DEFAULT_LANGUAGE
 
-    # Normalize: "es-ec" → "es"
+ # Normalize: "es-ec" → "es"
     lang = lang[:2].lower()
 
-    # Try requested language, then fall back to Spanish
+ # Try requested language, then fall back to Spanish
     catalog = _CATALOGS.get(lang, _MESSAGES_ES)
     template = catalog.get(code)
     if template is None:
-        # Fallback to Spanish canonical catalog
+ # Fallback to Spanish canonical catalog
         template = _MESSAGES_ES.get(code)
     if template is None:
         raise KeyError(f"Unknown message code: '{code}'")
@@ -594,18 +589,18 @@ def get_message_for_request(code: str, request=None, **kwargs: Any) -> str:
     lang = None
 
     if request is not None:
-        # 1. User preference
+ # 1. User preference
         user = getattr(request, "user", None)
         if user and hasattr(user, "preferred_language") and user.preferred_language:
             lang = user.preferred_language
 
-        # 2. Tenant default
+ # 2. Tenant default
         if not lang:
             tenant = getattr(request, "tenant", None)
             if tenant and hasattr(tenant, "default_language") and tenant.default_language:
                 lang = tenant.default_language
 
-        # 3. Accept-Language header
+ # 3. Accept-Language header
         if not lang:
             accept_lang = request.META.get("HTTP_ACCEPT_LANGUAGE", "")
             if accept_lang:

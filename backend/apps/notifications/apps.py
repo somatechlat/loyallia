@@ -1,5 +1,5 @@
 """
-Loyallia — Notifications App Configuration
+Loyallia  Notifications App Configuration
 """
 
 from django.apps import AppConfig

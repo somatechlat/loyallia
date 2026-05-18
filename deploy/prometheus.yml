@@ -1,8 +1,6 @@
-# =============================================================================
-# Prometheus Configuration — Loyallia Monitoring
+# Prometheus configuration
 # LYL-H-INFRA-013: Alerting rules for backup failures, error rates, disk space
 # LYL-L-INFRA-036: Container resource monitoring
-# =============================================================================
 global:
   scrape_interval: 15s
   evaluation_interval: 15s

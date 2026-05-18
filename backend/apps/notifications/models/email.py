@@ -1,5 +1,5 @@
 """
-Loyallia — Email Configuration Models
+Loyallia  Email Configuration Models
 
 Per-tenant SMTP configuration for campaign delivery.
 """
@@ -15,7 +15,7 @@ class TenantEmailConfig(models.Model):
     """Per-tenant custom SMTP configuration for email campaigns.
 
     Allows business owners to send campaigns from their own domain
-    instead of the default @loyallia.com sender. Optional — when not
+    instead of the default @loyallia.com sender. Optional  when not
     configured, all emails go through the platform's default SMTP.
 
     SEC: SMTP password stored encrypted. In production, retrieved from
@@ -30,7 +30,7 @@ class TenantEmailConfig(models.Model):
         verbose_name="Negocio",
     )
 
-    # Custom sender identity
+ # Custom sender identity
     sender_name = models.CharField(
         max_length=200,
         blank=True,
@@ -45,7 +45,7 @@ class TenantEmailConfig(models.Model):
         help_text="From address: promotions@hm-ecuador.com",
     )
 
-    # Custom SMTP relay (optional — falls back to platform default)
+ # Custom SMTP relay (optional falls back to platform default)
     smtp_host = models.CharField(
         max_length=255,
         blank=True,
@@ -68,7 +68,7 @@ class TenantEmailConfig(models.Model):
     )
     use_tls = models.BooleanField(default=True, verbose_name="Usar TLS")
 
-    # Verification status
+ # Verification status
     is_verified = models.BooleanField(
         default=False,
         verbose_name="Verificado",
@@ -86,8 +86,8 @@ class TenantEmailConfig(models.Model):
 
     def __str__(self) -> str:
         if self.sender_email:
-            return f"{self.tenant.name} — {self.sender_email}"
-        return f"{self.tenant.name} — sin configurar"
+            return f"{self.tenant.name}  {self.sender_email}"
+        return f"{self.tenant.name}  sin configurar"
 
     @property
     def is_configured(self) -> bool:

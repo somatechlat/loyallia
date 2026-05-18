@@ -1,13 +1,13 @@
 """
-Loyallia — WhatsApp Bridge API Routes (LYL-SRS-006)
+Loyallia  WhatsApp Bridge API Routes (LYL-SRS-006)
 
 Django Ninja router for WhatsApp session management and delivery webhooks.
 Endpoints:
-    GET  /qr/{tenant_id}/         — QR code for pairing
-    GET  /status/{tenant_id}/     — Connection status
-    POST /disconnect/{tenant_id}/ — Disconnect session
-    POST /webhook/delivery/       — Delivery status from bridge
-    POST /webhook/session/        — Session state changes from bridge
+    GET  /qr/{tenant_id}/          QR code for pairing
+    GET  /status/{tenant_id}/      Connection status
+    POST /disconnect/{tenant_id}/  Disconnect session
+    POST /webhook/delivery/        Delivery status from bridge
+    POST /webhook/session/         Session state changes from bridge
 """
 
 import logging
@@ -34,9 +34,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-# =============================================================================
 # SCHEMAS
-# =============================================================================
 
 
 class QROut(Schema):
@@ -76,9 +74,7 @@ class SessionWebhookIn(Schema):
     phone: str | None = None
 
 
-# =============================================================================
-# SESSION MANAGEMENT (authenticated — owner only)
-# =============================================================================
+# SESSION MANAGEMENT (authenticated owner only)
 
 
 def _require_tenant(request):
@@ -113,7 +109,7 @@ def get_qr_code(request, tenant_id: str):
     try:
         result = wa_client.get_qr(tenant_id)
 
-        # Update session record
+ # Update session record
         session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
         session.last_qr_at = timezone.now()
         session.save(update_fields=["last_qr_at", "updated_at"])
@@ -141,7 +137,7 @@ def get_session_status(request, tenant_id: str):
     except Exception:
         result = {"connected": False, "qr": None, "phone": ""}
 
-    # Merge with local session data
+ # Merge with local session data
     try:
         session = WhatsAppSession.objects.get(tenant=tenant)
         return StatusOut(
@@ -171,7 +167,7 @@ def disconnect_session(request, tenant_id: str):
     try:
         wa_client.disconnect(tenant_id)
 
-        # Update local session
+ # Update local session
         WhatsAppSession.objects.filter(tenant=tenant).update(is_connected=False, phone_number="")
 
         logger.info("WhatsApp disconnected for tenant %s", tenant_id)
@@ -181,9 +177,7 @@ def disconnect_session(request, tenant_id: str):
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
 
 
-# =============================================================================
 # WEBHOOKS (bridge → Django, API key authenticated)
-# =============================================================================
 
 
 def _verify_bridge_api_key(request) -> None:
@@ -197,7 +191,7 @@ def _verify_bridge_api_key(request) -> None:
         default="",
     )
     if not expected_key:
-        return  # Dev mode — no key configured
+        return  # Dev mode no key configured
 
     auth = request.headers.get("Authorization", "")
     key = auth.replace("Bearer ", "").strip()
@@ -214,7 +208,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
     """
     _verify_bridge_api_key(request)
 
-    # Update specific delivery log if ID provided
+ # Update specific delivery log if ID provided
     if payload.delivery_log_id:
         try:
             log = CampaignDeliveryLog.objects.get(id=payload.delivery_log_id)
@@ -231,7 +225,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                         "external_message_id",
                     ]
                 )
-                # Increment campaign run counter
+ # Increment campaign run counter
                 CampaignRun.objects.filter(id=log.campaign_run_id).update(sent_count=models.F("sent_count") + 1)
 
             elif payload.status == "delivered":
@@ -269,7 +263,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 payload.delivery_log_id,
             )
 
-    # Also try matching by external message_id (for receipts from Baileys)
+ # Also try matching by external message_id (for receipts from Baileys)
     elif payload.message_id and payload.campaign_run_id:
         updated = CampaignDeliveryLog.objects.filter(
             campaign_run_id=payload.campaign_run_id,

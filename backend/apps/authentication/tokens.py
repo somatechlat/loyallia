@@ -1,5 +1,5 @@
 """
-Loyallia — JWT Token Utilities
+Loyallia  JWT Token Utilities
 Issue and verify access + refresh tokens.
 
 LYL-H-SEC-005: Supports both HS256 (symmetric, default) and RS256 (asymmetric).
@@ -49,13 +49,13 @@ def _load_keys() -> tuple[str, str]:
     algorithm = getattr(settings, "JWT_ALGORITHM", "HS256")
 
     if algorithm == "RS256":
-        # Load private key
+ # Load private key
         private_key_path = getattr(settings, "JWT_PRIVATE_KEY_PATH", "")
         if private_key_path and os.path.isfile(private_key_path):
             with open(private_key_path) as f:
                 _signing_key = f.read()
         else:
-            # Try Vault
+ # Try Vault
             try:
                 from common.vault import get_secret
 
@@ -67,13 +67,13 @@ def _load_keys() -> tuple[str, str]:
                 _keys_loaded = True
                 return cast(str, _signing_key), cast(str, _verification_key)
 
-        # Load public key
+ # Load public key
         public_key_path = getattr(settings, "JWT_PUBLIC_KEY_PATH", "")
         if public_key_path and os.path.isfile(public_key_path):
             with open(public_key_path) as f:
                 _verification_key = f.read()
         else:
-            # Try Vault
+ # Try Vault
             try:
                 from common.vault import get_secret
 
@@ -87,7 +87,7 @@ def _load_keys() -> tuple[str, str]:
             _verification_key = settings.JWT_SECRET_KEY
 
     else:
-        # HS256: symmetric key
+ # HS256: symmetric key
         _signing_key = settings.JWT_SECRET_KEY
         _verification_key = settings.JWT_SECRET_KEY
 

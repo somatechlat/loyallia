@@ -1,5 +1,5 @@
 """
-Loyallia — Super Admin API: Seed Demo Data and Factory Reset
+Loyallia  Super Admin API: Seed Demo Data and Factory Reset
 """
 
 import logging
@@ -59,7 +59,7 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
 
     from django.core.management import call_command
 
-    # Audit
+ # Audit
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -115,12 +115,12 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
         custom_friendly_name="Loyallia Platform",
     )
 
-    # Store verification SID in Redis for confirm step
+ # Store verification SID in Redis for confirm step
     from django.core.cache import cache
 
     cache.set(f"factory_reset:sid:{request.user.email}", result.get("sid", ""), timeout=300)
 
-    # Secondary: Email notification (always sent, regardless of Verify)
+ # Secondary: Email notification (always sent, regardless of Verify)
     from django.core.mail import send_mail
 
     try:
@@ -140,7 +140,7 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
             )
 
         send_mail(
-            subject="Loyallia — Código de Verificación para Restaurar de Fábrica",
+            subject="Loyallia  Código de Verificación para Restaurar de Fábrica",
             message=msg_body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[request.user.email],
@@ -195,7 +195,7 @@ def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) 
     if not check_otp(recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"):
         raise HttpError(403, get_message("ADMIN_FACTORY_OTP_INVALID"))
 
-    # Audit BEFORE wipe (so the log entry is created before data is deleted)
+ # Audit BEFORE wipe (so the log entry is created before data is deleted)
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -212,7 +212,7 @@ def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) 
         logger.warning("Failed to audit factory reset", exc_info=True)
 
     with transaction.atomic():
-        # Wipe order: deepest dependencies first to avoid FK violations
+ # Wipe order: deepest dependencies first to avoid FK violations
         from apps.authentication.models import RefreshToken
         from apps.automation.models import Automation, AutomationExecution
         from apps.billing.models import Subscription
@@ -241,13 +241,13 @@ def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) 
         User.objects.exclude(role=UserRole.SUPER_ADMIN).delete()
         Tenant.objects.all().delete()
 
-    # Re-seed vital data (plans + settings)
+ # Re-seed vital data (plans + settings)
     from django.core.management import call_command
 
     call_command("seed_subscription_plans", stdout=StringIO())
     call_command("seed_platform_settings", stdout=StringIO())
 
-    # Flush Redis cache (kill all sessions)
+ # Flush Redis cache (kill all sessions)
     from django.core.cache import cache
 
     try:

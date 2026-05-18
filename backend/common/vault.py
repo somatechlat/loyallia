@@ -90,7 +90,7 @@ def _fetch_vault_secrets() -> dict:
     _clear_cache_if_shared_version_changed()
     now = time.monotonic()
 
-    # Return cached secrets if still within TTL
+ # Return cached secrets if still within TTL
     if _secrets_cache and (now - _cache_fetched_at) < VAULT_CACHE_TTL:
         return _secrets_cache
 
@@ -150,17 +150,17 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict
     Returns:
         The secret value as a string.
     """
-    # 1. Test overrides (highest priority for tests)
+ # 1. Test overrides (highest priority for tests)
     if vault_key in _test_overrides:
         return _test_overrides[vault_key]
 
-    # 2. Try Vault
+ # 2. Try Vault
     secrets = _fetch_vault_secrets()
     vault_value = secrets.get(vault_key, "")
     if vault_value:
         return str(vault_value)
 
-    # 2. Try explicit environment fallback.
+ # 2. Try explicit environment fallback.
     if env_fallback:
         env_value = os.environ.get(env_fallback, "")
         if env_value:
@@ -172,7 +172,7 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict
             source = f"{source} or env var '{env_fallback}'"
         raise RuntimeError(f"Required secret missing: {source}")
 
-    # 3. Default for non-strict callers.
+ # 3. Default for non-strict callers.
     return default
 
 

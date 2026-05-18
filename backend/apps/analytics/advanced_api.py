@@ -1,5 +1,5 @@
 """
-Loyallia — Advanced Analytics API router
+Loyallia  Advanced Analytics API router
 Extended business intelligence: revenue breakdown, visit metrics,
 top buyers, demographics, and program-type analysis.
 
@@ -26,7 +26,7 @@ from common.permissions import is_manager_or_owner, jwt_auth
 router = Router()
 
 
-# ============ Revenue Breakdown ============
+# Revenue Breakdown
 @router.get("/revenue-breakdown/", auth=jwt_auth, summary="Get revenue breakdown by source")
 def get_revenue_breakdown(request, days: int = 30):
     """Revenue breakdown: loyalty, referral, non-loyalty. Cached 5min. MANAGER+ only."""
@@ -76,7 +76,7 @@ def get_revenue_breakdown(request, days: int = 30):
     return result
 
 
-# ============ Visit Metrics ============
+# Visit Metrics
 @router.get("/visits/", auth=jwt_auth, summary="Get visit metrics")
 def get_visit_metrics(request, days: int = 30):
     """Detailed visit metrics for the dashboard. Cached 5min. MANAGER+ only."""
@@ -138,7 +138,7 @@ def get_visit_metrics(request, days: int = 30):
     return result
 
 
-# ============ Top Buyers ============
+# Top Buyers
 @router.get("/top-buyers/", auth=jwt_auth, summary="Get top buyers")
 def get_top_buyers(request, limit: int = 15, days: int = 30):
     """Top N buyers by total spend. MANAGER+ only."""
@@ -177,7 +177,7 @@ def get_top_buyers(request, limit: int = 15, days: int = 30):
     }
 
 
-# ============ Notify Top Buyers ============
+# Notify Top Buyers
 @router.post(
     "/notify-top-buyers/",
     auth=jwt_auth,
@@ -202,7 +202,7 @@ def notify_top_buyers(request):
 
     from apps.notifications.models import Notification, NotificationType
 
-    # PERF-F6: bulk_create instead of N individual INSERT statements
+ # PERF-F6: bulk_create instead of N individual INSERT statements
     notifications_to_create = [
         Notification(
             tenant=tenant,
@@ -223,7 +223,7 @@ def notify_top_buyers(request):
     }
 
 
-# ============ Demographics ============
+# Demographics
 @router.get("/demographics/", auth=jwt_auth, summary="Get customer demographics")
 def get_demographics(request):
     """Age and gender distribution via SQL aggregation. O(1) memory. MANAGER+ only."""
@@ -231,7 +231,7 @@ def get_demographics(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
-    # Check cache first (5-minute TTL)
+ # Check cache first (5-minute TTL)
     cache_key = f"analytics:demographics:{tenant.id}"
     cached = cache.get(cache_key)
     if cached:
@@ -239,14 +239,14 @@ def get_demographics(request):
 
     customers = Customer.objects.filter(tenant=tenant)
 
-    # Gender distribution — pure SQL aggregate
+ # Gender distribution pure SQL aggregate
     gender_data = customers.exclude(gender="").values("gender").annotate(count=Count("id")).order_by("-count")
     gender_labels = {"M": "Masculino", "F": "Femenino", "O": "Otro"}
 
     total = customers.count()
 
-    # Age distribution — single SQL query using ExtractYear + conditional Count
-    # No Python iteration; computation is entirely database-side.
+ # Age distribution single SQL query using ExtractYear + conditional Count
+ # No Python iteration; computation is entirely database-side.
     today_year = date.today().year
     age_dist = (
         customers.exclude(date_of_birth=None)
@@ -302,7 +302,7 @@ def get_demographics(request):
     return result
 
 
-# ============ By Program Type ============
+# By Program Type
 @router.get("/by-program-type/", auth=jwt_auth, summary="Get metrics by program type")
 def get_by_program_type(request, days: int = 30):
     """Visits and revenue grouped by card type. MANAGER+ only."""

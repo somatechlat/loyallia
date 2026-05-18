@@ -1,5 +1,5 @@
 """
-Loyallia — Custom User Model
+Loyallia  Custom User Model
 Extends AbstractBaseUser for full control.
 Supports per-tenant RBAC with OWNER, MANAGER, STAFF, SUPER_ADMIN roles.
 """
@@ -64,7 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)  # Django admin access
     is_email_verified = models.BooleanField(default=False)
 
-    # Phone verification
+ # Phone verification
     phone_number = models.CharField(
         max_length=20,
         blank=True,
@@ -74,7 +74,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     is_phone_verified = models.BooleanField(default=False)
 
-    # Invitation tracking
+ # Invitation tracking
     invited_by = models.ForeignKey(
         "self",
         null=True,
@@ -85,11 +85,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     invitation_token = models.CharField(max_length=200, blank=True, default="")
     invitation_accepted_at = models.DateTimeField(null=True, blank=True)
 
-    # Failed login tracking
+ # Failed login tracking
     failed_login_count = models.SmallIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
 
-    # i18n — user language preference (REQ-I18N-001)
+ # i18n user language preference (REQ-I18N-001)
     preferred_language = models.CharField(
         max_length=5,
         default="",
@@ -98,7 +98,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text="ISO 639-1 code (es, en, fr, de). Empty = tenant default.",
     )
 
-    # Security PIN for impersonation verification (LYL-SEC-030/031)
+ # Security PIN for impersonation verification (LYL-SEC-030/031)
     security_pin_hash = models.CharField(
         max_length=128,
         blank=True,
@@ -161,20 +161,20 @@ class User(AbstractBaseUser, PermissionsMixin):
             self.locked_until = timezone.now() + timedelta(minutes=15)
         self.save(update_fields=["failed_login_count", "locked_until", "updated_at"])
 
-        # LYL-L-SEC-021: Notify user on first lockout (not repeated lockouts)
+ # LYL-L-SEC-021: Notify user on first lockout (not repeated lockouts)
         if self.is_locked and not was_locked:
             try:
                 from django.core.mail import send_mail
 
                 send_mail(
-                    subject="Cuenta temporalmente bloqueada — Loyallia",
+                    subject="Cuenta temporalmente bloqueada  Loyallia",
                     message=(
                         f"Hola {self.first_name},\n\n"
                         f"Tu cuenta ha sido temporalmente bloqueada debido a "
                         f"múltiples intentos de inicio de sesión fallidos.\n\n"
                         f"Se desbloqueará automáticamente en 15 minutos.\n\n"
                         f"Si no fuiste tú, te recomendamos cambiar tu contraseña.\n\n"
-                        f"— Equipo de Loyallia"
+                        f" Equipo de Loyallia"
                     ),
                     from_email=None,
                     recipient_list=[self.email],
@@ -193,7 +193,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.locked_until = None
         self.save(update_fields=["failed_login_count", "locked_until", "updated_at"])
 
-    # ── Security PIN (LYL-SEC-030/031) ──────────────────────────────
+ # Security PIN (LYL-SEC-030/031)
 
     def set_security_pin(self, pin: str) -> None:
         """Hash and store a 6-digit security PIN for impersonation verification."""

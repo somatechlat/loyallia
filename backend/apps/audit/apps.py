@@ -1,4 +1,4 @@
-"""Loyallia — Audit app configuration."""
+"""Loyallia  Audit app configuration."""
 
 from django.apps import AppConfig
 

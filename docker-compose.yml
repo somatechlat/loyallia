@@ -1,19 +1,9 @@
-# =============================================================================
-# LOYALLIA — Full Docker Compose Stack (Production-Grade for Localhost)
-# All services open source — PostgreSQL + Redis + MinIO + Django + Next.js
+# Loyallia Docker Compose Stack
 # PORT RANGE: 33900+ (see docs/PORT_AUTHORITY.md)
-# TOTAL CLUSTER LIMIT: 12GB RAM
-# ACTUAL BUDGET: ~9.4GB allocated (headroom for OS/Docker daemon + spikes)
+# CLUSTER LIMIT: 12GB RAM total, ~9.4GB allocated (headroom for OS/Docker)
 #
-# MEMORY ALLOCATION:
-#   postgres=1.5G | redis=512M | minio=512M | pgbouncer=128M
-#   api=2G | web=2G | celery-pass/push/default=384Mx3 | celery-beat=192M
-#   flower=192M | vault=256M | whatsapp-bridge=256M
-#   init containers=64Mx2 (ephemeral)
-#
-# SECRETS: Local development may seed Vault from .env. Production app runtime
-# secrets must be read from Vault, not plaintext environment variables.
-# =============================================================================
+# SECRETS: Local development seeds Vault from .env. Production reads from Vault.
+# Ref: LYL-SEC-001
 
 x-common-env: &common-env
   DATABASE_URL: postgres://loyallia@postgres:5432/loyallia_dev
@@ -42,25 +32,20 @@ x-common-env: &common-env
   EMAIL_HOST: in-v3.mailjet.com
   EMAIL_PORT: "587"
   EMAIL_FROM: noreply@loyallia.com
-  # ═══════════════════════════════════════════════════════════════════════
-  # GOOGLE OAUTH 2.0 — LOCAL DEVELOPMENT MODE
-  # ───────────────────────────────────────────────────────────────────────
-  # Local dev uses a SEPARATE Google OAuth client from production.
+  # Google OAuth 2.0 - local development mode
+  # Local dev uses a separate Google OAuth client from production.
   # Create your own dev client at: https://console.cloud.google.com/apis/credentials
   #   Authorized JS origins: http://localhost:3000
   #   Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
   # Then set in your local .env or Vault: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET
-  # ═══════════════════════════════════════════════════════════════════════
   GOOGLE_OAUTH_REDIRECT_URI: http://localhost:33905/api/v1/auth/google/callback/
   # Sentry error tracking (B-013)
   SENTRY_DSN:  
   # WhatsApp Bridge (LYL-SRS-006)
   WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:3001
 services:
-  # ---------------------------------------------------------------------------
-  # POSTGRESQL 16 — Primary Database  → localhost:33900              [1.5GB]
-  # Production: WAL archiving, tuned memory, persistent volume
-  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 primary database (localhost:33900, 1.5GB)
+  # WAL archiving, tuned memory, persistent volume
   postgres:
     image: postgres:16.2-alpine
     container_name: loyallia-postgres
@@ -140,10 +125,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # POSTGRESQL REPLICA — Streaming Replication (LYL-H-INFRA-015)
+  # PostgreSQL replica - streaming replication (LYL-H-INFRA-015)
   # Hot standby for read scaling and failover
-  # ---------------------------------------------------------------------------
   postgres-replica:
     image: postgres:16.2-alpine
     container_name: loyallia-postgres-replica
@@ -190,10 +173,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # PGBOUNCER — Connection Pooling      → localhost:33901            [128M]
-  # Transaction pooling for millions of concurrent connections
-  # ---------------------------------------------------------------------------
+  # PgBouncer connection pooling (localhost:33901, 128M)
+  # Transaction pooling for high concurrency
   pgbouncer:
     image: edoburu/pgbouncer:v1.23.1-p3
     container_name: loyallia-pgbouncer
@@ -244,10 +225,8 @@ services:
         reservations:
           memory: 32M
 
-  # ---------------------------------------------------------------------------
-  # REDIS 7 — Cache + Celery Broker     → localhost:33902            [512M]
+  # Redis 7 cache and Celery broker (localhost:33902, 512M)
   # AOF persistence, LRU eviction, production limits
-  # ---------------------------------------------------------------------------
   redis:
     image: redis:7.2.4-alpine
     container_name: loyallia-redis
@@ -280,10 +259,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # ---------------------------------------------------------------------------
-  # MINIO — S3-Compatible Object Storage → localhost:33903-33904     [512M]
-  # Persistent volume for passes, assets (Apple/Google Wallet PKPasses)
-  # ---------------------------------------------------------------------------
+  # MinIO S3-compatible object storage (localhost:33903-33904, 512M)
+  # Stores passes and assets for Apple/Google Wallet
   minio:
     image: minio/minio:RELEASE.2025-07-23T15-54-02Z
     container_name: loyallia-minio
@@ -350,11 +327,9 @@ services:
         reservations:
           memory: 64M
 
-  # ---------------------------------------------------------------------------
-  # DJANGO API — Django 5 + Django Ninja → localhost:33905           [2GB]
-  # Production-grade: migrate, collectstatic, seed plans, Gunicorn-ready
-  # Live reload via volume mount for dev; switch to gunicorn for prod
-  # ---------------------------------------------------------------------------
+  # Django API (localhost:33905, 2GB)
+  # Runs migrations, collectstatic, then development server
+  # Use gunicorn for production
   api:
     build:
       context: ./backend
@@ -422,10 +397,8 @@ services:
       retries: 5
       start_period: 30s
 
-  # ---------------------------------------------------------------------------
-  # NEXT.JS — Dashboard + Scanner PWA   → localhost:33906           [2GB]
-  # Production-grade: optimized build, persistent .next cache
-  # ---------------------------------------------------------------------------
+  # Next.js frontend (localhost:33906, 2GB)
+  # Optimized build with persistent .next cache
   web:
     build:
       context: ./frontend
@@ -480,12 +453,10 @@ services:
         delay: 5s
         order: start-first
 
-  # ---------------------------------------------------------------------------
-  # CELERY WORKERS — Async Task Processing                         [1.2GB total]
+  # Celery workers - async task processing (1.2GB total)
   # max-tasks-per-child prevents memory leaks in long-running workers
-  # ---------------------------------------------------------------------------
 
-  # Worker 1: Pass generation (high priority)                      [384M]
+  # Celery pass generation worker (384M)
   celery-pass:
     build:
       context: ./backend
@@ -540,7 +511,7 @@ services:
         delay: 10s
         order: start-first
 
-  # Worker 2: Push notification delivery                           [384M]
+  # Celery push notification worker (384M)
   celery-push:
     build:
       context: ./backend
@@ -595,7 +566,7 @@ services:
         delay: 10s
         order: start-first
 
-  # Worker 3: Default queue (email, billing, automation)           [384M]
+  # Celery default queue worker - email, billing, automation (384M)
   celery-default:
     build:
       context: ./backend
@@ -650,9 +621,7 @@ services:
         delay: 10s
         order: start-first
 
-  # ---------------------------------------------------------------------------
-  # CELERY BEAT — Scheduled Jobs Scheduler                         [128M]
-  # ---------------------------------------------------------------------------
+  # Celery Beat scheduled job scheduler (128M)
   celery-beat:
     build:
       context: ./backend
@@ -693,9 +662,7 @@ services:
         reservations:
           memory: 96M
 
-  # ---------------------------------------------------------------------------
-  # FLOWER — Celery Worker Monitor       → localhost:33907          [128M]
-  # ---------------------------------------------------------------------------
+  # Flower Celery monitor (localhost:33907, 128M)
   flower:
     build:
       context: ./backend
@@ -732,11 +699,9 @@ services:
           memory: 192M
           cpus: "0.25"
 
-  # ---------------------------------------------------------------------------
-  # WHATSAPP BRIDGE — Baileys REST API    → localhost:33914           [256M]
-  # LYL-SRS-006: Multi-tenant WhatsApp messaging via Baileys
-  # SEC: Internal network only — never exposed to public internet
-  # ---------------------------------------------------------------------------
+  # WhatsApp Bridge - Baileys REST API (localhost:33914, 256M)
+  # LYL-SRS-006: Multi-tenant WhatsApp messaging
+  # Internal network only, never exposed to public internet
   whatsapp-bridge:
     build:
       context: ./services/whatsapp-bridge
@@ -778,9 +743,7 @@ services:
         reservations:
           memory: 64M
 
-  # ---------------------------------------------------------------------------
-  # HASHICORP VAULT — Secret Management   → localhost:33908           [256M]
-  # ---------------------------------------------------------------------------
+  # HashiCorp Vault secret management (localhost:33908, 256M)
   vault:
     image: hashicorp/vault:1.15.6
     container_name: loyallia-vault
@@ -841,9 +804,7 @@ services:
         reservations:
           memory: 64M
 
-  # ---------------------------------------------------------------------------
-  # NGINX — Reverse Proxy + Security Headers
-  # ---------------------------------------------------------------------------
+  # Nginx reverse proxy and security headers
   nginx:
     image: nginx:1.25.4-alpine
     container_name: loyallia-nginx
@@ -886,9 +847,7 @@ services:
         parallelism: 1
         order: start-first
 
-  # ---------------------------------------------------------------------------
-  # PROMETHEUS — Metrics Collection       → localhost:33909          [512M]
-  # ---------------------------------------------------------------------------
+  # Prometheus metrics collection (localhost:33909, 512M)
   prometheus:
     image: prom/prometheus:v2.50.1
     container_name: loyallia-prometheus
@@ -915,9 +874,7 @@ services:
         reservations:
           memory: 128M
 
-  # ---------------------------------------------------------------------------
-  # GRAFANA — Metrics Dashboard           → localhost:33910          [512M]
-  # ---------------------------------------------------------------------------
+  # Grafana metrics dashboard (localhost:33910, 512M)
   grafana:
     image: grafana/grafana:10.3.3
     container_name: loyallia-grafana
@@ -949,10 +906,8 @@ services:
         reservations:
           memory: 128M
 
-  # ---------------------------------------------------------------------------
-  # LOKI — Log Aggregation              → localhost:33912            [256M]
+  # Loki log aggregation (localhost:33912, 256M)
   # LYL-H-INFRA-012: Centralized log collection and querying
-  # ---------------------------------------------------------------------------
   loki:
     image: grafana/loki:2.9.4
     container_name: loyallia-loki
@@ -983,10 +938,8 @@ services:
       retries: 3
       start_period: 30s
 
-  # ---------------------------------------------------------------------------
-  # ALERTMANAGER — Alert Routing & Notification         → localhost:9093      [128M]
-  # LYL-H-INFRA-013: Production-grade alert routing with SMTP email delivery
-  # ---------------------------------------------------------------------------
+  # Alertmanager alert routing (localhost:9093, 128M)
+  # LYL-H-INFRA-013: Alert routing with SMTP email delivery
   alertmanager:
     image: prom/alertmanager:v0.27.0
     container_name: loyallia-alertmanager
@@ -1019,10 +972,8 @@ services:
       timeout: 5s
       retries: 3
 
-  # ---------------------------------------------------------------------------
-  # REDIS SENTINEL — High Availability for Redis        → localhost:26379   [128M]
+  # Redis Sentinel high availability (localhost:26379, 128M)
   # LYL-H-INFRA-015: Automatic failover when Redis master goes down
-  # ---------------------------------------------------------------------------
   redis-sentinel:
     image: redis:7.2.4-alpine
     container_name: loyallia-redis-sentinel
@@ -1059,9 +1010,7 @@ services:
       timeout: 5s
       retries: 5
 
-# =============================================================================
-# VOLUMES — All persistent, driver: local
-# =============================================================================
+# Volumes - all persistent, driver: local
 volumes:
   postgres_data:
     driver: local
@@ -1094,12 +1043,10 @@ volumes:
   sentinel-data:
     driver: local
 
-# =============================================================================
-# NETWORKS — LYL-M-INFRA-017: Container network segmentation
-# frontend-net: Nginx ↔ Web (public-facing)
-# backend-net:  API ↔ Database ↔ Cache ↔ Workers (internal)
-# monitoring-net: Prometheus ↔ Grafana ↔ Loki (observability)
-# =============================================================================
+# Networks - LYL-M-INFRA-017: Container network segmentation
+# frontend-net: Nginx to Web (public-facing)
+# backend-net: API to Database, Cache, Workers (internal)
+# monitoring-net: Prometheus, Grafana, Loki (observability)
 networks:
   frontend-net:
     driver: bridge

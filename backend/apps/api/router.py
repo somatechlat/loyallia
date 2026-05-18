@@ -1,5 +1,5 @@
 """
-Loyallia — API Router (Django Ninja)
+Loyallia  API Router (Django Ninja)
 Central registration of all sub-routers.
 Mounted at /api/v1/ in loyallia/urls.py
 """
@@ -20,16 +20,16 @@ api = NinjaAPI(
 )
 
 
-# --- Health check (unauthenticated) ---
+# Health check (unauthenticated)
 @api.get("/health/", auth=None, tags=["System"])
 def health_check(request: HttpRequest):
-    """Liveness probe — returns 200 if the process is running."""
+    """Liveness probe  returns 200 if the process is running."""
     return {"status": "ok", "version": "1.0.0", "platform": "Loyallia"}
 
 
 @api.get("/health/ready/", auth=None, tags=["System"])
 def readiness_check(request: HttpRequest):
-    """Readiness probe — verifies all dependencies (PostgreSQL, Redis) are healthy.
+    """Readiness probe  verifies all dependencies (PostgreSQL, Redis) are healthy.
     Returns HTTP 200 if all dependencies are healthy, HTTP 503 if any are down.
     """
     import time
@@ -37,7 +37,7 @@ def readiness_check(request: HttpRequest):
     checks = {}
     all_healthy = True
 
-    # PostgreSQL check
+ # PostgreSQL check
     try:
         from django.db import connection
 
@@ -52,7 +52,7 @@ def readiness_check(request: HttpRequest):
         checks["database"] = {"status": "error", "detail": str(e)}
         all_healthy = False
 
-    # Redis check
+ # Redis check
     try:
         from django.core.cache import cache
 
@@ -110,7 +110,7 @@ def celery_health(request: HttpRequest):
         return DjJsonResponse({"status": "error", "detail": str(e)}, status=503)
 
 
-# --- Mount all app routers ---
+# Mount all app routers
 from apps.agent_api.api import router as agent_api_router
 from apps.analytics.api import router as analytics_router
 from apps.api.upload_api import router as upload_router
@@ -164,12 +164,12 @@ api.add_router("/agent/", agent_api_router, tags=["Agent API"])
 api.add_router("/admin/audit/", audit_router, tags=["Audit"])
 
 
-# Mailjet webhook receiver — mounted at root so URL is /api/v1/webhooks/mailjet/
+# Mailjet webhook receiver mounted at root so URL is /api/v1/webhooks/mailjet/
 @api.post("/webhooks/mailjet/", auth=None, tags=["Webhooks"])
 def mailjet_webhook(request, payload: list[dict[str, Any]]) -> dict:
     """Receive Mailjet event webhooks for email delivery tracking.
 
-    SEC: No authentication required — Mailjet sends signed requests.
+    SEC: No authentication required  Mailjet sends signed requests.
     IP whitelisting should be configured at Nginx level.
     """
     from apps.notifications.api.webhooks import process_mailjet_event
@@ -208,7 +208,7 @@ api.get(
 )(automation_api.list_automations)
 
 
-# --- Global error handlers ---
+# Global error handlers
 @api.exception_handler(ValidationError)
 def validation_error_handler(request: HttpRequest, exc: ValidationError) -> JsonResponse:
     return JsonResponse(

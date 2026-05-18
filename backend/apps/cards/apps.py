@@ -1,5 +1,5 @@
 """
-Loyallia — Cards App Configuration
+Loyallia  Cards App Configuration
 """
 
 from django.apps import AppConfig

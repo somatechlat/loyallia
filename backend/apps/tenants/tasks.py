@@ -92,7 +92,7 @@ def hard_delete_tenant(tenant_id: str) -> str:
 
     tenant_name = tenant.name
 
-    # 1. Notifications & campaign delivery records.
+ # 1. Notifications & campaign delivery records.
     with contextlib.suppress(Exception):
         from apps.notifications.models import (
             CampaignDeliveryLog,
@@ -110,14 +110,14 @@ def hard_delete_tenant(tenant_id: str) -> str:
         TenantEmailConfig.objects.filter(tenant=tenant).delete()
         WhatsAppSession.objects.filter(tenant=tenant).delete()
 
-    # 2. Automation
+ # 2. Automation
     with contextlib.suppress(Exception):
         from apps.automation.models import Automation, AutomationExecution
 
         AutomationExecution.objects.filter(automation__tenant=tenant).delete()
         Automation.objects.filter(tenant=tenant).delete()
 
-    # 3. Customer chain
+ # 3. Customer chain
     with contextlib.suppress(Exception):
         Enrollment.objects.filter(tenant=tenant).delete()
     with contextlib.suppress(Exception):
@@ -127,17 +127,17 @@ def hard_delete_tenant(tenant_id: str) -> str:
     with contextlib.suppress(Exception):
         Customer.objects.filter(tenant=tenant).delete()
 
-    # 4. Programs
+ # 4. Programs
     with contextlib.suppress(Exception):
         Card.objects.filter(tenant=tenant).delete()
 
-    # 5. Locations
+ # 5. Locations
     with contextlib.suppress(Exception):
         from apps.tenants.models import Location
 
         Location.objects.filter(tenant=tenant).delete()
 
-    # 6. Billing
+ # 6. Billing
     with contextlib.suppress(Exception):
         from apps.billing.models import Invoice, PaymentMethod, Subscription
 
@@ -145,11 +145,11 @@ def hard_delete_tenant(tenant_id: str) -> str:
         PaymentMethod.objects.filter(tenant=tenant).delete()
         Subscription.objects.filter(tenant=tenant).delete()
 
-    # 7. Team users
+ # 7. Team users
     User.objects.filter(tenant=tenant).exclude(role="OWNER").delete()
     User.objects.filter(tenant=tenant, role="OWNER").delete()
 
-    # 8. Anonymize audit log (LYL-FR-DPR-025.7)
+ # 8. Anonymize audit log (LYL-FR-DPR-025.7)
     with contextlib.suppress(Exception):
         from apps.audit.models import AuditLog
 
@@ -158,7 +158,7 @@ def hard_delete_tenant(tenant_id: str) -> str:
             details={},
         )
 
-    # 9. Delete Tenant
+ # 9. Delete Tenant
     tenant.delete()
 
     logger.info("Hard deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id)
@@ -168,7 +168,7 @@ def hard_delete_tenant(tenant_id: str) -> str:
 @shared_task(queue="default", bind=True, max_retries=2)
 def delete_tenant_cascade(self, tenant_id: str):
     """
-    LYL-FR-DPR-025.6/025.7: LOPDP Art. 18 — Hard-delete ALL tenant data.
+    LYL-FR-DPR-025.6/025.7: LOPDP Art. 18  Hard-delete ALL tenant data.
     Runs 24 hours after owner requests deletion via POST /tenants/delete-account/.
     """
     logger.info("Starting cascade deletion for tenant %s", tenant_id)
@@ -179,14 +179,14 @@ def delete_tenant_cascade(self, tenant_id: str):
         logger.warning("Tenant %s already deleted, skipping", tenant_id)
         return
 
-    # Safety: only proceed if deletion was actually scheduled
+ # Safety: only proceed if deletion was actually scheduled
     if tenant.scheduled_deletion_at is None:
         logger.warning("Tenant %s has no scheduled_deletion_at, aborting", tenant_id)
         return
 
     tenant_name = hard_delete_tenant(tenant_id)
 
-    # Final audit entry (owner not present in Celery context)
+ # Final audit entry (owner not present in Celery context)
     with contextlib.suppress(Exception):
         from apps.audit.models import AuditAction, AuditLog
 

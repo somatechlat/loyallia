@@ -1,5 +1,5 @@
 """
-Loyallia — Customers API router.
+Loyallia  Customers API router.
 Phase 5 implementation of customer + pass management endpoints.
 """
 
@@ -34,9 +34,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-# =============================================================================
 # ENDPOINTS
-# =============================================================================
 
 
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
@@ -135,7 +133,7 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
 
     from apps.customers.import_service import CustomerImportService
 
-    # SECURITY HARDENING: Prevent OOM (Memory Exhaustion) Attacks
+ # SECURITY HARDENING: Prevent OOM (Memory Exhaustion) Attacks
     if file.size is None or file.size > CustomerImportService.MAX_FILE_SIZE:
         max_mb = CustomerImportService.MAX_FILE_SIZE // (1024 * 1024)
         raise HttpError(
@@ -171,11 +169,11 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
     """Public endpoint for customer self-enrollment via QR code scan.
 
     Rate limited to 10 enrollments per hour per IP address.
-    Does NOT overwrite existing customer profile data — only creates/updates the pass.
+    Does NOT overwrite existing customer profile data  only creates/updates the pass.
     """
     from django.core.cache import cache
 
-    # Rate limiting: 10 per hour per IP
+ # Rate limiting: 10 per hour per IP
     client_ip = get_client_ip(request)
     cache_key = f"enroll_rate:{client_ip}"
     enroll_count = cache.get(cache_key, 0)
@@ -207,14 +205,14 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
         },
     )
 
-    # SECURITY: Do NOT overwrite existing customer profile data on re-enrollment.
-    # Only the pass (CustomerPass) is created/updated — customer fields stay as-is.
+ # SECURITY: Do NOT overwrite existing customer profile data on re-enrollment.
+ # Only the pass (CustomerPass) is created/updated customer fields stay as-is.
 
     existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
     if existing_pass:
         raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
 
-    # Extract any dynamic extra fields from the Pydantic model
+ # Extract any dynamic extra fields from the Pydantic model
     standard_fields = {
         "first_name",
         "last_name",
@@ -228,7 +226,7 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
 
     pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
-    # Store custom enrollment metadata in pass_data
+ # Store custom enrollment metadata in pass_data
     if dynamic_fields:
         pass_obj.update_pass_data({"enrollment_data": dynamic_fields})
 
@@ -276,9 +274,7 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
     return CustomerPassOut.from_model(pass_obj)
 
 
-# =============================================================================
 # CUSTOMER CRUD
-# =============================================================================
 
 
 @router.get("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente")

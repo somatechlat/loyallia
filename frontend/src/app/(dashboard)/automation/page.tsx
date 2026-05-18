@@ -84,7 +84,7 @@ const PRESET_TEMPLATES = [
     action: 'send_email',
     action_config: { title: 'Transacción registrada', message: '¡Has ganado sellos/puntos! Sigue acumulando para obtener tu próxima recompensa.' },
   },
-  // ── Wallet preset templates ──
+  // Wallet preset templates
   {
     id: 'wallet_welcome',
     name: '🎉 Bienvenida Wallet',
@@ -318,12 +318,10 @@ export default function AutomationPage() {
         <div className="space-y-3">
           {automations.map(a => (
             <div key={a.id} className="card p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-              {/* Icon */}
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${a.is_active ? 'bg-brand-50' : 'bg-surface-100'}`}>
                 <ActionIcon action={a.action} className="w-5 h-5 text-brand-600" />
               </div>
 
-              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <h3 className="font-semibold text-surface-900 dark:text-white truncate">{a.name}</h3>
@@ -340,7 +338,6 @@ export default function AutomationPage() {
                 </p>
               </div>
 
-              {/* Actions */}
               <div className="flex items-center gap-2">
                 {isOwner && (
                   <button onClick={() => openEdit(a)} className="btn-ghost text-sm p-2" title="Editar">
@@ -364,7 +361,7 @@ export default function AutomationPage() {
         </div>
       )}
 
-      {/* ═══ Delete Confirmation ═══ */}
+      {/* Delete confirmation */}
       {showDelete && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowDelete(null)}>
           <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
@@ -381,7 +378,7 @@ export default function AutomationPage() {
         </div>
       )}
 
-      {/* ═══ Create / Edit Modal ═══ */}
+      {/* Create / edit modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
           <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>

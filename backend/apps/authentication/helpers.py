@@ -1,5 +1,5 @@
 """
-Loyallia — Authentication Helpers
+Loyallia  Authentication Helpers
 Internal utility functions for the authentication module.
 """
 
@@ -38,7 +38,7 @@ def slugify_business(name: str) -> str:
 
 
 def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
-    """Send OTP email. Logs failure but does not raise — prevents timing attacks."""
+    """Send OTP email. Logs failure but does not raise  prevents timing attacks."""
     try:
         send_mail(
             subject=subject,

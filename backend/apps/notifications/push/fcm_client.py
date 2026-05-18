@@ -1,5 +1,5 @@
 """
-Loyallia — FCM Client (Firebase Cloud Messaging HTTP v1 API)
+Loyallia  FCM Client (Firebase Cloud Messaging HTTP v1 API)
 
 Uses the FCM HTTP v1 API (not the legacy FCM API which was deprecated Jun 2024).
 Documentation: https://firebase.google.com/docs/cloud-messaging/http-server-ref
@@ -48,12 +48,12 @@ def _get_access_token() -> tuple[str | None, str | None]:
             scopes=FCM_SCOPES,
         )
 
-        # Read the project_id from the SA file
+ # Read the project_id from the SA file
         with open(credential_file) as f:
             sa_data = json.load(f)
         project_id = sa_data.get("project_id")
 
-        # Refresh the token
+ # Refresh the token
         credentials.refresh(GoogleRequest())
         return credentials.token, project_id
 
@@ -85,7 +85,7 @@ def send_fcm_message(
     access_token, project_id = _get_access_token()
     if not access_token or not project_id:
         logger.warning(
-            "FCM not configured. Skipping push to token %s…%s",
+            "FCM not configured. Skipping push to token %s%s",
             fcm_token[:8],
             fcm_token[-4:],
         )
@@ -98,7 +98,7 @@ def send_fcm_message(
     if image_url:
         notification_payload["image"] = image_url
 
-    # All data payload values must be strings per FCM spec
+ # All data payload values must be strings per FCM spec
     str_data = {k: str(v) for k, v in (data or {}).items()}
 
     message = {
@@ -130,16 +130,16 @@ def send_fcm_message(
             )
 
         if response.status_code == 200:
-            logger.debug("FCM message sent successfully to …%s", fcm_token[-4:])
+            logger.debug("FCM message sent successfully to %s", fcm_token[-4:])
             return True
 
-        # FCM returns 404 if the token is stale/unregistered
+ # FCM returns 404 if the token is stale/unregistered
         if response.status_code == 404:
-            logger.warning("FCM token unregistered (404): …%s", fcm_token[-4:])
+            logger.warning("FCM token unregistered (404): %s", fcm_token[-4:])
             return False
 
         logger.error(
-            "FCM HTTP error %s for token …%s: %s",
+            "FCM HTTP error %s for token %s: %s",
             response.status_code,
             fcm_token[-4:],
             response.text[:300],
@@ -147,8 +147,8 @@ def send_fcm_message(
         return False
 
     except httpx.TimeoutException:
-        logger.error("FCM request timed out for token …%s", fcm_token[-4:])
+        logger.error("FCM request timed out for token %s", fcm_token[-4:])
         return False
     except Exception as exc:
-        logger.error("FCM send error for token …%s: %s", fcm_token[-4:], exc)
+        logger.error("FCM send error for token %s: %s", fcm_token[-4:], exc)
         return False

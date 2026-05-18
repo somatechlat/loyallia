@@ -1,5 +1,5 @@
 """
-Loyallia — Plan Enforcement Module (common/plan_enforcement.py)
+Loyallia  Plan Enforcement Module (common/plan_enforcement.py)
 
 Decorators and utilities for enforcing subscription plan limits and features.
 Prevents tenants from exceeding their plan quotas (customers, programs, etc.).
@@ -48,9 +48,7 @@ from common.request import require_tenant
 logger = logging.getLogger("loyallia.plan_enforcement")
 
 
-# =============================================================================
 # TENANT LIMITS RESOLUTION
-# =============================================================================
 
 
 def get_tenant_limits(tenant) -> dict:
@@ -67,7 +65,7 @@ def get_tenant_limits(tenant) -> dict:
 
     plan = subscription.subscription_plan
     if not plan and subscription.is_trial_active:
-        # Trial plan grants unlimited access (999999) for all resources
+ # Trial plan grants unlimited access (999999) for all resources
         return {
             "customers": 999999,
             "programs": 999999,
@@ -274,15 +272,13 @@ def _count_exports_month(tenant, month_start) -> int:
     ).count()
 
 
-# =============================================================================
 # CHECK FUNCTIONS
-# =============================================================================
 
 
 def check_plan_limit(tenant, resource: str) -> None:
     """Check if tenant has exceeded their plan limit for a resource.
 
-    SEC: LYL-M-API-024 — Uses select_for_update on Subscription to prevent
+    SEC: LYL-M-API-024  Uses select_for_update on Subscription to prevent
     TOCTOU race conditions where two concurrent requests both pass the limit
     check and create resources beyond the plan maximum.
 
@@ -334,9 +330,7 @@ def check_feature_access(tenant, feature: str) -> None:
         )
 
 
-# =============================================================================
 # DECORATORS
-# =============================================================================
 
 
 def require_active_subscription(func):

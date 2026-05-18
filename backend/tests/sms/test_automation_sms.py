@@ -1,5 +1,5 @@
 """
-Loyallia — Automation SMS Integration Tests (LYL-SRS-009)
+Loyallia  Automation SMS Integration Tests (LYL-SRS-009)
 
 Tests for:
   1. Automation action hardening (send_email, send_sms, send_wallet)
@@ -47,7 +47,7 @@ class AutomationSendEmailTest(TestCase):
             action_config={"title": "Welcome!", "message": "Thanks for joining"},
         )
         result = auto._execute_send_email(self.customer, {})
-        # Real email backend executes (console in dev). Method returns True on success.
+ # Real email backend executes (console in dev). Method returns True on success.
         self.assertTrue(result)
 
     def test_send_email_no_email_returns_false(self):
@@ -61,16 +61,16 @@ class AutomationSendEmailTest(TestCase):
         self.assertFalse(result)
 
     def test_send_email_smtp_failure_returns_false(self):
-        # SMTP failure is handled internally — the method catches exceptions
-        # and returns False. We test with a customer that has an email.
+ # SMTP failure is handled internally the method catches exceptions
+ # and returns False. We test with a customer that has an email.
         auto = make_automation(
             self.tenant,
             action=AutomationAction.SEND_EMAIL,
             action_config={"title": "Hi", "message": "World"},
         )
-        # Real execution: if SMTP fails, method catches and returns False
+ # Real execution: if SMTP fails, method catches and returns False
         result = auto._execute_send_email(self.customer, {})
-        # In dev with console backend, this succeeds. In production SMTP, failures are caught.
+ # In dev with console backend, this succeeds. In production SMTP, failures are caught.
         self.assertIsInstance(result, bool)
 
 
@@ -147,8 +147,8 @@ class AutomationSendWalletTest(TestCase):
             action_config={"title": "New Offer!", "message": "Check your wallet"},
         )
         result = auto._execute_send_wallet(self.customer, {})
-        # Google/Apple push functions return False gracefully when not configured.
-        # The method returns push_sent (False if none succeeded).
+ # Google/Apple push functions return False gracefully when not configured.
+ # The method returns push_sent (False if none succeeded).
         self.assertIsInstance(result, bool)
 
     def test_send_wallet_no_passes(self):
@@ -204,7 +204,7 @@ class AutomationDispatchTest(TestCase):
     def test_dispatch_send_notification(self):
         auto = make_automation(self.tenant, action=AutomationAction.SEND_NOTIFICATION)
         result = auto.execute(self.customer)
-        # Real _execute_send_notification creates a Notification record
+ # Real _execute_send_notification creates a Notification record
         self.assertIsInstance(result, bool)
 
     def test_dispatch_send_email(self):

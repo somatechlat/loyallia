@@ -1,6 +1,4 @@
-# =============================================================================
-# Loyallia Backend — Tool Configuration
-# =============================================================================
+# Loyallia backend tool configuration
 
 [project]
 name = "loyallia"

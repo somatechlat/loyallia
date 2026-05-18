@@ -1,7 +1,7 @@
 """
-Loyallia — Seed Subscription Plans (REQ-PLAN-001)
+Loyallia  Seed Subscription Plans (REQ-PLAN-001)
 Creates the default 4-tier plan structure: Trial, Starter, Professional, Enterprise.
-Idempotent — safe to run multiple times.
+Idempotent  safe to run multiple times.
 
 Usage:
     python manage.py seed_subscription_plans
@@ -125,9 +125,9 @@ class Command(BaseCommand):
             )
             if created:
                 created_count += 1
-                self.stdout.write(self.style.SUCCESS(f"  ✅ Created: {obj.name}"))
+                self.stdout.write(self.style.SUCCESS(f"   Created: {obj.name}"))
             else:
                 skipped_count += 1
-                self.stdout.write(self.style.NOTICE(f"  ⏭️  Skipped: {obj.name} (already exists)"))
+                self.stdout.write(self.style.NOTICE(f"  ⏭  Skipped: {obj.name} (already exists)"))
 
         self.stdout.write(self.style.SUCCESS(f"\nDone: {created_count} created, {skipped_count} skipped."))

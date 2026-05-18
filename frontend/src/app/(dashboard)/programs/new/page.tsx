@@ -136,7 +136,7 @@ export default function NewProgramPage() {
 
       <StepBar step={step} />
 
-      {/* ──── STEP 0: Card type selection ──── */}
+      {/* Step 0: card type selection */}
       {step === 0 && (
         <div className="space-y-4 animate-fade-in">
           <h2 className="text-lg font-bold text-surface-900 dark:text-white">Selecciona el tipo de programa</h2>
@@ -186,7 +186,7 @@ export default function NewProgramPage() {
         </div>
       )}
 
-      {/* ──── STEP 1: Type-specific config ──── */}
+      {/* Step 1: type-specific config */}
       {step === 1 && (
         <div className="card p-6 space-y-4 animate-fade-in">
           <div className="flex items-center gap-3 mb-2">
@@ -208,7 +208,7 @@ export default function NewProgramPage() {
         </div>
       )}
 
-      {/* ──── STEP 2: Design — Templates + Logo Upload + Preview ──── */}
+      {/* Step 2: design, templates, logo upload, and preview */}
       {step === 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
           {/* Left: Form */}
@@ -504,7 +504,7 @@ export default function NewProgramPage() {
         </div>
       )}
 
-      {/* ──── STEP 3: Review ──── */}
+      {/* Step 3: review */}
       {step === 3 && (
         <ProgramReviewStep
           form={form}
@@ -518,7 +518,7 @@ export default function NewProgramPage() {
         />
       )}
 
-      {/* ──── Navigation buttons ──── */}
+      {/* Navigation buttons */}
       <div className="flex justify-between pt-4">
         <button
           type="button"

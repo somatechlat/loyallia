@@ -26,7 +26,7 @@ def process_mailjet_event(event: dict[str, Any]) -> bool:
     Returns True if a matching log was found and updated.
     """
     event_type = event.get("event")
-    # Mailjet uses MessageID or Message_GUID depending on event type
+ # Mailjet uses MessageID or Message_GUID depending on event type
     message_id = event.get("Message_GUID") or str(event.get("MessageID", ""))
 
     if not message_id:
@@ -44,7 +44,7 @@ def process_mailjet_event(event: dict[str, Any]) -> bool:
             log.status = DeliveryStatus.READ
             log.read_at = timezone.now()
         elif event_type == "click":
-            # Click implies the message was read
+ # Click implies the message was read
             log.status = DeliveryStatus.READ
             if not log.read_at:
                 log.read_at = timezone.now()
@@ -54,7 +54,7 @@ def process_mailjet_event(event: dict[str, Any]) -> bool:
             log.error_code = event_type
             log.error_message = (event.get("error", "") or event.get("error_related_to", "") or event_type)[:500]
         else:
-            # Unknown event — log but don't fail
+ # Unknown event log but don't fail
             logger.debug("Unknown Mailjet event type: %s", event_type)
             return False
 
@@ -69,7 +69,7 @@ def process_mailjet_event(event: dict[str, Any]) -> bool:
             ]
         )
 
-        # Update aggregate counters on the parent CampaignRun
+ # Update aggregate counters on the parent CampaignRun
         if log.campaign_run:
             _update_campaign_run_counters(log.campaign_run)
 

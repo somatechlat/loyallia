@@ -1,5 +1,5 @@
 """
-Loyallia — Campaign SMS Integration Tests (LYL-SRS-009)
+Loyallia  Campaign SMS Integration Tests (LYL-SRS-009)
 
 Tests for:
   1. SMS campaign task (apps.notifications.sms.tasks.send_sms_campaign)

@@ -1,11 +1,11 @@
 """
-Loyallia — Data Migration: Seed Vital Subscription Plans (REQ-BOOT-001)
+Loyallia  Data Migration: Seed Vital Subscription Plans (REQ-BOOT-001)
 
 Seeds the 4-tier plan structure (Trial, Starter, Professional, Enterprise)
 that the platform requires to function. Without plans, no tenant can
 register or subscribe.
 
-Idempotent: Uses get_or_create on slug — preserves manual SuperAdmin adjustments.
+Idempotent: Uses get_or_create on slug  preserves manual SuperAdmin adjustments.
 Reverse: noop (plans remain on rollback).
 
 Called by: `python manage.py migrate --noinput` (automatic on every deploy).

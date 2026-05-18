@@ -1,5 +1,5 @@
 """
-Loyallia — Typed Request Helpers (common/request.py)
+Loyallia  Typed Request Helpers (common/request.py)
 
 Provides type-safe access to the tenant and agent API key that middleware
 and JWTAuth attach to every Django request during authentication.
@@ -10,7 +10,7 @@ Architecture:
     require_tenant() is a guard that raises 403 when tenant context is missing.
 
 Performance (Rule 12):
-    These are pure type-system helpers. as_tenant_request() compiles to a no-op —
+    These are pure type-system helpers. as_tenant_request() compiles to a no-op
     the cast() call is erased at runtime. Zero overhead on the hot path.
 
 Called by: Every API endpoint and middleware that needs tenant-scoped data access.
@@ -42,7 +42,7 @@ class TenantRequest(HttpRequest):
 def as_tenant_request(request: HttpRequest) -> TenantRequest:
     """Cast middleware-enriched request to the typed TenantRequest interface.
 
-    PERF: This is a zero-cost type assertion — cast() is erased at runtime.
+    PERF: This is a zero-cost type assertion  cast() is erased at runtime.
     No object creation, no dict copy, no attribute check.
     """
     return cast(TenantRequest, request)

@@ -37,7 +37,7 @@ interface EnrollResult {
   };
 }
 
-// ─── SVG Icon Components (Flat, Modern — No Emojis) ───────────────────────
+// SVG icon components (flat style, no emojis)
 
 function IconSearch({ className = 'w-8 h-8' }: { className?: string }) {
   return (
@@ -100,7 +100,7 @@ function IconCardType({ cardType, className = 'w-6 h-6' }: { cardType: string; c
   }
 }
 
-// ─── Platform Detection ───────────────────────────────────────────────────
+// Platform detection
 
 function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -112,9 +112,7 @@ function isAndroid(): boolean {
   return /Android/i.test(navigator.userAgent);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ═══════════════════════════════════════════════════════════════════════════
+// Enrollment page
 
 export default function EnrollPage() {
   const params = useParams();
@@ -228,7 +226,7 @@ export default function EnrollPage() {
     window.location.href = redirectUrl;
   };
 
-  // ─── Loading State ────────────────────────────────────────────────────────
+  // Loading state
 
   if (cardLoading) {
     return (
@@ -238,7 +236,7 @@ export default function EnrollPage() {
     );
   }
 
-  // ─── Card Not Found ───────────────────────────────────────────────────────
+  // Card not found
 
   if (!card) {
     return (
@@ -274,7 +272,7 @@ export default function EnrollPage() {
         </div>
 
         <div className="bg-white dark:bg-surface-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10 backdrop-blur-xl">
-          {/* ═══ FORM STEP ═══ */}
+
           {step === 'form' && (
             <form onSubmit={handleEnroll} className="space-y-4" noValidate>
               <h2 className="text-lg font-bold text-surface-900 dark:text-white text-center mb-1">Únete ahora</h2>
@@ -373,7 +371,7 @@ export default function EnrollPage() {
             </form>
           )}
 
-          {/* ═══ SUCCESS STEP ═══ */}
+
           {step === 'success' && enrollResult && (
             <div className="text-center py-2 space-y-5">
               {/* Success icon */}
@@ -388,7 +386,7 @@ export default function EnrollPage() {
                 </p>
               </div>
 
-              {/* ─── Premium Card Preview ─── */}
+
               <div
                 className="w-full rounded-2xl overflow-hidden shadow-xl relative"
                 style={{ 
@@ -462,7 +460,7 @@ export default function EnrollPage() {
                 </div>
               </div>
 
-              {/* ─── Wallet Buttons ─── */}
+
               <div className="space-y-2.5">
                 <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider">
                   Agregar a billetera digital
@@ -517,7 +515,7 @@ export default function EnrollPage() {
             </div>
           )}
 
-          {/* ═══ ERROR STEP ═══ */}
+
           {step === 'error' && (
             <div className="text-center py-4 space-y-4">
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500">

@@ -3,7 +3,7 @@
 Run with:
     docker compose exec api python manage.py seed_platform_settings
 
-Idempotent — safe to run multiple times; existing keys are skipped.
+Idempotent  safe to run multiple times; existing keys are skipped.
 """
 
 from django.core.management.base import BaseCommand

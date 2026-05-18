@@ -1,5 +1,5 @@
 """
-Loyallia — Super Admin API Package
+Loyallia  Super Admin API Package
 Re-exports a unified router that combines all super admin endpoint modules.
 
 Import contract: `from apps.tenants.super_admin_api import router as super_admin_router`

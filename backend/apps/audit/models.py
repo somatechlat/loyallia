@@ -1,5 +1,5 @@
 """
-Loyallia — Audit Models (REQ-DPR-002)
+Loyallia  Audit Models (REQ-DPR-002)
 Immutable audit trail for data access and mutations.
 Compliant with LOPDP Art. 47 (Ecuador) and GDPR Art. 30 (EU).
 Entries cannot be edited or deleted. 7-year retention.
@@ -69,12 +69,12 @@ class AuditLog(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # WHO
+ # WHO
     actor_id = models.UUIDField(db_index=True, verbose_name="ID del actor")
     actor_email = models.CharField(max_length=255, verbose_name="Email del actor")
     actor_role = models.CharField(max_length=20, verbose_name="Rol del actor")
 
-    # WHAT
+ # WHAT
     action = models.CharField(
         max_length=20,
         choices=AuditAction.choices(),
@@ -88,7 +88,7 @@ class AuditLog(models.Model):
         verbose_name="ID del recurso",
     )
 
-    # CONTEXT
+ # CONTEXT
     tenant_id = models.UUIDField(
         null=True,
         blank=True,
@@ -104,7 +104,7 @@ class AuditLog(models.Model):
         help_text="Required for impersonation actions",
     )
 
-    # RESULT
+ # RESULT
     details = models.JSONField(default=dict, verbose_name="Detalles")
     status = models.CharField(
         max_length=20,
@@ -113,7 +113,7 @@ class AuditLog(models.Model):
         verbose_name="Estado",
     )
 
-    # WHEN (immutable)
+ # WHEN (immutable)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Fecha")
 
     class Meta:

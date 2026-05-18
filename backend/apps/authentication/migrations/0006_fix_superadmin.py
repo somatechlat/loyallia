@@ -1,5 +1,5 @@
 """
-Loyallia — Data Migration: Repair legacy SUPER_ADMIN (REQ-BOOT-001)
+Loyallia  Data Migration: Repair legacy SUPER_ADMIN (REQ-BOOT-001)
 
 Older seed scripts assigned a tenant to the SUPER_ADMIN and did not set
 is_staff/is_superuser flags. This migration repairs any such legacy user.

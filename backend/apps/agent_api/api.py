@@ -1,8 +1,8 @@
 """
-Loyallia — Agent API Endpoints (REQ-AGENT-002)
+Loyallia  Agent API Endpoints (REQ-AGENT-002)
 Read-only endpoints for external AI agents using Django Ninja.
-All data is aggregated or anonymized — no PII exposed.
-Enterprise plan only — gated by AgentAPIKeyAuth.
+All data is aggregated or anonymized  no PII exposed.
+Enterprise plan only  gated by AgentAPIKeyAuth.
 
 Endpoints:
     GET /agent/context/            → tenant context, plan, usage
@@ -80,7 +80,7 @@ def get_context(request: HttpRequest):
     summary="Resumen de clientes (agregado)",
 )
 def get_customers_summary(request: HttpRequest):
-    """Aggregated customer summary — no PII exposed."""
+    """Aggregated customer summary  no PII exposed."""
     from apps.customers.models import Customer
 
     tenant = require_tenant(request)
@@ -184,7 +184,7 @@ def get_analytics_overview(request: HttpRequest):
     summary="Transacciones recientes (anonimizadas)",
 )
 def get_recent_transactions(request: HttpRequest):
-    """Last 50 transactions — anonymized (no customer PII)."""
+    """Last 50 transactions  anonymized (no customer PII)."""
     from apps.transactions.models import Transaction
 
     tenant = require_tenant(request)

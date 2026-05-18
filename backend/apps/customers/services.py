@@ -1,5 +1,5 @@
 """
-Loyallia — Customer Pass Services
+Loyallia  Customer Pass Services
 Handles business logic for processing transactions across 10 card types.
 Split from customers/models.py per Rule 245.
 """

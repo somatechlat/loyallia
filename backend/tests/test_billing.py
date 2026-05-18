@@ -1,5 +1,5 @@
 """
-Loyallia — Billing Tests
+Loyallia  Billing Tests
 Tests for Invoice, PaymentMethod, BillingService, Subscription lifecycle,
 plan limits, and trial period behavior.
 """
@@ -23,9 +23,7 @@ from tests.factories import (
     make_user,
 )
 
-# =============================================================================
 # Invoice Model Tests
-# =============================================================================
 
 
 class InvoiceModelTest(TestCase):
@@ -143,9 +141,7 @@ class InvoiceModelTest(TestCase):
         self.assertEqual(invoice.currency, "USD")
 
 
-# =============================================================================
 # PaymentMethod Model Tests
-# =============================================================================
 
 
 class PaymentMethodModelTest(TestCase):
@@ -195,9 +191,7 @@ class PaymentMethodModelTest(TestCase):
         self.assertTrue(pm.is_default)
 
 
-# =============================================================================
 # WebhookEvent Model Tests
-# =============================================================================
 
 
 class WebhookEventModelTest(TestCase):
@@ -233,9 +227,7 @@ class WebhookEventModelTest(TestCase):
         self.assertIn("subscription.created", str(event))
 
 
-# =============================================================================
 # BillingService Tests
-# =============================================================================
 
 
 class BillingServiceGetPlansTest(TestCase):
@@ -342,9 +334,7 @@ class BillingServiceCheckUsageTest(TestCase):
             self.assertIn(key, usage)
 
 
-# =============================================================================
 # Subscription Lifecycle Tests
-# =============================================================================
 
 
 class SubscriptionLifecycleTest(TestCase):
@@ -405,9 +395,7 @@ class SubscriptionLifecycleTest(TestCase):
         self.assertGreaterEqual(days_diff, 364)
 
 
-# =============================================================================
 # Plan Limit Tests
-# =============================================================================
 
 
 class PlanLimitTest(TestCase):
@@ -441,9 +429,7 @@ class PlanLimitTest(TestCase):
         self.assertTrue(usage["users"]["is_over_limit"])
 
 
-# =============================================================================
 # Trial Period Tests
-# =============================================================================
 
 
 class TrialPeriodTest(TestCase):

@@ -109,7 +109,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* ── Header ── */}
+
         <div className="flex items-center justify-between px-8 py-4 border-b border-slate-200/60 bg-white/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -122,10 +122,10 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
           >✕</button>
         </div>
 
-        {/* ── Main 3-column layout ── */}
+
         <div className="flex-1 grid grid-cols-12 gap-0 min-h-0">
 
-          {/* ─── Col 1: Identity & Images ─── */}
+
           <div className="col-span-4 p-6 border-r border-slate-100 flex flex-col gap-4 bg-white/40">
             <div>
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Nombre del programa</label>
@@ -230,7 +230,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
             )}
           </div>
 
-          {/* ─── Col 2: Design Templates & Colors ─── */}
+
           <div className="col-span-3 p-6 border-r border-slate-100 flex flex-col gap-4 bg-white/30">
             <div>
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Plantillas de diseño</label>
@@ -293,7 +293,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
             </div>
           </div>
 
-          {/* ─── Col 3: Live Wallet Preview ─── */}
+
           <div className="col-span-5 p-6 flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100/50">
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-4">Vista previa en vivo</p>
 
@@ -374,7 +374,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
           </div>
         </div>
 
-        {/* ── Footer ── */}
+
         <div className="flex items-center justify-between px-8 py-4 border-t border-slate-200/60 bg-white/60 shrink-0">
           <p className="text-[10px] text-slate-300 font-medium">Powered by Loyallia — Intelligent Rewards</p>
           <div className="flex gap-3">

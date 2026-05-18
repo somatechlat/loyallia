@@ -1,5 +1,5 @@
 """
-Loyallia — Audit Service (REQ-DPR-002)
+Loyallia  Audit Service (REQ-DPR-002)
 Functions for writing audit log entries.
 All entries are immutable and comply with LOPDP/GDPR.
 """
@@ -44,7 +44,7 @@ def log_action(
     actor_email = getattr(user, "email", "anonymous") or "anonymous"
     actor_role = getattr(user, "role", "unknown") or "unknown"
 
-    # Resolve tenant_id
+ # Resolve tenant_id
     if tenant_id is None:
         tenant = getattr(request, "tenant", None)
         if tenant:

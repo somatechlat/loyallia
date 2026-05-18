@@ -244,7 +244,7 @@ export default function LocationsPage() {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <header className="flex items-center justify-between">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-surface-900 dark:text-surface-100 tracking-tight">Sucursales</h1>
@@ -264,7 +264,7 @@ export default function LocationsPage() {
         )}
       </header>
 
-      {/* ── Stats ribbon ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Total', value: locations.length, color: 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400' },
@@ -279,7 +279,6 @@ export default function LocationsPage() {
         ))}
       </div>
 
-      {/* ── Map ──────────────────────────────────────────────────────────── */}
       {mapPins.length > 0 && (
         <div className="bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
@@ -297,7 +296,6 @@ export default function LocationsPage() {
         </div>
       )}
 
-      {/* ── Location Cards ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {locations.map(loc => (
           <LocationCard key={loc.id} location={loc} onClick={openDetail} />
@@ -317,7 +315,7 @@ export default function LocationsPage() {
         </div>
       )}
 
-      {/* ── Detail / Edit / Create Modal ─────────────────────────────────── */}
+
       {(selectedLoc || showCreate) && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -326,7 +324,6 @@ export default function LocationsPage() {
           aria-modal="true"
           aria-label={showCreate ? 'Crear nueva sucursal' : editMode ? 'Editar sucursal' : selectedLoc?.name}
         >
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
           {/* Modal panel — LYL-M-FE-029: ref for focus trap */}
@@ -367,7 +364,7 @@ export default function LocationsPage() {
               </button>
             </div>
 
-            {/* ── READ MODE ─────────────────────────────────────────────── */}
+  
             {selectedLoc && !editMode && !showCreate && (
               <div className="px-6 pb-6 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -440,7 +437,7 @@ export default function LocationsPage() {
               </div>
             )}
 
-            {/* ── EDIT / CREATE MODE ────────────────────────────────────── */}
+  
             {(editMode || showCreate) && (
               <LocationForm
                 form={form}

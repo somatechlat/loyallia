@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend,
 } from 'recharts';
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// Types
 interface DailyPoint {
   date: string;
   new_customers: number;
@@ -33,7 +33,7 @@ interface Program {
   redemption_rate: number;
 }
 
-// ── Palette ────────────────────────────────────────────────────────────────
+// Palette
 const SEG_COLORS: Record<string, string> = {
   inactive: '#94a3b8', at_risk: '#f59e0b', high_value: '#6366f1',
   regular: '#10b981', new: '#06b6d4',

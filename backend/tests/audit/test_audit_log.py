@@ -1,5 +1,5 @@
 """
-Tests for audit logging business logic fixes — audit findings LYL-C-API-001, LYL-C-API-004,
+Tests for audit logging business logic fixes  audit findings LYL-C-API-001, LYL-C-API-004,
 LYL-H-API-014, LYL-H-API-005, LYL-H-API-006.
 Uses Django's TestCase with PostgreSQL.
 """
@@ -10,9 +10,7 @@ from typing import Any, cast
 
 from django.test import TestCase
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 
 def _make_tenant(**kwargs):
@@ -101,9 +99,7 @@ def _make_pass(customer, card):
     return CustomerPass.objects.create(customer=customer, card=card)
 
 
-# ===========================================================================
-# FIX 1 — LYL-C-API-001: Coupon double-redemption race condition
-# ===========================================================================
+# FIX 1 LYL-C-API-001: Coupon double-redemption race condition
 
 
 class CouponRedemptionRaceConditionTest(TestCase):
@@ -129,16 +125,14 @@ class CouponRedemptionRaceConditionTest(TestCase):
 
     def test_second_redemption_blocked(self):
         cast(Any, self.pass_obj)._process_coupon_transaction()
-        # Refresh from DB
+ # Refresh from DB
         self.pass_obj.refresh_from_db()
         result = cast(Any, self.pass_obj)._process_coupon_transaction()
         self.assertFalse(result["pass_updated"])
         self.assertNotIn("reward_earned", result)
 
 
-# ===========================================================================
-# FIX 4 — LYL-C-API-004: Max referrals per customer
-# ===========================================================================
+# FIX 4 LYL-C-API-004: Max referrals per customer
 
 
 class MaxReferralsPerCustomerTest(TestCase):
@@ -162,7 +156,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         self.assertEqual(result["new_referral_count"], 1)
 
     def test_referral_blocked_at_max(self):
-        # Set referral count to max
+ # Set referral count to max
         self.pass_obj.pass_data["referral_count"] = 3
         self.pass_obj.save(update_fields=["pass_data"])
         self.pass_obj.refresh_from_db()
@@ -173,7 +167,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         self.assertEqual(result["new_referral_count"], 3)
 
     def test_referral_allows_below_max(self):
-        # Set referral count below max
+ # Set referral count below max
         self.pass_obj.pass_data["referral_count"] = 2
         self.pass_obj.save(update_fields=["pass_data"])
         self.pass_obj.refresh_from_db()
@@ -195,9 +189,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         self.assertEqual(result["new_referral_count"], 101)
 
 
-# ===========================================================================
-# FIX 5 — LYL-H-API-014: Quantity validation
-# ===========================================================================
+# FIX 5 LYL-H-API-014: Quantity validation
 
 
 class QuantityValidationTest(TestCase):
@@ -229,9 +221,7 @@ class QuantityValidationTest(TestCase):
         self.assertTrue(result["pass_updated"])
 
 
-# ===========================================================================
-# FIX 8 — LYL-H-API-005: Stamp multi-cycle loss
-# ===========================================================================
+# FIX 8 LYL-H-API-005: Stamp multi-cycle loss
 
 
 class StampMultiCycleTest(TestCase):
@@ -251,21 +241,21 @@ class StampMultiCycleTest(TestCase):
         self.pass_obj = _make_pass(self.customer, self.card)
 
     def test_single_cycle(self):
-        # 0 + 10 = 1 cycle, 0 remaining
+ # 0 + 10 = 1 cycle, 0 remaining
         result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=10)
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 1)
 
     def test_multi_cycle(self):
-        # 0 + 25 = 2 cycles, 5 remaining
+ # 0 + 25 = 2 cycles, 5 remaining
         result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=25)
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 5)
         self.assertEqual(result["reward_count"], 2)
 
     def test_multi_cycle_with_existing_stamps(self):
-        # Start with 3 stamps, add 17 = 2 cycles, 0 remaining
+ # Start with 3 stamps, add 17 = 2 cycles, 0 remaining
         self.pass_obj.pass_data["stamp_count"] = 3
         self.pass_obj.save(update_fields=["pass_data"])
         self.pass_obj.refresh_from_db()
@@ -277,21 +267,19 @@ class StampMultiCycleTest(TestCase):
 
     def test_no_stamps_lost_large_quantity(self):
         """Previously, stamps beyond one cycle were lost."""
-        # 0 + 100 = 10 cycles, 0 remaining
+ # 0 + 100 = 10 cycles, 0 remaining
         result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=100)
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 10)
 
     def test_partial_cycle(self):
-        # 0 + 7 = 0 cycles, 7 remaining
+ # 0 + 7 = 0 cycles, 7 remaining
         result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=7)
         self.assertFalse(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 7)
 
 
-# ===========================================================================
-# FIX 9 — LYL-H-API-006: Discount float precision
-# ===========================================================================
+# FIX 9 LYL-H-API-006: Discount float precision
 
 
 class DiscountFloatPrecisionTest(TestCase):
@@ -317,7 +305,7 @@ class DiscountFloatPrecisionTest(TestCase):
         cast(Any, self.pass_obj)._process_discount_transaction(Decimal("0.1"))
         self.pass_obj.refresh_from_db()
         total = self.pass_obj.pass_data["total_spent_at_business"]
-        # Should be stored as string "0.1", not 0.10000000000000001
+ # Should be stored as string "0.1", not 0.10000000000000001
         self.assertEqual(str(total), "0.1")
 
     def test_stored_as_string(self):

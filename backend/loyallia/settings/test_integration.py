@@ -1,5 +1,5 @@
 """
-Loyallia Django Settings — Integration Tests
+Loyallia Django Settings  Integration Tests
 
 Inherits from test.py.
 Integration tests exercise the real PgBouncer query path (port 6432)

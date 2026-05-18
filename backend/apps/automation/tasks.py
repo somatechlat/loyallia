@@ -1,5 +1,5 @@
 """
-Loyallia — Automation Celery Tasks
+Loyallia  Automation Celery Tasks
 """
 
 import logging
@@ -78,7 +78,7 @@ def evaluate_scheduled_automations() -> dict:
     total_executed = 0
 
     for automation in scheduled:
-        # Get all customers for this tenant
+ # Get all customers for this tenant
         customers = Customer.objects.filter(
             tenant=automation.tenant,
             is_active=True,
@@ -161,7 +161,7 @@ def evaluate_birthday_triggers() -> dict:
     today = date.today()
     triggered = 0
 
-    # Check today + next 3 days for upcoming birthdays
+ # Check today + next 3 days for upcoming birthdays
     for offset in range(4):
         check_date = today + timedelta(days=offset)
         customers = Customer.objects.filter(

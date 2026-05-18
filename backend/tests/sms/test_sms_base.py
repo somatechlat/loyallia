@@ -1,5 +1,5 @@
 """
-Loyallia — SMS Base Integration Tests (LYL-SRS-009)
+Loyallia  SMS Base Integration Tests (LYL-SRS-009)
 
 Tests for:
   1. Twilio SMS client (apps.notifications.sms.client)

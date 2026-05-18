@@ -1,5 +1,5 @@
 """
-Loyallia — Twilio Verify Service Management (LYL-SRS-VERIFY-001)
+Loyallia  Twilio Verify Service Management (LYL-SRS-VERIFY-001)
 
 REAL PRODUCTION CODE. NO MOCKS. NO BYPASSES.
 
@@ -49,9 +49,8 @@ class VerifyServiceManager:
         self._client = TwilioClient(username, password)
         return self._client
 
-    # ------------------------------------------------------------------
-    # Service CRUD
-    # ------------------------------------------------------------------
+ # Service CRUD
+
 
     def create_service(
         self,
@@ -249,7 +248,7 @@ class VerifyServiceManager:
         logger.info("Creating new Verify Service: %s", friendly_name)
         service = self.create_service(friendly_name=friendly_name)
 
-        # Store SID in Vault for automatic discovery
+ # Store SID in Vault for automatic discovery
         from common.vault import put_secret
 
         sid = service.get("sid", "")
@@ -259,9 +258,8 @@ class VerifyServiceManager:
 
         return service
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
+ # Helpers
+
 
     @staticmethod
     def _service_to_dict(service) -> dict[str, Any]:

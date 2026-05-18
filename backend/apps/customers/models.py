@@ -1,5 +1,5 @@
 """
-Loyallia — Customer Models
+Loyallia  Customer Models
 Customer profiles, passes, and enrollment management.
 """
 
@@ -28,13 +28,13 @@ class Customer(TimestampedModel):
         verbose_name="Negocio",
     )
 
-    # Contact Information
+ # Contact Information
     first_name = models.CharField(max_length=100, verbose_name="Nombre")
     last_name = models.CharField(max_length=100, verbose_name="Apellido")
     email = models.EmailField(validators=[EmailValidator()], verbose_name="Correo electrónico")
     phone = models.CharField(max_length=20, blank=True, default="", verbose_name="Teléfono")
 
-    # Optional additional info
+ # Optional additional info
     date_of_birth = models.DateField(null=True, blank=True, verbose_name="Fecha de nacimiento")
     gender = models.CharField(
         max_length=1,
@@ -44,7 +44,7 @@ class Customer(TimestampedModel):
         verbose_name="Género",
     )
 
-    # Referral system
+ # Referral system
     referral_code = models.CharField(max_length=20, unique=True, blank=True, default="")
     referred_by = models.ForeignKey(
         "self",
@@ -55,11 +55,11 @@ class Customer(TimestampedModel):
         verbose_name="Referido por",
     )
 
-    # Status
+ # Status
     is_active = models.BooleanField(default=True, verbose_name="Cliente activo")
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
 
-    # Analytics
+ # Analytics
     total_visits = models.PositiveIntegerField(default=0, verbose_name="Total de visitas")
     total_spent = models.DecimalField(
         max_digits=10,
@@ -77,23 +77,23 @@ class Customer(TimestampedModel):
         ordering = ["-created_at"]
         unique_together = ["tenant", "email"]  # One account per email per tenant
         indexes = [
-            # Tenant-scoped time-series queries (analytics, sorting)
+ # Tenant-scoped time-series queries (analytics, sorting)
             models.Index(
                 fields=["tenant", "created_at"],
                 name="idx_cust_tenant_created",
             ),
-            # Tenant-scoped active customer lookups
+ # Tenant-scoped active customer lookups
             models.Index(
                 fields=["tenant", "is_active", "created_at"],
                 name="idx_cust_tenant_active_date",
             ),
-            # Demographics: SQL-based age aggregation
+ # Demographics: SQL-based age aggregation
             models.Index(
                 fields=["tenant", "date_of_birth"],
                 name="idx_cust_tenant_dob",
             ),
-            # Customer search by name (icontains uses sequential scan,
-            # but this index helps with exact prefix matches)
+ # Customer search by name (icontains uses sequential scan,
+ # but this index helps with exact prefix matches)
             models.Index(
                 fields=["tenant", "last_name", "first_name"],
                 name="idx_cust_tenant_name",
@@ -137,7 +137,7 @@ class Customer(TimestampedModel):
             if not Customer.objects.filter(referral_code=code).exists():
                 return code
 
-        # Fallback: use UUID-based code (guaranteed unique)
+ # Fallback: use UUID-based code (guaranteed unique)
         fallback = uuid.uuid4().hex[:12].upper()
         logger.warning(
             "Referral code generation: exhausted %d random attempts, using UUID fallback",
@@ -167,10 +167,10 @@ class CustomerPass(models.Model):
     )
     card = models.ForeignKey(Card, on_delete=models.CASCADE, related_name="passes", verbose_name="Programa")
 
-    # Pass state stored as JSONB (Legacy/Dynamic)
+ # Pass state stored as JSONB (Legacy/Dynamic)
     pass_data = models.JSONField(default=dict, verbose_name="Datos del pase")
 
-    # Core metrics (Typed columns for integrity and indexing)
+ # Core metrics (Typed columns for integrity and indexing)
     stamp_count = models.PositiveIntegerField(default=0, verbose_name="Contador de sellos")
     cashback_balance = models.DecimalField(
         max_digits=12,
@@ -187,11 +187,11 @@ class CustomerPass(models.Model):
         verbose_name="Balance de certificado de regalo",
     )
 
-    # Wallet pass identifiers
+ # Wallet pass identifiers
     apple_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Apple Pass ID")
     google_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Google Pass ID")
 
-    # QR code for validation — indexed for O(log N) scan lookups
+ # QR code for validation indexed for O(log N) scan lookups
     qr_code = models.CharField(
         max_length=100,
         unique=True,
@@ -201,7 +201,7 @@ class CustomerPass(models.Model):
         verbose_name="Código QR",
     )
 
-    # Status
+ # Status
     is_active = models.BooleanField(default=True, verbose_name="Pase activo")
     enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de inscripción")
     last_updated = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
@@ -223,7 +223,7 @@ class CustomerPass(models.Model):
         """Generate a unique QR code for this pass.
 
         Uses UUID4 (128-bit random) truncated to 16 hex chars.
-        Collision probability: 1 in 1.8×10^19 — effectively zero.
+        Collision probability: 1 in 1.8×10^19  effectively zero.
         No database query needed, unlike the previous exists()-loop approach.
         """
         return uuid.uuid4().hex[:16].upper()
@@ -252,7 +252,7 @@ class CustomerPass(models.Model):
             for k, v in updates.items():
                 locked.pass_data[k] = v
             locked.save(update_fields=["pass_data", "last_updated"])
-        # Refresh in-memory instance to reflect the committed state
+ # Refresh in-memory instance to reflect the committed state
         self.refresh_from_db(fields=["pass_data", "last_updated"])
 
     def save(self, *args, **kwargs) -> None:
@@ -365,20 +365,20 @@ class ApplePassRegistration(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # The unique device identifier provided by the Apple device
+ # The unique device identifier provided by the Apple device
     device_library_id = models.CharField(
         max_length=255,
         db_index=True,
         verbose_name="Device Library Identifier",
     )
 
-    # APNs push token — used to send empty {} push to trigger pass re-download
+ # APNs push token used to send empty {} push to trigger pass re-download
     push_token = models.CharField(
         max_length=255,
         verbose_name="APNs Push Token",
     )
 
-    # The customer pass this device is registered to receive updates for
+ # The customer pass this device is registered to receive updates for
     customer_pass = models.ForeignKey(
         CustomerPass,
         on_delete=models.CASCADE,
@@ -393,7 +393,7 @@ class ApplePassRegistration(models.Model):
         db_table = "loyallia_apple_pass_registrations"
         verbose_name = "Apple Pass Registration"
         verbose_name_plural = "Apple Pass Registrations"
-        # One registration per device per pass (Apple spec)
+ # One registration per device per pass (Apple spec)
         unique_together = ("device_library_id", "customer_pass")
         indexes = [
             models.Index(
@@ -403,4 +403,4 @@ class ApplePassRegistration(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Apple Registration: device …{self.device_library_id[-8:]} → pass {self.customer_pass_id}"
+        return f"Apple Registration: device {self.device_library_id[-8:]} → pass {self.customer_pass_id}"

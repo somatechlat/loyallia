@@ -58,7 +58,7 @@ Actually looking at the Vault check output: `PASS_WEB_SERVICE_URL: NOT SET` — 
 
 **The real issue:** Need to check if `APP_URL` env var is set. If not, it should default to `https://rewards.loyallia.com`.
 
-But we need to also check: Is the `webServiceURL` actually in the generated `.pkpass`? Let's verify.
+Verification required: confirm `webServiceURL` is present in the generated `.pkpass`.
 
 **Impact:** Without `webServiceURL` in the `.pkpass`:
 - iPhone never registers for push notifications
@@ -256,7 +256,7 @@ Ensure `APP_URL` or `PASS_WEB_SERVICE_URL` env var is set.
 ### Option C: Refactor
 - Extract wallet push logic into a dedicated `WalletPushService`
 - Unify Apple + Google push patterns
-- Add comprehensive tests
+- Add tests covering all edge cases
 - Most work, but cleanest architecture
 
 ---

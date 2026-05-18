@@ -1,5 +1,5 @@
 """
-Loyallia — Payment & Invoice Models (REQ-PAY-001)
+Loyallia  Payment & Invoice Models (REQ-PAY-001)
 Split from billing/models.py per the 600-line architectural limit.
 Contains PaymentMethod and Invoice models.
 """
@@ -15,15 +15,13 @@ from apps.billing.models import Subscription
 from apps.tenants.models import Tenant
 from common.models import TimestampedModel
 
-# =============================================================================
 # PAYMENT METHOD
-# =============================================================================
 
 
 class PaymentMethod(TimestampedModel):
     """
     Stored payment method for a tenant.
-    Tokenized card data stored by payment gateway — we only keep last4 and brand.
+    Tokenized card data stored by payment gateway  we only keep last4 and brand.
     """
 
     tenant = models.ForeignKey(
@@ -33,17 +31,17 @@ class PaymentMethod(TimestampedModel):
         verbose_name="Negocio",
     )
 
-    # Payment gateway token (PCI-compliant — we never store raw card data)
+ # Payment gateway token (PCI-compliant we never store raw card data)
     gateway_token = models.CharField(max_length=200, verbose_name="Token de pago (gateway)")
 
-    # Display info only
+ # Display info only
     card_brand = models.CharField(max_length=20, blank=True, default="", verbose_name="Marca de tarjeta")
     card_last_four = models.CharField(max_length=4, blank=True, default="", verbose_name="Últimos 4 dígitos")
     card_exp_month = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Mes de expiración")
     card_exp_year = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Año de expiración")
     cardholder_name = models.CharField(max_length=200, blank=True, default="", verbose_name="Nombre del titular")
 
-    # Status
+ # Status
     is_default = models.BooleanField(default=False, verbose_name="Método predeterminado")
     is_active = models.BooleanField(default=True, verbose_name="Activo")
 
@@ -54,19 +52,17 @@ class PaymentMethod(TimestampedModel):
         ordering = ["-is_default", "-created_at"]
 
     def __repr__(self) -> str:
-        return f"<PaymentMethod: {self.card_brand} ****{self.card_last_four} — {self.tenant.name}>"
+        return f"<PaymentMethod: {self.card_brand} ****{self.card_last_four}  {self.tenant.name}>"
 
     def __str__(self) -> str:
-        return f"{self.card_brand} ****{self.card_last_four} — {self.tenant.name}"
+        return f"{self.card_brand} ****{self.card_last_four}  {self.tenant.name}"
 
     @property
     def display_name(self) -> str:
         return f"{self.card_brand} terminada en {self.card_last_four}"
 
 
-# =============================================================================
 # INVOICE
-# =============================================================================
 
 
 class Invoice(TimestampedModel):
@@ -95,10 +91,10 @@ class Invoice(TimestampedModel):
         verbose_name="Suscripción",
     )
 
-    # Invoice number (sequential per tenant)
+ # Invoice number (sequential per tenant)
     invoice_number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
 
-    # Amounts
+ # Amounts
     subtotal = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -125,11 +121,11 @@ class Invoice(TimestampedModel):
     )
     currency = models.CharField(max_length=3, default="USD", verbose_name="Moneda")
 
-    # Billing period
+ # Billing period
     period_start = models.DateTimeField(verbose_name="Inicio del período")
     period_end = models.DateTimeField(verbose_name="Fin del período")
 
-    # Payment
+ # Payment
     status = models.CharField(
         max_length=20,
         choices=InvoiceStatus.choices,
@@ -144,7 +140,7 @@ class Invoice(TimestampedModel):
     )
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name="Pagado en")
 
-    # SRI Ecuador electronic invoice fields
+ # SRI Ecuador electronic invoice fields
     sri_authorization_number = models.CharField(
         max_length=49,
         blank=True,
@@ -158,7 +154,7 @@ class Invoice(TimestampedModel):
         verbose_name="Clave de acceso SRI",
     )
 
-    # Additional data
+ # Additional data
     invoice_data = models.JSONField(default=dict, verbose_name="Datos adicionales de factura")
     pdf_url = models.URLField(blank=True, default="", verbose_name="URL del PDF")
 
@@ -173,10 +169,10 @@ class Invoice(TimestampedModel):
         ]
 
     def __repr__(self) -> str:
-        return f"<Invoice: {self.invoice_number} — {self.tenant.name} ${self.total}>"
+        return f"<Invoice: {self.invoice_number}  {self.tenant.name} ${self.total}>"
 
     def __str__(self) -> str:
-        return f"Factura {self.invoice_number} — {self.tenant.name} — ${self.total}"
+        return f"Factura {self.invoice_number}  {self.tenant.name}  ${self.total}"
 
     def clean(self) -> None:
         """Validate invoice data."""
@@ -208,9 +204,7 @@ class Invoice(TimestampedModel):
         self.save(update_fields=["status", "gateway_charge_id", "paid_at", "updated_at"])
 
 
-# =============================================================================
 # WEBHOOK EVENT (LYL-H-SEC-003: Replay protection / idempotency)
-# =============================================================================
 
 
 class WebhookEvent(models.Model):
@@ -248,7 +242,7 @@ class WebhookEvent(models.Model):
         ]
 
     def __repr__(self) -> str:
-        return f"<WebhookEvent: {self.event_type} — {self.event_id}>"
+        return f"<WebhookEvent: {self.event_type}  {self.event_id}>"
 
     def __str__(self) -> str:
-        return f"{self.event_type} — {self.event_id}"
+        return f"{self.event_type}  {self.event_id}"

@@ -1,5 +1,5 @@
 """
-Loyallia — Authentication API Schemas (Pydantic models)
+Loyallia  Authentication API Schemas (Pydantic models)
 """
 
 from datetime import datetime
@@ -184,7 +184,7 @@ class PhoneVerifyRequestIn(BaseModel):
         import re
 
         v = v.strip()
-        # Accept E.164 format: +[country_code][number], 8-15 digits
+ # Accept E.164 format: +[country_code][number], 8-15 digits
         if not re.match(r"^\+[1-9]\d{7,14}$", v):
             raise ValueError("Formato inválido. Usa formato internacional: +593991234567")
         return v

@@ -1,5 +1,5 @@
 """
-Loyallia — Automation Service Layer
+Loyallia  Automation Service Layer
 Extracted business logic from automation API views and engine.
 """
 
@@ -128,13 +128,13 @@ class AutomationService:
             cooldown_hours=data.get("cooldown_hours", 24),
         )
 
-        # Set target programs
+ # Set target programs
         program_ids = data.get("target_program_ids", [])
         if program_ids:
             programs = Card.objects.filter(id__in=program_ids, tenant=tenant)
             automation.target_programs.set(programs)
 
-        # Set target segments
+ # Set target segments
         segments = data.get("target_segments", [])
         if segments:
             automation.target_segments = segments
@@ -172,7 +172,7 @@ class AutomationService:
                 setattr(automation, attr, data[field])
                 update_fields.append(attr)
 
-        # Handle target programs separately (M2M)
+ # Handle target programs separately (M2M)
         if "target_program_ids" in data and data["target_program_ids"] is not None:
             programs = Card.objects.filter(id__in=data["target_program_ids"], tenant=automation.tenant)
             automation.target_programs.set(programs)

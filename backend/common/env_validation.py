@@ -1,5 +1,5 @@
 """
-Environment Variable Validation — LYL-L-INFRA-034
+Environment Variable Validation  LYL-L-INFRA-034
 Validates required environment variables on startup.
 Fails fast with clear error messages instead of cryptic runtime errors.
 """
@@ -30,9 +30,8 @@ class EnvVar:
     sensitive: bool = False  # Don't log the value
 
 
-# =============================================================================
 # Required Environment Variables
-# =============================================================================
+
 REQUIRED_VARS = [
     EnvVar(
         name="SECRET_KEY",
@@ -163,8 +162,8 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
     """
     errors: list[ValidationError] = []
     if is_production:
-        # SEC-006: Production MUST use VAULT_TOKEN_FILE, not raw VAULT_TOKEN env var.
-        # Raw VAULT_TOKEN is the dev-mode root token — unacceptable in production.
+ # SEC-006: Production MUST use VAULT_TOKEN_FILE, not raw VAULT_TOKEN env var.
+ # Raw VAULT_TOKEN is the dev-mode root token unacceptable in production.
         if os.environ.get("VAULT_TOKEN") and not os.environ.get("VAULT_TOKEN_FILE"):
             errors.append(
                 ValidationError(
@@ -192,8 +191,8 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
             required_keys.extend(APPLE_REQUIRED_VAULT_KEYS)
         if _truthy(secrets.get("payment_gateway_enabled")):
             required_keys.extend(PAYMENT_REQUIRED_VAULT_KEYS)
-        # Only require Mailjet credentials if email is actively configured.
-        # An empty mailjet_api_key means "no mass-email provider configured" — valid state.
+ # Only require Mailjet credentials if email is actively configured.
+ # An empty mailjet_api_key means "no mass-email provider configured" valid state.
         if str(secrets.get("mailjet_api_key", "")).strip():
             required_keys.extend(EMAIL_REQUIRED_VAULT_KEYS)
 
@@ -210,8 +209,8 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
     vars_to_check = REQUIRED_VARS.copy()
 
     for var in vars_to_check:
-        # Secrets are validated from Vault only. Environment variables may carry
-        # non-secret routing/configuration, but not credential material.
+ # Secrets are validated from Vault only. Environment variables may carry
+ # non-secret routing/configuration, but not credential material.
         value = get_secret(var.name.lower())
 
         if value is None:
@@ -220,7 +219,7 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     var_name=var.name,
-                    message=f"Missing required env var: {var.name} — {var.description}",
+                    message=f"Missing required env var: {var.name}  {var.description}",
                 )
             )
             continue
@@ -233,7 +232,7 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
                 )
             )
 
-        # Check for obviously weak/default values
+ # Check for obviously weak/default values
         weak_values = {
             "SECRET_KEY": ["secret", "changeme", "django-insecure", "test"],
             "POSTGRES_PASSWORD": ["password", "postgres", "admin", "123456"],
@@ -245,7 +244,7 @@ def validate_environment(is_production: bool = False) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     var_name=var.name,
-                    message=f"{var.name} uses a weak/default value — change before deployment",
+                    message=f"{var.name} uses a weak/default value  change before deployment",
                 )
             )
 
@@ -263,7 +262,7 @@ def check_or_die(is_production: bool = False) -> None:
         logger.info("Environment validation passed (%d vars checked)", len(REQUIRED_VARS))
         return
 
-    # In DEBUG mode, just warn
+ # In DEBUG mode, just warn
     if not is_production and os.environ.get("DEBUG", "").lower() in (
         "true",
         "1",
@@ -273,12 +272,12 @@ def check_or_die(is_production: bool = False) -> None:
             logger.warning("ENV WARNING: %s", err.message)
         return
 
-    # In production, fail fast
+ # In production, fail fast
     for err in errors:
         logger.error("ENV ERROR: %s", err.message)
 
-    print("\n❌ Environment validation failed:", file=sys.stderr)
+    print("\n Environment validation failed:", file=sys.stderr)
     for err in errors:
-        print(f"  • {err.message}", file=sys.stderr)
+        print(f"   {err.message}", file=sys.stderr)
     print("\nFix the above errors and restart.", file=sys.stderr)
     sys.exit(1)

@@ -1,5 +1,5 @@
 """
-Loyallia — Automation Tests
+Loyallia  Automation Tests
 Tests for Automation model: trigger matching, action execution,
 cooldown enforcement, daily limits, and AutomationExecution log.
 """
@@ -24,9 +24,7 @@ from tests.factories import (
     make_tenant,
 )
 
-# =============================================================================
 # Automation Model Tests
-# =============================================================================
 
 
 class AutomationCreateTest(TestCase):
@@ -77,9 +75,7 @@ class AutomationCreateTest(TestCase):
         self.assertEqual(auto.action_config["title"], "Hi!")
 
 
-# =============================================================================
 # can_execute_for_customer Tests
-# =============================================================================
 
 
 class CanExecuteForCustomerTest(TestCase):
@@ -113,7 +109,7 @@ class CanExecuteForCustomerTest(TestCase):
             trigger_event="customer_enrolled",
             success=True,
         )
-        # Move execution to 2 hours ago
+ # Move execution to 2 hours ago
         AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=timezone.now() - timedelta(hours=2))
         self.assertTrue(auto.can_execute_for_customer(self.customer))
 
@@ -123,14 +119,14 @@ class CanExecuteForCustomerTest(TestCase):
         customer2 = make_customer(self.tenant, email="c2@test.com")
         make_customer_pass(customer2, self.card)
 
-        # Execute for customer1
+ # Execute for customer1
         AutomationExecution.objects.create(
             automation=auto,
             customer=self.customer,
             trigger_event="customer_enrolled",
             success=True,
         )
-        # customer2 should still be able to execute
+ # customer2 should still be able to execute
         self.assertTrue(auto.can_execute_for_customer(customer2))
 
     def test_failed_execution_does_not_block_cooldown(self):
@@ -155,9 +151,7 @@ class CanExecuteForCustomerTest(TestCase):
         self.assertTrue(auto.can_execute_for_customer(self.customer))
 
 
-# =============================================================================
 # Automation Execution Tests
-# =============================================================================
 
 
 class AutomationExecuteTest(TestCase):
@@ -227,9 +221,7 @@ class AutomationExecuteTest(TestCase):
         self.assertFalse(result)
 
 
-# =============================================================================
 # Daily Limits Tests
-# =============================================================================
 
 
 class AutomationDailyLimitsTest(TestCase):
@@ -249,7 +241,7 @@ class AutomationDailyLimitsTest(TestCase):
             action_config={"new_segment": "vip"},
             cooldown_hours=0,
         )
-        # Create 2 executions today
+ # Create 2 executions today
         for _ in range(2):
             AutomationExecution.objects.create(
                 automation=auto,
@@ -296,7 +288,7 @@ class AutomationDailyLimitsTest(TestCase):
             action_config={"new_segment": "vip"},
             cooldown_hours=0,
         )
-        # Create 2 executions yesterday
+ # Create 2 executions yesterday
         for _ in range(2):
             exec_obj = AutomationExecution.objects.create(
                 automation=auto,
@@ -320,9 +312,7 @@ class AutomationDailyLimitsTest(TestCase):
         self.assertFalse(result)
 
 
-# =============================================================================
 # Action Execution Tests
-# =============================================================================
 
 
 class AutomationActionTest(TestCase):
@@ -352,9 +342,9 @@ class AutomationActionTest(TestCase):
             action_config={"message": "Hi"},
         )
         result = auto._execute_send_sms(self.customer, {})
-        # Result is bool regardless of whether Twilio is configured
+ # Result is bool regardless of whether Twilio is configured
         self.assertIsInstance(result, bool)
-        # If Twilio is not configured, should return False
+ # If Twilio is not configured, should return False
         if not is_sms_available():
             self.assertFalse(result)
 
@@ -365,7 +355,7 @@ class AutomationActionTest(TestCase):
             action_config={"program_id": str(self.card.id)},
         )
         result = auto._execute_issue_reward(self.customer, {})
-        # Should succeed since customer has a pass for the card
+ # Should succeed since customer has a pass for the card
         self.assertIsInstance(result, bool)
 
     def test_issue_reward_with_invalid_program(self):
@@ -398,9 +388,7 @@ class AutomationActionTest(TestCase):
         self.assertFalse(result)
 
 
-# =============================================================================
 # AutomationExecution Model Tests
-# =============================================================================
 
 
 class AutomationExecutionModelTest(TestCase):

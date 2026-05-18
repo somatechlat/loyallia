@@ -1,5 +1,5 @@
 """
-Loyallia — Billing Models (REQ-PAY-001, REQ-PLAN-001)
+Loyallia  Billing Models (REQ-PAY-001, REQ-PLAN-001)
 Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
@@ -14,9 +14,7 @@ from django.utils import timezone
 from apps.tenants.models import PlatformSetting, Tenant
 from common.models import TimestampedModel
 
-# =============================================================================
 # PLAN FEATURE FLAGS (REQ-PLAN-003)
-# =============================================================================
 
 
 class PlanFeature:
@@ -54,9 +52,7 @@ class PlanFeature:
     ]
 
 
-# =============================================================================
 # SUBSCRIPTION PLAN (DB-driven, managed by SUPER_ADMIN)
-# =============================================================================
 
 
 class SubscriptionPlan(TimestampedModel):
@@ -70,7 +66,7 @@ class SubscriptionPlan(TimestampedModel):
     slug = models.SlugField(max_length=50, unique=True)
     description = models.TextField(blank=True, default="", verbose_name="Descripción")
 
-    # Pricing (monthly AND annual — REQ-PLAN-001)
+ # Pricing (monthly AND annual REQ-PLAN-001)
     price_monthly = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -86,7 +82,7 @@ class SubscriptionPlan(TimestampedModel):
         verbose_name="Precio anual (USD)",
     )
 
-    # Usage Limits (enforced by plan_enforcement.py)
+ # Usage Limits (enforced by plan_enforcement.py)
     max_locations = models.PositiveIntegerField(default=1, verbose_name="Máx. sucursales")
     max_users = models.PositiveIntegerField(default=3, verbose_name="Máx. usuarios")
     max_customers = models.PositiveIntegerField(default=500, verbose_name="Máx. clientes")
@@ -94,8 +90,8 @@ class SubscriptionPlan(TimestampedModel):
     max_notifications_month = models.PositiveIntegerField(default=1000, verbose_name="Máx. notificaciones/mes")
     max_transactions_month = models.PositiveIntegerField(default=5000, verbose_name="Máx. transacciones/mes")
 
-    # Messaging channel quotas (LYL-SRS-008)
-    # 0 = disabled (channel not available for this plan)
+ # Messaging channel quotas (LYL-SRS-008)
+ # 0 = disabled (channel not available for this plan)
     max_whatsapp_day = models.PositiveIntegerField(
         default=0,
         verbose_name="Máx. WhatsApp/día",
@@ -117,8 +113,8 @@ class SubscriptionPlan(TimestampedModel):
         help_text="Monthly Google/Apple Wallet push notifications. 0=disabled. Protects shared issuer quota.",
     )
 
-    # Feature-specific rate limits
-    # These cap the USAGE of features that have real cost drivers or abuse vectors.
+ # Feature-specific rate limits
+ # These cap the USAGE of features that have real cost drivers or abuse vectors.
     max_automations = models.PositiveIntegerField(
         default=3,
         verbose_name="Máx. automatizaciones",
@@ -145,14 +141,14 @@ class SubscriptionPlan(TimestampedModel):
         help_text="Monthly data export quota. CPU-intensive Celery task.",
     )
 
-    # Feature Flags (selectable in admin — REQ-PLAN-003)
+ # Feature Flags (selectable in admin REQ-PLAN-003)
     features = models.JSONField(
         default=list,
         verbose_name="Características incluidas",
         help_text="List of PlanFeature flags: geo_fencing, automation, ai_assistant, etc.",
     )
 
-    # Status workflow
+ # Status workflow
     class Status(models.TextChoices):
         DRAFT = "draft", "Borrador"
         PUBLISHED = "published", "Publicado"
@@ -180,7 +176,7 @@ class SubscriptionPlan(TimestampedModel):
         return f"<SubscriptionPlan: {self.name} ${self.price_monthly}/mes>"
 
     def __str__(self) -> str:
-        return f"{self.name} — ${self.price_monthly}/mes"
+        return f"{self.name}  ${self.price_monthly}/mes"
 
     def clean(self) -> None:
         """Validate subscription plan data."""
@@ -211,9 +207,7 @@ class SubscriptionPlan(TimestampedModel):
         return feature in (self.features or [])
 
 
-# =============================================================================
 # SUBSCRIPTION STATUS
-# =============================================================================
 
 
 class SubscriptionStatus(models.TextChoices):
@@ -226,9 +220,7 @@ class SubscriptionStatus(models.TextChoices):
     CANCELED = "canceled", "Cancelado"
 
 
-# =============================================================================
 # SUBSCRIPTION
-# =============================================================================
 
 
 class Subscription(TimestampedModel):
@@ -245,7 +237,7 @@ class Subscription(TimestampedModel):
         verbose_name="Negocio",
     )
 
-    # Plan reference (FK to SubscriptionPlan for dynamic limits)
+ # Plan reference (FK to SubscriptionPlan for dynamic limits)
     subscription_plan = models.ForeignKey(
         SubscriptionPlan,
         on_delete=models.SET_NULL,
@@ -255,7 +247,7 @@ class Subscription(TimestampedModel):
         verbose_name="Plan de suscripción",
     )
 
-    # Legacy plan field (kept for migration compatibility)
+ # Legacy plan field (kept for migration compatibility)
     plan = models.CharField(
         max_length=20,
         default="trial",
@@ -268,7 +260,7 @@ class Subscription(TimestampedModel):
         verbose_name="Ciclo de facturación",
     )
 
-    # Status
+ # Status
     status = models.CharField(
         max_length=20,
         choices=SubscriptionStatus.choices,
@@ -276,7 +268,7 @@ class Subscription(TimestampedModel):
         verbose_name="Estado",
     )
 
-    # Payment gateway identifiers (generic — REQ-PAY-001)
+ # Payment gateway identifiers (generic REQ-PAY-001)
     gateway_subscription_id = models.CharField(
         max_length=100,
         blank=True,
@@ -290,7 +282,7 @@ class Subscription(TimestampedModel):
         verbose_name="ID de cliente (gateway)",
     )
 
-    # Dates
+ # Dates
     trial_start = models.DateTimeField(null=True, blank=True, verbose_name="Inicio del trial")
     trial_end = models.DateTimeField(null=True, blank=True, verbose_name="Fin del trial")
     current_period_start = models.DateTimeField(null=True, blank=True, verbose_name="Inicio del período actual")
@@ -299,7 +291,7 @@ class Subscription(TimestampedModel):
     canceled_at = models.DateTimeField(null=True, blank=True, verbose_name="Cancelado en")
     trial_extended_count = models.SmallIntegerField(default=0, verbose_name="Extensiones de trial")
 
-    # Payment failure tracking
+ # Payment failure tracking
     failed_payment_count = models.SmallIntegerField(default=0, verbose_name="Intentos de pago fallidos")
     last_payment_error = models.TextField(blank=True, default="", verbose_name="Último error de pago")
     last_payment_at = models.DateTimeField(null=True, blank=True, verbose_name="Último pago exitoso")
@@ -312,11 +304,11 @@ class Subscription(TimestampedModel):
 
     def __repr__(self) -> str:
         plan_name = self.subscription_plan.name if self.subscription_plan else self.plan
-        return f"<Subscription: {self.tenant.name} — {plan_name} ({self.status})>"
+        return f"<Subscription: {self.tenant.name}  {plan_name} ({self.status})>"
 
     def __str__(self) -> str:
         plan_name = self.subscription_plan.name if self.subscription_plan else self.plan
-        return f"{self.tenant.name} — {plan_name} ({self.status})"
+        return f"{self.tenant.name}  {plan_name} ({self.status})"
 
     @property
     def is_trial_active(self) -> bool:
@@ -399,13 +391,13 @@ class Subscription(TimestampedModel):
 
         trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
-        # Enforce trial extension limits (LYL-H-API-013)
+ # Enforce trial extension limits (LYL-H-API-013)
         if self.trial_start is not None:
             if self.trial_extended_count >= 1:
                 raise ValueError("Trial cannot be extended more than once.")
             self.trial_extended_count += 1
 
-            # Extend from current trial_end or from now if already expired
+ # Extend from current trial_end or from now if already expired
             base_date = self.trial_end if (self.trial_end and self.trial_end > timezone.now()) else timezone.now()
             self.trial_end = base_date + timedelta(days=trial_days)
             self.status = SubscriptionStatus.TRIALING
@@ -487,8 +479,7 @@ class Subscription(TimestampedModel):
         )
 
 
-# =============================================================================
-# RE-EXPORTS (split per 600-line limit — see payment_models.py)
-# =============================================================================
+# RE-EXPORTS (split per 600-line limit see payment_models.py)
+
 
 from apps.billing.payment_models import Invoice, PaymentMethod  # noqa: E402, F401

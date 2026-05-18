@@ -1,5 +1,5 @@
 """
-Loyallia — Full Tenant Data Export Service (LYL-FR-DPR-020)
+Loyallia  Full Tenant Data Export Service (LYL-FR-DPR-020)
 LOPDP Art. 17 & 20: Right of Access / Data Portability.
 
 Generates a ZIP containing tenant data in JSON and CSV formats.
@@ -580,7 +580,7 @@ def generate_tenant_export(tenant) -> io.BytesIO:
 
     buf.seek(0)
     logger.info(
-        "Data export generated for tenant '%s' (%s) — %d bytes",
+        "Data export generated for tenant '%s' (%s)  %d bytes",
         tenant.name,
         tenant.slug,
         buf.getbuffer().nbytes,

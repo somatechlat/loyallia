@@ -43,7 +43,7 @@ const COUNTRY_CODES = [
   { code: '+81',  country: 'Japón', flag: '🇯🇵' },
 ];
 
-/** Field wrapper with label and error message — LYL-M-FE-032 */
+/** Renders a form field with label and error message. LYL-M-FE-032 */
 function FormField({
   label,
   htmlFor,
@@ -315,7 +315,6 @@ export default function RegisterPage() {
         <p className="text-surface-500 text-sm mt-1">5 días de prueba sin tarjeta de crédito</p>
       </div>
 
-      {/* Google OAuth Button */}
       {googleEnabled && (
         <>
           <div className="relative">

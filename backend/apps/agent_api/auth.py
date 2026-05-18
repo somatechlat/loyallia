@@ -1,5 +1,5 @@
 """
-Loyallia — Agent API Authentication (REQ-AGENT-001)
+Loyallia  Agent API Authentication (REQ-AGENT-001)
 Bearer token authentication for external AI agents.
 Verifies API key, checks enterprise plan, and attaches tenant to request.
 """
@@ -39,34 +39,34 @@ class AgentAPIKeyAuth(HttpBearer):
             logger.warning("Invalid agent API key attempt: %s...", token[:12])
             return None
 
-        # Check expiry
+ # Check expiry
         if api_key.expires_at and api_key.expires_at < timezone.now():
             logger.warning("Expired agent API key: %s", api_key.key_prefix)
             return None
 
-        # Check Enterprise plan (agent_api feature required)
+ # Check Enterprise plan (agent_api feature required)
         from apps.billing.models import Subscription
 
         subscription = Subscription.objects.filter(tenant=api_key.tenant).first()
         if not subscription or not subscription.has_feature("agent_api"):
             logger.warning(
-                "Agent API access denied — plan does not include agent_api: %s",
+                "Agent API access denied  plan does not include agent_api: %s",
                 api_key.tenant.slug,
             )
             return None
         if subscription.get_limit("api_calls_day") <= 0:
-            logger.warning("Agent API access denied — daily API quota disabled")
+            logger.warning("Agent API access denied  daily API quota disabled")
             return None
 
-        # Attach tenant to request
+ # Attach tenant to request
         request.tenant = api_key.tenant
         request.agent_api_key = api_key
 
-        # Update last_used timestamp
+ # Update last_used timestamp
         api_key.last_used_at = timezone.now()
         api_key.save(update_fields=["last_used_at"])
 
-        # Log the API call for rate-limiting and audit
+ # Log the API call for rate-limiting and audit
         from apps.agent_api.models import AgentAPICallLog
 
         today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)

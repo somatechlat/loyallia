@@ -1,5 +1,5 @@
 """
-Loyallia — Billing Payment Methods, Invoices & Webhook API (REQ-PAY-001)
+Loyallia  Billing Payment Methods, Invoices & Webhook API (REQ-PAY-001)
 Split from billing/api.py per the 600-line architectural limit.
 """
 
@@ -41,9 +41,7 @@ INVOICE_STATUS_LABELS = {
 }
 
 
-# ============================================================================
 # Payment Methods
-# ============================================================================
 
 
 @router.get("/payment-methods/", auth=jwt_auth, summary="Listar metodos de pago")
@@ -164,9 +162,7 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
     return {"success": True, "message": get_message("BILLING_DEFAULT_PM_SET")}
 
 
-# ============================================================================
 # Invoices
-# ============================================================================
 
 
 @router.get("/invoices/", auth=jwt_auth, summary="Listar facturas")
@@ -231,9 +227,7 @@ def get_invoice(request: HttpRequest, invoice_id: str):
     }
 
 
-# ============================================================================
 # Payment Gateway Webhook
-# ============================================================================
 
 
 @router.post("/webhook/", summary="Payment Gateway Webhook")
@@ -259,7 +253,7 @@ def payment_webhook(request: HttpRequest):
     except json.JSONDecodeError:
         raise HttpError(400, get_message("BILLING_INVALID_PAYLOAD"))
 
-    # SECURITY (LYL-H-SEC-003): Timestamp validation — reject stale webhooks (replay protection)
+ # SECURITY (LYL-H-SEC-003): Timestamp validation reject stale webhooks (replay protection)
     timestamp = payload.get("timestamp")
     if timestamp is None:
         raise HttpError(
@@ -285,13 +279,13 @@ def payment_webhook(request: HttpRequest):
             get_message("VALIDATION_ERROR", detail="Webhook timestamp expired."),
         )
 
-    # SECURITY (LYL-H-SEC-003): Idempotency — prevent duplicate event processing
+ # SECURITY (LYL-H-SEC-003): Idempotency prevent duplicate event processing
     event_id = payload.get("id") or payload.get("event_id") or ""
     event_type = payload.get("event", "")
     payload_hash = hashlib.sha256(request.body).hexdigest()
 
     if not event_id:
-        # Fallback: use payload hash as event ID for deduplication
+ # Fallback: use payload hash as event ID for deduplication
         event_id = payload_hash
 
     logger.info("Payment webhook: event=%s event_id=%s", event_type, event_id)

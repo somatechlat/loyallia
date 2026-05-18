@@ -1,5 +1,5 @@
 """
-Loyallia — Common Middleware (common/middleware.py)
+Loyallia  Common Middleware (common/middleware.py)
 
 Three middleware classes that run on EVERY request:
 1. RequestIDMiddleware (B-011): Distributed tracing via X-Request-ID.
@@ -39,7 +39,7 @@ class RequestIDMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # PERF: reuse upstream ID if present, otherwise generate (single uuid4 call)
+ # PERF: reuse upstream ID if present, otherwise generate (single uuid4 call)
         request_id = request.META.get(f"HTTP_{self.HEADER.upper().replace('-', '_')}", "")
         if not request_id:
             request_id = uuid.uuid4().hex
@@ -47,7 +47,7 @@ class RequestIDMiddleware:
         request.request_id = request_id
 
         response = self.get_response(request)
-        # Echo ID back so clients can correlate requests with server logs
+ # Echo ID back so clients can correlate requests with server logs
         response[self.HEADER] = request_id
         return response
 
@@ -67,15 +67,15 @@ class CSPNonceMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # SEC: 128-bit cryptographic nonce (22 chars base64url) per request
+ # SEC: 128-bit cryptographic nonce (22 chars base64url) per request
         nonce = secrets.token_urlsafe(16)
         request.csp_nonce = nonce
 
         response = self.get_response(request)
 
-        # Build CSP header with nonce
-        # LYL-H-SEC-010: Covers Google Identity Services domains to prevent
-        # CSP violations when Google OAuth is enabled.
+ # Build CSP header with nonce
+ # LYL-H-SEC-010: Covers Google Identity Services domains to prevent
+ # CSP violations when Google OAuth is enabled.
         csp_directives = [
             "default-src 'self'",
             f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com",
@@ -105,8 +105,8 @@ class CSRFExemptAPIMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # SEC: /api/ paths use JWT Bearer tokens which are CSRF-immune by design.
-        # Browsers never auto-attach Authorization headers, so CSRF is impossible.
+ # SEC: /api/ paths use JWT Bearer tokens which are CSRF-immune by design.
+ # Browsers never auto-attach Authorization headers, so CSRF is impossible.
         if request.path.startswith("/api/"):
             request._dont_enforce_csrf_checks = True
 

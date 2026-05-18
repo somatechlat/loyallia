@@ -1,5 +1,5 @@
 """
-Loyallia — OTP Service Strategy Pattern (LYL-SRS-VERIFY-001)
+Loyallia  OTP Service Strategy Pattern (LYL-SRS-VERIFY-001)
 
 REAL PRODUCTION CODE. NO MOCKS. NO BYPASSES.
 
@@ -153,10 +153,10 @@ class LocalOTPStrategy(OTPStrategy):
     Delivery priority:
         1. Twilio direct SMS (if recipient is E.164 phone)
         2. Email OTP via Django send_mail (fallback, or if recipient is email)
-        3. Code stored in Redis regardless — always verifiable
+        3. Code stored in Redis regardless  always verifiable
 
     This strategy activates when Twilio Verify is disabled in Vault,
-    enabling a seamless enable/disable toggle for phone verification.
+    enabling dynamic enable/disable control for phone verification.
     """
 
     def _generate_code(self) -> str:
@@ -188,12 +188,12 @@ class LocalOTPStrategy(OTPStrategy):
 
         try:
             result = send_mail(
-                subject="Loyallia — Código de verificación",
+                subject="Loyallia  Código de verificación",
                 message=(
                     f"Tu código de verificación Loyallia es: {code}\n\n"
                     f"Este código expira en {OTP_TTL_SECONDS // 60} minutos.\n"
                     f"No compartas este código con nadie.\n\n"
-                    f"— Loyallia"
+                    f" Loyallia"
                 ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
@@ -223,12 +223,12 @@ class LocalOTPStrategy(OTPStrategy):
         delivery_success = False
         delivery_error: str | None = None
 
-        # Determine if recipient is a phone or email
+ # Determine if recipient is a phone or email
         is_phone = recipient.startswith("+")
         fallback_email = kwargs.get("email", "")
 
         if is_phone:
-            # Try Twilio direct SMS first
+ # Try Twilio direct SMS first
             try:
                 sms_result = send_sms(
                     phone=recipient,
@@ -241,7 +241,7 @@ class LocalOTPStrategy(OTPStrategy):
                 logger.error("Local OTP SMS send failed: %s", exc)
                 delivery_error = str(exc)
 
-            # If SMS failed and we have a fallback email, send via email
+ # If SMS failed and we have a fallback email, send via email
             if not delivery_success and fallback_email:
                 logger.info("SMS failed, falling back to email OTP for %s", fallback_email)
                 email_result = self._send_otp_email(fallback_email, code)
@@ -249,7 +249,7 @@ class LocalOTPStrategy(OTPStrategy):
                 delivery_error = email_result.get("error")
                 delivery_channel = "email"
         else:
-            # Recipient is an email address — send directly
+ # Recipient is an email address send directly
             email_result = self._send_otp_email(recipient, code)
             delivery_success = email_result["success"]
             delivery_error = email_result.get("error")
@@ -272,13 +272,13 @@ class LocalOTPStrategy(OTPStrategy):
         if stored is None:
             return False
 
-        # Use constant-time comparison to prevent timing attacks
+ # Use constant-time comparison to prevent timing attacks
         import hmac
 
         is_valid = hmac.compare_digest(stored, code)
         if is_valid:
             self._reset_attempts(recipient)
-            # Delete used code
+ # Delete used code
             cache.delete(f"{OTP_REDIS_PREFIX}code:{recipient}")
         else:
             self._increment_attempts(recipient)
@@ -312,7 +312,7 @@ def send_otp(
     purpose: str = "verification",
     **kwargs: Any,
 ) -> dict[str, Any]:
-    """High-level OTP send — auto-selects strategy.
+    """High-level OTP send  auto-selects strategy.
 
     Args:
         recipient: Phone (E.164) or email.
@@ -342,7 +342,7 @@ def check_otp(
     purpose: str = "verification",
     **kwargs: Any,
 ) -> bool:
-    """High-level OTP verify — auto-selects strategy.
+    """High-level OTP verify  auto-selects strategy.
 
     Args:
         recipient: Phone or email.

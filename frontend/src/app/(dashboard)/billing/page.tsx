@@ -112,7 +112,7 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* ── Plan Overview Card ─────────────────────────────────── */}
+      {/* Plan overview card */}
       <div className="card overflow-visible">
         <div className="bg-gradient-to-r from-brand-500 to-brand-700 dark:from-brand-600 dark:to-brand-800 px-6 py-5 rounded-t-3xl">
           <div className="flex items-center justify-between">
@@ -149,7 +149,7 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* ── Usage Gauges Grid ─────────────────────────────────── */}
+      {/* Usage gauges grid */}
       {usage && Object.keys(usage.limits).length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -163,14 +163,12 @@ export default function BillingPage() {
               return (
                 <div key={key} className="card p-5 flex flex-col items-center gap-3 group hover:shadow-card-hover transition-all duration-300"
                   id={`usage-${key}`}>
-                  {/* Radial Gauge */}
                   <div className="relative">
                     <RadialGauge percentage={val.percentage} color={gaugeColor} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-lg font-bold text-surface-900 dark:text-white">{Math.round(val.percentage)}%</span>
                     </div>
                   </div>
-                  {/* Label */}
                   <div className="text-center">
                     <p className="text-sm font-semibold text-surface-900 dark:text-white">{meta.icon} {meta.label}</p>
                     <p className="text-xs text-surface-500 mt-0.5">
@@ -189,7 +187,7 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* ── Plan Comparison ─────────────────────────────────── */}
+      {/* Plan comparison */}
       <div className="card p-6">
         <h2 className="text-base font-bold text-surface-900 dark:text-white mb-4">Comparar planes</h2>
         <div className="overflow-x-auto">
@@ -225,7 +223,7 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* ── Payment History ─────────────────────────────────── */}
+      {/* Payment history */}
       <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-surface-900 dark:text-white">Historial de pagos</h2>

@@ -1,5 +1,5 @@
 """
-Loyallia — Billing Model Unit Tests
+Loyallia  Billing Model Unit Tests
 Tests for Subscription, Invoice, Plan, and related billing models.
 """
 
@@ -12,9 +12,7 @@ from django.utils import timezone
 from apps.billing.models import Subscription, SubscriptionStatus
 from tests.factories import make_plan, make_subscription, make_tenant
 
-# =============================================================================
 # Billing Model Tests
-# =============================================================================
 
 
 class SubscriptionPlanModelTest(TestCase):

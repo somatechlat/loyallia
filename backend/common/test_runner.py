@@ -1,5 +1,5 @@
 """
-Loyallia — PgBouncer-Aware Test Runner
+Loyallia  PgBouncer-Aware Test Runner
 
 PgBouncer in transaction pooling mode cannot execute DDL (CREATE DATABASE,
 DROP DATABASE) or advisory locks (used by Django migrations). This runner
@@ -44,9 +44,9 @@ class PgBouncerTestRunner(DiscoverRunner):
         old_default = settings.DATABASES["default"].copy()
         if "direct" in settings.DATABASES:
             settings.DATABASES["default"] = settings.DATABASES["direct"].copy()
-            # Preserve the logical database name from the original default
+ # Preserve the logical database name from the original default
             settings.DATABASES["default"]["NAME"] = old_default["NAME"]
-        # Disable routers so Django doesn't try to route DDL to PgBouncer
+ # Disable routers so Django doesn't try to route DDL to PgBouncer
         settings.DATABASE_ROUTERS = []
         return old_default
 

@@ -1,5 +1,5 @@
 """
-Loyallia — Authentication API Router (apps/authentication/api.py)
+Loyallia  Authentication API Router (apps/authentication/api.py)
 
 Handles the complete auth lifecycle: registration, login, token refresh,
 logout, password reset, email verification, and Google OAuth 2.0.
@@ -74,9 +74,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-# =============================================================================
 # AUTH ENDPOINTS
-# =============================================================================
 
 
 @router.post("/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio")
@@ -90,7 +88,7 @@ def register(request, payload: RegisterIn):
     """
     from django.db import transaction
 
-    # SEC: LYL-M-SEC-016 -- fake success for existing emails (prevents enumeration)
+ # SEC: LYL-M-SEC-016 -- fake success for existing emails (prevents enumeration)
     if User.objects.filter(email=payload.email).exists():
         return RegisterOut(
             success=True,
@@ -102,7 +100,7 @@ def register(request, payload: RegisterIn):
             user_id="",
         )
 
-    # Server-side phone verification (NO BYPASS)
+ # Server-side phone verification (NO BYPASS)
     is_phone_verified = False
     if payload.phone_number.strip() and payload.phone_verification_sid:
         try:
@@ -237,7 +235,7 @@ def refresh_token(request, payload: RefreshIn):
             if not user.is_active:
                 raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
 
-            # B-002: Revoke the old refresh token (one-time use)
+ # B-002: Revoke the old refresh token (one-time use)
             db_token.revoked_at = dj_timezone.now()
             db_token.save(update_fields=["revoked_at"])
     except RefreshToken.DoesNotExist:
@@ -288,11 +286,11 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
     """
     from django.core.cache import cache
 
-    # B-003: Rate limit — 3 password reset requests per hour per email
+ # B-003: Rate limit 3 password reset requests per hour per email
     cache_key = f"pwd_reset_rate:{payload.email}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 3:
-        # Still return 200 to prevent enumeration
+ # Still return 200 to prevent enumeration
         return MessageOut(
             success=True,
             message=get_message("AUTH_PASSWORD_RESET_SENT", email=payload.email),
@@ -332,7 +330,7 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     """
     from django.core.cache import cache
 
-    # Rate limit OTP verification attempts — 5 per 15 min per email
+ # Rate limit OTP verification attempts 5 per 15 min per email
     cache_key = f"otp_attempts:password_reset:{payload.email}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 5:
@@ -368,7 +366,7 @@ def verify_email(request, payload: VerifyEmailIn):
     """
     from django.core.cache import cache
 
-    # Rate limit OTP verification attempts — 5 per 15 min per email
+ # Rate limit OTP verification attempts 5 per 15 min per email
     cache_key = f"otp_attempts:verify_email:{payload.email}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 5:
@@ -386,9 +384,7 @@ def verify_email(request, payload: VerifyEmailIn):
     return MessageOut(success=True, message=get_message("AUTH_EMAIL_VERIFIED"))
 
 
-# =============================================================================
-# FORGOT PASSWORD (unauthenticated) — Request + Confirm
-# =============================================================================
+# FORGOT PASSWORD (unauthenticated) Request + Confirm
 
 
 @router.post(
@@ -406,7 +402,7 @@ def forgot_password(request, payload: ForgotPasswordIn):
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
 
-    # B-003: Rate limit — 3 password reset requests per hour per email
+ # B-003: Rate limit 3 password reset requests per hour per email
     cache_key = f"pwd_reset_rate:{payload.email}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 3:
@@ -469,9 +465,8 @@ def reset_password(request, payload: ResetPasswordIn):
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
 
-# =============================================================================
-# GOOGLE OAUTH 2.0 — Social Login
-# =============================================================================
+# GOOGLE OAUTH 2.0 Social Login
+
 
 from apps.authentication.schemas import GoogleTokenIn  # noqa: E402
 
@@ -484,7 +479,7 @@ from apps.authentication.schemas import GoogleTokenIn  # noqa: E402
 def google_oauth_config(request):
     """Returns Google OAuth config for the frontend.
 
-    NOTE: client_id is a PUBLIC identifier — Google's own documentation
+    NOTE: client_id is a PUBLIC identifier  Google's own documentation
     requires embedding it in frontend <script> tags and meta tags.
     It is NOT a secret. The frontend needs it to initialize the
     Google Identity Services (GSI) button via google.accounts.id.initialize().
@@ -522,7 +517,7 @@ def google_login(request, payload: GoogleTokenIn):
     import httpx
     from django.core.cache import cache
 
-    # LYL-L-SEC-023: Rate limit Google OAuth login (20/hour per IP)
+ # LYL-L-SEC-023: Rate limit Google OAuth login (20/hour per IP)
     client_ip = get_client_ip(request)
     cache_key = f"gauth_rate:{client_ip}"
     attempt_count = cache.get(cache_key, 0)
@@ -534,7 +529,7 @@ def google_login(request, payload: GoogleTokenIn):
     if not client_id:
         raise HttpError(503, get_message("AUTH_GOOGLE_NOT_CONFIGURED"))
 
-    # Verify the ID token with Google's tokeninfo endpoint
+ # Verify the ID token with Google's tokeninfo endpoint
     try:
         resp = httpx.get(
             "https://oauth2.googleapis.com/tokeninfo",
@@ -549,7 +544,7 @@ def google_login(request, payload: GoogleTokenIn):
         logger.error("Google token verification network error: %s", exc)
         raise HttpError(502, get_message("AUTH_GOOGLE_FAILED"))
 
-    # Validate the audience (must match our client ID)
+ # Validate the audience (must match our client ID)
     if google_data.get("aud") != client_id:
         logger.warning(
             "Google token audience mismatch: got %s, expected %s",
@@ -558,7 +553,7 @@ def google_login(request, payload: GoogleTokenIn):
         )
         raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
 
-    # Validate email is verified by Google
+ # Validate email is verified by Google
     if google_data.get("email_verified") != "true":
         raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
 
@@ -569,12 +564,12 @@ def google_login(request, payload: GoogleTokenIn):
     first_name = google_data.get("given_name", "")
     last_name = google_data.get("family_name", "")
 
-    # Check if user already exists
+ # Check if user already exists
     try:
         user = User.objects.select_related("tenant").get(email=email)
         if not user.is_active:
             raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
-        # Mark email as verified (Google already verified it)
+ # Mark email as verified (Google already verified it)
         if not user.is_email_verified:
             user.is_email_verified = True
             user.save(update_fields=["is_email_verified", "updated_at"])
@@ -586,12 +581,12 @@ def google_login(request, payload: GoogleTokenIn):
             logger.warning("Google OAuth login failed: unregistered user %s", email)
             raise HttpError(404, get_message("AUTH_USER_NOT_FOUND_REGISTER"))
 
-    # New user — create tenant + OWNER
+ # New user create tenant + OWNER
     from django.db import transaction
 
     business_name = payload.business_name.strip()
     if not business_name:
-        # Use the user's name as default business name
+ # Use the user's name as default business name
         business_name = f"{first_name} {last_name}".strip() or email.split("@")[0]
 
     with transaction.atomic():

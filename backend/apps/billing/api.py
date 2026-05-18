@@ -1,5 +1,5 @@
 """
-Loyallia — Billing API Router (apps/billing/api.py)
+Loyallia  Billing API Router (apps/billing/api.py)
 
 Subscription management with pluggable payment gateway (Stripe-ready).
 Plans are DB-driven via SubscriptionPlan model (not hardcoded).
@@ -69,9 +69,7 @@ SUBSCRIPTION_STATUS_LABELS = {
 }
 
 
-# ============================================================================
-# Plans (DB-driven — REQ-PLAN-001)
-# ============================================================================
+# Plans (DB-driven REQ-PLAN-001)
 
 
 @router.get("/plans/", summary="Planes disponibles")
@@ -132,9 +130,7 @@ def list_plans(request: HttpRequest):
     return {"plans": result}
 
 
-# ============================================================================
 # Subscription Management
-# ============================================================================
 
 
 @router.get("/subscription/", auth=jwt_auth, summary="Obtener suscripción actual")
@@ -187,9 +183,7 @@ def get_subscription(request: HttpRequest):
     }
 
 
-# ============================================================================
-# Usage (reads from SubscriptionPlan — REQ-PLAN-002)
-# ============================================================================
+# Usage (reads from SubscriptionPlan REQ-PLAN-002)
 
 
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
@@ -214,9 +208,9 @@ def get_usage(request: HttpRequest):
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    # PERF: 6 independent COUNT queries against 6 different tables.
-    # Each is O(index scan) in PostgreSQL. Cannot be consolidated without raw SQL
-    # since they target different models. Total latency: ~6ms on indexed tables.
+ # PERF: 6 independent COUNT queries against 6 different tables.
+ # Each is O(index scan) in PostgreSQL. Cannot be consolidated without raw SQL
+ # since they target different models. Total latency: ~6ms on indexed tables.
     total_customers = Customer.objects.filter(tenant=tenant).count()
     total_programs = Card.objects.filter(tenant=tenant).count()
     total_users = User.objects.filter(tenant=tenant, is_active=True).count()
@@ -224,7 +218,7 @@ def get_usage(request: HttpRequest):
     monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
     monthly_notifs = Notification.objects.filter(tenant=tenant, created_at__gte=month_start).count()
 
-    # Read limits from subscription plan (not hardcoded)
+ # Read limits from subscription plan (not hardcoded)
     subscription = Subscription.objects.filter(tenant=tenant).first()
 
     def _limit(resource: str) -> int:
@@ -315,9 +309,7 @@ def get_usage(request: HttpRequest):
     }
 
 
-# ============================================================================
-# Subscribe (via payment gateway — REQ-PAY-002)
-# ============================================================================
+# Subscribe (via payment gateway REQ-PAY-002)
 
 
 @router.post("/subscribe/", auth=jwt_auth, summary="Suscribirse a un plan")
@@ -330,7 +322,7 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
     if data.billing_cycle not in ("monthly", "annual"):
         raise HttpError(400, get_message("BILLING_INVALID_CYCLE"))
 
-    # Resolve the target plan
+ # Resolve the target plan
     plan = SubscriptionPlan.objects.filter(slug=data.plan_slug, is_active=True).first()
     if not plan:
         raise HttpError(404, get_message("NOT_FOUND"))
@@ -405,9 +397,7 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
     }
 
 
-# ============================================================================
 # Update & Cancel
-# ============================================================================
 
 
 @router.put("/subscription/", auth=jwt_auth, summary="Actualizar suscripción")
@@ -441,7 +431,7 @@ def cancel_subscription(request: HttpRequest):
     if subscription.status == SubscriptionStatus.CANCELED:
         raise HttpError(400, get_message("BILLING_ALREADY_CANCELED"))
 
-    # Cancel in payment gateway if active
+ # Cancel in payment gateway if active
     if subscription.gateway_subscription_id:
         try:
             gateway = get_payment_gateway()

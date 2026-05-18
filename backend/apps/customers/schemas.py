@@ -1,5 +1,5 @@
 """
-Loyallia — Customer API Schemas (Pydantic models)
+Loyallia  Customer API Schemas (Pydantic models)
 """
 
 from pydantic import BaseModel, EmailStr, field_validator
@@ -16,7 +16,7 @@ class CustomerCreateIn(BaseModel):
     gender: str | None = ""
     notes: str | None = ""
 
-    # Allow dynamic custom fields from the Form Builder to be captured
+ # Allow dynamic custom fields from the Form Builder to be captured
     model_config = {"extra": "allow"}
 
     @field_validator("first_name", "last_name")

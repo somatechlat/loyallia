@@ -1,5 +1,5 @@
 """
-Loyallia — Seed Ecuador Businesses
+Loyallia  Seed Ecuador Businesses
 Loads verified Ecuadorian business data from JSON and initializes the database.
 """
 
@@ -43,13 +43,13 @@ class Command(BaseCommand):
         if not data:
             return
 
-        # 1. Create Subscription Plans
+ # 1. Create Subscription Plans
         self._seed_plans(data.get("plans", []))
 
-        # 2. Create Businesses
+ # 2. Create Businesses
         self._seed_businesses(data.get("businesses", []))
 
-        # 3. Update existing test tenant (Café El Ritmo)
+ # 3. Update existing test tenant (Café El Ritmo)
         self._update_existing_tenant(data.get("update_cafe_el_ritmo"))
 
         self.stdout.write(self.style.SUCCESS("\n=== Seed complete! ==="))
@@ -66,7 +66,7 @@ class Command(BaseCommand):
     def _seed_plans(self, plans):
         self.stdout.write("\n--- Creating Subscription Plans ---")
         for plan_data in plans:
-            # Convert string prices back to Decimal
+ # Convert string prices back to Decimal
             plan_data["price_monthly"] = Decimal(plan_data["price_monthly"])
             plan_data["price_annual"] = Decimal(plan_data["price_annual"])
 
@@ -76,14 +76,14 @@ class Command(BaseCommand):
                 defaults=plan_data,
             )
             status = "CREATED" if created else "SKIPPED"
-            self.stdout.write(f"  [{status}] Plan: {obj.name} — ${obj.price_monthly}/mes")
+            self.stdout.write(f"  [{status}] Plan: {obj.name}  ${obj.price_monthly}/mes")
 
     def _seed_businesses(self, businesses):
         self.stdout.write("\n--- Creating Ecuadorian Businesses ---")
         for biz in businesses:
             tenant = Tenant.objects.filter(slug=biz["slug"]).first()
             if tenant:
-                # Update existing with real data
+ # Update existing with real data
                 tenant.legal_name = biz["legal_name"]
                 tenant.ruc = biz["ruc"]
                 tenant.industry = biz["industry"]
@@ -116,10 +116,10 @@ class Command(BaseCommand):
 
             plan_obj = SubscriptionPlan.objects.filter(slug=biz["plan_slug"]).first()
 
-            # Create Users (Owner, Manager, Staff)
+ # Create Users (Owner, Manager, Staff)
             self._seed_users(tenant, biz)
 
-            # Create/update Locations
+ # Create/update Locations
             for i, loc in enumerate(biz.get("locations", [])):
                 Location.objects.update_or_create(
                     tenant=tenant,
@@ -135,12 +135,12 @@ class Command(BaseCommand):
                     },
                 )
 
-            # Subscription + Invoices
+ # Subscription + Invoices
             if plan_obj and not Subscription.objects.filter(tenant=tenant).exists():
                 self._seed_subscription_history(tenant, plan_obj)
 
     def _seed_users(self, tenant, biz):
-        # Owner
+ # Owner
         owner_data = biz["owner"]
         if not User.objects.filter(email=owner_data["email"]).exists():
             cast(UserManager, User.objects).create_user(
@@ -152,7 +152,7 @@ class Command(BaseCommand):
                 tenant=tenant,
             )
 
-        # Manager
+ # Manager
         if "manager" in biz:
             mgr_data = biz["manager"]
             if not User.objects.filter(email=mgr_data["email"]).exists():
@@ -165,7 +165,7 @@ class Command(BaseCommand):
                     tenant=tenant,
                 )
 
-        # Staff
+ # Staff
         for staff_data in biz.get("staff", []):
             if not User.objects.filter(email=staff_data["email"]).exists():
                 cast(UserManager, User.objects).create_user(

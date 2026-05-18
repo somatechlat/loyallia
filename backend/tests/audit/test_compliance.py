@@ -1,5 +1,5 @@
 """
-Tests for compliance-related audit fixes — audit findings LYL-H-ARCH-004, LYL-H-API-010.
+Tests for compliance-related audit fixes  audit findings LYL-H-ARCH-004, LYL-H-API-010.
 Uses Django's TestCase with PostgreSQL.
 """
 
@@ -10,9 +10,8 @@ from typing import cast
 from django.test import TestCase
 from django.utils import timezone
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
+
 
 
 def _make_tenant(**kwargs):
@@ -101,9 +100,7 @@ def _make_pass(customer, card):
     return CustomerPass.objects.create(customer=customer, card=card)
 
 
-# ===========================================================================
-# FIX 10 — LYL-H-API-010: Automation max_executions_per_day
-# ===========================================================================
+# FIX 10 LYL-H-API-010: Automation max_executions_per_day
 
 
 class AutomationMaxExecutionsPerDayTest(TestCase):
@@ -135,7 +132,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
     def test_execution_blocked_after_max(self):
         from apps.automation.models import AutomationExecution
 
-        # Create 2 executions today
+ # Create 2 executions today
         for _ in range(2):
             AutomationExecution.objects.create(
                 automation=self.automation,
@@ -144,14 +141,14 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
                 success=True,
             )
 
-        # Third execution should be blocked
+ # Third execution should be blocked
         result = self.automation.execute(self.customer)
         self.assertFalse(result)
 
     def test_execution_allowed_below_max(self):
         from apps.automation.models import AutomationExecution
 
-        # Create 1 execution today
+ # Create 1 execution today
         AutomationExecution.objects.create(
             automation=self.automation,
             customer=self.customer,
@@ -159,8 +156,8 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
             success=True,
         )
 
-        # Real can_execute_for_customer checks cooldown (no prior execution for this customer = True)
-        # Real _execute_send_notification creates a notification
+ # Real can_execute_for_customer checks cooldown (no prior execution for this customer = True)
+ # Real _execute_send_notification creates a notification
         result = self.automation.execute(self.customer)
         self.assertTrue(result)
 
@@ -169,7 +166,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
         self.automation.max_executions_per_day = None
         self.automation.save(update_fields=["max_executions_per_day"])
 
-        # Real methods run without patches
+ # Real methods run without patches
         result = self.automation.execute(self.customer)
         self.assertTrue(result)
 
@@ -177,7 +174,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
         """Executions from yesterday should not count toward today's limit."""
         from apps.automation.models import AutomationExecution
 
-        # Create 2 executions yesterday
+ # Create 2 executions yesterday
         yesterday = timezone.now() - timedelta(days=1)
         for _ in range(2):
             exec_obj = AutomationExecution.objects.create(
@@ -188,6 +185,6 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
             )
             AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=yesterday)
 
-        # Should still be allowed today — real methods run
+ # Should still be allowed today real methods run
         result = self.automation.execute(self.customer)
         self.assertTrue(result)

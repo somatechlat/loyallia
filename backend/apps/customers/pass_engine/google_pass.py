@@ -1,5 +1,5 @@
 """
-Loyallia — Google Wallet Pass Generator
+Loyallia  Google Wallet Pass Generator
 Generates JWT-based loyalty passes for Google Wallet.
 
 According to Google Wallet API docs:
@@ -39,7 +39,7 @@ def _load_service_account() -> dict | None:
     from common.vault import get_secret
 
     try:
-        # Fetching directly from Vault as a JSON string
+ # Fetching directly from Vault as a JSON string
         sa_json_str = get_secret("google_service_account_json", strict=True)
         if not sa_json_str:
             return None
@@ -327,7 +327,7 @@ def update_loyalty_class(card) -> dict:
             logger.info("Google Wallet Class patched successfully: %s", class_id)
             return {"success": True, "action": "patch"}
         if patch_resp.status_code == 404:
-            logger.info("Class %s not found — creating via POST", class_id)
+            logger.info("Class %s not found  creating via POST", class_id)
             post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Class created: %s", class_id)
@@ -393,8 +393,8 @@ def update_wallet_object(customer_pass) -> dict:
             logger.info("Google Wallet Object patched: %s", object_id)
             return {"success": True, "action": "patch", "object_id": object_id}
         if patch_resp.status_code == 404:
-            # Object doesn't exist yet — create it
-            logger.info("Object %s not found — creating via POST", object_id)
+ # Object doesn't exist yet create it
+            logger.info("Object %s not found  creating via POST", object_id)
             post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Object created: %s", object_id)

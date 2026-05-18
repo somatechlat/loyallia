@@ -1,5 +1,5 @@
 """
-Loyallia — Apple Wallet Pass Update Push (APNs)
+Loyallia  Apple Wallet Pass Update Push (APNs)
 
 Sends empty APNs pushes to devices registered for pass updates.
 This is DIFFERENT from apps.notifications.push.apns_client which sends
@@ -72,7 +72,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
     cert_pem, key_pem = _get_pass_apns_auth()
     if not cert_pem or not key_pem:
-        logger.warning("Apple pass push: Not configured — skipping push to …%s", push_token[-8:])
+        logger.warning("Apple pass push: Not configured  skipping push to %s", push_token[-8:])
         return False
 
     topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
@@ -80,7 +80,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         logger.warning("Apple pass push: Pass type identifier is not configured")
         return False
 
-    # Auto-detect sandbox from Django DEBUG setting
+ # Auto-detect sandbox from Django DEBUG setting
     use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)
     host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
 
@@ -92,12 +92,12 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         "apns-priority": "5",  # Background pushes require priority 5
     }
 
-    # Write cert and key to temp files for httpx SSL context
+ # Write cert and key to temp files for httpx SSL context
     import ssl
     import tempfile
 
     try:
-        # Create temporary PEM files for the SSL context
+ # Create temporary PEM files for the SSL context
         with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as cert_file:
             cert_file.write(cert_pem)
             cert_path = cert_file.name
@@ -106,12 +106,12 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
             key_file.write(key_pem)
             key_path = key_file.name
 
-        # Build SSL context with client certificate
+ # Build SSL context with client certificate
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
         ssl_context.load_default_certs()
 
-        # httpx HTTP/2 required for APNs
+ # httpx HTTP/2 required for APNs
         with httpx.Client(
             http2=True,
             verify=ssl_context,
@@ -124,10 +124,10 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
             )
 
         if response.status_code == 200:
-            logger.debug("Apple pass push sent successfully to …%s", push_token[-8:])
+            logger.debug("Apple pass push sent successfully to %s", push_token[-8:])
             return True
 
-        # Parse error reason
+ # Parse error reason
         try:
             reason = response.json().get("reason", "Unknown")
         except Exception:
@@ -135,13 +135,13 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
 
         if reason in ("BadDeviceToken", "Unregistered"):
             logger.warning(
-                "Apple pass push: Token invalid/unregistered (…%s): %s",
+                "Apple pass push: Token invalid/unregistered (%s): %s",
                 push_token[-8:],
                 reason,
             )
         else:
             logger.error(
-                "Apple pass push HTTP %s for …%s: %s",
+                "Apple pass push HTTP %s for %s: %s",
                 response.status_code,
                 push_token[-8:],
                 reason,
@@ -149,13 +149,13 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         return False
 
     except httpx.TimeoutException:
-        logger.error("Apple pass push: Timed out for …%s", push_token[-8:])
+        logger.error("Apple pass push: Timed out for %s", push_token[-8:])
         return False
     except Exception as exc:
-        logger.error("Apple pass push error for …%s: %s", push_token[-8:], exc)
+        logger.error("Apple pass push error for %s: %s", push_token[-8:], exc)
         return False
     finally:
-        # Clean up temp files
+ # Clean up temp files
         import os
 
         for path in (cert_path, key_path):
@@ -190,9 +190,9 @@ def notify_pass_updated(customer_pass) -> int:
         if success:
             notified += 1
         else:
-            # Track failures — deactivate after repeated failures
-            # (Similar to apns_client.py stale token handling)
-            logger.debug("Apple pass push: Failed for device …%s", reg.device_library_id[-8:])
+ # Track failures deactivate after repeated failures
+ # (Similar to apns_client.py stale token handling)
+            logger.debug("Apple pass push: Failed for device %s", reg.device_library_id[-8:])
 
     logger.info(
         "Apple pass push: Notified %d/%d devices for pass %s",

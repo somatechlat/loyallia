@@ -13,7 +13,7 @@ from common.messages import get_message
 router = Router()
 
 
-# ============ Pydantic Schemas ============
+# Pydantic Schemas
 class PushDeviceSchema(BaseModel):
     device_type: str  # ios, android, web
     device_token: str
@@ -42,7 +42,7 @@ class SendNotificationSchema(BaseModel):
     image_url: str | None = None
 
 
-# ============ Base dependencies ============
+# Base dependencies
 def _get_customer_or_403(request):
     """Resolve the Customer object for the authenticated user, or raise 403."""
     if not hasattr(request.user, "customer") or request.user.customer is None:

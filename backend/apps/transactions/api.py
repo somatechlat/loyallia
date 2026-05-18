@@ -1,5 +1,5 @@
 """
-Loyallia — Transactions API Router (apps/transactions/api.py)
+Loyallia  Transactions API Router (apps/transactions/api.py)
 
 Handles the two highest-traffic operations in the system:
 1. QR scanner validation and transaction recording (STAFF endpoints).
@@ -7,8 +7,8 @@ Handles the two highest-traffic operations in the system:
 
 Architecture:
     Two sub-routers:
-    - scanner_router: mounted at /scanner/ — used by POS staff to scan QR codes.
-    - router: mounted at /transactions/ — used by dashboard for transaction history.
+    - scanner_router: mounted at /scanner/  used by POS staff to scan QR codes.
+    - router: mounted at /transactions/  used by dashboard for transaction history.
 
 Performance (Rule 12):
     - Scanner endpoints are the HOTTEST PATH (called on every customer scan).
@@ -16,7 +16,7 @@ Performance (Rule 12):
     - Customer stats updated via F() expressions to prevent lost updates under
       concurrent scans from multiple POS terminals (no SELECT-then-UPDATE race).
     - Analytics recalculation and automation triggers are fired ASYNCHRONOUSLY
-      via Celery — scanner response is never blocked by downstream processing.
+      via Celery  scanner response is never blocked by downstream processing.
     - Cache invalidation delegated to 5-min TTL (prevents thundering herd).
     - Transaction list uses select_related for 4 JOINs in a single query.
 
@@ -85,7 +85,7 @@ class ScanTransactIn(BaseModel):
 def validate_qr(request: HttpRequest, data: ScanValidateIn):
     """Validate QR HMAC token and return pass state + customer info.
 
-    This is a read-only operation — the pass state is not modified.
+    This is a read-only operation  the pass state is not modified.
     Used by staff to preview a customer's pass before recording a transaction.
 
     SEC: Tenant-scoped lookup (card__tenant=request.tenant) prevents cross-tenant access.
@@ -97,8 +97,8 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
         raise HttpError(400, get_message("PASS_QR_REQUIRED"))
 
     try:
-        # PERF: single JOIN query for Pass + Customer + Card + Tenant
-        # SEC: card__tenant=request.tenant ensures tenant isolation
+ # PERF: single JOIN query for Pass + Customer + Card + Tenant
+ # SEC: card__tenant=request.tenant ensures tenant isolation
         pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             qr_code=data.qr_code, is_active=True, card__tenant=request.tenant
         )
@@ -126,13 +126,13 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
 def transact(request: HttpRequest, data: ScanTransactIn):
     """Record a transaction from a QR scan and update pass balance atomically.
 
-    This is the HOTTEST endpoint in the system — called on every customer scan
+    This is the HOTTEST endpoint in the system  called on every customer scan
     at every POS terminal. Latency directly impacts staff experience.
 
     SEC: Tenant-scoped pass lookup prevents cross-tenant transactions.
     PERF: Customer stats updated via F() expressions (atomic increment) to prevent
     lost updates under concurrent scans from multiple POS terminals.
-    PERF: Analytics recalc + automation triggers fire ASYNC via Celery — scanner
+    PERF: Analytics recalc + automation triggers fire ASYNC via Celery  scanner
     response is never blocked by downstream processing.
     """
     if not is_staff_or_above(request):
@@ -141,8 +141,8 @@ def transact(request: HttpRequest, data: ScanTransactIn):
         raise HttpError(400, get_message("PASS_INVALID_QR"))
 
     try:
-        # PERF: single JOIN for pass + customer + card + tenant
-        # SEC: card__tenant isolates to the staff member's tenant
+ # PERF: single JOIN for pass + customer + card + tenant
+ # SEC: card__tenant isolates to the staff member's tenant
         pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             qr_code=data.qr_code, is_active=True, card__tenant=request.tenant
         )
@@ -156,14 +156,14 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     amount_decimal = Decimal(str(data.amount))
 
     with db_transaction.atomic():
-        # Process the card-type-specific business logic (stamp, cashback, etc.)
+ # Process the card-type-specific business logic (stamp, cashback, etc.)
         result = pass_obj.process_transaction(
             transaction_type="",  # Determined by card type inside process_transaction
             amount=amount_decimal,
             quantity=1,
         )
 
-        # Serialize Decimal values for JSONField storage (avoids serialization errors)
+ # Serialize Decimal values for JSONField storage (avoids serialization errors)
         transaction_data = _serialize_json_value(
             {
                 "qr_code": data.qr_code,
@@ -183,8 +183,8 @@ def transact(request: HttpRequest, data: ScanTransactIn):
             transaction_data=transaction_data,
         )
 
-        # PERF: F() atomic increment — prevents lost updates when multiple POS
-        # terminals scan the same customer simultaneously. No SELECT-then-UPDATE race.
+ # PERF: F() atomic increment prevents lost updates when multiple POS
+ # terminals scan the same customer simultaneously. No SELECT-then-UPDATE race.
         from django.db.models import F
 
         Customer.objects.filter(pk=pass_obj.customer.pk).update(
@@ -193,16 +193,16 @@ def transact(request: HttpRequest, data: ScanTransactIn):
             last_visit=transaction.created_at,
         )
 
-    # PERF: Cache invalidation delegated to 5-min TTL in analytics endpoints.
-    # Aggressively deleting cache here would cause thundering herd under high TPS.
+ # PERF: Cache invalidation delegated to 5-min TTL in analytics endpoints.
+ # Aggressively deleting cache here would cause thundering herd under high TPS.
 
-    # PERF: Async analytics recalc — fires after 2s delay to batch rapid scans
+ # PERF: Async analytics recalc fires after 2s delay to batch rapid scans
     from apps.analytics.tasks import update_tenant_analytics
 
     analytics_task: Any = update_tenant_analytics
     analytics_task.apply_async(args=[str(request.tenant.id)], countdown=2)
 
-    # PERF: Async automation trigger — does not block the scanner response
+ # PERF: Async automation trigger does not block the scanner response
     from apps.automation.engine import fire_trigger_async
 
     fire_trigger_async(
@@ -216,7 +216,7 @@ def transact(request: HttpRequest, data: ScanTransactIn):
         },
     )
 
-    # PERF: Async wallet pass update — only when pass state actually changed
+ # PERF: Async wallet pass update only when pass state actually changed
     if result.get("pass_updated"):
         import logging
 
@@ -258,7 +258,7 @@ def transact(request: HttpRequest, data: ScanTransactIn):
 def search_customer(request: HttpRequest, query: str):
     """Search customer by name/email/phone for remote stamp issuance.
 
-    SEC: Scoped to request.tenant — staff cannot see other tenants' customers.
+    SEC: Scoped to request.tenant  staff cannot see other tenants' customers.
     PERF: prefetch_related("passes__card") prevents N+1 when serializing passes.
     Results capped at 10 to prevent unbounded memory usage on broad searches.
     """
@@ -267,8 +267,8 @@ def search_customer(request: HttpRequest, query: str):
     if not query or len(query.strip()) < 2:
         raise HttpError(400, get_message("TRANSACTION_SEARCH_MIN_CHARS"))
 
-    # PERF: prefetch_related loads all passes+cards in 2 queries total (not N+1)
-    # SEC: tenant isolation via request.tenant filter
+ # PERF: prefetch_related loads all passes+cards in 2 queries total (not N+1)
+ # SEC: tenant isolation via request.tenant filter
     customers = (
         Customer.objects.filter(tenant=request.tenant, is_active=True)
         .filter(
@@ -282,7 +282,7 @@ def search_customer(request: HttpRequest, query: str):
 
     results = []
     for customer in customers:
-        # PERF: uses prefetched passes — no additional queries per customer
+ # PERF: uses prefetched passes no additional queries per customer
         results.append(
             {
                 "id": str(customer.id),
@@ -305,17 +305,17 @@ def search_customer(request: HttpRequest, query: str):
     return {"results": results}
 
 
-# --- Transaction list endpoints (/transactions/) ---
+# Transaction list endpoints (/transactions/)
 @router.get("/", auth=jwt_auth, summary="Listar transacciones")
 def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
     """List transactions with pagination for the dashboard.
 
-    SEC: Filtered by request.tenant — managers can only see their tenant's transactions.
+    SEC: Filtered by request.tenant  managers can only see their tenant's transactions.
     PERF: select_related with 4 JOINs loads all related objects in a single query.
     """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    # PERF: 4-way JOIN in single query (pass → customer, pass → card → tenant, staff)
+ # PERF: 4-way JOIN in single query (pass → customer, pass → card → tenant, staff)
     transactions = (
         Transaction.objects.filter(tenant=request.tenant)
         .select_related(
@@ -359,7 +359,7 @@ def get_transaction(request: HttpRequest, transaction_id: str):
     """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    # SEC: tenant=request.tenant prevents cross-tenant access
+ # SEC: tenant=request.tenant prevents cross-tenant access
     transaction = get_object_or_404(Transaction, id=transaction_id, tenant=request.tenant)
 
     log_action(
@@ -430,20 +430,20 @@ def remote_issue(request: HttpRequest, data: RemoteIssueIn):
 
     from apps.customers.models import Customer
 
-    # SEC: validate UUID format before DB lookup to prevent injection
+ # SEC: validate UUID format before DB lookup to prevent injection
     try:
         customer_uuid = uuid.UUID(data.customer_id)
         card_uuid = uuid.UUID(data.card_id)
     except ValueError:
         raise HttpError(400, get_message("NOT_FOUND"))
 
-    # SEC: tenant-scoped customer lookup
+ # SEC: tenant-scoped customer lookup
     try:
         customer = Customer.objects.get(id=customer_uuid, tenant=request.tenant, is_active=True)
     except Customer.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
-    # SEC: tenant-scoped pass lookup via customer ownership
+ # SEC: tenant-scoped pass lookup via customer ownership
     try:
         pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             customer=customer, card_id=card_uuid, is_active=True

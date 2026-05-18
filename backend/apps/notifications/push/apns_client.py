@@ -1,11 +1,11 @@
 """
-Loyallia — APNs Client (Apple Push Notification service)
+Loyallia  APNs Client (Apple Push Notification service)
 
 Uses the APNs HTTP/2 token-based authentication (JWT Provider Token).
 Reference: https://developer.apple.com/documentation/usernotifications/establishing_a_token-based_connection_to_apns
 
 Authentication flow:
-  1. Load the APNs Auth Key (.p8 file) — NOT the pass signing cert
+  1. Load the APNs Auth Key (.p8 file)  NOT the pass signing cert
   2. Sign a JWT with kid=KEY_ID, iss=TEAM_ID, iat=now, exp=now+3600
   3. Send to https://api.push.apple.com:443 (production) or api.sandbox.push.apple.com (dev)
   4. Reuse token for up to 1 hour, then refresh
@@ -56,14 +56,14 @@ def _get_apns_jwt_token() -> str | None:
         logger.warning("APNs auth key not found at '%s'. iOS push disabled.", apns_auth_key_path)
         return None
 
-    # Check cache
+ # Check cache
     cache_key = (apns_key_id, apple_team_id)
     if cache_key in _token_cache:
         token_str, expires_at = _token_cache[cache_key]
         if time.time() < expires_at - 60:  # Refresh 60s before expiry
             return token_str
 
-    # Generate new token
+ # Generate new token
     try:
         import jwt as pyjwt  # PyJWT
 
@@ -124,7 +124,7 @@ def send_apns_message(
         logger.warning("APNs send skipped: Apple pass type identifier is not configured")
         return False
 
-    # Auto-detect sandbox from Django DEBUG setting
+ # Auto-detect sandbox from Django DEBUG setting
     use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)
     host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
 
@@ -152,25 +152,25 @@ def send_apns_message(
     }
 
     try:
-        # httpx HTTP/2 requires h2 package: pip install httpx[http2]
+ # httpx HTTP/2 requires h2 package: pip install httpx[http2]
         with httpx.Client(http2=True, timeout=10.0) as client:
             response = client.post(url, json=payload, headers=headers)
 
         if response.status_code == 200:
-            logger.debug("APNs message sent to …%s", device_token[-8:])
+            logger.debug("APNs message sent to %s", device_token[-8:])
             return True
 
-        # Parse APNs error reason
+ # Parse APNs error reason
         try:
             reason = response.json().get("reason", "Unknown")
         except Exception:
             reason = response.text[:100]
 
         if reason == "BadDeviceToken" or reason == "Unregistered":
-            logger.warning("APNs token invalid/unregistered (…%s): %s", device_token[-8:], reason)
+            logger.warning("APNs token invalid/unregistered (%s): %s", device_token[-8:], reason)
         else:
             logger.error(
-                "APNs HTTP %s for …%s: %s",
+                "APNs HTTP %s for %s: %s",
                 response.status_code,
                 device_token[-8:],
                 reason,
@@ -178,8 +178,8 @@ def send_apns_message(
         return False
 
     except httpx.TimeoutException:
-        logger.error("APNs request timed out for …%s", device_token[-8:])
+        logger.error("APNs request timed out for %s", device_token[-8:])
         return False
     except Exception as exc:
-        logger.error("APNs send error for …%s: %s", device_token[-8:], exc)
+        logger.error("APNs send error for %s: %s", device_token[-8:], exc)
         return False

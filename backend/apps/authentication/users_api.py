@@ -1,5 +1,5 @@
 """
-Loyallia — Users & Profile API (Django Ninja Router)
+Loyallia  Users & Profile API (Django Ninja Router)
 Split from authentication/api.py per Rule 245 (600-line limit).
 Handles: profile updates, user invitations, team management, phone verification.
 """
@@ -37,9 +37,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-# =============================================================================
 # USER & PROFILE ENDPOINTS
-# =============================================================================
 
 
 @router.get("/me/", auth=jwt_auth, summary="Perfil del usuario actual")
@@ -110,9 +108,7 @@ def change_password(request, payload: ChangePasswordIn):
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
 
-# =============================================================================
 # TEAM MANAGEMENT (OWNER ONLY)
-# =============================================================================
 
 
 @router.post("/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo")
@@ -124,7 +120,7 @@ def invite_user(request, payload: InviteIn):
     if User.objects.filter(email=payload.email, tenant=tenant).exists():
         raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
-    # SECURITY (LYL-H-SEC-007): Generate token, store SHA-256 hash in DB.
+ # SECURITY (LYL-H-SEC-007): Generate token, store SHA-256 hash in DB.
     invitation_token = secrets.token_urlsafe(32)
     invitation_token_hash = hashlib.sha256(invitation_token.encode()).hexdigest()
     from django.db import transaction
@@ -198,9 +194,7 @@ def deactivate_user(request, user_id: str):
     return MessageOut(success=True, message=get_message("AUTH_USER_DEACTIVATED"))
 
 
-# =============================================================================
 # PHONE NUMBER VERIFICATION
-# =============================================================================
 
 
 @router.post(
@@ -212,7 +206,7 @@ def deactivate_user(request, user_id: str):
 def phone_verify_request(request, payload: PhoneVerifyRequestIn):
     """Send OTP for phone verification via Twilio Verify (real SMS).
 
-    REAL PRODUCTION CODE — OTP is sent via Twilio Verify API.
+    REAL PRODUCTION CODE  OTP is sent via Twilio Verify API.
     No DEV bypass. No mock. The code arrives on the actual phone.
     """
     from django.core.cache import cache
@@ -237,7 +231,7 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
             message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),
         )
 
-    # Store SID in Redis for confirm step
+ # Store SID in Redis for confirm step
     cache.set(
         f"phone_verify_sid:{payload.phone_number}",
         result.get("sid", ""),
@@ -262,13 +256,13 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
 def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
     """Validate OTP via Twilio Verify and mark phone as verified.
 
-    REAL PRODUCTION CODE — Validates against Twilio Verify API.
+    REAL PRODUCTION CODE  Validates against Twilio Verify API.
     """
     from django.core.cache import cache
 
     from apps.authentication.otp_service import check_otp
 
-    # Rate limit check
+ # Rate limit check
     cache_key = f"otp_attempts:phone_verify:{payload.phone_number}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 5:
@@ -279,7 +273,7 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
         )
     cache.set(cache_key, attempts + 1, 900)
 
-    # Retrieve SID from Redis
+ # Retrieve SID from Redis
     sid = cache.get(f"phone_verify_sid:{payload.phone_number}", "")
 
     try:
@@ -315,7 +309,7 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
     user.is_phone_verified = True
     user.save(update_fields=["is_phone_verified", "updated_at"])
 
-    # Clean up
+ # Clean up
     cache.delete(f"phone_verify_sid:{payload.phone_number}")
     cache.delete(cache_key)
 

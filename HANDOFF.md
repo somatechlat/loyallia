@@ -12,7 +12,7 @@
 
 ## 1. Executive Summary
 
-This handoff documents remediation items identified during the comprehensive production audit (LYL-SRS-AUDIT-001 v4.0). Previously completed items are in §2. Bootstrap idempotency is verified in §4. Total: **12 REQ items** (12 resolved, **0 pending**) across 5 execution phases.
+This handoff documents remediation items identified during the complete production audit (LYL-SRS-AUDIT-001 v4.0). Previously completed items are in §2. Bootstrap idempotency is verified in §4. Total: **12 REQ items** (12 resolved, **0 pending**) across 5 execution phases.
 
 ### Remaining Work
 
@@ -24,19 +24,19 @@ None. All 12 REQ items are resolved.
 
 | ID | System | Status | Evidence |
 |---|---|---|---|
-| VER-001 | **Factory Reset OTP** | ✅ CORRECT | Twilio Verify → Email fallback via `get_otp_strategy()`. Rate-limited 3/hr. HMAC timing-safe. 5-min TTL. Dual `window.confirm()`. Audit log BEFORE wipe. |
-| VER-002 | **OTP Service** | ✅ CORRECT | `VerifyOTPStrategy` / `LocalOTPStrategy`. Auto-selects via Vault `twilio_verify_enabled`. |
-| VER-003 | **WhatsApp Activation** | ✅ CORRECT | QR wizard → toggle → cancel → refresh. 6 E2E tests. RBAC (OWNER only). |
-| VER-004 | **Wallet Passbook** | ✅ CORRECT | Apple PKPass + Google `save_url`. 14 E2E tests. |
-| VER-005 | **Suspension / Reactivation** | ✅ CORRECT | `Tenant.is_active` + `Subscription.status` atomic. Plan deactivation blocked (409). |
-| VER-006 | **SMS Campaign Task** | ✅ CORRECT | `CampaignRun` + `CampaignDeliveryLog`. Twilio test mode safety. |
-| VER-007 | **Wallet Campaign Task** | ✅ CORRECT | `CampaignRun` + delivery logs. `wallet` channel. |
-| VER-008 | **Email Campaign Task** | ✅ CORRECT | `send_email_campaign` Celery task. Per-customer SMTP. `CampaignRun` + `CampaignDeliveryLog`. |
-| VER-009 | **Segment Targeting** | ✅ CORRECT | 5 segments: `all`, `active`, `at_risk`, `lost`, `vip`. UI card-per-segment with counts. |
-| VER-010 | **Campaign Analytics API** | ✅ CORRECT (partial) | List runs, results, recipients (paginated), CSV export. Gaps in delivered/read — see REQ-011. |
-| VER-011 | **Campaign Data Model** | ✅ CORRECT (schema) | `CampaignRun` + `CampaignDeliveryLog` + `DeliveryStatus` enum with 6 states. |
-| VER-012 | **Mailjet SMTP** | ✅ RESOLVED | Credentials injected into live Vault 2026-05-12T22:01Z. Health: `ok`. SMTP Reachable: `True`. See §2.1. |
-| VER-013 | **Bootstrap Idempotency** | ✅ VERIFIED | Platform settings: `get_or_create` (skip existing). Migrations: all applied. Vault: `set_secret_from_env` is no-op when env empty. See §4. |
+| VER-001 | **Factory Reset OTP** | VERIFIED | Twilio Verify → Email fallback via `get_otp_strategy()`. Rate-limited 3/hr. HMAC timing-safe. 5-min TTL. Dual `window.confirm()`. Audit log BEFORE wipe. |
+| VER-002 | **OTP Service** | VERIFIED | `VerifyOTPStrategy` / `LocalOTPStrategy`. Auto-selects via Vault `twilio_verify_enabled`. |
+| VER-003 | **WhatsApp Activation** | VERIFIED | QR wizard → toggle → cancel → refresh. 6 E2E tests. RBAC (OWNER only). |
+| VER-004 | **Wallet Passbook** | VERIFIED | Apple PKPass + Google `save_url`. 14 E2E tests. |
+| VER-005 | **Suspension / Reactivation** | VERIFIED | `Tenant.is_active` + `Subscription.status` atomic. Plan deactivation blocked (409). |
+| VER-006 | **SMS Campaign Task** | VERIFIED | `CampaignRun` + `CampaignDeliveryLog`. Twilio test mode safety. |
+| VER-007 | **Wallet Campaign Task** | VERIFIED | `CampaignRun` + delivery logs. `wallet` channel. |
+| VER-008 | **Email Campaign Task** | VERIFIED | `send_email_campaign` Celery task. Per-customer SMTP. `CampaignRun` + `CampaignDeliveryLog`. |
+| VER-009 | **Segment Targeting** | VERIFIED | 5 segments: `all`, `active`, `at_risk`, `lost`, `vip`. UI card-per-segment with counts. |
+| VER-010 | **Campaign Analytics API** | VERIFIED (partial) | List runs, results, recipients (paginated), CSV export. Gaps in delivered/read — see REQ-011. |
+| VER-011 | **Campaign Data Model** | VERIFIED (schema) | `CampaignRun` + `CampaignDeliveryLog` + `DeliveryStatus` enum with 6 states. |
+| VER-012 | **Mailjet SMTP** | RESOLVED | Credentials injected into live Vault 2026-05-12T22:01Z. Health: `ok`. SMTP Reachable: `True`. See §2.1. |
+| VER-013 | **Bootstrap Idempotency** | VERIFIED | Platform settings: `get_or_create` (skip existing). Migrations: all applied. Vault: `set_secret_from_env` is no-op when env empty. See §4. |
 
 ### 2.1 Mailjet Integration — Technical Assessment
 
@@ -44,26 +44,26 @@ Loyallia uses Mailjet as a **SMTP relay only**. It does NOT use the Mailjet REST
 
 | Capability | Status | Implementation |
 |---|---|---|
-| **Send emails** | ✅ SMTP relay | `EmailMultiAlternatives` → `in-v3.mailjet.com:587/TLS`. Credentials from Vault. |
-| **Email campaigns** | ✅ Loyallia-managed | `send_email_campaign` Celery task. Audience by segment. HTML inline. `CampaignRun` + `CampaignDeliveryLog`. |
-| **OTP verification email** | ✅ SMTP relay | `LocalOTPStrategy._send_otp_email()` via `send_mail()`. |
-| **Broadcast to owners** | ✅ SMTP relay | `broadcast_announcement()` via `send_mass_mail()`. |
-| **Contact management** | ❌ NOT used | `create_subscriber()` is a no-op. Customers managed in Loyallia DB. |
-| **Mailjet templates** | ❌ NOT used | HTML built inline in `email.py:L128-160`. |
-| **Mailjet REST API** | ❌ NOT used | No `mailjet_rest` package. Only SMTP. |
-| **Mailjet analytics** | ❌ NOT used | Delivery tracked via Loyallia `CampaignDeliveryLog`. See REQ-011. |
+| **Send emails** | SMTP relay | `EmailMultiAlternatives` → `in-v3.mailjet.com:587/TLS`. Credentials from Vault. |
+| **Email campaigns** |  Loyallia-managed | `send_email_campaign` Celery task. Audience by segment. HTML inline. `CampaignRun` + `CampaignDeliveryLog`. |
+| **OTP verification email** | SMTP relay | `LocalOTPStrategy._send_otp_email()` via `send_mail()`. |
+| **Broadcast to owners** | SMTP relay | `broadcast_announcement()` via `send_mass_mail()`. |
+| **Contact management** | NOT used | `create_subscriber()` is a no-op. Customers managed in Loyallia DB. |
+| **Mailjet templates** | NOT used | HTML built inline in `email.py:L128-160`. |
+| **Mailjet REST API** | NOT used | No `mailjet_rest` package. Only SMTP. |
+| **Mailjet analytics** | NOT used | Delivery tracked via Loyallia `CampaignDeliveryLog`. See REQ-011. |
 
 ### 2.2 Mailjet Vault Credentials (LIVE — Verified 2026-05-12T22:01Z)
 
 | Vault Key | Status | Value |
 |---|---|---|
-| `mailjet_api_key` | ✅ SET | 32 chars |
-| `mailjet_secret_key` | ✅ SET | 32 chars |
-| `mailjet_sender_email` | ✅ SET | `info@loyallia.com` (17 chars) |
-| `mailjet_sender_name` | ✅ SET | `Loyallia` (8 chars) |
-| **SMTP Reachable** | ✅ TRUE | `in-v3.mailjet.com:587/TLS` connected |
+| `mailjet_api_key` | SET | 32 chars |
+| `mailjet_secret_key` | SET | 32 chars |
+| `mailjet_sender_email` | SET | `info@loyallia.com` (17 chars) |
+| `mailjet_sender_name` | SET | `Loyallia` (8 chars) |
+| **SMTP Reachable** | TRUE | `in-v3.mailjet.com:587/TLS` connected |
 
-**⚠️ Note:** In development mode, `EMAIL_BACKEND = console` (emails print to stdout). In production, `EMAIL_BACKEND = smtp` (real delivery). Ensure production containers run with `DJANGO_SETTINGS_MODULE=loyallia.settings.production`.
+** Note:** In development mode, `EMAIL_BACKEND = console` (emails print to stdout). In production, `EMAIL_BACKEND = smtp` (real delivery). Ensure production containers run with `DJANGO_SETTINGS_MODULE=loyallia.settings.production`.
 
 ---
 
@@ -74,7 +74,7 @@ Loyallia uses Mailjet as a **SMTP relay only**. It does NOT use the Mailjet REST
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-001 |
-| **Severity** | 🔴 CRITICAL |
+| **Severity** | CRITICAL |
 | **Priority** | P0 — Immediate |
 | **Category** | Security / Business Logic |
 | **SRS Ref** | LYL-SRS-BILLING-001 |
@@ -108,7 +108,7 @@ Only the `trial` (FREE) plan slug gets unlimited during `TRIALING`. All paid pla
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-002 |
-| **Severity** | 🔴 HIGH |
+| **Severity** | HIGH |
 | **Priority** | P1 |
 | **Category** | UX / Business Flow |
 | **SRS Ref** | LYL-SRS-TENANT-001 |
@@ -131,7 +131,7 @@ Verified in codebase and E2E test `27-tenant-creation-wizard.spec.ts`: the wizar
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-003 |
-| **Severity** | 🔴 HIGH |
+| **Severity** | HIGH |
 | **Priority** | P1 |
 | **Category** | Business Logic |
 | **SRS Ref** | LYL-SRS-BILLING-002 |
@@ -151,14 +151,14 @@ Verified in codebase: `tenants.py:167` already implements this logic correctly.
 | Property | Value |
 |---|---|
 | **ID** | LYL-SRS-MODE-001 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P2 |
 | **Category** | New Feature — Platform Operations |
 | **SRS Ref** | LYL-SRS-PLATFORM-001 |
 
 **3.4.1 Mode Configuration Matrix**
 
-| Setting | 🟡 Development | 🟢 Production |
+| Setting | Development | Production |
 |---|---|---|
 | `PLATFORM_MODE` | `development` | `production` |
 | `twilio_use_test_mode` | `true` (sandbox) | `false` (real SMS) |
@@ -167,10 +167,10 @@ Verified in codebase: `tenants.py:167` already implements this logic correctly.
 
 **3.4.2 Status — RESOLVED**
 
-1. `PlatformSetting` DB key: `PLATFORM_MODE` ✅ Already seeded in `seed_platform_settings.py`
-2. Backend `POST /platform/mode/toggle/` + `GET /platform/mode/` ✅ Implemented
-3. Audit log on mode change ✅ Implemented
-4. Visual toggle banner at top of SuperAdmin settings page ✅ Implemented — prominent banner with mode indicator, confirmation dialog, and `loadIntegrations()` refresh
+1. `PlatformSetting` DB key: `PLATFORM_MODE`  Already seeded in `seed_platform_settings.py`
+2. Backend `POST /platform/mode/toggle/` + `GET /platform/mode/`  Implemented
+3. Audit log on mode change  Implemented
+4. Visual toggle banner at top of SuperAdmin settings page  Implemented — prominent banner with mode indicator, confirmation dialog, and `loadIntegrations()` refresh
 
 **3.4.3 Files to Modify**
 
@@ -187,7 +187,7 @@ Verified in codebase: `tenants.py:167` already implements this logic correctly.
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-005 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P2 |
 | **Category** | Data Integrity |
 | **SRS Ref** | LYL-SRS-BILLING-003 |
@@ -209,7 +209,7 @@ Verified in codebase: both files already set `trial_days=0` for starter, profess
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-004 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P2 |
 | **Category** | Data Integrity |
 | **SRS Ref** | LYL-SRS-BILLING-004 |
@@ -229,7 +229,7 @@ Verified in codebase: `get_tenant_limits()` already queries `SubscriptionPlan.ob
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-006 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P2 |
 | **Category** | Data Integrity / Security |
 | **SRS Ref** | LYL-SRS-PLATFORM-002 |
@@ -249,7 +249,7 @@ Verified in codebase: factory reset already deletes all three models before `Cus
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-007 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P3 |
 | **SRS Ref** | LYL-SRS-TENANT-002 |
 
@@ -268,7 +268,7 @@ Verified in codebase: `extend_trial()` already uses `subscription.trial_end` as 
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-008 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P3 |
 | **SRS Ref** | LYL-SRS-SMS-001 |
 
@@ -289,7 +289,7 @@ Verified in codebase: `sms/tasks.py:182` sets `campaign_run.delivered_count = su
 | **ID** | LYL-OPS-001 |
 | **Severity** | — |
 | **Priority** | — |
-| **Status** | ✅ **RESOLVED — 2026-05-12T22:01Z** |
+| **Status** |  **RESOLVED — 2026-05-12T22:01Z** |
 
 Credentials injected via `put_secret()`. Verified: Health `ok`, SMTP Reachable `True`. See §2.2 for details.
 
@@ -300,7 +300,7 @@ Credentials injected via `put_secret()`. Verified: Health `ok`, SMTP Reachable `
 | Property | Value |
 |---|---|
 | **ID** | LYL-BUG-009 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P2 |
 | **Category** | Analytics / Feature Gap |
 | **SRS Ref** | LYL-SRS-EMAIL-002 |
@@ -309,15 +309,15 @@ Credentials injected via `put_secret()`. Verified: Health `ok`, SMTP Reachable `
 
 | Field | Model | Status | Problem |
 |---|---|---|---|
-| `sent_count` | `CampaignRun` | ✅ Populated | Set after loop |
-| `failed_count` | `CampaignRun` | ✅ Populated | Set after loop |
-| `delivered_count` | `CampaignRun` | ❌ ALWAYS 0 | SMTP `send()` = "accepted by server" ≠ "delivered to inbox" |
-| `read_count` | `CampaignRun` | ❌ ALWAYS 0 | No tracking pixel. No open event. |
-| `delivery_rate` | `CampaignRun` | ❌ ALWAYS 0% | Depends on `delivered_count` |
-| `read_rate` | `CampaignRun` | ❌ ALWAYS 0% | Depends on `read_count` |
-| `delivered_at` | `CampaignDeliveryLog` | ❌ ALWAYS NULL | Never set |
-| `read_at` | `CampaignDeliveryLog` | ❌ ALWAYS NULL | Never set |
-| `BOUNCED` status | `DeliveryStatus` enum | ❌ NEVER USED | Exists but never assigned |
+| `sent_count` | `CampaignRun` |  Populated | Set after loop |
+| `failed_count` | `CampaignRun` |  Populated | Set after loop |
+| `delivered_count` | `CampaignRun` | ALWAYS 0 | SMTP `send()` = "accepted by server" ≠ "delivered to inbox" |
+| `read_count` | `CampaignRun` | ALWAYS 0 | No tracking pixel. No open event. |
+| `delivery_rate` | `CampaignRun` | ALWAYS 0% | Depends on `delivered_count` |
+| `read_rate` | `CampaignRun` | ALWAYS 0% | Depends on `read_count` |
+| `delivered_at` | `CampaignDeliveryLog` | ALWAYS NULL | Never set |
+| `read_at` | `CampaignDeliveryLog` | ALWAYS NULL | Never set |
+| `BOUNCED` status | `DeliveryStatus` enum | NEVER USED | Exists but never assigned |
 
 **3.11.2 Impact**
 
@@ -360,7 +360,7 @@ Owner sees "Sent: 150, Delivered: 0, Read: 0" — misleading. Zero inbox/open vi
 | **ID** | LYL-BUG-010 |
 | **Severity** | — |
 | **Priority** | — |
-| **Status** | ✅ **RESOLVED — 2026-05-12T22:08Z** |
+| **Status** |  **RESOLVED — 2026-05-12T22:08Z** |
 
 **Fix Applied:** Changed `update_or_create` → `get_or_create` in `seed_subscription_plans.py:L122`. SuperAdmin customizations now survive factory resets and re-bootstraps.
 
@@ -376,22 +376,22 @@ The full bootstrap runs 7 steps via `deploy/bootstrap/bootstrap.sh`:
 
 | Step | What | Idempotent? | Overwrites Data? |
 |---|---|---|---|
-| 1/7 | Check prerequisites (docker, compose) | ✅ Safe | No |
-| 2/7 | Load/generate secrets (`.bootstrap_secrets`) | ✅ Safe | No (detects existing Vault → aborts or prompts) |
-| 3/7 | Start Vault + vault-init | ✅ Safe | No — `env_or_existing()` checks Vault first, env second. `set_secret_from_env` is **no-op when env empty**. Existing Vault values preserved. |
-| 4/7 | Start PostgreSQL, Redis, MinIO, PgBouncer | ✅ Safe | No |
-| 5/7 | `migrate --noinput` (automatic on API start) | ✅ Safe | No — `get_or_create` in migration seeds |
-| 6/7 | Start Celery workers, Flower, WhatsApp, Nginx | ✅ Safe | No |
-| 7/7 | Verify container health | ✅ Safe | No |
+| 1/7 | Check prerequisites (docker, compose) |  Safe | No |
+| 2/7 | Load/generate secrets (`.bootstrap_secrets`) |  Safe | No (detects existing Vault → aborts or prompts) |
+| 3/7 | Start Vault + vault-init |  Safe | No — `env_or_existing()` checks Vault first, env second. `set_secret_from_env` is **no-op when env empty**. Existing Vault values preserved. |
+| 4/7 | Start PostgreSQL, Redis, MinIO, PgBouncer |  Safe | No |
+| 5/7 | `migrate --noinput` (automatic on API start) |  Safe | No — `get_or_create` in migration seeds |
+| 6/7 | Start Celery workers, Flower, WhatsApp, Nginx |  Safe | No |
+| 7/7 | Verify container health |  Safe | No |
 
 ### 4.2 Vault Init Idempotency (deploy/vault/init.sh)
 
 | Secret Type | Behavior on Re-Run | Safe? |
 |---|---|---|
-| **Required secrets** (postgres_password, redis_url, etc.) | `env_or_existing()` → reads existing Vault value if env empty | ✅ |
-| **Optional integrations** (mailjet, twilio, google, apple) | `set_secret_from_env` → **no-op** when env var empty | ✅ |
-| **Defaults** (wallet_enabled, nfc_enabled) | `set_secret_default_if_missing` → skips if key exists | ✅ |
-| **Infrastructure files** (postgres_password file, redis_password file) | Always re-written from current Vault values | ✅ (same value) |
+| **Required secrets** (postgres_password, redis_url, etc.) | `env_or_existing()` → reads existing Vault value if env empty |  |
+| **Optional integrations** (mailjet, twilio, google, apple) | `set_secret_from_env` → **no-op** when env var empty |  |
+| **Defaults** (wallet_enabled, nfc_enabled) | `set_secret_default_if_missing` → skips if key exists |  |
+| **Infrastructure files** (postgres_password file, redis_password file) | Always re-written from current Vault values |  (same value) |
 
 ### 4.3 API Container Startup Command
 
@@ -412,35 +412,35 @@ sh -c "python manage.py migrate --database=direct --noinput &&
   Skipped TRIAL_DAYS (already exists)
   Skipped TAX_RATE_ECUADOR (already exists)
   Skipped DEFAULT_TIMEZONE (already exists)
-  Done. 0 setting(s) created, 3 skipped. ✅
+  Done. 0 setting(s) created, 3 skipped.
 
 === seed_subscription_plans (re-run) ===
-  🔄 Updated: Trial
-  🔄 Updated: Starter
-  🔄 Updated: Professional
-  🔄 Updated: Enterprise
-  Done: 0 created, 4 updated. ⚠️ (see REQ-012)
+  Updated: Trial
+  Updated: Starter
+  Updated: Professional
+  Updated: Enterprise
+  Done: 0 created, 4 updated. (see REQ-012)
 
 === Vault Mailjet keys survived re-run ===
-  mailjet_api_key: SET (32 chars) ✅
-  mailjet_secret_key: SET (32 chars) ✅
-  mailjet_sender_email: SET (17 chars) ✅
+  mailjet_api_key: SET (32 chars)
+  mailjet_secret_key: SET (32 chars)
+  mailjet_sender_email: SET (17 chars)
 
 === Migrations ===
-  Unapplied: 0. All applied ✅
+  Unapplied: 0. All applied
 
 === SuperAdmin User ===
-  admin@loyallia.com role=SUPER_ADMIN active=True ✅
+  admin@loyallia.com role=SUPER_ADMIN active=True
 ```
 
 ### 4.5 Disaster Recovery Safety
 
 | Scenario | Result |
 |---|---|
-| `docker compose down && docker compose up -d` | ✅ All data preserved. Vault auto-unseals. Migrations skip. |
-| `docker compose down -v` (DESTROYS VOLUMES) | ❌ Full data loss. Must use `recover_from_rescue.sh` or fresh bootstrap. |
-| Factory reset via SuperAdmin UI | ⚠️ Data wiped per design. Plans re-seeded (overwrites — see REQ-012). Vault untouched. SuperAdmin user preserved. |
-| Re-run `bootstrap.sh` with existing Vault | ✅ Prompted. Existing Vault values preserved. No secret corruption. |
+| `docker compose down && docker compose up -d` |  All data preserved. Vault auto-unseals. Migrations skip. |
+| `docker compose down -v` (DESTROYS VOLUMES) | Full data loss. Must use `recover_from_rescue.sh` or fresh bootstrap. |
+| Factory reset via SuperAdmin UI | Data wiped per design. Plans re-seeded (overwrites — see REQ-012). Vault untouched. SuperAdmin user preserved. |
+| Re-run `bootstrap.sh` with existing Vault |  Prompted. Existing Vault values preserved. No secret corruption. |
 
 ---
 
@@ -449,19 +449,19 @@ sh -c "python manage.py migrate --database=direct --noinput &&
 | Property | Value |
 |---|---|
 | **ID** | LYL-TEST-001 |
-| **Severity** | 🟡 MEDIUM |
+| **Severity** | MEDIUM |
 | **Priority** | P2 |
 | **SRS Ref** | LYL-SRS-TEST-001 |
 
 | # | Test | Priority | Target Suite |
 |---|---|---|---|
-| T1 | Full 4-step tenant creation wizard | 🔴 HIGH | NEW: `27-tenant-creation-wizard.spec.ts` |
-| T2 | Suspend / Reactivate tenant via UI | 🔴 HIGH | `27-tenant-creation-wizard.spec.ts` |
-| T3 | Extend trial with 90-day cap | 🟡 MEDIUM | `27-tenant-creation-wizard.spec.ts` |
-| T4 | Plan deactivation with active subs (409) | 🟡 MEDIUM | `20-plan-rate-limits.spec.ts` |
-| T5 | Impersonation flow (token backup + restore) | 🔴 HIGH | `27-tenant-creation-wizard.spec.ts` |
-| T6 | WhatsApp override per-tenant (SA API) | 🟡 MEDIUM | `17-whatsapp-campaigns.spec.ts` |
-| T7 | Billing self-subscribe (Owner → plan → confirm) | 🟡 MEDIUM | `09-settings-billing.spec.ts` |
+| T1 | Full 4-step tenant creation wizard | HIGH | NEW: `27-tenant-creation-wizard.spec.ts` |
+| T2 | Suspend / Reactivate tenant via UI | HIGH | `27-tenant-creation-wizard.spec.ts` |
+| T3 | Extend trial with 90-day cap | MEDIUM | `27-tenant-creation-wizard.spec.ts` |
+| T4 | Plan deactivation with active subs (409) | MEDIUM | `20-plan-rate-limits.spec.ts` |
+| T5 | Impersonation flow (token backup + restore) | HIGH | `27-tenant-creation-wizard.spec.ts` |
+| T6 | WhatsApp override per-tenant (SA API) | MEDIUM | `17-whatsapp-campaigns.spec.ts` |
+| T7 | Billing self-subscribe (Owner → plan → confirm) | MEDIUM | `09-settings-billing.spec.ts` |
 
 ---
 
@@ -472,10 +472,10 @@ sh -c "python manage.py migrate --database=direct --noinput &&
 | **Phase 1 — Critical Security** | REQ-001, REQ-003, REQ-005 | None | ~2 hours |
 | **Phase 2 — UX / Flow** | REQ-002 | Depends on REQ-003 | ~1 hour |
 | **Phase 3 — Data Integrity** | REQ-006, REQ-007, REQ-008, REQ-009 | None | ~2 hours |
-| **Phase 4 — New Features** | ~~REQ-004~~ (Mode Toggle), ~~REQ-011~~ (Email Webhooks) | None | ✅ Done |
+| **Phase 4 — New Features** | ~~REQ-004~~ (Mode Toggle), ~~REQ-011~~ (Email Webhooks) | None |  Done |
 | **Phase 5 — Test Coverage** | E2E Tests (§5) | Depends on Phase 1-3 | ~3 hours |
-| ~~Phase — Bootstrap~~ | ~~REQ-012~~ | — | ✅ RESOLVED |
-| ~~Phase — Infrastructure~~ | ~~REQ-010~~ | — | ✅ RESOLVED |
+| ~~Phase — Bootstrap~~ | ~~REQ-012~~ | — | RESOLVED |
+| ~~Phase — Infrastructure~~ | ~~REQ-010~~ | — | RESOLVED |
 
 ---
 
@@ -558,7 +558,7 @@ Results:
 | Property | Value |
 |---|---|
 | **ID** | LYL-FEAT-001 |
-| **Status** | ✅ IMPLEMENTED |
+| **Status** | IMPLEMENTED |
 
 **Backend:**
 - `hard_delete_tenant()` extracted from Celery task for reuse
@@ -574,7 +574,7 @@ Results:
 | Property | Value |
 |---|---|
 | **ID** | LYL-INFRA-001 |
-| **Status** | ✅ IMPLEMENTED |
+| **Status** | IMPLEMENTED |
 
 **Changes:**
 - `test.py`: `PgBouncerRouter` restored — router code now exercised in unit tests
@@ -590,7 +590,7 @@ Results:
 | Property | Value |
 |---|---|
 | **ID** | LYL-TEST-002 |
-| **Status** | ✅ IMPLEMENTED |
+| **Status** | IMPLEMENTED |
 
 **Changes:**
 - All 32 spec files tagged with BOTH role (`@owner`/`@manager`/`@staff`/`@superadmin`) AND module (`@auth`/`@programs`/`@customers`/etc.)
@@ -619,7 +619,7 @@ Results:
 | Property | Value |
 |---|---|
 | **ID** | LYL-INFRA-002 |
-| **Status** | ✅ IMPLEMENTED |
+| **Status** | IMPLEMENTED |
 
 - Removed `docker-compose.lan.yml`, `scripts/start-lan.sh`, `.env.example`
 - All 16 port bindings in `docker-compose.yml` use `${DOCKER_BIND_HOST:-127.0.0.1}`
@@ -677,7 +677,7 @@ Added `log_action()` calls to modules that had **zero** audit coverage:
 |---|---|---|---|
 | `apps/authentication/api.py` | 716 lines | **617 lines** | Extracted phone verification endpoints → `api_phone_verify.py` |
 | `apps/tenants/super_admin_api/platform.py` | 870 lines | **~470 lines** | Extracted plan CRUD → `platform_plans.py`; extracted seed_demo + factory_reset → `platform_reset.py` |
-| `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | 921 lines | **921 lines** | ❌ NOT YET SPLIT — still over limit. Extract IntegrationSettings and PlatformSettings components. |
+| `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | 921 lines | **921 lines** |  NOT YET SPLIT — still over limit. Extract IntegrationSettings and PlatformSettings components. |
 
 **Router registration:** `apps/api/router.py` now mounts `phone_verify_router`, `platform_plans_router`, and `platform_reset_router` alongside existing routers.
 
@@ -687,10 +687,10 @@ Added `log_action()` calls to modules that had **zero** audit coverage:
 
 | Issue | Priority | Details |
 |---|---|---|
-| **Playwright `getRoleCredentials` import bug** | 🔴 HIGH | `tests/e2e/suite/01-auth.spec.ts` and `30-impersonation.spec.ts` import `getRoleCredentials` from `e2e-safety.ts`, but that function does not exist. **Workaround added:** `getRoleCredentials()` re-export added to `e2e-safety.ts` (via `require('./e2e-test-config')`). Needs verification that full E2E suite passes. |
-| **Playwright test failures** | 🔴 HIGH | When running full suite, many tests timeout at 60s (default). Some tests fail on login/dashboard navigation. The auth setup project **passes** (all 4 roles authenticated). Individual test failures need investigation. Run: `cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --reporter=list` |
-| **Frontend settings page > 650 lines** | 🟡 MEDIUM | `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` is 921 lines. Split into: `IntegrationSettings.tsx`, `PlatformSettings.tsx`, `SysAdminOperations.tsx`. |
-| **Pyright warnings (32)** | 🟡 LOW | `log_action(action=AuditAction.UPDATE, ...)` — `AuditAction.UPDATE` is a tuple `(str, str)` but `log_action` expects `str`. Fix: either change `AuditAction` values to plain strings, or update `log_action` signature to accept `str \| tuple`. |
+| **Playwright `getRoleCredentials` import bug** | HIGH | `tests/e2e/suite/01-auth.spec.ts` and `30-impersonation.spec.ts` import `getRoleCredentials` from `e2e-safety.ts`, but that function does not exist. **Workaround added:** `getRoleCredentials()` re-export added to `e2e-safety.ts` (via `require('./e2e-test-config')`). Needs verification that full E2E suite passes. |
+| **Playwright test failures** | HIGH | When running full suite, many tests timeout at 60s (default). Some tests fail on login/dashboard navigation. The auth setup project **passes** (all 4 roles authenticated). Individual test failures need investigation. Run: `cd frontend && env PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test --reporter=list` |
+| **Frontend settings page > 650 lines** | MEDIUM | `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` is 921 lines. Split into: `IntegrationSettings.tsx`, `PlatformSettings.tsx`, `SysAdminOperations.tsx`. |
+| **Pyright warnings (32)** |  LOW | `log_action(action=AuditAction.UPDATE, ...)` — `AuditAction.UPDATE` is a tuple `(str, str)` but `log_action` expects `str`. Fix: either change `AuditAction` values to plain strings, or update `log_action` signature to accept `str \| tuple`. |
 
 ### 10.7 Commands for Next Agent
 
@@ -759,34 +759,34 @@ frontend/tests/e2e/helpers/e2e-safety.ts
 
 | Component | Status |
 |-----------|--------|
-| Docker daemon | ✅ Running |
-| Vault | ✅ Unsealed |
-| API (`loyallia-api`) | ✅ Running |
-| Web (`loyallia-web`) | ✅ Running (HTTP 200 on :33906) |
-| WhatsApp Bridge | ✅ Healthy |
-| Provisioning | ✅ Ran successfully — all 4 plans seeded, credentials written |
+| Docker daemon | Running |
+| Vault |  Unsealed |
+| API (`loyallia-api`) | Running |
+| Web (`loyallia-web`) | Running (HTTP 200 on :33906) |
+| WhatsApp Bridge |  Healthy |
+| Provisioning |  Ran successfully — all 4 plans seeded, credentials written |
 
 ### 11.3 Phase Execution Status
 
 | Phase | Item | Status |
 |-------|------|--------|
-| **A1** | Deduplicate WhatsApp tests (merge 24→17, delete 24) | ✅ Done |
-| **A2** | Fix project overlap in `playwright.config.ts` | ✅ Done — removed `external-providers` project |
-| **A3** | Consolidate dashboard KPI tests | ✅ Done — 16 navigations → 4 focused tests |
-| **B1** | Replace `waitForTimeout` anti-patterns | ⚠️ Partial — replaced many in 11-superadmin and 21-sms-campaigns; still ~94 total across 22-wallet-flows (35), 16-srs-hardening (29), 11-superadmin (remaining) |
-| **B2** | Skeleton-aware dashboard polling | ✅ Done — waits for `.animate-pulse` detach |
-| **B3** | Remove `retries: 2` from auth | ✅ Done |
-| **C1** | Seed all 4 plans in provisioning | ✅ Done |
-| **C2** | Provision `whatsapp_bridge_api_key` | ✅ Done |
-| **C3** | Set `twilio_use_test_mode=true` | ✅ Done |
-| **C4** | Tolerant integration card tests | ✅ Done — `span.bg-green-100` → `span[class*="bg-"]` |
-| **C5** | Metrics page tolerate 204 | ✅ Done |
-| **D1** | Random PIN (no hardcode) | ✅ Done |
-| **D2** | SMS safety throw preserved | ✅ Done |
-| **D3** | Bridge health gate | ✅ Done |
-| **E1** | Celery wait → API polling | ✅ Done |
-| **E2** | Batch navigation tests | ❌ Skipped — marginal gain |
-| **E3** | No factory-reset clicks | ✅ Verified |
+| **A1** | Deduplicate WhatsApp tests (merge 24→17, delete 24) |  Done |
+| **A2** | Fix project overlap in `playwright.config.ts` |  Done — removed `external-providers` project |
+| **A3** | Consolidate dashboard KPI tests |  Done — 16 navigations → 4 focused tests |
+| **B1** | Replace `waitForTimeout` anti-patterns | Partial — replaced many in 11-superadmin and 21-sms-campaigns; still ~94 total across 22-wallet-flows (35), 16-srs-hardening (29), 11-superadmin (remaining) |
+| **B2** | Skeleton-aware dashboard polling |  Done — waits for `.animate-pulse` detach |
+| **B3** | Remove `retries: 2` from auth |  Done |
+| **C1** | Seed all 4 plans in provisioning |  Done |
+| **C2** | Provision `whatsapp_bridge_api_key` |  Done |
+| **C3** | Set `twilio_use_test_mode=true` |  Done |
+| **C4** | Tolerant integration card tests |  Done — `span.bg-green-100` → `span[class*="bg-"]` |
+| **C5** | Metrics page tolerate 204 |  Done |
+| **D1** | Random PIN (no hardcode) |  Done |
+| **D2** | SMS safety throw preserved |  Done |
+| **D3** | Bridge health gate |  Done |
+| **E1** | Celery wait → API polling |  Done |
+| **E2** | Batch navigation tests | Skipped — marginal gain |
+| **E3** | No factory-reset clicks |  Verified |
 
 ### 11.4 Critical Fix Applied During Session
 
@@ -796,10 +796,10 @@ Default Playwright action timeout is `0` (infinite). Tests clicking missing elem
 
 ### 11.5 Test Run Results (First Pass)
 
-- **Setup**: ✅ Auth setup passed (10.8s)
-- **Tests 1–69**: ✅ All passed (owner/manager/staff CRUD, navigation, campaigns, settings, scanner)
-- **Auth tests (01-auth)**: ❌ Multiple failures — browser form login tests failing under load
-- **Superadmin tests (11-superadmin)**: ❌ Many failures:
+- **Setup**:  Auth setup passed (10.8s)
+- **Tests 1–69**:  All passed (owner/manager/staff CRUD, navigation, campaigns, settings, scanner)
+- **Auth tests (01-auth)**:  Multiple failures — browser form login tests failing under load
+- **Superadmin tests (11-superadmin)**:  Many failures:
   - Navigation text tests fail after ~13s (`"Plataforma"`, `"Negocios"`, etc. not found in nav)
   - Plan/settings tests previously hung for 2.0m; now fail fast with `actionTimeout`
 - **Suite timed out** after 30 minutes before completing all 292 tests
@@ -814,12 +814,12 @@ Default Playwright action timeout is `0` (infinite). Tests clicking missing elem
 
 ### 11.7 Rules Compliance
 
-- ✅ No hardcoded credentials
-- ✅ No mocks, placeholders, bypasses
-- ✅ No Vault writes from normal E2E tests
-- ✅ No factory reset or seed-demo execution
-- ✅ No secrets committed (redacted and force-pushed)
-- ⚠️ Did not claim "production ready" — test suite still has failures
+-  No hardcoded credentials
+-  No mocks, placeholders, bypasses
+-  No Vault writes from normal E2E tests
+-  No factory reset or seed-demo execution
+-  No secrets committed (redacted and force-pushed)
+- Did not claim "production ready" — test suite still has failures
 
 ### 11.8 Commands for Next Agent
 

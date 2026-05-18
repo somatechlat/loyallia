@@ -1,9 +1,9 @@
 """
-Loyallia — Twilio SMS Client (LYL-SRS-009)
+Loyallia  Twilio SMS Client (LYL-SRS-009)
 
 Production SMS delivery via the Twilio REST API.
 Credentials are fetched from HashiCorp Vault (twilio_account_sid, twilio_auth_token,
-twilio_from_number) — NEVER hardcoded.
+twilio_from_number)  NEVER hardcoded.
 
 API Reference:
     https://www.twilio.com/docs/sms/quickstart/python
@@ -67,7 +67,7 @@ def _get_twilio_client():
         account_sid = _twilio_setting("twilio_test_account_sid", "TWILIO_TEST_ACCOUNT_SID", "TWILIO_TEST_ACCOUNT_SID")
         auth_token = _twilio_setting("twilio_test_auth_token", "TWILIO_TEST_AUTH_TOKEN", "TWILIO_TEST_AUTH_TOKEN")
         if account_sid and auth_token:
-            logger.warning("Twilio SMS: using TEST credentials — NOT for production")
+            logger.warning("Twilio SMS: using TEST credentials  NOT for production")
             return Client(account_sid, auth_token)
         logger.warning("Twilio SMS: test mode enabled but test credentials missing, falling back to production")
 

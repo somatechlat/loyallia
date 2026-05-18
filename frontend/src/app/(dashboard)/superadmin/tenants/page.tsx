@@ -146,7 +146,7 @@ export default function SuperAdminTenants() {
   }, []);
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── Wizard Helpers ──
+  // Wizard helpers
   const openWizard = () => {
     setStep(1); setCreationResult(null); setEntityType('juridica');
     setCompany({ name: '', legal_name: '', ruc: '', cedula: '', industry: 'food_beverage', province: 'pichincha', city: '', address: '', phone: '', email: '', website: '' });
@@ -175,7 +175,7 @@ export default function SuperAdminTenants() {
     } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error al registrar'); }
   };
 
-  // ── Detail Modal ──
+  // Detail modal
   const openDetail = async (t: Tenant) => {
     setDt(t); setDtTab('info'); setDtEdit(false); setEditLoc(null);
     setDtForm({ name: t.name, legal_name: t.legal_name||'', ruc: t.ruc||'', industry: t.industry||'other', province: t.province||'', city: t.city||'', phone: t.phone||'', email: t.email||'' });
@@ -302,7 +302,7 @@ export default function SuperAdminTenants() {
         </div>
       )}
 
-      {/* ═══ WIZARD ═══ */}
+      {/* Wizard */}
       {wizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setWizardOpen(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -384,7 +384,7 @@ export default function SuperAdminTenants() {
         </div>
       )}
 
-      {/* ═══ TABLE ═══ */}
+      {/* Tenant table */}
       <div className="bg-white dark:bg-surface-900 shadow-sm border border-surface-200 dark:border-surface-700 rounded-2xl overflow-hidden">
         {loading ? <div className="p-12 flex justify-center"><div className="spinner w-8 h-8" /></div> : (
           <table className="w-full text-left border-collapse">
@@ -409,7 +409,7 @@ export default function SuperAdminTenants() {
         )}
       </div>
 
-      {/* ═══ DETAIL MODAL (Tabs: Info | Sucursales | Acciones) ═══ */}
+      {/* Detail modal */}
       {dt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={closeDetail}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />

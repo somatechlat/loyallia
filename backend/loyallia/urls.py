@@ -1,5 +1,5 @@
 """
-Loyallia URL Configuration — Root router.
+Loyallia URL Configuration  Root router.
 Mounts:
   /api/v1/   → Django Ninja API (all REST endpoints)
   /admin/    → Django admin
@@ -17,7 +17,7 @@ from apps.customers.pass_engine.apple_pass_web_service import (
     router as apple_wallet_router,
 )
 
-# Apple Wallet Web Service — separate NinjaAPI instance (no JWT auth,
+# Apple Wallet Web Service separate NinjaAPI instance (no JWT auth,
 # uses ApplePass header auth per Apple spec)
 apple_wallet_api = NinjaAPI(
     title="Loyallia Apple Wallet Web Service",
@@ -28,12 +28,12 @@ apple_wallet_api = NinjaAPI(
 apple_wallet_api.add_router("", apple_wallet_router)
 
 urlpatterns = [
-    # Django Admin (super-admin access)
+ # Django Admin (super-admin access)
     path("django-admin/", admin.site.urls),
-    # Ninja API v1 — all REST endpoints
+ # Ninja API v1 all REST endpoints
     path("api/v1/", api.urls),
-    # Apple Wallet Web Service — per Apple PassKit spec, these endpoints must
-    # be accessible at the webServiceURL path set in pass.json
+ # Apple Wallet Web Service per Apple PassKit spec, these endpoints must
+ # be accessible at the webServiceURL path set in pass.json
     path("wallet/apple/", apple_wallet_api.urls),
 ]
 
