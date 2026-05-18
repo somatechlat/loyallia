@@ -504,7 +504,7 @@ test.describe('Settings WhatsApp Wizard — OWNER @owner @whatsapp', () => {
 
   test('Settings page renders Integraciones section', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-integration-section').waitFor({ state: 'visible', timeout: 10000 });
 
     await expect(page.locator('#wa-integration-section')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#wa-toggle')).toBeVisible();
@@ -513,26 +513,32 @@ test.describe('Settings WhatsApp Wizard — OWNER @owner @whatsapp', () => {
 
   test('Toggle activates bridge check and displays wizard state', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
     await page.locator('#wa-toggle').click();
-    await page.waitForTimeout(5000);
+    // Wait for one of the expected states to appear
+    await expect(
+      page.locator('#wa-wizard-content, #wa-connected-dashboard')
+        .or(page.getByText('Verificando disponibilidad'))
+        .or(page.getByText('no esta disponible'))
+        .first(),
+    ).toBeVisible({ timeout: 15000 });
 
     // Should show one of: checking, QR, connected, or error
     const hasQr = await page.locator('#wa-wizard-content').count();
     const hasConnected = await page.locator('#wa-connected-dashboard').count();
     const hasChecking = await page.getByText('Verificando disponibilidad').count();
-    const hasError = await page.getByText('no está disponible').count();
+    const hasError = await page.getByText('no esta disponible').count();
     expect(hasQr + hasConnected + hasChecking + hasError).toBeGreaterThan(0);
   });
 
   test('QR code image renders when bridge is available', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
     await page.locator('#wa-toggle').click();
-    // Wait for QR to render (bridge takes up to 5s internally)
-    await page.waitForTimeout(10000);
+    // Wait for QR wizard to appear (bridge takes up to 5-10s internally)
+    await page.locator('#wa-wizard-content').waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
 
     // Check if QR image appeared
     const qrImage = page.locator('#wa-wizard-content img');
@@ -547,21 +553,22 @@ test.describe('Settings WhatsApp Wizard — OWNER @owner @whatsapp', () => {
 
   test('Cancel button dismisses wizard', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
     await page.locator('#wa-toggle').click();
-    await page.waitForTimeout(5000);
+    // Wait for QR wizard or any state to appear
+    await page.locator('#wa-wizard-content, #wa-cancel-btn').first()
+      .waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
 
     const cancelBtn = page.locator('#wa-cancel-btn');
     if (await cancelBtn.isVisible()) {
       await cancelBtn.click();
-      await page.waitForTimeout(500);
-      await expect(page.locator('#wa-wizard-content')).toHaveCount(0);
+      await expect(page.locator('#wa-wizard-content')).toHaveCount(0, { timeout: 5000 });
     }
   });
 
   test('Save settings button remains functional', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#save-settings-btn').waitFor({ state: 'visible', timeout: 10000 });
     await expect(page.locator('#save-settings-btn')).toBeVisible();
   });
 });
@@ -571,7 +578,7 @@ test.describe('Settings WhatsApp Wizard — MANAGER denied @manager @whatsapp', 
 
   test('MANAGER does not see WhatsApp section', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
 
     const isOnSettings = page.url().includes('/settings');
     if (isOnSettings) {

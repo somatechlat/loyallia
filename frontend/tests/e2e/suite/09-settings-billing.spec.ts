@@ -13,28 +13,27 @@ test.describe('Settings — OWNER @owner @settings', () => {
 
   test('OWNER can access settings page @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
     const heading = page.locator('h1').first();
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('OWNER has "Configuración" in navigation @owner', async ({ page }) => {
+  test('OWNER has "Configuracion" in navigation @owner', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Configuración');
+    const navLink = page.locator('nav, aside').getByText('Configuracion');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('OWNER settings page shows business info form @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
     // Should have inputs for business configuration
     await expect(page.locator('input, textarea').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('OWNER settings page shows save button @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#save-settings-btn').waitFor({ state: 'visible', timeout: 10000 });
     const saveBtn = page.locator('#save-settings-btn');
     await expect(saveBtn).toBeVisible({ timeout: 10000 });
   });
@@ -48,21 +47,20 @@ test.describe('Billing — OWNER @owner @settings', () => {
 
   test('OWNER can access billing page @owner', async ({ page }) => {
     await page.goto('/billing', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
     const heading = page.locator('h1').first();
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('OWNER has "Facturación" in navigation @owner', async ({ page }) => {
+  test('OWNER has "Facturacion" in navigation @owner', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Facturación');
+    const navLink = page.locator('nav, aside').getByText('Facturacion');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('OWNER billing page shows plan info @owner', async ({ page }) => {
     await page.goto('/billing', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('main').waitFor({ state: 'visible', timeout: 10000 });
     // Should show current plan or trial status
     const main = page.locator('main');
     await expect(main).toBeVisible({ timeout: 10000 });
@@ -81,12 +79,9 @@ test.describe('Billing — OWNER @owner @settings', () => {
 
 test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
-  test.beforeAll(() => {
-  });
-
   test('OWNER sees WhatsApp integration with active toggle @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-integration-section').waitFor({ state: 'visible', timeout: 10000 });
 
     // Section container
     await expect(page.locator('#wa-integration-section')).toBeVisible({ timeout: 10000 });
@@ -94,7 +89,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
     // Title and description
     await expect(page.getByText('Integraciones')).toBeVisible();
     await expect(page.getByText('WhatsApp Business Bridge')).toBeVisible();
-    await expect(page.getByText('Vincula tu WhatsApp para enviar campañas masivas')).toBeVisible();
+    await expect(page.getByText('Vincula tu WhatsApp para enviar campanas masivas')).toBeVisible();
 
     // Toggle must be present (plan has whatsapp_campaigns feature)
     const toggle = page.locator('#wa-toggle');
@@ -107,9 +102,9 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
     await expect(page.getByText('Esperando', { exact: true })).toHaveCount(0);
   });
 
-  test('OWNER toggles ON → checking state → QR wizard appears @owner', async ({ page }) => {
+  test('OWNER toggles ON -> checking state -> QR wizard appears @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
     // Initial: toggle OFF
     const toggle = page.locator('#wa-toggle');
@@ -134,7 +129,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
   test('OWNER QR wizard shows instructions and controls @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
     // Activate to QR state
     await page.locator('#wa-toggle').click();
@@ -149,10 +144,10 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
     // Step-by-step instructions
     await expect(page.getByText('Vincula tu dispositivo')).toBeVisible();
-    await expect(page.getByText('Abre WhatsApp en tu teléfono')).toBeVisible();
-    await expect(page.getByText('Ajustes → Dispositivos vinculados')).toBeVisible();
+    await expect(page.getByText('Abre WhatsApp en tu telefono')).toBeVisible();
+    await expect(page.getByText('Ajustes -> Dispositivos vinculados')).toBeVisible();
     await expect(page.getByText('Vincular un dispositivo')).toBeVisible();
-    await expect(page.getByText('Escanea este código QR')).toBeVisible();
+    await expect(page.getByText('Escanea este codigo QR')).toBeVisible();
 
     // Waiting indicator
     await expect(page.getByText('Esperando escaneo...')).toBeVisible();
@@ -164,12 +159,12 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
     await expect(page.locator('#wa-cancel-btn')).toContainText('Cancelar');
 
     // Warning banner about session persistence
-    await expect(page.getByText('La sesión se mantiene mientras el servicio esté activo')).toBeVisible();
+    await expect(page.getByText('La sesion se mantiene mientras el servicio este activo')).toBeVisible();
   });
 
   test('OWNER can refresh QR code @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
     // Activate to QR state
     await page.locator('#wa-toggle').click();
@@ -190,7 +185,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
   test('OWNER can cancel QR wizard and return to disabled @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
     // Activate to QR state
     await page.locator('#wa-toggle').click();
@@ -219,17 +214,15 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 test.describe('Settings & Billing — MANAGER Isolation @manager @settings', () => {
   test.use({ storageState: '.auth/manager.json' });
 
-  test('MANAGER does NOT have "Configuración" in navigation @manager', async ({ page }) => {
+  test('MANAGER does NOT have "Configuracion" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Configuración');
+    const navLink = page.locator('nav, aside').getByText('Configuracion');
     await expect(navLink).toHaveCount(0);
   });
 
-  test('MANAGER does NOT have "Facturación" in navigation @manager', async ({ page }) => {
+  test('MANAGER does NOT have "Facturacion" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Facturación');
+    const navLink = page.locator('nav, aside').getByText('Facturacion');
     await expect(navLink).toHaveCount(0);
   });
 
@@ -251,10 +244,9 @@ test.describe('Settings & Billing — MANAGER Isolation @manager @settings', () 
 test.describe('Settings & Billing — STAFF Isolation @staff @settings', () => {
   test.use({ storageState: '.auth/staff.json' });
 
-  test('STAFF does NOT have "Configuración" in navigation @staff', async ({ page }) => {
+  test('STAFF does NOT have "Configuracion" in navigation @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
-    const navLink = page.locator('nav, aside').getByText('Configuración');
+    const navLink = page.locator('nav, aside').getByText('Configuracion');
     await expect(navLink).toHaveCount(0);
   });
 

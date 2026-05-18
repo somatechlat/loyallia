@@ -105,7 +105,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
+    await page.locator('button').filter({ hasText: 'SMS' }).first().waitFor({ state: 'visible', timeout: 5000 });
 
     // SMS channel button must exist in the channel selector area
     const smsButton = page.locator('button').filter({ hasText: 'SMS' });
@@ -113,7 +113,7 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
     // Click SMS channel
     await smsButton.first().click();
-    await page.waitForTimeout(500);
+    await page.locator('#send-campaign-btn').waitFor({ state: 'visible', timeout: 5000 });
 
     // Send button should update to contain SMS
     const sendBtn = page.locator('#send-campaign-btn');
@@ -126,12 +126,12 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
+    await page.locator('button').filter({ hasText: 'SMS' }).first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Click SMS channel
     const smsButton = page.locator('button').filter({ hasText: 'SMS' });
     await smsButton.first().click();
-    await page.waitForTimeout(500);
+    await page.locator('text=Informacion de envio SMS').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
 
     // Info banner should be visible with SMS-specific content
     const bannerText = await page.locator('text=Información de envío SMS').isVisible();
@@ -142,12 +142,12 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
+    await page.locator('button').filter({ hasText: 'SMS' }).first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Select SMS
     const smsButton = page.locator('button').filter({ hasText: 'SMS' });
     await smsButton.first().click();
-    await page.waitForTimeout(500);
+    await page.locator('#campaign-title').waitFor({ state: 'visible', timeout: 5000 });
 
     // Title input should have SMS-specific placeholder
     const titleInput = page.locator('#campaign-title');
@@ -168,12 +168,12 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
     // Open form
     await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
+    await page.locator('button').filter({ hasText: 'SMS' }).first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Select SMS channel
     const smsButton = page.locator('button').filter({ hasText: 'SMS' });
     await smsButton.first().click();
-    await page.waitForTimeout(500);
+    await page.locator('#campaign-title').waitFor({ state: 'visible', timeout: 5000 });
 
     // Fill form
     const testTitle = `E2E SMS Test ${Date.now()}`;
@@ -182,11 +182,18 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
 
     // Select "Todos los clientes" segment (default is 'all')
     await page.click('#segment-all');
-    await page.waitForTimeout(300);
+    await page.waitForResponse(
+      (resp) => resp.url().includes('/api/') && resp.url().includes('campaign'),
+      { timeout: 15000 },
+    ).catch(() => {});
 
     // Submit campaign
     await page.click('#send-campaign-btn');
-    await page.waitForTimeout(3000);
+    // Wait for campaign API response or toast
+    await page.waitForResponse(
+      (resp) => resp.url().includes('/api/') && resp.url().includes('campaign'),
+      { timeout: 15000 },
+    ).catch(() => {});
 
     // Form should close on success
     await expect(page.locator('#send-campaign-btn')).toHaveCount(0);
@@ -200,9 +207,8 @@ test.describe('SMS Campaign UI — OWNER @owner @campaigns', () => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
+    await page.locator('#cancel-campaign-btn').waitFor({ state: 'visible', timeout: 5000 });
     await page.click('#cancel-campaign-btn');
-    await page.waitForTimeout(500);
     // Form should be closed — send button no longer visible
     await expect(page.locator('#send-campaign-btn')).toHaveCount(0);
   });
@@ -284,7 +290,6 @@ test.describe('SMS Campaign RBAC — MANAGER blocked @manager @campaigns', () =>
 
   test('MANAGER does NOT have "Campañas" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
     const navLink = page.locator('nav, aside').getByText('Campañas');
     await expect(navLink).toHaveCount(0);
   });
@@ -299,7 +304,7 @@ test.describe('SuperAdmin — Twilio Test Mode @superadmin @superadmin', () => {
 
   test('SA can view Twilio SMS integration settings @superadmin', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('main').waitFor({ state: 'visible', timeout: 10000 });
 
     const mainContent = page.locator('main');
     await expect(mainContent).toBeVisible();
@@ -408,14 +413,16 @@ test.describe('Campaign List — SMS Badge @owner @campaigns', () => {
       expect(resp.status(), 'Seeded owner enterprise plan should allow SMS badge campaign create').toBe(200);
 
       // Poll campaigns API until the new campaign appears (max 10s)
+      let found = false;
       for (let i = 0; i < 10; i++) {
         const listResp = await request.get(`${BASE_API}/api/v1/notifications/campaigns/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const listBody = await listResp.json();
-        const found = listBody.campaigns?.some((c: any) => c.title === `Badge Test ${Date.now()}`);
+        found = listBody.campaigns?.some((c: any) => c.title === `Badge Test ${Date.now()}`);
         if (found) break;
-        await page.waitForTimeout(1000);
+        // Use a short delay for backend data propagation
+        await new Promise(r => setTimeout(r, 1000));
       }
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('text=📱 SMS').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});

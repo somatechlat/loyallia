@@ -245,7 +245,6 @@ export default function LocationsPage() {
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
-      <header className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-surface-900 dark:text-surface-100 tracking-tight">Sucursales</h1>
           <p className="text-surface-500 dark:text-surface-400 mt-1">
@@ -264,7 +263,6 @@ export default function LocationsPage() {
         )}
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Total', value: locations.length, color: 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400' },

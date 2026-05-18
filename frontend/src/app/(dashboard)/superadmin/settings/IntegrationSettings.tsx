@@ -111,8 +111,8 @@ export default function IntegrationSettings({
       await superAdminApi.updateIntegrationSecret('twilio_sms', 'twilio_use_test_mode', newValue ? 'true' : 'false');
       toast.success(
         newValue
-          ? '🧪 Modo prueba activado. SMS usan credenciales de test (sin costo).'
-          : '💰 Modo producción activado. SMS usan credenciales reales (con costo).',
+          ? <span className="flex items-center gap-1"><FlaskConical className="w-3.5 h-3.5" /> Modo prueba activado. SMS usan credenciales de test (sin costo).</span>
+          : <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> Modo producción activado. SMS usan credenciales reales (con costo).</span>,
         { id: toastId },
       );
       onRefresh();

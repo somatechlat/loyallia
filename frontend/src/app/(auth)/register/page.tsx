@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { Rocket, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -303,7 +304,7 @@ export default function RegisterPage() {
           disabled={googleLoading}
           id="google-register-complete-btn"
         >
-          {googleLoading ? <span className="spinner w-4 h-4" /> : '🚀 Crear cuenta gratis'}
+          {googleLoading ? <span className="spinner w-4 h-4" /> : <span className="flex items-center gap-1"><Rocket className="w-4 h-4" /> Crear cuenta gratis</span>}
         </button>
         <button
           type="button"
@@ -503,7 +504,7 @@ export default function RegisterPage() {
               disabled={verifyLoading || !fullPhone || phoneVerified}
               className="btn-secondary w-full justify-center text-sm py-2"
             >
-              {verifyLoading ? <span className="spinner w-3 h-3" /> : '📱 Verificar teléfono'}
+              {verifyLoading ? <span className="spinner w-3 h-3" /> : <span className="flex items-center gap-1"><Smartphone className="w-3 h-3" /> Verificar teléfono</span>}
             </button>
           )}
 

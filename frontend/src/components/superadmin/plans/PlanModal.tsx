@@ -1,4 +1,5 @@
 'use client';
+import { Bot, Smartphone, Mail, MessageSquare, Rocket, Star, Zap, FileText, Wallet } from 'lucide-react';
 
 import { useEffect, useState } from 'react';
 import { superAdminApi } from '@/lib/api';
@@ -227,7 +228,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
 
             {/* AI & API */}
             <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-3 border border-purple-200/50">
-              <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2">🤖 IA & API</p>
+              <p className="text-[10px] font-semibold text-surface-400 uppercase mb-2"><Bot className="w-3.5 h-3.5 inline mr-1" /> IA & API</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-[10px] font-semibold text-purple-600 uppercase">Consultas IA/mes</p>
@@ -297,7 +298,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
             <div className="grid grid-cols-3 gap-4">
               {/* COLUMN 1: Info & Pricing */}
               <div className="space-y-3">
-                <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide">📋 Información</p>
+                <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide"><FileText className="w-3.5 h-3.5 inline mr-1" /> Información</p>
                 <FormField label="Nombre" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="Professional" />
                 <FormField
                   label="Slug"
@@ -372,7 +373,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                       }}
                       className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-400"
                     />
-                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold">📱 WhatsApp</span>
+                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold"><Smartphone className="w-4 h-4 inline mr-1" /> WhatsApp</span>
                   </label>
                   {form.features.includes('whatsapp_campaigns') && (
                     <div className="ml-6">
@@ -401,7 +402,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                       }}
                       className="w-4 h-4 rounded border-blue-400 text-blue-600 focus:ring-blue-400"
                     />
-                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold">📧 Email</span>
+                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold"><Mail className="w-4 h-4 inline mr-1" /> Email</span>
                   </label>
                   {form.features.includes('email_campaigns') && (
                     <div className="ml-6">
@@ -430,7 +431,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                       }}
                       className="w-4 h-4 rounded border-purple-400 text-purple-600 focus:ring-purple-400"
                     />
-                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold">💬 SMS (Twilio)</span>
+                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold"><MessageSquare className="w-4 h-4 inline mr-1" /> SMS (Twilio)</span>
                   </label>
                   {form.features.includes('sms_campaigns') && (
                     <div className="ml-6">
@@ -459,7 +460,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                       }}
                       className="w-4 h-4 rounded border-indigo-400 text-indigo-600 focus:ring-indigo-400"
                     />
-                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold">💳 Wallet (Apple/Google)</span>
+                    <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold"><Wallet className="w-4 h-4 inline mr-1" /> Wallet (Apple/Google)</span>
                   </label>
                   {form.features.includes('wallet_campaigns') && (
                     <div className="ml-6">
@@ -474,7 +475,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                 </div>
 
                 {/* AI & API Rate Limits */}
-                <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide pt-2">🤖 IA & API</p>
+                <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide pt-2"><Bot className="w-3.5 h-3.5 inline mr-1" /> IA & API</p>
                 <div className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 rounded-xl p-3 border border-purple-200/40 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <FormField
@@ -496,7 +497,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
 
               {/* COLUMN 3: Features & Automation */}
               <div className="space-y-3">
-                <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide">⚡ Automatización</p>
+                <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide"><Zap className="w-3.5 h-3.5 inline mr-1" /> Automatización</p>
                 <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 rounded-xl p-3 border border-amber-200/40 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <FormField
@@ -532,7 +533,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                       className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
                     >
                       <option value="draft">📝 Borrador (solo visible en SuperAdmin)</option>
-                      <option value="published">🚀 Publicado (visible para todos)</option>
+                      <option value="published"><Rocket className="w-3.5 h-3.5 inline mr-1" /> Publicado (visible para todos)</option>
                       <option value="archived">📦 Archivado (oculto)</option>
                     </select>
                   </div>
@@ -543,7 +544,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                       onChange={(e) => setForm((f) => ({ ...f, is_featured: e.target.checked }))}
                       className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-400"
                     />
-                    <span className="text-sm text-surface-700 dark:text-surface-200 font-medium">⭐ Plan destacado</span>
+                    <span className="text-sm text-surface-700 dark:text-surface-200 font-medium"><Star className="w-4 h-4 inline mr-1" /> Plan destacado</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <FormField

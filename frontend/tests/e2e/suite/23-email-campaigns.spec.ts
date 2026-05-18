@@ -29,27 +29,28 @@ test.describe('Email Campaigns — OWNER @owner @campaigns', () => {
 
   test('1. Campaign page loads with Email channel indicator', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
-
-    // Campaign page should show "Email:" in the channel indicators bar
+    // Wait for the Email indicator to be visible
     const emailIndicator = page.locator('text=Email:');
+    await emailIndicator.first().waitFor({ state: 'visible', timeout: 10000 });
     await expect(emailIndicator.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('2. "+ Nueva campaña" button is visible and clickable', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: /Campañas/i }).waitFor({ state: 'visible', timeout: 15000 });
 
     // Look for the campaign creation button
     const createBtn = page.locator('button:has-text("Nueva campaña"), a:has-text("Nueva campaña")');
+    await createBtn.first().waitFor({ state: 'visible', timeout: 10000 });
     await expect(createBtn.first()).toBeVisible({ timeout: 10000 });
 
     // Click it and verify a modal/form appears
     await createBtn.first().click();
-    await page.waitForTimeout(1000);
 
-    // After clicking, some form elements or modal should appear
+    // Wait for form elements to appear
     const formElements = page.locator('input, textarea, select, [role="dialog"]');
+    await expect(formElements.first()).toBeVisible({ timeout: 5000 });
+
     const count = await formElements.count();
     expect(count, 'Campaign form should appear after clicking create').toBeGreaterThan(0);
   });

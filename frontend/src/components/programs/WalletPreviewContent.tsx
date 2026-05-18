@@ -153,7 +153,7 @@ function WalletPreviewContent({ type }: { type: string }) {
             <div className="px-2.5 pb-1.5 flex justify-between">
               <div>
                 <p className="text-[5px] font-semibold uppercase opacity-30">CLIENTE</p>
-                <p className="text-[8px] font-bold opacity-80">Juan Pérez</p>
+                <p className="text-[8px] font-bold opacity-80">Cliente</p>
               </div>
               <div className="text-right">
                 <p className="text-[5px] font-semibold uppercase opacity-30">DESDE</p>
@@ -175,8 +175,7 @@ function WalletPreviewContent({ type }: { type: string }) {
               </div>
             </div>
           </div>
-          {/* Powered by */}
-          <p className="text-[6px] text-white/20 text-center mt-1">Powered by Loyallia</p>
+
         </div>
         {/* Home indicator */}
         <div className="flex justify-center pb-1">

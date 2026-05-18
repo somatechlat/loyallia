@@ -7,6 +7,20 @@ import { uploadFile } from '@/lib/upload';
 import WalletPlatformSelector from '@/components/notifications/WalletPlatformSelector';
 import WalletNotificationPreview from '@/components/notifications/WalletNotificationPreview';
 import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
+import { Mail, Smartphone, MessageCircle, AlertTriangle, Send, BarChart3 } from 'lucide-react';
+
+function SegmentIcon({ icon }: { icon: string }) {
+  switch (icon) {
+    case 'all': return <svg className="w-5 h-5 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>;
+    case 'vip': return <svg className="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>;
+    case 'active': return <svg className="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>;
+    case 'at_risk': return <AlertTriangle className="w-5 h-5 text-orange-500" />;
+    case 'inactive': return <svg className="w-5 h-5 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M8 15h8M9 9h.01M15 9h.01"/></svg>;
+    case 'new': return <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>;
+    case 'chart': return <BarChart3 className="w-5 h-5 text-surface-500" />;
+    default: return <BarChart3 className="w-5 h-5 text-surface-500" />;
+  }
+}
 
 interface Campaign {
   id: string; title: string; message: string; segment: string;
@@ -413,7 +427,7 @@ export default function CampaignsPage() {
                     maxLength={10000}
                     value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
                   <p className="text-xs text-surface-400 mt-1">Puedes usar HTML: &lt;b&gt;, &lt;i&gt;, &lt;img&gt; · Máximo 10,000 caracteres</p>
-                  <p className="text-xs text-amber-600 mt-1">⚠️ El HTML será sanitizado automáticamente antes del envío para prevenir inyección de código.</p>
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> El HTML será sanitizado automáticamente antes del envío para prevenir inyección de código.</p>
                 </>
               ) : (
                 <textarea id="campaign-msg"
@@ -428,7 +442,7 @@ export default function CampaignsPage() {
             {campaignType === 'wallet' && (
               <div className="border border-surface-200 dark:border-surface-700 rounded-xl p-4 bg-surface-50 dark:bg-surface-900/50">
                 <p className="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3">
-                  👁️ Vista previa de la notificación
+                  <svg className="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Vista previa de la notificación
                 </p>
                 <WalletNotificationPreview
                   title={form.title}
@@ -446,14 +460,14 @@ export default function CampaignsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {segments.map(s => {
                   const segmentMeta: Record<string, { icon: string; desc: string; color: string; darkColor: string }> = {
-                    all:      { icon: '📢', desc: 'Envía a toda tu base de clientes registrados.', color: 'border-brand-500 bg-brand-50', darkColor: 'dark:bg-brand-900/20' },
-                    vip:      { icon: '👑', desc: 'Clientes con alto volumen de compras y visitas frecuentes.', color: 'border-amber-500 bg-amber-50', darkColor: 'dark:bg-amber-900/20' },
-                    active:   { icon: '🟢', desc: 'Clientes con actividad reciente (últimos 30 días).', color: 'border-emerald-500 bg-emerald-50', darkColor: 'dark:bg-emerald-900/20' },
-                    at_risk:  { icon: '⚠️', desc: 'Clientes cuya frecuencia de visita ha disminuido.', color: 'border-orange-500 bg-orange-50', darkColor: 'dark:bg-orange-900/20' },
-                    inactive: { icon: '💤', desc: 'Clientes sin actividad en los últimos 60+ días.', color: 'border-red-400 bg-red-50', darkColor: 'dark:bg-red-900/20' },
-                    new:      { icon: '🆕', desc: 'Clientes registrados en los últimos 30 días.', color: 'border-blue-500 bg-blue-50', darkColor: 'dark:bg-blue-900/20' },
+                    all:      { icon: 'all', desc: 'Envía a toda tu base de clientes registrados.', color: 'border-brand-500 bg-brand-50', darkColor: 'dark:bg-brand-900/20' },
+                    vip:      { icon: 'vip', desc: 'Clientes con alto volumen de compras y visitas frecuentes.', color: 'border-amber-500 bg-amber-50', darkColor: 'dark:bg-amber-900/20' },
+                    active:   { icon: 'active', desc: 'Clientes con actividad reciente (últimos 30 días).', color: 'border-emerald-500 bg-emerald-50', darkColor: 'dark:bg-emerald-900/20' },
+                    at_risk:  { icon: 'alert', desc: 'Clientes cuya frecuencia de visita ha disminuido.', color: 'border-orange-500 bg-orange-50', darkColor: 'dark:bg-orange-900/20' },
+                    inactive: { icon: 'inactive', desc: 'Clientes sin actividad en los últimos 60+ días.', color: 'border-red-400 bg-red-50', darkColor: 'dark:bg-red-900/20' },
+                    new:      { icon: 'new', desc: 'Clientes registrados en los últimos 30 días.', color: 'border-blue-500 bg-blue-50', darkColor: 'dark:bg-blue-900/20' },
                   };
-                  const meta = segmentMeta[s.id] ?? { icon: '📊', desc: `Segmento: ${s.name}`, color: 'border-surface-300 bg-surface-50', darkColor: 'dark:bg-surface-800' };
+                  const meta = segmentMeta[s.id] ?? { icon: 'chart', desc: `Segmento: ${s.name}`, color: 'border-surface-300 bg-surface-50', darkColor: 'dark:bg-surface-800' };
                   const isSelected = form.segment_id === s.id;
                   return (
                     <button
@@ -468,7 +482,7 @@ export default function CampaignsPage() {
                       id={`segment-${s.id}`}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="text-xl">{meta.icon}</span>
+                        <span className="text-xl"><SegmentIcon icon={meta.icon} /></span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-sm text-surface-900 dark:text-white truncate">{s.name}</p>
@@ -491,7 +505,7 @@ export default function CampaignsPage() {
               {/* Selected summary */}
               {form.segment_id && (
                 <div className="mt-3 p-3 bg-surface-50 dark:bg-surface-800 rounded-xl flex items-center gap-2">
-                  <span className="text-xs text-surface-500">📨 Esta campaña se enviará a</span>
+                  <span className="text-xs text-surface-500 flex items-center gap-1"><Send className="w-3 h-3" /> Esta campaña se enviará a</span>
                   <span className="text-xs font-bold text-surface-900 dark:text-white">
                     {segments.find(s => s.id === form.segment_id)?.member_count.toLocaleString() ?? 0} clientes
                   </span>
@@ -545,10 +559,10 @@ export default function CampaignsPage() {
                       c.channel === 'sms' ? 'bg-orange-100 text-orange-700' :
                       'bg-gray-100 text-gray-700'
                     }`}>
-                      {c.channel === 'email' ? '📧 Email' :
-                       (c.channel === 'wallet' || c.channel === 'in_app') ? '💳 Wallet' :
-                       c.channel === 'whatsapp' ? '💬 WhatsApp' :
-                       c.channel === 'sms' ? '📱 SMS' :
+                      {c.channel === 'email' ? <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> Email</span> :
+                       (c.channel === 'wallet' || c.channel === 'in_app') ? <span className="flex items-center gap-1"><Wallet className="w-3 h-3" /> Wallet</span> :
+                       c.channel === 'whatsapp' ? <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" /> WhatsApp</span> :
+                       c.channel === 'sms' ? <span className="flex items-center gap-1"><Smartphone className="w-3 h-3" /> SMS</span> :
                        c.channel?.toUpperCase() || 'Email'}
                     </span>
                   </td>

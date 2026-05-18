@@ -9,7 +9,7 @@ test.describe('Role Isolation — MANAGER blocked routes @manager @role-isolatio
 
   test('MANAGER navigating to /team does not crash @manager', async ({ page }) => {
     await page.goto('/team', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     // Should either redirect away or show no content — NOT crash
     const errorElement = page.locator('text=Application error');
     const errorCount = await errorElement.count();
@@ -18,7 +18,7 @@ test.describe('Role Isolation — MANAGER blocked routes @manager @role-isolatio
 
   test('MANAGER navigating to /automation does not crash @manager', async ({ page }) => {
     await page.goto('/automation', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const errorElement = page.locator('text=Application error');
     const errorCount = await errorElement.count();
     expect(errorCount).toBe(0);
@@ -26,7 +26,7 @@ test.describe('Role Isolation — MANAGER blocked routes @manager @role-isolatio
 
   test('MANAGER navigating to /settings does not crash @manager', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const errorElement = page.locator('text=Application error');
     const errorCount = await errorElement.count();
     expect(errorCount).toBe(0);
@@ -34,7 +34,7 @@ test.describe('Role Isolation — MANAGER blocked routes @manager @role-isolatio
 
   test('MANAGER navigating to /billing does not crash @manager', async ({ page }) => {
     await page.goto('/billing', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const errorElement = page.locator('text=Application error');
     const errorCount = await errorElement.count();
     expect(errorCount).toBe(0);
@@ -47,21 +47,21 @@ test.describe('Role Isolation — STAFF blocked from dashboard @staff @role-isol
 
   test('STAFF navigating to / redirects to scanner @staff', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForURL(/scanner/, { timeout: 15000 });
     const url = page.url();
     expect(url).toMatch(/scanner/);
   });
 
   test('STAFF navigating to /customers is blocked @staff', async ({ page }) => {
     await page.goto('/customers', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForURL((url) => !url.toString().includes('/customers'), { timeout: 15000 });
     const url = page.url();
     expect(url).not.toMatch(/\/customers$/);
   });
 
   test('STAFF navigating to /analytics is blocked @staff', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForURL((url) => !url.toString().includes('/analytics'), { timeout: 15000 });
     const url = page.url();
     expect(url).not.toMatch(/\/analytics$/);
   });
@@ -73,7 +73,7 @@ test.describe('Role Isolation — OWNER blocked from superadmin @owner @role-iso
 
   test('OWNER navigating to /superadmin does not show SA dashboard @owner', async ({ page }) => {
     await page.goto('/superadmin', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     // OWNER should not see "Plataforma" heading
     const saHeading = page.locator('nav, aside').getByText('Plataforma');
     await expect(saHeading).toHaveCount(0);
@@ -81,7 +81,7 @@ test.describe('Role Isolation — OWNER blocked from superadmin @owner @role-iso
 
   test('OWNER navigating to /superadmin/tenants is blocked @owner', async ({ page }) => {
     await page.goto('/superadmin/tenants', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     // Should not show tenant management
     const saNav = page.locator('nav, aside').getByText('Negocios');
     await expect(saNav).toHaveCount(0);

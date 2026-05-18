@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { billingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
+import { Rocket, ArrowUpCircle, AlertTriangle, Mail, MessageSquare, Smartphone, Bot, BarChart3, CreditCard, Users, MapPin, Bell, Wallet, Settings, Link2, Upload, Gift, Zap } from 'lucide-react';
 
 interface Subscription {
   plan: string;
@@ -18,9 +19,12 @@ const PLAN_LABELS: Record<string, string> = {
   trial: 'Prueba Gratuita', starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise',
 };
 
-const PLAN_ICONS: Record<string, string> = {
-  trial: '🎁', starter: '🚀', professional: '⚡', enterprise: '🏢',
+const PLAN_ICON_COMPONENTS: Record<string, React.FC<{className?: string}>> = {
+  trial: Gift, starter: Rocket, professional: Zap, enterprise: BuildingIcon,
 };
+function BuildingIcon({className}: {className?: string}) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6"/></svg>;
+}
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   active:    { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', label: 'Activo' },
@@ -29,28 +33,28 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
   canceled:  { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Cancelado' },
 };
 
-const USAGE_LABELS: Record<string, { label: string; icon: string }> = {
-  customers:     { label: 'Clientes', icon: '👤' },
-  programs:      { label: 'Programas', icon: '📋' },
-  users:         { label: 'Usuarios', icon: '👥' },
-  locations:     { label: 'Sucursales', icon: '📍' },
-  notifications_month: { label: 'Notificaciones/mes', icon: '🔔' },
-  transactions_month:  { label: 'Transacciones/mes', icon: '💳' },
-  emails_month:  { label: 'Emails/mes', icon: '📧' },
-  sms_day:       { label: 'SMS/día', icon: '💬' },
-  whatsapp_day:  { label: 'WhatsApp/día', icon: '📱' },
-  wallet_pushes_month: { label: 'Wallet pushes/mes', icon: '🎫' },
-  automations:   { label: 'Automatizaciones', icon: '⚡' },
-  automation_executions_day: { label: 'Ejec. automatización/día', icon: '⚙️' },
-  ai_queries_month: { label: 'Consultas IA/mes', icon: '🤖' },
-  api_calls_day: { label: 'Llamadas API/día', icon: '🔗' },
-  exports_month: { label: 'Exportaciones/mes', icon: '📤' },
-  enrollments:   { label: 'Inscripciones', icon: '👤' },
-  notifications: { label: 'Notificaciones', icon: '🔔' },
-  team_members:  { label: 'Miembros del equipo', icon: '👥' },
-  transactions:  { label: 'Transacciones', icon: '💳' },
-  campaigns:     { label: 'Campañas', icon: '📣' },
-  api_calls:     { label: 'Llamadas API', icon: '🔗' },
+const USAGE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
+  customers:     { label: 'Clientes', icon: <Users className="w-3.5 h-3.5" /> },
+  programs:      { label: 'Programas', icon: <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> },
+  users:         { label: 'Usuarios', icon: <Users className="w-3.5 h-3.5" /> },
+  locations:     { label: 'Sucursales', icon: <MapPin className="w-3.5 h-3.5" /> },
+  notifications_month: { label: 'Notificaciones/mes', icon: <Bell className="w-3.5 h-3.5" /> },
+  transactions_month:  { label: 'Transacciones/mes', icon: <CreditCard className="w-3.5 h-3.5" /> },
+  emails_month:  { label: 'Emails/mes', icon: <Mail className="w-3.5 h-3.5" /> },
+  sms_day:       { label: 'SMS/día', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  whatsapp_day:  { label: 'WhatsApp/día', icon: <Smartphone className="w-3.5 h-3.5" /> },
+  wallet_pushes_month: { label: 'Wallet pushes/mes', icon: <Wallet className="w-3.5 h-3.5" /> },
+  automations:   { label: 'Automatizaciones', icon: <Zap className="w-3.5 h-3.5" /> },
+  automation_executions_day: { label: 'Ejec. automatización/día', icon: <Settings className="w-3.5 h-3.5" /> },
+  ai_queries_month: { label: 'Consultas IA/mes', icon: <Bot className="w-3.5 h-3.5" /> },
+  api_calls_day: { label: 'Llamadas API/día', icon: <Link2 className="w-3.5 h-3.5" /> },
+  exports_month: { label: 'Exportaciones/mes', icon: <Upload className="w-3.5 h-3.5" /> },
+  enrollments:   { label: 'Inscripciones', icon: <Users className="w-3.5 h-3.5" /> },
+  notifications: { label: 'Notificaciones', icon: <Bell className="w-3.5 h-3.5" /> },
+  team_members:  { label: 'Miembros del equipo', icon: <Users className="w-3.5 h-3.5" /> },
+  transactions:  { label: 'Transacciones', icon: <CreditCard className="w-3.5 h-3.5" /> },
+  campaigns:     { label: 'Campañas', icon: <Mail className="w-3.5 h-3.5" /> },
+  api_calls:     { label: 'Llamadas API', icon: <Link2 className="w-3.5 h-3.5" /> },
 };
 
 /** SVG arc for radial gauge */
@@ -100,7 +104,7 @@ export default function BillingPage() {
 
   const statusInfo = STATUS_COLORS[sub?.status ?? ''] ?? STATUS_COLORS['active'] ?? { bg: 'bg-gray-100', text: 'text-gray-700', label: sub?.status ?? 'Desconocido' };
   const planSlug = sub?.plan_slug || sub?.plan || '';
-  const planIcon = PLAN_ICONS[planSlug] ?? '📦';
+  const PlanIconComponent = PLAN_ICON_COMPONENTS[planSlug] ?? BuildingIcon;
   const planLabel = sub?.plan_name || PLAN_LABELS[planSlug] || planSlug || 'Plan';
 
   return (
@@ -117,7 +121,7 @@ export default function BillingPage() {
         <div className="bg-gradient-to-r from-brand-500 to-brand-700 dark:from-brand-600 dark:to-brand-800 px-6 py-5 rounded-t-3xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-4xl">{planIcon}</span>
+              <PlanIconComponent className="w-10 h-10 text-white" />
               <div className="text-white">
                 <h2 className="text-xl font-bold">{planLabel}</h2>
                 <div className="flex items-center gap-2 mt-1">
@@ -144,7 +148,7 @@ export default function BillingPage() {
             </p>
           </div>
           <button className="btn-primary whitespace-nowrap" id="upgrade-btn">
-            {planSlug === 'trial' ? '🚀 Mejorar plan' : '⬆️ Cambiar plan'}
+            {planSlug === 'trial' ? <span className="flex items-center gap-1"><Rocket className="w-4 h-4" /> Mejorar plan</span> : <span className="flex items-center gap-1"><ArrowUpCircle className="w-4 h-4" /> Cambiar plan</span>}
           </button>
         </div>
       </div>
@@ -158,7 +162,7 @@ export default function BillingPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {Object.entries(usage.limits).map(([key, val]) => {
-              const meta = USAGE_LABELS[key] ?? { label: key, icon: '📊' };
+              const meta = USAGE_LABELS[key] ?? { label: key, icon: <BarChart3 className="w-3.5 h-3.5" /> };
               const gaugeColor = getGaugeColor(val.percentage);
               return (
                 <div key={key} className="card p-5 flex flex-col items-center gap-3 group hover:shadow-card-hover transition-all duration-300"
@@ -170,14 +174,14 @@ export default function BillingPage() {
                     </div>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-surface-900 dark:text-white">{meta.icon} {meta.label}</p>
+                    <p className="text-sm font-semibold text-surface-900 dark:text-white flex items-center gap-1">{meta.icon} {meta.label}</p>
                     <p className="text-xs text-surface-500 mt-0.5">
                       <span className="font-mono font-bold">{val.used.toLocaleString()}</span>
                       <span className="mx-1">/</span>
                       <span className="font-mono">{val.limit.toLocaleString()}</span>
                     </p>
                     {val.percentage >= 90 && (
-                      <p className="text-[10px] text-red-500 font-semibold mt-1 animate-pulse">⚠️ Cerca del límite</p>
+                      <p className="text-[10px] text-red-500 font-semibold mt-1 animate-pulse flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Cerca del límite</p>
                     )}
                   </div>
                 </div>

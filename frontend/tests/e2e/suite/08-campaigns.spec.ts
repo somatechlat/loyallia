@@ -8,14 +8,13 @@ test.describe('Campaigns — OWNER @owner @campaigns', () => {
 
   test('OWNER sees campaigns page @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
     const heading = page.locator('h1').first();
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
   test('OWNER has "Campañas" in navigation @owner', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
     const navLink = page.locator('nav, aside').getByText('Campañas');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
@@ -27,7 +26,6 @@ test.describe('Campaigns — MANAGER Isolation @manager @campaigns', () => {
 
   test('MANAGER does NOT have "Campañas" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
     const navLink = page.locator('nav, aside').getByText('Campañas');
     await expect(navLink).toHaveCount(0);
   });

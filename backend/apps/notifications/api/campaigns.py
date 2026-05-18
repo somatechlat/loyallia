@@ -1,5 +1,6 @@
 """Campaign listing and creation endpoints."""
 
+from datetime import datetime
 from typing import Any
 
 from django.http import HttpRequest
@@ -16,6 +17,50 @@ from common.plan_enforcement import (
 )
 
 from .base import router
+
+
+# ---------------------------------------------------------------------------
+# Scheduled campaign support
+# ---------------------------------------------------------------------------
+
+def _get_campaign_task(data: CampaignCreateIn):
+    """Return the Celery task function and kwargs for a campaign channel."""
+    if data.channel == "email":
+        from apps.notifications.tasks import send_email_campaign
+        return send_email_campaign, {
+            "tenant_id": None,  # filled at dispatch time
+            "subject": data.title,
+            "html_body": data.message,
+            "segment_id": data.segment_id,
+            "image_url": data.image_url or "",
+        }
+    elif data.channel == "wallet":
+        from apps.notifications.tasks import send_wallet_notification_campaign
+        return send_wallet_notification_campaign, {
+            "tenant_id": None,
+            "title": data.title,
+            "message": data.message,
+            "segment_id": data.segment_id,
+            "wallet_platform": data.wallet_platform,
+        }
+    elif data.channel == "whatsapp":
+        from apps.notifications.tasks import send_whatsapp_campaign
+        return send_whatsapp_campaign, {
+            "tenant_id": None,
+            "title": data.title,
+            "message": data.message,
+            "segment_id": data.segment_id,
+            "image_url": data.image_url or "",
+        }
+    elif data.channel == "sms":
+        from apps.notifications.sms.tasks import send_sms_campaign
+        return send_sms_campaign, {
+            "tenant_id": None,
+            "title": data.title,
+            "message": data.message,
+            "segment_id": data.segment_id,
+        }
+    return None, {}
 
 
 class CampaignOut(BaseModel):
@@ -37,6 +82,8 @@ class CampaignCreateIn(BaseModel):
     channel: str | None = "email"  # 'email', 'wallet', 'whatsapp', or 'sms'
     sender_domain: str | None = "loyallia"  # 'loyallia' or 'custom'
     wallet_platform: str = "both"  # 'apple', 'google', or 'both'
+    schedule_type: str = "immediate"  # 'immediate' or 'scheduled'
+    scheduled_at: str | None = None  # ISO datetime string for scheduled campaigns
 
 
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
@@ -111,11 +158,61 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     - 'wallet': Creates notifications that appear when customers check their wallet cards
     - 'whatsapp': WhatsApp campaign via Baileys bridge  messages queued with Gaussian jitter anti-ban
     - 'sms': SMS campaign via Twilio with per-message delivery tracking
+
+    Scheduling: pass schedule_type="scheduled" and scheduled_at="<ISO datetime>"
+    to defer dispatch instead of sending immediately.
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     check_plan_limit(request.tenant, "notifications_month", write=True)
 
+    # -- Scheduled campaign support -------------------------------------------
+    if data.schedule_type == "scheduled" and data.scheduled_at:
+        from celery import current_app as celery_app
+        from django.utils import timezone
+
+        try:
+            scheduled_time = datetime.fromisoformat(data.scheduled_at.replace("Z", "+00:00"))
+        except ValueError:
+            raise HttpError(400, get_message("VALIDATION_ERROR", detail="Invalid scheduled_at format. Use ISO 8601."))
+
+        if scheduled_time < timezone.now():
+            raise HttpError(400, get_message("VALIDATION_ERROR", detail="scheduled_at must be in the future."))
+
+        # Resolve task for the channel
+        task_fn, task_kwargs = _get_campaign_task(data)
+        if task_fn is None:
+            raise HttpError(400, get_message("VALIDATION_ERROR", detail="Canal no válido para programación."))
+
+        # Fill tenant_id
+        task_kwargs["tenant_id"] = str(request.tenant.id)
+
+        # Schedule via Celery
+        celery_app.send_task(
+            task_fn.name,
+            kwargs=task_kwargs,
+            eta=scheduled_time,
+        )
+
+        log_action(
+            request=request,
+            action="CREATE",
+            resource_type="campaign",
+            details={
+                "channel": data.channel,
+                "segment_id": data.segment_id,
+                "title": data.title,
+                "schedule_type": "scheduled",
+                "scheduled_at": data.scheduled_at,
+            },
+        )
+        return {
+            "success": True,
+            "message": "Campaign scheduled successfully",
+            "scheduled_at": data.scheduled_at,
+        }
+
+    # -- Immediate dispatch (existing flow) -----------------------------------
     if data.channel == "email":
  # LYL-SRS-008: Gate email campaigns by plan feature + monthly quota
         check_feature_access(request.tenant, "email_campaigns")

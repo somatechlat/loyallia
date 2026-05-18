@@ -40,7 +40,7 @@ const TRIGGER_DESCRIPTIONS: Record<string, string> = {
 const PRESET_TEMPLATES = [
   {
     id: 'welcome',
-    name: '🎉 Bienvenida a nuevos clientes',
+    name: 'Bienvenida a nuevos clientes',
     description: 'Envia un mensaje de bienvenida cuando alguien seinscribe',
     trigger: 'customer_enrolled',
     action: 'send_email',
@@ -48,15 +48,15 @@ const PRESET_TEMPLATES = [
   },
   {
     id: 'birthday',
-    name: '🎂 Felicidades de cumpleaños',
+    name: 'Felicidades de cumpleaños',
     description: 'Envia una promoción especial en el cumpleaños del cliente',
     trigger: 'birthday_coming',
     action: 'send_email',
-    action_config: { title: '🎂 ¡Feliz cumpleaños!', message: '¡Tenemos un regalo especial para ti! Visita nuestro local y muestra este mensaje.' },
+    action_config: { title: '¡Feliz cumpleaños!', message: '¡Tenemos un regalo especial para ti! Visita nuestro local y muestra este mensaje.' },
   },
   {
     id: 'inactive',
-    name: '💤 Recordatorio de inactividad',
+    name: 'Recordatorio de inactividad',
     description: 'Recuerda a los clientes que no han visitado en mucho tiempo',
     trigger: 'inactive_reminder',
     action: 'send_email',
@@ -64,7 +64,7 @@ const PRESET_TEMPLATES = [
   },
   {
     id: 'milestone',
-    name: '🏆 Cliente fiel - Hitos',
+    name: 'Cliente fiel - Hitos',
     description: 'Celebra cuando el cliente alcanza un número de visitas/puntos',
     trigger: 'milestone_reached',
     action: 'send_email',
@@ -72,7 +72,7 @@ const PRESET_TEMPLATES = [
   },
   {
     id: 'reward_ready',
-    name: '🎁 Recompensa lista para canjear',
+    name: 'Recompensa lista para canjear',
     description: 'Notifica cuando el cliente tiene una recompensa lista',
     trigger: 'reward_ready',
     action: 'send_email',
@@ -80,7 +80,7 @@ const PRESET_TEMPLATES = [
   },
   {
     id: 'transaction',
-    name: '💳 Confirmación de transacción',
+    name: 'Confirmación de transacción',
     description: 'Confirma cada transacción con Sellos/Puntos',
     trigger: 'transaction_completed',
     action: 'send_email',
@@ -89,36 +89,36 @@ const PRESET_TEMPLATES = [
   // Wallet preset templates
   {
     id: 'wallet_welcome',
-    name: '🎉 Bienvenida Wallet',
+    name: 'Bienvenida Wallet',
     description: 'Envía notificación en wallet cuando alguien se inscribe',
     trigger: 'customer_enrolled',
     action: 'send_wallet',
     action_config: {
-      title: '🎉 ¡Bienvenido!',
+      title: '¡Bienvenido!',
       message: 'Gracias por unirte. Tu tarjeta digital está lista. Acumula sellos y gana recompensas.',
       wallet_platform: 'both',
     },
   },
   {
     id: 'wallet_reward',
-    name: '🎁 Recompensa en Wallet',
+    name: 'Recompensa en Wallet',
     description: 'Notifica en wallet cuando el cliente gana una recompensa',
     trigger: 'reward_earned',
     action: 'send_wallet',
     action_config: {
-      title: '🎁 ¡Recompensa ganada!',
+      title: '¡Recompensa ganada!',
       message: 'Has alcanzado una recompensa. ¡Canjéala en tu próxima visita!',
       wallet_platform: 'both',
     },
   },
   {
     id: 'wallet_transaction',
-    name: '💳 Confirmación Wallet',
+    name: 'Confirmación Wallet',
     description: 'Confirma transacciones directamente en la tarjeta digital',
     trigger: 'transaction_completed',
     action: 'send_wallet',
     action_config: {
-      title: '💳 Transacción registrada',
+      title: 'Transacción registrada',
       message: '¡Has ganado sellos/puntos! Sigue acumulando para tu próxima recompensa.',
       wallet_platform: 'both',
     },
@@ -129,7 +129,7 @@ const ACTION_LABELS: Record<string, string> = {
   send_notification: 'Notificación (Push/Email)', send_email: 'Solo Email',
   send_sms: 'Enviar SMS', issue_reward: 'Emitir recompensa',
   update_segment: 'Actualizar segmento', create_campaign: 'Crear campaña',
-  send_wallet: '💳 Notificación Wallet',
+  send_wallet: 'Notificación Wallet',
 };
 /* Flat SVG icons for actions — NO emojis */
 const ACTION_ICON_PATHS: Record<string, string> = {
@@ -501,7 +501,7 @@ export default function AutomationPage() {
                       {form.action === 'send_wallet' && (
                         <div className="border border-surface-200 dark:border-surface-700 rounded-xl p-4 bg-surface-50 dark:bg-surface-900/50">
                           <p className="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3">
-                            👁️ Vista previa de la notificación
+                            <svg className="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Vista previa de la notificación
                           </p>
                           <WalletNotificationPreview
                             title={form.action_config.title || ''}

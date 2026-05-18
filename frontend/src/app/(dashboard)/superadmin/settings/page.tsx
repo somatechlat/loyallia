@@ -62,8 +62,8 @@ export default function SuperAdminSettings() {
       setPlatformMode(newMode);
       toast.success(
         newMode === 'development'
-          ? '🟡 Modo Desarrollo activado. Sandbox seguro para pruebas.'
-          : '🟢 Modo Producción activado. Operaciones reales habilitadas.',
+          ? 'Modo Desarrollo activado. Sandbox seguro para pruebas.'
+          : 'Modo Producción activado. Operaciones reales habilitadas.',
         { id: toastId },
       );
       loadIntegrations();

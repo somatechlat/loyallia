@@ -183,3 +183,81 @@ def evaluate_birthday_triggers() -> dict:
 
     logger.info("evaluate_birthday_triggers: %d automation triggers fired", triggered)
     return {"triggered": triggered}
+
+
+@shared_task(
+    queue="default",
+    name="apps.automation.tasks.evaluate_points_threshold_triggers",
+)
+def evaluate_points_threshold_triggers() -> dict:
+    """Daily task: fire POINTS_THRESHOLD trigger for customers who meet the
+    points threshold configured in their tenant's automations.
+
+    Each automation defines its own threshold via trigger_config.points_threshold.
+    """
+    from apps.automation.engine import fire_trigger
+    from apps.automation.models import Automation, AutomationTrigger
+    from apps.customers.models import Customer
+    from apps.transactions.models import Transaction
+
+    # Find all active points_threshold automations
+    threshold_automations = (
+        Automation.objects.filter(
+            trigger=AutomationTrigger.POINTS_THRESHOLD,
+            is_active=True,
+        )
+        .select_related("tenant")
+        .prefetch_related("target_programs")
+    )
+
+    total_triggered = 0
+
+    for automation in threshold_automations:
+        threshold = automation.trigger_config.get("points_threshold", 0)
+        if threshold <= 0:
+            continue
+
+        # Find customers whose total points >= threshold
+        from django.db.models import Sum
+
+        qualifying = (
+            Customer.objects.filter(
+                tenant=automation.tenant,
+                is_active=True,
+            )
+            .annotate(total_points=Sum("transactions__points"))
+            .filter(total_points__gte=threshold)
+        )
+
+        # Apply target program filter if configured
+        if automation.target_programs.exists():
+            qualifying = qualifying.filter(
+                passes__card__in=automation.target_programs,
+                passes__is_active=True,
+            ).distinct()
+
+        triggered = 0
+        for customer in qualifying.iterator(chunk_size=100):
+            count = fire_trigger(
+                trigger="points_threshold",
+                customer=customer,
+                context={
+                    "points_threshold": threshold,
+                    "source": "scheduled_evaluation",
+                },
+            )
+            triggered += count
+
+        total_triggered += triggered
+        logger.info(
+            "evaluate_points_threshold: automation=%s threshold=%d triggered=%d",
+            automation.id,
+            threshold,
+            triggered,
+        )
+
+    logger.info(
+        "evaluate_points_threshold_triggers: %d total automation triggers fired",
+        total_triggered,
+    )
+    return {"triggered": total_triggered}

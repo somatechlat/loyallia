@@ -72,7 +72,7 @@ export default function IntegrationsManager({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">
-                      {int.preview_values?.twilio_use_test_mode === 'true' ? '🧪' : '💰'}
+                      {int.preview_values?.twilio_use_test_mode === 'true' ? <FlaskConical className="w-4 h-4 text-amber-500" /> : <DollarSign className="w-4 h-4 text-green-500" />}
                     </span>
                     <div>
                       <p className={`text-xs font-bold uppercase ${
@@ -91,7 +91,7 @@ export default function IntegrationsManager({
                       }`}>
                         {int.preview_values?.twilio_use_test_mode === 'true'
                           ? 'SMS de test sin costo — seguro para desarrollo'
-                          : '⚠️ SMS reales con costo por mensaje'}
+                          : <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> SMS reales con costo por mensaje</span>}
                       </p>
                     </div>
                   </div>
@@ -241,7 +241,7 @@ export default function IntegrationsManager({
                       >
                         {savingVault ? 'Guardando...' : 'Guardar en Vault'}
                       </button>
-                      {getDiagnosticValue(int.diagnostics as Record<string, unknown>, field.key) === '✅ Configurado' && (
+                      {getDiagnosticValue(int.diagnostics as Record<string, unknown>, field.key) === 'Configurado' && (
                         <span className="text-[10px] text-green-600 font-medium">✓ En Vault</span>
                       )}
                     </div>

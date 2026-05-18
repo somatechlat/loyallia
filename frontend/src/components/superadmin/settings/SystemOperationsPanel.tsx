@@ -60,7 +60,7 @@ export default function SystemOperationsPanel({
       {/* Factory Reset */}
       <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-5 border border-red-200 dark:border-red-800">
         <div className="flex items-start gap-3 mb-3">
-          <span className="text-2xl">⚠️</span>
+          <AlertTriangle className="w-6 h-6 text-red-500" />
           <div>
             <h3 className="font-semibold text-red-700 dark:text-red-400">Restaurar de Fábrica</h3>
             <p className="text-sm text-surface-500 mt-1">
@@ -78,14 +78,14 @@ export default function SystemOperationsPanel({
             onClick={onFactoryResetRequest}
             className="bg-red-600 hover:bg-red-700 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
           >
-            {requestingReset ? 'Enviando código...' : '🔑 Solicitar Código de Verificación'}
+            {requestingReset ? 'Enviando código...' : <span className="flex items-center gap-1"><Key className="w-3.5 h-3.5" /> Solicitar Código de Verificación</span>}
           </button>
         )}
 
         {resetStep === 'otp_sent' && (
           <div className="space-y-3">
             <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-              ✉️ Código enviado a su email (y SMS si está configurado). Ingrese el código de 6 dígitos:
+              <Mail className="w-3.5 h-3.5 inline mr-1" />Código enviado a su email (y SMS si está configurado). Ingrese el código de 6 dígitos:
             </p>
             <div className="flex gap-3 items-center flex-wrap">
               <input
@@ -104,7 +104,7 @@ export default function SystemOperationsPanel({
                 onClick={onFactoryResetConfirm}
                 className="bg-red-700 hover:bg-red-800 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
               >
-                {confirmingReset ? 'Procesando...' : '🔥 Confirmar Restauración'}
+                {confirmingReset ? 'Procesando...' : <span className="flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> Confirmar Restauración</span>}
               </button>
               <button
                 onClick={onCancelReset}

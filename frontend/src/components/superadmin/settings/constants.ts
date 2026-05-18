@@ -130,7 +130,7 @@ export const getDiagnosticValue = (
   const diagKey = DIAGNOSTIC_MAPPING[fieldKey];
   if (diagKey && diagKey in diagnostics) {
     const val = diagnostics[diagKey];
-    return val === true ? '✅ Configurado' : '❌ No configurado';
+    return val === true ? 'Configurado' : 'No configurado';
   }
   return '';
 };

@@ -160,7 +160,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                   <div className="relative z-10 flex items-end justify-between">
                     <div>
                       <p className="text-[8px] font-semibold uppercase tracking-wider opacity-40">Cliente</p>
-                      <p className="text-xs font-bold opacity-80">Juan Pérez</p>
+                      <p className="text-xs font-bold opacity-80">Cliente</p>
                     </div>
                     <div className="bg-[#ffffff] rounded-xl p-1 shadow-lg">
                       <PremiumQrSvg color={program.background_color || '#1a1a2e'} size={44} />

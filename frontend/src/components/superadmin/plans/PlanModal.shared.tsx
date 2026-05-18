@@ -33,18 +33,18 @@ export interface PlanData {
 }
 
 export const PREDEFINED_FEATURES = [
-  { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp', icon: '📱' },
-  { id: 'sms_campaigns', label: 'Campañas de SMS', icon: '💬' },
-  { id: 'email_campaigns', label: 'Campañas de Email', icon: '📧' },
-  { id: 'wallet_campaigns', label: 'Apple/Google Wallet', icon: '💳' },
-  { id: 'geo_fencing', label: 'Geo-Fencing', icon: '📍' },
-  { id: 'automation', label: 'Automatización', icon: '⚡' },
-  { id: 'advanced_analytics', label: 'Analítica Avanzada', icon: '📊' },
-  { id: 'ai_assistant', label: 'Asistente IA', icon: '🤖' },
-  { id: 'agent_api', label: 'Acceso API Agente', icon: '🔌' },
-  { id: 'priority_support', label: 'Soporte Prioritario', icon: '⭐' },
-  { id: 'custom_branding', label: 'Marca Personalizada', icon: '🎨' },
-  { id: 'data_export', label: 'Exportación de Datos', icon: '📤' },
+  { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp', icon: 'phone' },
+  { id: 'sms_campaigns', label: 'Campañas de SMS', icon: 'message' },
+  { id: 'email_campaigns', label: 'Campañas de Email', icon: 'mail' },
+  { id: 'wallet_campaigns', label: 'Apple/Google Wallet', icon: 'wallet' },
+  { id: 'geo_fencing', label: 'Geo-Fencing', icon: 'map' },
+  { id: 'automation', label: 'Automatización', icon: 'zap' },
+  { id: 'advanced_analytics', label: 'Analítica Avanzada', icon: 'chart' },
+  { id: 'ai_assistant', label: 'Asistente IA', icon: 'bot' },
+  { id: 'agent_api', label: 'Acceso API Agente', icon: 'plug' },
+  { id: 'priority_support', label: 'Soporte Prioritario', icon: 'star' },
+  { id: 'custom_branding', label: 'Marca Personalizada', icon: 'palette' },
+  { id: 'data_export', label: 'Exportación de Datos', icon: 'upload' },
 ] as const;
 
 export const emptyPlan: PlanData = {
