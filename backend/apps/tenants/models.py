@@ -402,7 +402,7 @@ class Location(TimestampedModel):
 from django.core.cache import cache
 
 _PLATFORM_SETTING_CACHE_PREFIX = "platform_setting"
-_PLATFORM_SETTING_CACHE_TTL = 60
+_PLATFORM_SETTING_CACHE_TTL = 300  # 5 minutes (LYL-PERF-001)
 
 
 class PlatformSetting(models.Model):
@@ -443,6 +443,58 @@ class PlatformSetting(models.Model):
             self.value,
             _PLATFORM_SETTING_CACHE_TTL,
         )
+
+    @classmethod
+    def set(cls, key: str, value: str, description: str = "", category: str = "general") -> "PlatformSetting":
+        """Set a setting value, updating both DB and cache.
+
+        Returns the created or updated PlatformSetting instance.
+        """
+        setting, created = cls.objects.update_or_create(
+            key=key,
+            defaults={
+                "value": value,
+                "description": description,
+                "category": category,
+            },
+        )
+        cache.set(
+            f"{_PLATFORM_SETTING_CACHE_PREFIX}:{key}",
+            value,
+            _PLATFORM_SETTING_CACHE_TTL,
+        )
+        return setting
+
+    @classmethod
+    def invalidate_cache(cls, key: str) -> None:
+        """Invalidate the Redis cache entry for a single setting key."""
+        cache.delete(f"{_PLATFORM_SETTING_CACHE_PREFIX}:{key}")
+
+    @classmethod
+    def refresh_cache(cls) -> dict:
+        """Invalidate and refresh the entire settings cache from the database.
+
+        Returns a dict with counts of refreshed and failed keys.
+        """
+        # Clear all cached setting keys
+        keys = cls.objects.values_list("key", flat=True)
+        cache.delete_many([f"{_PLATFORM_SETTING_CACHE_PREFIX}:{k}" for k in keys])
+
+        # Re-populate cache
+        refreshed = 0
+        failed = 0
+        for setting in cls.objects.all():
+            try:
+                cache.set(
+                    f"{_PLATFORM_SETTING_CACHE_PREFIX}:{setting.key}",
+                    setting.value,
+                    _PLATFORM_SETTING_CACHE_TTL,
+                )
+                refreshed += 1
+            except Exception:
+                failed += 1
+
+        return {"refreshed": refreshed, "failed": failed, "total": refreshed + failed}
 
     @classmethod
     def get(cls, key: str, default: str = "") -> str:

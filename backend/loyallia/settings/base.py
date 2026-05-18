@@ -54,6 +54,7 @@ LOCAL_APPS = [
     "apps.agent_api.apps.AgentApiConfig",
     "apps.audit.apps.AuditConfig",
     "apps.api.apps.ApiConfig",
+    "apps.backup.apps.BackupConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

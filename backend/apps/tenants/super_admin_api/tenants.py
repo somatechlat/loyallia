@@ -205,7 +205,9 @@ def create_tenant(request, payload: CreateTenantWizardIn):
             tenant.save(update_fields=["trial_end"])
 
             def _send_owner_welcome() -> None:
-                login_url = f"{settings.FRONTEND_URL.rstrip('/')}/login"
+                from apps.tenants.models import PlatformSetting
+                dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
+                login_url = f"{dashboard_url.rstrip('/')}/login"
                 try:
                     send_mail(
                         subject=get_message("TENANT_WELCOME_EMAIL_SUBJECT"),

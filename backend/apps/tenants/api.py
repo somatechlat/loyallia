@@ -352,7 +352,9 @@ def add_team_member(request, payload: TeamMemberCreateIn):
             }
             role_label = role_labels.get(payload.role, payload.role)
             tenant_name = request.tenant.name
-            login_url = getattr(django_settings, "FRONTEND_URL", "https://rewards.loyallia.com") + "/login"
+            from apps.tenants.models import PlatformSetting
+            dashboard_url = PlatformSetting.get("dashboard_url", django_settings.FRONTEND_URL)
+            login_url = dashboard_url.rstrip("/") + "/login"
             from_email = getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
             primary_color = getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
 

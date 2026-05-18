@@ -37,7 +37,8 @@ CSRF_COOKIE_HTTPONLY = True  # Prevent JS access to CSRF cookie
 AWS_S3_VERIFY = True
 
 # Trust the Nginx proxy for host validation
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="rewards.loyallia.com", cast=Csv())
+# NOTE: Set ALLOWED_HOSTS via environment variable. No hardcoded defaults in production.
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=Csv()) or ["*"]
 
 # SECRETS VIA VAULT (STRICT MODE: Vault or fail)
 
@@ -77,8 +78,12 @@ if APPLE_WALLET_ENABLED:
     APPLE_PASS_TYPE_IDENTIFIER = get_secret("apple_pass_type_identifier", strict=True)
     APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", strict=True)
  # Apple Wallet webServiceURL derive from APP_URL if not explicitly set
+    # NOTE: Runtime code falls back to PlatformSetting.get("wallet_web_service_url")
+    #       if PASS_WEB_SERVICE_URL remains empty. Never hardcode production URLs.
     if not PASS_WEB_SERVICE_URL:  # noqa: F405
-        PASS_WEB_SERVICE_URL = f"{config('APP_URL', default='https://rewards.loyallia.com')}/wallet/apple"
+        _app_url = config("APP_URL", default="")
+        if _app_url:
+            PASS_WEB_SERVICE_URL = f"{_app_url}/wallet/apple"
 
 # Google OAuth
 GOOGLE_OAUTH_CLIENT_ID = get_secret("google_oauth_client_id", strict=True)

@@ -99,3 +99,34 @@ test_output.log
 
 # Stray root assets
 1Asset*
+
+# =============================================================================
+# Bootstrap intermediate files (NEVER commit)
+# =============================================================================
+.bootstrap_secrets.json
+vault_secrets_rescue.json
+vault_init_rescue.json
+*.rescue.json
+*.backup.json
+
+# Environment files (reinforced)
+.env
+.env.*
+!.env.example
+
+# Certificates (reinforced)
+*.pem
+*.key
+*.p12
+*.p8
+certs/
+vault/certs/
+
+# Vault data
+vault/file/
+
+# Backup temp files
+backups/tmp/
+backups/*.dump
+backups/*.rdb
+backups/*.tar.gz
