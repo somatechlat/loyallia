@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth';
 import { authApi } from '@/lib/api';
+import { UserRole } from '@/types';
 import { useGoogleScript } from '@/lib/useGoogleScript';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 
@@ -57,7 +58,7 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       const user = await loginWithGoogle(response.credential, undefined, true);
-      if (user.role === 'STAFF') {
+      if (user.role === UserRole.STAFF) {
         router.replace('/scanner/scan');
       } else {
         router.replace('/');
@@ -85,7 +86,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(data.email, data.password);
-      if (user.role === 'STAFF') {
+      if (user.role === UserRole.STAFF) {
         router.replace('/scanner/scan');
       } else {
         router.replace('/');

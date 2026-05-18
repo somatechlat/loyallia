@@ -113,7 +113,7 @@ class CreateTenantWizardIn(BaseModel):
     city: str = ""
     address: str = ""
     phone: str = ""
-    email: str = ""
+    email: EmailStr = ""
     website: str = ""
  # Step 2 Owner
     owner_email: EmailStr

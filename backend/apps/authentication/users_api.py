@@ -21,7 +21,6 @@ from apps.authentication.models import RefreshToken, User, UserManager
 from apps.authentication.schemas import (
     ChangePasswordIn,
     InviteIn,
-    MessageOut,
     PhoneVerifyCheckOut,
     PhoneVerifyConfirmIn,
     PhoneVerifyRequestIn,
@@ -29,6 +28,7 @@ from apps.authentication.schemas import (
     ProfileUpdateIn,
     UserOut,
 )
+from common.schemas import MessageOut
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
 from common.request import require_tenant

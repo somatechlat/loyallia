@@ -4,12 +4,11 @@
  */
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { APP_CONFIG } from './constants';
 
 class TokenManager {
   private refreshPromise: Promise<string> | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly REFRESH_BUFFER_MS = 5 * 60 * 1000;
-  private static readonly MIN_REFRESH_MS = 30 * 1000;
 
   getAccessToken(): string | undefined {
     if (typeof window === 'undefined') return undefined;
@@ -68,7 +67,7 @@ class TokenManager {
 
       const nowSec = Math.floor(Date.now() / 1000);
       const msUntilExpiry = (payload.exp - nowSec) * 1000;
-      const delay = Math.max(msUntilExpiry - TokenManager.REFRESH_BUFFER_MS, TokenManager.MIN_REFRESH_MS);
+      const delay = Math.max(msUntilExpiry - APP_CONFIG.TOKEN_REFRESH_BUFFER_MS, APP_CONFIG.MIN_REFRESH_INTERVAL_MS);
 
       this.refreshTimer = setTimeout(() => {
         this.refresh().catch(() => {});

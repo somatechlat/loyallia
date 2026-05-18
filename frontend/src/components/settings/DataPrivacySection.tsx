@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import Cookies from 'js-cookie';
 import api from '@/lib/api';
+import { UserRole } from '@/types';
+import { APP_CONFIG } from '@/lib/constants';
 import toast from 'react-hot-toast';
 
 /** Exact confirmation phrase required for account deletion (LOPDP Art. 18) */
@@ -24,7 +26,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
   const [deletePassword, setDeletePassword] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  if (userRole !== 'OWNER') return null;
+  if (userRole !== UserRole.OWNER) return null;
 
   const handleExportData = async () => {
     setExporting(true);
@@ -32,7 +34,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
     try {
       const response = await api.get('/api/v1/tenants/data-export/', {
         responseType: 'blob',
-        timeout: 120_000,
+        timeout: APP_CONFIG.LONG_OPERATION_TIMEOUT,
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');

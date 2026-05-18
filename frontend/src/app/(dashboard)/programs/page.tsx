@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { programsApi } from '@/lib/api';
 import { useAuth, User } from '@/lib/auth';
+import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
@@ -99,7 +100,7 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: 
                       <p className="text-xs text-surface-400">inscritos</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {user?.role === 'OWNER' && (
+                      {user?.role === UserRole.OWNER && (
                         <div className="flex gap-1">
                           <button
                             onClick={() => openSuspendModal(p)}
@@ -218,7 +219,7 @@ export default function ProgramsPage() {
             </span>
           </p>
         </div>
-        {user?.role === 'OWNER' && (
+        {user?.role === UserRole.OWNER && (
           <a href="/programs/new" className="btn-primary" id="new-program-btn">+ Crear programa</a>
         )}
       </div>
@@ -234,7 +235,7 @@ export default function ProgramsPage() {
           </div>
           <p className="text-surface-700 font-semibold text-lg">No tienes programas aun</p>
           <p className="text-surface-400 text-sm mt-2">Crea tu primer programa de fidelizacion</p>
-          {user?.role === 'OWNER' && (
+          {user?.role === UserRole.OWNER && (
             <a href="/programs/new" className="btn-primary mt-6 inline-flex" id="create-first-program-btn">
               Crear programa
             </a>
