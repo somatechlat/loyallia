@@ -33,7 +33,6 @@ from apps.notifications.models import (
 )
 
 # Authentic Ecuadorian / Latin American Name Pools
-
 # Phone prefixes for Ecuador
 from apps.tenants.management.commands.seed_constants import (
     EC_FIRST_NAMES_F,
@@ -630,4 +629,3 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas")
         )
-)

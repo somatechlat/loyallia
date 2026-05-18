@@ -7,8 +7,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.authentication.models import User, UserRole
-from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
 from apps.billing.management.commands.seed_subscription_plans import Command as SeedPlansCommand
+from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
 from apps.tenants.models import Location, Plan, Tenant
 from common.environment_guard import enforce_settings_environment
 from common.vault import put_secret
