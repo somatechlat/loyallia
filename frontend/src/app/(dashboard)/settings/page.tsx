@@ -64,7 +64,9 @@ export default function SettingsPage() {
         logo_url: data.logo_url || '',
       });
       if (data.logo_url) setLogoPreview(data.logo_url);
-    } catch (e) { console.error(e); }
+    } catch {
+      /* silently handle error — UI already shows loading state */
+    }
     finally { setLoading(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

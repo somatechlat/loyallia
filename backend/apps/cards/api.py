@@ -184,7 +184,7 @@ def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    check_plan_limit(tenant, "programs")
+    check_plan_limit(tenant, "programs", write=True)
 
  # Check for duplicate name
     if Card.objects.filter(tenant=tenant, name=data.name).exists():

@@ -132,8 +132,7 @@ export default function DashboardPage() {
       setRevBreakdown(rb.data);
       setProgramTypes(pt.data.program_types || []);
       setCampaignStats(ns.data);
-    } catch (err) {
-      console.error('Dashboard fetch error:', err);
+    } catch {
       setError('Error de conexión con el servidor');
     } finally {
       setLoading(false);

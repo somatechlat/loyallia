@@ -86,7 +86,7 @@ class Invoice(TimestampedModel):
     )
     subscription = models.ForeignKey(
         Subscription,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="invoices",
         verbose_name="Suscripción",
     )

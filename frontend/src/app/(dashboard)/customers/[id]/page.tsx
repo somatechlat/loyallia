@@ -49,8 +49,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
         setCustomer(custRes.data);
         setPasses(Array.isArray(passRes.data) ? passRes.data : passRes.data.passes || []);
       })
-      .catch((e) => {
-        console.error(e);
+      .catch(() => {
         toast.error('Error al cargar perfil de cliente');
       })
       .finally(() => setLoading(false));

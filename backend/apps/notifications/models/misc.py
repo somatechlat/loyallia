@@ -29,7 +29,9 @@ class Notification(models.Model):
     )
     customer = models.ForeignKey(
         Customer,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="notifications",
         verbose_name="Cliente",
     )

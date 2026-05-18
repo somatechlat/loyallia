@@ -185,7 +185,7 @@ def list_locations(request):
 def create_location(request, payload: LocationCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    check_plan_limit(request.tenant, "locations")
+    check_plan_limit(request.tenant, "locations", write=True)
 
     loc = Location.objects.create(
         tenant=request.tenant,
@@ -311,7 +311,7 @@ def list_team(request):
 def add_team_member(request, payload: TeamMemberCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    check_plan_limit(request.tenant, "users")
+    check_plan_limit(request.tenant, "users", write=True)
 
     import secrets
 

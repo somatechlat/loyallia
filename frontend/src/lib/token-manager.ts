@@ -12,23 +12,27 @@ class TokenManager {
   private static readonly MIN_REFRESH_MS = 30 * 1000;
 
   getAccessToken(): string | undefined {
+    if (typeof window === 'undefined') return undefined;
     return Cookies.get('access_token');
   }
 
   setTokens(accessToken: string, refreshToken: string): void {
-    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    if (typeof window === 'undefined') return;
+    const isSecure = window.location.protocol === 'https:';
     Cookies.set('access_token', accessToken, { expires: 1/24, secure: isSecure, sameSite: 'strict' });
     Cookies.set('refresh_token', refreshToken, { expires: 7, secure: isSecure, sameSite: 'strict' });
     this.scheduleRefresh();
   }
 
   clearTokens(): void {
+    if (typeof window === 'undefined') return;
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
     Cookies.remove('access_token');
     Cookies.remove('refresh_token');
   }
 
   async refresh(): Promise<string> {
+    if (typeof window === 'undefined') return Promise.reject(new Error('SSR: cannot refresh token'));
     if (!this.refreshPromise) {
       const refresh = Cookies.get('refresh_token');
       if (!refresh) return Promise.reject(new Error('No refresh token'));
@@ -36,7 +40,7 @@ class TokenManager {
       this.refreshPromise = axios
         .post('/api/v1/auth/refresh/', { refresh_token: refresh }, { withCredentials: true })
         .then(({ data }) => {
-          const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          const isSecure = window.location.protocol === 'https:';
           Cookies.set('access_token', data.access_token, { expires: 1/24, secure: isSecure, sameSite: 'strict' });
           this.scheduleRefresh();
           return data.access_token;
@@ -49,6 +53,7 @@ class TokenManager {
   }
 
   scheduleRefresh(): void {
+    if (typeof window === 'undefined') return;
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
     const token = Cookies.get('access_token');
     if (!token) return;

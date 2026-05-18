@@ -63,7 +63,9 @@ export default function LoginPage() {
         router.replace('/');
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof Error && 'response' in err
+        ? (err as unknown as { response?: { data?: { error?: string } } }).response?.data?.error
+        : undefined;
       toast.error(msg || 'Error al iniciar sesión con Google');
     } finally {
       setGoogleLoading(false);
@@ -89,7 +91,9 @@ export default function LoginPage() {
         router.replace('/');
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      const msg = err instanceof Error && 'response' in err
+        ? (err as unknown as { response?: { data?: { detail?: string } } }).response?.data?.detail
+        : undefined;
       const errorMsg = msg || 'Credenciales incorrectas';
       setError('root', { message: errorMsg });
       toast.error(errorMsg);

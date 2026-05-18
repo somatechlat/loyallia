@@ -121,8 +121,20 @@ if [ "$VAULT_ALREADY_INIT" -gt 0 ]; then
     UNSEAL_KEY=""
     ROOT_TOKEN=""
 
+    # Decrypt init.json.gpg if present (GPG-encrypted unseal keys)
+    if [ -f /vault/file/init.json.gpg ]; then
+        if command -v gpg &>/dev/null && [ -n "${VAULT_INIT_PASSPHRASE:-}" ]; then
+            gpg --batch --yes --passphrase "$VAULT_INIT_PASSPHRASE" \
+                --decrypt --output /vault/file/init.json /vault/file/init.json.gpg 2>/dev/null || true
+        fi
+    fi
+
     if [ -s /vault/file/init.json ]; then
-        UNSEAL_KEY="$(awk -F '"' '/unseal_keys_b64/ {getline; print $2}' /vault/file/init.json)"
+        if command -v jq &>/dev/null; then
+            UNSEAL_KEY="$(jq -r '.unseal_keys_b64[0]' /vault/file/init.json)"
+        else
+            UNSEAL_KEY="$(python3 -c "import json; print(json.load(open('/vault/file/init.json'))['unseal_keys_b64'][0])" 2>/dev/null || true)"
+        fi
         ROOT_TOKEN="$(awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
     fi
 
@@ -156,9 +168,22 @@ if [ "$VAULT_ALREADY_INIT" -gt 0 ]; then
     fi
 else
     echo "Vault not initialized. Performing first-time initialization..."
-    vault operator init -key-shares=1 -key-threshold=1 -format=json >/vault/file/init.json
-    UNSEAL_KEY="$(awk -F '"' '/unseal_keys_b64/ {getline; print $2}' /vault/file/init.json)"
+    vault operator init -key-shares=5 -key-threshold=3 -format=json >/vault/file/init.json
+    # Extract unseal keys using jq or python3 (handles JSON array properly)
+    if command -v jq &>/dev/null; then
+        UNSEAL_KEY="$(jq -r '.unseal_keys_b64[0]' /vault/file/init.json)"
+    else
+        UNSEAL_KEY="$(python3 -c "import json; print(json.load(open('/vault/file/init.json'))['unseal_keys_b64'][0])")"
+    fi
     ROOT_TOKEN="$(awk -F '"' '/root_token/ {print $4}' /vault/file/init.json)"
+
+    # Encrypt init.json to protect unseal keys at rest
+    if command -v gpg &>/dev/null; then
+        gpg --batch --yes --passphrase "${VAULT_INIT_PASSPHRASE:-$(openssl rand -base64 32)}" \
+            --symmetric --cipher-algo AES256 --output /vault/file/init.json.gpg /vault/file/init.json
+        rm -f /vault/file/init.json
+        echo "Unseal keys encrypted with AES256-GPG. Passphrase stored in Vault env only."
+    fi
 
     [ -n "$UNSEAL_KEY" ] || { echo "missing unseal key"; exit 1; }
     [ -n "$ROOT_TOKEN" ] || { echo "missing root token"; exit 1; }
@@ -314,16 +339,30 @@ printf "%s" "$minio_access_key" >/vault/runtime/minio_root_user
 printf "%s" "$minio_secret_key" >/vault/runtime/minio_root_password
 printf "%s" "$whatsapp_bridge_api_key" >/vault/runtime/whatsapp_bridge_api_key
 printf "%s" "$grafana_admin_password" >/vault/runtime/grafana_admin_password
-chmod 0444 /vault/runtime/postgres_password /vault/runtime/redis_password \
+chmod 0600 /vault/runtime/postgres_password /vault/runtime/redis_password \
     /vault/runtime/minio_root_user /vault/runtime/minio_root_password \
     /vault/runtime/whatsapp_bridge_api_key /vault/runtime/grafana_admin_password
 
 # Create or refresh loyallia-app policy and token
-printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\", \"patch\"]\n}\n" >/vault/runtime/loyallia-app.hcl
+mkdir -p /vault/policies
+# Copy bundled policy file to runtime location (idempotent)
+if [ -f /vault/policies/app-policy.hcl ]; then
+    cp /vault/policies/app-policy.hcl /vault/runtime/loyallia-app.hcl
+else
+    printf '%b' "path \"secret/data/loyallia/*\" {\n  capabilities = [\"read\", \"create\", \"update\", \"patch\"]\n}\n" >/vault/runtime/loyallia-app.hcl
+fi
 vault policy write loyallia-app /vault/runtime/loyallia-app.hcl >/dev/null 2>&1 || echo "Policy write skipped (non-root token — policy already exists)"
+# Save root token for revocation after app token creation
+root_token="${ROOT_TOKEN:-}"
 if ! [ -f /vault/runtime/app-token ] || ! [ -s /vault/runtime/app-token ]; then
     vault token create -policy=loyallia-app -field=token >/vault/runtime/app-token 2>/dev/null || true
-    chmod 0444 /vault/runtime/app-token 2>/dev/null || true
+    chmod 0600 /vault/runtime/app-token 2>/dev/null || true
+
+    # Revoke root token after successful app token creation
+    if [ -s /vault/runtime/app-token ] && [ -n "$root_token" ]; then
+        echo "INFO: Revoking root token..."
+        vault token revoke "$root_token" >/dev/null 2>&1 || echo "WARN: Failed to revoke root token"
+    fi
 fi
 
 echo "Vault initialized, unsealed, and secrets seeded successfully"

@@ -1,65 +1,81 @@
 """
-Loyallia  Cursor-Based Pagination Utility
-Provides efficient pagination for large datasets using created_at as cursor.
-Avoids OFFSET performance degradation on large tables.
+Loyallia  Pagination Utilities (common/pagination.py)
+
+Standard page-based pagination for all Django Ninja list endpoints.
+Provides a generic PaginatedResponse envelope and a paginate_queryset() helper.
+
+Performance (Rule 12):
+    - paginate_queryset() uses QuerySet slicing (SQL LIMIT/OFFSET)  only the
+      requested page of rows is loaded into Python memory.
+    - MAX_PAGE_SIZE (100) caps memory usage per request.
+    - count() query runs separately from the data query (Django ORM limitation).
+
+Called by: Customer list, Transaction list, Program list, and other paginated endpoints.
 """
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
-from ninja import Schema
+from django.db.models import QuerySet
+from pydantic import BaseModel
 
 T = TypeVar("T")
 
-
-class CursorPage(Schema, Generic[T]):
-    """Paginated response with cursor-based navigation."""
-
-    items: list[T]
-    next_cursor: str | None = None
-    has_next: bool = False
+# Default page size
+DEFAULT_PAGE_SIZE = 25
+MAX_PAGE_SIZE = 100
 
 
-class CursorPagination:
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Standard paginated response envelope for all list endpoints."""
+
+    count: int
+    page: int
+    page_size: int
+    total_pages: int
+    next: str | None = None
+    previous: str | None = None
+    results: list[T]
+
+
+def paginate_queryset(
+    queryset: QuerySet,
+    page: int,
+    page_size: int,
+    request_url: str = "",
+) -> dict[str, Any]:
     """
-    Cursor-based pagination for list endpoints.
+    Paginates a Django QuerySet and returns a dict ready for PaginatedResponse.
 
-    Uses created_at (descending) as the cursor field.
-    Much more efficient than OFFSET for large datasets.
+    Args:
+        queryset: The Django queryset to paginate
+        page: Current page number (1-indexed)
+        page_size: Number of items per page (capped at MAX_PAGE_SIZE)
+        request_url: Base URL for next/previous links
 
-    Usage:
-        items, next_cursor = CursorPagination.paginate(
-            queryset, cursor=request.GET.get("cursor"), limit=25
-        )
+    Returns:
+        Dict with count, page, page_size, total_pages, next, previous, results
     """
+    page = max(1, page)
+    page_size = min(max(1, page_size), MAX_PAGE_SIZE)
 
-    DEFAULT_LIMIT = 25
-    MAX_LIMIT = 100
+    total_count = queryset.count()
+    total_pages = max(1, (total_count + page_size - 1) // page_size)
+    offset = (page - 1) * page_size
 
-    @staticmethod
-    def paginate(queryset, cursor=None, limit=25):
-        """
-        Paginate a queryset using cursor-based pagination.
+    results = list(queryset[offset : offset + page_size])
 
-        Args:
-            queryset: Django queryset (should be ordered by -created_at)
-            cursor: ISO format datetime string from previous page's next_cursor
-            limit: Number of items per page (max 100)
+    def build_url(p: int) -> str | None:
+        if not request_url:
+            return None
+        separator = "&" if "?" in request_url else "?"
+        return f"{request_url}{separator}page={p}&page_size={page_size}"
 
-        Returns:
-            Tuple of (items_list, next_cursor_string_or_None)
-        """
-        limit = min(limit, CursorPagination.MAX_LIMIT)
-        limit = max(limit, 1)
-
-        if cursor:
-            queryset = queryset.filter(created_at__lt=cursor)
-
-        items = list(queryset[: limit + 1])
-        has_next = len(items) > limit
-
-        if has_next:
-            items = items[:limit]
-
-        next_cursor = items[-1].created_at.isoformat() if items and has_next else None
-
-        return items, next_cursor
+    return {
+        "count": total_count,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "next": build_url(page + 1) if page < total_pages else None,
+        "previous": build_url(page - 1) if page > 1 else None,
+        "results": results,
+    }

@@ -147,10 +147,10 @@ function ActionIcon({ action, className = 'w-5 h-5' }: { action: string; classNa
   );
 }
 
-const EMPTY_FORM = {
+const EMPTY_FORM: AutomationForm = {
   name: '', description: '', trigger: 'customer_enrolled', action: 'send_notification',
-  trigger_config: {} as Record<string, unknown>, action_config: { title: '', message: '' } as Record<string, any>,
-  cooldown_hours: 24, max_executions_per_day: null as number | null,
+  trigger_config: {}, action_config: { title: '', message: '' },
+  cooldown_hours: 24, max_executions_per_day: null,
 };
 
 export default function AutomationPage() {
@@ -214,8 +214,8 @@ export default function AutomationPage() {
     setEditingId(a.id);
     setForm({
       name: a.name, description: a.description, trigger: a.trigger, action: a.action,
-      trigger_config: (a.trigger_config || {}) as Record<string, string>,
-      action_config: (a.action_config || { title: '', message: '' }) as Record<string, unknown>,
+      trigger_config: typeof a.trigger_config === 'object' && a.trigger_config !== null ? a.trigger_config as Record<string, string> : {},
+      action_config: typeof a.action_config === 'object' && a.action_config !== null ? a.action_config as Record<string, unknown> : { title: '', message: '' },
       cooldown_hours: a.cooldown_hours || 24, max_executions_per_day: a.max_executions_per_day,
     });
     setStep(1);

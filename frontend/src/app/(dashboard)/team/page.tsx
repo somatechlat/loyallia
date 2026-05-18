@@ -22,7 +22,9 @@ export default function TeamPage() {
   const fetchTeam = () => {
     api.get('/api/v1/tenants/team/')
       .then(({ data }) => setMembers((data || []).filter((m: TeamMember) => m.role !== 'SUPER_ADMIN')))
-      .catch(console.error)
+      .catch(() => {
+        /* silently handle error — loading state cleared in finally */
+      })
       .finally(() => setLoading(false));
   };
 

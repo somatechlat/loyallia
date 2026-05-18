@@ -83,7 +83,7 @@ def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if not subscription or not subscription.is_access_allowed:
         raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
-    check_plan_limit(tenant, "customers")
+    check_plan_limit(tenant, "customers", write=True)
 
     if Customer.objects.filter(tenant=tenant, email=data.email).exists():
         raise HttpError(400, get_message("CUSTOMER_DUPLICATE_EMAIL"))
@@ -129,7 +129,7 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if not subscription or not subscription.is_access_allowed:
         raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
-    check_plan_limit(tenant, "customers")
+    check_plan_limit(tenant, "customers", write=True)
 
     from apps.customers.import_service import CustomerImportService
 

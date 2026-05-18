@@ -114,12 +114,12 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    check_plan_limit(request.tenant, "notifications_month")
+    check_plan_limit(request.tenant, "notifications_month", write=True)
 
     if data.channel == "email":
  # LYL-SRS-008: Gate email campaigns by plan feature + monthly quota
         check_feature_access(request.tenant, "email_campaigns")
-        check_plan_limit(request.tenant, "emails_month")
+        check_plan_limit(request.tenant, "emails_month", write=True)
 
         from apps.notifications.tasks import send_email_campaign
 
@@ -144,7 +144,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     elif data.channel == "wallet":
  # LYL-SRS-008: Gate wallet campaigns by plan feature + monthly quota
         check_feature_access(request.tenant, "wallet_campaigns")
-        check_plan_limit(request.tenant, "wallet_pushes_month")
+        check_plan_limit(request.tenant, "wallet_pushes_month", write=True)
 
         from apps.notifications.tasks import send_wallet_notification_campaign
 
@@ -169,7 +169,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     elif data.channel == "whatsapp":
  # LYL-SRS-008: Gate WhatsApp campaigns by plan feature + daily quota
         check_feature_access(request.tenant, "whatsapp_campaigns")
-        check_plan_limit(request.tenant, "whatsapp_day")
+        check_plan_limit(request.tenant, "whatsapp_day", write=True)
 
         from apps.notifications.tasks import send_whatsapp_campaign
 
@@ -194,7 +194,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     elif data.channel == "sms":
  # LYL-SRS-009: Gate SMS campaigns by plan feature + daily quota
         check_feature_access(request.tenant, "sms_campaigns")
-        check_plan_limit(request.tenant, "sms_day")
+        check_plan_limit(request.tenant, "sms_day", write=True)
 
         from apps.notifications.sms.tasks import send_sms_campaign
 
