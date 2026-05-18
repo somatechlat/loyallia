@@ -277,17 +277,18 @@ fi
 log_info "All required secrets present."
 
 # =============================================================================
-# BUILD SINGLE BULK KV PUT COMMAND (avoids overwrite issues)
+# WRITE ALL SECRETS TO VAULT KV v2 (BULK ATOMIC PUT)
 # =============================================================================
 # KV v2 "vault kv put" REPLACES all data at the path.
 # Individual "kv put" calls would overwrite each other.
 # Solution: Build ONE command with ALL key=value pairs.
+#
+# The @file syntax for "vault kv put" expects flat key=value lines (like .env),
+# NOT JSON. We generate this format and call kv put once.
 # =============================================================================
 
-log_info "Building secret payload..."
+log_info "Preparing secrets for Vault bulk upload..."
 
-# Build key=value pairs for the bulk put
-# We write to a temp file and use vault kv put with @file syntax
 python3 - "$BOOTSTRAP_FILE" "$flower_basic_auth" "$whatsapp_bridge_api_key" "$grafana_admin_password" << 'PYEOF'
 import json
 import sys
@@ -315,52 +316,92 @@ for k in ['apple_cert_pem', 'apple_cert_key_pem', 'apple_wwdr_cert_pem', 'google
     if k in secrets and not secrets[k]:
         del secrets[k]
 
-# Ensure all values are strings
-for k, v in secrets.items():
-    if not isinstance(v, str):
-        secrets[k] = str(v)
+# Write flat key=value format for "vault kv put @file" syntax
+# Format: one key=value per line, values are raw strings
+with open('/tmp/vault_secrets_flat.env', 'w') as f:
+    for k, v in secrets.items():
+        # Escape newlines and write as raw string
+        val = str(v).replace('\n', '\\n')
+        f.write(f"{k}={val}\n")
 
-# Write the payload for vault kv put
-with open('/tmp/vault_secrets_payload.json', 'w') as f:
-    json.dump({"data": secrets}, f)
-
-print(f"Prepared {len(secrets)} secrets for bulk upload")
+print(f"Prepared {len(secrets)} secrets in flat key=value format")
 PYEOF
 
 log_info "Writing all secrets to Vault in a single atomic operation..."
 
-# Use the payload file approach for KV v2
-# First check if the path already exists
-EXISTS="$(vault kv list -mount=secret "$VAULT_APP_SECRET_PATH" 2>/dev/null | grep -c "^$" || echo 0)" || true
+# First ensure the path exists (create with placeholder, then overwrite)
+vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" __bootstrap_init=true 2>/dev/null || {
+    log_warn "Could not create initial path — may already exist"
+}
 
-if vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" @/tmp/vault_secrets_payload.json 2>/tmp/vault_put_error.log; then
-    log_info "All secrets written to Vault successfully."
+# Now bulk write ALL secrets using @file syntax with flat key=value format
+if vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" @/tmp/vault_secrets_flat.env 2>/tmp/vault_put_error.log; then
+    log_info "All secrets written to Vault successfully (bulk put)."
 else
-    # Try alternate format: extract data field
-    log_warn "Bulk put with @file failed, trying alternate format..."
-    if python3 -c "
-import json, subprocess, sys
-with open('/tmp/vault_secrets_payload.json') as f:
-    payload = json.load(f)
-data = payload.get('data', payload)
-# Build key=value pairs
-pairs = []
-for k, v in data.items():
-    pairs.append(f'{k}={v}')
-cmd = ['vault', 'kv', 'put', '-mount=secret', '$VAULT_APP_SECRET_PATH'] + pairs
-result = subprocess.run(cmd, capture_output=True, text=True)
-print(result.stdout)
-if result.returncode != 0:
-    print(result.stderr, file=sys.stderr)
+    log_warn "Bulk put with @file failed — falling back to Python API direct write..."
+
+    python3 - "$VAULT_APP_SECRET_PATH" << 'PYEOF2'
+import json
+import os
+import sys
+import urllib.request
+import ssl
+
+vault_path = sys.argv[1]
+vault_addr = os.environ.get('VAULT_ADDR', 'https://127.0.0.1:8200')
+vault_token = os.environ.get('VAULT_TOKEN', '')
+
+# Read flat key=value file
+secrets = {}
+with open('/tmp/vault_secrets_flat.env') as f:
+    for line in f:
+        line = line.strip()
+        if not line or '=' not in line:
+            continue
+        k, v = line.split('=', 1)
+        # Unescape newlines
+        v = v.replace('\\n', '\n')
+        secrets[k] = v
+
+# Build Vault KV v2 write payload
+payload = json.dumps({"data": secrets}).encode('utf-8')
+
+# Prepare SSL context (skip verify for local dev / self-signed)
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+
+# Write via Vault HTTP API
+url = f"{vault_addr}/v1/secret/data/{vault_path}"
+req = urllib.request.Request(
+    url,
+    data=payload,
+    headers={
+        "X-Vault-Token": vault_token,
+        "Content-Type": "application/json",
+    },
+    method="POST",
+)
+
+try:
+    with urllib.request.urlopen(req, context=ctx, timeout=30) as resp:
+        if resp.status in (200, 204):
+            print(f"Successfully wrote {len(secrets)} secrets via HTTP API")
+        else:
+            print(f"Unexpected status: {resp.status}", file=sys.stderr)
+            sys.exit(1)
+except urllib.error.HTTPError as e:
+    body = e.read().decode() if e.read else ""
+    print(f"HTTP Error {e.code}: {e.reason} — {body}", file=sys.stderr)
     sys.exit(1)
-"; then
-        log_info "All secrets written via alternate format."
-    else
-        log_error "Failed to write secrets to Vault. Error:"
-        cat /tmp/vault_put_error.log >&2 || true
-        exit 1
-    fi
+except Exception as e:
+    print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)
+PYEOF2
 fi
+
+# Clean up temp file
+rm -f /tmp/vault_secrets_flat.env /tmp/vault_put_error.log
 
 # Verify: count secrets in Vault
 SECRETS_COUNT="$(vault kv get -mount=secret -format=json "$VAULT_APP_SECRET_PATH" 2>/dev/null | \
@@ -437,6 +478,17 @@ printf "%s" "$redis_url" > /vault/runtime/redis_url
 printf "%s" "$celery_broker_url" > /vault/runtime/celery_broker_url
 printf "%s" "$celery_result_backend" > /vault/runtime/celery_result_backend
 chmod 0600 /vault/runtime/redis_url /vault/runtime/celery_broker_url /vault/runtime/celery_result_backend
+
+# Copy CA certificate to runtime for TLS verification by other containers
+if [ -f /vault/certs/vault.crt ]; then
+    cp /vault/certs/vault.crt /vault/runtime/ca.crt
+    chmod 0644 /vault/runtime/ca.crt
+    log_info "CA certificate copied to runtime/ca.crt"
+elif [ -f /vault/file/vault.crt ]; then
+    cp /vault/file/vault.crt /vault/runtime/ca.crt
+    chmod 0644 /vault/runtime/ca.crt
+    log_info "CA certificate copied from vault file storage"
+fi
 
 log_info "Runtime files created."
 
