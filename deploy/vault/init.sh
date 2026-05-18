@@ -263,7 +263,7 @@ write_runtime_files() {
         _name="$1"
         _content="$2"
         printf "%s" "$_content" > "/vault/runtime/$_name"
-        chmod 0600 "/vault/runtime/$_name"
+        chmod 0644 "/vault/runtime/$_name"
     }
 
     _write_file "postgres_password"          "$postgres_password"

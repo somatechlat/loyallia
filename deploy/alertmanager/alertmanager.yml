@@ -1,8 +1,8 @@
 global:
-  smtp_smarthost: '${ALERT_SMTP_HOST:-localhost}:587'
+  smtp_smarthost: 'localhost:587'
   smtp_from: 'alerts@loyallia.com'
-  smtp_auth_username: '${ALERT_SMTP_USER:-}'
-  smtp_auth_password: '${ALERT_SMTP_PASS:-}'
+  smtp_auth_username: ''
+  smtp_auth_password: ''
 
 templates:
 - '/etc/alertmanager/templates/*.tmpl'
@@ -25,19 +25,19 @@ route:
 receivers:
 - name: 'default'
   email_configs:
-  - to: '${ALERT_EMAIL:-admin@loyallia.com}'
+  - to: 'admin@loyallia.com'
     send_resolved: true
 
 - name: 'critical'
   email_configs:
-  - to: '${ALERT_EMAIL_CRITICAL:-admin@loyallia.com}'
+  - to: 'admin@loyallia.com'
     send_resolved: true
     headers:
       Subject: '[CRITICAL] Loyallia Alert: {{ .GroupLabels.alertname }}'
 
 - name: 'warning'
   email_configs:
-  - to: '${ALERT_EMAIL:-admin@loyallia.com}'
+  - to: 'admin@loyallia.com'
     send_resolved: true
 
 inhibit_rules:
