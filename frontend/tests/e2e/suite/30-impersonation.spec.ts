@@ -41,15 +41,16 @@ test.describe('SuperAdmin — Impersonation @superadmin @superadmin', () => {
 
     await page.getByRole('button', { name: 'Acciones' }).click();
     await page.getByLabel('PIN del propietario').fill(testPin);
-    await page.getByLabel('Justificación').fill('Soporte solicitado por el propietario en E2E');
+    await page.getByLabel('Justificacion').fill('Soporte solicitado por el propietario en E2E');
 
     page.once('dialog', dialog => dialog.accept());
     await page.getByRole('button', { name: /Impersonar Propietario/ }).click();
 
     // Impersonation triggers a full redirect to /; wait for navigation + layout mount
     await page.waitForURL('/', { timeout: 15000 });
-    await page.waitForTimeout(2000);
-    await expect(page.getByText('Modo impersonación activo')).toBeVisible({ timeout: 15000 });
+    // Wait for impersonation banner instead of fixed timeout
+    await page.getByText('Modo impersonacion activo').waitFor({ state: 'visible', timeout: 15000 });
+    await expect(page.getByText('Modo impersonacion activo')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('nav, aside').getByText(/Resumen|Programas|Clientes/).first()).toBeVisible({ timeout: 10000 });
 
     await page.getByRole('button', { name: /Volver al Admin/ }).click();

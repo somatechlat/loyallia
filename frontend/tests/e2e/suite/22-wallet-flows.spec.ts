@@ -9,6 +9,9 @@
  *   - Playwright UI for visual interaction validation (platform selector, preview, wizard)
  *
  * Runs in the 'owner' project so auth cookies are pre-loaded.
+ *
+ * NOTE: test.describe blocks run tests sequentially by default. Shared state
+ * variables are reset per top-level describe via beforeAll.
  */
 import { test, expect } from '@playwright/test';
 import { ensureOwnerEnterpriseCampaignAccess, getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
@@ -26,7 +29,7 @@ async function loginAsOwner(
   return loginRole(request, 'owner');
 }
 
-// ─── Shared state across serial tests ──────────────────────────────────────
+// ─── Shared state — scoped per phase via setup below ──────────────────────
 // These are populated by Phase 1 tests and consumed by subsequent phases.
 let createdCardId = '';
 let enrolledPassId = '';
@@ -34,13 +37,28 @@ let walletAppleUrl = '';
 let walletGoogleUrl = '';
 let walletStatusUrl = '';
 
+/**
+ * Reset all shared state variables before each phase.
+ */
+function resetSharedState() {
+  createdCardId = '';
+  enrolledPassId = '';
+  walletAppleUrl = '';
+  walletGoogleUrl = '';
+  walletStatusUrl = '';
+}
+
 // =============================================================================
 // PHASE 1: DATA SETUP VIA API
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', () => {
+test.describe('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', () => {
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeAll(() => {
+    resetSharedState();
+  });
+
+  test.beforeEach(async ({ request }) => {
     await ensureOwnerEnterpriseCampaignAccess(request);
   });
 
@@ -133,7 +151,7 @@ test.describe.serial('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', 
 // PHASE 2: WALLET API VALIDATION
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', () => {
+test.describe('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', () => {
 
   test('4. Wallet status shows both providers available', async ({ request }) => {
     expect(walletStatusUrl, 'Wallet status URL must exist from enrollment').toBeTruthy();
@@ -190,7 +208,7 @@ test.describe.serial('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', 
 // PHASE 3: CAMPAIGN UI WITH PLATFORM SELECTOR
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => {
+test.describe('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => {
 
   test('7. Campaigns page shows wallet type with platform selector', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'networkidle' });
@@ -202,6 +220,7 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
 
     // Verify the campaign form is visible
     const formHeading = page.getByText('Nueva campaña de marketing');
+    await formHeading.waitFor({ state: 'visible', timeout: 5000 });
     await expect(formHeading).toBeVisible({ timeout: 5000 });
 
     // Select "Wallet" campaign type — it may already be selected by default
@@ -269,7 +288,8 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
     await page.locator('#campaign-msg').fill('Gana puntos dobles esta semana');
 
     // Preview section should be visible
-    const previewSection = page.getByText('Vista previa de la notificación');
+    const previewSection = page.getByText('Vista previa de la notificacion');
+    await previewSection.waitFor({ state: 'visible', timeout: 5000 });
     await expect(previewSection).toBeVisible({ timeout: 5000 });
 
     // Both platform labels should be in the preview
@@ -298,12 +318,13 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
     await page.getByRole('button', { name: 'Ambos' }).click();
 
     // Fill title with >40 characters
-    const longTitle = 'Esta es una promoción especial que excede cuarenta caracteres del límite';
+    const longTitle = 'Esta es una promocion especial que excede cuarenta caracteres del limite';
     await page.locator('#campaign-title').fill(longTitle);
     await page.locator('#campaign-msg').fill('Mensaje corto');
 
     // Apple title counter should turn red (text-red-500 class)
     const appleTitleCounter = page.locator('span').filter({ hasText: /Título: \d+\/40/ }).first();
+    await appleTitleCounter.waitFor({ state: 'visible', timeout: 3000 });
     await expect(appleTitleCounter).toBeVisible();
     await expect(appleTitleCounter).toHaveClass(/text-red-500/);
 
@@ -360,17 +381,19 @@ test.describe.serial('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet',
 // PHASE 4: PROGRAM WIZARD WALLET PROVIDER
 // =============================================================================
 
-test.describe.serial('Wallet Lifecycle — Phase 4: Program Wizard @owner @wallet', () => {
+test.describe('Wallet Lifecycle — Phase 4: Program Wizard @owner @wallet', () => {
 
   test('12. Program wizard Step 2 shows WalletProviderSelector', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     // Step 0: Select stamp card type
+    await page.getByText('Tarjeta de Sellos').waitFor({ state: 'visible', timeout: 10000 });
     await expect(page.getByText('Tarjeta de Sellos')).toBeVisible({ timeout: 10000 });
     await page.getByText('Tarjeta de Sellos').click();
     await page.getByRole('button', { name: /siguiente/i }).click();
 
     // Step 1: Config — use defaults, click Next
+    await page.getByRole('button', { name: /siguiente/i }).waitFor({ state: 'visible', timeout: 5000 });
     await page.getByRole('button', { name: /siguiente/i }).click();
 
     // Step 2: Design — WalletProviderSelector should be visible
@@ -386,10 +409,12 @@ test.describe.serial('Wallet Lifecycle — Phase 4: Program Wizard @owner @walle
     await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     // Step 0: Select stamp
+    await page.getByText('Tarjeta de Sellos').waitFor({ state: 'visible', timeout: 10000 });
     await page.getByText('Tarjeta de Sellos').click();
     await page.getByRole('button', { name: /siguiente/i }).click();
 
     // Step 1: Next
+    await page.getByRole('button', { name: /siguiente/i }).waitFor({ state: 'visible', timeout: 5000 });
     await page.getByRole('button', { name: /siguiente/i }).click();
 
     // Step 2: Select "Google Wallet" provider

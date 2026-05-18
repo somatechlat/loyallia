@@ -286,7 +286,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
 
             {/* Info tip */}
             <div className="mt-auto p-3 rounded-xl bg-indigo-50 border border-indigo-100">
-              <p className="text-[10px] text-indigo-600 font-medium mb-1">💡 Consejo</p>
+              <p className="text-[10px] text-indigo-600 font-medium mb-1">Consejo</p>
               <p className="text-[10px] text-indigo-500/70 leading-relaxed">
                 Los cambios se sincronizan automáticamente con Google Wallet. Todos los clientes verán el nuevo diseño.
               </p>
@@ -345,17 +345,14 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
                       <div className="relative z-10 flex items-end justify-between mt-auto">
                         <div>
                           <p className="text-[7px] uppercase tracking-wider opacity-40 font-semibold">Cliente</p>
-                          <p className="text-xs font-bold opacity-90">Juan Pérez</p>
+                          <p className="text-xs font-bold opacity-90">Cliente</p>
                         </div>
                         <div className="bg-[#ffffff]/95 rounded-xl p-1 shadow-lg">
                           <PremiumQrSvg color={editForm.background_color || '#1a1a2e'} size={50} />
                         </div>
                       </div>
 
-                      {/* Powered by branding */}
-                      <div className="relative z-10 mt-2 pt-1.5 border-t" style={{ borderColor: `${editForm.text_color || '#fff'}20` }}>
-                        <p className="text-[7px] text-center opacity-30 tracking-wide">Powered by Loyallia — Intelligent Rewards</p>
-                      </div>
+
                     </div>
                   </div>
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-full" />
@@ -376,7 +373,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
 
 
         <div className="flex items-center justify-between px-8 py-4 border-t border-slate-200/60 bg-white/60 shrink-0">
-          <p className="text-[10px] text-slate-300 font-medium">Powered by Loyallia — Intelligent Rewards</p>
+          <p className="text-[10px] text-slate-300 font-medium" />
           <div className="flex gap-3">
             <button onClick={onClose}
               className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium border border-slate-200 transition-all">

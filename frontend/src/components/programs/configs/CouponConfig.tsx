@@ -150,7 +150,7 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
                 min={meta.coupon_start_date as string ?? ''}
                 onChange={e => set('coupon_end_date', e.target.value)} />
               {Boolean(meta.coupon_end_date && meta.coupon_start_date && (meta.coupon_end_date as string) < (meta.coupon_start_date as string)) && (
-                <p className="text-xs text-red-500 mt-1">⚠️ La fecha de fin no puede ser anterior a la fecha de inicio</p>
+                <p className="text-xs text-red-500 mt-1">La fecha de fin no puede ser anterior a la fecha de inicio</p>
               )}
             </div>
           </div>

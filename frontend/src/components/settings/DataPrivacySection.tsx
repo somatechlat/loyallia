@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import Cookies from 'js-cookie';
 import api from '@/lib/api';
 import { UserRole } from '@/types';
@@ -153,7 +154,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
             </div>
 
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-2">⚠️ Esta acción es IRREVERSIBLE</p>
+              <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-2 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Esta acción es IRREVERSIBLE</p>
               <ul className="text-xs text-red-600/80 dark:text-red-400/80 space-y-1 list-disc list-inside">
                 <li>Todos tus clientes y sus pases serán eliminados</li>
                 <li>Programas de fidelidad, transacciones, campañas</li>

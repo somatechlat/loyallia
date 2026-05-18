@@ -85,7 +85,17 @@ export default function ProgramReviewStep({
               {Object.entries(meta).map(([key, value]) => (
                 <div key={key} className="flex justify-between py-2 border-b border-surface-100">
                   <span className="text-sm text-surface-500">{key.replace(/_/g, ' ')}</span>
-                  <span className="text-sm font-medium">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                  <span className="text-sm font-medium">
+                    {value === null || value === undefined
+                      ? '—'
+                      : typeof value === 'object'
+                        ? Array.isArray(value)
+                          ? `${value.length} item${value.length !== 1 ? 's' : ''}`
+                          : Object.entries(value as Record<string, unknown>)
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join(', ')
+                        : String(value)}
+                  </span>
                 </div>
               ))}
             </div>

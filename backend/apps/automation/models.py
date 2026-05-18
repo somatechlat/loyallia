@@ -24,6 +24,7 @@ class AutomationTrigger(models.TextChoices):
     BIRTHDAY_COMING = "birthday_coming", "Birthday Coming"
     INACTIVE_REMINDER = "inactive_reminder", "Inactive Reminder"
     MILESTONE_REACHED = "milestone_reached", "Milestone Reached"
+    POINTS_THRESHOLD = "points_threshold", "Points Threshold"
     SCHEDULED_TIME = "scheduled_time", "Scheduled Time"
 
 
@@ -40,6 +41,7 @@ class AutomationAction(models.TextChoices):
     ISSUE_REWARD = "issue_reward", "Issue Reward"
     UPDATE_SEGMENT = "update_segment", "Update Segment"
     SEND_WALLET = "send_wallet", "Send Wallet Push"
+    TRIGGER_WEBHOOK = "trigger_webhook", "Trigger Webhook"
 
 
 class Automation(TimestampedModel):
@@ -187,6 +189,8 @@ class Automation(TimestampedModel):
                 success = self._execute_update_segment(customer, context)
             elif self.action == AutomationAction.SEND_WALLET:
                 success = self._execute_send_wallet(customer, context)
+            elif self.action == AutomationAction.TRIGGER_WEBHOOK:
+                success = self._execute_trigger_webhook(customer, context)
 
             if success:
  # LYL-M-API-020: Use F() to prevent lost updates under concurrency
@@ -456,6 +460,78 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
             analytics.save(update_fields=["segment"])
             return True
         return False
+
+    def _execute_trigger_webhook(self, customer, context) -> bool:
+        """Trigger a webhook with automation context.
+
+        LYL-SRS-009: Real implementation using requests.post.
+        Sends tenant_id, rule_id, customer_id, trigger type and timestamp.
+        """
+        import logging
+
+        import requests
+        from django.utils import timezone
+
+        webhook_url = self.action_config.get("webhook_url")
+        if not webhook_url:
+            logging.getLogger(__name__).warning(
+                "No webhook URL configured for automation %s", self.id
+            )
+            return False
+
+        payload = {
+            "tenant_id": str(self.tenant_id),
+            "automation_id": str(self.id),
+            "automation_name": self.name,
+            "customer_id": str(customer.id),
+            "customer_name": f"{customer.first_name} {customer.last_name}".strip(),
+            "customer_email": getattr(customer, "email", None),
+            "customer_phone": getattr(customer, "phone", None),
+            "trigger": self.trigger,
+            "trigger_config": self.trigger_config,
+            "timestamp": timezone.now().isoformat(),
+            "context": {k: v for k, v in (context or {}).items() if not str(k).startswith("_")},
+        }
+
+        try:
+            headers = {"Content-Type": "application/json"}
+            # Support custom headers from action_config
+            custom_headers = self.action_config.get("headers", {})
+            if custom_headers:
+                headers.update(custom_headers)
+
+            response = requests.post(
+                webhook_url,
+                json=payload,
+                headers=headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            logging.getLogger(__name__).info(
+                "Webhook triggered successfully: %s (automation=%s, customer=%s, status=%d)",
+                webhook_url,
+                self.id,
+                customer.id,
+                response.status_code,
+            )
+            return True
+        except requests.exceptions.Timeout:
+            logging.getLogger(__name__).error(
+                "Webhook timeout: %s (automation=%s, customer=%s)",
+                webhook_url,
+                self.id,
+                customer.id,
+            )
+            return False
+        except requests.RequestException as e:
+            logging.getLogger(__name__).error(
+                "Webhook trigger failed: %s (automation=%s, customer=%s) - %s",
+                webhook_url,
+                self.id,
+                customer.id,
+                str(e),
+            )
+            return False
 
 
 class AutomationExecution(models.Model):

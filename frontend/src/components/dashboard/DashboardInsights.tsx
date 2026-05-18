@@ -172,7 +172,7 @@ export default function DashboardInsights({
                 finally { setNotifying(false); }
               }}
             >
-              {notifying ? 'Enviando...' : '🔔 Notificar Top 15'}
+              {notifying ? 'Enviando...' : <span className="flex items-center gap-1"><Bell className="w-3.5 h-3.5" /> Notificar Top 15</span>}
             </button>
           </div>
           {topBuyers.length > 0 ? (

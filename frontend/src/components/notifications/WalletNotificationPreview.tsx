@@ -104,7 +104,7 @@ export default function WalletNotificationPreview({
           </div>
           {(appleTitleOver || appleBodyOver) && (
             <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
-              ⚠️ Apple Wallet trunca textos largos. El título usa el nombre de la tarjeta, no el título personalizado.
+              <AlertTriangle className="w-3 h-3 inline mr-1" />Apple Wallet trunca textos largos. El título usa el nombre de la tarjeta, no el título personalizado.
             </p>
           )}
         </div>
@@ -183,7 +183,7 @@ export default function WalletNotificationPreview({
           </div>
           {(googleHeaderOver || googleBodyOver) && (
             <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
-              ⚠️ Google Wallet puede truncar textos que excedan los límites recomendados.
+              <AlertTriangle className="w-3 h-3 inline mr-1" />Google Wallet puede truncar textos que excedan los límites recomendados.
             </p>
           )}
         </div>

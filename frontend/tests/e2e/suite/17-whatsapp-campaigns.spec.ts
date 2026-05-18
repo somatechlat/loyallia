@@ -28,7 +28,7 @@ test.describe('WhatsApp Campaign UI — OWNER @owner @campaigns', () => {
 
   test('Campaign page loads with heading and form button @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
     // Page heading visible
     await expect(page.getByRole('heading', { name: 'Campañas de Marketing' })).toBeVisible({ timeout: 10000 });
     // New campaign button visible
@@ -37,17 +37,19 @@ test.describe('WhatsApp Campaign UI — OWNER @owner @campaigns', () => {
 
   test('New campaign form opens and has channel selector @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
+
     await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
     // WhatsApp channel button must exist in the channel selector area
     const waButton = page.locator('button').filter({ hasText: 'WhatsApp' });
+    await waButton.first().waitFor({ state: 'visible', timeout: 5000 });
     await expect(waButton.first()).toBeVisible({ timeout: 5000 });
     // Click WhatsApp channel
     await waButton.first().click();
-    await page.waitForTimeout(500);
+
     // Send button should update to contain WhatsApp
     const sendBtn = page.locator('#send-campaign-btn');
+    await sendBtn.waitFor({ state: 'visible', timeout: 5000 });
     await expect(sendBtn).toBeVisible();
     const btnText = await sendBtn.textContent();
     expect(btnText).toContain('WhatsApp');
@@ -55,11 +57,12 @@ test.describe('WhatsApp Campaign UI — OWNER @owner @campaigns', () => {
 
   test('Cancel button closes campaign form @owner', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: 'Campañas de Marketing' }).waitFor({ state: 'visible', timeout: 10000 });
+
     await page.click('#new-campaign-btn');
-    await page.waitForTimeout(1000);
+    await page.locator('#send-campaign-btn, #cancel-campaign-btn').first().waitFor({ state: 'visible', timeout: 5000 });
+
     await page.click('#cancel-campaign-btn');
-    await page.waitForTimeout(500);
     // Form should be closed — send button no longer visible
     await expect(page.locator('#send-campaign-btn')).toHaveCount(0);
   });
@@ -257,7 +260,6 @@ test.describe('WhatsApp & Analytics RBAC — MANAGER blocked @manager @whatsapp'
 
   test('MANAGER does NOT see "Campañas" in nav @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
     const navLink = page.locator('nav, aside').getByText('Campañas');
     await expect(navLink).toHaveCount(0);
   });
@@ -307,7 +309,7 @@ test.describe('WhatsApp & Analytics RBAC — STAFF blocked @staff @whatsapp', ()
 
   test('STAFF navigating to /campaigns is blocked @staff', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const url = page.url();
     // Should redirect away or not show campaign content
     const heading = page.getByRole('heading', { name: 'Campañas de Marketing' });
@@ -416,7 +418,7 @@ test.describe('WhatsApp Settings Wizard — OWNER @owner @whatsapp', () => {
 
   test('Settings page shows WhatsApp integration section @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-integration-section').waitFor({ state: 'visible', timeout: 10000 });
 
     // Integrations section must be visible
     await expect(page.locator('#wa-integration-section')).toBeVisible({ timeout: 10000 });
@@ -428,31 +430,44 @@ test.describe('WhatsApp Settings Wizard — OWNER @owner @whatsapp', () => {
 
   test('WhatsApp toggle triggers bridge status check @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-integration-section').waitFor({ state: 'visible', timeout: 10000 });
 
     // Click toggle — should trigger checking or QR or error
     await page.locator('#wa-toggle').click();
-    await page.waitForTimeout(5000);
+
+    // Wait for one of the expected states to appear
+    await expect(
+      page.locator('#wa-wizard-content, #wa-connected-dashboard')
+        .or(page.getByText('Verificando disponibilidad'))
+        .or(page.getByText('no esta disponible'))
+        .first(),
+    ).toBeVisible({ timeout: 10000 });
 
     // One of: QR wizard, connected dashboard, checking spinner, or error should be visible
     const hasQr = await page.locator('#wa-wizard-content').count();
     const hasConnected = await page.locator('#wa-connected-dashboard').count();
     const hasChecking = await page.getByText('Verificando disponibilidad').count();
-    const hasError = await page.getByText('no está disponible').count();
+    const hasError = await page.getByText('no esta disponible').count();
     expect(hasQr + hasConnected + hasChecking + hasError).toBeGreaterThan(0);
   });
 
   test('Cancel button in QR wizard returns to disabled state @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-integration-section').waitFor({ state: 'visible', timeout: 10000 });
+
     await page.locator('#wa-toggle').click();
-    await page.waitForTimeout(3000);
+    // Wait for one of the expected states
+    await expect(
+      page.locator('#wa-wizard-content, #wa-connected-dashboard')
+        .or(page.getByText('Verificando disponibilidad'))
+        .or(page.getByText('no esta disponible'))
+        .first(),
+    ).toBeVisible({ timeout: 10000 });
 
     // If QR wizard appeared, cancel it
     const cancelBtn = page.locator('#wa-cancel-btn');
     if (await cancelBtn.isVisible()) {
       await cancelBtn.click();
-      await page.waitForTimeout(500);
       // QR wizard should be gone
       await expect(page.locator('#wa-wizard-content')).toHaveCount(0);
     }
@@ -460,7 +475,8 @@ test.describe('WhatsApp Settings Wizard — OWNER @owner @whatsapp', () => {
 
   test('Settings save button still works with integrations section @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('#wa-integration-section').waitFor({ state: 'visible', timeout: 10000 });
+
     // Save button must still be visible
     await expect(page.locator('#save-settings-btn')).toBeVisible();
   });
@@ -470,7 +486,7 @@ test.describe('WhatsApp Settings — MANAGER denied @manager @whatsapp', () => {
   test.use({ storageState: '.auth/manager.json' });
   test('MANAGER cannot access settings page @manager', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
 
     // Settings is OWNER-only route — should redirect or show no WA section
     const waSection = page.locator('#wa-integration-section');

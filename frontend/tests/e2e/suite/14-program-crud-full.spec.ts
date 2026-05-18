@@ -14,28 +14,23 @@ const BASE_API = getE2EBaseURL();
 async function gotoPrograms(page: any) {
   await page.goto('/programs', { waitUntil: 'domcontentloaded' });
   // Wait for heading to confirm the page loaded with data
-  await page.getByRole('heading', { name: 'Programas de fidelización' }).waitFor({ state: 'visible', timeout: 15000 });
+  await page.getByRole('heading', { name: 'Programas de fidelizacion' }).waitFor({ state: 'visible', timeout: 15000 });
 }
 
 test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
-  test.beforeAll(() => {
-  });
-
   test('1. Create program with all customizations (logo, hero, icon, colors)', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByText('Tarjeta de Sellos').waitFor({ state: 'visible', timeout: 10000 });
 
     // Step 0: Select card type (stamp)
     await expect(page.getByText('Tarjeta de Sellos')).toBeVisible({ timeout: 10000 });
     await page.getByText('Tarjeta de Sellos').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 1: Config — use defaults
+    await page.getByRole('button', { name: /siguiente/i }).waitFor({ state: 'visible', timeout: 5000 });
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 2: Design — fill name, description, select template
     await expect(page.locator('#program-name')).toBeVisible({ timeout: 5000 });
@@ -46,17 +41,18 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
     const templates = page.locator('[data-template]');
     if (await templates.count() > 0) {
       await templates.first().click();
-      await page.waitForTimeout(300);
     }
 
     // Click next to review
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 3: Review — confirm and create
     await expect(page.getByText('E2E CRUD Program').first()).toBeVisible({ timeout: 5000 });
-    await page.getByRole('button', { name: /crear programa/i }).click();
-    await page.waitForTimeout(5000);
+    const createBtn = page.getByRole('button', { name: /crear programa/i });
+    await createBtn.click();
+
+    // Wait for navigation to programs list or program detail instead of fixed timeout
+    await page.waitForURL(/.*programs.*/, { timeout: 15000 });
 
     // Should redirect to programs list or program detail
     const url = page.url();
@@ -65,7 +61,6 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
   test('2. Edit program - update name and verify saved', async ({ page }) => {
     await gotoPrograms(page);
-    await page.waitForTimeout(2000);
 
     // Find a program detail link (eye icon) — exclude /programs/new
     const allLinks = page.locator('#programs-view a[href*="/programs/"]');
@@ -77,25 +72,28 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
     }
     expect(detailLink, 'No programs available to edit — seed data may have been cleared').toBeTruthy();
     await detailLink!.click();
-    await page.waitForTimeout(3000);
 
-    // Should be on /programs/{id}
-    await expect(page).toHaveURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
+    // Wait for navigation to detail page
+    await page.waitForURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
 
     // Look for edit button
     const editBtn = page.getByText('Editar').or(page.locator('#edit-program-btn'));
     if (await editBtn.first().isVisible({ timeout: 5000 }).catch(() => false)) {
       await editBtn.first().click();
-      await page.waitForTimeout(2000);
-      // The edit form should be visible — just verify we got there
+
+      // Wait for edit form to appear
       const nameField = page.locator('#edit-name').or(page.locator('#program-name'));
-      if (await nameField.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (await nameField.first().isVisible({ timeout: 5000 }).catch(() => false)) {
         await nameField.first().fill('E2E Updated Program');
         // Save
         const saveBtn = page.getByRole('button', { name: /guardar|actualizar|save/i });
-        if (await saveBtn.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        if (await saveBtn.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+          const savePromise = page.waitForResponse(
+            (resp) => resp.url().includes('/api/') && resp.url().includes('program'),
+            { timeout: 15000 },
+          ).catch(() => {});
           await saveBtn.first().click();
-          await page.waitForTimeout(3000);
+          await savePromise;
         }
       }
     }
@@ -106,7 +104,6 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
   test('3. View program details - verify wallet card preview shows all images', async ({ page }) => {
     await gotoPrograms(page);
-    await page.waitForTimeout(2000);
 
     // Find a program detail link — exclude /programs/new
     const allLinks = page.locator('#programs-view a[href*="/programs/"]');
@@ -118,10 +115,9 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
     }
     expect(detailLink, 'No programs available to view — seed data may have been cleared').toBeTruthy();
     await detailLink!.click();
-    await page.waitForTimeout(3000);
 
-    // Should be on /programs/{id}
-    await expect(page).toHaveURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
+    // Wait for navigation to detail page
+    await page.waitForURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
 
     // The detail page should show some content
     const pageContent = page.locator('main').or(page.locator('.page-title'));
@@ -154,7 +150,7 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
   test('5. Create wallet notification campaign to program members', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: /Campañas/i }).waitFor({ state: 'visible', timeout: 15000 });
 
     // Campaigns page should load
     const heading = page.locator('.page-title').or(page.getByRole('heading').first());
@@ -168,7 +164,7 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
   test('6. Create email campaign to program members', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.getByRole('heading', { name: /Campañas/i }).waitFor({ state: 'visible', timeout: 15000 });
 
     // Campaigns page should load
     const heading = page.locator('.page-title').or(page.getByRole('heading').first());

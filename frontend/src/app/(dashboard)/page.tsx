@@ -241,9 +241,9 @@ export default function DashboardPage() {
   ];
 
   const chartTabs: { key: ChartTab; label: string; icon: string }[] = [
-    { key: 'revenue', label: 'Ganancias', icon: '💰' },
-    { key: 'visits', label: 'Visitas', icon: '📊' },
-    { key: 'customers', label: 'Clientes nuevos', icon: '👥' },
+    { key: 'revenue', label: 'Ganancias', icon: 'revenue' },
+    { key: 'visits', label: 'Visitas', icon: 'chart' },
+    { key: 'customers', label: 'Clientes nuevos', icon: 'users' },
   ];
 
   const getChartConfig = () => {

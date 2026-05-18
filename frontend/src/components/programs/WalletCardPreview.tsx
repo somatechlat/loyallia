@@ -208,10 +208,10 @@ export function WalletProviderSelector({
           <div className="text-xs text-surface-500 bg-surface-100 dark:bg-surface-800 rounded-lg p-2.5">
             <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">Imagen:</p>
             {APPLE_IMAGE_SUPPORT[applePassStyle]?.strip
-              ? <p>✅ <span className="font-medium">strip.png</span> — imagen panorámica (375×123pt). Visible en iPhone.</p>
-              : <p>✅ <span className="font-medium">thumbnail.png</span> — miniatura (90×90pt). Visible en iPhone.</p>
+              ? <p><span className="font-medium">strip.png</span> — imagen panorámica (375x123pt). Visible en iPhone.</p>
+              : <p><span className="font-medium">thumbnail.png</span> — miniatura (90x90pt). Visible en iPhone.</p>
             }
-            <p className="mt-1 opacity-70">⌚ Apple Watch: imágenes no se muestran.</p>
+            <p className="mt-1 opacity-70">Apple Watch: las imagenes no se muestran.</p>
           </div>
 
           <label className="flex items-start justify-between gap-4">
@@ -261,8 +261,8 @@ export function WalletProviderSelector({
           </div>
           <div className="text-xs text-surface-500 bg-surface-100 dark:bg-surface-800 rounded-lg p-2.5">
             <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">Hero Image:</p>
-            <p>✅ Imagen de ancho completo soportada en todos los tipos Google.</p>
-            <p className="mt-1">📐 Layout: <span className="font-mono">cardTemplateOverride</span> con filas de 1-3 campos.</p>
+            <p>Imagen de ancho completo soportada en todos los tipos Google.</p>
+            <p className="mt-1">Layout: <span className="font-mono">cardTemplateOverride</span> con filas de 1-3 campos.</p>
           </div>
         </div>
       )}
@@ -271,7 +271,7 @@ export function WalletProviderSelector({
 }
 
 /* ─── Apple Wallet Card (storeCard / coupon / generic) ────────────── */
-function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcodeType }: CardProps) {
+function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcodeType, customerName }: CardProps) {
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const passStyle = APPLE_PASS_STYLES[form.card_type] || 'generic';
@@ -353,16 +353,16 @@ function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcod
             {/* Primary / Secondary Fields — type-specific */}
             <div className="px-4 py-2.5 space-y-1.5">
               <div className="flex justify-between">
-                {form.card_type === 'stamp' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PROGRESO</p><p className="text-xs font-bold opacity-90">⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
-                {form.card_type === 'cashback' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CASHBACK</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
-                {form.card_type === 'coupon' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">{form.description || 'Descuento especial'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
-                {form.card_type === 'vip_membership' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PLAN</p><p className="text-xs font-bold opacity-90">Club VIP</p></div></>}
-                {form.card_type === 'referral_pass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">TU CÓDIGO</p><p className="text-xs font-bold opacity-90 font-mono">REF-XXXX</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMBAJADOR</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
-                {form.card_type === 'discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
-                {form.card_type === 'gift_certificate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CERTIFICADO</p><p className="text-xs font-bold opacity-90">{form.name || 'Regalo'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">BENEFICIARIO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
-                {form.card_type === 'affiliate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">AFILIADO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO DESDE</p><p className="text-xs font-bold opacity-90">—</p></div></>}
-                {form.card_type === 'corporate_discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPRESA</p><p className="text-xs font-bold opacity-90">{form.name || 'Empresa'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPLEADO</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
-                {form.card_type === 'multipass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MULTIPASE</p><p className="text-xs font-bold opacity-90">{form.name || 'Paquete'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">Juan Pérez</p></div></>}
+                {form.card_type === 'stamp' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PROGRESO</p><p className="text-xs font-bold opacity-90">⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
+                {form.card_type === 'cashback' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CASHBACK</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
+                {form.card_type === 'coupon' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">{form.description || 'Descuento especial'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
+                {form.card_type === 'vip_membership' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PLAN</p><p className="text-xs font-bold opacity-90">Club VIP</p></div></>}
+                {form.card_type === 'referral_pass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">TU CÓDIGO</p><p className="text-xs font-bold opacity-90 font-mono">REF-XXXX</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMBAJADOR</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
+                {form.card_type === 'discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
+                {form.card_type === 'gift_certificate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CERTIFICADO</p><p className="text-xs font-bold opacity-90">{form.name || 'Regalo'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">BENEFICIARIO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
+                {form.card_type === 'affiliate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">AFILIADO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO DESDE</p><p className="text-xs font-bold opacity-90">—</p></div></>}
+                {form.card_type === 'corporate_discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPRESA</p><p className="text-xs font-bold opacity-90">{form.name || 'Empresa'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPLEADO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
+                {form.card_type === 'multipass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MULTIPASE</p><p className="text-xs font-bold opacity-90">{form.name || 'Paquete'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
               </div>
               {form.description && (
                 <p className="text-[9px] opacity-50 line-clamp-1">{form.description}</p>
@@ -386,7 +386,7 @@ function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcod
 }
 
 /* ─── Google Wallet Card (Material You) ───────────────────────────── */
-function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barcodeType }: CardProps) {
+function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barcodeType, customerName }: CardProps) {
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const heroImage = stripPreview || form.strip_image_url;
@@ -435,7 +435,7 @@ function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barco
             <div className="px-4 py-2 space-y-2 border-t border-white/10 mx-3">
               <div className="flex justify-between">
                 <span className="text-[9px] opacity-40 font-medium">Miembro</span>
-                <span className="text-[10px] font-semibold">Juan Pérez</span>
+                <span className="text-[10px] font-semibold">{customerName || "Cliente"}</span>
               </div>
               {(form.card_type === 'stamp' || form.card_type === 'vip_membership' || form.card_type === 'affiliate') && (
                 <div className="flex justify-between">
@@ -494,6 +494,7 @@ interface CardProps {
   logoPreview: string | null;
   stripPreview?: string | null;
   barcodeType: string;
+  customerName?: string;
 }
 
 /* ─── Main Wallet Preview (exported) ──────────────────────────────── */
@@ -505,9 +506,11 @@ export default function WalletCardPreview({
   barcodeType = 'qr_code',
   walletPlatform = 'apple',
   onWalletPlatformChange,
+  customerName,
 }: CardProps & {
   walletPlatform?: 'apple' | 'google';
   onWalletPlatformChange?: (platform: 'apple' | 'google') => void;
+  customerName?: string;
 }) {
   const [platform, setPlatform] = useState(walletPlatform);
 
@@ -527,9 +530,9 @@ export default function WalletCardPreview({
     <div className="relative w-full max-w-[320px]">
       <PlatformToggle platform={platform} onChange={handlePlatformChange} />
       {platform === 'apple' ? (
-        <AppleWalletCard form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={barcodeType} />
+        <AppleWalletCard form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={barcodeType} customerName={customerName} />
       ) : (
-        <GoogleWalletCard form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={barcodeType} />
+        <GoogleWalletCard form={form} selectedType={selectedType} logoPreview={logoPreview} stripPreview={stripPreview} barcodeType={barcodeType} customerName={customerName} />
       )}
       <p className="text-center text-xs text-surface-400 mt-3 font-medium">
         Vista previa — {platform === 'apple' ? 'Apple Wallet' : 'Google Wallet'}

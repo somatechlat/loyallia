@@ -17,7 +17,7 @@ export default function PlatformModeBanner({ platformMode, loadingMode, onToggle
     >
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{platformMode === 'development' ? '🟡' : '🟢'}</span>
+          {platformMode === 'development' ? <AlertCircle className="w-6 h-6 text-amber-500" /> : <CheckCircle className="w-6 h-6 text-green-500" />}
           <div>
             <p
               className={`text-sm font-bold uppercase ${

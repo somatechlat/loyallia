@@ -221,10 +221,10 @@ function PlanCard({ plan, onClick }: { plan: PlanData; onClick: () => void }) {
         <p>{plan.max_customers.toLocaleString()} clientes</p>
         <p>{plan.trial_days}d prueba</p>
         {plan.max_whatsapp_day > 0 && (
-          <p className="text-green-500">📱 {plan.max_whatsapp_day} WA/día</p>
+          <p className="text-green-500 flex items-center gap-1"><svg className="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> {plan.max_whatsapp_day} WA/día</p>
         )}
         {plan.max_emails_month > 0 && (
-          <p className="text-blue-500">📧 {plan.max_emails_month.toLocaleString()} emails/mes</p>
+          <p className="text-blue-500 flex items-center gap-1"><svg className="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> {plan.max_emails_month.toLocaleString()} emails/mes</p>
         )}
       </div>
       <div className="mt-3 pt-3 border-t border-surface-100 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">

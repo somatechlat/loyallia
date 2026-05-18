@@ -136,6 +136,7 @@ class TeamMemberCreateIn(BaseModel):
     first_name: str
     last_name: str
     role: str
+    send_email: bool = True
 
     class Config:
         json_schema_extra = {
@@ -144,6 +145,7 @@ class TeamMemberCreateIn(BaseModel):
                 "first_name": "Juan",
                 "last_name": "Perez",
                 "role": "staff",
+                "send_email": True,
             }
         }
 

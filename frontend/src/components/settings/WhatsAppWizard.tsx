@@ -133,8 +133,8 @@ export default function WhatsAppWizard({ tenantId, planFeatures, planName, planL
         <div className="flex items-center gap-2 text-xs bg-surface-50 dark:bg-surface-800/50 rounded-lg px-3 py-2 border border-surface-200 dark:border-surface-700">
           <span className="font-semibold text-surface-500">Plan:</span>
           <span className="font-bold text-brand-600">{planName}</span>
-          {(planLimits.whatsapp_day ?? 0) > 0 && <span className="text-green-600">· 📱 {planLimits.whatsapp_day} WA/día</span>}
-          {(planLimits.emails_month ?? 0) > 0 && <span className="text-blue-600">· 📧 {planLimits.emails_month?.toLocaleString()} emails/mes</span>}
+          {(planLimits.whatsapp_day ?? 0) > 0 && <span className="text-green-600 flex items-center gap-1">· <Smartphone className="w-3 h-3" /> {planLimits.whatsapp_day} WA/día</span>}
+          {(planLimits.emails_month ?? 0) > 0 && <span className="text-blue-600 flex items-center gap-1">· <Mail className="w-3 h-3" /> {planLimits.emails_month?.toLocaleString()} emails/mes</span>}
         </div>
       )}
 
@@ -286,7 +286,7 @@ export default function WhatsAppWizard({ tenantId, planFeatures, planName, planL
               </button>
             </div>
             <p className="text-lg font-mono font-semibold text-surface-900 dark:text-white mb-3">
-              📱 {waStatus.phone || 'Número no disponible'}
+              <Smartphone className="w-4 h-4 inline mr-1" />{waStatus.phone || 'Número no disponible'}
             </p>
             <div className="space-y-2">
               <div>

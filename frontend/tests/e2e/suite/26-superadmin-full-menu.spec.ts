@@ -34,7 +34,8 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin @superadmin
 
   test('3. Plans Management (/superadmin/plans) loads', async ({ page }) => {
     await page.goto('/superadmin/plans', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="plan"], [class*="card"], button').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, [class*="plan"], [class*="card"], button').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -42,7 +43,8 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin @superadmin
 
   test('4. Global Settings (/superadmin/settings) loads with integration cards', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="settings"], [class*="integration"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     // Should show integration cards (Apple, Google, Twilio, Email)
     const content = page.locator('h1, h2, [class*="settings"], [class*="integration"], [class*="card"]').first();
@@ -61,7 +63,8 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin @superadmin
 
   test('7. Metrics (/superadmin/metrics) loads with charts', async ({ page }) => {
     await page.goto('/superadmin/metrics', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, canvas, svg, [class*="metric"], [class*="chart"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, canvas, svg, [class*="metric"], [class*="chart"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -69,7 +72,7 @@ test.describe('SuperAdmin Full Menu — Every Page Loads @superadmin @superadmin
 
   test('8. Broadcast announcement form is accessible', async ({ page }) => {
     await page.goto('/superadmin/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
 
     // Look for broadcast/announcement section
     const broadcastSection = page.locator('text=Anuncio').or(page.locator('text=Broadcast')).or(page.locator('text=broadcast'));

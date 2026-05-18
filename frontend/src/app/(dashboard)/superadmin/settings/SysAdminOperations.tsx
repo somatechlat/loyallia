@@ -76,7 +76,7 @@ export default function SysAdminOperations({
   };
 
   const handleFactoryResetConfirm = async () => {
-    if (!window.confirm('⚠️ ÚLTIMA ADVERTENCIA: ¿Restaurar el sistema a estado de fábrica? Esta acción es IRREVERSIBLE y eliminará TODOS los datos de negocios.')) return;
+    if (!window.confirm('[ADVERTENCIA] ÚLTIMA ADVERTENCIA: ¿Restaurar el sistema a estado de fábrica? Esta acción es IRREVERSIBLE y eliminará TODOS los datos de negocios.')) return;
     setConfirmingReset(true);
     try {
       const { data } = await superAdminApi.factoryResetConfirm(resetOtp);

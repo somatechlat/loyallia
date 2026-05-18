@@ -14,7 +14,9 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('1. Dashboard (/) loads with KPI cards', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    // Wait for main content to be visible
+    await page.locator('h1, h2, [class*="stat"], [class*="kpi"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     // Dashboard should have visible content (KPI cards, charts, etc.)
     const heading = page.locator('h1, h2, [class*="stat"], [class*="kpi"], [class*="card"]').first();
@@ -27,7 +29,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('2. Programs (/programs) loads with list', async ({ page }) => {
     await page.goto('/programs', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, [class*="program"], table, [class*="card"], [class*="grid"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, [class*="program"], table, [class*="card"], [class*="grid"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -46,7 +49,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
     expect(items.length, 'At least one program must exist for detail page test').toBeGreaterThan(0);
     const firstId = items[0].id;
     await page.goto(`/programs/${firstId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="detail"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, [class*="detail"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -54,7 +58,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('4. Customers (/customers) loads with table', async ({ page }) => {
     await page.goto('/customers', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('table, [class*="customer"], [class*="list"], [class*="grid"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('table, [class*="customer"], [class*="list"], [class*="grid"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -72,7 +77,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
     expect(items.length, 'At least one customer must exist for detail page test').toBeGreaterThan(0);
     const firstId = items[0].id;
     await page.goto(`/customers/${firstId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="detail"], [class*="card"], [class*="profile"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, [class*="detail"], [class*="card"], [class*="profile"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -80,7 +86,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('6. Team (/team) loads with member list', async ({ page }) => {
     await page.goto('/team', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('table, [class*="team"], [class*="member"], [class*="list"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('table, [class*="team"], [class*="member"], [class*="list"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -88,7 +95,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('7. Locations (/locations) loads', async ({ page }) => {
     await page.goto('/locations', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="location"], [class*="map"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, [class*="location"], [class*="map"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -96,7 +104,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('8. Analytics (/analytics) loads with charts', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('canvas, svg, [class*="chart"], [class*="analytics"], h1, h2').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('canvas, svg, [class*="chart"], [class*="analytics"], h1, h2').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -104,7 +113,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('9. Automation (/automation) loads with rules', async ({ page }) => {
     await page.goto('/automation', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="automation"], [class*="rule"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, [class*="automation"], [class*="rule"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -112,7 +122,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('10. Campaigns (/campaigns) loads with type selector', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, button[aria-pressed], [class*="campaign"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, button[aria-pressed], [class*="campaign"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -120,7 +131,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('11. Settings (/settings) loads with sections', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="settings"], [class*="section"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, [class*="settings"], [class*="section"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
@@ -128,7 +140,8 @@ test.describe('Owner Full Menu — Every Page Loads @owner', () => {
 
   test('12. Billing (/billing) loads with plan details', async ({ page }) => {
     await page.goto('/billing', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.locator('h1, h2, [class*="billing"], [class*="plan"], [class*="card"]').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
 
     const content = page.locator('h1, h2, [class*="billing"], [class*="plan"], [class*="card"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
