@@ -33,6 +33,7 @@ from decimal import Decimal
 from typing import Any
 
 from django.db.models import Q
+from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -81,7 +82,7 @@ class ScanTransactIn(BaseModel):
 
 
 @scanner_router.post("/validate/", auth=jwt_auth, summary="Validar código QR del pase")
-def validate_qr(request, data: ScanValidateIn):
+def validate_qr(request: HttpRequest, data: ScanValidateIn):
     """Validate QR HMAC token and return pass state + customer info.
 
     This is a read-only operation — the pass state is not modified.
@@ -122,7 +123,7 @@ def validate_qr(request, data: ScanValidateIn):
 
 
 @scanner_router.post("/transact/", auth=jwt_auth, summary="Registrar transacción")
-def transact(request, data: ScanTransactIn):
+def transact(request: HttpRequest, data: ScanTransactIn):
     """Record a transaction from a QR scan and update pass balance atomically.
 
     This is the HOTTEST endpoint in the system — called on every customer scan
@@ -254,7 +255,7 @@ def transact(request, data: ScanTransactIn):
 
 
 @scanner_router.get("/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono")
-def search_customer(request, query: str):
+def search_customer(request: HttpRequest, query: str):
     """Search customer by name/email/phone for remote stamp issuance.
 
     SEC: Scoped to request.tenant — staff cannot see other tenants' customers.
@@ -306,7 +307,7 @@ def search_customer(request, query: str):
 
 # --- Transaction list endpoints (/transactions/) ---
 @router.get("/", auth=jwt_auth, summary="Listar transacciones")
-def list_transactions(request, limit: int = 50, offset: int = 0):
+def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
     """List transactions with pagination for the dashboard.
 
     SEC: Filtered by request.tenant — managers can only see their tenant's transactions.
@@ -351,7 +352,7 @@ def list_transactions(request, limit: int = 50, offset: int = 0):
 
 
 @router.get("/{transaction_id}/", auth=jwt_auth, summary="Detalle de transacción")
-def get_transaction(request, transaction_id: str):
+def get_transaction(request: HttpRequest, transaction_id: str):
     """Transaction detail view with all related data.
 
     SEC: Tenant-scoped lookup prevents cross-tenant access.
@@ -415,7 +416,7 @@ class RemoteIssueIn(BaseModel):
 
 
 @router.post("/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota")
-def remote_issue(request, data: RemoteIssueIn):
+def remote_issue(request: HttpRequest, data: RemoteIssueIn):
     """Issue stamps/rewards remotely without a QR scan.
 
     Used when staff finds a customer by search and manually applies rewards.

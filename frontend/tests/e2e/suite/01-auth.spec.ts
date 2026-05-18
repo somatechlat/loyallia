@@ -34,7 +34,7 @@ async function login(page: any, email: string, password: string) {
     refreshToken = body.refresh_token || null;
   } catch { /* response already consumed */ }
 
-  await page.waitForTimeout(1000);
+  await page.waitForLoadState('networkidle');
 
   // Inject cookies manually since secure cookies won't stick on HTTP localhost.
   // Then navigate to / so the auth middleware can redirect to the correct landing page.
@@ -48,7 +48,7 @@ async function login(page: any, email: string, password: string) {
     }
     // Navigate to root to trigger auth-gated redirect (login page won't auto-redirect)
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('nav, [data-testid="main-nav"], #sidebar, aside', { timeout: 30000 });
   }
 }
 
@@ -114,25 +114,26 @@ test.describe('Authentication & Role Routing @auth', () => {
     await passwordInput.click();
     await passwordInput.fill('wrongpassword');
     await page.locator('#login-btn').click();
-    await page.waitForTimeout(3000);
+    await page.waitForResponse(
+      (resp: any) => resp.url().includes('/api/v1/auth/login/'),
+      { timeout: 10000 },
+    );
     const url = page.url();
     expect(url).toContain('/login');
   });
 
   test('Forgot password link exists', async ({ page }) => {
-    await page.goto('/login', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/login', { waitUntil: 'networkidle' });
     const link = page.getByRole('link', { name: /olvidaste/i });
-    await expect(link).toBeVisible();
+    await expect(link).toBeVisible({ timeout: 10000 });
   });
 
   test('Register link navigates to /register', async ({ page }) => {
-    await page.goto('/login', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/login', { waitUntil: 'networkidle' });
     const link = page.getByRole('link', { name: /reg[ií]strate/i });
-    await expect(link).toBeVisible();
+    await expect(link).toBeVisible({ timeout: 10000 });
     await link.click();
-    await page.waitForTimeout(3000);
+    await page.waitForURL(/\/register/, { timeout: 10000 });
     expect(page.url()).toContain('/register');
   });
 });
@@ -151,33 +152,32 @@ test.describe('Registration Form @auth', () => {
   });
 
   test('Register form validates required fields', async ({ page }) => {
-    await page.goto('/register', { waitUntil: 'domcontentloaded' });
+    await page.goto('/register', { waitUntil: 'networkidle' });
     await page.locator('#register-btn').click();
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('#register-btn', { timeout: 5000 });
     // Should stay on register page
     expect(page.url()).toContain('/register');
   });
 
   test('Register form validates password length (min 8)', async ({ page }) => {
-    await page.goto('/register', { waitUntil: 'domcontentloaded' });
+    await page.goto('/register', { waitUntil: 'networkidle' });
     await page.locator('#register-business_name').fill('TestBiz');
     await page.locator('#register-first_name').fill('Test');
     await page.locator('#register-last_name').fill('User');
     await page.locator('#register-email').fill('test@loyallia.com');
     await page.locator('#register-password').fill('short');
     await page.locator('#register-btn').click();
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('#register-btn', { timeout: 5000 });
     // Should stay on register (password too short)
     expect(page.url()).toContain('/register');
   });
 
   test('Login link navigates to /login from register', async ({ page }) => {
-    await page.goto('/register', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/register', { waitUntil: 'networkidle' });
     const link = page.getByRole('link', { name: /inicia sesi[oó]n/i });
-    await expect(link).toBeVisible();
+    await expect(link).toBeVisible({ timeout: 10000 });
     await link.click();
-    await page.waitForTimeout(3000);
+    await page.waitForURL(/\/login/, { timeout: 10000 });
     expect(page.url()).toContain('/login');
   });
 });

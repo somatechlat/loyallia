@@ -6,6 +6,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
+from django.http import HttpRequest
 from ninja import Router
 from ninja.errors import HttpError
 
@@ -43,7 +44,7 @@ def _is_production_environment() -> bool:
     response=SeedDemoDataOut,
     summary="Cargar datos de demostración",
 )
-def seed_demo_data(request):
+def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
     """Load demo data (tenants, customers, transactions) for demonstration.
 
     SUPER_ADMIN only. Calls the seed_test_data management command.
@@ -91,7 +92,7 @@ def seed_demo_data(request):
     response=MessageOut,
     summary="Solicitar código para restaurar de fábrica",
 )
-def factory_reset_request(request):
+def factory_reset_request(request: HttpRequest) -> MessageOut:
     """Send OTP to SUPER_ADMIN for factory reset verification.
 
     Step 1 of 2: Uses OTP strategy (Twilio Verify when enabled,
@@ -170,7 +171,7 @@ def factory_reset_request(request):
     response=MessageOut,
     summary="Confirmar restauración de fábrica con código OTP",
 )
-def factory_reset_confirm(request, payload: FactoryResetConfirmIn):
+def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) -> MessageOut:
     """Verify OTP and execute factory reset. IRREVERSIBLE.
 
     Step 2 of 2: Validates the OTP from step 1, then wipes ALL tenant data

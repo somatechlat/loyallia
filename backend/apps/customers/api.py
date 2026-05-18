@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 from django.db.models import Q
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -40,7 +41,7 @@ router = Router()
 
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
 @require_active_subscription
-def list_customers(request, search: str | None = None, limit: int = 50, offset: int = 0):
+def list_customers(request: HttpRequest, search: str | None = None, limit: int = 50, offset: int = 0) -> CustomerListOut:
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -74,7 +75,7 @@ def list_customers(request, search: str | None = None, limit: int = 50, offset: 
 
 
 @router.post("/", auth=jwt_auth, response=CustomerOut, summary="Crear cliente")
-def create_customer(request, data: CustomerCreateIn):
+def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut:
     """Create a customer for the current tenant. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -117,7 +118,7 @@ def create_customer(request, data: CustomerCreateIn):
 
 
 @router.post("/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)")
-def import_customers(request, file: UploadedFile):
+def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     """
     Import customers from an Excel or CSV file. OWNER only.
     Delegates processing to CustomerImportService.
@@ -166,7 +167,7 @@ def import_customers(request, file: UploadedFile):
 
 
 @router.post("/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente")
-def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateIn):
+def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: CustomerCreateIn) -> CustomerPassOut:
     """Public endpoint for customer self-enrollment via QR code scan.
 
     Rate limited to 10 enrollments per hour per IP address.
@@ -281,7 +282,7 @@ def enroll_customer_public(request, card_id: str, customer_data: CustomerCreateI
 
 
 @router.get("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente")
-def get_customer(request, customer_id: str):
+def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
     """Customer profile with pass and transaction history. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -300,7 +301,7 @@ def get_customer(request, customer_id: str):
 
 @router.patch("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
-def update_customer(request, customer_id: str, data: CustomerUpdateIn):
+def update_customer(request: HttpRequest, customer_id: str, data: CustomerUpdateIn) -> CustomerOut:
     """Update customer information. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -346,14 +347,14 @@ def update_customer(request, customer_id: str, data: CustomerUpdateIn):
 
 @router.put("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
-def replace_customer(request, customer_id: str, data: CustomerUpdateIn):
+def replace_customer(request: HttpRequest, customer_id: str, data: CustomerUpdateIn) -> CustomerOut:
     """Compatibility alias for clients that send PUT for partial customer updates."""
     return update_customer(request, customer_id, data)
 
 
 @router.delete("/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente")
 @require_active_subscription
-def delete_customer(request, customer_id: str):
+def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
     """Permanent delete of a customer and all associated data. OWNER only.
     LYL-M-API-023: Return 204 No Content on successful delete.
     """
@@ -371,8 +372,6 @@ def delete_customer(request, customer_id: str):
 
     customer.delete()
 
-    from django.http import HttpResponse
-
     return HttpResponse(status=204)
 
 
@@ -382,7 +381,7 @@ def delete_customer(request, customer_id: str):
     response=list[CustomerPassOut],
     summary="Pases del cliente",
 )
-def get_customer_passes(request, customer_id: str):
+def get_customer_passes(request: HttpRequest, customer_id: str) -> list[CustomerPassOut]:
     """Get all passes for a customer. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -397,7 +396,7 @@ def get_customer_passes(request, customer_id: str):
     response=CustomerPassOut,
     summary="Inscribir cliente en programa",
 )
-def enroll_customer(request, customer_id: str, card_id: str):
+def enroll_customer(request: HttpRequest, customer_id: str, card_id: str) -> CustomerPassOut:
     """Enroll customer in a loyalty program. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))

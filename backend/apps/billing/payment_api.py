@@ -25,6 +25,7 @@ from apps.billing.payment_models import WebhookEvent
 from apps.billing.schemas import AddPaymentMethodSchema
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
+from common.rate_limit import rate_limit
 from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.billing")
@@ -236,6 +237,7 @@ def get_invoice(request: HttpRequest, invoice_id: str):
 
 
 @router.post("/webhook/", summary="Payment Gateway Webhook")
+@rate_limit(key_prefix="stripe_webhook", max_requests=100, window_seconds=60)
 def payment_webhook(request: HttpRequest):
     """
     Receive and process payment gateway webhook events.

@@ -15,8 +15,7 @@ const BASE_API = getE2EBaseURL();
 test.describe('Programs Borradores — OWNER @owner @programs', () => {
 
   test('Programs page renders section structure @owner', async ({ page }) => {
-    await page.goto('/programs', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/programs', { waitUntil: 'networkidle' });
     // At minimum the page title should be visible
     await expect(page.getByRole('heading', { name: 'Programas de fidelización' })).toBeVisible({ timeout: 10000 });
     // At least one status section (Activas/Borradores/Inactivas) should be visible after data loads
@@ -25,8 +24,7 @@ test.describe('Programs Borradores — OWNER @owner @programs', () => {
   });
 
   test('Borradores section renders only when drafts exist @owner', async ({ page }) => {
-    await page.goto('/programs', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    await page.goto('/programs', { waitUntil: 'networkidle' });
     // Borradores section is conditionally rendered — check it doesn't crash
     // If there are no drafts, the section won't appear (expected behavior)
     const borradoresSection = page.getByText('Borradores');
@@ -47,14 +45,11 @@ test.describe('Programs Borradores — OWNER @owner @programs', () => {
 test.describe('Wizard FormBuilder — OWNER @owner @programs', () => {
 
   test('FormBuilder renders in Step 1 with default fields @owner', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     // Step 0: Select stamp card type
     await page.getByText('Tarjeta de Sellos').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 1: FormBuilder should be visible
     await expect(page.getByText('Formulario de inscripción')).toBeVisible({ timeout: 5000 });
@@ -62,30 +57,23 @@ test.describe('Wizard FormBuilder — OWNER @owner @programs', () => {
   });
 
   test('Can add a new field in FormBuilder @owner', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     await page.getByText('Tarjeta de Sellos').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Click "Agregar campo"
     await page.getByText('+ Agregar campo').click();
-    await page.waitForTimeout(500);
 
     // A "Nuevo campo" should appear
     await expect(page.getByText('Nuevo campo')).toBeVisible({ timeout: 3000 });
   });
 
   test('FormBuilder field count updates @owner', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     await page.getByText('Tarjeta de Sellos').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Should show field count text
     const countText = page.getByText(/campos? configurados?/);
@@ -100,59 +88,45 @@ test.describe('Wizard FormBuilder — OWNER @owner @programs', () => {
 test.describe('Coupon Push Enhancements — OWNER @owner @programs', () => {
 
   test('Coupon wizard shows push title field @owner', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     // Step 0: Select coupon type
     await page.getByText('Cupón de Descuento').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // Step 1: Configure coupon
     // Select a discount type first
     await page.getByText('Descuento de valor fijo').click();
-    await page.waitForTimeout(300);
 
     // Scroll down to find push section
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500);
 
     // Push title input should be visible
     await expect(page.getByText('Título de la notificación')).toBeVisible({ timeout: 5000 });
   });
 
   test('Coupon wizard shows image URL field @owner', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     await page.getByText('Cupón de Descuento').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     await page.getByText('Descuento de valor fijo').click();
-    await page.waitForTimeout(300);
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500);
 
     await expect(page.getByText('Imagen del cupón (URL)')).toBeVisible({ timeout: 5000 });
   });
 
   test('Coupon wizard shows expiry reminder checkbox @owner', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+    await page.goto('/programs/new', { waitUntil: 'networkidle' });
 
     await page.getByText('Cupón de Descuento').click();
-    await page.waitForTimeout(500);
     await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(1000);
 
     // The expiry reminder checkbox should be in the coupon config section
     // Scroll to find it
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500);
 
     // Check the push_expiry_reminder element is present in DOM
     const checkbox = page.locator('#push_expiry_reminder');
@@ -180,8 +154,7 @@ test.describe('Enrollment Page — Public Flow @programs', () => {
     expect(programs.length, 'At least one program must exist to test enrollment page').toBeGreaterThan(0);
 
     const cardId = programs[0].id;
-    await page.goto(`/enroll/${cardId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5000);
+    await page.goto(`/enroll/${cardId}`, { waitUntil: 'networkidle' });
 
     // Form should be visible — either enrollment heading or page content
     const heading = page.getByText('Únete ahora').or(page.getByText('Inscríbete'));
@@ -199,8 +172,7 @@ test.describe('Enrollment Page — Public Flow @programs', () => {
     expect(programs.length, 'At least one program must exist to test privacy consent').toBeGreaterThan(0);
 
     const cardId = programs[0].id;
-    await page.goto(`/enroll/${cardId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5000);
+    await page.goto(`/enroll/${cardId}`, { waitUntil: 'networkidle' });
 
     // Privacy consent text should be visible (may be in Spanish)
     const privacyText = page.getByText('política de privacidad').or(page.getByText('privacidad').or(page.getByText('acepto')));
@@ -218,8 +190,7 @@ test.describe('Enrollment Page — Public Flow @programs', () => {
     expect(programs.length, 'At least one program must exist to test enroll button').toBeGreaterThan(0);
 
     const cardId = programs[0].id;
-    await page.goto(`/enroll/${cardId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5000);
+    await page.goto(`/enroll/${cardId}`, { waitUntil: 'networkidle' });
 
     // Button should be disabled initially
     const enrollBtn = page.locator('#enroll-btn');

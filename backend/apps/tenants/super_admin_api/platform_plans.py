@@ -6,6 +6,7 @@ import logging
 import uuid
 from decimal import Decimal
 
+from django.http import HttpRequest
 from ninja import Router
 from ninja.errors import HttpError
 
@@ -32,13 +33,13 @@ def _require_super_admin(request) -> None:
 
 
 @router.get("/plans/", auth=jwt_auth, response=list[PlanOut])
-def list_plans(request):
+def list_plans(request: HttpRequest) -> list[PlanOut]:
     _require_super_admin(request)
     return [PlanOut.from_plan(p) for p in SubscriptionPlan.objects.all()]
 
 
 @router.post("/plans/", auth=jwt_auth, response=PlanOut)
-def create_plan(request, payload: PlanCreateIn):
+def create_plan(request: HttpRequest, payload: PlanCreateIn) -> PlanOut:
     _require_super_admin(request)
     validate_plan_config(payload.model_dump())
     plan = SubscriptionPlan.objects.create(
@@ -73,7 +74,7 @@ def create_plan(request, payload: PlanCreateIn):
 
 
 @router.delete("/plans/{plan_id}/", auth=jwt_auth, response=MessageOut)
-def delete_plan(request, plan_id: str):
+def delete_plan(request: HttpRequest, plan_id: str) -> MessageOut:
     _require_super_admin(request)
     try:
         plan = SubscriptionPlan.objects.get(id=uuid.UUID(plan_id))
@@ -101,7 +102,7 @@ def delete_plan(request, plan_id: str):
 
 
 @router.patch("/plans/{plan_id}/", auth=jwt_auth, response=PlanOut)
-def update_plan(request, plan_id: str, payload: PlanUpdateIn):
+def update_plan(request: HttpRequest, plan_id: str, payload: PlanUpdateIn) -> PlanOut:
     """Updates an existing subscription plan."""
     _require_super_admin(request)
     try:

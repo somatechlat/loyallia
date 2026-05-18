@@ -889,6 +889,7 @@ services:
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./deploy/alerts:/etc/prometheus/alerts:ro
+      - ./deploy/alertmanager/alerts.yml:/etc/prometheus/alerts/loyallia-core.yml:ro
       - prometheus_data:/prometheus
     ports:
       - "127.0.0.1:33909:9090"
@@ -976,6 +977,82 @@ services:
       retries: 3
       start_period: 30s
 
+  # ---------------------------------------------------------------------------
+  # ALERTMANAGER — Alert Routing & Notification         → localhost:9093      [128M]
+  # LYL-H-INFRA-013: Production-grade alert routing with SMTP email delivery
+  # ---------------------------------------------------------------------------
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: loyallia-alertmanager
+    volumes:
+      - ./deploy/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:9093:9093"
+    networks:
+      - backend-net
+      - monitoring-net
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+        reservations:
+          memory: 32M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # REDIS SENTINEL — High Availability for Redis        → localhost:26379   [128M]
+  # LYL-H-INFRA-015: Automatic failover when Redis master goes down
+  # ---------------------------------------------------------------------------
+  redis-sentinel:
+    image: redis:7.2.4-alpine
+    container_name: loyallia-redis-sentinel
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c 'export REDIS_PASSWORD=$$(cat /run/loyallia-vault/redis_password) &&
+      envsubst < /etc/redis/sentinel.conf > /tmp/sentinel.conf &&
+      redis-sentinel /tmp/sentinel.conf --sentinel'
+    volumes:
+      - ./deploy/redis/sentinel.conf:/etc/redis/sentinel.conf:ro
+      - sentinel-data:/data
+      - vault_runtime:/run/loyallia-vault:ro
+    ports:
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:26379:26379"
+    networks:
+      - backend-net
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+        reservations:
+          memory: 32M
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -p 26379 ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 # =============================================================================
 # VOLUMES — All persistent, driver: local
 # =============================================================================
@@ -1005,6 +1082,10 @@ volumes:
   grafana_data:
     driver: local
   loki_data:
+    driver: local
+  alertmanager-data:
+    driver: local
+  sentinel-data:
     driver: local
 
 # =============================================================================
