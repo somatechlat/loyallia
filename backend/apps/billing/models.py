@@ -342,14 +342,32 @@ class Subscription(TimestampedModel):
     def get_limit(self, resource: str) -> int:
         """
         Get the plan limit for a resource.
-        Trial plan = unlimited (returns very high number) during trial period.
+        Trial plan = generous finite limits (C4/H4 fix) during trial period.
         Paid plans = from SubscriptionPlan model, even during trial.
         """
         plan = self.subscription_plan
         is_trial_plan = (plan.slug == "trial") if plan else (self.plan == "trial")
 
         if self.status == SubscriptionStatus.TRIALING and self.is_trial_active and is_trial_plan:
-            return 999999  # Only the 'trial' plan gets unlimited during trial
+            # SEC: Trial tenants get generous but finite limits — not infinity (C4/H4).
+            trial_limits = {
+                "customers": 500,
+                "programs": 50,
+                "locations": 10,
+                "users": 10,
+                "notifications_month": 1000,
+                "transactions_month": 5000,
+                "whatsapp_day": 100,
+                "emails_month": 500,
+                "sms_day": 50,
+                "wallet_pushes_month": 200,
+                "automations": 10,
+                "automation_executions_day": 100,
+                "ai_queries_month": 500,
+                "api_calls_day": 1000,
+                "exports_month": 10,
+            }
+            return trial_limits.get(resource, 0)
 
         if not plan:
             return 0  # No plan = no access

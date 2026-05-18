@@ -30,6 +30,15 @@ def export_tenant_data(tenant_id: str, user_email: str):
         tenant = Tenant.objects.get(id=tenant_id)
         user = User.objects.get(email=user_email)
 
+        # SEC: Cross-tenant guard -- verify the user belongs to the tenant being exported
+        if str(user.tenant_id) != str(tenant_id):
+            logger.warning(
+                "SECURITY: Cross-tenant export blocked -- user %s (tenant %s) "
+                "requested export of tenant %s",
+                user_email, user.tenant_id, tenant_id,
+            )
+            return
+
         from apps.tenants.data_export_service import generate_tenant_export
 
         zip_filename = f"export_{tenant.id}_{uuid4().hex[:8]}.zip"
@@ -88,6 +97,14 @@ def hard_delete_tenant(tenant_id: str) -> str:
         tenant = Tenant.objects.get(id=tenant_id)
     except Tenant.DoesNotExist:
         logger.warning("Tenant %s already deleted, skipping", tenant_id)
+        return ""
+
+    # SEC: Cross-tenant guard -- only delete tenants with a scheduled deletion
+    if tenant.scheduled_deletion_at is None:
+        logger.warning(
+            "SECURITY: Hard-delete blocked for tenant %s -- no scheduled_deletion_at",
+            tenant_id,
+        )
         return ""
 
     tenant_name = tenant.name
@@ -179,9 +196,14 @@ def delete_tenant_cascade(self, tenant_id: str):
         logger.warning("Tenant %s already deleted, skipping", tenant_id)
         return
 
- # Safety: only proceed if deletion was actually scheduled
+    # SEC: Cross-tenant guard -- only proceed if deletion was scheduled by owner
+    # This prevents arbitrary tenant deletion via task queue injection
     if tenant.scheduled_deletion_at is None:
-        logger.warning("Tenant %s has no scheduled_deletion_at, aborting", tenant_id)
+        logger.warning(
+            "SECURITY: Cascade delete blocked for tenant %s -- "
+            "no scheduled_deletion_at (possible task queue injection)",
+            tenant_id,
+        )
         return
 
     tenant_name = hard_delete_tenant(tenant_id)

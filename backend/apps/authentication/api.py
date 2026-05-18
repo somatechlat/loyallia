@@ -68,7 +68,7 @@ from apps.authentication.tokens import (
 from apps.tenants.models import PlatformSetting, Tenant
 from common.messages import get_message
 from common.permissions import jwt_auth
-from common.rate_limit import get_client_ip
+from common.rate_limit import get_client_ip, rate_limit
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -279,6 +279,7 @@ def logout(request, payload: LogoutIn):
     response=MessageOut,
     summary="Solicitar restablecimiento de contrasena",
 )
+@rate_limit(key_prefix="forgot_password", max_requests=5, window_seconds=3600)
 def password_reset_request(request, payload: PasswordResetRequestIn):
     """Sends a 6-char OTP. Always returns 200 to prevent email enumeration.
 
@@ -392,6 +393,7 @@ def verify_email(request, payload: VerifyEmailIn):
     response=MessageOut,
     summary="Solicitar restablecimiento de contrasena",
 )
+@rate_limit(key_prefix="forgot_password", max_requests=5, window_seconds=3600)
 def forgot_password(request, payload: ForgotPasswordIn):
     """Send a password reset email with a one-time token.
 

@@ -53,11 +53,19 @@ def update_tenant_analytics(self, tenant_id: str) -> dict:
 
     try:
         tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))
-    except Tenant.DoesNotExist:
+    except (Tenant.DoesNotExist, ValueError):
         logger.error("update_tenant_analytics: tenant %s not found", tenant_id)
         return {"success": False}
 
- # 1. Update Program Analytics
+    # SEC: Cross-tenant guard -- only compute analytics for active tenants
+    if not tenant.is_active:
+        logger.warning(
+            "SECURITY: Analytics blocked for inactive tenant %s",
+            tenant_id,
+        )
+        return {"success": False}
+
+    # 1. Update Program Analytics
     programs = Card.objects.filter(tenant=tenant)
     for program in programs:
         analytics, _ = ProgramAnalytics.objects.get_or_create(card=program, defaults={"tenant": tenant})

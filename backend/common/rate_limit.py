@@ -39,6 +39,77 @@ from common.messages import get_message
 
 logger = logging.getLogger(__name__)
 
+
+def _get_redis_client():
+    """Get Redis client for atomic rate limiting.
+
+    Uses django_redis if available; returns None otherwise so callers
+    can fall back to Django cache (e.g. LocMemCache in dev).
+    """
+    try:
+        from django_redis import get_redis_connection
+        return get_redis_connection("default")
+    except Exception:
+        return None
+
+
+def _check_rate_limit_cache(key: str, max_requests: int, window_seconds: int) -> bool:
+    """Non-atomic rate limit check using Django cache.
+
+    Falls back to this when Redis is unavailable.  May be slightly
+    racy under high concurrency but better than nothing.
+    """
+    try:
+        from django.core.cache import cache
+
+        current_count = cache.get(key)
+        if current_count is None:
+            cache.set(key, 1, window_seconds)
+            current_count = 1
+        else:
+            try:
+                current_count = cache.incr(key)
+            except ValueError:
+                cache.set(key, 1, window_seconds)
+                current_count = 1
+        return current_count <= max_requests
+    except Exception:
+        logger.warning("Rate limiter: Cache operation error. Failing open.")
+        return True
+
+
+def _get_cache_ttl(key: str, window_seconds: int) -> int:
+    """Best-effort TTL lookup from Django cache."""
+    try:
+        from django.core.cache import cache
+        ttl = cache.ttl(key) if hasattr(cache, "ttl") else window_seconds
+    except Exception:
+        ttl = window_seconds
+    return ttl
+
+
+def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) -> bool:
+    """Atomic rate limit check using Redis INCR + EXPIRE.
+
+    Uses a Lua-like atomic sequence: INCR the key; if it was the first
+    creation (value == 1), set EXPIRE.  Returns True if request is
+    allowed, False if it exceeds the limit.
+
+    Falls back to Django cache when Redis is unavailable.
+    """
+    redis_client = _get_redis_client()
+    if not redis_client:
+        return _check_rate_limit_cache(key, max_requests, window_seconds)
+
+    try:
+        current = redis_client.incr(key)
+        if current == 1:
+            redis_client.expire(key, window_seconds)
+        return current <= max_requests
+    except Exception:
+        logger.warning("Rate limiter: Redis INCR failed. Falling back to cache.")
+        return _check_rate_limit_cache(key, max_requests, window_seconds)
+
 # Rate limit rules: (path_prefix, key_type, max_requests, window_seconds)
 RATE_LIMIT_RULES = [
     (
@@ -271,10 +342,11 @@ F = TypeVar("F", bound=Callable)
 
 
 def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Callable[[F], F]:
-    """Decorator for endpoint-level rate limiting using Django cache.
+    """Decorator for endpoint-level rate limiting using Redis (preferred) or Django cache.
 
-    Uses Redis INCR + EXPIRE (sliding window) for atomic counting.
-    Falls open (allows request) when cache is unavailable.
+    Uses Redis INCR + EXPIRE for atomic, distributed rate counting.
+    Falls back to Django cache when Redis is unavailable.
+    Falls open (allows request) when both backends are unavailable.
 
     Args:
         key_prefix: Unique prefix for the rate limit key (e.g., "stripe_webhook").
@@ -299,49 +371,40 @@ def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Calla
             client_ip = _get_client_ip(request)
             rate_key = f"rl:{key_prefix}:ip:{client_ip}"
 
-            try:
-                from django.core.cache import cache
+            allowed = _check_rate_limit_redis(rate_key, max_requests, window_seconds)
+            if allowed:
+                return func(*args, **kwargs)
 
-                current_count = cache.get(rate_key)
-                if current_count is None:
-                    cache.set(rate_key, 1, window_seconds)
-                    current_count = 1
-                else:
-                    try:
-                        current_count = cache.incr(rate_key)
-                    except ValueError:
-                        cache.set(rate_key, 1, window_seconds)
-                        current_count = 1
+ # Rate limit exceeded — get TTL for Retry-After header
+            ttl = window_seconds
+            redis_client = _get_redis_client()
+            if redis_client:
+                try:
+                    ttl = redis_client.ttl(rate_key)
+                    if ttl < 0:
+                        ttl = window_seconds
+                except Exception:
+                    pass
+            else:
+                ttl = _get_cache_ttl(rate_key, window_seconds)
 
-                if current_count > max_requests:
-                    ttl = window_seconds
-                    try:
-                        ttl = cache.ttl(rate_key) if hasattr(cache, "ttl") else window_seconds
-                    except Exception:
-                        pass
-
-                    logger.warning(
-                        "Rate limit exceeded: key_prefix=%s ip=%s count=%d limit=%d",
-                        key_prefix,
-                        client_ip,
-                        current_count,
-                        max_requests,
-                    )
-                    return JsonResponse(
-                        {
-                            "success": False,
-                            "error": "RATE_LIMIT_EXCEEDED",
-                            "message": get_message("RATE_LIMIT_EXCEEDED"),
-                            "retry_after": ttl,
-                        },
-                        status=429,
-                        headers={"Retry-After": str(ttl)},
-                    )
-            except Exception:
- # Cache error fail open
-                logger.warning("Rate limiter: Cache error for %s. Failing open.", key_prefix)
-
-            return func(*args, **kwargs)
+            logger.warning(
+                "Rate limit exceeded: key_prefix=%s ip=%s count=%d limit=%d",
+                key_prefix,
+                client_ip,
+                max_requests + 1,
+                max_requests,
+            )
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "RATE_LIMIT_EXCEEDED",
+                    "message": get_message("RATE_LIMIT_EXCEEDED"),
+                    "retry_after": ttl,
+                },
+                status=429,
+                headers={"Retry-After": str(ttl)},
+            )
 
         return wrapper  # type: ignore[return-value]
 

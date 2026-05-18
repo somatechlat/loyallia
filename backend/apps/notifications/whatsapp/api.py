@@ -289,10 +289,20 @@ def session_webhook(request, payload: SessionWebhookIn):
     """
     _verify_bridge_api_key(request)
 
+    # SEC: Validate tenant_id is a proper UUID before DB lookup to prevent
+    # injection and cross-tenant access via a compromised bridge payload
+    import uuid
+
+    try:
+        tenant_uuid = uuid.UUID(payload.tenant_id)
+    except (ValueError, TypeError):
+        logger.warning("SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id)
+        raise HttpError(400, "Invalid tenant_id")
+
     try:
         from apps.tenants.models import Tenant
 
-        tenant = Tenant.objects.get(id=payload.tenant_id)
+        tenant = Tenant.objects.get(id=tenant_uuid)
         session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
 
         if payload.event == "connected":
