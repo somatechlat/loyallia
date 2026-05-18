@@ -7,6 +7,7 @@ from celery import shared_task
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.db import connection
 
 from apps.authentication.models import User
 from apps.cards.models import Card
@@ -74,7 +75,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
             )
 
 
-def hard_delete_tenant(tenant_id: str) -> str:
+def hard_delete_tenant(tenant_id: str, *, require_scheduled_deletion: bool = True) -> str:
     """
     Synchronously hard-delete ALL tenant data.
 
@@ -100,7 +101,7 @@ def hard_delete_tenant(tenant_id: str) -> str:
         return ""
 
     # SEC: Cross-tenant guard -- only delete tenants with a scheduled deletion
-    if tenant.scheduled_deletion_at is None:
+    if require_scheduled_deletion and tenant.scheduled_deletion_at is None:
         logger.warning(
             "SECURITY: Hard-delete blocked for tenant %s -- no scheduled_deletion_at",
             tenant_id,
@@ -175,8 +176,13 @@ def hard_delete_tenant(tenant_id: str) -> str:
             details={},
         )
 
- # 9. Delete Tenant
-    tenant.delete()
+ # 9. Delete Tenant. Related tenant data is explicitly cleaned above; use a
+ # direct delete so optional/missing local tables do not block SuperAdmin purges.
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f'DELETE FROM "{Tenant._meta.db_table}" WHERE "id" = %s',
+            [tenant.id],
+        )
 
     logger.info("Hard deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id)
     return tenant_name
