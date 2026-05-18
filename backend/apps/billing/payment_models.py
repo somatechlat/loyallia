@@ -165,6 +165,7 @@ class Invoice(TimestampedModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["tenant", "created_at"]),
+            models.Index(fields=["tenant", "status"]),
             models.Index(fields=["status"]),
         ]
 

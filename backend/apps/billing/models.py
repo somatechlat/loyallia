@@ -301,6 +301,9 @@ class Subscription(TimestampedModel):
         verbose_name = "Suscripción"
         verbose_name_plural = "Suscripciones"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+        ]
 
     def __repr__(self) -> str:
         plan_name = self.subscription_plan.name if self.subscription_plan else self.plan

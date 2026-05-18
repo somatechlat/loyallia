@@ -130,6 +130,7 @@ class AuditLog(models.Model):
             models.Index(fields=["resource_type", "created_at"]),
             models.Index(fields=["tenant_id", "created_at"]),
             models.Index(fields=["action", "created_at"]),
+            models.Index(fields=["ip_address", "created_at"]),
         ]
 
     def __str__(self) -> str:
