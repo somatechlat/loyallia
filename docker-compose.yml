@@ -23,7 +23,7 @@ x-common-env: &common-env
   VAULT_ADDR: https://vault:8200
   VAULT_CACERT: /run/loyallia-vault/ca.crt
   VAULT_TOKEN_FILE: /run/loyallia-vault/app-token
-  VAULT_SECRET_PATH: secret/data/loyallia/production
+  VAULT_SECRET_PATH: secret/data/loyallia/development
   # Apple Wallet
   APPLE_WALLET_MODE: vault
   # Google Wallet
@@ -692,7 +692,7 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5555"]
+      test: ["CMD-SHELL", "python -c \"import sys, urllib.error, urllib.request; url='http://localhost:5555';\ntry:\n    urllib.request.urlopen(url, timeout=3)\nexcept urllib.error.HTTPError as e:\n    sys.exit(0 if e.code == 401 else 1)\nexcept Exception:\n    sys.exit(1)\n\""]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -710,6 +710,7 @@ services:
       context: ./services/whatsapp-bridge
       dockerfile: Dockerfile
     container_name: loyallia-whatsapp-bridge
+    user: root
     environment:
       DJANGO_WEBHOOK_URL: http://api:8000
       REDIS_PASSWORD_FILE: /run/loyallia-vault/redis_password
@@ -796,13 +797,15 @@ services:
       # LYL-SEC-001: Vault uses HTTPS with TLS certificates
       VAULT_ADDR: https://vault:8200
       VAULT_SKIP_VERIFY: "true"
-      VAULT_APP_SECRET_PATH: loyallia/production
+      VAULT_APP_SECRET_PATH: loyallia/development
       BOOTSTRAP_SECRETS_FILE: /vault/bootstrap/secrets.env
       # Zero-Secret: Secrets injected via read-only flat .env volume mount.
       # Alpine vault container has NO Python — flat key=value format required.
     volumes:
       - vault_data:/vault/file
       - vault_runtime:/vault/runtime
+      - ${SSL_CERT_PATH:-/etc/letsencrypt/live/rewards.loyallia.com/fullchain.pem}:/vault/certs/vault.crt:ro
+      - ${SSL_KEY_PATH:-/etc/letsencrypt/live/rewards.loyallia.com/privkey.pem}:/vault/certs/vault.key:ro
       - ./deploy/vault/init.sh:/vault/bootstrap-script/init.sh:ro
       - ./.bootstrap_secrets.env:/vault/bootstrap/secrets.env:ro
     entrypoint: /bin/sh /vault/bootstrap-script/init.sh
@@ -866,7 +869,6 @@ services:
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./deploy/alerts:/etc/prometheus/alerts:ro
-      - ./deploy/alertmanager/alerts.yml:/etc/prometheus/alerts/loyallia-core.yml:ro
       - prometheus_data:/prometheus
     ports:
       - "127.0.0.1:33909:9090"
@@ -994,7 +996,7 @@ services:
         condition: service_healthy
     command: >
       sh -c 'export REDIS_PASSWORD=$$(cat /run/loyallia-vault/redis_password) &&
-      envsubst < /etc/redis/sentinel.conf > /tmp/sentinel.conf &&
+      sed "s|\$${REDIS_PASSWORD}|$$REDIS_PASSWORD|g" /etc/redis/sentinel.conf > /tmp/sentinel.conf &&
       redis-sentinel /tmp/sentinel.conf --sentinel'
     volumes:
       - ./deploy/redis/sentinel.conf:/etc/redis/sentinel.conf:ro

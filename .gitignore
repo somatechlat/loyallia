@@ -104,6 +104,7 @@ test_output.log
 # Bootstrap intermediate files (NEVER commit)
 # =============================================================================
 .bootstrap_secrets.json
+.bootstrap_secrets.env
 vault_secrets_rescue.json
 vault_init_rescue.json
 *.rescue.json
