@@ -148,13 +148,17 @@ class Enrollment(models.Model):
     )
     customer = models.ForeignKey(
         Customer,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="enrollments",
         verbose_name="Cliente",
     )
     card = models.ForeignKey(
         "cards.Card",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="enrollments",
         verbose_name="Programa",
     )

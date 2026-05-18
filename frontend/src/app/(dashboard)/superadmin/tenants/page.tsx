@@ -184,7 +184,10 @@ export default function SuperAdminTenants() {
     try {
       const { data } = await api(`/tenants/${t.id}/locations/`);
       setDtLocs(Array.isArray(data) ? data : []);
-    } catch (e) { console.error('Locations fetch failed:', e); setDtLocs([]); }
+    } catch {
+      /* silently handle error — empty locations state shown in UI */
+      setDtLocs([]);
+    }
     setDtLocsLoading(false);
   };
   const closeDetail = () => {

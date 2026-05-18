@@ -276,12 +276,16 @@ def _count_exports_month(tenant, month_start) -> int:
 # CHECK FUNCTIONS
 
 
-def check_plan_limit(tenant, resource: str) -> None:
+def check_plan_limit(tenant, resource: str, write: bool = False) -> None:
     """Check if tenant has exceeded their plan limit for a resource.
 
     SEC: LYL-M-API-024  Uses select_for_update on Subscription to prevent
     TOCTOU race conditions where two concurrent requests both pass the limit
     check and create resources beyond the plan maximum.
+
+    Args:
+        write: When True, acquires a row lock (select_for_update) to prevent
+               TOCTOU races on resource creation. Pass True for all write ops.
 
     Raises:
         HttpError 402: No subscription found (payment required).
@@ -292,7 +296,8 @@ def check_plan_limit(tenant, resource: str) -> None:
     from apps.billing.models import Subscription
 
     with transaction.atomic():
-        subscription = Subscription.objects.select_for_update().filter(tenant=tenant).first()
+        qs = Subscription.objects.select_for_update() if write else Subscription.objects
+        subscription = qs.filter(tenant=tenant).first()
         if not subscription:
             raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
 
@@ -364,7 +369,7 @@ def enforce_limit(resource: str):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs):
-            check_plan_limit(require_tenant(request), resource)
+            check_plan_limit(require_tenant(request), resource, write=True)
             return func(request, *args, **kwargs)
 
         return wrapper

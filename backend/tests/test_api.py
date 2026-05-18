@@ -188,29 +188,6 @@ class AuthMeAPITest(TestCase):
         self.assertIn(resp.status_code, [401, 403])
 
 
-class AuthPasswordResetAPITest(TestCase):
-    """Tests for password reset flow."""
-
-    def test_password_reset_request_returns_200(self):
-        make_user(email="reset@test.com")
-        resp = self.client.post(
-            "/api/v1/auth/password-reset/request/",
-            data=json.dumps({"email": "reset@test.com"}),
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertTrue(resp.json()["success"])
-
-    def test_password_reset_nonexistent_email_returns_200(self):
-        """Security: always return 200 to prevent email enumeration."""
-        resp = self.client.post(
-            "/api/v1/auth/password-reset/request/",
-            data=json.dumps({"email": "ghost@test.com"}),
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 200)
-
-
 class AuthForgotPasswordAPITest(TestCase):
     """Tests for POST /api/v1/auth/forgot-password/"""
 

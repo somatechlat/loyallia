@@ -71,7 +71,6 @@ export default function LocationsPage() {
       setLocations(Array.isArray(data) ? data : data?.items || []);
     } catch (e) {
       // LYL-M-FE-021: User-friendly error message
-      console.error('Failed to load locations:', e);
       toast.error('No se pudieron cargar las sucursales');
     } finally {
       setLoading(false);

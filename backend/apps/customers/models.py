@@ -165,7 +165,7 @@ class CustomerPass(models.Model):
         related_name="passes",
         verbose_name="Cliente",
     )
-    card = models.ForeignKey(Card, on_delete=models.CASCADE, related_name="passes", verbose_name="Programa")
+    card = models.ForeignKey(Card, on_delete=models.PROTECT, related_name="passes", verbose_name="Programa")
 
  # Pass state stored as JSONB (Legacy/Dynamic)
     pass_data = models.JSONField(default=dict, verbose_name="Datos del pase")

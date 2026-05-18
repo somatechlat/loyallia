@@ -66,7 +66,7 @@ def export_tenant_data(request):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    check_plan_limit(request.tenant, "exports_month")
+    check_plan_limit(request.tenant, "exports_month", write=True)
 
     from apps.tenants.data_export_service import generate_tenant_export
 

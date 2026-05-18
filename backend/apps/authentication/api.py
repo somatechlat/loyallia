@@ -52,8 +52,6 @@ from apps.authentication.schemas import (
     LoginIn,
     LogoutIn,
     MessageOut,
-    PasswordResetConfirmIn,
-    PasswordResetRequestIn,
     RefreshIn,
     RefreshOut,
     RegisterIn,
@@ -271,86 +269,6 @@ def logout(request, payload: LogoutIn):
     except Exception:
         pass
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
-
-
-@router.post(
-    "/password-reset/request/",
-    auth=None,
-    response=MessageOut,
-    summary="Solicitar restablecimiento de contrasena",
-)
-@rate_limit(key_prefix="forgot_password", max_requests=5, window_seconds=3600)
-def password_reset_request(request, payload: PasswordResetRequestIn):
-    """Sends a 6-char OTP. Always returns 200 to prevent email enumeration.
-
-    B-003: Rate limited to 3 requests per hour per email.
-    """
-    from django.core.cache import cache
-
- # B-003: Rate limit 3 password reset requests per hour per email
-    cache_key = f"pwd_reset_rate:{payload.email}"
-    attempts = cache.get(cache_key, 0)
-    if attempts >= 3:
- # Still return 200 to prevent enumeration
-        return MessageOut(
-            success=True,
-            message=get_message("AUTH_PASSWORD_RESET_SENT", email=payload.email),
-        )
-    cache.set(cache_key, attempts + 1, 3600)  # 1 hour TTL
-
-    try:
-        user = User.objects.get(email=payload.email, is_active=True)
-        otp = secrets.token_urlsafe(8)
-        store_otp(payload.email, otp, "password_reset")
-        send_otp_email(
-            email=payload.email,
-            otp=otp,
-            subject="Restablecer contrasena -- Loyallia",
-            body=f"Hola {user.first_name or payload.email},\n\nTu codigo de restablecimiento es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",
-        )
-    except User.DoesNotExist:
-        pass
-    return MessageOut(
-        success=True,
-        message=get_message("AUTH_PASSWORD_RESET_SENT", email=payload.email),
-    )
-
-
-@router.post(
-    "/password-reset/confirm/",
-    auth=None,
-    response=MessageOut,
-    summary="Confirmar restablecimiento de contrasena",
-)
-def password_reset_confirm(request, payload: PasswordResetConfirmIn):
-    """Validate OTP and set new password, then revoke all refresh tokens.
-
-    SEC: OTP verification capped at 5 attempts per 15 min per email.
-    After password change, all refresh tokens are bulk-revoked to force
-    re-authentication on all devices.
-    """
-    from django.core.cache import cache
-
- # Rate limit OTP verification attempts 5 per 15 min per email
-    cache_key = f"otp_attempts:password_reset:{payload.email}"
-    attempts = cache.get(cache_key, 0)
-    if attempts >= 5:
-        raise HttpError(429, get_message("RATE_LIMITED"))
-    cache.set(cache_key, attempts + 1, 900)
-
-    if not verify_otp(payload.email, payload.otp, "password_reset"):
-        raise HttpError(400, get_message("AUTH_PASSWORD_RESET_EXPIRED"))
-    try:
-        user = User.objects.get(email=payload.email, is_active=True)
-    except User.DoesNotExist:
-        raise HttpError(400, get_message("AUTH_PASSWORD_RESET_EXPIRED"))
-
-    user.set_password(payload.new_password)
-    user.failed_login_count = 0
-    user.locked_until = None
-    user.save(update_fields=["password", "failed_login_count", "locked_until", "updated_at"])
-    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
-    return MessageOut(success=True, message=get_message("AUTH_PASSWORD_RESET_SUCCESS"))
 
 
 @router.post(

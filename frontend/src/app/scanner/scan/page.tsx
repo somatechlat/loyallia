@@ -38,7 +38,9 @@ export default function ScannerPage() {
       setResult(data);
       setStatus('success');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      const msg = err instanceof Error && 'response' in err
+        ? (err as unknown as { response?: { data?: { detail?: string } } }).response?.data?.detail
+        : undefined;
       setResult({ success: false, transaction_id: '', message: msg || 'Error procesando transacción', reward_earned: false, reward_description: '', pass_updated: false });
       setStatus('error');
     }

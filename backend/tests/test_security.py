@@ -14,7 +14,7 @@ from django.test import RequestFactory, TestCase
 
 from apps.authentication.models import User, UserManager, UserRole
 from apps.tenants.models import validate_cedula, validate_ruc
-from common.role_check import require_role
+from common.permissions import require_role
 from common.validators import ComplexityValidator
 from tests.factories import make_user
 

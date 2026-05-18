@@ -14,6 +14,16 @@ interface Campaign {
   channel?: string;
 }
 
+const isValidImageUrl = (url: string): boolean => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url, window.location.href);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+};
+
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [segments, setSegments] = useState<{id: string; name: string; member_count: number}[]>([]);
@@ -368,7 +378,7 @@ export default function CampaignsPage() {
                 <div className="flex items-center gap-3 mt-1">
                   <button type="button" onClick={() => imgInputRef.current?.click()} 
                     className="w-16 h-16 rounded-xl border-2 border-dashed border-surface-300 hover:border-brand-400 flex items-center justify-center bg-surface-50">
-                    {form.image_url ? (
+                    {form.image_url && isValidImageUrl(form.image_url) ? (
                       <img src={form.image_url} alt="Preview" className="w-full h-full object-cover rounded-xl" />
                     ) : (
                       <span className="text-xs text-surface-400">+</span>

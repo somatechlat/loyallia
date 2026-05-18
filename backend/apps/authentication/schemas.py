@@ -73,23 +73,6 @@ class MessageOut(BaseModel):
     message: str
 
 
-class PasswordResetRequestIn(BaseModel):
-    email: EmailStr
-
-
-class PasswordResetConfirmIn(BaseModel):
-    email: EmailStr
-    otp: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("La contrasena debe tener al menos 8 caracteres.")
-        return v
-
-
 class VerifyEmailIn(BaseModel):
     email: EmailStr
     otp: str

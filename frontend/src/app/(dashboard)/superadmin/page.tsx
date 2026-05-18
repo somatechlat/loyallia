@@ -35,7 +35,9 @@ export default function SuperAdminDashboard() {
     ]).then(([m, locs]) => {
       setMetrics(m.data);
       setLocations(locs.data || []);
-    }).catch(console.error)
+    }).catch(() => {
+      /* silently handle error — loading state cleared in finally */
+    })
       .finally(() => setLoading(false));
   }, []);
 

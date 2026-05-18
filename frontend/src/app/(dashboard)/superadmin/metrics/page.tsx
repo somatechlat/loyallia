@@ -38,7 +38,9 @@ export default function SuperAdminMetrics() {
   useEffect(() => {
     Promise.all([api.get('/api/v1/admin/tenants/'), api.get('/api/v1/admin/platform/metrics/')])
       .then(([t, m]) => { setTenants(t.data || []); setMetrics(m.data); })
-      .catch(console.error)
+      .catch(() => {
+        /* silently handle error — loading state cleared in finally */
+      })
       .finally(() => setLoading(false));
   }, []);
 

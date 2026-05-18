@@ -62,8 +62,7 @@ export async function POST(req: Request) {
         { status: response.status }
       );
     }
-  } catch (error: unknown) {
-    console.error('Chat API Error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error while contacting AI agent' },
       { status: 500 }

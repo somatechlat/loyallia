@@ -100,15 +100,26 @@ def _fetch_vault_secrets() -> dict:
         return {}
 
     import json
+    import ssl
     import urllib.error
     import urllib.request
 
     url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH}"
     headers = {"X-Vault-Token": vault_token}
 
+    # TLS verification: use Vault CA certificate when available
+    ssl_context = ssl.create_default_context()
+    vault_ca_cert = os.environ.get("VAULT_CACERT", "/vault/certs/vault.crt")
+    if vault_ca_cert and os.path.isfile(vault_ca_cert):
+        ssl_context.load_verify_locations(vault_ca_cert)
+    else:
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        logger.warning("Vault: CA certificate not found at %s — TLS verification disabled", vault_ca_cert)
+
     try:
         req = urllib.request.Request(url, headers=headers, method="GET")
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
             body = json.loads(response.read().decode("utf-8"))
             secrets = body.get("data", {}).get("data", {})
             logger.info("Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH)
@@ -192,6 +203,7 @@ def put_secret(vault_key: str, value: str) -> bool:
         return False
 
     import json
+    import ssl
     import urllib.error
     import urllib.request
 
@@ -205,11 +217,21 @@ def put_secret(vault_key: str, value: str) -> bool:
         "Content-Type": "application/merge-patch+json",
     }
 
+    # TLS verification: use Vault CA certificate when available
+    ssl_context = ssl.create_default_context()
+    vault_ca_cert = os.environ.get("VAULT_CACERT", "/vault/certs/vault.crt")
+    if vault_ca_cert and os.path.isfile(vault_ca_cert):
+        ssl_context.load_verify_locations(vault_ca_cert)
+    else:
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        logger.warning("Vault: CA certificate not found at %s — TLS verification disabled", vault_ca_cert)
+
     payload = json.dumps({"data": {vault_key: value}}).encode("utf-8")
 
     try:
         req = urllib.request.Request(url, data=payload, headers=patch_headers, method="PATCH")
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
             if response.status in (200, 204):
                 logger.info("Vault: patched secret '%s' in %s", vault_key, VAULT_SECRET_PATH)
                 _publish_shared_cache_invalidation()
@@ -233,7 +255,7 @@ def put_secret(vault_key: str, value: str) -> bool:
 
     try:
         req = urllib.request.Request(url, data=fallback_payload, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
             if response.status in (200, 204):
                 logger.info("Vault: merge-wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH)
                 _publish_shared_cache_invalidation()

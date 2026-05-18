@@ -118,7 +118,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (countryRef.current && !countryRef.current.contains(e.target as Node)) setShowCountryDropdown(false);
+      if (countryRef.current && e.target instanceof Node && !countryRef.current.contains(e.target)) setShowCountryDropdown(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -172,7 +172,9 @@ export default function RegisterPage() {
       toast.success('¡Cuenta creada con Google!');
       router.replace('/');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof Error && 'response' in err
+        ? (err as unknown as { response?: { data?: { error?: string } } }).response?.data?.error
+        : undefined;
       toast.error(msg || 'Error al registrarse con Google');
     } finally {
       setGoogleLoading(false);
@@ -196,7 +198,9 @@ export default function RegisterPage() {
         setVerifyError(resp.data.message || 'Error al enviar código');
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const msg = err instanceof Error && 'response' in err
+        ? (err as unknown as { response?: { data?: { message?: string } } }).response?.data?.message
+        : undefined;
       setVerifyError(msg || 'Error al enviar código');
     } finally {
       setVerifyLoading(false);
@@ -220,7 +224,9 @@ export default function RegisterPage() {
         setVerifyError(resp.data.message || 'Código inválido');
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const msg = err instanceof Error && 'response' in err
+        ? (err as unknown as { response?: { data?: { message?: string } } }).response?.data?.message
+        : undefined;
       setVerifyError(msg || 'Error al verificar código');
     } finally {
       setVerifyLoading(false);
@@ -245,7 +251,9 @@ export default function RegisterPage() {
       toast.success('¡Cuenta creada! Redirigiendo al inicio de sesión...');
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: unknown) {
-      const errData = (err as { response?: { data?: Record<string, string | string[]> } })?.response?.data;
+      const errData = err instanceof Error && 'response' in err
+        ? (err as unknown as { response?: { data?: Record<string, string | string[]> } }).response?.data
+        : undefined;
       if (errData) {
         const msg = typeof errData.error === 'string'
           ? errData.error

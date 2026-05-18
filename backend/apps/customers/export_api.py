@@ -41,7 +41,7 @@ def export_customers(request):
 
     tenant = require_tenant(request)
     check_feature_access(tenant, "data_export")
-    check_plan_limit(tenant, "exports_month")
+    check_plan_limit(tenant, "exports_month", write=True)
 
     customers = Customer.objects.filter(tenant=tenant).order_by("created_at")
 
