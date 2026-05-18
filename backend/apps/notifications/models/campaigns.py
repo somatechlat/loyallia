@@ -180,6 +180,7 @@ class CampaignDeliveryLog(models.Model):
         indexes = [
             models.Index(fields=["campaign_run", "status"]),
             models.Index(fields=["customer", "-created_at"]),
+            models.Index(fields=["status", "-created_at"]),
         ]
         unique_together = ["campaign_run", "customer"]
 

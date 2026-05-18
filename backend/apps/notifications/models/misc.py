@@ -83,6 +83,7 @@ class Notification(models.Model):
         verbose_name_plural = "Notificaciones"
         ordering = ["-created_at"]
         indexes = [
+            models.Index(fields=["tenant", "-created_at"]),
             models.Index(fields=["customer", "-created_at"]),
             models.Index(fields=["is_sent", "is_read"]),
         ]

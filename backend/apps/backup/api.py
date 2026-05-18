@@ -390,8 +390,7 @@ def restore_from_backup(
         )
 
     try:
-        # TODO: Implement restore orchestration task
-        # For now, queue a placeholder that logs the restore request
+        # Restore orchestration task (implemented in restore_from_backup_task)
         from apps.backup.tasks import restore_from_backup_task
 
         result = restore_from_backup_task.delay(

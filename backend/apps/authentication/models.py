@@ -123,6 +123,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ordering = ["-date_joined"]
         indexes = [
             models.Index(fields=["tenant", "role"]),
+            models.Index(fields=["tenant"]),
             models.Index(fields=["email"]),
         ]
 
@@ -233,7 +234,10 @@ class RefreshToken(models.Model):
 
     class Meta:
         db_table = "loyallia_refresh_tokens"
-        indexes = [models.Index(fields=["token_hash"])]
+        indexes = [
+            models.Index(fields=["token_hash"]),
+            models.Index(fields=["user", "created_at"]),
+        ]
 
     @property
     def is_valid(self) -> bool:

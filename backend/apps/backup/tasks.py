@@ -562,7 +562,7 @@ def backup_media(self, job_id: str) -> dict:
             aws_access_key_id=minio_cfg["access_key"],
             aws_secret_access_key=minio_cfg["secret_key"],
             config=Config(signature_version="s3v4"),
-            verify=False,
+            verify=getattr(settings, "AWS_S3_VERIFY", True),
         )
 
         media_dir = os.path.join(tmp_dir, "media")
@@ -796,7 +796,7 @@ def _pack_and_upload_archive(component_results: list, job_id: str) -> str:
             aws_access_key_id=minio_cfg["access_key"],
             aws_secret_access_key=minio_cfg["secret_key"],
             config=Config(signature_version="s3v4"),
-            verify=False,
+            verify=getattr(settings, "AWS_S3_VERIFY", True),
         )
 
         # Ensure bucket exists
@@ -865,7 +865,7 @@ def cleanup_old_backups(self) -> dict:
                 aws_access_key_id=minio_cfg["access_key"],
                 aws_secret_access_key=minio_cfg["secret_key"],
                 config=Config(signature_version="s3v4"),
-                verify=False,
+                verify=getattr(settings, "AWS_S3_VERIFY", True),
             )
 
             s3_bucket = PlatformSetting.get("backup_s3_bucket", "loyallia-backups")
@@ -973,7 +973,7 @@ def restore_from_backup_task(
                 aws_access_key_id=minio_cfg["access_key"],
                 aws_secret_access_key=minio_cfg["secret_key"],
                 config=Config(signature_version="s3v4"),
-                verify=False,
+                verify=getattr(settings, "AWS_S3_VERIFY", True),
             )
 
             download_path = archive_path
@@ -1229,7 +1229,7 @@ def _restore_media(media_tar: str) -> bool:
             aws_access_key_id=minio_cfg["access_key"],
             aws_secret_access_key=minio_cfg["secret_key"],
             config=Config(signature_version="s3v4"),
-            verify=False,
+            verify=getattr(settings, "AWS_S3_VERIFY", True),
         )
 
         # Extract media tarball

@@ -208,6 +208,7 @@ class Tenant(TimestampedModel):
     scheduled_deletion_at = models.DateTimeField(
         null=True,
         blank=True,
+        db_index=True,
         verbose_name="Eliminación programada",
         help_text="When set, Celery will hard-delete all tenant data after this timestamp.",
     )
