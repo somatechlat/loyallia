@@ -53,6 +53,9 @@ export default function SettingsPage() {
     try {
       const { data } = await api.get('/api/v1/tenants/me/');
       setTenant(data);
+      const cleanLogo = data.logo_url && (data.logo_url.includes('://localhost:33903/') || data.logo_url.includes('://127.0.0.1:33903/'))
+        ? data.logo_url.replace(/^https?:\/\/[^/]+:33903/, '')
+        : (data.logo_url || '');
       setForm({
         name: data.name || '',
         phone: data.phone || '',
@@ -61,9 +64,9 @@ export default function SettingsPage() {
         timezone: data.timezone || 'America/Guayaquil',
         primary_color: data.primary_color || '#6366f1',
         secondary_color: data.secondary_color || '#f59e0b',
-        logo_url: data.logo_url || '',
+        logo_url: cleanLogo,
       });
-      if (data.logo_url) setLogoPreview(data.logo_url);
+      if (cleanLogo) setLogoPreview(cleanLogo);
     } catch {
       /* silently handle error — UI already shows loading state */
     }
@@ -216,9 +219,6 @@ export default function SettingsPage() {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
-                  reader.readAsDataURL(file);
                   setLogoUploading(true);
                   try {
                     const fd = new FormData();
@@ -227,8 +227,9 @@ export default function SettingsPage() {
                       headers: { 'Content-Type': 'multipart/form-data' },
                     });
                     setForm(f => ({ ...f, logo_url: data.url || '' }));
+                    setLogoPreview(data.url || null);
                     toast.success('Logo subido correctamente');
-                  } catch { toast('Logo guardado localmente', { icon: 'i' }); }
+                  } catch { toast.error('Error al subir logo'); }
                   finally { setLogoUploading(false); }
                 }} />
             </div>

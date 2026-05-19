@@ -22,8 +22,8 @@ from common.environment_guard import enforce_settings_environment
 
 enforce_settings_environment(mode="development", databases=DATABASES)  # noqa: F405
 
-# Email to console in development
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email via Mailjet SMTP in development (real emails for testing wallet/card flows)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 # Relaxed CORS in development
 CORS_ALLOW_ALL_ORIGINS = True

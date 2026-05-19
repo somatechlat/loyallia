@@ -97,8 +97,8 @@ def upload_file(request, file: UploadedFile):
  # Save to S3/MinIO
         path = default_storage.save(filename, file)
 
- # Retrieve the public URL
-        public_url = default_storage.url(path)
+ # Return relative URL so it works via nginx proxy on any origin (localhost, IP, domain)
+        public_url = f"/assets/{path}"
 
         return {"success": True, "url": public_url}
 
@@ -141,7 +141,7 @@ def list_assets(request):
             key = obj["Key"]
             name = key.split("/")[-1]
             assets.append({
-                "url": f"{settings.MINIO_ENDPOINT}/{settings.MINIO_BUCKET_ASSETS}/{key}",
+                "url": f"/assets/{key}",
                 "name": name,
                 "size": obj["Size"],
                 "last_modified": obj["LastModified"].isoformat(),

@@ -61,6 +61,20 @@ def _resolve_gw_type(card_type: str) -> str:
     return "loyalty"
 
 
+def _resolve_url(url: str, base_url: str) -> str:
+    """Convert relative image URLs to absolute for Google Wallet API.
+
+    Google Wallet servers fetch images directly, so they need full URLs.
+    """
+    if not url:
+        return url
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    if url.startswith("/"):
+        return base_url.rstrip("/") + url
+    return url
+
+
 def _get_google_locations(card) -> list:
     """Build location array from tenant locations for Google Wallet geo-push."""
     locations = []
@@ -91,11 +105,11 @@ def _get_google_advanced(card) -> dict:
     return _get_wallet_design(card).get("google_advanced", {}) or {}
 
 
-def _build_class_images(card, payload: dict) -> None:
+def _build_class_images(card, payload: dict, base_url: str = "") -> None:
     """Add heroImage, wideLogo, and imageModulesData to a class payload if available."""
     google_images = _get_google_images(card)
 
-    hero_url = google_images.get("hero_image") or card.strip_image_url
+    hero_url = _resolve_url(google_images.get("hero_image") or card.strip_image_url, base_url)
     if hero_url:
         payload["heroImage"] = {
             "sourceUri": {"uri": hero_url},
@@ -104,7 +118,7 @@ def _build_class_images(card, payload: dict) -> None:
             },
         }
 
-    wide_logo_url = google_images.get("wide_logo") or card.logo_url
+    wide_logo_url = _resolve_url(google_images.get("wide_logo") or card.logo_url, base_url)
     if wide_logo_url:
         payload["wideLogo"] = {
             "sourceUri": {"uri": wide_logo_url},
@@ -113,7 +127,7 @@ def _build_class_images(card, payload: dict) -> None:
             },
         }
 
-    image_module_url = google_images.get("image_module") or card.icon_url
+    image_module_url = _resolve_url(google_images.get("image_module") or card.icon_url, base_url)
     if image_module_url:
         payload["imageModulesData"] = [
             {
@@ -451,16 +465,15 @@ def _build_points_for_type(card, customer_pass) -> dict:
         return {"label": "Puntos", "balance": {"int": 0}}
 
 
-def _build_offer_class(card, tenant) -> dict:
+def _build_offer_class(card, tenant, base_url: str = "") -> dict:
     """Build a Google Wallet OfferClass for coupon/discount card types."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.offer-{card.id}"
     google_images = _get_google_images(card)
-    logo_uri = (
-        google_images.get("program_logo")
-        or card.logo_url
-        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
-    )
+    logo_uri = _resolve_url(
+        google_images.get("program_logo") or card.logo_url,
+        base_url,
+    ) or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -474,7 +487,7 @@ def _build_offer_class(card, tenant) -> dict:
         "reviewStatus": "UNDER_REVIEW",
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
-    _build_class_images(card, payload)
+    _build_class_images(card, payload, base_url)
     _apply_card_template_override(card, payload)
     _apply_google_advanced_to_class(card, payload)
 
@@ -485,7 +498,7 @@ def _build_offer_class(card, tenant) -> dict:
     return payload
 
 
-def _build_offer_object(customer_pass, card, customer, tenant) -> dict:
+def _build_offer_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
     """Build a Google Wallet OfferObject instance."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.offer-{card.id}"
@@ -506,14 +519,17 @@ def _build_offer_object(customer_pass, card, customer, tenant) -> dict:
         ],
     }
 
-    hero_uri = google_images.get("hero_image") or card.strip_image_url
+    hero_uri = _resolve_url(google_images.get("hero_image") or card.strip_image_url, base_url)
     if hero_uri:
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
         }
 
-    image_module_url = google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url
+    image_module_url = _resolve_url(
+        google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url,
+        base_url,
+    )
     if image_module_url:
         obj["imageModulesData"] = [
             {

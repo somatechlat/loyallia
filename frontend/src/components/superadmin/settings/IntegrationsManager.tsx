@@ -41,15 +41,23 @@ export default function IntegrationsManager({
         {integrations.map((int) => (
           <div key={int.key} className="p-4 rounded-xl border border-surface-100 space-y-3">
             <div className="flex items-center gap-3">
-              <span className={`w-3 h-3 rounded-full shrink-0 ${
-                int.enabled && int.configured ? 'bg-green-500' : int.enabled ? 'bg-yellow-500' : 'bg-surface-400'
+              <span className={`w-3 h-3 rounded-full shrink-0 shadow-sm ${
+                int.enabled && int.configured
+                  ? 'bg-emerald-500 shadow-emerald-500/50'
+                  : int.enabled
+                    ? 'bg-amber-500 shadow-amber-500/50'
+                    : 'bg-surface-400'
               }`} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-surface-900 dark:text-white">{int.name}</p>
                 <p className="text-xs text-surface-400 truncate">{int.detail}</p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-                int.enabled && int.configured ? 'bg-green-100 text-green-700' : int.enabled ? 'bg-yellow-100 text-yellow-700' : 'bg-surface-100 text-surface-600'
+              <span className={`text-xs px-2.5 py-1 rounded-full font-bold shrink-0 border ${
+                int.enabled && int.configured
+                  ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700'
+                  : int.enabled
+                    ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700'
+                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 border-surface-200 dark:border-surface-700'
               }`}>
                 {int.status}
               </span>

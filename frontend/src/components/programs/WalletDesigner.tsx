@@ -2,8 +2,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
-import type { ChangeEvent } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
@@ -50,13 +49,7 @@ function InfoIcon({ className = 'w-5 h-5' }: { className?: string }) {
     </svg>
   );
 }
-function ImageIcon({ className = 'w-5 h-5' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-    </svg>
-  );
-}
+
 /* ─── Types (exact exports) ───────────────────────────────────────── */
 export interface AppleWalletFeatureConfig {
   nfc_enabled: boolean;
@@ -190,79 +183,7 @@ function uid() {
 }
 
 /* ─── Image Upload ────────────────────────────────────────────────── */
-function ImageUploadField({
-  label, specs, required, value, onChange,
-}: {
-  label: string;
-  specs: string;
-  required: boolean;
-  value: string;
-  onChange: (url: string) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragOver, setDragOver] = useState(false);
-
-  const handleFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => onChange(e.target?.result as string);
-    reader.readAsDataURL(file);
-  }, [onChange]);
-
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
-  }, [handleFile]);
-
-  const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) handleFile(f);
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-semibold text-surface-700 dark:text-surface-200">{label}</span>
-        {required && <span className="text-xs bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded">Obligatorio</span>}
-        <span className="text-xs text-surface-500 dark:text-surface-400 ml-auto font-mono">{specs}</span>
-      </div>
-      <div
-        onClick={() => inputRef.current?.click()}
-        onDrop={onDrop}
-        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        className={`
-          relative cursor-pointer rounded-xl border-2 border-dashed transition-all overflow-hidden
-          ${dragOver ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-300 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 hover:border-brand-400 dark:hover:border-brand-500'}
-          ${value ? 'p-0 aspect-video' : 'p-4 flex flex-col items-center justify-center gap-2 aspect-video'}
-        `}
-      >
-        {value ? (
-          <img src={value} alt={label} className="w-full h-full object-contain" />
-        ) : (
-          <>
-            <ImageIcon className="w-8 h-8 text-surface-400 dark:text-surface-500" />
-            <span className="text-xs text-surface-500 dark:text-surface-400 text-center">Haz click o arrastra una imagen<br/><span className="font-mono">{specs}</span></span>
-          </>
-        )}
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onInputChange} />
-      </div>
-      {value && (
-        <div className="flex items-center gap-3">
-          <img src={value} alt={`${label} miniatura`} className="w-12 h-12 rounded-lg object-cover border border-surface-200 dark:border-surface-600" />
-          <button
-            onClick={() => onChange('')}
-            className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 flex items-center gap-1"
-          >
-            <TrashIcon className="w-3 h-3" /> Eliminar imagen
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+import ImageUploadField from '@/components/ui/ImageUploadField';
 
 /* ─── Accordion Section ───────────────────────────────────────────── */
 function AccordionSection({

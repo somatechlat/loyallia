@@ -26,6 +26,45 @@ APPLE_PASS_STYLES = {
 }
 
 
+def _substitute_template_values(value: str, card, customer) -> str:
+    """Replace template placeholders with actual customer/card data."""
+    if not isinstance(value, str):
+        return value
+    customer_name = f"{customer.first_name} {customer.last_name}".strip()
+    replacements = {
+        "{description}": card.description or "",
+        "{customer_name}": customer_name,
+        "{program_name}": card.name or "",
+        "{qr_code}": customer_pass.qr_code if 'customer_pass' in dir() else "",
+    }
+    for placeholder, replacement in replacements.items():
+        value = value.replace(placeholder, replacement)
+    return value
+
+
+def _substitute_fields(fields: dict, card, customer_pass) -> dict:
+    """Recursively substitute template placeholders in all field values."""
+    customer = customer_pass.customer
+    result = {}
+    for key, value in fields.items():
+        if isinstance(value, list):
+            result[key] = []
+            for item in value:
+                if isinstance(item, dict) and "value" in item:
+                    new_item = dict(item)
+                    new_item["value"] = _substitute_template_values(str(item["value"]), card, customer)
+                    result[key].append(new_item)
+                else:
+                    result[key].append(item)
+        elif isinstance(value, dict):
+            result[key] = _substitute_fields(value, card, customer_pass)
+        elif isinstance(value, str):
+            result[key] = _substitute_template_values(value, card, customer)
+        else:
+            result[key] = value
+    return result
+
+
 def _build_fields_for_type(card, customer_pass) -> dict:
     """Build Apple PassKit field layout based on card type."""
     pass_data = customer_pass.pass_data or {}
@@ -36,7 +75,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     wallet_design = metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
     apple_fields = wallet_design.get("apple_fields") if isinstance(wallet_design, dict) else None
     if apple_fields and isinstance(apple_fields, dict):
-        return apple_fields
+        # Substitute template placeholders like {description}, {customer_name}, {program_name}
+        return _substitute_fields(apple_fields, card, customer_pass)
 
     if card.card_type == "stamp":
         total = metadata.get("total_stamps", 6)

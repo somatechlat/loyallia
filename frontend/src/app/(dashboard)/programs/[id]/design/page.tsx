@@ -31,6 +31,15 @@ interface ProgramData {
   is_published: boolean;
 }
 
+function stripTempUrl(url: string | undefined): string {
+  if (typeof url !== 'string') return '';
+  if (url.startsWith('data:') || url.startsWith('blob:')) return '';
+  if (url.includes('://localhost:33903/') || url.includes('://127.0.0.1:33903/')) {
+    return url.replace(/^https?:\/\/[^/]+:33903/, '');
+  }
+  return url;
+}
+
 function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): WalletDesignState {
   const wd = metadata?.wallet_design as Record<string, unknown> | undefined;
   if (!wd) return defaultWalletDesignState();
@@ -41,18 +50,18 @@ function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): Walle
 
   return {
     provider: (wd.provider as 'apple' | 'google') || 'apple',
-    appleLogoUrl: appleImages.logo || '',
-    appleLogo2xUrl: appleImages.logo_2x || '',
-    appleStripUrl: appleImages.strip || '',
-    appleStrip2xUrl: appleImages.strip_2x || '',
-    appleThumbnailUrl: appleImages.thumbnail || '',
-    appleThumbnail2xUrl: appleImages.thumbnail_2x || '',
-    appleIconUrl: appleImages.icon || '',
-    appleIcon2xUrl: appleImages.icon_2x || '',
-    googleProgramLogoUrl: googleImages.program_logo || '',
-    googleHeroImageUrl: googleImages.hero_image || '',
-    googleWideLogoUrl: googleImages.wide_logo || '',
-    googleImageModuleUrl: googleImages.image_module || '',
+    appleLogoUrl: stripTempUrl(appleImages.logo),
+    appleLogo2xUrl: stripTempUrl(appleImages.logo_2x),
+    appleStripUrl: stripTempUrl(appleImages.strip),
+    appleStrip2xUrl: stripTempUrl(appleImages.strip_2x),
+    appleThumbnailUrl: stripTempUrl(appleImages.thumbnail),
+    appleThumbnail2xUrl: stripTempUrl(appleImages.thumbnail_2x),
+    appleIconUrl: stripTempUrl(appleImages.icon),
+    appleIcon2xUrl: stripTempUrl(appleImages.icon_2x),
+    googleProgramLogoUrl: stripTempUrl(googleImages.program_logo),
+    googleHeroImageUrl: stripTempUrl(googleImages.hero_image),
+    googleWideLogoUrl: stripTempUrl(googleImages.wide_logo),
+    googleImageModuleUrl: stripTempUrl(googleImages.image_module),
     appleFields: (wd.apple_fields as Record<string, Array<{ key: string; label: string; value: string }>>) || {},
     googleRows: (wd.google_rows as WalletDesignState['googleRows']) || [],
     googleAdvanced: (wd.google_advanced as WalletDesignState['googleAdvanced']) || {

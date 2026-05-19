@@ -58,6 +58,17 @@ interface ProgramStats {
 
 /* ─── Helpers: convert between stored metadata and WalletDesignState ─── */
 
+/** Detect base64 / blob URLs and strip them to prevent metadata bloat. */
+function stripTempUrl(url: string | undefined): string {
+  if (typeof url !== 'string') return '';
+  if (url.startsWith('data:') || url.startsWith('blob:')) return '';
+  // Convert old hardcoded MinIO URLs to relative paths so they work from any origin
+  if (url.includes('://localhost:33903/') || url.includes('://127.0.0.1:33903/')) {
+    return url.replace(/^https?:\/\/[^/]+:33903/, '');
+  }
+  return url;
+}
+
 function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): WalletDesignState {
   const wd = metadata?.wallet_design as Record<string, unknown> | undefined;
   if (!wd) return defaultWalletDesignState();
@@ -68,18 +79,18 @@ function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): Walle
 
   return {
     provider: (wd.provider as 'apple' | 'google') || 'apple',
-    appleLogoUrl: appleImages.logo || '',
-    appleLogo2xUrl: appleImages.logo_2x || '',
-    appleStripUrl: appleImages.strip || '',
-    appleStrip2xUrl: appleImages.strip_2x || '',
-    appleThumbnailUrl: appleImages.thumbnail || '',
-    appleThumbnail2xUrl: appleImages.thumbnail_2x || '',
-    appleIconUrl: appleImages.icon || '',
-    appleIcon2xUrl: appleImages.icon_2x || '',
-    googleProgramLogoUrl: googleImages.program_logo || '',
-    googleHeroImageUrl: googleImages.hero_image || '',
-    googleWideLogoUrl: googleImages.wide_logo || '',
-    googleImageModuleUrl: googleImages.image_module || '',
+    appleLogoUrl: stripTempUrl(appleImages.logo),
+    appleLogo2xUrl: stripTempUrl(appleImages.logo_2x),
+    appleStripUrl: stripTempUrl(appleImages.strip),
+    appleStrip2xUrl: stripTempUrl(appleImages.strip_2x),
+    appleThumbnailUrl: stripTempUrl(appleImages.thumbnail),
+    appleThumbnail2xUrl: stripTempUrl(appleImages.thumbnail_2x),
+    appleIconUrl: stripTempUrl(appleImages.icon),
+    appleIcon2xUrl: stripTempUrl(appleImages.icon_2x),
+    googleProgramLogoUrl: stripTempUrl(googleImages.program_logo),
+    googleHeroImageUrl: stripTempUrl(googleImages.hero_image),
+    googleWideLogoUrl: stripTempUrl(googleImages.wide_logo),
+    googleImageModuleUrl: stripTempUrl(googleImages.image_module),
     appleFields: (wd.apple_fields as Record<string, AppleFieldDef[]>) || {},
     googleRows: (wd.google_rows as GoogleFieldRow[]) || [],
     googleAdvanced: (wd.google_advanced as GoogleAdvancedConfig) || defaultWalletDesignState().googleAdvanced,
@@ -94,24 +105,25 @@ function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): Walle
 }
 
 function buildWalletDesignMetadata(state: WalletDesignState): Record<string, unknown> {
+  const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
   return {
     wallet_design: {
       provider: state.provider,
       apple_images: {
-        logo: state.appleLogoUrl,
-        logo_2x: state.appleLogo2xUrl,
-        strip: state.appleStripUrl,
-        strip_2x: state.appleStrip2xUrl,
-        thumbnail: state.appleThumbnailUrl,
-        thumbnail_2x: state.appleThumbnail2xUrl,
-        icon: state.appleIconUrl,
-        icon_2x: state.appleIcon2xUrl,
+        logo: clean(state.appleLogoUrl),
+        logo_2x: clean(state.appleLogo2xUrl),
+        strip: clean(state.appleStripUrl),
+        strip_2x: clean(state.appleStrip2xUrl),
+        thumbnail: clean(state.appleThumbnailUrl),
+        thumbnail_2x: clean(state.appleThumbnail2xUrl),
+        icon: clean(state.appleIconUrl),
+        icon_2x: clean(state.appleIcon2xUrl),
       },
       google_images: {
-        program_logo: state.googleProgramLogoUrl,
-        hero_image: state.googleHeroImageUrl,
-        wide_logo: state.googleWideLogoUrl,
-        image_module: state.googleImageModuleUrl,
+        program_logo: clean(state.googleProgramLogoUrl),
+        hero_image: clean(state.googleHeroImageUrl),
+        wide_logo: clean(state.googleWideLogoUrl),
+        image_module: clean(state.googleImageModuleUrl),
       },
       apple_fields: state.appleFields,
       google_rows: state.googleRows,
@@ -155,6 +167,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   // Suspend / Delete modal states
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   const startEdit = () => {
@@ -164,9 +177,9 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       description: program.description,
       background_color: program.background_color,
       text_color: program.text_color,
-      logo_url: program.logo_url,
-      strip_image_url: program.strip_image_url,
-      icon_url: program.icon_url,
+      logo_url: stripTempUrl(program.logo_url),
+      strip_image_url: stripTempUrl(program.strip_image_url),
+      icon_url: stripTempUrl(program.icon_url),
     });
     const parsed = parseWalletDesignFromMetadata(program.metadata);
     setWalletDesign(parsed);
@@ -198,8 +211,21 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       toast.success('Programa actualizado');
       setIsEditing(false);
       loadProgram();
-    } catch {
-      toast.error('Error al actualizar');
+      // Show QR modal for phone enrollment testing
+      setShowQrModal(true);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
+      const detail = axiosErr?.response?.data?.detail;
+      let msg: string;
+      if (Array.isArray(detail)) {
+        // Pydantic validation error array
+        msg = detail.map((d: Record<string, unknown>) => `${(d.loc as string[])?.join('.')}: ${d.msg}`).join('; ');
+      } else if (typeof detail === 'string') {
+        msg = detail;
+      } else {
+        msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || 'Error al actualizar';
+      }
+      toast.error(msg);
     } finally {
       setEditSaving(false);
     }
@@ -207,7 +233,21 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
   const loadProgram = () => {
     Promise.all([programsApi.get(id), programsApi.stats(id)])
-      .then(([progRes, statsRes]) => { setProgram(progRes.data); setStats(statsRes.data); })
+      .then(([progRes, statsRes]) => {
+        const prog = progRes.data;
+        // Clean old hardcoded MinIO URLs from legacy fields
+        if (prog.logo_url && (prog.logo_url.includes('://localhost:33903/') || prog.logo_url.includes('://127.0.0.1:33903/'))) {
+          prog.logo_url = prog.logo_url.replace(/^https?:\/\/[^/]+:33903/, '');
+        }
+        if (prog.strip_image_url && (prog.strip_image_url.includes('://localhost:33903/') || prog.strip_image_url.includes('://127.0.0.1:33903/'))) {
+          prog.strip_image_url = prog.strip_image_url.replace(/^https?:\/\/[^/]+:33903/, '');
+        }
+        if (prog.icon_url && (prog.icon_url.includes('://localhost:33903/') || prog.icon_url.includes('://127.0.0.1:33903/'))) {
+          prog.icon_url = prog.icon_url.replace(/^https?:\/\/[^/]+:33903/, '');
+        }
+        setProgram(prog);
+        setStats(statsRes.data);
+      })
       .catch(() => toast.error('Error al cargar los detalles del programa'))
       .finally(() => setLoading(false));
   };
@@ -271,8 +311,19 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                     await programsApi.publish(program.id);
                     toast.success('Programa publicado exitosamente');
                     loadProgram();
-                  } catch {
-                    toast.error('Error al publicar programa');
+                    setShowQrModal(true);
+                  } catch (err: unknown) {
+                    const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
+                    const detail = axiosErr?.response?.data?.detail;
+                    let msg: string;
+                    if (Array.isArray(detail)) {
+                      msg = detail.map((d: Record<string, unknown>) => `${(d.loc as string[])?.join('.')}: ${d.msg}`).join('; ');
+                    } else if (typeof detail === 'string') {
+                      msg = detail;
+                    } else {
+                      msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || 'Error al publicar programa';
+                    }
+                    toast.error(msg);
                   }
                 }}
                 className="btn-primary text-sm flex items-center gap-2"
@@ -326,8 +377,19 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                   await programsApi.publish(program.id);
                   toast.success('Programa publicado exitosamente');
                   loadProgram();
-                } catch {
-                  toast.error('Error al publicar programa');
+                  setShowQrModal(true);
+                } catch (err: unknown) {
+                  const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
+                  const detail = axiosErr?.response?.data?.detail;
+                  let msg: string;
+                  if (Array.isArray(detail)) {
+                    msg = detail.map((d: Record<string, unknown>) => `${(d.loc as string[])?.join('.')}: ${d.msg}`).join('; ');
+                  } else if (typeof detail === 'string') {
+                    msg = detail;
+                  } else {
+                    msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || 'Error al publicar programa';
+                  }
+                  toast.error(msg);
                 }
               }}
               className="btn-primary text-sm"
@@ -504,17 +566,6 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             </div>
           </div>
 
-          {/* V2 Designer Link */}
-          <div className="flex justify-end">
-            <a
-              href={`/programs/${program.id}/design`}
-              className="inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors px-4 py-2 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800 hover:bg-brand-100 dark:hover:bg-brand-900/30"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-              Abrir en diseñador V2 →
-            </a>
-          </div>
-
           {/* Full Wallet Designer */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <div className="space-y-6">
@@ -574,6 +625,51 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           onCancel={() => setShowDeleteModal(false)}
           loading={processing}
         />
+      )}
+
+      {/* Enrollment QR Modal — shown after save/publish for phone testing */}
+      {showQrModal && program && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowQrModal(false)}>
+          <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-surface-900 dark:text-white">¡Listo para probar!</h3>
+              <button onClick={() => setShowQrModal(false)} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              Escanea este código con tu teléfono para agregar la tarjeta a tu wallet.
+            </p>
+            <div className="flex justify-center">
+              <img
+                src={styledQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
+                alt="QR de inscripción"
+                className="w-56 h-56 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
+              />
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  const url = `${resolvedAppUrl}/enroll/${id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success('¡Enlace copiado!');
+                }}
+                className="btn-primary w-full justify-center text-sm"
+              >
+                <svg className="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copiar enlace de inscripción
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn w-full justify-center text-sm bg-emerald-500 hover:bg-emerald-600 text-white"
+              >
+                Compartir por WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

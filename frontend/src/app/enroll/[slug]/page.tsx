@@ -35,6 +35,7 @@ interface EnrollResult {
     google: string;
     status: string;
   };
+  already_enrolled?: boolean;
 }
 
 // SVG icon components (flat style, no emojis)
@@ -129,6 +130,7 @@ export default function EnrollPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [cooldown, setCooldown] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   // SEC-011: Cooldown timer for rate limiting
   useEffect(() => {
@@ -147,7 +149,16 @@ export default function EnrollPage() {
         if (!res.ok) throw new Error('Card not found');
         return res.json();
       })
-      .then(data => setCard(data))
+      .then(data => {
+        // Clean old hardcoded MinIO URLs
+        if (data.logo_url && (data.logo_url.includes('://localhost:33903/') || data.logo_url.includes('://127.0.0.1:33903/'))) {
+          data.logo_url = data.logo_url.replace(/^https?:\/\/[^/]+:33903/, '');
+        }
+        if (data.strip_image_url && (data.strip_image_url.includes('://localhost:33903/') || data.strip_image_url.includes('://127.0.0.1:33903/'))) {
+          data.strip_image_url = data.strip_image_url.replace(/^https?:\/\/[^/]+:33903/, '');
+        }
+        setCard(data);
+      })
       .catch(() => setCard(null))
       .finally(() => setCardLoading(false));
   }, [cardId]);
@@ -181,7 +192,6 @@ export default function EnrollPage() {
       }
       const result: EnrollResult = await res.json();
       setEnrollResult(result);
-      setCooldown(30); // SEC-011: 30-second cooldown after successful enrollment
 
       // Check which wallets are available
       if (result.wallet_urls?.status) {
@@ -194,6 +204,7 @@ export default function EnrollPage() {
         } catch { /* wallet status check is optional */ }
       }
 
+      setCooldown(30); // SEC-011: 30-second cooldown after successful enrollment
       setStep('success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al inscribirse';
@@ -224,6 +235,30 @@ export default function EnrollPage() {
     const redirectUrl = `${baseUrl}${enrollResult.wallet_urls.google}?redirect=true`;
     
     window.location.href = redirectUrl;
+  };
+
+  const handleResendEmail = async () => {
+    if (!form.email || !cardId) return;
+    setResendingEmail(true);
+    try {
+      const baseUrl = getBaseUrl();
+      const res = await fetch(`${baseUrl}/api/v1/customers/resend-pass/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, card_id: cardId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || 'Error al reenviar');
+      }
+      const data = await res.json();
+      toast.success(data.message || 'Tarjeta reenviada a tu email');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al reenviar';
+      toast.error(msg);
+    } finally {
+      setResendingEmail(false);
+    }
   };
 
   // Loading state
@@ -374,15 +409,23 @@ export default function EnrollPage() {
 
           {step === 'success' && enrollResult && (
             <div className="text-center py-2 space-y-5">
-              {/* Success icon */}
-              <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-500">
-                <IconCheckCircle className="w-9 h-9" />
+              {/* Icon */}
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${enrollResult.already_enrolled ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                {enrollResult.already_enrolled ? (
+                  <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                ) : (
+                  <IconCheckCircle className="w-9 h-9" />
+                )}
               </div>
 
               <div>
-                <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">Inscripción exitosa</h2>
+                <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">
+                  {enrollResult.already_enrolled ? 'Ya estás inscrito' : 'Inscripción exitosa'}
+                </h2>
                 <p className="text-surface-500 text-sm">
-                  Ya eres miembro de <strong>{enrollResult.card_name}</strong>.
+                  {enrollResult.already_enrolled
+                    ? <>Ya eres miembro de <strong>{enrollResult.card_name}</strong>. Aquí está tu tarjeta:</>
+                    : <>Ya eres miembro de <strong>{enrollResult.card_name}</strong>.</>}
                 </p>
               </div>
 
@@ -466,48 +509,131 @@ export default function EnrollPage() {
                   Agregar a billetera digital
                 </p>
 
-                {/* Apple Wallet — show when available on backend, or on iOS before status loads */}
-                {(walletStatus?.apple_wallet_available || (isIOS() && !walletStatus)) && (
-                  <button
-                    onClick={handleAppleWallet}
-                    className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md"
-                    id="add-apple-wallet-btn"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                    </svg>
-                    Añadir a Apple Wallet
-                  </button>
+                {/* Device-specific wallet buttons — show ONLY the wallet for the current platform */}
+                {isIOS() && (
+                  <>
+                    {(walletStatus?.apple_wallet_available || !walletStatus) ? (
+                      <button
+                        onClick={handleAppleWallet}
+                        className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md"
+                        id="add-apple-wallet-btn"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                        </svg>
+                        Añadir a Apple Wallet
+                      </button>
+                    ) : (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
+                        <IconAlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-xs">Apple Wallet no disponible</p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed">Tu tarjeta ya está activa. Muestra el código QR en tu próxima visita.</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {/* Google Wallet — show when available on backend, or on Android before status loads */}
-                {(walletStatus?.google_wallet_available || (isAndroid() && !walletStatus)) && (
-                  <button
-                    onClick={handleGoogleWallet}
-                    className="w-full bg-white dark:bg-surface-900 hover:bg-surface-50 text-surface-800 dark:text-surface-100 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md border border-surface-200 dark:border-surface-700"
-                    id="add-google-wallet-btn"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    Guardar en Google Wallet
-                  </button>
+                {isAndroid() && (
+                  <>
+                    {(walletStatus?.google_wallet_available || !walletStatus) ? (
+                      <button
+                        onClick={handleGoogleWallet}
+                        className="w-full bg-white dark:bg-surface-900 hover:bg-surface-50 text-surface-800 dark:text-surface-100 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md border border-surface-200 dark:border-surface-700"
+                        id="add-google-wallet-btn"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Guardar en Google Wallet
+                      </button>
+                    ) : (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
+                        <IconAlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-xs">Google Wallet no disponible</p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed">Tu tarjeta ya está activa. Muestra el código QR en tu próxima visita.</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {/* Wallet unavailable fallback */}
-                {walletStatus && !walletStatus.apple_wallet_available && !walletStatus.google_wallet_available && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
-                    <IconAlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-xs">Billetera digital en configuración</p>
-                      <p className="mt-0.5 text-[11px] leading-relaxed">Tu tarjeta ya está activa. Muestra el código QR en tu próxima visita.</p>
-                    </div>
-                  </div>
+                {/* Desktop / unknown device — show both if available */}
+                {!isIOS() && !isAndroid() && (
+                  <>
+                    {walletStatus?.apple_wallet_available && (
+                      <button
+                        onClick={handleAppleWallet}
+                        className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md"
+                        id="add-apple-wallet-btn"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                        </svg>
+                        Añadir a Apple Wallet
+                      </button>
+                    )}
+                    {walletStatus?.google_wallet_available && (
+                      <button
+                        onClick={handleGoogleWallet}
+                        className="w-full bg-white dark:bg-surface-900 hover:bg-surface-50 text-surface-800 dark:text-surface-100 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md border border-surface-200 dark:border-surface-700"
+                        id="add-google-wallet-btn"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Guardar en Google Wallet
+                      </button>
+                    )}
+                    {walletStatus && !walletStatus.apple_wallet_available && !walletStatus.google_wallet_available && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
+                        <IconAlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-xs">Billetera digital en configuración</p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed">Tu tarjeta ya está activa. Muestra el código QR en tu próxima visita.</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
+
+              {/* Resend to email — shown when already enrolled */}
+              {enrollResult?.already_enrolled && (
+                <button
+                  onClick={handleResendEmail}
+                  disabled={resendingEmail}
+                  className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
+                >
+                  {resendingEmail ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 01.8-1.6l8-6a2 2 0 012.4 0l8 6z"/><polyline points="22 12 12 17 2 12"/></svg>
+                  )}
+                  {resendingEmail ? 'Enviando...' : 'Reenviar tarjeta a mi email'}
+                </button>
+              )}
+
+              {/* Pass ID and link for later access */}
+              {enrollResult?.id && (
+                <div className="text-center space-y-1">
+                  <p className="text-[10px] text-surface-400 font-mono">ID: {enrollResult.id}</p>
+                  <a
+                    href={`/pass/${enrollResult.id}/`}
+                    className="block text-xs text-brand-600 hover:text-brand-700 font-medium py-1"
+                  >
+                    Ver mi tarjeta / Agregar a billetera →
+                  </a>
+                </div>
+              )}
 
               <p className="text-[10px] text-surface-400 pt-1">
                 Tu tarjeta de fidelización ya está activa. Muestra el código QR en tu siguiente visita.

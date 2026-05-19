@@ -1,0 +1,3 @@
+# Ignore designerV2 experimental code — not part of current build
+src/components/programs/designerV2/**
+src/app/(dashboard)/programs/[id]/design/**
