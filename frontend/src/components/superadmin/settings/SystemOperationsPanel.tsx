@@ -1,4 +1,5 @@
 'use client';
+import { AlertTriangle, Key, Mail, Flame } from '@/components/ui/LucideIcons';
 
 interface SystemOperationsPanelProps {
   seedingDemo: boolean;

@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Rocket, Smartphone } from 'lucide-react';
+import { Rocket, Smartphone } from '@/components/ui/LucideIcons';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

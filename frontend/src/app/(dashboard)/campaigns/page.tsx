@@ -7,7 +7,7 @@ import { uploadFile } from '@/lib/upload';
 import WalletPlatformSelector from '@/components/notifications/WalletPlatformSelector';
 import WalletNotificationPreview from '@/components/notifications/WalletNotificationPreview';
 import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
-import { Mail, Smartphone, MessageCircle, AlertTriangle, Send, BarChart3 } from 'lucide-react';
+import { Mail, Smartphone, MessageCircle, AlertTriangle, Send, BarChart3, Wallet } from '@/components/ui/LucideIcons';
 
 function SegmentIcon({ icon }: { icon: string }) {
   switch (icon) {

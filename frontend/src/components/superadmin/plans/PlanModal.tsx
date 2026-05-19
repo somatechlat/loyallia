@@ -1,5 +1,5 @@
 'use client';
-import { Bot, Smartphone, Mail, MessageSquare, Rocket, Star, Zap, FileText, Wallet } from 'lucide-react';
+import { Bot, Smartphone, Mail, MessageSquare, Rocket, Star, Zap, FileText, Wallet } from '@/components/ui/LucideIcons';
 
 import { useEffect, useState } from 'react';
 import { superAdminApi } from '@/lib/api';

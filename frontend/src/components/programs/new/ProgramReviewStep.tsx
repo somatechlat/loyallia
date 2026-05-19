@@ -2,6 +2,55 @@ import { CardTypeIcon, BARCODE_TYPES } from '@/components/programs/constants';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import type { AppleWalletFeatureConfig } from '@/components/programs/WalletCardPreview';
 
+/** Spanish labels for all program metadata keys — prevents mixed languages in review step. */
+const META_LABELS: Record<string, string> = {
+  // Stamp
+  stamp_type: 'Tipo de sello',
+  consumption_per_stamp: 'Equivalencia consumo-sello',
+  stamps_required: 'Sellos requeridos',
+  reward_description: 'Descripción de la recompensa',
+  stamp_expiry: 'Vigencia de la tarjeta',
+  stamp_start_date: 'Fecha de inicio',
+  stamp_end_date: 'Fecha de fin',
+  stamps_at_issue: 'Sellos al emitir',
+  daily_stamp_limit: 'Límite por día',
+  birthday_stamps: 'Sellos cumpleaños',
+  // Coupon
+  discount_type: 'Tipo de descuento',
+  discount_value: 'Valor del descuento',
+  special_promotion_text: 'Descripción de la promoción',
+  coupon_expiry: 'Vigencia del cupón',
+  coupon_start_date: 'Fecha de inicio',
+  coupon_end_date: 'Fecha de fin',
+  usage_limit_per_customer: 'Usos máximos por cliente',
+  coupon_description: 'Descripción del cupón',
+  coupon_image_url: 'Imagen del cupón',
+  push_title: 'Título de la notificación',
+  push_message: 'Mensaje de la notificación',
+  push_expiry_reminder: 'Recordatorio push antes de expirar',
+  // Cashback
+  cashback_percentage: 'Porcentaje de cashback',
+  minimum_purchase: 'Compra mínima',
+  credit_expiry_days: 'Días de expiración del crédito',
+  // Discount
+  tiers: 'Niveles de descuento',
+  // Gift
+  denominations: 'Denominaciones disponibles',
+  expiry_days: 'Días de expiración',
+  // VIP
+  membership_name: 'Nombre de la membresía',
+  monthly_fee: 'Cuota mensual',
+  annual_fee: 'Cuota anual',
+  validity_period: 'Periodo de validez',
+  // Referral
+  referrer_reward: 'Recompensa para el que refiere',
+  referee_reward: 'Recompensa para el referido',
+  max_referrals_per_customer: 'Máximo de referidos por cliente',
+  // Multipass
+  bundle_size: 'Cantidad de sellos en el paquete',
+  bundle_price: 'Precio del paquete',
+};
+
 type ProgramForm = {
   name: string;
   card_type: string;
@@ -84,7 +133,7 @@ export default function ProgramReviewStep({
               )}
               {Object.entries(meta).map(([key, value]) => (
                 <div key={key} className="flex justify-between py-2 border-b border-surface-100">
-                  <span className="text-sm text-surface-500">{key.replace(/_/g, ' ')}</span>
+                  <span className="text-sm text-surface-500">{META_LABELS[key] || key.replace(/_/g, ' ')}</span>
                   <span className="text-sm font-medium">
                     {value === null || value === undefined
                       ? '—'

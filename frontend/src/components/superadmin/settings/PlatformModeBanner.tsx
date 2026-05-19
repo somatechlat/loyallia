@@ -1,4 +1,5 @@
 'use client';
+import { AlertCircle, CheckCircle } from '@/components/ui/LucideIcons';
 
 interface PlatformModeBannerProps {
   platformMode: 'development' | 'production';

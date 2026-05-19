@@ -81,7 +81,7 @@ class CSPNonceMiddleware:
             csp_directives = [
                 "default-src 'self'",
                 f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com",
-                f"style-src 'self' 'nonce-{nonce}' https://accounts.google.com",
+                f"style-src 'self' 'nonce-{nonce}' https://accounts.google.com https://fonts.googleapis.com",
                 "img-src 'self' data: https: blob:",
                 "font-src 'self' https://fonts.gstatic.com",
                 "connect-src 'self' https://oauth2.googleapis.com https://accounts.google.com https://apis.google.com",

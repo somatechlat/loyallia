@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { whatsappApi } from '@/lib/api';
+import { Smartphone, Mail } from '@/components/ui/LucideIcons';
 import toast from 'react-hot-toast';
 
 interface WaStatus {

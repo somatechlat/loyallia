@@ -48,11 +48,11 @@ class Card(TimestampedModel):
     description = models.TextField(blank=True, default="", verbose_name="Descripción")
 
  # Branding
-    logo_url = models.URLField(blank=True, default="", verbose_name="URL del logo")
+    logo_url = models.URLField(blank=True, default="", max_length=2000, verbose_name="URL del logo")
     background_color = models.CharField(max_length=7, default="#1a1a2e", verbose_name="Color de fondo (HEX)")
     text_color = models.CharField(max_length=7, default="#ffffff", verbose_name="Color del texto (HEX)")
-    strip_image_url = models.URLField(blank=True, default="", verbose_name="Imagen de tira")
-    icon_url = models.URLField(blank=True, default="", verbose_name="URL del ícono")
+    strip_image_url = models.URLField(blank=True, default="", max_length=2000, verbose_name="Imagen de tira")
+    icon_url = models.URLField(blank=True, default="", max_length=2000, verbose_name="URL del ícono")
     barcode_type = models.CharField(
         max_length=20,
         choices=BarcodeType.choices,

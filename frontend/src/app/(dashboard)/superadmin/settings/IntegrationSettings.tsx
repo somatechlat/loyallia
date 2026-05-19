@@ -6,6 +6,7 @@ import IntegrationsManager from '@/components/superadmin/settings/IntegrationsMa
 import { Integration } from '@/components/superadmin/settings/types';
 import { errorMessage, vaultFieldsFor } from '@/components/superadmin/settings/constants';
 import { superAdminApi } from '@/lib/api';
+import { FlaskConical, DollarSign } from '@/components/ui/LucideIcons';
 
 interface IntegrationSettingsProps {
   integrations: Integration[];

@@ -1,19 +1,21 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-import { uploadFile } from '@/lib/upload';
-import { CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta } from '@/components/programs/constants';
+import {
+  CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta,
+  APPLE_DEFAULT_FIELDS,
+} from '@/components/programs/constants';
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
-import {
-  BarcodeTypeSelector,
-  WalletProviderSelector,
-  type AppleWalletFeatureConfig,
-} from '@/components/programs/WalletCardPreview';
+import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
+import WalletDesigner, {
+  type WalletDesignState,
+  defaultWalletDesignState,
+} from '@/components/programs/WalletDesigner';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 import StepBar from '@/components/programs/new/StepBar';
 import ProgramReviewStep from '@/components/programs/new/ProgramReviewStep';
@@ -37,21 +39,30 @@ export default function NewProgramPage() {
     locations: [] as Array<{lat: number, lng: number, name: string}>,
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
-  const [walletProvider, setWalletProvider] = useState<'apple' | 'google'>('apple');
-  const [appleWalletConfig, setAppleWalletConfig] = useState<AppleWalletFeatureConfig>({
-    nfc_enabled: false,
-    nfc_requires_authentication: false,
-  });
+  const [walletDesign, setWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
   const [selectedTemplate, setSelectedTemplate] = useState('midnight');
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoUploading, setLogoUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview] = useState<string | null>(null);
+  const [stripPreview] = useState<string | null>(null);
+
+  // Keep generic uploads for backward compat (populated from wallet designer)
+  const walletProvider = walletDesign.provider;
+  const setWalletProvider = (v: 'apple' | 'google') => setWalletDesign(w => ({ ...w, provider: v }));
+  const appleWalletConfig = walletDesign.appleNfc;
 
   const selectedType = CARD_TYPES.find(t => t.value === form.card_type);
 
   const handleTypeSelect = (type: string) => {
     setForm(f => ({ ...f, card_type: type }));
     setMeta(defaultMeta(type));
+    // Reset wallet design defaults for the new card type
+    const defaults = defaultWalletDesignState();
+    defaults.provider = walletDesign.provider;
+    // Pre-populate Apple default fields for this card type
+    const typeDefaults = APPLE_DEFAULT_FIELDS[type];
+    if (typeDefaults) {
+      defaults.appleFields = JSON.parse(JSON.stringify(typeDefaults));
+    }
+    setWalletDesign(defaults);
   };
 
   const handleTemplateSelect = (template: typeof DESIGN_TEMPLATES[0]) => {
@@ -61,37 +72,6 @@ export default function NewProgramPage() {
     }
   };
 
-  /** Shared file upload handler (PERF-007) — replaces 3 identical handlers */
-  const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    formField: 'logo_url' | 'strip_image_url' | 'icon_url',
-    setPreview: (val: string | null) => void,
-    setUploading: (val: boolean) => void,
-    successMsg: string,
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-    setUploading(true);
-    const url = await uploadFile(file, false);
-    if (url) {
-      setForm(f => ({ ...f, [formField]: url }));
-      toast.success(successMsg);
-    } else {
-      toast('Guardado localmente', { icon: 'ℹ️' });
-    }
-    setUploading(false);
-  };
-
-  const [stripPreview, setStripPreview] = useState<string | null>(null);
-  const [_stripUploading, setStripUploading] = useState(false);
-  const stripInputRef = useRef<HTMLInputElement>(null);
-
-  const [iconPreview, setIconPreview] = useState<string | null>(null);
-  const [_iconUploading, setIconUploading] = useState(false);
-  const iconInputRef = useRef<HTMLInputElement>(null);
 
   const canNext = () => {
     if (step === 0) return !!form.card_type;
@@ -104,19 +84,57 @@ export default function NewProgramPage() {
     setLoading(true);
     try {
       const walletMetadata =
-        walletProvider === 'apple'
+        walletDesign.provider === 'apple'
           ? {
               wallet_provider: 'apple',
-              apple_wallet: appleWalletConfig,
+              apple_wallet: walletDesign.appleNfc,
             }
           : {
               wallet_provider: 'google',
             };
-      await programsApi.create({ ...form, metadata: { ...meta, ...walletMetadata } });
+      // Include wallet design configuration in metadata
+      const walletDesignMetadata = {
+        wallet_design: {
+          provider: walletDesign.provider,
+          apple_images: {
+            logo: walletDesign.appleLogoUrl,
+            logo_2x: walletDesign.appleLogo2xUrl,
+            strip: walletDesign.appleStripUrl,
+            strip_2x: walletDesign.appleStrip2xUrl,
+            thumbnail: walletDesign.appleThumbnailUrl,
+            thumbnail_2x: walletDesign.appleThumbnail2xUrl,
+            icon: walletDesign.appleIconUrl,
+            icon_2x: walletDesign.appleIcon2xUrl,
+          },
+          google_images: {
+            program_logo: walletDesign.googleProgramLogoUrl,
+            hero_image: walletDesign.googleHeroImageUrl,
+            wide_logo: walletDesign.googleWideLogoUrl,
+            image_module: walletDesign.googleImageModuleUrl,
+          },
+          apple_fields: walletDesign.appleFields,
+          google_rows: walletDesign.googleRows,
+          google_advanced: walletDesign.googleAdvanced,
+          apple_advanced: walletDesign.appleAdvanced,
+        },
+      };
+      // Map designer images to legacy fields for backward compat
+      const legacyImages = {
+        logo_url: walletDesign.provider === 'apple' ? walletDesign.appleLogoUrl : walletDesign.googleProgramLogoUrl,
+        strip_image_url: walletDesign.provider === 'apple' ? walletDesign.appleStripUrl : walletDesign.googleHeroImageUrl,
+        icon_url: walletDesign.provider === 'apple' ? walletDesign.appleIconUrl : walletDesign.googleProgramLogoUrl,
+      };
+      await programsApi.create({
+        ...form,
+        ...legacyImages,
+        metadata: { ...meta, ...walletMetadata, ...walletDesignMetadata }
+      });
       toast.success('¡Programa creado exitosamente!');
       window.location.href = '/programs';
-    } catch {
-      toast.error('Error al crear el programa');
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { message?: string; detail?: string; error?: string } } })?.response?.data;
+      const msg = detail?.message || detail?.detail || detail?.error || 'Error al crear el programa';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -274,163 +292,11 @@ export default function NewProgramPage() {
               </div>
             </div>
 
-            {/* Logo Upload */}
-            <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900 dark:text-white">Logo del programa</h2>
-              <p className="text-sm text-surface-500">Sube el logo de tu negocio. Aparecerá en la tarjeta del cliente.</p>
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 rounded-2xl border-2 border-dashed border-surface-300 hover:border-brand-400 flex items-center justify-center transition-all bg-surface-50 hover:bg-brand-50 group"
-                  id="logo-upload-btn"
-                >
-                  {logoPreview ? (
-                    <img src={logoPreview} alt="Logo" className="w-full h-full rounded-2xl object-cover" />
-                  ) : (
-                    <div className="text-center">
-                      <svg className="w-6 h-6 mx-auto text-surface-400 group-hover:text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                      <p className="text-[10px] text-surface-400 group-hover:text-brand-500 mt-1">Subir</p>
-                    </div>
-                  )}
-                </button>
-                <div className="flex-1">
-                  <p className="text-sm text-surface-700 font-medium">
-                    {logoPreview ? 'Logo cargado ✓' : 'Sin logo'}
-                  </p>
-                  <p className="text-xs text-surface-400 mt-1">
-                    PNG, JPG o SVG. Recomendado: 256×256px
-                  </p>
-                  {logoUploading && (
-                    <p className="text-xs text-brand-600 mt-1 flex items-center gap-1">
-                      <span className="w-3 h-3 border-2 border-brand-300 border-t-brand-600 rounded-full animate-spin" />
-                      Subiendo...
-                    </p>
-                  )}
-                </div>
-                {logoPreview && (
-                  <button
-                    type="button"
-                    onClick={() => { setLogoPreview(null); setForm(f => ({ ...f, logo_url: '' })); }}
-                    className="text-red-400 hover:text-red-600 text-sm"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={e => handleFileUpload(e, 'logo_url', setLogoPreview, setLogoUploading, 'Logo subido correctamente')}
-                className="hidden"
-                id="logo-file-input"
-              />
-            </div>
-
-            {/* Strip Image Upload - Hero Image for Wallet */}
-            <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900 dark:text-white">Imagen de cabecera (Hero)</h2>
-              <p className="text-sm text-surface-500">Imagen grande que aparece en la parte superior de la tarjeta del wallet.</p>
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => stripInputRef.current?.click()}
-                  className="w-32 h-20 rounded-2xl border-2 border-dashed border-surface-300 hover:border-brand-400 flex items-center justify-center transition-all bg-surface-50 hover:bg-brand-50 group overflow-hidden"
-                  id="strip-upload-btn"
-                >
-                  {stripPreview ? (
-                    <img src={stripPreview} alt="Strip" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-center">
-                      <svg className="w-6 h-6 mx-auto text-surface-400 group-hover:text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18"/></svg>
-                      <p className="text-[9px] text-surface-400 group-hover:text-brand-500 mt-1">Hero</p>
-                    </div>
-                  )}
-                </button>
-                <div className="flex-1">
-                  <p className="text-sm text-surface-700 font-medium">
-                    {stripPreview ? 'Imagen de cabecera cargada ✓' : 'Sin imagen de cabecera'}
-                  </p>
-                  <p className="text-xs text-surface-400 mt-1">
-                    PNG, JPG. Recomendado: 600×200px (aspect ratio 3:1)
-                  </p>
-                </div>
-                {stripPreview && (
-                  <button
-                    type="button"
-                    onClick={() => { setStripPreview(null); setForm(f => ({ ...f, strip_image_url: '' })); }}
-                    className="text-red-400 hover:text-red-600 text-sm"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              <input
-                ref={stripInputRef}
-                type="file"
-                accept="image/*"
-                onChange={e => handleFileUpload(e, 'strip_image_url', setStripPreview, setStripUploading, 'Imagen de cabecera subida')}
-                className="hidden"
-                id="strip-file-input"
-              />
-            </div>
-
-            {/* Icon Upload */}
-            <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900 dark:text-white">Ícono del programa</h2>
-              <p className="text-sm text-surface-500">Ícono pequeño para mostrar en la tarjeta.</p>
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => iconInputRef.current?.click()}
-                  className="w-16 h-16 rounded-2xl border-2 border-dashed border-surface-300 hover:border-brand-400 flex items-center justify-center transition-all bg-surface-50 hover:bg-brand-50 group overflow-hidden"
-                  id="icon-upload-btn"
-                >
-                  {iconPreview ? (
-                    <img src={iconPreview} alt="Icon" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-center">
-                      <svg className="w-5 h-5 mx-auto text-surface-400 group-hover:text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/></svg>
-                      <p className="text-[8px] text-surface-400 group-hover:text-brand-500 mt-1">Icono</p>
-                    </div>
-                  )}
-                </button>
-                <div className="flex-1">
-                  <p className="text-sm text-surface-700 font-medium">
-                    {iconPreview ? 'Ícono cargado ✓' : 'Sin ícono'}
-                  </p>
-                  <p className="text-xs text-surface-400 mt-1">
-                    PNG, JPG. Recomendado: 64×64px
-                  </p>
-                </div>
-                {iconPreview && (
-                  <button
-                    type="button"
-                    onClick={() => { setIconPreview(null); setForm(f => ({ ...f, icon_url: '' })); }}
-                    className="text-red-400 hover:text-red-600 text-sm"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              <input
-                ref={iconInputRef}
-                type="file"
-                accept="image/*"
-                onChange={e => handleFileUpload(e, 'icon_url', setIconPreview, setIconUploading, 'Ícono subido')}
-                className="hidden"
-                id="icon-file-input"
-              />
-            </div>
-
-            {/* Barcode Type Selector */}
-            <WalletProviderSelector
-              value={walletProvider}
-              onChange={setWalletProvider}
-              appleConfig={appleWalletConfig}
-              onAppleConfigChange={setAppleWalletConfig}
+            {/* Wallet Designer — Full visual customization */}
+            <WalletDesigner
               cardType={form.card_type}
+              state={walletDesign}
+              onChange={setWalletDesign}
             />
 
             {/* Barcode Type Selector */}
