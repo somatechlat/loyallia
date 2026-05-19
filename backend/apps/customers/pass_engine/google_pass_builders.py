@@ -562,6 +562,7 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
         "issuerName": tenant.name,
         "title": card.name,
         "provider": tenant.name,
+        "redemptionChannel": "BOTH",
         "titleImage": {
             "sourceUri": {"uri": logo_uri},
             "contentDescription": {"defaultValue": {"language": "es", "value": card.name}},
