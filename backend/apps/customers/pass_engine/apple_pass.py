@@ -27,6 +27,7 @@ from apps.customers.pass_engine.apple_pass_builders import (
     _build_fields_for_type,
     _build_locations,
     _generate_placeholder_icon,
+    _generate_placeholder_logo,
     _hex_to_rgb,
     _resize_image,
 )
@@ -147,7 +148,7 @@ APPLE_BARCODE_FORMATS = {
 }
 
 
-def _build_nfc_payload(card, customer_pass, barcode_value: str) -> dict | None:
+def _build_nfc_payload(card, customer_pass, barcode_value: str, override_message: str = "") -> dict | None:
     """Build the optional Apple NFC payload from card metadata and Vault config."""
     metadata = card.metadata if isinstance(card.metadata, dict) else {}
     apple_config = metadata.get("apple_wallet", {})
@@ -160,7 +161,7 @@ def _build_nfc_payload(card, customer_pass, barcode_value: str) -> dict | None:
     if not nfc_public_key:
         raise ValueError("Apple NFC is enabled but apple_nfc_encryption_public_key is missing")
 
-    message = str(apple_config.get("nfc_message") or barcode_value)
+    message = override_message or str(apple_config.get("nfc_message") or barcode_value)
     if len(message.encode("utf-8")) > 64:
         raise ValueError("Apple NFC message must be 64 bytes or less")
 
@@ -213,9 +214,23 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         pass_json["locations"] = locations
         pass_json["maxDistance"] = 100
 
-    nfc_payload = _build_nfc_payload(card, customer_pass, barcode_value)
+    metadata = card.metadata or {}
+    wallet_design = metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
+    apple_advanced = wallet_design.get("apple_advanced", {}) if isinstance(wallet_design, dict) else {}
+    nfc_override = apple_advanced.get("nfcMessage", "") if isinstance(apple_advanced, dict) else ""
+    nfc_payload = _build_nfc_payload(card, customer_pass, barcode_value, nfc_override)
     if nfc_payload:
         pass_json["nfc"] = nfc_payload
+
+    if isinstance(apple_advanced, dict):
+        if apple_advanced.get("suppressStripShine") is not None:
+            pass_json["suppressStripShine"] = apple_advanced["suppressStripShine"]
+        if apple_advanced.get("sharingProhibited") is not None:
+            pass_json["sharingProhibited"] = apple_advanced["sharingProhibited"]
+        if apple_advanced.get("voided") is not None:
+            pass_json["voided"] = apple_advanced["voided"]
+        if apple_advanced.get("expirationDate"):
+            pass_json["expirationDate"] = apple_advanced["expirationDate"]
 
     web_service_url = getattr(settings, "PASS_WEB_SERVICE_URL", "")
     if not web_service_url:
@@ -333,23 +348,53 @@ def generate_pkpass(customer_pass) -> bytes | None:
             logger.warning("Failed to fetch image from %s: %s", url, exc)
         return None
 
-    logo_bytes = fetch_image_bytes(card.logo_url)
-    icon_bytes = fetch_image_bytes(card.icon_url)
-    strip_bytes = fetch_image_bytes(card.strip_image_url)
+    wallet_design = (card.metadata or {}).get("wallet_design", {}) if isinstance(card.metadata, dict) else {}
+    apple_images = wallet_design.get("apple_images", {}) if isinstance(wallet_design, dict) else {}
+
+    logo_bytes = fetch_image_bytes(apple_images.get("logo") or card.logo_url)
+    logo_2x_bytes = fetch_image_bytes(apple_images.get("logo_2x"))
+    icon_bytes = fetch_image_bytes(apple_images.get("icon") or card.icon_url)
+    icon_2x_bytes = fetch_image_bytes(apple_images.get("icon_2x"))
+
+    if pass_style in ("storeCard", "coupon"):
+        strip_url = apple_images.get("strip") or card.strip_image_url
+        strip_2x_url = apple_images.get("strip_2x")
+    elif pass_style == "generic":
+        strip_url = apple_images.get("thumbnail") or card.strip_image_url
+        strip_2x_url = apple_images.get("thumbnail_2x")
+    else:
+        strip_url = None
+        strip_2x_url = None
+
+    strip_bytes = fetch_image_bytes(strip_url)
+    strip_2x_bytes = fetch_image_bytes(strip_2x_url)
 
     from PIL import Image
 
  # Default fallbacks
     icon_29 = _generate_placeholder_icon(card.name, bg_color, 29)
     icon_58 = _generate_placeholder_icon(card.name, bg_color, 58)
-    logo_87 = _generate_placeholder_icon(card.name, bg_color, 87)
-    logo_174 = _generate_placeholder_icon(card.name, bg_color, 174)
+    # Apple logo spec: 160x50 pt (@1x) and 320x100 pt (@2x) — wide, not square
+    logo_160x50 = _generate_placeholder_logo(card.name, bg_color, 160, 50)
+    logo_320x100 = _generate_placeholder_logo(card.name, bg_color, 320, 100)
 
     if logo_bytes:
         try:
             img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-            logo_87 = _resize_image(img, 87, 87)
-            logo_174 = _resize_image(img, 174, 174)
+            logo_160x50 = _resize_image(img, 160, 50)
+        except Exception as exc:
+            logger.warning("Failed to process logo image: %s", exc)
+
+    if logo_2x_bytes:
+        try:
+            img = Image.open(io.BytesIO(logo_2x_bytes)).convert("RGBA")
+            logo_320x100 = _resize_image(img, 320, 100)
+        except Exception as exc:
+            logger.warning("Failed to process logo@2x image: %s", exc)
+    elif logo_bytes:
+        try:
+            img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+            logo_320x100 = _resize_image(img, 320, 100)
         except Exception as exc:
             logger.warning("Failed to process logo image: %s", exc)
 
@@ -357,6 +402,18 @@ def generate_pkpass(customer_pass) -> bytes | None:
         try:
             img = Image.open(io.BytesIO(icon_bytes)).convert("RGBA")
             icon_29 = _resize_image(img, 29, 29)
+        except Exception as exc:
+            logger.warning("Failed to process icon image: %s", exc)
+
+    if icon_2x_bytes:
+        try:
+            img = Image.open(io.BytesIO(icon_2x_bytes)).convert("RGBA")
+            icon_58 = _resize_image(img, 58, 58)
+        except Exception as exc:
+            logger.warning("Failed to process icon@2x image: %s", exc)
+    elif icon_bytes:
+        try:
+            img = Image.open(io.BytesIO(icon_bytes)).convert("RGBA")
             icon_58 = _resize_image(img, 58, 58)
         except Exception as exc:
             logger.warning("Failed to process icon image: %s", exc)
@@ -365,8 +422,8 @@ def generate_pkpass(customer_pass) -> bytes | None:
         "pass.json": pass_json_bytes,
         "icon.png": icon_29,
         "icon@2x.png": icon_58,
-        "logo.png": logo_87,
-        "logo@2x.png": logo_174,
+        "logo.png": logo_160x50,
+        "logo@2x.png": logo_320x100,
     }
 
     if strip_bytes:
@@ -377,11 +434,19 @@ def generate_pkpass(customer_pass) -> bytes | None:
             if pass_style in ("storeCard", "coupon"):
  # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
                 files["strip.png"] = _resize_image(img, 375, 123)
-                files["strip@2x.png"] = _resize_image(img, 750, 246)
+                if strip_2x_bytes:
+                    img_2x = Image.open(io.BytesIO(strip_2x_bytes)).convert("RGBA")
+                    files["strip@2x.png"] = _resize_image(img_2x, 750, 246)
+                else:
+                    files["strip@2x.png"] = _resize_image(img, 750, 246)
             elif pass_style == "generic":
  # Apple Wallet thumbnail: 90x90 (@1x), 180x180 (@2x)
                 files["thumbnail.png"] = _resize_image(img, 90, 90)
-                files["thumbnail@2x.png"] = _resize_image(img, 180, 180)
+                if strip_2x_bytes:
+                    img_2x = Image.open(io.BytesIO(strip_2x_bytes)).convert("RGBA")
+                    files["thumbnail@2x.png"] = _resize_image(img_2x, 180, 180)
+                else:
+                    files["thumbnail@2x.png"] = _resize_image(img, 180, 180)
         except Exception as exc:
             logger.warning("Failed to process strip/thumbnail image: %s", exc)
 

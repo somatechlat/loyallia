@@ -62,6 +62,7 @@ class Card(TimestampedModel):
 
  # Status
     is_active = models.BooleanField(default=True, verbose_name="Programa activo")
+    is_published = models.BooleanField(default=False, verbose_name="Programa publicado")
 
  # Type-specific configuration (Typed columns for core metrics)
     stamps_required = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Sellos requeridos")

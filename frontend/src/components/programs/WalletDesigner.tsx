@@ -8,15 +8,13 @@ import {
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
   APPLE_IMAGE_SUPPORT,
-  APPLE_IMAGE_SPECS,
-  GOOGLE_IMAGE_SPECS,
   GOOGLE_ROW_TYPES,
   GOOGLE_PREDEFINED_FIELDS,
   APPLE_FIELD_GROUPS,
   GOOGLE_DEVICE_SHARING_OPTIONS,
 } from './constants';
 
-/* ─── Lucide-like inline SVGs ─────────────────────────────────────── */
+/* ─── Inline SVGs ─────────────────────────────────────────────────── */
 function PlusIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -59,22 +57,7 @@ function ImageIcon({ className = 'w-5 h-5' }: { className?: string }) {
     </svg>
   );
 }
-function AppleIcon({ className = 'w-5 h-5' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.84-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-    </svg>
-  );
-}
-function GoogleGIcon({ className = 'w-5 h-5' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C6.477 2 1.545 6.932 1.545 13s4.932 11 11 11c6.068 0 11-4.932 11-11 0-.73-.074-1.44-.213-2.128H12.545z"/>
-    </svg>
-  );
-}
-
-/* ─── Types ───────────────────────────────────────────────────────── */
+/* ─── Types (exact exports) ───────────────────────────────────────── */
 export interface AppleWalletFeatureConfig {
   nfc_enabled: boolean;
   nfc_requires_authentication: boolean;
@@ -104,7 +87,7 @@ export interface AppleFieldDef {
 
 export interface GoogleAdvancedConfig {
   reviewStatus: 'underReview' | 'approved' | 'rejected';
-  allowMultipleUsers: string; // ONE_USER_ALL_DEVICES | ONE_USER_ONE_DEVICE | MULTIPLE_USERS
+  allowMultipleUsers: string;
   homepageUri: string;
   helpUri: string;
   linksModuleUris: { label: string; uri: string }[];
@@ -122,7 +105,6 @@ export interface AppleAdvancedConfig {
 
 export interface WalletDesignState {
   provider: 'apple' | 'google';
-  /* Apple images */
   appleLogoUrl: string;
   appleLogo2xUrl: string;
   appleStripUrl: string;
@@ -131,19 +113,14 @@ export interface WalletDesignState {
   appleThumbnail2xUrl: string;
   appleIconUrl: string;
   appleIcon2xUrl: string;
-  /* Google images */
   googleProgramLogoUrl: string;
   googleHeroImageUrl: string;
   googleWideLogoUrl: string;
   googleImageModuleUrl: string;
-  /* Apple fields */
   appleFields: Record<string, AppleFieldDef[]>;
-  /* Google rows */
   googleRows: GoogleFieldRow[];
-  /* Advanced */
   googleAdvanced: GoogleAdvancedConfig;
   appleAdvanced: AppleAdvancedConfig;
-  /* Apple NFC */
   appleNfc: AppleWalletFeatureConfig;
 }
 
@@ -180,15 +157,12 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-/* ─── Image Upload Component ──────────────────────────────────────── */
+/* ─── Image Upload ────────────────────────────────────────────────── */
 function ImageUploadField({
-  label, desc, dimPx, dimPt, required,
-  value, onChange,
+  label, specs, required, value, onChange,
 }: {
   label: string;
-  desc: string;
-  dimPx: string;
-  dimPt?: string;
+  specs: string;
   required: boolean;
   value: string;
   onChange: (url: string) => void;
@@ -217,12 +191,11 @@ function ImageUploadField({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-slate-700">{label}</span>
-        {required && <span className="text-xs bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">Obligatorio</span>}
-        <span className="text-xs text-slate-400 ml-auto font-mono">{dimPx}{dimPt ? ` (${dimPt}pt)` : ''}</span>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm font-semibold text-surface-700 dark:text-surface-200">{label}</span>
+        {required && <span className="text-xs bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded">Obligatorio</span>}
+        <span className="text-xs text-surface-500 dark:text-surface-400 ml-auto font-mono">{specs}</span>
       </div>
-      <p className="text-xs text-slate-500">{desc}</p>
       <div
         onClick={() => inputRef.current?.click()}
         onDrop={onDrop}
@@ -230,7 +203,7 @@ function ImageUploadField({
         onDragLeave={() => setDragOver(false)}
         className={`
           relative cursor-pointer rounded-xl border-2 border-dashed transition-all overflow-hidden
-          ${dragOver ? 'border-brand-500 bg-brand-50' : 'border-slate-200 bg-slate-50 hover:border-brand-300'}
+          ${dragOver ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-300 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 hover:border-brand-400 dark:hover:border-brand-500'}
           ${value ? 'p-0 aspect-video' : 'p-4 flex flex-col items-center justify-center gap-2 aspect-video'}
         `}
       >
@@ -238,53 +211,220 @@ function ImageUploadField({
           <img src={value} alt={label} className="w-full h-full object-contain" />
         ) : (
           <>
-            <ImageIcon className="w-8 h-8 text-slate-300" />
-            <span className="text-xs text-slate-400 text-center">Haz click o arrastra una imagen<br/>{dimPx}</span>
+            <ImageIcon className="w-8 h-8 text-surface-400 dark:text-surface-500" />
+            <span className="text-xs text-surface-500 dark:text-surface-400 text-center">Haz click o arrastra una imagen<br/><span className="font-mono">{specs}</span></span>
           </>
         )}
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onInputChange} />
       </div>
       {value && (
-        <button
-          onClick={() => onChange('')}
-          className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1"
-        >
-          <TrashIcon className="w-3 h-3" /> Eliminar imagen
-        </button>
+        <div className="flex items-center gap-3">
+          <img src={value} alt={`${label} miniatura`} className="w-12 h-12 rounded-lg object-cover border border-surface-200 dark:border-surface-600" />
+          <button
+            onClick={() => onChange('')}
+            className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 flex items-center gap-1"
+          >
+            <TrashIcon className="w-3 h-3" /> Eliminar imagen
+          </button>
+        </div>
       )}
     </div>
   );
 }
 
-/* ─── Platform Toggle ─────────────────────────────────────────────── */
-function PlatformToggle({
-  value, onChange,
+/* ─── Accordion Section ───────────────────────────────────────────── */
+function AccordionSection({
+  title, children, defaultOpen = false,
 }: {
-  value: 'apple' | 'google';
-  onChange: (v: 'apple' | 'google') => void;
+  title: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+    <div className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 overflow-hidden">
       <button
-        onClick={() => onChange('apple')}
-        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all
-          ${value === 'apple' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-surface-50 dark:bg-surface-800 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
       >
-        <AppleIcon className="w-4 h-4" /> Apple Wallet
+        <span className="text-sm font-semibold text-surface-700 dark:text-surface-200">{title}</span>
+        {open ? <ChevronUpIcon className="w-4 h-4 text-surface-400 dark:text-surface-500" /> : <ChevronDownIcon className="w-4 h-4 text-surface-400 dark:text-surface-500" />}
       </button>
-      <button
-        onClick={() => onChange('google')}
-        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all
-          ${value === 'google' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-      >
-        <GoogleGIcon className="w-4 h-4" /> Google Wallet
-      </button>
+      {open && <div className="p-4">{children}</div>}
     </div>
   );
 }
 
+/* ─── Google Advanced Settings ────────────────────────────────────── */
+function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedConfig; onChange: (c: GoogleAdvancedConfig) => void }) {
+  const patch = (p: Partial<GoogleAdvancedConfig>) => onChange({ ...config, ...p });
+  const addLink = () => patch({ linksModuleUris: [...config.linksModuleUris, { label: '', uri: '' }] });
+  const updateLink = (i: number, p: Partial<{ label: string; uri: string }>) => {
+    patch({ linksModuleUris: config.linksModuleUris.map((l, idx) => idx === i ? { ...l, ...p } : l) });
+  };
+  const removeLink = (i: number) => {
+    patch({ linksModuleUris: config.linksModuleUris.filter((_, idx) => idx !== i) });
+  };
+
+  const addMsg = () => patch({ messages: [...config.messages, { header: '', body: '' }] });
+  const updateMsg = (i: number, p: Partial<{ header: string; body: string }>) => {
+    patch({ messages: config.messages.map((m, idx) => idx === i ? { ...m, ...p } : m) });
+  };
+  const removeMsg = (i: number) => {
+    patch({ messages: config.messages.filter((_, idx) => idx !== i) });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Estado de revisión</label>
+          <select value={config.reviewStatus} onChange={e => patch({ reviewStatus: e.target.value as GoogleAdvancedConfig['reviewStatus'] })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            <option value="underReview">En revisión</option>
+            <option value="approved">Aprobado</option>
+            <option value="rejected">Rechazado</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Compartir dispositivos</label>
+          <select value={config.allowMultipleUsers} onChange={e => patch({ allowMultipleUsers: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            {GOOGLE_DEVICE_SHARING_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">URL de inicio</label>
+          <input type="url" value={config.homepageUri} onChange={e => patch({ homepageUri: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="https://..." />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">URL de ayuda</label>
+          <input type="url" value={config.helpUri} onChange={e => patch({ helpUri: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="https://..." />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Enlaces adicionales</label>
+          <button onClick={addLink} className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex items-center gap-1"><PlusIcon className="w-3 h-3" /> Añadir</button>
+        </div>
+        {config.linksModuleUris.map((l, i) => (
+          <div key={i} className="flex gap-2">
+            <input type="text" placeholder="Etiqueta" value={l.label} onChange={e => updateLink(i, { label: e.target.value })} className="flex-1 text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            <input type="url" placeholder="https://..." value={l.uri} onChange={e => updateLink(i, { uri: e.target.value })} className="flex-[2] text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            <button onClick={() => removeLink(i)} className="text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300"><TrashIcon className="w-4 h-4" /></button>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Mensajes informativos</label>
+          <button onClick={addMsg} className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-800 dark:hover:text-brand-300 flex items-center gap-1"><PlusIcon className="w-3 h-3" /> Añadir</button>
+        </div>
+        {config.messages.map((m, i) => (
+          <div key={i} className="flex gap-2">
+            <input type="text" placeholder="Encabezado" value={m.header} onChange={e => updateMsg(i, { header: e.target.value })} className="flex-1 text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            <input type="text" placeholder="Mensaje" value={m.body} onChange={e => updateMsg(i, { body: e.target.value })} className="flex-[2] text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            <button onClick={() => removeMsg(i)} className="text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300"><TrashIcon className="w-4 h-4" /></button>
+          </div>
+        ))}
+      </div>
+      <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+        <input type="checkbox" checked={config.notifyPreference} onChange={e => patch({ notifyPreference: e.target.checked })} className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700" />
+        Notificar a los clientes cuando la tarjeta cambie
+      </label>
+    </div>
+  );
+}
+
+/* ─── Apple Advanced Settings ─────────────────────────────────────── */
+function AppleAdvancedSettings({ config, onChange }: { config: AppleAdvancedConfig; onChange: (c: AppleAdvancedConfig) => void }) {
+  const patch = (p: Partial<AppleAdvancedConfig>) => onChange({ ...config, ...p });
+  return (
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+          <input type="checkbox" checked={config.suppressStripShine} onChange={e => patch({ suppressStripShine: e.target.checked })} className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700" />
+          Desactivar efecto brillante en strip
+        </label>
+        <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+          <input type="checkbox" checked={config.sharingProhibited} onChange={e => patch({ sharingProhibited: e.target.checked })} className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700" />
+          Prohibir compartir la tarjeta (Sharing Prohibited)
+        </label>
+        <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+          <input type="checkbox" checked={config.voided} onChange={e => patch({ voided: e.target.checked })} className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700" />
+          Marcar como anulada (Voided)
+        </label>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Mensaje NFC (requiere NFC activado)</label>
+        <input type="text" value={config.nfcMessage} onChange={e => patch({ nfcMessage: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="Texto que aparece al escanear con NFC" />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Fecha de expiración</label>
+        <input type="date" value={config.expirationDate} onChange={e => patch({ expirationDate: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Field Registries (card-type filtered) ───────────────────────── */
+const APPLE_FIELD_REGISTRY = [
+  { label: 'Nombre del cliente', value: '{customer_name}', types: 'all' as const },
+  { label: 'Sellos actuales', value: '{stamp_count}/{stamps_required}', types: ['stamp'] as const },
+  { label: 'Recompensa', value: '{reward_description}', types: ['stamp'] as const },
+  { label: 'Saldo de cashback', value: '${cashback_balance}', types: ['cashback'] as const },
+  { label: 'Nombre del programa', value: '{program_name}', types: 'all' as const },
+  { label: 'Descripción', value: '{description}', types: 'all' as const },
+  { label: 'Nivel de descuento', value: '{discount_tier}', types: ['discount'] as const },
+  { label: 'Porcentaje de descuento', value: '{discount_percentage}%', types: ['discount', 'coupon', 'corporate_discount'] as const },
+  { label: 'Membresía VIP', value: '{membership_tier}', types: ['vip_membership'] as const },
+  { label: 'Referidos', value: '{referrals_made}', types: ['referral_pass'] as const },
+  { label: 'Código de referido', value: '{referral_code}', types: ['referral_pass'] as const },
+  { label: 'Usos restantes', value: '{multipass_remaining}/{bundle_size}', types: ['multipass'] as const },
+  { label: 'Saldo de regalo', value: '${gift_balance}', types: ['gift_certificate'] as const },
+  { label: 'Descuento corporativo', value: '{corporate_discount}%', types: ['corporate_discount'] as const },
+  { label: 'Empresa', value: '{company_name}', types: ['corporate_discount'] as const },
+  { label: 'Código de afiliado', value: '{affiliate_code}', types: ['affiliate'] as const },
+  { label: 'Fecha de inscripción', value: '{enrolled_date}', types: ['affiliate'] as const },
+  { label: 'Texto personalizado...', value: 'custom', types: 'all' as const },
+] as const;
+
+function getAppleFieldOptions(cardType: string) {
+  return APPLE_FIELD_REGISTRY.filter(f => f.types === 'all' || (Array.isArray(f.types) && f.types.includes(cardType)));
+}
+
+const GOOGLE_FIELD_REGISTRY = [
+  { label: 'Nombre del cliente', fieldPath: 'object.accountName', defaultDisplayName: 'Cliente', types: 'all' as const },
+  { label: 'Nombre del programa', fieldPath: 'class.programName', defaultDisplayName: 'Programa', types: 'all' as const },
+  { label: 'Nombre del negocio', fieldPath: 'class.issuerName', defaultDisplayName: 'Negocio', types: 'all' as const },
+  { label: 'Puntos de lealtad', fieldPath: 'object.loyaltyPoints.balance', defaultDisplayName: 'Puntos', types: ['stamp', 'affiliate', 'vip_membership'] as const },
+  { label: 'Etiqueta de puntos', fieldPath: 'object.loyaltyPoints.label', defaultDisplayName: 'Etiqueta', types: ['stamp', 'affiliate', 'vip_membership'] as const },
+  { label: 'Balance secundario', fieldPath: 'object.secondaryLoyaltyPoints.balance', defaultDisplayName: 'Balance 2', types: ['stamp', 'cashback', 'gift_certificate', 'multipass'] as const },
+  { label: 'Nivel de recompensa', fieldPath: 'class.rewardsTier', defaultDisplayName: 'Nivel', types: ['discount', 'vip_membership'] as const },
+  { label: 'Etiqueta de nivel', fieldPath: 'class.rewardsTierLabel', defaultDisplayName: 'Nivel', types: ['discount', 'vip_membership'] as const },
+  { label: 'Saldo de regalo', fieldPath: 'object.balance.money', defaultDisplayName: 'Saldo', types: ['cashback', 'gift_certificate', 'multipass'] as const },
+  { label: 'Personalizado...', fieldPath: 'custom', defaultDisplayName: '', types: 'all' as const },
+] as const;
+
+function getGoogleFieldOptions(cardType: string) {
+  return GOOGLE_FIELD_REGISTRY.filter(f => f.types === 'all' || (Array.isArray(f.types) && f.types.includes(cardType)));
+}
+
+/* ─── Zone visual indicator helpers ───────────────────────────────── */
+const APPLE_GROUP_META: Record<string, { borderColor: string; badge: string; hint: string }> = {
+  backFields: { borderColor: 'border-l-surface-400', badge: 'bg-surface-100 dark:bg-surface-700/50 text-surface-700 dark:text-surface-300', hint: '🔄 Detrás de la tarjeta' },
+  headerFields:   { borderColor: 'border-l-amber-500',   badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300', hint: '↗️ Esquina superior derecha' },
+  primaryFields:  { borderColor: 'border-l-emerald-500', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300', hint: '🔠 Texto grande central' },
+  secondaryFields:{ borderColor: 'border-l-indigo-500',  badge: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300', hint: '📊 Debajo del principal' },
+  auxiliaryFields:{ borderColor: 'border-l-slate-400',   badge: 'bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300', hint: '📋 Parte inferior' },
+};
+
 /* ─── Google Card Template Builder ────────────────────────────────── */
-function GoogleRowBuilder({ rows, onChange }: { rows: GoogleFieldRow[]; onChange: (rows: GoogleFieldRow[]) => void }) {
+function GoogleRowBuilder({ rows, onChange, cardType }: { rows: GoogleFieldRow[]; onChange: (rows: GoogleFieldRow[]) => void; cardType: string }) {
+  const fieldOptions = getGoogleFieldOptions(cardType);
+
   const addRow = (type: 'oneItem' | 'twoItems' | 'threeItems') => {
     const row: GoogleFieldRow = {
       id: uid(),
@@ -299,8 +439,8 @@ function GoogleRowBuilder({ rows, onChange }: { rows: GoogleFieldRow[]; onChange
     onChange([...rows, row]);
   };
 
-  const updateItem = (rowId: string, itemId: string, patch: Partial<GoogleFieldItem>) => {
-    onChange(rows.map(r => r.id === rowId ? { ...r, items: r.items.map(i => i.id === itemId ? { ...i, ...patch } : i) } : r));
+  const updateItem = (rowId: string, itemId: string, patchItem: Partial<GoogleFieldItem>) => {
+    onChange(rows.map(r => r.id === rowId ? { ...r, items: r.items.map(i => i.id === itemId ? { ...i, ...patchItem } : i) } : r));
   };
 
   const removeRow = (rowId: string) => onChange(rows.filter(r => r.id !== rowId));
@@ -317,72 +457,68 @@ function GoogleRowBuilder({ rows, onChange }: { rows: GoogleFieldRow[]; onChange
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <h4 className="text-sm font-semibold text-slate-800">Configuración de filas</h4>
-        <span className="text-xs text-slate-400">{rows.length} fila(s)</span>
+        <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">Configuración de filas</h4>
+        <span className="text-xs text-surface-400 dark:text-surface-500">{rows.length} fila(s)</span>
       </div>
 
       {rows.length === 0 && (
-        <div className="rounded-lg border border-dashed border-slate-200 p-4 text-center">
-          <InfoIcon className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-          <p className="text-xs text-slate-400">Sin filas configuradas. Añade filas usando los botones de abajo.</p>
+        <div className="rounded-lg border border-dashed border-surface-200 dark:border-surface-600 p-4 text-center">
+          <InfoIcon className="w-6 h-6 text-surface-300 dark:text-surface-500 mx-auto mb-1" />
+          <p className="text-xs text-surface-400 dark:text-surface-500">Sin filas configuradas. Añade filas usando los botones de abajo.</p>
         </div>
       )}
 
       {rows.map((row, rIdx) => (
-        <div key={row.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-100">
-            <span className="text-xs font-semibold text-slate-600">Fila {rIdx + 1}</span>
-            <span className="text-xs text-slate-400 px-2 py-0.5 bg-slate-100 rounded">
+        <div key={row.id} className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 bg-surface-50 dark:bg-surface-800 border-b border-surface-100 dark:border-surface-700">
+            <span className="text-xs font-semibold text-surface-600 dark:text-surface-300">Fila {rIdx + 1}</span>
+            <span className="text-xs text-surface-500 dark:text-surface-400 px-2 py-0.5 bg-surface-100 dark:bg-surface-700 rounded">
               {GOOGLE_ROW_TYPES.find(t => t.value === row.type)?.label}
             </span>
             <div className="ml-auto flex items-center gap-1">
-              <button onClick={() => moveRow(rIdx, -1)} disabled={rIdx === 0} className="p-1 hover:bg-slate-200 rounded disabled:opacity-30"><ChevronUpIcon className="w-3 h-3" /></button>
-              <button onClick={() => moveRow(rIdx, 1)} disabled={rIdx === rows.length - 1} className="p-1 hover:bg-slate-200 rounded disabled:opacity-30"><ChevronDownIcon className="w-3 h-3" /></button>
-              <button onClick={() => removeRow(row.id)} className="p-1 hover:bg-rose-100 rounded text-rose-500"><TrashIcon className="w-3 h-3" /></button>
+              <button onClick={() => moveRow(rIdx, -1)} disabled={rIdx === 0} className="p-1 hover:bg-surface-200 dark:hover:bg-surface-600 rounded disabled:opacity-30"><ChevronUpIcon className="w-3 h-3 text-surface-600 dark:text-surface-300" /></button>
+              <button onClick={() => moveRow(rIdx, 1)} disabled={rIdx === rows.length - 1} className="p-1 hover:bg-surface-200 dark:hover:bg-surface-600 rounded disabled:opacity-30"><ChevronDownIcon className="w-3 h-3 text-surface-600 dark:text-surface-300" /></button>
+              <button onClick={() => removeRow(row.id)} className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded text-rose-500 dark:text-rose-400"><TrashIcon className="w-3 h-3" /></button>
             </div>
           </div>
           <div className="p-3 grid gap-3" style={{ gridTemplateColumns: `repeat(${row.type === 'oneItem' ? 1 : row.type === 'twoItems' ? 2 : 3}, 1fr)` }}>
             {row.items.map((item, iIdx) => (
               <div key={item.id} className="space-y-2">
-                <label className="text-xs text-slate-500">Campo {iIdx + 1}</label>
+                <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Campo {iIdx + 1}</label>
                 <select
                   value={item.fieldPath}
                   onChange={e => {
                     const fieldPath = e.target.value;
+                    const option = fieldOptions.find(f => f.fieldPath === fieldPath);
                     const predefined = GOOGLE_PREDEFINED_FIELDS.find(f => f.path === fieldPath);
                     updateItem(row.id, item.id, {
                       fieldPath,
-                      label: predefined?.label || '',
-                      displayName: predefined?.label || '',
+                      label: predefined?.label || option?.defaultDisplayName || '',
+                      displayName: option?.defaultDisplayName || predefined?.label || '',
                     });
                   }}
-                  className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 >
                   <option value="">Selecciona un campo...</option>
-                  <optgroup label="Campos predefinidos">
-                    {GOOGLE_PREDEFINED_FIELDS.map(f => (
-                      <option key={f.path} value={f.path}>{f.label}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Campos personalizados">
-                    <option value="custom">Personalizado...</option>
-                  </optgroup>
+                  {fieldOptions.map(f => (
+                    <option key={f.fieldPath} value={f.fieldPath}>{f.label}</option>
+                  ))}
                 </select>
                 {item.fieldPath === 'custom' && (
                   <input
                     type="text"
-                    placeholder="ID del campo (ej: object.customField)"
+                    placeholder="Ruta del campo (ej: object.customField)"
                     value={item.label}
-                    onChange={e => updateItem(row.id, item.id, { label: e.target.value })}
-                    className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2 focus:ring-2 focus:ring-brand-500"
+                    onChange={e => updateItem(row.id, item.id, { label: e.target.value, fieldPath: e.target.value })}
+                    className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                   />
                 )}
                 <input
                   type="text"
-                  placeholder="Etiqueta visible"
+                  placeholder="Etiqueta"
                   value={item.displayName}
                   onChange={e => updateItem(row.id, item.id, { displayName: e.target.value })}
-                  className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2 focus:ring-2 focus:ring-brand-500"
+                  className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />
               </div>
             ))}
@@ -395,7 +531,7 @@ function GoogleRowBuilder({ rows, onChange }: { rows: GoogleFieldRow[]; onChange
           <button
             key={t.value}
             onClick={() => addRow(t.value)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-dashed border-surface-300 dark:border-surface-600 text-xs font-medium text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 hover:border-surface-400 dark:hover:border-surface-500 transition-all"
           >
             <PlusIcon className="w-3.5 h-3.5" /> {t.label}
           </button>
@@ -407,12 +543,14 @@ function GoogleRowBuilder({ rows, onChange }: { rows: GoogleFieldRow[]; onChange
 
 /* ─── Apple Field Layout Editor ───────────────────────────────────── */
 function AppleFieldEditor({
-  fields,
-  onChange,
+  fields, onChange, cardType,
 }: {
   fields: Record<string, AppleFieldDef[]>;
   onChange: (fields: Record<string, AppleFieldDef[]>) => void;
+  cardType: string;
 }) {
+  const options = getAppleFieldOptions(cardType);
+
   const updateGroup = (groupKey: string, groupFields: AppleFieldDef[]) => {
     onChange({ ...fields, [groupKey]: groupFields });
   };
@@ -441,82 +579,135 @@ function AppleFieldEditor({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {APPLE_FIELD_GROUPS.map(group => {
         const groupFields = fields[group.key] || [];
+        const meta = APPLE_GROUP_META[group.key]!;
         return (
-          <div key={group.key} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
-              <span className="text-sm font-semibold text-slate-700">{group.label}</span>
-              <span className="text-xs text-slate-400">{group.desc}</span>
-              <span className="ml-auto text-xs text-slate-400">{groupFields.length}/{group.max}</span>
+          <div key={group.key} className={`rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 overflow-hidden border-l-4 ${meta.borderColor}`}>
+            <div className="px-3 py-2.5 bg-surface-50 dark:bg-surface-800 border-b border-surface-100 dark:border-surface-700 flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-surface-700 dark:text-surface-200">{group.label}</span>
+              <span className="text-xs text-surface-400 dark:text-surface-500">{group.desc}</span>
+              <span className="ml-auto text-xs font-mono text-surface-500 dark:text-surface-400">{groupFields.length}/{group.max}</span>
             </div>
-            <div className="p-3 space-y-2">
-              {groupFields.map((f, idx) => (
-                <div key={f.key} className="flex gap-2 items-start">
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Etiqueta (ej: CLIENTE)"
-                      value={f.label}
-                      onChange={e => {
-                        const updated = [...groupFields];
-                        updated[idx] = { ...f, label: e.target.value };
-                        updateGroup(group.key, updated);
-                      }}
-                      className="text-sm rounded-lg border border-slate-200 px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Valor (usa {variable})"
-                      value={f.value}
-                      onChange={e => {
-                        const updated = [...groupFields];
-                        updated[idx] = { ...f, value: e.target.value };
-                        updateGroup(group.key, updated);
-                      }}
-                      className="text-sm rounded-lg border border-slate-200 px-2.5 py-1.5 focus:ring-2 focus:ring-brand-500"
-                    />
-                    <select
-                      value={f.textAlignment}
-                      onChange={e => {
-                        const updated = [...groupFields];
-                        updated[idx] = { ...f, textAlignment: e.target.value as AppleFieldDef['textAlignment'] };
-                        updateGroup(group.key, updated);
-                      }}
-                      className="text-xs rounded-lg border border-slate-200 px-2 py-1"
-                    >
-                      <option value="PKTextAlignmentNatural">Natural</option>
-                      <option value="PKTextAlignmentLeft">Izquierda</option>
-                      <option value="PKTextAlignmentCenter">Centro</option>
-                      <option value="PKTextAlignmentRight">Derecha</option>
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Mensaje de cambio (opcional)"
-                      value={f.changeMessage || ''}
-                      onChange={e => {
-                        const updated = [...groupFields];
-                        updated[idx] = { ...f, changeMessage: e.target.value };
-                        updateGroup(group.key, updated);
-                      }}
-                      className="text-xs rounded-lg border border-slate-200 px-2 py-1"
-                    />
+            <div className="p-3 space-y-3">
+              {/* Mini visual indicator */}
+              <div className={`inline-flex items-center gap-1.5 text-xs rounded-md px-2 py-1 ${meta.badge}`}>
+                <span>{meta.hint}</span>
+              </div>
+
+              {groupFields.map((f, idx) => {
+                const selectedOption = options.find(o => o.value === f.value);
+                const showCustomInput = !selectedOption || selectedOption.value === 'custom';
+
+                return (
+                  <div key={f.key} className="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 p-3 space-y-3">
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-1 space-y-3 min-w-0">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Información a mostrar</label>
+                          <select
+                            value={showCustomInput ? 'custom' : f.value}
+                            onChange={e => {
+                              const val = e.target.value;
+                              const option = options.find(o => o.value === val);
+                              const updated = [...groupFields];
+                              const newValue = val === 'custom' ? '' : val;
+                              const newLabel = f.label || (option && option.value !== 'custom' ? option.label : '');
+                              updated[idx] = { ...f, value: newValue, label: newLabel };
+                              updateGroup(group.key, updated);
+                            }}
+                            className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                          >
+                            <option value="">Selecciona una opción...</option>
+                            {options.map(o => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {showCustomInput && (
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Texto personalizado</label>
+                            <input
+                              type="text"
+                              placeholder="Escribe el texto que quieres mostrar"
+                              value={f.value}
+                              onChange={e => {
+                                const updated = [...groupFields];
+                                updated[idx] = { ...f, value: e.target.value };
+                                updateGroup(group.key, updated);
+                              }}
+                              className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Etiqueta visible</label>
+                          <input
+                            type="text"
+                            placeholder="Ej: CLIENTE, RECOMPENSA, SELLOS"
+                            value={f.label}
+                            onChange={e => {
+                              const updated = [...groupFields];
+                              updated[idx] = { ...f, label: e.target.value };
+                              updateGroup(group.key, updated);
+                            }}
+                            className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Alineación</label>
+                            <select
+                              value={f.textAlignment}
+                              onChange={e => {
+                                const updated = [...groupFields];
+                                updated[idx] = { ...f, textAlignment: e.target.value as AppleFieldDef['textAlignment'] };
+                                updateGroup(group.key, updated);
+                              }}
+                              className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                            >
+                              <option value="PKTextAlignmentNatural">Natural</option>
+                              <option value="PKTextAlignmentLeft">Izquierda</option>
+                              <option value="PKTextAlignmentCenter">Centro</option>
+                              <option value="PKTextAlignmentRight">Derecha</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Mensaje de cambio</label>
+                            <input
+                              type="text"
+                              placeholder="Opcional"
+                              value={f.changeMessage || ''}
+                              onChange={e => {
+                                const updated = [...groupFields];
+                                updated[idx] = { ...f, changeMessage: e.target.value };
+                                updateGroup(group.key, updated);
+                              }}
+                              className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 pt-0.5 shrink-0">
+                        <button onClick={() => moveField(group.key, idx, -1)} disabled={idx === 0} className="p-1 hover:bg-surface-200 dark:hover:bg-surface-600 rounded disabled:opacity-30"><ChevronUpIcon className="w-3 h-3 text-surface-600 dark:text-surface-300" /></button>
+                        <button onClick={() => moveField(group.key, idx, 1)} disabled={idx === groupFields.length - 1} className="p-1 hover:bg-surface-200 dark:hover:bg-surface-600 rounded disabled:opacity-30"><ChevronDownIcon className="w-3 h-3 text-surface-600 dark:text-surface-300" /></button>
+                        <button onClick={() => removeField(group.key, idx)} className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded text-rose-500 dark:text-rose-400"><TrashIcon className="w-3 h-3" /></button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 pt-0.5">
-                    <button onClick={() => moveField(group.key, idx, -1)} disabled={idx === 0} className="p-0.5 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronUpIcon className="w-3 h-3" /></button>
-                    <button onClick={() => moveField(group.key, idx, 1)} disabled={idx === groupFields.length - 1} className="p-0.5 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronDownIcon className="w-3 h-3" /></button>
-                    <button onClick={() => removeField(group.key, idx)} className="p-0.5 hover:bg-rose-100 rounded text-rose-500"><TrashIcon className="w-3 h-3" /></button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {groupFields.length === 0 && (
-                <p className="text-xs text-slate-400 italic">Sin campos configurados.</p>
+                <p className="text-xs text-surface-400 dark:text-surface-500 italic">Sin campos configurados.</p>
               )}
               <button
                 onClick={() => addField(group.key)}
                 disabled={groupFields.length >= group.max}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-dashed border-slate-200 text-xs font-medium text-slate-500 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all disabled:opacity-40"
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-surface-300 dark:border-surface-600 text-xs font-medium text-surface-500 dark:text-surface-400 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-all disabled:opacity-40"
               >
                 <PlusIcon className="w-3.5 h-3.5" /> Añadir campo
               </button>
@@ -524,143 +715,6 @@ function AppleFieldEditor({
           </div>
         );
       })}
-    </div>
-  );
-}
-
-/* ─── Google Advanced Settings ────────────────────────────────────── */
-function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedConfig; onChange: (c: GoogleAdvancedConfig) => void }) {
-  const patch = (p: Partial<GoogleAdvancedConfig>) => onChange({ ...config, ...p });
-  const addLink = () => patch({ linksModuleUris: [...config.linksModuleUris, { label: '', uri: '' }] });
-  const updateLink = (i: number, p: Partial<{ label: string; uri: string }>) => {
-    patch({ linksModuleUris: config.linksModuleUris.map((l, idx) => idx === i ? { ...l, ...p } : l) });
-  };
-  const removeLink = (i: number) => {
-    patch({ linksModuleUris: config.linksModuleUris.filter((_, idx) => idx !== i) });
-  };
-
-  const addMsg = () => patch({ messages: [...config.messages, { header: '', body: '' }] });
-  const updateMsg = (i: number, p: Partial<{ header: string; body: string }>) => {
-    patch({ messages: config.messages.map((m, idx) => idx === i ? { ...m, ...p } : m) });
-  };
-  const removeMsg = (i: number) => {
-    patch({ messages: config.messages.filter((_, idx) => idx !== i) });
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-600">Estado de revisión</label>
-          <select value={config.reviewStatus} onChange={e => patch({ reviewStatus: e.target.value as GoogleAdvancedConfig['reviewStatus'] })} className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2">
-            <option value="underReview">En revisión</option>
-            <option value="approved">Aprobado</option>
-            <option value="rejected">Rechazado</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-600">Compartir dispositivos</label>
-          <select value={config.allowMultipleUsers} onChange={e => patch({ allowMultipleUsers: e.target.value })} className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2">
-            {GOOGLE_DEVICE_SHARING_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-600">URL de inicio</label>
-          <input type="url" value={config.homepageUri} onChange={e => patch({ homepageUri: e.target.value })} className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2" placeholder="https://..." />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-600">URL de ayuda</label>
-          <input type="url" value={config.helpUri} onChange={e => patch({ helpUri: e.target.value })} className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2" placeholder="https://..." />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-slate-600">Enlaces adicionales</label>
-          <button onClick={addLink} className="text-xs text-brand-600 hover:text-brand-800 flex items-center gap-1"><PlusIcon className="w-3 h-3" /> Añadir</button>
-        </div>
-        {config.linksModuleUris.map((l, i) => (
-          <div key={i} className="flex gap-2">
-            <input type="text" placeholder="Etiqueta" value={l.label} onChange={e => updateLink(i, { label: e.target.value })} className="flex-1 text-sm rounded-lg border border-slate-200 px-2.5 py-1.5" />
-            <input type="url" placeholder="https://..." value={l.uri} onChange={e => updateLink(i, { uri: e.target.value })} className="flex-[2] text-sm rounded-lg border border-slate-200 px-2.5 py-1.5" />
-            <button onClick={() => removeLink(i)} className="text-rose-500 hover:text-rose-700"><TrashIcon className="w-4 h-4" /></button>
-          </div>
-        ))}
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-slate-600">Mensajes informativos</label>
-          <button onClick={addMsg} className="text-xs text-brand-600 hover:text-brand-800 flex items-center gap-1"><PlusIcon className="w-3 h-3" /> Añadir</button>
-        </div>
-        {config.messages.map((m, i) => (
-          <div key={i} className="flex gap-2">
-            <input type="text" placeholder="Encabezado" value={m.header} onChange={e => updateMsg(i, { header: e.target.value })} className="flex-1 text-sm rounded-lg border border-slate-200 px-2.5 py-1.5" />
-            <input type="text" placeholder="Mensaje" value={m.body} onChange={e => updateMsg(i, { body: e.target.value })} className="flex-[2] text-sm rounded-lg border border-slate-200 px-2.5 py-1.5" />
-            <button onClick={() => removeMsg(i)} className="text-rose-500 hover:text-rose-700"><TrashIcon className="w-4 h-4" /></button>
-          </div>
-        ))}
-      </div>
-      <label className="flex items-center gap-2 text-sm text-slate-600">
-        <input type="checkbox" checked={config.notifyPreference} onChange={e => patch({ notifyPreference: e.target.checked })} className="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-        Notificar a los clientes cuando la tarjeta cambie
-      </label>
-    </div>
-  );
-}
-
-/* ─── Apple Advanced Settings ─────────────────────────────────────── */
-function AppleAdvancedSettings({ config, onChange }: { config: AppleAdvancedConfig; onChange: (c: AppleAdvancedConfig) => void }) {
-  const patch = (p: Partial<AppleAdvancedConfig>) => onChange({ ...config, ...p });
-  return (
-    <div className="space-y-4">
-      <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={config.suppressStripShine} onChange={e => patch({ suppressStripShine: e.target.checked })} className="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-          Desactivar efecto brillante en strip
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={config.sharingProhibited} onChange={e => patch({ sharingProhibited: e.target.checked })} className="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-          Prohibir compartir la tarjeta (Sharing Prohibited)
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={config.voided} onChange={e => patch({ voided: e.target.checked })} className="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-          Marcar como anulada (Voided)
-        </label>
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-slate-600">Mensaje NFC (requiere NFC activado)</label>
-        <input type="text" value={config.nfcMessage} onChange={e => patch({ nfcMessage: e.target.value })} className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2" placeholder="Texto que aparece al escanear con NFC" />
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-slate-600">Fecha de expiración</label>
-        <input type="date" value={config.expirationDate} onChange={e => patch({ expirationDate: e.target.value })} className="w-full text-sm rounded-lg border border-slate-200 px-2.5 py-2" />
-      </div>
-    </div>
-  );
-}
-
-/* ─── Accordion Section ───────────────────────────────────────────── */
-function AccordionSection({
-  title, children, defaultOpen = false,
-}: {
-  title: React.ReactNode;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
-      >
-        <span className="text-sm font-semibold text-slate-700">{title}</span>
-        {open ? <ChevronUpIcon className="w-4 h-4 text-slate-400" /> : <ChevronDownIcon className="w-4 h-4 text-slate-400" />}
-      </button>
-      {open && <div className="p-4">{children}</div>}
     </div>
   );
 }
@@ -673,9 +727,10 @@ export interface WalletDesignerProps {
   cardType: string;
   state: WalletDesignState;
   onChange: (state: WalletDesignState) => void;
+  provider: 'apple' | 'google';
 }
 
-export default function WalletDesigner({ cardType, state, onChange }: WalletDesignerProps) {
+export default function WalletDesigner({ cardType, state, onChange, provider }: WalletDesignerProps) {
   const passStyle = APPLE_PASS_STYLES[cardType] || 'storeCard';
   const appleSupportsStrip = APPLE_IMAGE_SUPPORT[passStyle]?.strip ?? false;
   const googleType = GOOGLE_WALLET_TYPES[cardType]?.type || 'LoyaltyClass';
@@ -686,18 +741,13 @@ export default function WalletDesigner({ cardType, state, onChange }: WalletDesi
 
   return (
     <div className="space-y-6">
-      {/* ── Platform Toggle ── */}
-      <PlatformToggle value={state.provider} onChange={v => patch({ provider: v })} />
-
-      {/* ── Apple Wallet ── */}
-      {state.provider === 'apple' && (
+      {provider === 'apple' && (
         <div className="space-y-4">
-          {/* Pass style info */}
-          <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 flex items-start gap-2">
-            <InfoIcon className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2.5 flex items-start gap-2">
+            <InfoIcon className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-amber-800">Estilo de pase: <span className="font-mono">{passStyle}</span></p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Estilo de pase: <span className="font-mono">{passStyle}</span></p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
                 {appleSupportsStrip
                   ? 'Este estilo usa la imagen panorámica (strip.png) en la parte superior.'
                   : 'Este estilo usa una miniatura (thumbnail.png) en la parte superior derecha.'}
@@ -708,58 +758,46 @@ export default function WalletDesigner({ cardType, state, onChange }: WalletDesi
           <AccordionSection title="Imágenes" defaultOpen>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUploadField
-                label={APPLE_IMAGE_SPECS.logo.label}
-                desc={APPLE_IMAGE_SPECS.logo.desc}
-                dimPx={APPLE_IMAGE_SPECS.logo.px}
-                dimPt={APPLE_IMAGE_SPECS.logo.pt}
-                required={APPLE_IMAGE_SPECS.logo.required}
+                label="Logo"
+                specs="160×50pt (320×100px @2x)"
+                required={true}
                 value={state.appleLogoUrl}
                 onChange={v => patch({ appleLogoUrl: v })}
               />
               <ImageUploadField
-                label={APPLE_IMAGE_SPECS.logo2x.label}
-                desc={APPLE_IMAGE_SPECS.logo2x.desc}
-                dimPx={APPLE_IMAGE_SPECS.logo2x.px}
-                dimPt={APPLE_IMAGE_SPECS.logo2x.pt}
-                required={APPLE_IMAGE_SPECS.logo2x.required}
+                label="Logo @2x"
+                specs="160×50pt (320×100px @2x)"
+                required={true}
                 value={state.appleLogo2xUrl}
                 onChange={v => patch({ appleLogo2xUrl: v })}
               />
               <ImageUploadField
-                label={APPLE_IMAGE_SPECS.icon.label}
-                desc={APPLE_IMAGE_SPECS.icon.desc}
-                dimPx={APPLE_IMAGE_SPECS.icon.px}
-                dimPt={APPLE_IMAGE_SPECS.icon.pt}
-                required={APPLE_IMAGE_SPECS.icon.required}
+                label="Ícono"
+                specs="29×29pt (58×58px @2x)"
+                required={true}
                 value={state.appleIconUrl}
                 onChange={v => patch({ appleIconUrl: v })}
               />
               <ImageUploadField
-                label={APPLE_IMAGE_SPECS.icon2x.label}
-                desc={APPLE_IMAGE_SPECS.icon2x.desc}
-                dimPx={APPLE_IMAGE_SPECS.icon2x.px}
-                dimPt={APPLE_IMAGE_SPECS.icon2x.pt}
-                required={APPLE_IMAGE_SPECS.icon2x.required}
+                label="Ícono @2x"
+                specs="29×29pt (58×58px @2x)"
+                required={true}
                 value={state.appleIcon2xUrl}
                 onChange={v => patch({ appleIcon2xUrl: v })}
               />
               {appleSupportsStrip ? (
                 <>
                   <ImageUploadField
-                    label={APPLE_IMAGE_SPECS.strip.label}
-                    desc={APPLE_IMAGE_SPECS.strip.desc}
-                    dimPx={APPLE_IMAGE_SPECS.strip.px}
-                    dimPt={APPLE_IMAGE_SPECS.strip.pt}
-                    required={APPLE_IMAGE_SPECS.strip.required}
+                    label="Strip"
+                    specs="375×123pt (750×246px @2x) — solo storeCard/coupon"
+                    required={false}
                     value={state.appleStripUrl}
                     onChange={v => patch({ appleStripUrl: v })}
                   />
                   <ImageUploadField
-                    label={APPLE_IMAGE_SPECS.strip2x.label}
-                    desc={APPLE_IMAGE_SPECS.strip2x.desc}
-                    dimPx={APPLE_IMAGE_SPECS.strip2x.px}
-                    dimPt={APPLE_IMAGE_SPECS.strip2x.pt}
-                    required={APPLE_IMAGE_SPECS.strip2x.required}
+                    label="Strip @2x"
+                    specs="375×123pt (750×246px @2x) — solo storeCard/coupon"
+                    required={false}
                     value={state.appleStrip2xUrl}
                     onChange={v => patch({ appleStrip2xUrl: v })}
                   />
@@ -767,20 +805,16 @@ export default function WalletDesigner({ cardType, state, onChange }: WalletDesi
               ) : (
                 <>
                   <ImageUploadField
-                    label={APPLE_IMAGE_SPECS.thumbnail.label}
-                    desc={APPLE_IMAGE_SPECS.thumbnail.desc}
-                    dimPx={APPLE_IMAGE_SPECS.thumbnail.px}
-                    dimPt={APPLE_IMAGE_SPECS.thumbnail.pt}
-                    required={APPLE_IMAGE_SPECS.thumbnail.required}
+                    label="Thumbnail"
+                    specs="90×90pt (180×180px @2x) — solo generic"
+                    required={false}
                     value={state.appleThumbnailUrl}
                     onChange={v => patch({ appleThumbnailUrl: v })}
                   />
                   <ImageUploadField
-                    label={APPLE_IMAGE_SPECS.thumbnail2x.label}
-                    desc={APPLE_IMAGE_SPECS.thumbnail2x.desc}
-                    dimPx={APPLE_IMAGE_SPECS.thumbnail2x.px}
-                    dimPt={APPLE_IMAGE_SPECS.thumbnail2x.pt}
-                    required={APPLE_IMAGE_SPECS.thumbnail2x.required}
+                    label="Thumbnail @2x"
+                    specs="90×90pt (180×180px @2x) — solo generic"
+                    required={false}
                     value={state.appleThumbnail2xUrl}
                     onChange={v => patch({ appleThumbnail2xUrl: v })}
                   />
@@ -793,27 +827,28 @@ export default function WalletDesigner({ cardType, state, onChange }: WalletDesi
             <AppleFieldEditor
               fields={state.appleFields}
               onChange={v => patch({ appleFields: v })}
+              cardType={cardType}
             />
           </AccordionSection>
 
           <AccordionSection title="NFC y funciones avanzadas">
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm text-slate-600">
+              <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
                 <input
                   type="checkbox"
                   checked={state.appleNfc.nfc_enabled}
                   onChange={e => patch({ appleNfc: { ...state.appleNfc, nfc_enabled: e.target.checked } })}
-                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700"
                 />
                 Activar NFC (Near Field Communication)
               </label>
               {state.appleNfc.nfc_enabled && (
-                <label className="flex items-center gap-2 text-sm text-slate-600 pl-6">
+                <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300 pl-6">
                   <input
                     type="checkbox"
                     checked={state.appleNfc.nfc_requires_authentication}
                     onChange={e => patch({ appleNfc: { ...state.appleNfc, nfc_requires_authentication: e.target.checked } })}
-                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700"
                   />
                   Requerir autenticación para usar NFC
                 </label>
@@ -827,15 +862,13 @@ export default function WalletDesigner({ cardType, state, onChange }: WalletDesi
         </div>
       )}
 
-      {/* ── Google Wallet ── */}
-      {state.provider === 'google' && (
+      {provider === 'google' && (
         <div className="space-y-4">
-          {/* Google type info */}
-          <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5 flex items-start gap-2">
-            <InfoIcon className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-3 py-2.5 flex items-start gap-2">
+            <InfoIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-blue-800">Tipo de clase: <span className="font-mono">{googleType}</span></p>
-              <p className="text-xs text-blue-700 mt-0.5">
+              <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">Tipo de clase: <span className="font-mono">{googleType}</span></p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
                 Google Wallet usa <span className="font-mono">cardTemplateOverride</span> con filas de campos personalizables.
               </p>
             </div>
@@ -844,34 +877,30 @@ export default function WalletDesigner({ cardType, state, onChange }: WalletDesi
           <AccordionSection title="Imágenes" defaultOpen>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUploadField
-                label={GOOGLE_IMAGE_SPECS.programLogo.label}
-                desc={GOOGLE_IMAGE_SPECS.programLogo.desc}
-                dimPx={GOOGLE_IMAGE_SPECS.programLogo.px}
-                required={GOOGLE_IMAGE_SPECS.programLogo.required}
+                label="Logo del programa"
+                specs="660×660px"
+                required={true}
                 value={state.googleProgramLogoUrl}
                 onChange={v => patch({ googleProgramLogoUrl: v })}
               />
               <ImageUploadField
-                label={GOOGLE_IMAGE_SPECS.heroImage.label}
-                desc={GOOGLE_IMAGE_SPECS.heroImage.desc}
-                dimPx={GOOGLE_IMAGE_SPECS.heroImage.px}
-                required={GOOGLE_IMAGE_SPECS.heroImage.required}
+                label="Imagen Hero"
+                specs="1032×336px"
+                required={false}
                 value={state.googleHeroImageUrl}
                 onChange={v => patch({ googleHeroImageUrl: v })}
               />
               <ImageUploadField
-                label={GOOGLE_IMAGE_SPECS.wideLogo.label}
-                desc={GOOGLE_IMAGE_SPECS.wideLogo.desc}
-                dimPx={GOOGLE_IMAGE_SPECS.wideLogo.px}
-                required={GOOGLE_IMAGE_SPECS.wideLogo.required}
+                label="Logo ancho"
+                specs="1032×150px"
+                required={false}
                 value={state.googleWideLogoUrl}
                 onChange={v => patch({ googleWideLogoUrl: v })}
               />
               <ImageUploadField
-                label={GOOGLE_IMAGE_SPECS.imageModule.label}
-                desc={GOOGLE_IMAGE_SPECS.imageModule.desc}
-                dimPx={GOOGLE_IMAGE_SPECS.imageModule.px}
-                required={GOOGLE_IMAGE_SPECS.imageModule.required}
+                label="Imagen adicional"
+                specs="660×660px"
+                required={false}
                 value={state.googleImageModuleUrl}
                 onChange={v => patch({ googleImageModuleUrl: v })}
               />
@@ -879,7 +908,7 @@ export default function WalletDesigner({ cardType, state, onChange }: WalletDesi
           </AccordionSection>
 
           <AccordionSection title="Configuración de filas (cardTemplateOverride)" defaultOpen>
-            <GoogleRowBuilder rows={state.googleRows} onChange={v => patch({ googleRows: v })} />
+            <GoogleRowBuilder rows={state.googleRows} onChange={v => patch({ googleRows: v })} cardType={cardType} />
           </AccordionSection>
 
           <AccordionSection title="Parámetros avanzados">

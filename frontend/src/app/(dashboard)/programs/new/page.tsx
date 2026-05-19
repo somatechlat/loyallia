@@ -26,6 +26,7 @@ export default function NewProgramPage() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hoveredType, setHoveredType] = useState<string | null>(null);
+  const [createdProgram, setCreatedProgram] = useState<{ id: string; name: string } | null>(null);
   const [form, setForm] = useState({
     name: '',
     card_type: '',
@@ -41,8 +42,6 @@ export default function NewProgramPage() {
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
   const [selectedTemplate, setSelectedTemplate] = useState('midnight');
-  const [logoPreview] = useState<string | null>(null);
-  const [stripPreview] = useState<string | null>(null);
 
   // Keep generic uploads for backward compat (populated from wallet designer)
   const walletProvider = walletDesign.provider;
@@ -124,13 +123,13 @@ export default function NewProgramPage() {
         strip_image_url: walletDesign.provider === 'apple' ? walletDesign.appleStripUrl : walletDesign.googleHeroImageUrl,
         icon_url: walletDesign.provider === 'apple' ? walletDesign.appleIconUrl : walletDesign.googleProgramLogoUrl,
       };
-      await programsApi.create({
+      const resp = await programsApi.create({
         ...form,
         ...legacyImages,
         metadata: { ...meta, ...walletMetadata, ...walletDesignMetadata }
       });
       toast.success('¡Programa creado exitosamente!');
-      window.location.href = '/programs';
+      setCreatedProgram({ id: resp.data.id, name: resp.data.name });
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { message?: string; detail?: string; error?: string } } })?.response?.data;
       const msg = detail?.message || detail?.detail || detail?.error || 'Error al crear el programa';
@@ -142,6 +141,59 @@ export default function NewProgramPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {createdProgram ? (
+        <div className="card p-8 text-center space-y-6 animate-fade-in max-w-2xl mx-auto">
+          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-surface-900 dark:text-white">¡Programa creado!</h1>
+            <p className="text-surface-500 mt-1">&quot;{createdProgram.name}&quot; está listo para recibir clientes.</p>
+          </div>
+
+          <div className="bg-surface-50 dark:bg-surface-900/50 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
+            <h3 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">Código QR de inscripción</h3>
+            <div className="flex justify-center mb-3">
+              <img
+                src={`https://quickchart.io/qr?text=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`)}&size=256&margin=2&dark=1a1a2e&light=ffffff&ecLevel=M&format=png`}
+                alt="QR de inscripción"
+                className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
+              />
+            </div>
+            <p className="text-xs text-surface-500 mb-3">
+              Escanea este código o comparte el enlace para inscribir clientes.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={() => {
+                  const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success('¡Enlace copiado!');
+                }}
+                className="btn-secondary text-sm"
+              >
+                Copiar enlace
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`¡Únete a nuestro programa de fidelización! ${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn text-sm bg-emerald-500 hover:bg-emerald-600 text-white"
+              >
+                WhatsApp
+              </a>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-center">
+            <a href="/programs" className="btn-secondary text-sm">← Ver todos los programas</a>
+            <a href={`/programs/${createdProgram.id}`} className="btn-primary text-sm">Ver programa →</a>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="page-header">
         <div>
           <h1 className="page-title">Nuevo Programa de Fidelización</h1>
@@ -191,7 +243,7 @@ export default function NewProgramPage() {
               <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full">
                 {hoveredType ? (
                   <div className="animate-fade-in flex justify-center">
-                    <WalletPreviewContent type={hoveredType} />
+                    <WalletPreviewContent type={hoveredType} walletDesign={walletDesign} />
                   </div>
                 ) : (
                   <div className="w-full h-[370px] flex items-center justify-center text-center">
@@ -297,6 +349,7 @@ export default function NewProgramPage() {
               cardType={form.card_type}
               state={walletDesign}
               onChange={setWalletDesign}
+              provider={walletProvider}
             />
 
             {/* Barcode Type Selector */}
@@ -360,11 +413,10 @@ export default function NewProgramPage() {
             <WalletCardPreview
               form={form}
               selectedType={selectedType}
-              logoPreview={logoPreview}
-              stripPreview={stripPreview}
               barcodeType={form.barcode_type}
               walletPlatform={walletProvider}
               onWalletPlatformChange={setWalletProvider}
+              walletDesign={walletDesign}
             />
           </div>
         </div>
@@ -376,11 +428,10 @@ export default function NewProgramPage() {
           form={form}
           meta={meta}
           selectedType={selectedType}
-          logoPreview={logoPreview}
-          stripPreview={stripPreview}
           walletProvider={walletProvider}
           setWalletProvider={setWalletProvider}
           appleWalletConfig={appleWalletConfig}
+          walletDesign={walletDesign}
         />
       )}
 
@@ -417,6 +468,8 @@ export default function NewProgramPage() {
           </button>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

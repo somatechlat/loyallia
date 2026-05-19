@@ -84,6 +84,7 @@ class CardUpdateIn(BaseModel):
     icon_url: str | None = None
     metadata: dict | None = None
     is_active: bool | None = None
+    is_published: bool | None = None
     locations: list | None = None
 
     @field_validator("metadata")
@@ -119,6 +120,7 @@ class CardOut(BaseModel):
     strip_image_url: str
     icon_url: str
     is_active: bool
+    is_published: bool
     metadata: dict
     locations: list
     created_at: str
@@ -140,6 +142,7 @@ class CardOut(BaseModel):
             strip_image_url=card.strip_image_url,
             icon_url=card.icon_url,
             is_active=card.is_active,
+            is_published=card.is_published,
             metadata=card.metadata,
             locations=card.locations,
             created_at=card.created_at.isoformat(),
@@ -295,6 +298,10 @@ def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) ->
         card.is_active = data.is_active
         update_fields.append("is_active")
 
+    if data.is_published is not None:
+        card.is_published = data.is_published
+        update_fields.append("is_published")
+
     if update_fields:
         try:
             card.save(update_fields=update_fields + ["updated_at"])
@@ -320,6 +327,33 @@ def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) ->
                 card.id,
                 e,
             )
+
+    return CardOut.from_model(card)
+
+
+@router.post(
+    "/{program_id}/publish/",
+    auth=jwt_auth,
+    response=CardOut,
+    summary="Publicar programa",
+)
+def publish_program(request: HttpRequest, program_id: str) -> CardOut:
+    """Publish a loyalty program so it becomes visible for enrollments. OWNER only."""
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
+
+    card.is_published = True
+    card.is_active = True
+    card.save(update_fields=["is_published", "is_active", "updated_at"])
+
+    log_action(
+        request=request,
+        action="UPDATE",
+        resource_type="program",
+        resource_id=str(card.id),
+        details={"is_published": True, "is_active": True},
+    )
 
     return CardOut.from_model(card)
 
@@ -428,6 +462,7 @@ def public_program(request: HttpRequest, slug: str) -> dict:
         card = Card.objects.select_related("tenant").get(
             id=card_uuid,
             is_active=True,
+            is_published=True,
         )
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))

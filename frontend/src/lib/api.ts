@@ -149,6 +149,7 @@ export const programsApi = {
   create: (data: Record<string, unknown>) => api.post('/api/v1/programs/', data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/api/v1/programs/${id}/`, data),
   suspend: (id: string) => api.post(`/api/v1/programs/${id}/suspend/`),
+  publish: (id: string) => api.post(`/api/v1/programs/${id}/publish/`),
   delete: (id: string) => api.delete(`/api/v1/programs/${id}/`),
   stats: (id: string) => api.get(`/api/v1/programs/${id}/stats/`),
 };
