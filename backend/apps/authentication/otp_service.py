@@ -183,8 +183,9 @@ class LocalOTPStrategy(OTPStrategy):
         Returns:
             {"success": bool, "error": str | None}
         """
-        from django.conf import settings
         from django.core.mail import send_mail
+
+        from common.email_config import get_default_from_email
 
         try:
             result = send_mail(
@@ -195,7 +196,7 @@ class LocalOTPStrategy(OTPStrategy):
                     f"No compartas este código con nadie.\n\n"
                     f" Loyallia"
                 ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=get_default_from_email(),
                 recipient_list=[email],
                 fail_silently=False,
             )

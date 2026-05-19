@@ -10,6 +10,8 @@ import logging
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 
+from common.email_config import get_default_from_email
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +65,7 @@ def send_raw_email(
     msg = EmailMultiAlternatives(
         subject=subject,
         body="",
-        from_email=from_email or getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        from_email=from_email or get_default_from_email(),
         to=[to_email],
     )
     msg.attach_alternative(body_html, "text/html")
@@ -95,7 +97,7 @@ def get_health() -> dict:
     configured = bool(
         getattr(settings, "EMAIL_HOST_USER", "")
         and getattr(settings, "EMAIL_HOST_PASSWORD", "")
-        and getattr(settings, "DEFAULT_FROM_EMAIL", "")
+        and get_default_from_email()
     )
     if not configured:
         return {"status": "missing_credentials", "provider": "mailjet"}

@@ -105,7 +105,9 @@ if PAYMENT_GATEWAY_ENABLED:
 EMAIL_HOST = "in-v3.mailjet.com"
 EMAIL_HOST_USER = get_secret("mailjet_api_key", strict=True)
 EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", strict=True)
-DEFAULT_FROM_EMAIL = get_secret("mailjet_sender_email", strict=True)
+# SEC: sender email is NOT a secret. It is a PlatformSetting editable via
+# SysAdmin UI without restart. The base.py fallback is sufficient here.
+# Runtime code reads the live value via common.email_config.get_default_from_email().
 
 # Override apps logger to INFO in production to avoid excessive log volume
 LOGGING["loggers"]["apps"]["level"] = "INFO"  # noqa: F405

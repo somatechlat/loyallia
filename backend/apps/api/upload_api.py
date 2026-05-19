@@ -6,7 +6,6 @@ Handles direct image uploads (logos, etc.) to MinIO/S3 and returns public URLs.
 import logging
 import os
 import uuid
-from datetime import datetime
 from io import BytesIO
 from typing import Any
 

@@ -28,10 +28,10 @@ from apps.authentication.schemas import (
     ProfileUpdateIn,
     UserOut,
 )
-from common.schemas import MessageOut
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
 from common.request import require_tenant
+from common.schemas import MessageOut
 
 logger = logging.getLogger(__name__)
 router = Router()

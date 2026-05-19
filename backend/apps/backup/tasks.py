@@ -36,13 +36,10 @@ Called by: Celery Beat scheduler, SuperAdmin API (trigger manual backup).
 
 import logging
 import os
-import secrets
 import shutil
 import subprocess
 import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional
 
 from celery import chain, group, shared_task
 from django.conf import settings
@@ -142,7 +139,7 @@ def _notify_backup_failure(job_id: str, error: str) -> None:
 
 def _create_job_record(
     backup_type: str = "full",
-    tenant_id: Optional[str] = None,
+    tenant_id: str | None = None,
     include_media: bool = True,
     include_vault: bool = True,
     encryption_enabled: bool = True,
@@ -290,7 +287,6 @@ def backup_postgresql(self, job_id: str) -> dict:
     SEC: Password comes from Vault via Django DATABASES setting.
     PERF: Streams directly to a gzipped file  no Python buffers.
     """
-    from apps.backup.models import BackupJobStatus
 
     tmp_dir = _temp_backup_dir("pg")
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -746,7 +742,6 @@ def _pack_and_upload_archive(component_results: list, job_id: str) -> str:
 
     Returns the S3 object key.
     """
-    from apps.tenants.models import PlatformSetting
 
     config = _get_backup_settings()
     s3_bucket = config["s3_bucket"]
@@ -1120,7 +1115,7 @@ def _restore_postgresql(dump_file: str) -> bool:
         stderr = (exc.stderr or b"").decode("utf-8", errors="replace")
         logger.error("restore: PostgreSQL restore failed: %s", _scrub_error(stderr))
         return False
-    except Exception as exc:
+    except Exception:
         logger.exception("restore: PostgreSQL restore unexpected error")
         return False
     finally:
@@ -1151,7 +1146,7 @@ def _restore_redis(rdb_file: str) -> bool:
 
         # Redis should restart automatically (via Docker/systemd)
         return True
-    except Exception as exc:
+    except Exception:
         logger.exception("restore: Redis restore failed")
         return False
 
@@ -1173,7 +1168,7 @@ def _restore_vault(vault_file: str) -> bool:
         import ssl
         import urllib.request
 
-        with open(vault_file, "r", encoding="utf-8") as f:
+        with open(vault_file, encoding="utf-8") as f:
             secrets_data = json.load(f)
 
         # Extract the actual secrets from the Vault response structure
@@ -1207,7 +1202,7 @@ def _restore_vault(vault_file: str) -> bool:
                 logger.error("restore: Vault returned status %d", response.status)
                 return False
 
-    except Exception as exc:
+    except Exception:
         logger.exception("restore: Vault restore failed")
         return False
 
@@ -1263,6 +1258,6 @@ def _restore_media(media_tar: str) -> bool:
         shutil.rmtree(tmp_dir, ignore_errors=True)
         return True
 
-    except Exception as exc:
+    except Exception:
         logger.exception("restore: media restore failed")
         return False

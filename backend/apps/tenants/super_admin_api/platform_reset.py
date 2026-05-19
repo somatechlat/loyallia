@@ -4,7 +4,6 @@ Loyallia  Super Admin API: Seed Demo Data and Factory Reset
 
 import logging
 
-from django.conf import settings
 from django.db import transaction
 from django.http import HttpRequest
 from ninja import Router
@@ -17,6 +16,7 @@ from apps.tenants.super_admin_api.schemas import (
     MessageOut,
     SeedDemoDataOut,
 )
+from common.email_config import get_default_from_email
 from common.messages import get_message
 from common.permissions import jwt_auth
 
@@ -142,7 +142,7 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
         send_mail(
             subject="Loyallia  Código de Verificación para Restaurar de Fábrica",
             message=msg_body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=get_default_from_email(),
             recipient_list=[request.user.email],
             fail_silently=True,
         )

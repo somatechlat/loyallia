@@ -198,7 +198,6 @@ def evaluate_points_threshold_triggers() -> dict:
     from apps.automation.engine import fire_trigger
     from apps.automation.models import Automation, AutomationTrigger
     from apps.customers.models import Customer
-    from apps.transactions.models import Transaction
 
     # Find all active points_threshold automations
     threshold_automations = (

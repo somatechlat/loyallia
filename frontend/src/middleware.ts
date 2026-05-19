@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Public routes (bypass auth check)
-    const publicRoutes = ['/', '/about', '/pricing', '/contact', '/privacy', '/terms'];
+    const publicRoutes = ['/', '/about', '/pricing', '/contact', '/privacy', '/terms', '/portal'];
 
     // Protected routes — require authentication
     const protectedRoutes = [
@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
     // Auth-only routes — redirect authenticated users away
     const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
 
-    const isPublic = publicRoutes.some(r => pathname === r);
+    const isPublic = publicRoutes.some(r => pathname === r || pathname.startsWith(r + '/'));
     if (isPublic) return NextResponse.next();
 
     const isProtected = protectedRoutes.some(r => pathname.startsWith(r));

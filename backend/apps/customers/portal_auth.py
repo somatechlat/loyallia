@@ -6,7 +6,7 @@ Uses same JWT secret as staff auth but with type="customer_access" claim
 to prevent token cross-use.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -16,7 +16,7 @@ from ninja.security import HttpBearer
 
 from common.request import as_tenant_request
 
-UTC = timezone.utc
+UTC = UTC
 
 
 def _utcnow() -> datetime:

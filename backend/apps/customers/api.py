@@ -26,6 +26,7 @@ from apps.customers.schemas import (
     MessageOut,
     ResendPassIn,
 )
+from common.email_config import get_default_from_email
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
@@ -285,7 +286,6 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     their pass link again (e.g., on a new device or after reinstall).
     """
     from django.core.mail import send_mail
-    from django.conf import settings
 
     try:
         card = Card.objects.select_related("tenant").get(id=data.card_id, is_active=True, is_published=True)
@@ -360,7 +360,7 @@ Equipo {card.tenant.name}
         send_mail(
             subject=subject,
             message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=get_default_from_email(),
             recipient_list=[customer.email],
             html_message=html_message,
             fail_silently=False,

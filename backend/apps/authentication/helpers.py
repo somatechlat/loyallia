@@ -21,6 +21,7 @@ from apps.authentication.tokens import (
     hash_token,
 )
 from apps.tenants.models import Tenant
+from common.email_config import get_default_from_email
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
         send_mail(
             subject=subject,
             message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=get_default_from_email(),
             recipient_list=[email],
             fail_silently=False,
         )

@@ -355,7 +355,8 @@ def add_team_member(request, payload: TeamMemberCreateIn):
             from apps.tenants.models import PlatformSetting
             dashboard_url = PlatformSetting.get("dashboard_url", django_settings.FRONTEND_URL)
             login_url = dashboard_url.rstrip("/") + "/login"
-            from_email = getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
+            from common.email_config import get_default_from_email
+            from_email = get_default_from_email()
             primary_color = getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
 
             from datetime import datetime as _dt

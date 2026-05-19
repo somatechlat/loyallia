@@ -184,7 +184,6 @@ class NotificationService:
     @staticmethod
     def _send_email_notification(notification: Notification) -> bool:
         """Send email notification."""
-        from django.conf import settings as django_settings
 
         try:
             html_message = render_to_string(
@@ -197,10 +196,12 @@ class NotificationService:
                 },
             )
 
+            from common.email_config import get_default_from_email
+
             send_mail(
                 subject=notification.title,
                 message=notification.message,
-                from_email=django_settings.DEFAULT_FROM_EMAIL,
+                from_email=get_default_from_email(),
                 recipient_list=[notification.customer.email],
                 html_message=html_message,
             )
