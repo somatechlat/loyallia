@@ -259,6 +259,8 @@ def platform_integrations(request):
             diagnostics=google_diagnostics,
             preview_values={
                 "google_wallet_enabled": ("true" if google_diagnostics["enabled"] else "false"),
+                "google_wallet_issuer_id": get_secret("google_wallet_issuer_id", default=""),
+                "google_oauth_client_id": get_secret("google_oauth_client_id", default=""),
             },
         ),
         PlatformIntegrationOut(
@@ -271,6 +273,8 @@ def platform_integrations(request):
             diagnostics=apple_diagnostics,
             preview_values={
                 "apple_wallet_enabled": "true" if apple_enabled else "false",
+                "apple_pass_type_identifier": get_secret("apple_pass_type_identifier", default=""),
+                "apple_team_identifier": get_secret("apple_team_identifier", default=""),
             },
         ),
         PlatformIntegrationOut(
@@ -299,7 +303,11 @@ def platform_integrations(request):
                 "secret_key_present": bool(mailjet_secret_key),
                 "sender_email_present": bool(mailjet_sender_email),
             },
-            preview_values={},
+            preview_values={
+                "mailjet_api_key": mailjet_api_key,
+                "mailjet_sender_email": mailjet_sender_email,
+                "mailjet_sender_name": get_secret("mailjet_sender_name", default=""),
+            },
         ),
         *additional_integrations(),
     ]

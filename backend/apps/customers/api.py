@@ -23,6 +23,8 @@ from apps.customers.schemas import (
     CustomerOut,
     CustomerPassOut,
     CustomerUpdateIn,
+    MessageOut,
+    ResendPassIn,
 )
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
@@ -210,7 +212,8 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
 
     existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
     if existing_pass:
-        raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
+        # Return existing pass with flag instead of error — UX: show user their card
+        return CustomerPassOut.from_model(existing_pass, already_enrolled=True)
 
  # Extract any dynamic extra fields from the Pydantic model
     standard_fields = {
@@ -272,6 +275,101 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
         },
     )
     return CustomerPassOut.from_model(pass_obj)
+
+
+@router.post("/resend-pass/", response=MessageOut, summary="Reenviar pase por email")
+def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
+    """Public endpoint to resend a customer's pass link via email.
+
+    Used when a customer is already enrolled and wants to receive
+    their pass link again (e.g., on a new device or after reinstall).
+    """
+    from django.core.mail import send_mail
+    from django.conf import settings
+
+    try:
+        card = Card.objects.select_related("tenant").get(id=data.card_id, is_active=True, is_published=True)
+    except Card.DoesNotExist:
+        raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
+
+    customer = Customer.objects.filter(tenant=card.tenant, email=data.email).first()
+    if not customer:
+        raise HttpError(404, get_message("CUSTOMER_NOT_FOUND"))
+
+    existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
+    if not existing_pass:
+        raise HttpError(404, get_message("PASS_NOT_FOUND"))
+
+    pass_id = str(existing_pass.id)
+    base_url = ""
+    if hasattr(request, "build_absolute_uri"):
+        base_url = request.build_absolute_uri("/").rstrip("/")
+    else:
+        from django.contrib.sites.models import Site
+        try:
+            base_url = f"https://{Site.objects.get_current().domain}"
+        except Exception:
+            base_url = ""
+
+    pass_url = f"{base_url}/pass/{pass_id}/"
+    apple_url = f"{base_url}/api/v1/wallet/apple/{pass_id}/"
+    google_url = f"{base_url}/api/v1/wallet/google/{pass_id}/?redirect=true"
+
+    # Build platform-appropriate wallet links
+    wallet_instructions = f"""Apple Wallet (iPhone/iPad):
+{apple_url}
+
+Google Wallet (Android):
+{google_url}
+"""
+
+    subject = f"Tu tarjeta de {card.name} — {card.tenant.name}"
+    message = f"""Hola {customer.first_name},
+
+Ya estás inscrito en el programa {card.name} de {card.tenant.name}.
+Aquí tienes los enlaces para acceder a tu tarjeta digital:
+
+Ver tu tarjeta (código QR):
+{pass_url}
+
+{wallet_instructions}
+---
+¿Necesitas gestionar tus datos?
+Muy pronto podrás crear una contraseña y acceder a tu portal de cliente
+para ver todas tus tarjetas, descargarlas y gestionar tu información.
+
+Saludos,
+Equipo {card.tenant.name}
+"""
+
+    html_message = f"""<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<div style="max-width: 480px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #1a1a2e;">¡Hola {customer.first_name}!</h2>
+  <p>Ya estás inscrito en <strong>{card.name}</strong> de <strong>{card.tenant.name}</strong>.</p>
+  <div style="background: #f8f9fa; border-radius: 12px; padding: 16px; margin: 16px 0;">
+    <p style="margin: 0 0 8px;"><strong>Tu tarjeta digital:</strong></p>
+    <a href="{pass_url}" style="display: inline-block; background: #5660ff; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Ver mi tarjeta</a>
+  </div>
+  <p style="color: #666; font-size: 14px;">Muy pronto podrás crear una contraseña y acceder a tu portal de cliente para gestionar todas tus tarjetas e información.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+  <p style="font-size: 12px; color: #999;">Equipo {card.tenant.name}</p>
+</div>
+</body></html>"""
+
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[customer.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+    except Exception as exc:
+        logger.error("Failed to send pass resend email to %s: %s", customer.email, exc)
+        raise HttpError(500, get_message("EMAIL_SEND_ERROR"))
+
+    return MessageOut(success=True, message=get_message("PASS_RESENT", email=customer.email))
 
 
 # CUSTOMER CRUD

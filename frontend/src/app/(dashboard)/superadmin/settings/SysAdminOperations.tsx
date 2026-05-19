@@ -10,14 +10,10 @@ import api, { superAdminApi } from '@/lib/api';
 
 interface SysAdminOperationsProps {
   mode: 'development' | 'production';
-  onToggleMode: () => void;
-  loadingMode: boolean;
 }
 
 export default function SysAdminOperations({
   mode,
-  onToggleMode,
-  loadingMode,
 }: SysAdminOperationsProps) {
   const [broadcastForm, setBroadcastForm] = useState({ subject: '', message: '' });
   const [sending, setSending] = useState(false);
@@ -97,11 +93,7 @@ export default function SysAdminOperations({
 
   return (
     <>
-      <PlatformModeBanner
-        platformMode={mode}
-        loadingMode={loadingMode}
-        onToggle={onToggleMode}
-      />
+      <PlatformModeBanner platformMode={mode} />
 
       <SystemOperationsPanel
         seedingDemo={seedingDemo}

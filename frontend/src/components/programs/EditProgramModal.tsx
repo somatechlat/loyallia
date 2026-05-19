@@ -57,9 +57,6 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
     setLogoUploading(true);
     const url = await uploadFile(file);
     if (url) {

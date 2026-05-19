@@ -208,6 +208,7 @@ from loyallia.settings.celery_config import *  # noqa: F401,F403,E402
 # FILE STORAGE MinIO (S3-compatible)
 
 MINIO_ENDPOINT = config("MINIO_ENDPOINT", default="http://localhost:9000")
+MINIO_PUBLIC_ENDPOINT = config("MINIO_PUBLIC_ENDPOINT", default=MINIO_ENDPOINT)
 MINIO_ACCESS_KEY = get_secret("minio_access_key", default="")
 MINIO_SECRET_KEY = get_secret("minio_secret_key", default="")
 MINIO_BUCKET_PASSES = config("MINIO_BUCKET_PASSES", default="passes")

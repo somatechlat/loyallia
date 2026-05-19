@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
 import api, { superAdminApi } from '@/lib/api';
 import IntegrationSettings from './IntegrationSettings';
 import PlatformSettings from './PlatformSettings';
 import SysAdminOperations from './SysAdminOperations';
 import { Integration, PlatformSetting } from '@/components/superadmin/settings/types';
-import { errorMessage } from '@/components/superadmin/settings/constants';
 
 export default function SuperAdminSettings() {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -16,7 +14,6 @@ export default function SuperAdminSettings() {
   const [platformSettings, setPlatformSettings] = useState<PlatformSetting[]>([]);
 
   const [platformMode, setPlatformMode] = useState<'development' | 'production'>('production');
-  const [loadingMode, setLoadingMode] = useState(false);
 
   const loadIntegrations = useCallback(() => {
     api.get('/api/v1/admin/platform/integrations/')
@@ -46,34 +43,6 @@ export default function SuperAdminSettings() {
     loadPlatformMode();
   }, [loadIntegrations, loadSettings, loadPlatformMode]);
 
-  const togglePlatformMode = async () => {
-    const nextMode = platformMode === 'production' ? 'development' : 'production';
-    const confirmMessage =
-      nextMode === 'development'
-        ? '¿Cambiar a MODO DESARROLLO? Los SMS usarán credenciales de prueba, los respaldos serán cada 15 días, y Twilio usará sandbox.'
-        : '¿Cambiar a MODO PRODUCCIÓN? Los SMS usarán credenciales reales (con costo), los respaldos serán diarios, y todas las integraciones usarán entornos reales.';
-    if (!window.confirm(confirmMessage)) return;
-
-    setLoadingMode(true);
-    const toastId = toast.loading(`Cambiando a ${nextMode}...`);
-    try {
-      const { data } = await superAdminApi.togglePlatformMode(nextMode);
-      const newMode = data.mode === 'development' ? 'development' : 'production';
-      setPlatformMode(newMode);
-      toast.success(
-        newMode === 'development'
-          ? 'Modo Desarrollo activado. Sandbox seguro para pruebas.'
-          : 'Modo Producción activado. Operaciones reales habilitadas.',
-        { id: toastId },
-      );
-      loadIntegrations();
-    } catch (err: unknown) {
-      toast.error(errorMessage(err, 'Error al cambiar modo de plataforma'), { id: toastId });
-    } finally {
-      setLoadingMode(false);
-    }
-  };
-
   return (
     <div className="space-y-8 max-w-5xl">
       <header>
@@ -93,11 +62,7 @@ export default function SuperAdminSettings() {
         onRefresh={loadSettings}
       />
 
-      <SysAdminOperations
-        mode={platformMode}
-        onToggleMode={togglePlatformMode}
-        loadingMode={loadingMode}
-      />
+      <SysAdminOperations mode={platformMode} />
     </div>
   );
 }

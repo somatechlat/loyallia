@@ -770,6 +770,64 @@ function GoogleWalletCard({
   );
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   APPLE WALLET BACK CARD — Info screen with backFields
+   ════════════════════════════════════════════════════════════════════ */
+function AppleWalletBackCard({
+  form, walletDesign, customerName,
+}: {
+  form: { name: string; description: string; background_color: string; text_color: string; card_type: string };
+  walletDesign?: WalletDesignState;
+  customerName?: string;
+}) {
+  const bgColor = form.background_color || '#1a1a2e';
+  const textColor = form.text_color || '#ffffff';
+  const backFields = walletDesign?.appleFields?.backFields;
+  const ctx = buildContext(form, customerName);
+
+  return (
+    <IPhone15ProFrame>
+      <div
+        className="rounded-2xl overflow-hidden flex flex-col shadow-lg h-full"
+        style={{
+          background: bgColor,
+          color: textColor,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25)',
+        }}
+      >
+        {/* Title bar */}
+        <div className="px-3 py-2.5 flex items-center justify-between shrink-0 border-b border-white/10">
+          <span className="text-[10px] font-bold opacity-40">Información</span>
+          <span className="text-[10px] font-semibold opacity-60">Listo</span>
+        </div>
+
+        {/* Back fields scrollable area */}
+        <div className="flex-1 px-3 py-3 overflow-y-auto">
+          {backFields && backFields.length > 0 ? (
+            <div className="space-y-3">
+              {backFields.map((f, i) => (
+                <div key={f.key || i} className="border-b border-white/10 pb-2.5 last:border-0">
+                  <p className="text-[7px] font-semibold uppercase tracking-wider opacity-35 mb-1">{f.label}</p>
+                  <p className="text-[10px] leading-relaxed opacity-90 whitespace-pre-wrap break-words">{resolveTemplate(f.value, ctx)}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center text-center">
+              <p className="text-[10px] opacity-30">Sin información adicional.<br/>Añade campos traseros en el editor.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Nav pill */}
+        <div className="flex justify-center pb-3 pt-1 shrink-0 z-10">
+          <div className="w-28 h-[3px] bg-white rounded-full opacity-15" />
+        </div>
+      </div>
+    </IPhone15ProFrame>
+  );
+}
+
 /* ─── Type definitions ────────────────────────────────────────────── */
 export interface CardProps {
   form: {
@@ -822,19 +880,38 @@ export default function WalletCardPreview({
     onWalletPlatformChange?.(next);
   };
 
+  const [showAppleBack, setShowAppleBack] = useState(false);
+
   return (
     <div className="relative w-full flex flex-col items-center" style={{ maxWidth: 320 }}>
       <PlatformToggle platform={platform} onChange={handlePlatformChange} />
       {platform === 'apple' ? (
-        <AppleWalletCard
-          form={form}
-          selectedType={selectedType}
-          logoPreview={logoPreview}
-          stripPreview={stripPreview}
-          barcodeType={barcodeType}
-          customerName={customerName}
-          walletDesign={walletDesign}
-        />
+        <div className="flex flex-col items-center">
+          {showAppleBack ? (
+            <AppleWalletBackCard
+              form={form}
+              walletDesign={walletDesign}
+              customerName={customerName}
+            />
+          ) : (
+            <AppleWalletCard
+              form={form}
+              selectedType={selectedType}
+              logoPreview={logoPreview}
+              stripPreview={stripPreview}
+              barcodeType={barcodeType}
+              customerName={customerName}
+              walletDesign={walletDesign}
+            />
+          )}
+          <button
+            onClick={() => setShowAppleBack(v => !v)}
+            className="mt-3 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-medium text-surface-300 transition-colors border border-white/10"
+            type="button"
+          >
+            {showAppleBack ? '← Frente de tarjeta' : 'Reverso tarjeta →'}
+          </button>
+        </div>
       ) : (
         <GoogleWalletCard
           form={form}

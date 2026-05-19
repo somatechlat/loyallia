@@ -286,10 +286,16 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
         default=getattr(settings, "AI_AGENT_BASE_URL", ""),
     )
     whatsapp_key_present = _present("whatsapp_bridge_api_key")
-    twilio_sid_present = _present("twilio_account_sid")
-    twilio_token_present = _present("twilio_auth_token")
-    twilio_from_present = _present("twilio_from_number")
     twilio_test_mode = _truthy(get_secret("twilio_use_test_mode", default="false"))
+    # When test mode is ON, check test credentials. Otherwise check live credentials.
+    if twilio_test_mode:
+        twilio_sid_present = _present("twilio_test_account_sid")
+        twilio_token_present = _present("twilio_test_auth_token")
+        twilio_from_present = True  # Test mode doesn't require a from_number
+    else:
+        twilio_sid_present = _present("twilio_account_sid")
+        twilio_token_present = _present("twilio_auth_token")
+        twilio_from_present = _present("twilio_from_number")
     verify_enabled = _truthy(get_secret("twilio_verify_enabled", default="false"))
     verify_sid_present = _present("twilio_verify_service_sid")
     api_key_sid_present = _present("twilio_api_key_sid")
@@ -314,7 +320,9 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "endpoint_present": bool(whatsapp_url),
                 "api_key_present": whatsapp_key_present,
             },
-            preview_values={},
+            preview_values={
+                "whatsapp_bridge_url": whatsapp_url,
+            },
         ),
         PlatformIntegrationOut(
             key="twilio_sms",
@@ -334,6 +342,8 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "use_test_mode": twilio_test_mode,
             },
             preview_values={
+                "twilio_account_sid": get_secret("twilio_account_sid", default=""),
+                "twilio_from_number": get_secret("twilio_from_number", default=""),
                 "twilio_use_test_mode": "true" if twilio_test_mode else "false",
             },
         ),
@@ -349,7 +359,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "service_sid_present": verify_sid_present,
                 "default_channel": get_secret("twilio_verify_default_channel", default="sms"),
             },
-            preview_values={},
+            preview_values={
+                "twilio_verify_enabled": "true" if verify_enabled else "false",
+                "twilio_verify_service_sid": get_secret("twilio_verify_service_sid", default=""),
+                "twilio_verify_default_channel": get_secret("twilio_verify_default_channel", default="sms"),
+            },
         ),
         PlatformIntegrationOut(
             key="twilio_api_key",
@@ -362,7 +376,9 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "api_key_sid_present": api_key_sid_present,
                 "api_key_secret_present": api_key_secret_present,
             },
-            preview_values={},
+            preview_values={
+                "twilio_api_key_sid": get_secret("twilio_api_key_sid", default=""),
+            },
         ),
         PlatformIntegrationOut(
             key="twilio_test",
@@ -375,7 +391,9 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "test_account_sid_present": test_sid_present,
                 "test_auth_token_present": test_token_present,
             },
-            preview_values={},
+            preview_values={
+                "twilio_test_account_sid": get_secret("twilio_test_account_sid", default=""),
+            },
         ),
         PlatformIntegrationOut(
             key="apple_nfc",
@@ -403,7 +421,9 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "endpoint_present": bool(ai_agent_base_url),
                 "api_key_present": ai_agent_key_present,
             },
-            preview_values={},
+            preview_values={
+                "ai_agent_base_url": ai_agent_base_url,
+            },
         ),
         PlatformIntegrationOut(
             key="backup_config",

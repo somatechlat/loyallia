@@ -98,9 +98,10 @@ class CustomerPassOut(BaseModel):
     enrolled_at: str
     last_updated: str
     wallet_urls: dict = {}
+    already_enrolled: bool = False
 
     @staticmethod
-    def from_model(pass_obj: CustomerPass) -> "CustomerPassOut":
+    def from_model(pass_obj: CustomerPass, already_enrolled: bool = False) -> "CustomerPassOut":
         pass_id = str(pass_obj.id)
         return CustomerPassOut(
             id=pass_id,
@@ -117,7 +118,13 @@ class CustomerPassOut(BaseModel):
                 "google": f"/api/v1/wallet/google/{pass_id}/",
                 "status": f"/api/v1/wallet/status/{pass_id}/",
             },
+            already_enrolled=already_enrolled,
         )
+
+
+class ResendPassIn(BaseModel):
+    email: EmailStr
+    card_id: str
 
 
 class MessageOut(BaseModel):

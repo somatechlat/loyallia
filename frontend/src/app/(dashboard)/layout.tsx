@@ -274,7 +274,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!user || user.role === UserRole.SUPER_ADMIN) return;
     fetch('/api/v1/tenants/me/')
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.logo_url) setTenantLogo(data.logo_url); })
+      .then(data => {
+        if (data?.logo_url) {
+          let url = data.logo_url;
+          if (url.includes('://localhost:33903/') || url.includes('://127.0.0.1:33903/')) {
+            url = url.replace(/^https?:\/\/[^/]+:33903/, '');
+          }
+          setTenantLogo(url);
+        }
+      })
       .catch(() => {});
   }, [user]);
 

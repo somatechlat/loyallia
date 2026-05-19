@@ -156,7 +156,7 @@ def _upload_to_storage(object_key: str, data: bytes, content_type: str) -> str:
     from botocore.exceptions import ClientError
     from django.conf import settings
 
-    endpoint = settings.MINIO_ENDPOINT
+    endpoint = getattr(settings, "MINIO_PUBLIC_ENDPOINT", settings.MINIO_ENDPOINT)
     access_key = settings.MINIO_ACCESS_KEY
     secret_key = settings.MINIO_SECRET_KEY
     bucket = settings.MINIO_BUCKET_ASSETS
@@ -181,4 +181,4 @@ def _upload_to_storage(object_key: str, data: bytes, content_type: str) -> str:
         logger.error("MinIO upload failed for key '%s': %s", object_key, exc)
         raise
 
-    return f"{endpoint}/{bucket}/{object_key}"
+    return f"/assets/{object_key}"

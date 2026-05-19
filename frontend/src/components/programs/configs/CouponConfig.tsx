@@ -11,6 +11,7 @@
 import React, { useCallback } from 'react';
 import Tooltip from '@/components/ui/Tooltip';
 import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
+import ImageUploadField from '@/components/ui/ImageUploadField';
 import type { ConfigProps } from './types';
 
 /** Coupon card configuration with discount types, dates, push notifications. */
@@ -174,11 +175,16 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {/* Coupon Image */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <label className="label mb-0">Imagen del cupón (URL)</label>
-          <Tooltip text="Sube o pega la URL de una imagen que represente el cupón. Se mostrará en la tarjeta de wallet del cliente." />
+          <label className="label mb-0">Imagen del cupón</label>
+          <Tooltip text="Sube una imagen que represente el cupón. Se mostrará en la tarjeta de wallet del cliente." />
         </div>
-        <input type="url" className="input" placeholder="https://example.com/coupon-image.jpg" value={meta.coupon_image_url as string ?? ''}
-          onChange={e => set('coupon_image_url', e.target.value)} />
+        <ImageUploadField
+          label="Imagen del cupón"
+          specs="JPG/PNG, máx 5MB"
+          value={(meta.coupon_image_url as string) || ''}
+          onChange={url => set('coupon_image_url', url)}
+          compact
+        />
       </div>
 
       {/* Push Notification Module */}

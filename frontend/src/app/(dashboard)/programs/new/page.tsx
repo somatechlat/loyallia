@@ -93,36 +93,42 @@ export default function NewProgramPage() {
               wallet_provider: 'google',
             };
       // Include wallet design configuration in metadata
+      const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
       const walletDesignMetadata = {
         wallet_design: {
           provider: walletDesign.provider,
           apple_images: {
-            logo: walletDesign.appleLogoUrl,
-            logo_2x: walletDesign.appleLogo2xUrl,
-            strip: walletDesign.appleStripUrl,
-            strip_2x: walletDesign.appleStrip2xUrl,
-            thumbnail: walletDesign.appleThumbnailUrl,
-            thumbnail_2x: walletDesign.appleThumbnail2xUrl,
-            icon: walletDesign.appleIconUrl,
-            icon_2x: walletDesign.appleIcon2xUrl,
+            logo: clean(walletDesign.appleLogoUrl),
+            logo_2x: clean(walletDesign.appleLogo2xUrl),
+            strip: clean(walletDesign.appleStripUrl),
+            strip_2x: clean(walletDesign.appleStrip2xUrl),
+            thumbnail: clean(walletDesign.appleThumbnailUrl),
+            thumbnail_2x: clean(walletDesign.appleThumbnail2xUrl),
+            icon: clean(walletDesign.appleIconUrl),
+            icon_2x: clean(walletDesign.appleIcon2xUrl),
           },
           google_images: {
-            program_logo: walletDesign.googleProgramLogoUrl,
-            hero_image: walletDesign.googleHeroImageUrl,
-            wide_logo: walletDesign.googleWideLogoUrl,
-            image_module: walletDesign.googleImageModuleUrl,
+            program_logo: clean(walletDesign.googleProgramLogoUrl),
+            hero_image: clean(walletDesign.googleHeroImageUrl),
+            wide_logo: clean(walletDesign.googleWideLogoUrl),
+            image_module: clean(walletDesign.googleImageModuleUrl),
           },
           apple_fields: walletDesign.appleFields,
           google_rows: walletDesign.googleRows,
           google_advanced: walletDesign.googleAdvanced,
           apple_advanced: walletDesign.appleAdvanced,
+          locations: walletDesign.locations,
+          beacons: walletDesign.beacons,
+          links: walletDesign.links,
+          homepage_uri: walletDesign.homepageUri,
+          help_uri: walletDesign.helpUri,
         },
       };
       // Map designer images to legacy fields for backward compat
       const legacyImages = {
-        logo_url: walletDesign.provider === 'apple' ? walletDesign.appleLogoUrl : walletDesign.googleProgramLogoUrl,
-        strip_image_url: walletDesign.provider === 'apple' ? walletDesign.appleStripUrl : walletDesign.googleHeroImageUrl,
-        icon_url: walletDesign.provider === 'apple' ? walletDesign.appleIconUrl : walletDesign.googleProgramLogoUrl,
+        logo_url: walletDesign.provider === 'apple' ? clean(walletDesign.appleLogoUrl) : clean(walletDesign.googleProgramLogoUrl),
+        strip_image_url: walletDesign.provider === 'apple' ? clean(walletDesign.appleStripUrl) : clean(walletDesign.googleHeroImageUrl),
+        icon_url: walletDesign.provider === 'apple' ? clean(walletDesign.appleIconUrl) : clean(walletDesign.googleProgramLogoUrl),
       };
       const resp = await programsApi.create({
         ...form,
@@ -132,8 +138,16 @@ export default function NewProgramPage() {
       toast.success('¡Programa creado exitosamente!');
       setCreatedProgram({ id: resp.data.id, name: resp.data.name });
     } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { message?: string; detail?: string; error?: string } } })?.response?.data;
-      const msg = detail?.message || detail?.detail || detail?.error || 'Error al crear el programa';
+      const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
+      const detail = axiosErr?.response?.data?.detail;
+      let msg: string;
+      if (Array.isArray(detail)) {
+        msg = detail.map((d: Record<string, unknown>) => `${(d.loc as string[])?.join('.')}: ${d.msg}`).join('; ');
+      } else if (typeof detail === 'string') {
+        msg = detail;
+      } else {
+        msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || 'Error al crear el programa';
+      }
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -249,12 +263,12 @@ export default function NewProgramPage() {
                 </button>
               ))}
             </div>
-            {/* Right: Hover Preview Panel (desktop only) */}
+            {/* Right: Preview Panel (desktop only) — shows hovered OR selected type */}
             <div className="hidden lg:flex items-start justify-center w-[220px] flex-shrink-0 sticky top-8" id="hover-preview-panel">
               <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full">
-                {hoveredType ? (
+                {hoveredType || form.card_type ? (
                   <div className="animate-fade-in flex justify-center">
-                    <WalletPreviewContent type={hoveredType} walletDesign={walletDesign} />
+                    <WalletPreviewContent type={hoveredType || form.card_type} walletDesign={walletDesign} />
                   </div>
                 ) : (
                   <div className="w-full h-[370px] flex items-center justify-center text-center">

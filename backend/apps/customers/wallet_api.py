@@ -111,6 +111,7 @@ def get_public_card(request, card_id: str):
         card = Card.objects.select_related("tenant").get(
             id=uuid.UUID(card_id),
             is_active=True,
+            is_published=True,
         )
     except (Card.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
@@ -271,4 +272,70 @@ def get_wallet_status(request, pass_id: str):
         google_wallet_available=google_available,
         apple_url=f"/api/v1/wallet/apple/{pass_id}/" if apple_available else "",
         google_url=f"/api/v1/wallet/google/{pass_id}/" if google_available else "",
+    )
+
+
+class PublicPassOut(Schema):
+    """Public pass info for existing members to view/add to wallet."""
+
+    pass_id: str
+    program_name: str
+    tenant_name: str
+    card_type: str
+    background_color: str
+    text_color: str
+    logo_url: str
+    strip_image_url: str
+    qr_code: str
+    member_name: str
+    wallet_urls: dict
+
+
+@router.get(
+    "/pass/public/{pass_id}/",
+    response=PublicPassOut,
+    summary="Información pública del pase",
+    auth=None,
+)
+def get_public_pass(request, pass_id: str):
+    """
+    Public endpoint for existing members to retrieve their pass info.
+    Used to re-display QR code and add to wallet after enrollment.
+    No authentication required  pass_id is a UUID.
+    """
+    from apps.customers.models import CustomerPass
+    from apps.customers.pass_engine.apple_pass import is_apple_wallet_configured
+    from apps.customers.pass_engine.google_pass import is_google_wallet_configured
+
+    try:
+        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(pass_id)
+        )
+    except (CustomerPass.DoesNotExist, ValueError):
+        raise HttpError(404, get_message("PASS_NOT_FOUND"))
+
+    _validate_pass_is_accessible(customer_pass)
+
+    card = customer_pass.card
+    customer = customer_pass.customer
+
+    apple_available = _is_wallet_provider_enabled(card, "apple") and is_apple_wallet_configured()
+    google_available = _is_wallet_provider_enabled(card, "google") and is_google_wallet_configured()
+
+    return PublicPassOut(
+        pass_id=str(customer_pass.id),
+        program_name=card.name,
+        tenant_name=card.tenant.name,
+        card_type=card.card_type,
+        background_color=card.background_color or "#1A1A2E",
+        text_color=card.text_color or "#FFFFFF",
+        logo_url=card.logo_url or "",
+        strip_image_url=card.strip_image_url or "",
+        qr_code=customer_pass.qr_code,
+        member_name=f"{customer.first_name} {customer.last_name}".strip(),
+        wallet_urls={
+            "apple": f"/api/v1/wallet/apple/{pass_id}/" if apple_available else "",
+            "google": f"/api/v1/wallet/google/{pass_id}/" if google_available else "",
+            "status": f"/api/v1/wallet/status/{pass_id}/",
+        },
     )
