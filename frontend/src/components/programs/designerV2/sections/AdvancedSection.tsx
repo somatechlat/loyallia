@@ -148,7 +148,7 @@ export function AdvancedSection({ walletDesign, onWalletDesignChange }: Advanced
                 onChange={e => updateGoogleAdvanced({ reviewStatus: e.target.value as WalletDesignState['googleAdvanced']['reviewStatus'] })}
                 className="w-full h-9 px-3 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="underReview">En revisión</option>
+                <option value="UNDER_REVIEW">En revisión</option>
                 <option value="approved">Aprobado</option>
                 <option value="rejected">Rechazado</option>
               </select>

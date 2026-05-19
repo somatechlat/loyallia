@@ -79,7 +79,7 @@ export interface AppleFieldDef {
 }
 
 export interface GoogleAdvancedConfig {
-  reviewStatus: 'underReview' | 'approved' | 'rejected';
+  reviewStatus: 'UNDER_REVIEW' | 'approved' | 'rejected';
   allowMultipleUsers: string;
   homepageUri: string;
   helpUri: string;
@@ -153,7 +153,7 @@ export function defaultWalletDesignState(): WalletDesignState {
     appleFields: {},
     googleRows: [],
     googleAdvanced: {
-      reviewStatus: 'underReview',
+      reviewStatus: 'UNDER_REVIEW',
       allowMultipleUsers: 'ONE_USER_ALL_DEVICES',
       homepageUri: '',
       helpUri: '',
@@ -233,7 +233,7 @@ function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedCo
         <div className="space-y-1">
           <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Estado de revisión</label>
           <select value={config.reviewStatus} onChange={e => patch({ reviewStatus: e.target.value as GoogleAdvancedConfig['reviewStatus'] })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-            <option value="underReview">En revisión</option>
+            <option value="UNDER_REVIEW">En revisión</option>
             <option value="approved">Aprobado</option>
             <option value="rejected">Rechazado</option>
           </select>

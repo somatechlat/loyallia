@@ -65,7 +65,7 @@ function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): Walle
     appleFields: (wd.apple_fields as Record<string, Array<{ key: string; label: string; value: string }>>) || {},
     googleRows: (wd.google_rows as WalletDesignState['googleRows']) || [],
     googleAdvanced: (wd.google_advanced as WalletDesignState['googleAdvanced']) || {
-      reviewStatus: 'underReview',
+      reviewStatus: 'UNDER_REVIEW',
       allowMultipleUsers: 'ONE_USER_ALL_DEVICES',
       homepageUri: '',
       helpUri: '',
