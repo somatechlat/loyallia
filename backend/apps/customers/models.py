@@ -15,6 +15,37 @@ from apps.tenants.models import Tenant
 from common.models import TimestampedModel
 
 
+class CustomerPortalAccount(models.Model):
+    """
+    Global customer portal account for self-service access.
+    Not tenant-scoped: one email = one portal account across all businesses.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(unique=True, verbose_name="Correo electrónico")
+    password = models.CharField(max_length=128, blank=True, default="", verbose_name="Contraseña")
+    is_active = models.BooleanField(default=True, verbose_name="Cuenta activa")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        db_table = "loyallia_customer_portal_accounts"
+        verbose_name = "Cuenta de Portal de Cliente"
+        verbose_name_plural = "Cuentas de Portal de Clientes"
+
+    def set_password(self, raw_password: str) -> None:
+        """Hash and store the password using Django's hasher."""
+        from django.contrib.auth.hashers import make_password
+
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password: str) -> bool:
+        """Verify a raw password against the stored hash."""
+        from django.contrib.auth.hashers import check_password as django_check
+
+        return django_check(raw_password, self.password)
+
+
 class Customer(TimestampedModel):
     """
     Customer profile with contact information.

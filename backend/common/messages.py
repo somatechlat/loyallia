@@ -61,6 +61,8 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTH_PROFILE_UPDATED": "Perfil actualizado exitosamente.",
     "AUTH_PASSWORD_CHANGED": "Contraseña actualizada exitosamente.",
     "AUTH_PASSWORD_WRONG": "La contraseña actual es incorrecta.",
+    "AUTH_UNAUTHORIZED": "No autorizado. Inicia sesión para continuar.",
+    "AUTH_INVALID_PASSWORD": "Contraseña incorrecta.",
     "AUTH_RESET_EMAIL_SENT": "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.",
     "AUTH_RESET_INVALID": "El enlace de restablecimiento es inválido o ha expirado.",
     "AUTH_GOOGLE_SUCCESS": "Inicio de sesión con Google exitoso.",
@@ -116,6 +118,7 @@ _MESSAGES_ES: dict[str, str] = {
     "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet no está configurado. Se requieren los identificadores y certificados de Apple Developer.",
     "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet no está configurado. Se requiere la cuenta de servicio de Google Wallet.",
     "PASS_WALLET_PROVIDER_DISABLED": "Esta billetera no está habilitada para la tarjeta.",
+    "PASS_DISENROLLED": "Has salido del programa exitosamente.",
     "PASS_QR_INVALID_SIGNATURE": "Firma del código QR inválida.",
     "PASS_QR_EXPIRED": "El código QR ha expirado. Abre tu tarjeta para actualizar el código.",
  # Transactions
@@ -319,6 +322,8 @@ _MESSAGES_EN: dict[str, str] = {
     "AUTH_PROFILE_UPDATED": "Profile updated successfully.",
     "AUTH_PASSWORD_CHANGED": "Password changed successfully.",
     "AUTH_PASSWORD_WRONG": "Current password is incorrect.",
+    "AUTH_UNAUTHORIZED": "Unauthorized. Please log in to continue.",
+    "AUTH_INVALID_PASSWORD": "Incorrect password.",
     "AUTH_RESET_EMAIL_SENT": "If the email is registered, you will receive a reset link.",
     "AUTH_RESET_INVALID": "The reset link is invalid or has expired.",
     "TENANT_CREATED": "Business registered. Your {days}-day free trial has started.",
@@ -534,10 +539,13 @@ _MESSAGES_FR: dict[str, str] = {
     "AUTH_LOGOUT_SUCCESS": "Déconnexion réussie.",
     "AUTH_INVALID_CREDENTIALS": "E-mail ou mot de passe incorrect.",
     "AUTH_PERMISSION_DENIED": "Vous n'avez pas la permission d'effectuer cette action.",
+    "AUTH_UNAUTHORIZED": "Non autorisé. Veuillez vous connecter pour continuer.",
+    "AUTH_INVALID_PASSWORD": "Mot de passe incorrect.",
     "NOT_FOUND": "Ressource introuvable.",
     "BILLING_PLAN_REQUIRED": "Un abonnement actif est requis pour utiliser cette fonctionnalité.",
     "PLAN_LIMIT_EXCEEDED": "Vous avez atteint la limite pour {resource} ({limit}). Améliorez votre plan.",
     "PLAN_FEATURE_UNAVAILABLE": "Cette fonctionnalité n'est pas disponible dans votre plan actuel.",
+    "PASS_DISENROLLED": "Vous avez quitté le programme avec succès.",
 }
 
 
@@ -547,11 +555,14 @@ _MESSAGES_DE: dict[str, str] = {
     "AUTH_LOGOUT_SUCCESS": "Erfolgreich abgemeldet.",
     "AUTH_INVALID_CREDENTIALS": "Ungültige E-Mail oder Passwort.",
     "AUTH_PERMISSION_DENIED": "Sie haben keine Berechtigung für diese Aktion.",
+    "AUTH_UNAUTHORIZED": "Nicht autorisiert. Bitte melden Sie sich an.",
+    "AUTH_INVALID_PASSWORD": "Falsches Passwort.",
     "NOT_FOUND": "Ressource nicht gefunden.",
     "BILLING_PLAN_REQUIRED": "Ein aktives Abonnement ist erforderlich.",
     "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "Plan '{name}' kann nicht deaktiviert werden, da er {count} aktive Abonnement(s) hat.",
     "PLAN_LIMIT_EXCEEDED": "Limit für {resource} ({limit}) erreicht. Upgraden Sie Ihren Plan.",
     "PLAN_FEATURE_UNAVAILABLE": "Diese Funktion ist in Ihrem aktuellen Plan nicht verfügbar.",
+    "PASS_DISENROLLED": "Sie haben das Programm erfolgreich verlassen.",
 }
 
 
