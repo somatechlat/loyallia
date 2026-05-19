@@ -322,7 +322,16 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = get_secret("mailjet_api_key", default="")
 EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", default="")
-DEFAULT_FROM_EMAIL = get_secret(
+# Default sender email: read from PlatformSetting so sysadmin can change it via UI.
+# Falls back to Vault (legacy) then env var.
+try:
+    from apps.tenants.models import PlatformSetting
+
+    _platform_sender = PlatformSetting.get("mailjet_sender_email", "")
+except Exception:
+    _platform_sender = ""
+
+DEFAULT_FROM_EMAIL = _platform_sender or get_secret(
     "mailjet_sender_email",
     default=str(config("EMAIL_FROM", default="noreply@loyallia.com")),
 )
