@@ -302,6 +302,10 @@ PAYMENT_GATEWAY_PROVIDER = get_secret(
     default="manual",
 )
 PAYMENT_GATEWAY_BASE_URL = config("PAYMENT_GATEWAY_BASE_URL", default="")
+
+# Public base URL for absolute link generation (wallet passes, emails, etc.)
+# In production this should be https://rewards.loyallia.com (or your domain)
+PUBLIC_BASE_URL = config("PUBLIC_BASE_URL", default="")
 PAYMENT_GATEWAY_LOGIN = get_secret("payment_gateway_login", default="")
 PAYMENT_GATEWAY_TRAN_KEY = get_secret("payment_gateway_tran_key", default="")
 PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(

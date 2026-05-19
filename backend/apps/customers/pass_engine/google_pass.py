@@ -286,12 +286,13 @@ def send_push_notification(customer_pass, header: str, body: str, action_url: st
         return {"success": False, "error": str(exc)}
 
 
-def update_loyalty_class(card) -> dict:
+def update_loyalty_class(card, base_url: str = "") -> dict:
     """
     Upsert the Google Wallet Class for a card (PATCH existing, POST if not found).
     Reference: https://developers.google.com/wallet/generic/rest/v1/loyaltyclass/patch
     """
     import httpx
+    from django.conf import settings
 
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
@@ -302,34 +303,38 @@ def update_loyalty_class(card) -> dict:
     if not access_token:
         return {"success": False, "error": "Auth failed"}
 
+    # Fallback to settings.PUBLIC_BASE_URL if no base_url provided
+    if not base_url:
+        base_url = getattr(settings, "PUBLIC_BASE_URL", "")
+
     gw_type = _resolve_gw_type(card.card_type)
     tenant = card.tenant
 
     if gw_type == "offer":
-        payload = _build_offer_class(card, tenant)
+        payload = _build_offer_class(card, tenant, base_url)
         api_endpoint = "offerClass"
     elif gw_type == "giftCard":
-        payload = _build_gift_card_class(card, tenant)
+        payload = _build_gift_card_class(card, tenant, base_url)
         api_endpoint = "giftCardClass"
     else:
-        payload = _build_loyalty_class(card, tenant)
+        payload = _build_loyalty_class(card, tenant, base_url)
         api_endpoint = "loyaltyClass"
 
     class_id = payload["id"]
-    base_url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
+    api_base_url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {access_token}",
     }
 
     try:
-        patch_resp = httpx.patch(f"{base_url}/{class_id}", json=payload, headers=headers, timeout=10.0)
+        patch_resp = httpx.patch(f"{api_base_url}/{class_id}", json=payload, headers=headers, timeout=10.0)
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Class patched successfully: %s", class_id)
             return {"success": True, "action": "patch"}
         if patch_resp.status_code == 404:
             logger.info("Class %s not found  creating via POST", class_id)
-            post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
+            post_resp = httpx.post(api_base_url, json=payload, headers=headers, timeout=10.0)
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Class created: %s", class_id)
                 return {"success": True, "action": "create"}
@@ -346,7 +351,7 @@ def update_loyalty_class(card) -> dict:
         return {"success": False, "error": str(exc)}
 
 
-def update_wallet_object(customer_pass) -> dict:
+def update_wallet_object(customer_pass, base_url: str = "") -> dict:
     """
     PATCH the Google Wallet Object with updated pass data.
     This silently updates stamp count, balance, etc. in the user's wallet.
@@ -354,6 +359,7 @@ def update_wallet_object(customer_pass) -> dict:
     Supports loyaltyObjects, offerObjects, and giftCardObjects.
     """
     import httpx
+    from django.conf import settings
 
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
@@ -364,39 +370,43 @@ def update_wallet_object(customer_pass) -> dict:
     if not access_token:
         return {"success": False, "error": "Auth failed"}
 
+    # Fallback to settings.PUBLIC_BASE_URL if no base_url provided
+    if not base_url:
+        base_url = getattr(settings, "PUBLIC_BASE_URL", "")
+
     card = customer_pass.card
     customer = customer_pass.customer
     tenant = card.tenant
     gw_type = _resolve_gw_type(card.card_type)
 
     if gw_type == "offer":
-        payload = _build_offer_object(customer_pass, card, customer, tenant)
+        payload = _build_offer_object(customer_pass, card, customer, tenant, base_url)
         api_endpoint = "offerObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.offer-pass-{customer_pass.id}"
     elif gw_type == "giftCard":
-        payload = _build_gift_card_object(customer_pass, card, customer, tenant)
+        payload = _build_gift_card_object(customer_pass, card, customer, tenant, base_url)
         api_endpoint = "giftCardObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
     else:
-        payload = _build_loyalty_object(customer_pass, card, customer, tenant)
+        payload = _build_loyalty_object(customer_pass, card, customer, tenant, base_url)
         api_endpoint = "loyaltyObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.loyallia-pass-{customer_pass.id}"
 
-    base_url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
+    api_base_url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {access_token}",
     }
 
     try:
-        patch_resp = httpx.patch(f"{base_url}/{object_id}", json=payload, headers=headers, timeout=10.0)
+        patch_resp = httpx.patch(f"{api_base_url}/{object_id}", json=payload, headers=headers, timeout=10.0)
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Object patched: %s", object_id)
             return {"success": True, "action": "patch", "object_id": object_id}
         if patch_resp.status_code == 404:
  # Object doesn't exist yet create it
             logger.info("Object %s not found  creating via POST", object_id)
-            post_resp = httpx.post(base_url, json=payload, headers=headers, timeout=10.0)
+            post_resp = httpx.post(api_base_url, json=payload, headers=headers, timeout=10.0)
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Object created: %s", object_id)
                 return {"success": True, "action": "create", "object_id": object_id}
