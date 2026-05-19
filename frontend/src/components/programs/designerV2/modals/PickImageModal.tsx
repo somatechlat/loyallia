@@ -3,7 +3,17 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Upload } from '@/components/ui/LucideIcons';
+import { X, Upload, Loader2 } from '@/components/ui/LucideIcons';
+import { uploadFileWithError } from '@/lib/upload';
+import { mediaApi } from '@/lib/api';
+import toast from 'react-hot-toast';
+
+interface AssetItem {
+  url: string;
+  name: string;
+  size: number;
+  last_modified: string;
+}
 
 interface PickImageModalProps {
   isOpen: boolean;
@@ -24,20 +34,51 @@ export function PickImageModal({
 }: PickImageModalProps) {
   const [activeTab, setActiveTab] = useState<'upload' | 'library'>('upload');
   const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [assets, setAssets] = useState<AssetItem[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) setActiveTab('upload');
   }, [isOpen]);
 
-  const handleFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      onChange(e.target?.result as string);
+  /* Load library when tab switches */
+  useEffect(() => {
+    if (!isOpen || activeTab !== 'library') return;
+    loadAssets();
+  }, [isOpen, activeTab]);
+
+  const loadAssets = async () => {
+    setLoadingAssets(true);
+    try {
+      const { data } = await mediaApi.listAssets();
+      if (data.success) {
+        setAssets(data.assets);
+      }
+    } catch {
+      toast.error('Error al cargar biblioteca');
+    } finally {
+      setLoadingAssets(false);
+    }
+  };
+
+  const handleFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes');
+      return;
+    }
+    setUploading(true);
+    const { url, error } = await uploadFileWithError(file);
+    setUploading(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    if (url) {
+      onChange(url);
       onClose();
-    };
-    reader.readAsDataURL(file);
+    }
   }, [onChange, onClose]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -119,33 +160,36 @@ export function PickImageModal({
           {activeTab === 'upload' ? (
             <div className="space-y-4">
               <div
-                onClick={() => inputRef.current?.click()}
+                onClick={() => !uploading && inputRef.current?.click()}
                 onDrop={onDrop}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 className={`
                   relative cursor-pointer rounded-2xl border-2 transition-all overflow-hidden flex flex-col items-center justify-center gap-3 py-10
+                  ${uploading ? 'opacity-60 cursor-not-allowed' : ''}
                   ${dragOver
                     ? 'border-primary bg-primary/5'
                     : 'border-dashed border-surface-300 dark:border-surface-700 hover:border-surface-400 dark:hover:border-surface-600'
                   }
                 `}
               >
-                {value ? (
+                {uploading ? (
+                  <Loader2 className="w-8 h-8 text-surface-400 animate-spin" strokeWidth={1.5} />
+                ) : value ? (
                   <img src={value} alt={label} className="w-24 h-24 object-cover rounded-xl" />
                 ) : (
                   <Upload className="w-8 h-8 text-surface-400" strokeWidth={1.5} />
                 )}
                 <div className="text-center">
                   <p className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                    {value ? 'Haz click para cambiar' : 'Haz click o arrastra para subir'}
+                    {uploading ? 'Subiendo...' : value ? 'Haz click para cambiar' : 'Haz click o arrastra para subir'}
                   </p>
                   <p className="text-xs text-surface-500 mt-1">{specs}</p>
                 </div>
-                <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onInputChange} />
+                <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onInputChange} disabled={uploading} />
               </div>
 
-              {value && (
+              {value && !uploading && (
                 <button
                   type="button"
                   onClick={() => { onChange(''); onClose(); }}
@@ -156,13 +200,40 @@ export function PickImageModal({
               )}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-sm text-surface-500 dark:text-surface-400">
-                La biblioteca de imágenes estará disponible próximamente.
-              </p>
-              <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
-                Por ahora, sube imágenes directamente desde tu dispositivo.
-              </p>
+            <div className="space-y-3">
+              {loadingAssets ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 text-surface-400 animate-spin" strokeWidth={1.5} />
+                </div>
+              ) : assets.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-surface-500 dark:text-surface-400">
+                    No hay imágenes en la biblioteca.
+                  </p>
+                  <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
+                    Sube imágenes desde la pestaña "Subir imagen".
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto p-1">
+                  {assets.map(asset => (
+                    <button
+                      key={asset.url}
+                      type="button"
+                      onClick={() => { onChange(asset.url); onClose(); }}
+                      className="relative aspect-square rounded-lg border border-surface-200 dark:border-white/[0.06] overflow-hidden hover:border-primary transition-colors group"
+                    >
+                      <img
+                        src={asset.url}
+                        alt={asset.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -72,6 +72,11 @@ function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): Walle
       expirationDate: '',
     },
     appleNfc: appleWallet || { nfc_enabled: false, nfc_requires_authentication: false },
+    locations: (wd.locations as WalletDesignState['locations']) || [],
+    beacons: (wd.beacons as WalletDesignState['beacons']) || [],
+    links: (wd.links as WalletDesignState['links']) || [],
+    homepageUri: (wd.homepage_uri as string) || '',
+    helpUri: (wd.help_uri as string) || '',
   };
 }
 
@@ -138,6 +143,11 @@ export default function ProgramDesignV2Page() {
           google_rows: walletDesign.googleRows,
           google_advanced: walletDesign.googleAdvanced,
           apple_advanced: walletDesign.appleAdvanced,
+          locations: walletDesign.locations,
+          beacons: walletDesign.beacons,
+          links: walletDesign.links,
+          homepage_uri: walletDesign.homepageUri,
+          help_uri: walletDesign.helpUri,
         },
         apple_wallet: walletDesign.appleNfc,
         wallet_provider: walletDesign.provider,

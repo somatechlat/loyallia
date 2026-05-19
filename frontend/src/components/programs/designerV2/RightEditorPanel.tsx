@@ -56,10 +56,16 @@ export function RightEditorPanel({
         />
       )}
       {activeNav === 'locations' && (
-        <LocationsSection />
+        <LocationsSection
+          walletDesign={walletDesign}
+          onWalletDesignChange={onWalletDesignChange}
+        />
       )}
       {activeNav === 'links' && (
-        <LinksSection />
+        <LinksSection
+          walletDesign={walletDesign}
+          onWalletDesignChange={onWalletDesignChange}
+        />
       )}
       {activeNav === 'barcode' && (
         <BarcodeSection

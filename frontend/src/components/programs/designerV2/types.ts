@@ -8,6 +8,9 @@ export type {
   GoogleAdvancedConfig,
   AppleAdvancedConfig,
   WalletDesignState,
+  WalletLocation,
+  WalletBeacon,
+  WalletLink,
 } from '../WalletDesigner';
 
 export { defaultWalletDesignState } from '../WalletDesigner';

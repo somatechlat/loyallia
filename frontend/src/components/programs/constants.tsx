@@ -293,6 +293,25 @@ export const APPLE_DEFAULT_FIELDS: Record<string, Record<string, Array<{key: str
   },
 };
 
+/** Human-friendly field value presets for Apple/Google Wallet fields */
+export const FIELD_VALUE_PRESETS = [
+  { label: 'Texto personalizado', value: '' },
+  { label: 'Nombre del cliente', value: '{customer_name}' },
+  { label: 'Nombre del programa', value: '{program_name}' },
+  { label: 'Sellos actuales / requeridos', value: '{stamp_count}/{stamps_required}' },
+  { label: 'Saldo de cashback', value: '${cashback_balance}' },
+  { label: 'Porcentaje de cashback', value: '{cashback_percentage}%' },
+  { label: 'Puntos actuales', value: '{loyalty_points}' },
+  { label: 'Nivel / Tier', value: '{membership_tier}' },
+  { label: 'Descuento actual', value: '{discount_percentage}%' },
+  { label: 'Código de referido', value: '{referral_code}' },
+  { label: 'Usos restantes (multipase)', value: '{multipass_remaining}/{bundle_size}' },
+  { label: 'Saldo de regalo', value: '${gift_balance}' },
+  { label: 'Fecha de inscripción', value: '{enrolled_date}' },
+  { label: 'Nombre del negocio', value: '{issuer_name}' },
+  { label: 'Descripción del programa', value: '{description}' },
+] as const;
+
 /** Google Wallet multipleDevicesAndHoldersAllowedStatus options */
 export const GOOGLE_DEVICE_SHARING_OPTIONS = [
   { value: 'ONE_USER_ALL_DEVICES', label: 'Un usuario, todos sus dispositivos', desc: 'El mismo usuario puede tener la tarjeta en múltiples dispositivos' },

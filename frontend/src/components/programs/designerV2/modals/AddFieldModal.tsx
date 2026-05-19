@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Plus } from '@/components/ui/LucideIcons';
-import { APPLE_FIELD_GROUPS, GOOGLE_ROW_TYPES } from '../../constants';
+import { APPLE_FIELD_GROUPS, GOOGLE_ROW_TYPES, FIELD_VALUE_PRESETS } from '../../constants';
 import type { AppleFieldDef, GoogleFieldRow } from '../types';
 
 interface AddFieldModalProps {
@@ -180,13 +180,33 @@ export function AddFieldModal({
 
               <div>
                 <label className="label">Valor</label>
-                <input
-                  type="text"
+                <select
                   className="input"
-                  value={value}
-                  onChange={e => setValue(e.target.value)}
-                  placeholder="Ej: {customer_name}"
-                />
+                  value={FIELD_VALUE_PRESETS.find(p => p.value === value && p.value !== "") ? value : '__custom__'}
+                  onChange={e => {
+                    const selected = e.target.value;
+                    if (selected === '__custom__') {
+                      setValue('');
+                    } else {
+                      setValue(selected);
+                    }
+                  }}
+                >
+                  {FIELD_VALUE_PRESETS.map(p => (
+                    <option key={p.value || 'custom'} value={p.value === "" ? '__custom__' : p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                {(value === '' || !FIELD_VALUE_PRESETS.some(p => p.value === value && p.value !== '')) && (
+                  <input
+                    type="text"
+                    className="input mt-2"
+                    value={value}
+                    onChange={e => setValue(e.target.value)}
+                    placeholder="Escribe un valor personalizado..."
+                  />
+                )}
               </div>
 
               <div>

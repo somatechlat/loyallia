@@ -3,10 +3,12 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Info, Upload, X } from '@/components/ui/LucideIcons';
+import { Info, Upload, X, Loader2 } from '@/components/ui/LucideIcons';
 import { DESIGN_TEMPLATES } from '../../constants';
 import type { WalletDesignState } from '../types';
 import { PickImageModal } from '../modals/PickImageModal';
+import { uploadFileWithError } from '@/lib/upload';
+import toast from 'react-hot-toast';
 
 /* ─── Info Callout ────────────────────────────────────────────────── */
 function InfoCallout({ children }: { children: React.ReactNode }) {
@@ -30,12 +32,21 @@ interface ImageUploadRowProps {
 function ImageUploadRow({ label, specs, value, onChange, onClick }: ImageUploadRowProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const handleFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => onChange(e.target?.result as string);
-    reader.readAsDataURL(file);
+  const handleFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes');
+      return;
+    }
+    setUploading(true);
+    const { url, error } = await uploadFileWithError(file);
+    setUploading(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    if (url) onChange(url);
   }, [onChange]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -60,30 +71,33 @@ function ImageUploadRow({ label, specs, value, onChange, onClick }: ImageUploadR
       <div className="flex items-center gap-3">
         {/* Preview */}
         <div
-          onClick={() => { onClick?.(); inputRef.current?.click(); }}
+          onClick={() => { if (!uploading) { onClick?.(); inputRef.current?.click(); } }}
           onDrop={onDrop}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           className={`
-            relative cursor-pointer rounded-lg border-2 transition-all overflow-hidden shrink-0
+            relative rounded-lg border-2 transition-all overflow-hidden shrink-0
+            ${uploading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
             ${dragOver ? 'border-primary bg-primary/5' : 'border-dashed border-muted-foreground/25 hover:border-muted-foreground/50'}
             ${value ? 'w-20 h-20 border-solid' : 'w-20 h-20 flex items-center justify-center'}
           `}
         >
-          {value ? (
+          {uploading ? (
+            <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" strokeWidth={1.5} />
+          ) : value ? (
             <img src={value} alt={label} className="w-full h-full object-cover" />
           ) : (
             <Upload className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
           )}
-          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onInputChange} />
+          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onInputChange} disabled={uploading} />
         </div>
 
         {/* Info & actions */}
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground">
-            {value ? 'Haz click para cambiar o arrastra una nueva imagen' : 'Haz click o arrastra para subir'}
+            {uploading ? 'Subiendo...' : value ? 'Haz click para cambiar o arrastra una nueva imagen' : 'Haz click o arrastra para subir'}
           </p>
-          {value && (
+          {value && !uploading && (
             <button
               type="button"
               onClick={() => onChange('')}
