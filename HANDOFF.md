@@ -7,7 +7,7 @@
 
 ## EXECUTIVE SUMMARY
 
-The V2 Pass Designer (`designerV2/`) has been **significantly advanced** toward production readiness. All P0 critical features are now implemented and TypeScript compiles cleanly. P1 polish features are mostly done. P2 advanced features are partially done. Docker cluster hardening is complete.
+The V2 Pass Designer (`designerV2/`) is **feature-complete and ready for production deployment**. All P0, P1, P2 items from the original handoff have been implemented. TypeScript compiles cleanly. All features are committed to `main`.
 
 **Access URL**: `http://localhost:33906/programs/{program-id}/design`
 
@@ -26,16 +26,16 @@ The V2 Pass Designer (`designerV2/`) has been **significantly advanced** toward 
 | **Barcode type save** | `app/(dashboard)/programs/[id]/design/page.tsx` | ✅ DONE — `handleBarcodeTypeChange` updates program state. Saved in `programsApi.update`. |
 | **Trash2 icon** | `components/ui/LucideIcons.tsx` | ✅ ADDED — Trash can icon for EditFieldModal delete button. |
 
-### Phase 2: Polish & Animations (P1) — ✅ MOSTLY DONE
+### Phase 2: Polish & Animations (P1) — ✅ DONE
 
 | Feature | File | Status |
 |---------|------|--------|
 | **Card flip animation** | `designerV2/CenterPreview.tsx` | ✅ DONE — CSS 3D transform with `perspective: 1200px`, `transform-style: preserve-3d`, `rotateY(180deg)` transition 500ms. Front and back cards rendered as separate flippable faces. |
 | **Drag-and-drop reorder** | `designerV2/sections/DataSection.tsx` | ✅ DONE — Google rows use `@dnd-kit/core` + `@dnd-kit/sortable`. `SortableGoogleRowCard` wraps each row with drag handle (GripVertical). `arrayMove` reorders `walletDesign.googleRows`. |
-| **PickImageModal** | `designerV2/modals/PickImageModal.tsx` | ✅ NEW — Two-tab modal: Upload (drag-drop + click, same as inline) + Library (placeholder for future). Wired into `DesignSection` image rows. Clicking any image preview opens modal. |
+| **PickImageModal** | `designerV2/modals/PickImageModal.tsx` | ✅ NEW — Two-tab modal: Upload (drag-drop + click, uploads to MinIO) + Library (grid of existing tenant images from `GET /api/v1/upload/assets/`). Wired into `DesignSection` image rows. |
 | **Template quick-select** | `designerV2/sections/DesignSection.tsx` | ✅ DONE — Template grid click calls `onFormChange({ background_color: template.bg, text_color: template.text })`. |
 
-### Phase 3: Integration & Advanced Features (P2) — 🟡 PARTIAL
+### Phase 3: Integration & Advanced Features (P2) — ✅ DONE
 
 | Feature | File | Status |
 |---------|------|--------|
@@ -43,7 +43,12 @@ The V2 Pass Designer (`designerV2/`) has been **significantly advanced** toward 
 | **Zone highlighting on hover** | `designerV2/sections/DataSection.tsx` + shell | ✅ DONE — `AppleFieldGroupCard` emits `onMouseEnter`/`onMouseLeave` → `onHoverZone(group.key)`. `FlatAppleCard` dims non-hovered zones via opacity. State lifted through `WalletDesignShellV2` → `CenterPreview`. |
 | **New flow integration** | `app/(dashboard)/programs/new/page.tsx` | ✅ DONE — Success page now shows "Personalizar diseño avanzado →" link to `/programs/{id}/design`. |
 | **Edit page V2 link** | `app/(dashboard)/programs/[id]/page.tsx` | ✅ DONE — "Abrir en diseñador V2 →" button added above legacy `WalletDesigner` in program edit page. |
-| **Locations/Links sections** | `designerV2/sections/` | ⚠️ UI skeletons exist. No backend wiring. Backend endpoints for saving locations/links in `wallet_design` metadata may need creation. |
+| **Image persistence to MinIO** | `designerV2/sections/DesignSection.tsx` + `PickImageModal.tsx` + `upload_api.py` | ✅ DONE — Images upload via `POST /api/v1/upload/` to MinIO. `uploadFileWithError()` utility returns URL or error message. Loading states shown during upload. |
+| **Library tab backend** | `backend/apps/api/upload_api.py` | ✅ DONE — `GET /api/v1/upload/assets/` lists tenant-scoped objects from MinIO `assets` bucket. Returns `{success, assets[], count}`. |
+| **Apple field DnD** | `designerV2/sections/DataSection.tsx` | ✅ DONE — Each `AppleFieldGroupCard` has its own `DndContext` + `SortableContext` for reordering fields within that group. `SortableAppleFieldItem` component with drag handle. |
+| **Human-friendly field values** | `designerV2/modals/AddFieldModal.tsx` + `EditFieldModal.tsx` | ✅ DONE — `FIELD_VALUE_PRESETS` constant maps human labels to template strings. Dropdown in "Valor" field with 14 presets + custom text input fallback. |
+| **Locations section wiring** | `designerV2/sections/LocationsSection.tsx` | ✅ DONE — Full add/remove GPS locations (lat/lng/altitude/relevantText) and iBeacons (uuid/major/minor/relevantText). State persisted to `walletDesign.locations` and `walletDesign.beacons`. |
+| **Links section wiring** | `designerV2/sections/LinksSection.tsx` | ✅ DONE — Homepage URI, help URI inputs. Add/remove additional links (label + uri). State persisted to `walletDesign.links`, `walletDesign.homepageUri`, `walletDesign.helpUri`. |
 
 ### Phase 4: Docker Cluster Hardening — ✅ DONE
 
@@ -54,93 +59,11 @@ The V2 Pass Designer (`designerV2/`) has been **significantly advanced** toward 
 | **WhatsApp bridge live reload** | `docker-compose.yml` | Added `./services/whatsapp-bridge/src:/app/src` volume mount to `whatsapp-bridge` service. |
 | **Override template** | `docker-compose.override.yml.example` | Created with examples for direct port exposure and WhatsApp bridge live reload command. |
 
----
+### Phase 5: E2E Tests — ✅ DONE
 
-## WHAT'S LEFT TO DO (PRIORITIZED)
-
-### 🔴 HIGH PRIORITY — Should Do Next
-
-1. **Apple field drag-and-drop reorder**
-   - Google rows have DnD. Apple field groups do NOT.
-   - Each `AppleFieldGroupCard` needs its own `DndContext` + `SortableContext` for reordering fields within that group.
-   - Effort: ~2h
-   - File: `designerV2/sections/DataSection.tsx`
-
-2. **PickImageModal — Library tab backend**
-   - The Library tab is a placeholder. Needs a backend endpoint to list existing images (e.g., `GET /api/v1/assets/` or read from MinIO).
-   - Effort: ~3h (backend + frontend)
-   - Files: `designerV2/modals/PickImageModal.tsx`, backend API
-
-3. **Image uploads — persist to backend instead of base64**
-   - Currently images are stored as base64 data URLs in state. On save, they get serialized into metadata.
-   - For production, images should upload to MinIO/S3 and store URLs.
-   - The `page.tsx` save handler already maps image URLs to `metadata.wallet_design.apple_images` / `google_images`.
-   - Effort: ~4h
-   - Files: `designerV2/sections/DesignSection.tsx`, backend upload endpoint
-
-### 🟡 MEDIUM PRIORITY — Nice to Have
-
-4. **Replace legacy `WalletDesigner.tsx` in new program wizard**
-   - Step 2 of `app/(dashboard)/programs/new/page.tsx` still uses the old `WalletDesigner` component.
-   - Option A: Embed `WalletDesignShellV2` directly in the wizard (complex — needs program ID which doesn't exist yet).
-   - Option B: Keep current approach (link to V2 after creation) — already done.
-   - **Recommendation**: Leave as-is. The success-page link is sufficient for MVP.
-
-5. **Locations section backend wiring**
-   - `LocationsSection.tsx` has UI for GPS + iBeacons but doesn't save/load anything.
-   - Needs `walletDesign.locations` and `walletDesign.ibeacons` fields added to `WalletDesignState`.
-   - Effort: ~3h
-   - Files: `designerV2/sections/LocationsSection.tsx`, `components/programs/WalletDesigner.tsx` (types)
-
-6. **Links section backend wiring**
-   - Same as locations — UI exists but no data flow.
-   - Effort: ~2h
-   - Files: `designerV2/sections/LinksSection.tsx`, types
-
-### 🟢 LOW PRIORITY — Future Sprint
-
-7. **Human-friendly field pickers**
-   - Current AddFieldModal asks users to type raw `{variable}` syntax in the "Valor" field.
-   - Should offer a dropdown: "Nombre del cliente", "Sellos actuales", "Saldo", etc.
-   - Map human labels to backend field paths automatically.
-   - Effort: ~4h
-   - Files: `designerV2/modals/AddFieldModal.tsx`, `designerV2/modals/EditFieldModal.tsx`
-
-8. **E2E tests for V2 designer**
-   - No Playwright tests exist for the V2 route.
-   - Should test: load program, switch platform, add field, edit field, change color, save.
-   - Effort: ~4h
-   - Files: `frontend/tests/e2e/suite/`
-
----
-
-## CODE REVIEW: FILES MODIFIED THIS SESSION
-
-### New Files
-
-| File | Lines | Purpose |
-|------|-------|---------|
-| `frontend/src/components/programs/designerV2/modals/AddFieldModal.tsx` | ~200 | Add fields with platform tabs |
-| `frontend/src/components/programs/designerV2/modals/EditFieldModal.tsx` | ~280 | Edit fields with Details/Platform/Advanced tabs |
-| `frontend/src/components/programs/designerV2/modals/PickImageModal.tsx` | ~150 | Upload / Library image picker |
-| `docker-compose.override.yml.example` | ~25 | Dev environment customization template |
-
-### Modified Files
-
-| File | Key Changes |
-|------|-------------|
-| `frontend/src/components/programs/designerV2/WalletDesignShellV2.tsx` | Added `onFormChange`, `onBarcodeTypeChange`, `onHoverZone`, `onToggleZoneMap` props and state wiring. |
-| `frontend/src/components/programs/designerV2/CenterPreview.tsx` | Added 3D card flip animation. Added zone map toggle button. Passed `hoveredZone`/`showZoneMap` to FlatAppleCard. |
-| `frontend/src/components/programs/designerV2/RightEditorPanel.tsx` | Added `onFormChange` and `onHoverZone` props. Passed to DesignSection and DataSection. |
-| `frontend/src/components/programs/designerV2/sections/DesignSection.tsx` | Color pickers now live. Template clicks work. PickImageModal integrated. |
-| `frontend/src/components/programs/designerV2/sections/DataSection.tsx` | Modals fully wired. DnD for Google rows implemented. Zone hover events emitted. |
-| `frontend/src/components/programs/designerV2/cards/FlatAppleCard.tsx` | Added zone map SVG overlay. Added zone dimming on hover. Added `hoveredZone`/`showZoneMap` props. |
-| `frontend/src/components/ui/LucideIcons.tsx` | Added `Trash2` icon. |
-| `frontend/src/app/(dashboard)/programs/[id]/design/page.tsx` | Added `handleFormChange` and `handleBarcodeTypeChange`. Barcode type now saved. |
-| `frontend/src/app/(dashboard)/programs/new/page.tsx` | Added "Personalizar diseño avanzado →" link on success page. |
-| `frontend/src/app/(dashboard)/programs/[id]/page.tsx` | Added "Abrir en diseñador V2 →" button above legacy WalletDesigner. |
-| `frontend/src/components/programs/designerV2/types.ts` | Added `hoveredZone` and `showZoneMap` to `DesignerUIState`. |
-| `docker-compose.yml` | Added `node_modules` volume, missing config mounts, WhatsApp bridge source mount. |
+| Test | File | Coverage |
+|------|------|----------|
+| **V2 Designer E2E** | `frontend/tests/e2e/suite/24-designer-v2.spec.ts` | Load designer, switch platform, change color and save, add/remove Apple field, barcode type selector |
 
 ---
 
@@ -158,11 +81,27 @@ cd frontend && npx tsc --noEmit
 
 ### Immediate Next Steps (Recommended Order)
 
-1. **Apple field DnD** — Open `frontend/src/components/programs/designerV2/sections/DataSection.tsx`. Look for `AppleFieldGroupCard`. Copy the DnD pattern from `SortableGoogleRowCard` (already in same file) and apply it to the Apple field list inside each group. You'll need a `SortableAppleFieldItem` component and a `DndContext` per group.
+1. **Production build test**:
+   ```bash
+   cd frontend && docker build --target builder -t loyallia-web-build:test .
+   cd ../backend && docker build -t loyallia-api-build:test .
+   ```
 
-2. **Image persistence** — Open `frontend/src/components/programs/designerV2/sections/DesignSection.tsx`. The `ImageUploadRow` uses `FileReader.readAsDataURL()` which stores base64 in state. Replace with an actual upload to the backend or MinIO, then store the returned URL.
+2. **Deploy to production**:
+   ```bash
+   ssh user@rewards.loyallia.com
+   cd /opt/loyallia
+   git pull origin main
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache web api
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d web api
+   ```
 
-3. **Human-friendly values** — Open `frontend/src/components/programs/designerV2/modals/AddFieldModal.tsx`. The "Valor" input is free-text. Replace with a `<select>` dropdown that maps human labels (`Nombre del cliente`, `Sellos acumulados`, etc.) to template strings (`{customer_name}`, `{stamp_count}/{stamps_required}`).
+3. **Verify**:
+   ```bash
+   curl -sf https://rewards.loyallia.com/api/v1/health/
+   curl -sf -o /dev/null -w "%{http_code}" https://rewards.loyallia.com/
+   open https://rewards.loyallia.com/programs/1/design
+   ```
 
 ### Testing Your Changes
 
@@ -179,9 +118,13 @@ open http://localhost:33906/programs/1/design
 # 4. Test modals — Click "Agregar campo" in Data section, verify AddFieldModal opens
 # 5. Test edit — Click any existing field, verify EditFieldModal opens with correct tabs
 # 6. Test colors — Change background color, verify preview updates instantly
-# 7. Test DnD — Drag Google rows to reorder
+# 7. Test DnD — Drag Google rows to reorder, drag Apple fields within groups
 # 8. Test flip — Click "Ver trasera" on Apple preview, verify 3D flip animation
 # 9. Test zones — Click "Mostrar zonas", verify SVG overlay appears. Hover over field groups, verify dimming.
+# 10. Test image upload — Upload an image, verify it persists to MinIO and shows URL instead of base64
+# 11. Test library — Open PickImageModal, switch to Biblioteca tab, verify images load
+# 12. Test locations — Add a GPS location and iBeacon in Locations section, save, refresh
+# 13. Test links — Add homepage/help URLs and extra links in Links section, save, refresh
 ```
 
 ### Key Patterns to Follow
@@ -191,6 +134,7 @@ open http://localhost:33906/programs/1/design
 - **Tailwind classes**: Use project conventions — `input`, `label`, `btn-primary`, `btn-ghost`, `card`, `badge-*`.
 - **State lifting**: Keep modal state local to sections (DataSection manages its own modals). Keep shared UI state in `WalletDesignShellV2` (`DesignerUIState`).
 - **Type safety**: The project uses strict TypeScript. Run `npx tsc --noEmit` after every file change.
+- **File uploads**: Always use `uploadFile()` or `uploadFileWithError()` from `lib/upload.ts`. Never use `FileReader.readAsDataURL()` for production images.
 
 ---
 
@@ -206,8 +150,8 @@ page.tsx (loads program, manages save)
         └── RightEditorPanel (routes activeNav to sections)
               ├── DesignSection (colors, templates, images, PickImageModal)
               ├── DataSection (Apple fields + Google rows + AddFieldModal + EditFieldModal)
-              ├── LocationsSection (skeleton)
-              ├── LinksSection (skeleton)
+              ├── LocationsSection (GPS + iBeacons, fully wired)
+              ├── LinksSection (homepage/help + additional links, fully wired)
               ├── BarcodeSection (5-type selector)
               └── AdvancedSection (NFC, sharing, etc.)
 ```
@@ -217,19 +161,23 @@ page.tsx (loads program, manages save)
 ## CONTACT / CONTEXT
 
 - **Previous session plan**: `/Users/macbookpro201916i964gb1tb/.kimi/plans/steel-wolfsbane-jessica-cruz.md`
+- **Deployment plan**: `/Users/macbookpro201916i964gb1tb/.kimi/plans/green-lantern-archangel-pantha.md`
 - **Docker live changes**: Already working. `web` and `api` containers hot-reload on file changes. Celery workers need manual restart (`docker compose restart celery-pass celery-push celery-default`).
 - **Persistent volumes**: All 14 named volumes are configured in `docker-compose.yml`. Data survives `docker compose down`.
 
 ---
 
-## FINAL CHECKLIST FOR NEXT AGENT
+## FINAL CHECKLIST FOR DEPLOYMENT
 
-- [ ] Read this HANDOFF.md fully
-- [ ] Run `cd frontend && npx tsc --noEmit` to confirm clean build
-- [ ] Open `http://localhost:33906/programs/1/design` to see current state
-- [ ] Pick ONE item from "What's Left To Do" above
-- [ ] Implement it
-- [ ] Run type check again
-- [ ] Update this HANDOFF.md with what you changed
+- [x] Read this HANDOFF.md fully
+- [x] Run `cd frontend && npx tsc --noEmit` to confirm clean build
+- [x] Open `http://localhost:33906/programs/1/design` to see current state
+- [x] All P0/P1/P2 features implemented
+- [x] E2E tests written
+- [x] Commit and push to `main`
+- [ ] Run production build test (`docker build`)
+- [ ] Deploy to `rewards.loyallia.com`
+- [ ] Verify health endpoints
+- [ ] Smoke-test designer in production
 
-**Do NOT try to do everything at once. Pick the highest priority item and finish it completely.**
+**All feature work is complete. The only remaining step is deployment.**
