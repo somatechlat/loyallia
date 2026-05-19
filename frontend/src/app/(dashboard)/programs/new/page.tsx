@@ -8,6 +8,7 @@ import {
   CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta,
   APPLE_DEFAULT_FIELDS,
 } from '@/components/programs/constants';
+import { Palette } from '@/components/ui/LucideIcons';
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
@@ -190,6 +191,16 @@ export default function NewProgramPage() {
           <div className="flex gap-3 justify-center">
             <a href="/programs" className="btn-secondary text-sm">← Ver todos los programas</a>
             <a href={`/programs/${createdProgram.id}`} className="btn-primary text-sm">Ver programa →</a>
+          </div>
+
+          <div className="pt-2">
+            <a
+              href={`/programs/${createdProgram.id}/design`}
+              className="inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
+            >
+              <Palette className="w-4 h-4" strokeWidth={1.5} />
+              Personalizar diseño avanzado →
+            </a>
           </div>
         </div>
       ) : (

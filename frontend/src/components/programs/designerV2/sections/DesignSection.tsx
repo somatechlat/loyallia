@@ -3,9 +3,10 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Info, Upload, X } from 'lucide-react';
-import { DESIGN_TEMPLATES } from '../constants';
+import { Info, Upload, X } from '@/components/ui/LucideIcons';
+import { DESIGN_TEMPLATES } from '../../constants';
 import type { WalletDesignState } from '../types';
+import { PickImageModal } from '../modals/PickImageModal';
 
 /* ─── Info Callout ────────────────────────────────────────────────── */
 function InfoCallout({ children }: { children: React.ReactNode }) {
@@ -23,9 +24,10 @@ interface ImageUploadRowProps {
   specs: string;
   value: string;
   onChange: (url: string) => void;
+  onClick?: () => void;
 }
 
-function ImageUploadRow({ label, specs, value, onChange }: ImageUploadRowProps) {
+function ImageUploadRow({ label, specs, value, onChange, onClick }: ImageUploadRowProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -58,7 +60,7 @@ function ImageUploadRow({ label, specs, value, onChange }: ImageUploadRowProps) 
       <div className="flex items-center gap-3">
         {/* Preview */}
         <div
-          onClick={() => inputRef.current?.click()}
+          onClick={() => { onClick?.(); inputRef.current?.click(); }}
           onDrop={onDrop}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -93,6 +95,7 @@ function ImageUploadRow({ label, specs, value, onChange }: ImageUploadRowProps) 
           )}
         </div>
       </div>
+
     </div>
   );
 }
@@ -124,6 +127,7 @@ function ColorPicker({
           className="flex-1 min-w-0 h-8 px-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
         />
       </div>
+
     </div>
   );
 }
@@ -137,10 +141,12 @@ export interface DesignSectionProps {
     text_color: string;
     card_type: string;
   };
+  onFormChange: (patch: Partial<{ background_color: string; text_color: string }>) => void;
 }
 
-export function DesignSection({ walletDesign, onWalletDesignChange, form }: DesignSectionProps) {
+export function DesignSection({ walletDesign, onWalletDesignChange, form, onFormChange }: DesignSectionProps) {
   const [showExtraImages, setShowExtraImages] = useState(false);
+  const [pickImageModal, setPickImageModal] = useState<{ key: keyof WalletDesignState; label: string; specs: string } | null>(null);
 
   const updateImage = (key: keyof WalletDesignState, url: string) => {
     onWalletDesignChange({ ...walletDesign, [key]: url });
@@ -171,8 +177,7 @@ export function DesignSection({ walletDesign, onWalletDesignChange, form }: Desi
               key={template.id}
               type="button"
               onClick={() => {
-                /* Templates apply colors to form, not walletDesign directly */
-                /* This would need to bubble up to parent */
+                onFormChange({ background_color: template.bg, text_color: template.text });
               }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-lg border border-border hover:border-primary/50 transition-colors"
             >
@@ -193,16 +198,12 @@ export function DesignSection({ walletDesign, onWalletDesignChange, form }: Desi
           <ColorPicker
             label="Fondo"
             value={form.background_color}
-            onChange={(color) => {
-              /* Would need to bubble up to parent form */
-            }}
+            onChange={(color) => onFormChange({ background_color: color })}
           />
           <ColorPicker
             label="Texto"
             value={form.text_color}
-            onChange={(color) => {
-              /* Would need to bubble up to parent form */
-            }}
+            onChange={(color) => onFormChange({ text_color: color })}
           />
         </div>
       </div>
@@ -218,12 +219,14 @@ export function DesignSection({ walletDesign, onWalletDesignChange, form }: Desi
               specs="160x50 px"
               value={walletDesign.appleLogoUrl}
               onChange={url => updateImage('appleLogoUrl', url)}
+              onClick={() => setPickImageModal({ key: 'appleLogoUrl', label: 'Logo del programa', specs: '160x50 px' })}
             />
             <ImageUploadRow
               label="Icono (pantalla de bloqueo)"
               specs="114x114 px"
               value={walletDesign.appleIconUrl}
               onChange={url => updateImage('appleIconUrl', url)}
+              onClick={() => setPickImageModal({ key: 'appleIconUrl', label: 'Icono', specs: '114x114 px' })}
             />
             {(passStyle === 'storeCard' || passStyle === 'coupon') && (
               <ImageUploadRow
@@ -231,6 +234,7 @@ export function DesignSection({ walletDesign, onWalletDesignChange, form }: Desi
                 specs="375x123 px"
                 value={walletDesign.appleStripUrl}
                 onChange={url => updateImage('appleStripUrl', url)}
+                onClick={() => setPickImageModal({ key: 'appleStripUrl', label: 'Imagen de tira', specs: '375x123 px' })}
               />
             )}
             {passStyle === 'generic' && (
@@ -239,6 +243,7 @@ export function DesignSection({ walletDesign, onWalletDesignChange, form }: Desi
                 specs="90x90 px"
                 value={walletDesign.appleThumbnailUrl}
                 onChange={url => updateImage('appleThumbnailUrl', url)}
+                onClick={() => setPickImageModal({ key: 'appleThumbnailUrl', label: 'Miniatura', specs: '90x90 px' })}
               />
             )}
           </>
@@ -249,12 +254,14 @@ export function DesignSection({ walletDesign, onWalletDesignChange, form }: Desi
               specs="660x660 px"
               value={walletDesign.googleProgramLogoUrl}
               onChange={url => updateImage('googleProgramLogoUrl', url)}
+              onClick={() => setPickImageModal({ key: 'googleProgramLogoUrl', label: 'Logo del programa', specs: '660x660 px' })}
             />
             <ImageUploadRow
               label="Imagen hero"
               specs="1032x336 px"
               value={walletDesign.googleHeroImageUrl}
               onChange={url => updateImage('googleHeroImageUrl', url)}
+              onClick={() => setPickImageModal({ key: 'googleHeroImageUrl', label: 'Imagen hero', specs: '1032x336 px' })}
             />
           </>
         )}
@@ -320,6 +327,18 @@ export function DesignSection({ walletDesign, onWalletDesignChange, form }: Desi
           </div>
         )}
       </div>
+
+      {/* Pick Image Modal */}
+      {pickImageModal && (
+        <PickImageModal
+          isOpen={!!pickImageModal}
+          onClose={() => setPickImageModal(null)}
+          label={pickImageModal.label}
+          specs={pickImageModal.specs}
+          value={walletDesign[pickImageModal.key] as string}
+          onChange={url => updateImage(pickImageModal.key, url)}
+        />
+      )}
     </div>
   );
 }

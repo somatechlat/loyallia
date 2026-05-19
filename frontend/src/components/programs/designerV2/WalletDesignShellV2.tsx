@@ -26,10 +26,12 @@ export interface WalletDesignShellV2Props {
     card_type: string;
     strip_image_url?: string;
   };
+  onFormChange: (patch: Partial<{ background_color: string; text_color: string }>) => void;
   selectedType?: { icon: string; label: string };
   logoPreview?: string | null;
   stripPreview?: string | null;
   barcodeType: string;
+  onBarcodeTypeChange: (type: string) => void;
   customerName?: string;
 
   /* Wallet design state */
@@ -56,6 +58,8 @@ export function WalletDesignShellV2({
   onWalletDesignChange,
   onSave,
   isSaving,
+  onFormChange,
+  onBarcodeTypeChange,
 }: WalletDesignShellV2Props) {
   const [ui, setUi] = useState<DesignerUIState>(defaultDesignerUIState);
 
@@ -77,6 +81,16 @@ export function WalletDesignShellV2({
   /* Apple view change */
   const handleAppleViewChange = useCallback((view: 'front' | 'back') => {
     setUi(prev => ({ ...prev, appleView: view }));
+  }, []);
+
+  /* Zone hover */
+  const handleHoverZone = useCallback((zone: string | null) => {
+    setUi(prev => ({ ...prev, hoveredZone: zone }));
+  }, []);
+
+  /* Zone map toggle */
+  const handleToggleZoneMap = useCallback(() => {
+    setUi(prev => ({ ...prev, showZoneMap: !prev.showZoneMap }));
   }, []);
 
   return (
@@ -116,6 +130,9 @@ export function WalletDesignShellV2({
             barcodeType={barcodeType}
             customerName={customerName}
             walletDesign={walletDesign}
+            hoveredZone={ui.hoveredZone}
+            showZoneMap={ui.showZoneMap}
+            onToggleZoneMap={handleToggleZoneMap}
           />
         </div>
 
@@ -126,11 +143,10 @@ export function WalletDesignShellV2({
             walletDesign={walletDesign}
             onWalletDesignChange={onWalletDesignChange}
             form={form}
+            onFormChange={onFormChange}
             barcodeType={barcodeType}
-            onBarcodeTypeChange={(type) => {
-              /* Barcode type is passed from parent, so we need to bubble up */
-              /* This will be handled by the parent page */
-            }}
+            onBarcodeTypeChange={onBarcodeTypeChange}
+            onHoverZone={handleHoverZone}
           />
         </div>
       </div>

@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import {
-  BARCODE_TYPES,
   CardTypeIcon,
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
@@ -99,7 +98,6 @@ function AppleFlatCard({
   const primaryFields = appleFields?.primaryFields?.length ? appleFields.primaryFields : undefined;
   const secondaryFields = appleFields?.secondaryFields?.length ? appleFields.secondaryFields : undefined;
   const auxiliaryFields = appleFields?.auxiliaryFields?.length ? appleFields.auxiliaryFields : undefined;
-  const backFields = appleFields?.backFields?.length ? appleFields.backFields : undefined;
 
   const defaultHeader = {
     stamp: { label: 'SELLOS', value: '0/10' },

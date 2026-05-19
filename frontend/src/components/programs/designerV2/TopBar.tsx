@@ -3,7 +3,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '@/components/ui/LucideIcons';
 
 export interface TopBarProps {
   programName: string;

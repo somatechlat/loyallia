@@ -6,9 +6,9 @@ import React from 'react';
 import {
   GOOGLE_WALLET_TYPES,
   CardTypeIcon,
-} from '../constants';
+} from '../../constants';
 import type { WalletDesignState } from '../types';
-import { BarcodeSvg } from '../WalletCardPreview';
+import { BarcodeSvg } from '../../WalletCardPreview';
 
 /* ─── Helper: resolve template values ─────────────────────────────── */
 function buildContext(form: { name: string; description: string; card_type: string }, customerName?: string): Record<string, string> {

@@ -424,9 +424,13 @@ services:
       - ./frontend/public:/app/public
       - ./frontend/next.config.js:/app/next.config.js
       - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js:ro
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./frontend/components.json:/app/components.json:ro
       - ./frontend/tests:/app/tests:ro
       - ./frontend/playwright.config.ts:/app/playwright.config.ts:ro
       - next_cache:/app/.next/cache
+      - node_modules:/app/node_modules
     depends_on:
       - api
     networks:
@@ -719,8 +723,10 @@ services:
       MAX_MESSAGES_PER_HOUR: 200
       AVG_DELAY_MS: 6000
       LOG_LEVEL: info
+      NODE_ENV: development
     volumes:
       - vault_runtime:/run/loyallia-vault:ro
+      - ./services/whatsapp-bridge/src:/app/src
     ports:
       - "127.0.0.1:33914:3001"
     depends_on:
@@ -1039,6 +1045,8 @@ volumes:
   media_files:
     driver: local
   next_cache:
+    driver: local
+  node_modules:
     driver: local
   vault_data:
     driver: local

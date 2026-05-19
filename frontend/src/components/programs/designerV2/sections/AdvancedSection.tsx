@@ -3,18 +3,8 @@
 'use client';
 
 import React from 'react';
-import { Info } from 'lucide-react';
-import { GOOGLE_DEVICE_SHARING_OPTIONS } from '../constants';
+import { GOOGLE_DEVICE_SHARING_OPTIONS } from '../../constants';
 import type { WalletDesignState } from '../types';
-
-function InfoCallout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex gap-2.5 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
-      <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" strokeWidth={1.5} />
-      <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">{children}</p>
-    </div>
-  );
-}
 
 /* ─── Toggle Switch ───────────────────────────────────────────────── */
 function ToggleSwitch({

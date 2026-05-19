@@ -3,9 +3,9 @@
 'use client';
 
 import React from 'react';
-import { Info } from 'lucide-react';
-import { BARCODE_TYPES } from '../constants';
-import { BarcodeSvg } from '../WalletCardPreview';
+import { Info } from '@/components/ui/LucideIcons';
+import { BARCODE_TYPES } from '../../constants';
+import { BarcodeSvg } from '../../WalletCardPreview';
 
 function InfoCallout({ children }: { children: React.ReactNode }) {
   return (
