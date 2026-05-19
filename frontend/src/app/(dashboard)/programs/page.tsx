@@ -16,24 +16,25 @@ const CARD_TYPE_LABELS: Record<string, string> = {
 
 interface Program {
   id: string; name: string; card_type: string; description: string;
-  is_active: boolean; enrollments_count: number; created_at: string;
+  is_active: boolean; is_published: boolean; enrollments_count: number; created_at: string;
   enrollment_url?: string;
 }
 
 /* ─── Status-classified sections (PROG-005/006/007) ──────────────────── */
-function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: {
+function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, onPublish }: {
   programs: Program[];
   user: User | null;
   openSuspendModal: (p: Program) => void;
   openDeleteModal: (p: Program) => void;
+  onPublish: (p: Program) => void;
 }) {
   const [expandActive, setExpandActive] = useState(false);
   const [expandDraft, setExpandDraft] = useState(false);
   const [expandInactive, setExpandInactive] = useState(false);
 
-  const active = programs.filter(p => p.is_active && (p.enrollments_count ?? 0) > 0);
-  const drafts = programs.filter(p => p.is_active && (p.enrollments_count ?? 0) === 0);
-  const inactive = programs.filter(p => !p.is_active);
+  const active = programs.filter(p => p.is_published && p.is_active);
+  const drafts = programs.filter(p => !p.is_published);
+  const inactive = programs.filter(p => p.is_published && !p.is_active);
 
   const sections = [
     {
@@ -91,7 +92,7 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: 
                       <p className="text-surface-400 text-sm mt-1 line-clamp-2">{p.description}</p>
                     </div>
                     <span className={sec.badge}>
-                      {p.is_active ? 'Activo' : 'Inactivo'}
+                      {!p.is_published ? 'Borrador' : p.is_active ? 'Activo' : 'Inactivo'}
                     </span>
                   </div>
                   <div className="border-t border-surface-100 dark:border-surface-800 pt-3 flex items-center justify-between">
@@ -99,9 +100,23 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: 
                       <p className="text-lg font-bold text-surface-900 dark:text-white">{p.enrollments_count ?? 0}</p>
                       <p className="text-xs text-surface-400">inscritos</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      <a
+                        href={`/programs/${p.id}`}
+                        className="px-2 py-1 text-[10px] rounded-full bg-brand-100 text-brand-600 hover:bg-brand-200 dark:bg-brand-900/30 dark:text-brand-400 font-medium transition-colors"
+                        title="Ver programa"
+                      >
+                        Ver
+                      </a>
                       {user?.role === UserRole.OWNER && (
-                        <div className="flex gap-1">
+                        <>
+                          <a
+                            href={`/programs/${p.id}?tab=edit`}
+                            className="px-2 py-1 text-[10px] rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 font-medium transition-colors"
+                            title="Editar programa"
+                          >
+                            Editar
+                          </a>
                           <button
                             onClick={() => openSuspendModal(p)}
                             className={`px-2 py-1 text-[10px] rounded-full font-medium transition-colors ${
@@ -113,18 +128,24 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal }: 
                           >
                             {p.is_active ? 'Suspender' : 'Activar'}
                           </button>
+                          {!p.is_published && (
                           <button
+                            onClick={() => onPublish(p)}
+                            className="px-2 py-1 text-[10px] rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium transition-colors"
+                            title="Publicar programa"
+                          >
+                            Publicar
+                          </button>
+                        )}
+                        <button
                             onClick={() => openDeleteModal(p)}
                             className="px-2 py-1 text-[10px] rounded-full bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 font-medium transition-colors"
                             title="Eliminar"
                           >
                             Eliminar
                           </button>
-                        </div>
+                        </>
                       )}
-                      <a href={`/programs/${p.id}`} className="px-2 py-1 text-[10px] rounded-full bg-brand-100 text-brand-600 hover:bg-brand-200 dark:bg-brand-900/30 dark:text-brand-400 font-medium transition-colors" title="Editar programa">
-                        Editar
-                      </a>
                     </div>
                   </div>
                 </div>
@@ -242,7 +263,11 @@ export default function ProgramsPage() {
           )}
         </div>
       ) : (
-        <ProgramSections programs={programs} user={user} openSuspendModal={openSuspendModal} openDeleteModal={openDeleteModal} />
+        <ProgramSections programs={programs} user={user} openSuspendModal={openSuspendModal} openDeleteModal={openDeleteModal} onPublish={(p) => {
+          programsApi.publish(p.id)
+            .then(() => { toast.success('Programa publicado'); loadPrograms(); })
+            .catch(() => toast.error('Error al publicar'));
+        }} />
       )}
 
       {/* LYL-H-FE-005: Standardized ConfirmModal for suspend/reactivate */}

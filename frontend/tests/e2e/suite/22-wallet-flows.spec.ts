@@ -93,6 +93,17 @@ test.describe('Wallet Lifecycle — Phase 1: Data Setup @owner @wallet', () => {
     createdCardId = card.id;
   });
 
+  test('1b. Publish the created program', async ({ request }) => {
+    expect(createdCardId, 'Card must be created in test 1').toBeTruthy();
+    const token = await loginAsOwner(request);
+    const resp = await request.post(`${BASE_API}/api/v1/programs/${createdCardId}/publish/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(resp.status(), 'Publish should succeed').toBe(200);
+    const published = await resp.json();
+    expect(published.is_published).toBe(true);
+  });
+
   test('2. Enroll a customer via public endpoint', async ({ request }) => {
     expect(createdCardId, 'Card must be created in test 1').toBeTruthy();
 
@@ -171,6 +182,10 @@ test.describe('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', () => {
     expect(cardResp.status()).toBe(200);
     const card = await cardResp.json();
 
+    await request.post(`${BASE_API}/api/v1/programs/${card.id}/publish/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
     const enrollResp = await request.post(
       `${BASE_API}/api/v1/customers/enroll/?card_id=${card.id}`,
       { data: { first_name: 'E2E', last_name: 'Status', email: `e2e-status-${Date.now()}@loyallia.com`, phone: '+593999000111' } },
@@ -205,6 +220,10 @@ test.describe('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', () => {
     expect(cardResp.status()).toBe(200);
     const card = await cardResp.json();
 
+    await request.post(`${BASE_API}/api/v1/programs/${card.id}/publish/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
     const enrollResp = await request.post(
       `${BASE_API}/api/v1/customers/enroll/?card_id=${card.id}`,
       { data: { first_name: 'E2E', last_name: 'Apple', email: `e2e-apple-${Date.now()}@loyallia.com`, phone: '+593999000111' } },
@@ -234,6 +253,10 @@ test.describe('Wallet Lifecycle — Phase 2: Wallet API @owner @wallet', () => {
     });
     expect(cardResp.status()).toBe(200);
     const card = await cardResp.json();
+
+    await request.post(`${BASE_API}/api/v1/programs/${card.id}/publish/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     const enrollResp = await request.post(
       `${BASE_API}/api/v1/customers/enroll/?card_id=${card.id}`,
@@ -337,7 +360,7 @@ test.describe('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => 
     await page.locator('#campaign-msg').fill('Gana puntos dobles esta semana');
 
     // Preview section should be visible
-    const previewSection = page.getByText('Vista previa de la notificacion');
+    const previewSection = page.getByText('Vista previa de la notificación');
     await previewSection.waitFor({ state: 'visible', timeout: 5000 });
     await expect(previewSection).toBeVisible({ timeout: 5000 });
 

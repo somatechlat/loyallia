@@ -76,27 +76,49 @@ def _get_google_locations(card) -> list:
     return locations
 
 
+def _get_wallet_design(card) -> dict:
+    metadata = card.metadata or {}
+    if isinstance(metadata, dict):
+        return metadata.get("wallet_design", {}) or {}
+    return {}
+
+
+def _get_google_images(card) -> dict:
+    return _get_wallet_design(card).get("google_images", {}) or {}
+
+
+def _get_google_advanced(card) -> dict:
+    return _get_wallet_design(card).get("google_advanced", {}) or {}
+
+
 def _build_class_images(card, payload: dict) -> None:
     """Add heroImage, wideLogo, and imageModulesData to a class payload if available."""
-    if card.strip_image_url:
+    google_images = _get_google_images(card)
+
+    hero_url = google_images.get("hero_image") or card.strip_image_url
+    if hero_url:
         payload["heroImage"] = {
-            "sourceUri": {"uri": card.strip_image_url},
+            "sourceUri": {"uri": hero_url},
             "contentDescription": {
                 "defaultValue": {"language": "es", "value": f"Banner de {card.name}"},
             },
         }
-    if card.logo_url:
+
+    wide_logo_url = google_images.get("wide_logo") or card.logo_url
+    if wide_logo_url:
         payload["wideLogo"] = {
-            "sourceUri": {"uri": card.logo_url},
+            "sourceUri": {"uri": wide_logo_url},
             "contentDescription": {
                 "defaultValue": {"language": "es", "value": card.name},
             },
         }
-    if card.icon_url:
+
+    image_module_url = google_images.get("image_module") or card.icon_url
+    if image_module_url:
         payload["imageModulesData"] = [
             {
                 "mainImage": {
-                    "sourceUri": {"uri": card.icon_url},
+                    "sourceUri": {"uri": image_module_url},
                     "contentDescription": {
                         "defaultValue": {
                             "language": "es",
@@ -109,11 +131,168 @@ def _build_class_images(card, payload: dict) -> None:
         ]
 
 
+def _transform_google_rows(rows: list) -> list:
+    """Convert frontend google_rows format to Google Wallet API cardRowTemplateInfos format.
+
+    Frontend format:
+        [
+            {"id": "...", "type": "oneItem", "items": [
+                {"id": "...", "fieldPath": "object.accountName", "label": "..."}
+            ]}
+        ]
+
+    Google format:
+        [
+            {"oneItem": {"item": {"firstValue": {"fields": [{"fieldPath": "..."}]}}}}
+        ]
+    """
+    result = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        row_type = row.get("type")
+        items = row.get("items", [])
+        if not isinstance(items, list):
+            continue
+
+        try:
+            if row_type == "oneItem" and len(items) >= 1:
+                field_path = items[0].get("fieldPath", "")
+                if field_path:
+                    result.append(
+                        {
+                            "oneItem": {
+                                "item": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": field_path}]
+                                    }
+                                }
+                            }
+                        }
+                    )
+            elif row_type == "twoItems" and len(items) >= 2:
+                start_fp = items[0].get("fieldPath", "")
+                end_fp = items[1].get("fieldPath", "")
+                if start_fp and end_fp:
+                    result.append(
+                        {
+                            "twoItems": {
+                                "startItem": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": start_fp}]
+                                    }
+                                },
+                                "endItem": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": end_fp}]
+                                    }
+                                },
+                            }
+                        }
+                    )
+            elif row_type == "threeItems" and len(items) >= 3:
+                start_fp = items[0].get("fieldPath", "")
+                middle_fp = items[1].get("fieldPath", "")
+                end_fp = items[2].get("fieldPath", "")
+                if start_fp and middle_fp and end_fp:
+                    result.append(
+                        {
+                            "threeItems": {
+                                "startItem": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": start_fp}]
+                                    }
+                                },
+                                "middleItem": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": middle_fp}]
+                                    }
+                                },
+                                "endItem": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": end_fp}]
+                                    }
+                                },
+                            }
+                        }
+                    )
+        except (AttributeError, IndexError, TypeError):
+            # Skip malformed items
+            continue
+    return result
+
+
+def _apply_card_template_override(card, payload: dict) -> None:
+    """Add cardTemplateOverride from wallet_design.google_rows if available."""
+    wallet_design = _get_wallet_design(card)
+    google_rows = wallet_design.get("google_rows")
+    if google_rows and isinstance(google_rows, list):
+        payload["cardTemplateOverride"] = {"cardRowTemplateInfos": _transform_google_rows(google_rows)}
+
+
+def _apply_google_advanced_to_class(card, payload: dict) -> None:
+    """Apply google_advanced settings relevant to class payloads."""
+    advanced = _get_google_advanced(card)
+    if not advanced:
+        return
+    if advanced.get("reviewStatus"):
+        payload["reviewStatus"] = advanced["reviewStatus"]
+    if advanced.get("allowMultipleUsers") is not None:
+        payload["multipleDevicesAndHoldersAllowedStatus"] = (
+            "MULTIPLE_HOLDERS" if advanced["allowMultipleUsers"] else "ONE_USER_ALL_DEVICES"
+        )
+    if advanced.get("homepageUri"):
+        payload["homepageUri"] = advanced["homepageUri"]
+    if advanced.get("helpUri"):
+        payload["helpUri"] = advanced["helpUri"]
+    if advanced.get("messages") and isinstance(advanced["messages"], list):
+        payload.setdefault("messages", []).extend(advanced["messages"])
+    _apply_links_module_uris(advanced, payload)
+
+
+def _apply_google_advanced_to_object(card, payload: dict) -> None:
+    """Apply google_advanced settings relevant to object payloads."""
+    advanced = _get_google_advanced(card)
+    if not advanced:
+        return
+    if advanced.get("messages") and isinstance(advanced["messages"], list):
+        payload.setdefault("messages", []).extend(advanced["messages"])
+    if advanced.get("notifyPreference"):
+        payload["notifyPreference"] = advanced["notifyPreference"]
+    _apply_links_module_uris(advanced, payload)
+
+
+def _apply_links_module_uris(advanced: dict, payload: dict) -> None:
+    """Merge custom linksModuleUris into linksModuleData."""
+    links = advanced.get("linksModuleUris")
+    if not links or not isinstance(links, list):
+        return
+    existing = payload.get("linksModuleData", {}).get("uris", [])
+    new_uris = []
+    for link in links:
+        if isinstance(link, dict) and "uri" in link and "description" in link:
+            new_uris.append(
+                {
+                    "uri": link["uri"],
+                    "description": link["description"],
+                    "id": link.get("id", f"custom_link_{len(existing) + len(new_uris)}"),
+                }
+            )
+    if new_uris:
+        payload.setdefault("linksModuleData", {"uris": []})
+        payload["linksModuleData"]["uris"] = existing + new_uris
+
+
 def _build_loyalty_class(card, tenant) -> dict:
     """Build the Google Wallet LoyaltyClass object (the template)."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.loyallia-{card.id}"
-    logo_uri = card.logo_url or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    google_images = _get_google_images(card)
+    logo_uri = (
+        google_images.get("program_logo")
+        or card.logo_url
+        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    )
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -130,6 +309,8 @@ def _build_loyalty_class(card, tenant) -> dict:
         "enableSmartTap": True,
     }
     _build_class_images(card, payload)
+    _apply_card_template_override(card, payload)
+    _apply_google_advanced_to_class(card, payload)
 
     locations = _get_google_locations(card)
     if locations:
@@ -165,12 +346,13 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
     class_id = f"{issuer_id}.loyallia-{card.id}"
     object_id = f"{issuer_id}.loyallia-pass-{customer_pass.id}"
     loyalty_points = _build_points_for_type(card, customer_pass)
+    google_images = _get_google_images(card)
 
-    hero_uri = card.strip_image_url
+    hero_uri = google_images.get("hero_image") or card.strip_image_url
     if not hero_uri and card.card_type == "stamp":
         hero_uri = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&h=280&q=80"
     elif not hero_uri:
-        hero_uri = card.logo_url
+        hero_uri = google_images.get("program_logo") or card.logo_url
 
     obj = {
         "id": object_id,
@@ -215,11 +397,13 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
         }
-    if card.icon_url or card.logo_url:
+
+    image_module_url = google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url
+    if image_module_url:
         obj["imageModulesData"] = [
             {
                 "mainImage": {
-                    "sourceUri": {"uri": card.icon_url or card.logo_url},
+                    "sourceUri": {"uri": image_module_url},
                     "contentDescription": {
                         "defaultValue": {
                             "language": "es",
@@ -230,6 +414,8 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
                 "id": "reward_highlight",
             }
         ]
+
+    _apply_google_advanced_to_object(card, obj)
     return obj
 
 
@@ -269,7 +455,12 @@ def _build_offer_class(card, tenant) -> dict:
     """Build a Google Wallet OfferClass for coupon/discount card types."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.offer-{card.id}"
-    logo_uri = card.logo_url or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    google_images = _get_google_images(card)
+    logo_uri = (
+        google_images.get("program_logo")
+        or card.logo_url
+        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    )
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -284,6 +475,8 @@ def _build_offer_class(card, tenant) -> dict:
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
     _build_class_images(card, payload)
+    _apply_card_template_override(card, payload)
+    _apply_google_advanced_to_class(card, payload)
 
     locations = _get_google_locations(card)
     if locations:
@@ -297,7 +490,8 @@ def _build_offer_object(customer_pass, card, customer, tenant) -> dict:
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.offer-{card.id}"
     object_id = f"{issuer_id}.offer-pass-{customer_pass.id}"
-    return {
+    google_images = _get_google_images(card)
+    obj = {
         "id": object_id,
         "classId": class_id,
         "state": "ACTIVE",
@@ -312,12 +506,44 @@ def _build_offer_object(customer_pass, card, customer, tenant) -> dict:
         ],
     }
 
+    hero_uri = google_images.get("hero_image") or card.strip_image_url
+    if hero_uri:
+        obj["heroImage"] = {
+            "sourceUri": {"uri": hero_uri},
+            "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
+        }
+
+    image_module_url = google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url
+    if image_module_url:
+        obj["imageModulesData"] = [
+            {
+                "mainImage": {
+                    "sourceUri": {"uri": image_module_url},
+                    "contentDescription": {
+                        "defaultValue": {
+                            "language": "es",
+                            "value": "Recompensa del programa",
+                        }
+                    },
+                },
+                "id": "reward_highlight",
+            }
+        ]
+
+    _apply_google_advanced_to_object(card, obj)
+    return obj
+
 
 def _build_gift_card_class(card, tenant) -> dict:
     """Build a Google Wallet GiftCardClass for cashback/gift certificate types."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.giftcard-{card.id}"
-    logo_uri = card.logo_url or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    google_images = _get_google_images(card)
+    logo_uri = (
+        google_images.get("program_logo")
+        or card.logo_url
+        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    )
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -331,6 +557,8 @@ def _build_gift_card_class(card, tenant) -> dict:
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
     _build_class_images(card, payload)
+    _apply_card_template_override(card, payload)
+    _apply_google_advanced_to_class(card, payload)
 
     locations = _get_google_locations(card)
     if locations:
@@ -346,7 +574,8 @@ def _build_gift_card_object(customer_pass, card, customer, tenant) -> dict:
     object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
     pass_data = customer_pass.pass_data or {}
     balance = pass_data.get("cashback_balance", "0")
-    return {
+    google_images = _get_google_images(card)
+    obj = {
         "id": object_id,
         "classId": class_id,
         "state": "ACTIVE",
@@ -362,3 +591,30 @@ def _build_gift_card_object(customer_pass, card, customer, tenant) -> dict:
             {"header": "Tarjeta", "body": card.name},
         ],
     }
+
+    hero_uri = google_images.get("hero_image") or card.strip_image_url
+    if hero_uri:
+        obj["heroImage"] = {
+            "sourceUri": {"uri": hero_uri},
+            "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
+        }
+
+    image_module_url = google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url
+    if image_module_url:
+        obj["imageModulesData"] = [
+            {
+                "mainImage": {
+                    "sourceUri": {"uri": image_module_url},
+                    "contentDescription": {
+                        "defaultValue": {
+                            "language": "es",
+                            "value": "Recompensa del programa",
+                        }
+                    },
+                },
+                "id": "reward_highlight",
+            }
+        ]
+
+    _apply_google_advanced_to_object(card, obj)
+    return obj

@@ -33,6 +33,11 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     customer = customer_pass.customer
     customer_name = f"{customer.first_name} {customer.last_name}"
 
+    wallet_design = metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
+    apple_fields = wallet_design.get("apple_fields") if isinstance(wallet_design, dict) else None
+    if apple_fields and isinstance(apple_fields, dict):
+        return apple_fields
+
     if card.card_type == "stamp":
         total = metadata.get("total_stamps", 6)
         current = pass_data.get("stamp_count", 0)
@@ -343,6 +348,36 @@ def _generate_placeholder_icon(name: str, bg_color: str = "#5660ff", size: int =
         return buf.getvalue()
     except ImportError:
         logger.warning("Pillow not installed  returning minimal 1x1 PNG for icon")
+        return _minimal_png()
+
+
+def _generate_placeholder_logo(name: str, bg_color: str = "#5660ff", width: int = 160, height: int = 50) -> bytes:
+    """Generate a wide logo PNG using a solid background with the first letter.
+
+    Apple PassKit specifies logo.png as 160 x 50 points (320 x 100 @2x).
+    This creates a wide rectangular placeholder matching that aspect ratio.
+    """
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+
+        img = Image.new("RGBA", (width, height), bg_color)
+        draw = ImageDraw.Draw(img)
+        letter = name[0].upper() if name else "L"
+        font_size = min(width, height) // 2
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
+        except OSError:
+            font = ImageFont.load_default()
+        bbox = draw.textbbox((0, 0), letter, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        x = (width - tw) // 2
+        y = (height - th) // 2
+        draw.text((x, y), letter, font=font, fill="#FFFFFF")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
+    except ImportError:
+        logger.warning("Pillow not installed  returning minimal 1x1 PNG for logo")
         return _minimal_png()
 
 

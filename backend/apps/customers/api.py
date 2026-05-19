@@ -182,7 +182,7 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
     cache.set(cache_key, enroll_count + 1, 3600)  # 1 hour TTL
 
     try:
-        card = Card.objects.select_related("tenant").get(id=card_id, is_active=True)
+        card = Card.objects.select_related("tenant").get(id=card_id, is_active=True, is_published=True)
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
 
