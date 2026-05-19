@@ -297,16 +297,15 @@ def _apply_links_module_uris(advanced: dict, payload: dict) -> None:
         payload["linksModuleData"]["uris"] = existing + new_uris
 
 
-def _build_loyalty_class(card, tenant) -> dict:
+def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     """Build the Google Wallet LoyaltyClass object (the template)."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.loyallia-{card.id}"
     google_images = _get_google_images(card)
-    logo_uri = (
-        google_images.get("program_logo")
-        or card.logo_url
-        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
-    )
+    logo_uri = _resolve_url(
+        google_images.get("program_logo") or card.logo_url,
+        base_url,
+    ) or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -322,7 +321,7 @@ def _build_loyalty_class(card, tenant) -> dict:
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
         "enableSmartTap": True,
     }
-    _build_class_images(card, payload)
+    _build_class_images(card, payload, base_url)
     _apply_card_template_override(card, payload)
     _apply_google_advanced_to_class(card, payload)
 
@@ -354,7 +353,7 @@ def _build_loyalty_class(card, tenant) -> dict:
     return payload
 
 
-def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
+def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
     """Build the Google Wallet LoyaltyObject (the instance per customer)."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.loyallia-{card.id}"
@@ -362,11 +361,11 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
     loyalty_points = _build_points_for_type(card, customer_pass)
     google_images = _get_google_images(card)
 
-    hero_uri = google_images.get("hero_image") or card.strip_image_url
+    hero_uri = _resolve_url(google_images.get("hero_image") or card.strip_image_url, base_url)
     if not hero_uri and card.card_type == "stamp":
         hero_uri = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&h=280&q=80"
     elif not hero_uri:
-        hero_uri = google_images.get("program_logo") or card.logo_url
+        hero_uri = _resolve_url(google_images.get("program_logo") or card.logo_url, base_url)
 
     obj = {
         "id": object_id,
@@ -412,7 +411,10 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
             "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
         }
 
-    image_module_url = google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url
+    image_module_url = _resolve_url(
+        google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url,
+        base_url,
+    )
     if image_module_url:
         obj["imageModulesData"] = [
             {
@@ -550,16 +552,15 @@ def _build_offer_object(customer_pass, card, customer, tenant, base_url: str = "
     return obj
 
 
-def _build_gift_card_class(card, tenant) -> dict:
+def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
     """Build a Google Wallet GiftCardClass for cashback/gift certificate types."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.giftcard-{card.id}"
     google_images = _get_google_images(card)
-    logo_uri = (
-        google_images.get("program_logo")
-        or card.logo_url
-        or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
-    )
+    logo_uri = _resolve_url(
+        google_images.get("program_logo") or card.logo_url,
+        base_url,
+    ) or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -572,7 +573,7 @@ def _build_gift_card_class(card, tenant) -> dict:
         "reviewStatus": "UNDER_REVIEW",
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
-    _build_class_images(card, payload)
+    _build_class_images(card, payload, base_url)
     _apply_card_template_override(card, payload)
     _apply_google_advanced_to_class(card, payload)
 
@@ -583,7 +584,7 @@ def _build_gift_card_class(card, tenant) -> dict:
     return payload
 
 
-def _build_gift_card_object(customer_pass, card, customer, tenant) -> dict:
+def _build_gift_card_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
     """Build a Google Wallet GiftCardObject instance."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.giftcard-{card.id}"
@@ -608,14 +609,17 @@ def _build_gift_card_object(customer_pass, card, customer, tenant) -> dict:
         ],
     }
 
-    hero_uri = google_images.get("hero_image") or card.strip_image_url
+    hero_uri = _resolve_url(google_images.get("hero_image") or card.strip_image_url, base_url)
     if hero_uri:
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
         }
 
-    image_module_url = google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url
+    image_module_url = _resolve_url(
+        google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url,
+        base_url,
+    )
     if image_module_url:
         obj["imageModulesData"] = [
             {
