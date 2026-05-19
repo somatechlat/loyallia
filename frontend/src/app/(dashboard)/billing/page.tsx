@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { billingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
-import { Rocket, ArrowUpCircle, AlertTriangle, Mail, MessageSquare, Smartphone, Bot, BarChart3, CreditCard, Users, MapPin, Bell, Wallet, Settings, Link2, Upload, Gift, Zap } from 'lucide-react';
+import { Rocket, ArrowUpCircle, AlertTriangle, Mail, MessageSquare, Smartphone, Bot, BarChart3, CreditCard, Users, MapPin, Bell, Wallet, Settings, Link2, Upload, Gift, Zap } from '@/components/ui/LucideIcons';
 
 interface Subscription {
   plan: string;

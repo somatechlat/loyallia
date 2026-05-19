@@ -176,7 +176,7 @@ class Tenant(TimestampedModel):
     trial_end = models.DateTimeField(null=True, blank=True)
 
  # Branding
-    logo_url = models.URLField(blank=True, default="")
+    logo_url = models.URLField(blank=True, default="", max_length=2000)
     primary_color = models.CharField(max_length=7, default="#1a1a2e")  # HEX
     secondary_color = models.CharField(max_length=7, default="#16213e")
 

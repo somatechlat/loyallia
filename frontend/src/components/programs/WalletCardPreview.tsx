@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { BARCODE_TYPES, CARD_TYPES, CardTypeIcon, APPLE_PASS_STYLES, GOOGLE_WALLET_TYPES, APPLE_IMAGE_SUPPORT, adjustColor } from './constants';
+import { BARCODE_TYPES, CARD_TYPES, CardTypeIcon, APPLE_PASS_STYLES, GOOGLE_WALLET_TYPES, APPLE_IMAGE_SUPPORT } from './constants';
 
 /* ─── Barcode SVG Previews ────────────────────────────────────────── */
 function BarcodeSvg({ type, size = 48 }: { type: string; size?: number }) {
   if (type === 'code_128' || type === 'pdf417') {
-    // Rectangular barcode
     const h = type === 'pdf417' ? size * 0.6 : size * 0.5;
     return (
       <svg width={size} height={h} viewBox={`0 0 ${size} ${h}`}>
@@ -36,12 +35,11 @@ function BarcodeSvg({ type, size = 48 }: { type: string; size?: number }) {
         <rect x="0" y="0" width="16" height="1" fill="#111" />
         <rect x="0" y="0" width="1" height="16" fill="#111" />
         {[2,4,6,8,10,12,14].map(v => <rect key={`b${v}`} x={0} y={v} width="1" height="1" fill="#111" />)}
-        {[1,3,5,7,9,11,13,15].map(v => <rect key={`r${v}`} x={v} y={15} width="1" height="1" fill="#111" />)}
+        {[1,3,5,7,9,11,13,15].map(v => <rect key={`r${v}`} x={v} y="15" width="1" height="1" fill="#111" />)}
         {[3,5,8,10,12].map((v,i) => <rect key={`d${i}`} x={v} y={v-1} width="2" height="2" fill="#111" />)}
       </svg>
     );
   }
-  // Default: QR Code
   return (
     <svg width={size} height={size} viewBox="0 0 21 21">
       <rect width="21" height="21" fill="white" rx={1.5} />
@@ -204,7 +202,6 @@ export function WalletProviderSelector({
             </span>
           </div>
 
-          {/* Image compatibility note — per Apple docs */}
           <div className="text-xs text-surface-500 bg-surface-100 dark:bg-surface-800 rounded-lg p-2.5">
             <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">Imagen:</p>
             {APPLE_IMAGE_SUPPORT[applePassStyle]?.strip
@@ -270,210 +267,291 @@ export function WalletProviderSelector({
   );
 }
 
-/* ─── Apple Wallet Card (storeCard / coupon / generic) ────────────── */
+/* ════════════════════════════════════════════════════════════════════
+   APPLE WALLET CARD — Pixel-perfect PassKit preview
+   Based on official Apple WalletCompanionFiles sample passes
+   ════════════════════════════════════════════════════════════════════ */
 function AppleWalletCard({ form, selectedType, logoPreview, stripPreview, barcodeType, customerName }: CardProps) {
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const passStyle = APPLE_PASS_STYLES[form.card_type] || 'generic';
   const heroImage = stripPreview || form.strip_image_url;
-  const gradBg = bgColor.startsWith('#') && bgColor.length === 7
-    ? `linear-gradient(135deg, ${bgColor} 0%, ${adjustColor(bgColor, -20)} 50%, ${bgColor} 100%)`
-    : bgColor;
+  const hasStrip = heroImage && (passStyle === 'storeCard' || passStyle === 'coupon');
+  const isCoupon = passStyle === 'coupon';
+  const isGeneric = passStyle === 'generic';
+
+  /* ── Per-type field data (mirrors real pass.json structure) ── */
+  const primaryField: { label: string; value: string } = {
+    stamp:             { label: 'Sellos acumulados', value: '0 / 10' },
+    cashback:          { label: 'Saldo disponible', value: '$0.00' },
+    coupon:            { label: form.description || 'Descuento especial', value: '20% OFF' },
+    vip_membership:    { label: 'Membresía', value: 'Club VIP' },
+    referral_pass:     { label: 'Tu código de referido', value: 'REF-XXXX' },
+    discount:          { label: 'Descuento actual', value: '5%' },
+    gift_certificate:  { label: 'Saldo del regalo', value: '$0.00' },
+    affiliate:         { label: 'Programa', value: form.name || 'Afiliación' },
+    corporate_discount:{ label: 'Descuento corporativo', value: '0%' },
+    multipass:         { label: 'Usos restantes', value: '10' },
+  }[form.card_type] || { label: '', value: '—' };
+
+  const auxiliaryFields: { label: string; value: string }[] = [
+    { label: 'CLIENTE', value: customerName || 'Cliente' },
+    { label: 'VÁLIDO HASTA', value: '31/12/2026' },
+  ];
+
+  const headerValue: Record<string, string> = {
+    stamp: '0/10', cashback: '$0.00', coupon: 'Cupón', vip_membership: 'VIP',
+    referral_pass: '0', discount: 'Bronce', gift_certificate: '$0',
+    affiliate: form.name?.slice(0, 6) || '—', corporate_discount: '0%', multipass: '10/10',
+  };
+
+  const headerLabel: Record<string, string> = {
+    stamp: 'SELLOS', cashback: 'SALDO', coupon: 'OFERTA', vip_membership: 'NIVEL',
+    referral_pass: 'REFERIDOS', discount: 'NIVEL', gift_certificate: 'SALDO',
+    affiliate: 'PROGRAMA', corporate_discount: 'DESC.', multipass: 'USOS',
+  };
 
   return (
-    <div className="bg-black rounded-[40px] p-3 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-[3px] border-gray-700 ring-1 ring-white/10 relative">
-      {/* Side buttons — iPhone style */}
-      <div className="absolute -left-[5px] top-[100px] w-[3px] h-8 bg-gray-700 rounded-l-sm" />
-      <div className="absolute -left-[5px] top-[140px] w-[3px] h-16 bg-gray-700 rounded-l-sm" />
-      <div className="absolute -right-[5px] top-[120px] w-[3px] h-20 bg-gray-700 rounded-r-sm" />
-      <div className="bg-black rounded-[32px] overflow-hidden relative">
+    <div className="relative mx-auto w-full max-w-[240px]" style={{ aspectRatio: '393/852' }}>
+      {/* ── iPhone 15 Pro frame ── */}
+      <div className="absolute inset-0 bg-[#151515] rounded-[44px] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.65)] border-[2px] border-[#2d2d2d]" />
+      {/* Side buttons */}
+      <div className="absolute -left-[2px] top-[14.5%] w-[2px] h-6 bg-[#3a3a3a] rounded-l-[1px]" />
+      <div className="absolute -left-[2px] top-[19.5%] w-[2px] h-10 bg-[#3a3a3a] rounded-l-[1px]" />
+      <div className="absolute -left-[2px] top-[27%] w-[2px] h-10 bg-[#3a3a3a] rounded-l-[1px]" />
+      <div className="absolute -right-[2px] top-[19%] w-[2px] h-14 bg-[#3a3a3a] rounded-r-[1px]" />
+
+      {/* ── Screen ── */}
+      <div className="absolute inset-[4px] bg-black rounded-[40px] overflow-hidden flex flex-col">
         {/* Dynamic Island */}
-        <div className="bg-black/80 px-6 py-3 flex justify-center">
-          <div className="w-24 h-6 bg-black rounded-full border border-gray-800" />
+        <div className="flex justify-center pt-2.5 pb-1.5">
+          <div className="w-[78px] h-[22px] bg-black rounded-full border border-[#222] relative z-10">
+            <div className="absolute right-[10px] top-1/2 -translate-y-1/2 w-[6px] h-[6px] rounded-full bg-[#0a0a0a] border border-[#1a1a1a]" />
+          </div>
         </div>
         {/* Status bar */}
-        <div className="px-5 py-1 flex justify-between text-[9px] text-white/50">
+        <div className="px-5 flex justify-between items-center text-[8px] text-white/40 font-medium leading-none tracking-wide">
           <span>9:41</span>
-          <div className="flex gap-1 items-center">
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          <div className="flex gap-[3px] items-center">
+            <svg className="w-[11px] h-[11px]" viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg className="w-[11px] h-[11px]" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
           </div>
         </div>
         {/* Wallet header */}
-        <div className="px-4 py-1">
-          <p className="text-[10px] text-white/40 font-semibold tracking-wider">WALLET</p>
+        <div className="px-4 pt-2.5 pb-1">
+          <p className="text-[8px] text-white/25 font-semibold tracking-[0.22em]">WALLET</p>
         </div>
-        {/* Pass card */}
-        <div className="px-4 pb-6 pt-1">
+
+        {/* ── Pass Card ── */}
+        <div className="flex-1 overflow-y-auto px-3 pt-1 pb-1.5 min-h-0">
           <div
-            className="rounded-2xl overflow-hidden shadow-2xl relative"
-            style={{ background: gradBg, color: textColor, boxShadow: `0 16px 32px -8px ${bgColor}60` }}
+            className="rounded-[14px] overflow-hidden relative"
+            style={{
+              background: bgColor,
+              color: textColor,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25)',
+            }}
           >
-            {/* Coupon top edge */}
-            {passStyle === 'coupon' && (
-              <div className="w-full h-1.5" style={{ background: `repeating-linear-gradient(90deg, transparent 0px, transparent 4px, ${textColor}20 4px, ${textColor}20 8px)` }} />
+            {/* Perforated edge for coupon */}
+            {isCoupon && (
+              <div
+                className="absolute top-[7px] left-3 right-3 h-[2px] z-20"
+                style={{ background: `repeating-linear-gradient(90deg, ${textColor}30 0px, ${textColor}30 5px, transparent 5px, transparent 9px)` }}
+              />
             )}
-            {/* Strip image — only storeCard & coupon (per Apple docs) */}
-            {heroImage && (passStyle === 'storeCard' || passStyle === 'coupon') && (
-              <img src={heroImage} alt="Strip" className="w-full h-14 object-cover" />
+
+            {/* Strip image — Apple spec: 375×123pt */}
+            {hasStrip && (
+              <div className="relative w-full" style={{ aspectRatio: '375/123' }}>
+                <img src={heroImage} alt="Strip" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
+              </div>
             )}
-            {/* Header: Logo + Org Name + Thumbnail (generic) */}
-            <div className="px-4 pt-3 flex items-center gap-2.5">
+
+            {/* ── Header: Logo | Org Name | Header Field ── */}
+            <div className={`px-3 flex items-start gap-2 ${hasStrip ? 'pt-2.5 pb-1.5' : 'pt-3 pb-1.5'}`}>
               {logoPreview ? (
-                <img src={logoPreview} alt="Logo" className="w-10 h-10 rounded-xl object-cover border border-white/20 shadow" />
+                <img src={logoPreview} alt="Logo" className="w-7 h-7 rounded-md object-cover border border-white/15 shadow-sm shrink-0" />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center border border-white/10">
-                  <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-5 h-5" />
+                <div className="w-7 h-7 rounded-md bg-white/12 flex items-center justify-center border border-white/8 shrink-0">
+                  <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-3.5 h-3.5" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] font-bold uppercase tracking-[0.15em] opacity-50">
-                  {passStyle === 'coupon' ? 'CUPÓN' : passStyle === 'storeCard' ? 'TARJETA' : 'PASE'}
-                </p>
-                <p className="text-sm font-bold truncate leading-tight">{form.name || 'Nombre del Programa'}</p>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <p className="text-[10px] font-bold truncate leading-tight">{form.name || 'Nombre del Programa'}</p>
               </div>
-              {/* Header field (type-specific, visible when stacked) */}
-              <div className="text-right shrink-0">
-                {form.card_type === 'stamp' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">SELLOS</p><p className="text-sm font-black">0/10</p></>}
-                {form.card_type === 'cashback' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">SALDO</p><p className="text-sm font-black">$0.00</p></>}
-                {form.card_type === 'coupon' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">OFERTA</p><p className="text-sm font-black">Cupón</p></>}
-                {form.card_type === 'vip_membership' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">NIVEL</p><p className="text-sm font-black">VIP</p></>}
-                {form.card_type === 'referral_pass' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">REFERIDOS</p><p className="text-sm font-black">0</p></>}
-                {form.card_type === 'discount' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">NIVEL</p><p className="text-sm font-black">Bronce</p></>}
-                {form.card_type === 'gift_certificate' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">SALDO</p><p className="text-sm font-black">$0</p></>}
-                {form.card_type === 'affiliate' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PROGRAMA</p><p className="text-sm font-black truncate max-w-[60px]">{form.name?.slice(0,6) || '—'}</p></>}
-                {form.card_type === 'corporate_discount' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESC.</p><p className="text-sm font-black">0%</p></>}
-                {form.card_type === 'multipass' && <><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">USOS</p><p className="text-sm font-black">10/10</p></>}
-              </div>
-              {/* Thumbnail image — generic passes only (per Apple docs) */}
-              {passStyle === 'generic' && heroImage && (
-                <img src={heroImage} alt="Thumbnail" className="w-10 h-10 rounded-lg object-cover border border-white/20" />
+              {headerValue[form.card_type] && (
+                <div className="text-right shrink-0 pt-0.5">
+                  <p className="text-[5px] font-semibold uppercase tracking-[0.1em] opacity-30 leading-none mb-0.5">{headerLabel[form.card_type]}</p>
+                  <p className="text-[11px] font-black leading-none">{headerValue[form.card_type]}</p>
+                </div>
+              )}
+              {/* Thumbnail — generic only (90×90pt per Apple docs) */}
+              {isGeneric && heroImage && (
+                <img src={heroImage} alt="Thumbnail" className="w-9 h-9 rounded-md object-cover border border-white/15 shadow-sm shrink-0" />
               )}
             </div>
-            {/* Primary / Secondary Fields — type-specific */}
-            <div className="px-4 py-2.5 space-y-1.5">
-              <div className="flex justify-between">
-                {form.card_type === 'stamp' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PROGRESO</p><p className="text-xs font-bold opacity-90">⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-                {form.card_type === 'cashback' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CASHBACK</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-                {form.card_type === 'coupon' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">{form.description || 'Descuento especial'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-                {form.card_type === 'vip_membership' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">PLAN</p><p className="text-xs font-bold opacity-90">Club VIP</p></div></>}
-                {form.card_type === 'referral_pass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">TU CÓDIGO</p><p className="text-xs font-bold opacity-90 font-mono">REF-XXXX</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMBAJADOR</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-                {form.card_type === 'discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">DESCUENTO</p><p className="text-xs font-bold opacity-90">5%</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-                {form.card_type === 'gift_certificate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CERTIFICADO</p><p className="text-xs font-bold opacity-90">{form.name || 'Regalo'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">BENEFICIARIO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-                {form.card_type === 'affiliate' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">AFILIADO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MIEMBRO DESDE</p><p className="text-xs font-bold opacity-90">—</p></div></>}
-                {form.card_type === 'corporate_discount' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPRESA</p><p className="text-xs font-bold opacity-90">{form.name || 'Empresa'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">EMPLEADO</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-                {form.card_type === 'multipass' && <><div><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">MULTIPASE</p><p className="text-xs font-bold opacity-90">{form.name || 'Paquete'}</p></div><div className="text-right"><p className="text-[7px] font-semibold uppercase tracking-wider opacity-40">CLIENTE</p><p className="text-xs font-bold opacity-90">{customerName || "Cliente"}</p></div></>}
-              </div>
-              {form.description && (
-                <p className="text-[9px] opacity-50 line-clamp-1">{form.description}</p>
-              )}
+
+            {/* ── Primary Field — label above, large value below ── */}
+            <div className="px-3 pt-1 pb-1">
+              <p className="text-[6px] font-semibold uppercase tracking-[0.1em] opacity-35 leading-none mb-1">
+                {primaryField.label}
+              </p>
+              <p className="text-[20px] font-black leading-none tracking-tight">
+                {primaryField.value}
+              </p>
             </div>
-            {/* Barcode */}
-            <div className="flex justify-center pb-3 pt-1">
-              <div className="bg-[#ffffff]/95 rounded-xl p-2 shadow-lg">
-                <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 100 : 56} />
+
+            {/* ── Auxiliary / Secondary Fields ── */}
+            <div className="px-3 pt-2 pb-2 flex justify-between gap-2">
+              {auxiliaryFields.map((f, i) => (
+                <div key={i} className={i === 1 ? 'text-right' : ''}>
+                  <p className="text-[5px] font-semibold uppercase tracking-[0.1em] opacity-30 leading-none mb-0.5">{f.label}</p>
+                  <p className="text-[9px] font-semibold opacity-85 leading-tight">{f.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Barcode — white rounded container per Apple spec ── */}
+            <div className="px-3 pb-2.5 pt-0.5">
+              <div className="bg-white rounded-lg p-1.5 shadow-sm flex flex-col items-center gap-0.5">
+                <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
+                <span className="text-[6px] text-black/40 font-mono tracking-wider">0000 0000 0000</span>
               </div>
             </div>
           </div>
         </div>
+
         {/* Home indicator */}
-        <div className="flex justify-center pb-2">
-          <div className="w-28 h-1 bg-white/20 rounded-full" />
+        <div className="flex justify-center pb-1.5 shrink-0">
+          <div className="w-[90px] h-[3px] bg-white/18 rounded-full" />
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Google Wallet Card (Material You) ───────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════
+   GOOGLE WALLET CARD — Pixel-perfect Material You preview
+   Based on Google Wallet API cardTemplateOverride spec
+   ════════════════════════════════════════════════════════════════════ */
 function GoogleWalletCard({ form, selectedType, logoPreview, stripPreview, barcodeType, customerName }: CardProps) {
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const heroImage = stripPreview || form.strip_image_url;
 
+  const rows: { label: string; value: string }[] = [
+    { label: 'Miembro', value: customerName || 'Cliente' },
+  ];
+
+  switch (form.card_type) {
+    case 'stamp':             rows.push({ label: 'Sellos', value: '0 / 10' }); break;
+    case 'cashback':          rows.push({ label: 'Saldo', value: '$0.00' }); break;
+    case 'coupon':            rows.push({ label: 'Descuento', value: form.description || 'Especial' }); break;
+    case 'vip_membership':    rows.push({ label: 'Nivel', value: 'Club VIP' }); break;
+    case 'referral_pass':     rows.push({ label: 'Código', value: 'REF-XXXX' }); break;
+    case 'discount':          rows.push({ label: 'Descuento actual', value: '5%' }); break;
+    case 'gift_certificate':  rows.push({ label: 'Saldo', value: '$0.00' }); break;
+    case 'affiliate':         rows.push({ label: 'Programa', value: form.name || 'Afiliación' }); break;
+    case 'corporate_discount':rows.push({ label: 'Descuento', value: '0%' }); break;
+    case 'multipass':         rows.push({ label: 'Usos restantes', value: '10' }); break;
+  }
+
+  rows.push({ label: 'Tipo', value: GOOGLE_WALLET_TYPES[form.card_type]?.label || 'Programa' });
+
   return (
-    <div className="bg-black rounded-[36px] p-2.5 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-[3px] border-gray-700 ring-1 ring-white/10 relative">
-      {/* Side buttons — Android style */}
-      <div className="absolute -left-[5px] top-[90px] w-[3px] h-10 bg-gray-700 rounded-l-sm" />
-      <div className="absolute -left-[5px] top-[150px] w-[3px] h-10 bg-gray-700 rounded-l-sm" />
-      <div className="absolute -right-[5px] top-[110px] w-[3px] h-14 bg-gray-700 rounded-r-sm" />
-      <div className="bg-gray-950 rounded-[28px] overflow-hidden relative">
-        {/* Android status bar with pill */}
-        <div className="flex justify-between items-center px-5 pt-2.5 pb-1">
-          <span className="text-[9px] text-white/50 font-medium">9:41</span>
-          <div className="w-16 h-5 bg-black rounded-full border border-gray-800" />
-          <div className="flex gap-1 items-center">
-            <svg className="w-3 h-3 text-white/50" viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
-            <svg className="w-3 h-3 text-white/50" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+    <div className="relative mx-auto w-full max-w-[240px]" style={{ aspectRatio: '412/915' }}>
+      {/* ── Pixel 7 Pro frame ── */}
+      <div className="absolute inset-0 bg-[#151515] rounded-[40px] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.65)] border-[2px] border-[#2d2d2d]" />
+      <div className="absolute -left-[2px] top-[13%] w-[2px] h-9 bg-[#3a3a3a] rounded-l-[1px]" />
+      <div className="absolute -left-[2px] top-[22%] w-[2px] h-9 bg-[#3a3a3a] rounded-l-[1px]" />
+      <div className="absolute -right-[2px] top-[18%] w-[2px] h-12 bg-[#3a3a3a] rounded-r-[1px]" />
+
+      {/* ── Screen ── */}
+      <div className="absolute inset-[4px] bg-[#0a0a0a] rounded-[36px] overflow-hidden flex flex-col">
+        {/* Status bar */}
+        <div className="flex justify-between items-center px-4 pt-2.5 pb-1">
+          <span className="text-[8px] text-white/40 font-medium">9:41</span>
+          <div className="flex gap-[3px] items-center">
+            <svg className="w-[11px] h-[11px] text-white/40" viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg className="w-[11px] h-[11px] text-white/40" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
           </div>
         </div>
         {/* Google Wallet header */}
-        <div className="px-4 py-1.5 flex items-center gap-2">
-          <svg className="w-4 h-4 text-white/40" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-          <span className="text-[10px] text-white/40 font-medium">Google Wallet</span>
+        <div className="px-3.5 py-1 flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5 text-white/30" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+          <span className="text-[9px] text-white/30 font-medium">Google Wallet</span>
         </div>
-        {/* Card */}
-        <div className="px-3 pb-6 pt-1">
-          <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: bgColor, color: textColor }}>
-            {/* Hero image full width */}
+
+        {/* ── Card ── */}
+        <div className="flex-1 overflow-y-auto px-2.5 pt-1 pb-1.5 min-h-0">
+          <div
+            className="rounded-[28px] overflow-hidden relative"
+            style={{
+              background: bgColor,
+              color: textColor,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2)',
+            }}
+          >
+            {/* Hero image */}
             {heroImage && (
-              <img src={heroImage} alt="Hero" className="w-full h-16 object-cover" />
+              <div className="relative w-full" style={{ aspectRatio: '16/7' }}>
+                <img src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
+              </div>
             )}
-            {/* Centered logo + title */}
-            <div className="flex flex-col items-center pt-4 pb-2 px-4">
-              {logoPreview ? (
-                <img src={logoPreview} alt="Logo" className="w-14 h-14 rounded-2xl object-cover border-2 border-white/20 shadow-lg mb-2" />
-              ) : (
-                <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center border border-white/10 mb-2">
-                  <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7" />
-                </div>
-              )}
-              <p className="text-base font-bold text-center leading-tight">{form.name || 'Nombre del Programa'}</p>
-              <p className="text-[10px] opacity-50 mt-0.5">{selectedType?.label || 'Programa de Fidelidad'}</p>
+
+            {/* Logo — centered, overlapping hero image */}
+            <div className="flex flex-col items-center px-4 relative z-10" style={{ marginTop: heroImage ? '-20px' : '12px' }}>
+              <div className="w-14 h-14 rounded-[18px] overflow-hidden border-[1.5px] border-white/15 shadow-lg bg-[#1a1a1a]">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-white/10">
+                    <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7" />
+                  </div>
+                )}
+              </div>
             </div>
-            {/* Info rows — type-specific, Material You style */}
-            <div className="px-4 py-2 space-y-2 border-t border-white/10 mx-3">
-              <div className="flex justify-between">
-                <span className="text-[9px] opacity-40 font-medium">Miembro</span>
-                <span className="text-[10px] font-semibold">{customerName || "Cliente"}</span>
-              </div>
-              {(form.card_type === 'stamp' || form.card_type === 'vip_membership' || form.card_type === 'affiliate') && (
-                <div className="flex justify-between">
-                  <span className="text-[9px] opacity-40 font-medium">Puntos</span>
-                  <span className="text-[10px] font-semibold">0</span>
+
+            {/* Title */}
+            <div className="px-4 pt-2 pb-1 text-center">
+              <p className="text-[13px] font-bold leading-tight">{form.name || 'Nombre del Programa'}</p>
+              <p className="text-[8px] opacity-40 mt-0.5 font-medium">{selectedType?.label || 'Programa de Fidelidad'}</p>
+            </div>
+
+            {/* Info rows — Material You style */}
+            <div className="px-3 pt-1.5 pb-1">
+              {rows.map((row, i) => (
+                <div key={i}>
+                  <div className="flex justify-between items-baseline py-[5px]">
+                    <span className="text-[8px] opacity-35 font-medium">{row.label}</span>
+                    <span className="text-[10px] font-semibold text-right max-w-[60%] truncate">{row.value}</span>
+                  </div>
+                  {i < rows.length - 1 && <div className="h-px bg-white/10" />}
                 </div>
-              )}
-              {(form.card_type === 'cashback' || form.card_type === 'gift_certificate' || form.card_type === 'multipass') && (
-                <div className="flex justify-between">
-                  <span className="text-[9px] opacity-40 font-medium">{form.card_type === 'multipass' ? 'Usos restantes' : 'Saldo'}</span>
-                  <span className="text-[10px] font-semibold">{form.card_type === 'multipass' ? '10' : '$0.00'}</span>
-                </div>
-              )}
-              {(form.card_type === 'coupon' || form.card_type === 'discount' || form.card_type === 'corporate_discount' || form.card_type === 'referral_pass') && (
-                <div className="flex justify-between">
-                  <span className="text-[9px] opacity-40 font-medium">{form.card_type === 'referral_pass' ? 'Referidos' : 'Descuento'}</span>
-                  <span className="text-[10px] font-semibold">{form.card_type === 'referral_pass' ? '0' : '—'}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-[9px] opacity-40 font-medium">Tipo</span>
-                <span className="text-[10px] font-semibold">{GOOGLE_WALLET_TYPES[form.card_type]?.label || 'Programa'}</span>
-              </div>
+              ))}
               {form.description && (
-                <p className="text-[9px] opacity-40 line-clamp-1 pt-1">{form.description}</p>
+                <>
+                  <div className="h-px bg-white/10" />
+                  <p className="text-[8px] opacity-30 line-clamp-2 pt-[5px] pb-[3px]">{form.description}</p>
+                </>
               )}
             </div>
-            {/* Barcode */}
-            <div className="flex justify-center py-3">
-              <div className="bg-[#ffffff] rounded-2xl p-2.5 shadow">
-                <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 100 : 56} />
+
+            {/* Barcode — white rounded container */}
+            <div className="px-3 pb-3 pt-0.5">
+              <div className="bg-white rounded-2xl p-2 shadow-sm flex flex-col items-center gap-1">
+                <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
+                <span className="text-[6px] text-black/40 font-mono tracking-wider">0000 0000 0000</span>
               </div>
             </div>
           </div>
         </div>
+
         {/* Android nav bar */}
-        <div className="flex justify-center pb-1.5">
-          <div className="w-24 h-1 bg-white/15 rounded-full" />
+        <div className="flex justify-center pb-1.5 shrink-0">
+          <div className="w-[100px] h-[3px] bg-white/12 rounded-full" />
         </div>
       </div>
     </div>
@@ -514,7 +592,6 @@ export default function WalletCardPreview({
 }) {
   const [platform, setPlatform] = useState(walletPlatform);
 
-  // Sync external prop changes
   useEffect(() => {
     if (walletPlatform !== platform) {
       setPlatform(walletPlatform);

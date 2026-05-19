@@ -2,6 +2,7 @@
 
 import { Integration } from './types';
 import { getDiagnosticValue, vaultFieldsFor, canEditIntegration, fileAcceptFor } from './constants';
+import { FlaskConical, DollarSign, AlertTriangle } from '@/components/ui/LucideIcons';
 
 interface IntegrationsManagerProps {
   integrations: Integration[];

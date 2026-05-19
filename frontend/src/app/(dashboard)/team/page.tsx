@@ -150,7 +150,7 @@ export default function TeamPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1">Rol</label>
-              <select className="input" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
+              <select className="input" value={form.role} onChange={e => setForm({...form, role: e.target.value as UserRole})}>
                 <option value={UserRole.MANAGER}>Gerente (Manager)</option>
                 <option value={UserRole.STAFF}>Personal / Cajero (Staff)</option>
               </select>

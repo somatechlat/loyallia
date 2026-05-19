@@ -149,6 +149,17 @@ function ActionIcon({ action, className = 'w-5 h-5' }: { action: string; classNa
   );
 }
 
+interface AutomationForm {
+  name: string;
+  description: string;
+  trigger: string;
+  action: string;
+  trigger_config: Record<string, unknown>;
+  action_config: Record<string, unknown>;
+  cooldown_hours: number;
+  max_executions_per_day: number | null;
+}
+
 const EMPTY_FORM: AutomationForm = {
   name: '', description: '', trigger: 'customer_enrolled', action: 'send_notification',
   trigger_config: {}, action_config: { title: '', message: '' },
@@ -467,7 +478,7 @@ export default function AutomationPage() {
                           />
                         </div>
                         <input id="action-title" className="input" placeholder="Ej: ¡Bienvenido a nuestro programa!"
-                          value={form.action_config.title || ''}
+                          value={(form.action_config.title as string) || ''}
                           onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, title: e.target.value } }))} />
                       </div>
                       <div>
@@ -479,7 +490,7 @@ export default function AutomationPage() {
                         </div>
                         <textarea id="action-message" className="input min-h-[80px] resize-none"
                           placeholder="Ej: Gracias por unirte. Tu primera recompensa te espera."
-                          value={form.action_config.message || ''}
+                          value={(form.action_config.message as string) || ''}
                           onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, message: e.target.value } }))} />
                       </div>
 
@@ -504,8 +515,8 @@ export default function AutomationPage() {
                             <svg className="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Vista previa de la notificación
                           </p>
                           <WalletNotificationPreview
-                            title={form.action_config.title || ''}
-                            message={form.action_config.message || ''}
+                            title={(form.action_config.title as string) || ''}
+                            message={(form.action_config.message as string) || ''}
                             platform={(form.action_config.wallet_platform as 'apple' | 'google' | 'both') || 'both'}
                           />
                         </div>
@@ -518,7 +529,7 @@ export default function AutomationPage() {
                     <div>
                       <label className="label" htmlFor="reward-program">Programa objetivo</label>
                       <select id="reward-program" className="input"
-                        value={form.action_config.program_id || ''}
+                        value={(form.action_config.program_id as string) || ''}
                         onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, program_id: e.target.value } }))}>
                         <option value="">Seleccionar programa</option>
                         {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -550,7 +561,7 @@ export default function AutomationPage() {
                     <p className="text-xs text-brand-700">
                       Cuando <strong>{TRIGGER_LABELS[form.trigger]}</strong> →{' '}
                       <strong>{ACTION_LABELS[form.action]}</strong>
-                      {form.action_config.title ? ` → "${form.action_config.title}"` : ''}
+                      {form.action_config.title ? ` → "${form.action_config.title as string}"` : ''}
                     </p>
                   </div>
                 </div>

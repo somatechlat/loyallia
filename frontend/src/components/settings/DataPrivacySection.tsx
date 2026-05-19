@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from '@/components/ui/LucideIcons';
 import Cookies from 'js-cookie';
 import api from '@/lib/api';
 import { UserRole } from '@/types';

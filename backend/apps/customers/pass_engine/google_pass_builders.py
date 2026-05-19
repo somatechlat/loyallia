@@ -10,6 +10,20 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# Google Wallet API barcode type mapping (ref: developers.google.com/wallet/generic/rest/v1/Barcode)
+GOOGLE_BARCODE_FORMATS = {
+    "qr_code": "QR_CODE",
+    "aztec": "AZTEC",
+    "code_128": "CODE_128",
+    "pdf417": "PDF_417",
+    "data_matrix": "DATA_MATRIX",
+}
+
+
+def _get_barcode_type(card) -> str:
+    """Map Loyallia card barcode_type to Google Wallet Barcode.type."""
+    return GOOGLE_BARCODE_FORMATS.get(card.barcode_type, "QR_CODE")
+
 
 def _get_issuer_id() -> str:
     """Return the Google Wallet Issuer ID from settings."""
@@ -166,7 +180,7 @@ def _build_loyalty_object(customer_pass, card, customer, tenant) -> dict:
         "accountName": f"{customer.first_name} {customer.last_name}",
         "loyaltyPoints": loyalty_points,
         "barcode": {
-            "type": "QR_CODE",
+            "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,
             "alternateText": customer_pass.qr_code,
         },
@@ -288,7 +302,7 @@ def _build_offer_object(customer_pass, card, customer, tenant) -> dict:
         "classId": class_id,
         "state": "ACTIVE",
         "barcode": {
-            "type": "QR_CODE",
+            "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,
             "alternateText": customer_pass.qr_code[:10],
         },
@@ -339,7 +353,7 @@ def _build_gift_card_object(customer_pass, card, customer, tenant) -> dict:
         "cardNumber": str(customer.id)[:8],
         "balance": {"micros": int(float(balance) * 1_000_000), "currencyCode": "USD"},
         "barcode": {
-            "type": "QR_CODE",
+            "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,
             "alternateText": customer_pass.qr_code[:10],
         },

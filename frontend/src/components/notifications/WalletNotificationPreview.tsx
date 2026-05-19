@@ -1,4 +1,5 @@
 'use client';
+import { AlertTriangle } from '@/components/ui/LucideIcons';
 interface WalletNotificationPreviewProps {
   title: string;
   message: string;
