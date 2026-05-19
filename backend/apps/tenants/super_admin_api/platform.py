@@ -6,7 +6,6 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
-from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone as dj_timezone
 from ninja import Router
@@ -245,7 +244,10 @@ def platform_integrations(request):
     payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
     mailjet_api_key = get_secret("mailjet_api_key", default="")
     mailjet_secret_key = get_secret("mailjet_secret_key", default="")
-    mailjet_sender_email = get_secret("mailjet_sender_email", default="")
+    # SEC: sender email is a PlatformSetting (not Vault) so SysAdmin can edit it via UI
+    from apps.tenants.models import PlatformSetting
+
+    mailjet_sender_email = PlatformSetting.get("mailjet_sender_email", "")
     mailjet_configured = bool(mailjet_api_key and mailjet_secret_key and mailjet_sender_email)
 
     return [
@@ -306,7 +308,7 @@ def platform_integrations(request):
             preview_values={
                 "mailjet_api_key": mailjet_api_key,
                 "mailjet_sender_email": mailjet_sender_email,
-                "mailjet_sender_name": get_secret("mailjet_sender_name", default=""),
+                "mailjet_sender_name": PlatformSetting.get("mailjet_sender_name", ""),
             },
         ),
         *additional_integrations(),

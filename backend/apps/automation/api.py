@@ -17,9 +17,8 @@ from apps.automation.models import (
 )
 from apps.cards.models import Card
 from common.messages import get_message
-from common.permissions import is_manager_or_owner, jwt_auth
+from common.permissions import is_manager_or_owner, jwt_auth, require_role
 from common.plan_enforcement import check_plan_limit
-from common.permissions import require_role
 
 router = Router()
 

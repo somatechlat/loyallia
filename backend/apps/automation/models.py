@@ -252,7 +252,6 @@ class Automation(TimestampedModel):
         if not customer.email:
             return False
 
-        from django.conf import settings
         from django.core.mail import EmailMultiAlternatives
 
         from apps.notifications.models import (
@@ -260,10 +259,11 @@ class Automation(TimestampedModel):
             NotificationChannel,
             NotificationType,
         )
+        from common.email_config import get_default_from_email
 
         subject = self.action_config.get("title", "Notificación")
         body_text = self.action_config.get("message", "")
-        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
+        from_email = get_default_from_email()
         primary_color = getattr(self.tenant, "primary_color", "#6366f1")
 
  # Create notification record for audit trail
@@ -406,7 +406,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                     from apps.customers.pass_engine.google_pass import (
                         send_push_notification,
                     )
-
                     from apps.tenants.models import PlatformSetting
                     dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
                     action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"

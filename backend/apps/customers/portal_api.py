@@ -11,7 +11,6 @@ Public endpoints for customers to manage their own data:
 - Delete my account
 """
 
-import json
 import logging
 import secrets
 from typing import Any
@@ -26,8 +25,6 @@ from ninja.errors import HttpError
 from apps.customers.models import Customer, CustomerPass, CustomerPortalAccount
 from apps.customers.portal_auth import (
     create_customer_access_token,
-    decode_customer_access_token,
-    optional_portal_auth,
     portal_auth,
 )
 from common.messages import get_message
@@ -155,7 +152,8 @@ def _send_portal_password_email(email: str, password: str) -> None:
 </html>
 """
 
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
+    from common.email_config import get_default_from_email
+    from_email = get_default_from_email()
     try:
         send_mail(
             subject=subject,

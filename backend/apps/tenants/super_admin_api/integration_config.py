@@ -43,8 +43,6 @@ ALLOWED_INTEGRATION_KEYS = {
     "mailjet": [
         "mailjet_api_key",
         "mailjet_secret_key",
-        "mailjet_sender_email",
-        "mailjet_sender_name",
     ],
     "google_oauth": [
         "google_oauth_client_id",

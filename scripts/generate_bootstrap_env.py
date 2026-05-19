@@ -74,12 +74,10 @@ def main():
     secrets["twilio_test_auth_token"] = tw.get("test_auth_token", "")
     secrets["twilio_use_test_mode"] = "true" if tw.get("use_test_mode", True) else "false"
 
-    # Mailjet
+    # Mailjet (secrets only — sender email/name are PlatformSettings, not Vault secrets)
     mj = creds.get("mailjet", {})
     secrets["mailjet_api_key"] = mj.get("api_key", "")
     secrets["mailjet_secret_key"] = mj.get("secret_key", "")
-    secrets["mailjet_sender_email"] = mj.get("sender_email", "")
-    secrets["mailjet_sender_name"] = mj.get("sender_name", "")
 
     # Apple Wallet
     aw = creds.get("apple_wallet", {})

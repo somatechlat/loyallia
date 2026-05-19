@@ -23,8 +23,6 @@ Called by: SuperAdmin dashboard (Backup & Restore page).
 """
 
 import logging
-import uuid
-from typing import Optional
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -45,9 +43,6 @@ from apps.backup.schemas import (
     TriggerBackupIn,
 )
 from apps.backup.tasks import (
-    backup_postgresql,
-    backup_redis,
-    backup_vault,
     cleanup_old_backups,
     run_full_backup,
     verify_backup,
@@ -97,7 +92,7 @@ def _audit(
     action: str,
     resource_type: str = "backup_job",
     resource_id: str = "",
-    details: Optional[dict] = None,
+    details: dict | None = None,
     status: str = "success",
 ) -> None:
     """Log an audit entry for backup operations."""
@@ -176,7 +171,6 @@ def list_backups(
 @require_role("SUPER_ADMIN")
 def get_backup_status(request: HttpRequest):
     """Return a summary of backup status including the latest job and counts."""
-    from django.db.models import Count
 
     total = BackupJob.objects.count()
     completed = BackupJob.objects.filter(status=BackupJobStatus.COMPLETED.value).count()

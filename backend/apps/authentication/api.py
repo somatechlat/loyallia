@@ -59,14 +59,15 @@ from apps.authentication.schemas import (
     TokenOut,
     VerifyEmailIn,
 )
-from common.schemas import MessageOut
 from apps.authentication.tokens import (
     hash_token,
 )
 from apps.tenants.models import PlatformSetting, Tenant
+from common.email_config import get_default_from_email
 from common.messages import get_message
 from common.permissions import jwt_auth
 from common.rate_limit import get_client_ip, rate_limit
+from common.schemas import MessageOut
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -349,7 +350,7 @@ def forgot_password(request, payload: ForgotPasswordIn):
                 f"Haz clic en el siguiente enlace:\n\n{reset_link}\n\n"
                 f"Este enlace expira en 24 horas.\nSi no solicitaste esto, ignora este correo.\n\n-- Loyallia"
             ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=get_default_from_email(),
             recipient_list=[user.email],
             fail_silently=True,
         )

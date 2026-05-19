@@ -140,7 +140,6 @@ PAYMENT_REQUIRED_VAULT_KEYS = [
 EMAIL_REQUIRED_VAULT_KEYS = [
     "mailjet_api_key",
     "mailjet_secret_key",
-    "mailjet_sender_email",
 ]
 
 

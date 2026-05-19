@@ -20,7 +20,6 @@ from common.plan_enforcement import (
 
 from .base import router
 
-
 # ---------------------------------------------------------------------------
 # Scheduled campaign support
 # ---------------------------------------------------------------------------

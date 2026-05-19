@@ -322,19 +322,11 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = get_secret("mailjet_api_key", default="")
 EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", default="")
-# Default sender email: read from PlatformSetting so sysadmin can change it via UI.
-# Falls back to Vault (legacy) then env var.
-try:
-    from apps.tenants.models import PlatformSetting
-
-    _platform_sender = PlatformSetting.get("mailjet_sender_email", "")
-except Exception:
-    _platform_sender = ""
-
-DEFAULT_FROM_EMAIL = _platform_sender or get_secret(
-    "mailjet_sender_email",
-    default=str(config("EMAIL_FROM", default="noreply@loyallia.com")),
-)
+# Default sender email fallback.
+# Runtime code MUST use common.email_config.get_default_from_email() to read
+# the live PlatformSetting value. This module-level constant is only a safe
+# fallback for code paths that do not (yet) use the helper.
+DEFAULT_FROM_EMAIL = "noreply@loyallia.com"
 
 # WHATSAPP BRIDGE (LYL-SRS-006)
 

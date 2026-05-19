@@ -39,7 +39,6 @@ def send_email_campaign(
     """
     import uuid
 
-    from django.conf import settings
     from django.core.mail import EmailMultiAlternatives
     from django.utils import timezone
 
@@ -81,7 +80,8 @@ def send_email_campaign(
 
     succeeded = 0
     failed = 0
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@loyallia.com")
+    from common.email_config import get_default_from_email
+    from_email = get_default_from_email()
     primary_color = getattr(tenant, "primary_color", "#6366f1")
     error_summary = ""
 

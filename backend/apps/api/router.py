@@ -19,21 +19,21 @@ from apps.authentication.api_phone_verify import router as phone_verify_router
 from apps.authentication.users_api import router as users_router
 from apps.automation import api as automation_api
 from apps.automation.api import router as automation_router
+from apps.backup.api import router as backup_router
 from apps.billing.api import router as billing_router
 from apps.billing.payment_api import router as billing_payment_router
 from apps.cards import api as cards_api
 from apps.cards.api import router as cards_router
 from apps.customers.api import router as customers_router
 from apps.customers.export_api import router as customer_export_router
-from apps.customers.segment_api import router as segment_router
 from apps.customers.portal_api import router as portal_router
+from apps.customers.segment_api import router as segment_router
 from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
 from apps.notifications.whatsapp.api import router as whatsapp_router
 from apps.tenants.api import router as tenants_router
 from apps.tenants.security_privacy_api import router as tenant_security_privacy_router
 from apps.tenants.super_admin_api import router as super_admin_router
-from apps.backup.api import router as backup_router
 from apps.tenants.super_admin_api.platform_reset import router as platform_reset_router
 from apps.transactions.api import router as transactions_router
 from apps.transactions.api import scanner_router
