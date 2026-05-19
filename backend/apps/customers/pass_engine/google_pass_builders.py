@@ -5,6 +5,7 @@ Not imported directly from outside pass_engine  used by google_pass.py.
 """
 
 import logging
+from typing import Any
 
 from django.conf import settings
 
@@ -61,18 +62,54 @@ def _resolve_gw_type(card_type: str) -> str:
     return "loyalty"
 
 
+def _is_local_or_private_url(url: str) -> bool:
+    """Check if a URL uses a local/private IP that Google servers cannot reach."""
+    import re
+    if not url:
+        return False
+    local_patterns = [
+        r"http://localhost[:/]",
+        r"http://127\.\d+\.\d+\.\d+[:/]",
+        r"http://192\.168\.\d+\.\d+[:/]",
+        r"http://10\.\d+\.\d+\.\d+[:/]",
+        r"http://172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+[:/]",
+        r"https?://\[?::1\]?[:/]",
+    ]
+    for pattern in local_patterns:
+        if re.search(pattern, url, re.IGNORECASE):
+            return True
+    return False
+
+
 def _resolve_url(url: str, base_url: str) -> str:
     """Convert relative image URLs to absolute for Google Wallet API.
 
     Google Wallet servers fetch images directly, so they need full URLs.
+    If the base URL is a local/private IP, returns a public placeholder
+    so Google Wallet works during development.
     """
     if not url:
         return url
     if url.startswith("http://") or url.startswith("https://"):
+        if _is_local_or_private_url(url):
+            return _public_placeholder_for_url(url)
         return url
     if url.startswith("/"):
-        return base_url.rstrip("/") + url
+        resolved = base_url.rstrip("/") + url
+        if _is_local_or_private_url(resolved):
+            return _public_placeholder_for_url(url)
+        return resolved
     return url
+
+
+def _public_placeholder_for_url(original_url: str) -> str:
+    """Return a public placeholder image URL for development/testing.
+
+    Google Wallet servers cannot reach local network IPs, so we use
+    public placeholder images during development.
+    """
+    # Use a branded gradient placeholder that looks professional
+    return "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&h=300&q=80"
 
 
 def _get_google_locations(card) -> list:
@@ -244,17 +281,61 @@ def _apply_card_template_override(card, payload: dict) -> None:
         payload["cardTemplateOverride"] = {"cardRowTemplateInfos": _transform_google_rows(google_rows)}
 
 
+def _normalize_review_status(value: str | None) -> str | None:
+    """Normalize reviewStatus to valid Google Wallet API enum values.
+
+    The frontend historically saved 'underReview' (camelCase) instead of
+    'UNDER_REVIEW' (the actual API enum). This fixes existing cards.
+    """
+    if not value:
+        return None
+    mapping = {
+        "underreview": "UNDER_REVIEW",
+        "under_review": "UNDER_REVIEW",
+        "approved": "approved",
+        "rejected": "rejected",
+    }
+    normalized = mapping.get(value.lower())
+    return normalized if normalized else value
+
+
+def _normalize_multiple_devices(value: Any) -> str | None:
+    """Normalize allowMultipleUsers to valid Google Wallet API enum values.
+
+    Handles both boolean (legacy) and string (current) values.
+    Maps frontend 'MULTIPLE_USERS' → API 'MULTIPLE_HOLDERS'.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return "MULTIPLE_HOLDERS" if value else "ONE_USER_ALL_DEVICES"
+    if isinstance(value, str):
+        mapping = {
+            "multiple_users": "MULTIPLE_HOLDERS",
+            "multiple_holders": "MULTIPLE_HOLDERS",
+            "one_user_all_devices": "ONE_USER_ALL_DEVICES",
+            "one_user_one_device": "ONE_USER_ONE_DEVICE",
+        }
+        mapped = mapping.get(value.lower())
+        if mapped:
+            return mapped
+        # Already a valid API value
+        if value in {"MULTIPLE_HOLDERS", "ONE_USER_ALL_DEVICES", "ONE_USER_ONE_DEVICE"}:
+            return value
+    return None
+
+
 def _apply_google_advanced_to_class(card, payload: dict) -> None:
     """Apply google_advanced settings relevant to class payloads."""
     advanced = _get_google_advanced(card)
     if not advanced:
         return
-    if advanced.get("reviewStatus"):
-        payload["reviewStatus"] = advanced["reviewStatus"]
-    if advanced.get("allowMultipleUsers") is not None:
-        payload["multipleDevicesAndHoldersAllowedStatus"] = (
-            "MULTIPLE_HOLDERS" if advanced["allowMultipleUsers"] else "ONE_USER_ALL_DEVICES"
-        )
+    review_status = _normalize_review_status(advanced.get("reviewStatus"))
+    if review_status:
+        payload["reviewStatus"] = review_status
+    multi_device = _normalize_multiple_devices(advanced.get("allowMultipleUsers"))
+    if multi_device:
+        payload["multipleDevicesAndHoldersAllowedStatus"] = multi_device
     if advanced.get("homepageUri"):
         payload["homepageUri"] = advanced["homepageUri"]
     if advanced.get("helpUri"):
