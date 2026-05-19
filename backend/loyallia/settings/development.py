@@ -43,3 +43,6 @@ if "django_extensions" not in INSTALLED_APPS:  # noqa: F405
 # "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
 # "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 # }
+
+# Feature flags (NOT secrets — these are system-wide settings)
+TWILIO_USE_TEST_MODE = True

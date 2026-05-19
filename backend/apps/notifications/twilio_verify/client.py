@@ -33,6 +33,7 @@ Refs:
 import logging
 from typing import Any
 
+from django.conf import settings
 from common.vault import get_secret
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ class VerifyClient:
         Raises:
             VerifyServiceError: If no valid credentials are configured.
         """
-        use_test_mode = get_secret("twilio_use_test_mode", default="false").lower() == "true"
+        use_test_mode = getattr(settings, "TWILIO_USE_TEST_MODE", False)
 
         if use_test_mode:
             test_sid = get_secret("twilio_test_account_sid", default="")

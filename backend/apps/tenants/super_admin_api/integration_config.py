@@ -56,7 +56,6 @@ ALLOWED_INTEGRATION_KEYS = {
         "twilio_account_sid",
         "twilio_auth_token",
         "twilio_from_number",
-        "twilio_use_test_mode",
     ],
     "twilio_verify": [
         "twilio_verify_enabled",
@@ -154,7 +153,6 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
         "payment_gateway_enabled",
         "apple_nfc_enabled",
         "twilio_verify_enabled",
-        "twilio_use_test_mode",
     }:
         lowered = normalized.lower()
         if lowered not in {"true", "false"}:
@@ -284,7 +282,7 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
         default=getattr(settings, "AI_AGENT_BASE_URL", ""),
     )
     whatsapp_key_present = _present("whatsapp_bridge_api_key")
-    twilio_test_mode = _truthy(get_secret("twilio_use_test_mode", default="false"))
+    twilio_test_mode = getattr(settings, "TWILIO_USE_TEST_MODE", False)
     # When test mode is ON, check test credentials. Otherwise check live credentials.
     if twilio_test_mode:
         twilio_sid_present = _present("twilio_test_account_sid")
@@ -342,7 +340,7 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             preview_values={
                 "twilio_account_sid": get_secret("twilio_account_sid", default=""),
                 "twilio_from_number": get_secret("twilio_from_number", default=""),
-                "twilio_use_test_mode": "true" if twilio_test_mode else "false",
+                "twilio_use_test_mode": "true" if getattr(settings, "TWILIO_USE_TEST_MODE", False) else "false",
             },
         ),
         PlatformIntegrationOut(
