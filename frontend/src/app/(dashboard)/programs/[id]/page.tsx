@@ -85,6 +85,11 @@ function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): Walle
     googleAdvanced: (wd.google_advanced as GoogleAdvancedConfig) || defaultWalletDesignState().googleAdvanced,
     appleAdvanced: (wd.apple_advanced as AppleAdvancedConfig) || defaultWalletDesignState().appleAdvanced,
     appleNfc: appleWallet || defaultWalletDesignState().appleNfc,
+    locations: (wd.locations as WalletDesignState['locations']) || [],
+    beacons: (wd.beacons as WalletDesignState['beacons']) || [],
+    links: (wd.links as WalletDesignState['links']) || [],
+    homepageUri: (wd.homepage_uri as string) || '',
+    helpUri: (wd.help_uri as string) || '',
   };
 }
 
@@ -112,6 +117,11 @@ function buildWalletDesignMetadata(state: WalletDesignState): Record<string, unk
       google_rows: state.googleRows,
       google_advanced: state.googleAdvanced,
       apple_advanced: state.appleAdvanced,
+      locations: state.locations,
+      beacons: state.beacons,
+      links: state.links,
+      homepage_uri: state.homepageUri,
+      help_uri: state.helpUri,
     },
     apple_wallet: state.appleNfc,
     wallet_provider: state.provider,

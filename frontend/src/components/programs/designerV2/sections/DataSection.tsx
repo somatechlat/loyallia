@@ -38,6 +38,63 @@ function InfoCallout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ─── Sortable Apple Field Item ───────────────────────────────────── */
+function SortableAppleFieldItem({
+  field,
+  index,
+  onEdit,
+  onRemove,
+}: {
+  field: AppleFieldDef;
+  index: number;
+  onEdit: (index: number) => void;
+  onRemove: (index: number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `${field.key}-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors duration-100 cursor-pointer"
+      onClick={() => onEdit(index)}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="p-0.5 rounded hover:bg-muted text-muted-foreground/40 cursor-grab active:cursor-grabbing shrink-0"
+      >
+        <GripVertical className="w-3.5 h-3.5" strokeWidth={1.5} />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-foreground truncate">{field.label}</p>
+        <p className="text-xs text-muted-foreground truncate">{field.value}</p>
+      </div>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onRemove(index); }}
+        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity duration-100 p-1"
+      >
+        <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+      </button>
+    </div>
+  );
+}
+
 /* ─── Apple Field Group Card ──────────────────────────────────────── */
 function AppleFieldGroupCard({
   group,
@@ -46,6 +103,7 @@ function AppleFieldGroupCard({
   onRemove,
   onEdit,
   onHover,
+  onReorder,
 }: {
   group: { key: string; label: string; desc: string; max: number };
   fields: AppleFieldDef[];
@@ -53,9 +111,25 @@ function AppleFieldGroupCard({
   onRemove: (index: number) => void;
   onEdit: (index: number) => void;
   onHover?: (hovering: boolean) => void;
+  onReorder: (oldIndex: number, newIndex: number) => void;
 }) {
   const count = fields?.length || 0;
   const isMax = count >= group.max;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const safeFields = fields || [];
+    const oldIndex = safeFields.findIndex((f, i) => `${f.key}-${i}` === active.id);
+    const newIndex = safeFields.findIndex((f, i) => `${f.key}-${i}` === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    onReorder(oldIndex, newIndex);
+  };
 
   return (
     <div
@@ -74,28 +148,30 @@ function AppleFieldGroupCard({
       </div>
 
       {/* Fields list */}
-      <div className="p-3 space-y-1.5">
+      <div className="p-3">
         {fields && fields.length > 0 ? (
-          fields.map((field, idx) => (
-            <div
-              key={field.key + idx}
-              className="group flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors duration-100 cursor-pointer"
-              onClick={() => onEdit(idx)}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={fields.map((f, i) => `${f.key}-${i}`)}
+              strategy={verticalListSortingStrategy}
             >
-              <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" strokeWidth={1.5} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-foreground truncate">{field.label}</p>
-                <p className="text-xs text-muted-foreground truncate">{field.value}</p>
+              <div className="space-y-1.5">
+                {fields.map((field, idx) => (
+                  <SortableAppleFieldItem
+                    key={`${field.key}-${idx}`}
+                    field={field}
+                    index={idx}
+                    onEdit={onEdit}
+                    onRemove={onRemove}
+                  />
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onRemove(idx); }}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity duration-100 p-1"
-              >
-                <X className="w-3.5 h-3.5" strokeWidth={1.5} />
-              </button>
-            </div>
-          ))
+            </SortableContext>
+          </DndContext>
         ) : (
           <p className="text-sm text-muted-foreground italic px-2 py-1">No hay campos agregados</p>
         )}
@@ -256,6 +332,14 @@ export function DataSection({ walletDesign, onWalletDesignChange, onHoverZone }:
     });
   };
 
+  const handleReorderAppleFields = (groupKey: string, oldIndex: number, newIndex: number) => {
+    const current = walletDesign.appleFields[groupKey] || [];
+    onWalletDesignChange({
+      ...walletDesign,
+      appleFields: { ...walletDesign.appleFields, [groupKey]: arrayMove(current, oldIndex, newIndex) },
+    });
+  };
+
   /* Google: rows */
   const handleAddGoogleRow = (row: import('../types').GoogleFieldRow) => {
     onWalletDesignChange({
@@ -332,6 +416,7 @@ export function DataSection({ walletDesign, onWalletDesignChange, onHoverZone }:
               onRemove={(idx) => handleRemoveAppleField(group.key, idx)}
               onEdit={(idx) => openEditApple(group.key, idx)}
               onHover={(hovering) => onHoverZone?.(hovering ? group.key : null)}
+              onReorder={(oldIdx, newIdx) => handleReorderAppleFields(group.key, oldIdx, newIdx)}
             />
           ))}
         </div>

@@ -103,6 +103,28 @@ export interface AppleAdvancedConfig {
   expirationDate: string;
 }
 
+export interface WalletLocation {
+  id: string;
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  relevantText: string;
+}
+
+export interface WalletBeacon {
+  id: string;
+  uuid: string;
+  major: number;
+  minor: number;
+  relevantText: string;
+}
+
+export interface WalletLink {
+  id: string;
+  label: string;
+  uri: string;
+}
+
 export interface WalletDesignState {
   provider: 'apple' | 'google';
   appleLogoUrl: string;
@@ -122,6 +144,11 @@ export interface WalletDesignState {
   googleAdvanced: GoogleAdvancedConfig;
   appleAdvanced: AppleAdvancedConfig;
   appleNfc: AppleWalletFeatureConfig;
+  locations: WalletLocation[];
+  beacons: WalletBeacon[];
+  links: WalletLink[];
+  homepageUri: string;
+  helpUri: string;
 }
 
 export function defaultWalletDesignState(): WalletDesignState {
@@ -149,6 +176,11 @@ export function defaultWalletDesignState(): WalletDesignState {
       expirationDate: '',
     },
     appleNfc: { nfc_enabled: false, nfc_requires_authentication: false },
+    locations: [],
+    beacons: [],
+    links: [],
+    homepageUri: '',
+    helpUri: '',
   };
 }
 

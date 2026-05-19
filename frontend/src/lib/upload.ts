@@ -20,3 +20,17 @@ export async function uploadFile(file: File, showToast = true): Promise<string |
     return null;
   }
 }
+
+export async function uploadFileWithError(file: File): Promise<{ url: string | null; error: string | null }> {
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const { data } = await api.post('/api/v1/upload/', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return { url: data.url || null, error: null };
+  } catch (err: any) {
+    const msg = err?.response?.data?.detail || err?.response?.data?.error || 'Error al subir archivo';
+    return { url: null, error: msg };
+  }
+}

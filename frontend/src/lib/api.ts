@@ -218,3 +218,7 @@ export const transactionsApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/transactions/', { params }),
   get: (id: string) => api.get(`/api/v1/transactions/${id}/`),
 };
+
+export const mediaApi = {
+  listAssets: () => api.get<{ success: boolean; assets: Array<{ url: string; name: string; size: number; last_modified: string }>; count: number }>('/api/v1/upload/assets/'),
+};

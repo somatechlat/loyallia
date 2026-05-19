@@ -6,10 +6,13 @@ Handles direct image uploads (logos, etc.) to MinIO/S3 and returns public URLs.
 import logging
 import os
 import uuid
+from datetime import datetime
 from io import BytesIO
+from typing import Any
 
+from django.conf import settings
 from django.core.files.storage import default_storage
-from ninja import Router
+from ninja import Router, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from PIL import Image, UnidentifiedImageError
@@ -25,6 +28,19 @@ router = Router(tags=["Uploads"])
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+class AssetOut(Schema):
+    url: str
+    name: str
+    size: int
+    last_modified: str
+
+
+class AssetListOut(Schema):
+    success: bool
+    assets: list[AssetOut]
+    count: int
 
 
 @router.post("/", auth=jwt_auth, summary="Subir imagen")
@@ -88,4 +104,57 @@ def upload_file(request, file: UploadedFile):
 
     except Exception as exc:
         logger.error("Error uploading file to storage: %s", exc, exc_info=True)
+        raise HttpError(500, get_message("SERVER_ERROR"))
+
+
+@router.get("/assets/", auth=jwt_auth, response=AssetListOut, summary="Listar imágenes subidas")
+def list_assets(request):
+    """
+    Lists previously uploaded images for the current tenant from MinIO/S3.
+    MANAGER+ only.
+    """
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    request = as_tenant_request(request)
+    tenant_dirname = str(request.tenant.id) if request.tenant else "platform"
+    prefix = f"uploads/{tenant_dirname}/"
+
+    try:
+        import boto3
+        from botocore.exceptions import ClientError
+
+        client = boto3.client(
+            "s3",
+            endpoint_url=settings.MINIO_ENDPOINT,
+            aws_access_key_id=settings.MINIO_ACCESS_KEY,
+            aws_secret_access_key=settings.MINIO_SECRET_KEY,
+            region_name="us-east-1",
+        )
+
+        response = client.list_objects_v2(
+            Bucket=settings.MINIO_BUCKET_ASSETS,
+            Prefix=prefix,
+        )
+
+        assets: list[dict[str, Any]] = []
+        for obj in response.get("Contents", []):
+            key = obj["Key"]
+            name = key.split("/")[-1]
+            assets.append({
+                "url": f"{settings.MINIO_ENDPOINT}/{settings.MINIO_BUCKET_ASSETS}/{key}",
+                "name": name,
+                "size": obj["Size"],
+                "last_modified": obj["LastModified"].isoformat(),
+            })
+
+        # Sort by most recent first
+        assets.sort(key=lambda x: x["last_modified"], reverse=True)
+
+        return {"success": True, "assets": assets, "count": len(assets)}
+
+    except ClientError as exc:
+        logger.error("MinIO list_objects failed: %s", exc)
+        raise HttpError(500, get_message("SERVER_ERROR"))
+    except Exception as exc:
+        logger.error("Error listing assets: %s", exc, exc_info=True)
         raise HttpError(500, get_message("SERVER_ERROR"))

@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Save, Trash2 } from '@/components/ui/LucideIcons';
 import type { AppleFieldDef, GoogleFieldItem } from '../types';
-import { GOOGLE_PREDEFINED_FIELDS } from '../../constants';
+import { GOOGLE_PREDEFINED_FIELDS, FIELD_VALUE_PRESETS } from '../../constants';
 
 type TabKey = 'details' | 'platform' | 'advanced';
 
@@ -200,13 +200,33 @@ export function EditFieldModal({
                   </div>
                   <div>
                     <label className="label">Valor</label>
-                    <input
-                      type="text"
+                    <select
                       className="input"
-                      value={aValue}
-                      onChange={e => setAValue(e.target.value)}
-                      placeholder="Ej: {customer_name}"
-                    />
+                      value={FIELD_VALUE_PRESETS.find(p => p.value === aValue && p.value !== "") ? aValue : '__custom__'}
+                      onChange={e => {
+                        const selected = e.target.value;
+                        if (selected === '__custom__') {
+                          setAValue('');
+                        } else {
+                          setAValue(selected);
+                        }
+                      }}
+                    >
+                      {FIELD_VALUE_PRESETS.map(p => (
+                        <option key={p.value || 'custom'} value={p.value === "" ? '__custom__' : p.value}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                    {(aValue === '' || !FIELD_VALUE_PRESETS.some(p => p.value === aValue && p.value !== "")) && (
+                      <input
+                        type="text"
+                        className="input mt-2"
+                        value={aValue}
+                        onChange={e => setAValue(e.target.value)}
+                        placeholder="Escribe un valor personalizado..."
+                      />
+                    )}
                   </div>
                   <div>
                     <label className="label">Clave (key)</label>
