@@ -103,7 +103,7 @@ def get_google_wallet_diagnostics() -> dict:
     return diagnostics
 
 
-def generate_google_wallet_url(customer_pass) -> str | None:
+def generate_google_wallet_url(customer_pass, base_url: str = "") -> str | None:
     """
     Generate a Google Wallet "Save to Google Pay" URL for a CustomerPass.
 
@@ -116,6 +116,7 @@ def generate_google_wallet_url(customer_pass) -> str | None:
 
     Args:
         customer_pass: CustomerPass model instance (with card, customer, card.tenant loaded)
+        base_url: Absolute base URL (e.g. "http://192.168.1.230") for resolving relative image URLs
 
     Returns:
         Save URL string, or None if credentials are not configured
@@ -137,18 +138,18 @@ def generate_google_wallet_url(customer_pass) -> str | None:
     gw_type = _resolve_gw_type(card.card_type)
 
     if gw_type == "offer":
-        gw_class = _build_offer_class(card, tenant)
-        gw_object = _build_offer_object(customer_pass, card, customer, tenant)
+        gw_class = _build_offer_class(card, tenant, base_url)
+        gw_object = _build_offer_object(customer_pass, card, customer, tenant, base_url)
         payload_key_class = "offerClasses"
         payload_key_object = "offerObjects"
     elif gw_type == "giftCard":
-        gw_class = _build_gift_card_class(card, tenant)
-        gw_object = _build_gift_card_object(customer_pass, card, customer, tenant)
+        gw_class = _build_gift_card_class(card, tenant, base_url)
+        gw_object = _build_gift_card_object(customer_pass, card, customer, tenant, base_url)
         payload_key_class = "giftCardClasses"
         payload_key_object = "giftCardObjects"
     else:
-        gw_class = _build_loyalty_class(card, tenant)
-        gw_object = _build_loyalty_object(customer_pass, card, customer, tenant)
+        gw_class = _build_loyalty_class(card, tenant, base_url)
+        gw_object = _build_loyalty_object(customer_pass, card, customer, tenant, base_url)
         payload_key_class = "loyaltyClasses"
         payload_key_object = "loyaltyObjects"
 
