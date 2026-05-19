@@ -26,6 +26,7 @@ from apps.cards.api import router as cards_router
 from apps.customers.api import router as customers_router
 from apps.customers.export_api import router as customer_export_router
 from apps.customers.segment_api import router as segment_router
+from apps.customers.portal_api import router as portal_router
 from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
 from apps.notifications.whatsapp.api import router as whatsapp_router
@@ -157,6 +158,7 @@ api.add_router("/billing/", billing_router, tags=["Billing"])
 api.add_router("/billing/payments/", billing_payment_router, tags=["Billing - Payments"])
 api.add_router("/admin/", super_admin_router, tags=["Super Admin"])
 api.add_router("/admin/reset/", platform_reset_router, tags=["Super Admin"])
+api.add_router("/portal/", portal_router, tags=["Customer Portal"])
 api.add_router("/", wallet_router, tags=["Wallet"])
 api.add_router("/upload/", upload_router, tags=["Uploads"])
 api.add_router("/agent/", agent_api_router, tags=["Agent API"])
