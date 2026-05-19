@@ -6,9 +6,9 @@ import React from 'react';
 import {
   APPLE_PASS_STYLES,
   CardTypeIcon,
-} from '../constants';
+} from '../../constants';
 import type { WalletDesignState } from '../types';
-import { BarcodeSvg } from '../WalletCardPreview';
+import { BarcodeSvg } from '../../WalletCardPreview';
 
 /* ─── Helper: resolve template values ─────────────────────────────── */
 function resolveTemplate(value: string, ctx: Record<string, string>): string {
@@ -63,6 +63,8 @@ export interface FlatAppleCardProps {
   customerName?: string;
   walletDesign?: WalletDesignState;
   view?: 'front' | 'back';
+  hoveredZone?: string | null;
+  showZoneMap?: boolean;
 }
 
 /* ─── Component ───────────────────────────────────────────────────── */
@@ -75,6 +77,8 @@ export function FlatAppleCard({
   customerName,
   walletDesign,
   view = 'front',
+  hoveredZone,
+  showZoneMap,
 }: FlatAppleCardProps) {
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
@@ -151,10 +155,18 @@ export function FlatAppleCard({
     );
   }
 
+  /* Zone overlay config */
+  const zoneDefs = [
+    { key: 'headerFields', label: 'Cabecera', y: 0, h: hasStrip ? 130 : 52, color: '#3b82f6' },
+    { key: 'primaryFields', label: 'Principal', y: hasStrip ? 130 : 52, h: 58, color: '#22c55e' },
+    { key: 'secondaryFields', label: 'Secundario', y: hasStrip ? 188 : 110, h: 42, color: '#f59e0b' },
+    { key: 'auxiliaryFields', label: 'Auxiliar', y: hasStrip ? 230 : 152, h: 42, color: '#a855f7' },
+  ];
+
   /* ── FRONT VIEW ── */
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col shadow-xl"
+      className="rounded-2xl overflow-hidden flex flex-col shadow-xl relative"
       style={{
         background: bgColor,
         color: textColor,
@@ -281,6 +293,50 @@ export function FlatAppleCard({
           <span className="text-[6px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
         </div>
       </div>
+
+      {/* Zone dimming overlay */}
+      {hoveredZone && (
+        <div
+          className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-200"
+          style={{ background: 'rgba(0,0,0,0.35)' }}
+        />
+      )}
+
+      {/* Zone map SVG overlay */}
+      {showZoneMap && (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+          {zoneDefs.map(z => {
+            const isHovered = hoveredZone === z.key;
+            const isDimmed = hoveredZone && hoveredZone !== z.key;
+            return (
+              <g key={z.key} opacity={isDimmed ? 0.2 : isHovered ? 1 : 0.7}>
+                <rect
+                  x="0"
+                  y={`${z.y}`}
+                  width="100%"
+                  height={`${z.h}`}
+                  fill={z.color}
+                  fillOpacity={isHovered ? 0.35 : 0.15}
+                  stroke={z.color}
+                  strokeWidth={isHovered ? 2 : 1}
+                  strokeOpacity={0.8}
+                  rx="8"
+                />
+                <text
+                  x="8"
+                  y={`${z.y + 14}`}
+                  fill={z.color}
+                  fontSize="10"
+                  fontWeight="bold"
+                  opacity={0.9}
+                >
+                  {z.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
     </div>
   );
 }

@@ -31,6 +31,8 @@ export interface DesignerUIState {
   showEditFieldModal: boolean;
   editingFieldId: string | null;
   showPickImageModal: string | null;
+  hoveredZone: string | null;
+  showZoneMap: boolean;
 }
 
 export function defaultDesignerUIState(): DesignerUIState {
@@ -44,5 +46,7 @@ export function defaultDesignerUIState(): DesignerUIState {
     showEditFieldModal: false,
     editingFieldId: null,
     showPickImageModal: null,
+    hoveredZone: null,
+    showZoneMap: false,
   };
 }

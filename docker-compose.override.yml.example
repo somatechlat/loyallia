@@ -1,0 +1,29 @@
+# docker-compose.override.yml
+# Copy this file to docker-compose.override.yml and customize for your local dev environment.
+# The override file is gitignored by default.
+#
+# Usage:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   docker compose up -d
+#
+# Docker Compose automatically reads docker-compose.override.yml if it exists.
+
+version: "3.8"
+
+services:
+  # Example: expose frontend directly on localhost:3000
+  # web:
+  #   ports:
+  #     - "3000:3000"
+
+  # Example: expose API directly on localhost:8000
+  # api:
+  #   ports:
+  #     - "8000:8000"
+
+  # Example: mount WhatsApp bridge source for live reload
+  # whatsapp-bridge:
+  #   volumes:
+  #     - ./services/whatsapp-bridge/src:/app/src
+  #   command: >
+  #     sh -c "npm install && node --watch src/index.js"

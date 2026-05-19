@@ -3,7 +3,7 @@
 'use client';
 
 import React from 'react';
-import { Smartphone, RotateCw } from 'lucide-react';
+import { Smartphone, RotateCw } from '@/components/ui/LucideIcons';
 import { FlatAppleCard } from './cards/FlatAppleCard';
 import { FlatGoogleCard } from './cards/FlatGoogleCard';
 import type { WalletDesignState } from './types';
@@ -223,6 +223,9 @@ export interface CenterPreviewProps {
   barcodeType: string;
   customerName?: string;
   walletDesign?: WalletDesignState;
+  hoveredZone?: string | null;
+  showZoneMap?: boolean;
+  onToggleZoneMap?: () => void;
 }
 
 /* ─── Main Component ──────────────────────────────────────────────── */
@@ -240,8 +243,11 @@ export function CenterPreview({
   barcodeType,
   customerName,
   walletDesign,
+  hoveredZone,
+  showZoneMap,
+  onToggleZoneMap,
 }: CenterPreviewProps) {
-  const cardContent = platform === 'apple' ? (
+  const appleCardFront = (
     <FlatAppleCard
       form={form}
       selectedType={selectedType}
@@ -250,8 +256,46 @@ export function CenterPreview({
       barcodeType={barcodeType}
       customerName={customerName}
       walletDesign={walletDesign}
-      view={appleView}
+      view="front"
+      hoveredZone={hoveredZone}
+      showZoneMap={showZoneMap}
     />
+  );
+  const appleCardBack = (
+    <FlatAppleCard
+      form={form}
+      selectedType={selectedType}
+      logoPreview={logoPreview}
+      stripPreview={stripPreview}
+      barcodeType={barcodeType}
+      customerName={customerName}
+      walletDesign={walletDesign}
+      view="back"
+      hoveredZone={hoveredZone}
+      showZoneMap={showZoneMap}
+    />
+  );
+
+  const cardContent = platform === 'apple' ? (
+    <div className="relative w-full" style={{ perspective: 1200 }}>
+      <div
+        className="relative w-full transition-transform duration-500"
+        style={{
+          transformStyle: 'preserve-3d',
+          transform: appleView === 'back' ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        }}
+      >
+        <div style={{ backfaceVisibility: 'hidden' }}>
+          {appleCardFront}
+        </div>
+        <div
+          className="absolute inset-0"
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+        >
+          {appleCardBack}
+        </div>
+      </div>
+    </div>
   ) : (
     <FlatGoogleCard
       form={form}
@@ -287,7 +331,7 @@ export function CenterPreview({
       </div>
 
       {/* Controls below card */}
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex items-center gap-3 flex-wrap justify-center">
         {/* Apple front/back toggle */}
         {platform === 'apple' && (
           <button
@@ -297,6 +341,22 @@ export function CenterPreview({
           >
             <RotateCw className="w-3.5 h-3.5" strokeWidth={1.5} />
             {appleView === 'front' ? 'Ver trasera' : 'Ver frente'}
+          </button>
+        )}
+
+        {/* Zone map toggle */}
+        {platform === 'apple' && (
+          <button
+            type="button"
+            onClick={onToggleZoneMap}
+            className={`flex items-center gap-1.5 text-xs transition-colors duration-100 px-3 py-1.5 rounded-full
+              ${showZoneMap
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80'
+              }`}
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            {showZoneMap ? 'Ocultar zonas' : 'Mostrar zonas'}
           </button>
         )}
 

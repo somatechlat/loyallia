@@ -494,6 +494,17 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             </div>
           </div>
 
+          {/* V2 Designer Link */}
+          <div className="flex justify-end">
+            <a
+              href={`/programs/${program.id}/design`}
+              className="inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors px-4 py-2 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800 hover:bg-brand-100 dark:hover:bg-brand-900/30"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              Abrir en diseñador V2 →
+            </a>
+          </div>
+
           {/* Full Wallet Designer */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <div className="space-y-6">

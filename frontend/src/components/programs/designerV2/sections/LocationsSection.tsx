@@ -3,7 +3,7 @@
 'use client';
 
 import React from 'react';
-import { Info, MapPin, Radio, Plus } from 'lucide-react';
+import { Info, MapPin, Radio, Plus } from '@/components/ui/LucideIcons';
 
 function InfoCallout({ children }: { children: React.ReactNode }) {
   return (

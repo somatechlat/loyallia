@@ -22,8 +22,10 @@ export interface RightEditorPanelProps {
     text_color: string;
     card_type: string;
   };
+  onFormChange: (patch: Partial<{ background_color: string; text_color: string }>) => void;
   barcodeType: string;
   onBarcodeTypeChange: (type: string) => void;
+  onHoverZone?: (zone: string | null) => void;
 }
 
 export function RightEditorPanel({
@@ -31,8 +33,10 @@ export function RightEditorPanel({
   walletDesign,
   onWalletDesignChange,
   form,
+  onFormChange,
   barcodeType,
   onBarcodeTypeChange,
+  onHoverZone,
 }: RightEditorPanelProps) {
   return (
     <div className="h-full">
@@ -41,13 +45,14 @@ export function RightEditorPanel({
           walletDesign={walletDesign}
           onWalletDesignChange={onWalletDesignChange}
           form={form}
+          onFormChange={onFormChange}
         />
       )}
       {activeNav === 'data' && (
         <DataSection
           walletDesign={walletDesign}
           onWalletDesignChange={onWalletDesignChange}
-          cardType={form.card_type}
+          onHoverZone={onHoverZone}
         />
       )}
       {activeNav === 'locations' && (

@@ -7,11 +7,11 @@ import {
   Palette,
   TableProperties,
   MapPin,
-  Link as LinkIcon,
+  Link2 as LinkIcon,
   Barcode,
   Settings,
   Save,
-} from 'lucide-react';
+} from '@/components/ui/LucideIcons';
 import type { DesignerNavItem } from './types';
 
 /* ─── Icon config ─────────────────────────────────────────────────── */
