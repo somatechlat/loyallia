@@ -331,8 +331,47 @@ migrate_and_seed() {
     fi
 }
 
+ensure_admin_password() {
+    step "8/10 — Setting admin password"
+
+    local admin_email="${ADMIN_EMAIL:-admin@loyallia.com}"
+    local admin_pass="${ADMIN_PASSWORD:-}"
+
+    if [ -z "$admin_pass" ]; then
+        if [ "$BOOTSTRAP_MODE" = "production" ]; then
+            err "ADMIN_PASSWORD environment variable is required in production mode."
+            err "Example: ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap.sh"
+            exit 1
+        else
+            warn "ADMIN_PASSWORD not set. Using an auto-generated password."
+            admin_pass="$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 24)"
+            log "Generated admin password: $admin_pass"
+            log "Set ADMIN_PASSWORD to use a fixed password."
+        fi
+    fi
+
+    log "Ensuring admin account has a usable password..."
+    docker compose exec -T api python manage.py recover_admin_access \
+        --email "$admin_email" \
+        --password "$admin_pass" \
+        --create || {
+        err "Could not set admin password via recover_admin_access."
+        err "You may need to set it manually after bootstrap:"
+        err "  docker compose exec api python manage.py recover_admin_access --password 'YourPass' --create"
+        exit 1
+    }
+
+    log "Admin password set."
+    log "  Email:    $admin_email"
+    if [ -z "${ADMIN_PASSWORD:-}" ]; then
+        log "  Password: $admin_pass (auto-generated, save this!)"
+    else
+        log "  Password: (set from ADMIN_PASSWORD environment variable)"
+    fi
+}
+
 start_workers_and_proxy() {
-    step "8/9 — Starting workers, monitoring, proxy"
+    step "9/10 — Starting workers, monitoring, proxy"
 
     log "Starting Celery workers..."
     docker compose up -d celery-pass celery-push celery-default celery-beat
@@ -354,7 +393,7 @@ start_workers_and_proxy() {
 }
 
 start_redis_sentinel() {
-    step "9/9 — Starting Redis Sentinel"
+    step "10/10 — Starting Redis Sentinel"
 
     log "Checking for Redis Sentinel configuration..."
     if [ -f "$PROJECT_ROOT/deploy/redis/sentinel.conf" ]; then
@@ -513,6 +552,7 @@ main() {
     migrate_and_seed
     start_workers_and_proxy
     start_redis_sentinel
+    ensure_admin_password
     cleanup_bootstrap
     verify_bootstrap
 

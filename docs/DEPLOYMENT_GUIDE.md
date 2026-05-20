@@ -187,6 +187,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 docker compose ps
 ```
 
+> **Note:** The production API container (`docker-compose.prod.yml`) does NOT auto-run seed commands on startup. Seeds must be executed manually during initial deployment. The container only runs `migrate`, `collectstatic`, and starts Gunicorn.
+
 ---
 
 ## Step 7: Database Setup
@@ -198,20 +200,20 @@ docker compose exec api python manage.py migrate --noinput
 # Collect static files
 docker compose exec api python manage.py collectstatic --noinput
 
-# Seed subscription plans
+# Seed canonical subscription plans from JSON fixture
 docker compose exec api python manage.py seed_subscription_plans
 
-# Create superadmin (optional)
-docker compose exec api python manage.py shell -c "
-from apps.authentication.models import User
-from apps.tenants.models import Tenant
-if not User.objects.filter(email='admin@loyallia.com').exists():
-    user = User.objects.create_superuser('admin@loyallia.com', 'CHANGE_THIS_PASSWORD_IMMEDIATELY', first_name='Admin', last_name='System')
-    print('Superadmin created')
-else:
-    print('Superadmin already exists')
-"
+# Seed platform settings
+docker compose exec api python manage.py seed_platform_settings
+
+# Create/recover superadmin (REQUIRES ADMIN_PASSWORD in production)
+docker compose exec -T api python manage.py recover_admin_access \
+    --email "admin@loyallia.com" \
+    --password "$ADMIN_PASSWORD" \
+    --create
 ```
+
+**CRITICAL:** The `recover_admin_access` command is the only supported way to create/recover the admin account. Do not use inline shell scripts or hardcoded passwords.
 
 ---
 
@@ -299,6 +301,8 @@ docker cp loyallia-vault:/vault/file/init.json vault-backup-$(date +%Y%m%d).json
 ---
 
 ## Credential Status Matrix
+
+> **Note:** The statuses below reflect the state of the codebase at the time of writing. Verify actual credential statuses in your local environment before deployment.
 
 | Integration | Status | Action Required |
 |-------------|--------|-----------------|

@@ -1,7 +1,7 @@
 # Loyallia — Agent Onboarding Guide
 
 > **Single source of truth for any coding agent joining this project.**
-> Updated: 2026-05-06
+> Updated: 2026-05-20
 > Status: Verify locally before claiming readiness
 
 ---
@@ -77,6 +77,7 @@ certs/             Certificate files (real + dev)
 | **Vault Write** | `common/vault.py` | `write_secret()` + `clear_cache()` for runtime secret updates |
 | **Integration Diagnostics** | `apps/tenants/super_admin_api/platform.py` | `platform_integrations()` returns per-service diagnostics with `errors` array |
 | **Vault Secret Endpoint** | `apps/tenants/super_admin_api/platform.py` | `PUT /integrations/{key}/secret/` — writes single key to Vault, validates against `ALLOWED_KEYS` |
+| **Migration & Seed Remediation** | `apps/*/migrations/`, `apps/billing/fixtures/subscription_plans.json`, `apps/tenants/fixtures/platform_settings.json`, `apps/*/management/commands/seed_*.py` | Data-creating migrations converted to no-ops; canonical JSON fixtures are the single source of truth. Seed commands read from fixtures. `--update-existing` flag supported. No hardcoded default passwords. Production startup no longer auto-runs seeds. |
 
 ### Frontend Changes
 
@@ -246,6 +247,14 @@ docker logs -f loyallia-api
 # Run migrations
 docker exec loyallia-api python manage.py migrate
 
+# Seed canonical data (run after migrations)
+docker exec loyallia-api python manage.py seed_subscription_plans
+docker exec loyallia-api python manage.py seed_platform_settings
+
+# Update existing seed data (optional)
+docker exec loyallia-api python manage.py seed_subscription_plans --update-existing
+docker exec loyallia-api python manage.py seed_platform_settings --update-existing
+
 # Run backend tests (inside container — resolves Docker hostnames)
 docker exec loyallia-api python3 -m pytest -q --reuse-db
 
@@ -257,6 +266,9 @@ cd frontend && npm run dev
 
 # Lint backend
 cd backend && python3 -m ruff check .
+
+# Recover admin access (requires password; use --create to create missing admin)
+docker exec loyallia-api python manage.py recover_admin_access --password <password> --create
 
 # Provision E2E test users (required before Playwright)
 docker compose exec api python manage.py provision_development_rbac_test_users --generate
@@ -279,6 +291,14 @@ export VAULT_SECRET_PATH="secret/data/loyallia/development"
 export DEBUG="True"
 export DJANGO_SETTINGS_MODULE="loyallia.settings.test"
 ```
+
+### Demo Data
+Ecuador business demo data runs **only** from the SysAdmin "Cargar Datos Demo" button or via API:
+```bash
+curl -s -X POST http://localhost:33905/api/v1/admin/platform/seed-demo-data/ \
+  -H "Authorization: Bearer $TOKEN"
+```
+The endpoint auto-generates a demo password and includes it in the response. `seed_ecuador_businesses` requires `--password` and is for **demo purposes only**.
 
 ### Playwright mutating tests
 Tests that create or delete data require:

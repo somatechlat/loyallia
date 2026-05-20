@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('auth', '0012_alter_user_first_name_max_length'),
-        ('authentication', '0006_fix_superadmin'),
+        ('authentication', '0005_ensure_superadmin'),
         ('tenants', '0009_alter_tenant_scheduled_deletion_at'),
     ]
 

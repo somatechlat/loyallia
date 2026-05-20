@@ -4,13 +4,22 @@ Run with:
     docker compose exec api python manage.py seed_platform_settings
     docker compose exec api python manage.py seed_platform_settings --mode=development
     docker compose exec api python manage.py seed_platform_settings --mode=production
+    docker compose exec api python manage.py seed_platform_settings --update-existing
 
-Idempotent  safe to run multiple times; existing keys are skipped.
+Idempotent  safe to run multiple times; existing keys are skipped unless
+--update-existing is passed.
 """
+
+import json
+from pathlib import Path
 
 from django.core.management.base import BaseCommand
 
 from apps.tenants.models import PlatformSetting
+
+FIXTURE_PATH = (
+    Path(__file__).parent.parent.parent / "fixtures" / "platform_settings.json"
+)
 
 # ---------------------------------------------------------------------------
 # SYSTEM MODE SETTINGS
@@ -264,40 +273,9 @@ _WORKER_SETTINGS = [
     },
 ]
 
-# ---------------------------------------------------------------------------
-# LEGACY DEFAULTS (kept for backward compatibility)
-# ---------------------------------------------------------------------------
-_LEGACY_DEFAULTS = [
-    {
-        "key": "TRIAL_DAYS",
-        "value": "5",
-        "description": "Días de prueba por defecto para nuevos tenants",
-        "category": "billing",
-    },
-    {
-        "key": "TAX_RATE_ECUADOR",
-        "value": "0.15",
-        "description": "Tasa de IVA Ecuador (0.15 = 15%)",
-        "category": "billing",
-    },
-    {
-        "key": "DEFAULT_TIMEZONE",
-        "value": "America/Guayaquil",
-        "description": "Zona horaria por defecto de la plataforma",
-        "category": "system",
-    },
-    {
-        "key": "PLATFORM_MODE",
-        "value": "production",
-        "description": "Modo de la plataforma (development/production)",
-        "category": "system",
-    },
-]
-
-# Flatten all setting groups
+# Flatten all setting groups (legacy loaded from fixture)
 ALL_DEFAULTS = (
-    _LEGACY_DEFAULTS
-    + _SYSTEM_MODE_SETTINGS
+    _SYSTEM_MODE_SETTINGS
     + _BACKUP_SETTINGS
     + _URL_SETTINGS
     + _NOTIFICATION_SETTINGS
@@ -323,6 +301,24 @@ _MODE_OVERRIDES = {
 }
 
 
+def _load_legacy_fixture():
+    """Load the 3 legacy platform settings from canonical JSON fixture."""
+    if not FIXTURE_PATH.exists():
+        return []
+    with open(FIXTURE_PATH) as f:
+        data = json.load(f)
+    return [
+        {
+            "key": item["fields"]["key"],
+            "value": item["fields"]["value"],
+            "description": item["fields"]["description"],
+            "category": item["fields"]["category"],
+            "requires_restart": item["fields"].get("requires_restart", False),
+        }
+        for item in data
+    ]
+
+
 class Command(BaseCommand):
     help = "Seed default platform settings (idempotent)"
 
@@ -334,18 +330,25 @@ class Command(BaseCommand):
             default="production",
             help="Platform mode: development or production (default: production)",
         )
+        parser.add_argument(
+            "--update-existing",
+            action="store_true",
+            help="Apply mode overrides to existing settings (default: skip existing)",
+        )
 
     def handle(self, *args, **options):
         mode = options["mode"]
+        update_existing = options["update_existing"]
         overrides = _MODE_OVERRIDES.get(mode, {})
 
         created_count = 0
         updated_count = 0
         skipped_count = 0
 
-        for item in ALL_DEFAULTS:
+        all_items = _load_legacy_fixture() + list(ALL_DEFAULTS)
+
+        for item in all_items:
             key = item["key"]
-            # Apply mode-specific override if any
             value = overrides.get(key, item["value"])
 
             setting, created = PlatformSetting.objects.get_or_create(
@@ -364,25 +367,27 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.NOTICE(f"Skipped {key} (already exists)"))
                 skipped_count += 1
 
-        # Apply mode overrides to existing settings
-        for key, value in overrides.items():
-            try:
-                setting = PlatformSetting.objects.get(key=key)
-                if setting.value != value:
-                    setting.value = value
-                    setting.save(update_fields=["value", "updated_at"])
-                    self.stdout.write(
-                        self.style.WARNING(f"Mode override: {key} = {value} (was {setting.value})")
-                    )
-                    updated_count += 1
-            except PlatformSetting.DoesNotExist:
-                pass  # Was just created with the override value
+        # Apply mode overrides to existing settings ONLY if --update-existing
+        if update_existing:
+            for key, value in overrides.items():
+                try:
+                    setting = PlatformSetting.objects.get(key=key)
+                    if setting.value != value:
+                        old = setting.value
+                        setting.value = value
+                        setting.save(update_fields=["value", "updated_at"])
+                        self.stdout.write(
+                            self.style.WARNING(f"Updated: {key} = {value} (was {old})")
+                        )
+                        updated_count += 1
+                except PlatformSetting.DoesNotExist:
+                    pass
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"\nDone [{mode}]. "
                 f"{created_count} created, "
-                f"{updated_count} overridden, "
+                f"{updated_count} updated, "
                 f"{skipped_count} skipped."
             )
         )

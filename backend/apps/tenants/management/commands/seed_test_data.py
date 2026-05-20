@@ -9,15 +9,12 @@ from django.utils import timezone
 
 from apps.analytics.models import CustomerAnalytics, DailyAnalytics, ProgramAnalytics
 
-# Audit
-from apps.audit.models import AuditLog
-
 # Core
-from apps.authentication.models import RefreshToken, User, UserRole
+from apps.authentication.models import User, UserRole
 from apps.automation.models import Automation
 
 # Billing
-from apps.billing.models import Invoice, PaymentMethod, Subscription, SubscriptionPlan, SubscriptionStatus
+from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
 
 # Loyalty
 from apps.cards.models import Card, CardType
@@ -25,11 +22,8 @@ from apps.customers.models import Customer, CustomerPass
 
 # Engagement
 from apps.notifications.models import (
-    CampaignDeliveryLog,
-    CampaignRun,
     Notification,
     NotificationType,
-    WhatsAppSession,
 )
 
 # Authentic Ecuadorian / Latin American Name Pools
@@ -51,11 +45,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--wipe",
-            action="store_true",
-            help="Wipe the database before seeding (Destructive!)",
-        )
-        parser.add_argument(
             "--password",
             default=None,
             help="Local-only password for generated demo tenant users.",
@@ -68,44 +57,9 @@ class Command(BaseCommand):
 
         enforce_settings_environment(mode="development", databases=settings.DATABASES)
         if not settings.DEBUG:
-            raise CommandError("Refusing to seed test data outside DEBUG development mode.")
-        if options["wipe"]:
-            self.stdout.write(
-                self.style.WARNING("Wiping existing DEMO data only (operational infrastructure preserved)...")
+            raise CommandError(
+                "Refusing to seed test data outside DEBUG development mode."
             )
- # Operational identifiers that must NEVER be deleted
-            OPERATIONAL_PLAN_SLUGS = {"trial", "starter", "professional", "enterprise"}
-            SUPERADMIN_EMAIL = "admin@loyallia.com"
-
-            with transaction.atomic():
- # Child records with FK dependencies first
-                superadmin = User.objects.filter(email=SUPERADMIN_EMAIL).first()
-                superadmin_id = superadmin.id if superadmin else None
-                if superadmin_id:
-                    RefreshToken.objects.exclude(user_id=superadmin_id).delete()
-                CampaignDeliveryLog.objects.all().delete()
-                Notification.objects.all().delete()
-                CampaignRun.objects.all().delete()
-                WhatsAppSession.objects.all().delete()
-                Transaction.objects.all().delete()
-                CustomerPass.objects.all().delete()
-                CustomerAnalytics.objects.all().delete()
-                ProgramAnalytics.objects.all().delete()
-                DailyAnalytics.objects.all().delete()
-                Automation.objects.all().delete()
-                AuditLog.objects.all().delete()
-                Invoice.objects.all().delete()
-                PaymentMethod.objects.all().delete()
-                Subscription.objects.all().delete()
- # Tenant-scoped entities
-                Customer.objects.all().delete()
-                Card.objects.all().delete()
-                Location.objects.all().delete()
-                User.objects.exclude(email=SUPERADMIN_EMAIL).delete()
-                Tenant.objects.all().delete()
- # Non-operational subscription plans (E2E test pollution)
-                SubscriptionPlan.objects.exclude(slug__in=OPERATIONAL_PLAN_SLUGS).delete()
-            self.stdout.write(self.style.SUCCESS("Demo data wiped. Operational infrastructure preserved."))
 
         self.stdout.write("Starting massive data seed process (Ecuador context)...")
 
@@ -120,14 +74,18 @@ class Command(BaseCommand):
             self._seed_data(seed_password)
 
         self.stdout.write(self.style.SUCCESS("Successfully seeded massive test data!"))
-        self.stdout.write("Demo tenant users were created with the operator-provided local seed password.")
-        self.stdout.write("SuperAdmin password is not created or reset by this seed command.")
+        self.stdout.write(
+            "Demo tenant users were created with the operator-provided local seed password."
+        )
+        self.stdout.write(
+            "SuperAdmin password is not created or reset by this seed command."
+        )
         self.stdout.write("  Owner: owner@example.com")
 
     def _seed_data(self, seed_password: str):
         now = timezone.now()
 
- # 1. Tenant Café El Ritmo (Quito, Ecuador)
+        # 1. Tenant Café El Ritmo (Quito, Ecuador)
 
         tenant, _ = Tenant.objects.get_or_create(
             slug="cafe-el-ritmo",
@@ -143,12 +101,16 @@ class Command(BaseCommand):
             },
         )
 
- # Idempotency guard: skip if demo data already exists
+        # Idempotency guard: skip if demo data already exists
         if Customer.objects.filter(tenant=tenant).exists():
-            self.stdout.write(self.style.NOTICE("Demo data already exists for Café El Ritmo. Skipping seed."))
+            self.stdout.write(
+                self.style.NOTICE(
+                    "Demo data already exists for Café El Ritmo. Skipping seed."
+                )
+            )
             return
 
- # 2. SuperAdmin
+        # 2. SuperAdmin
 
         admin, admin_created = User.objects.get_or_create(
             email="admin@loyallia.com",
@@ -162,7 +124,7 @@ class Command(BaseCommand):
                 "is_superuser": True,
             },
         )
- # SUPER_ADMIN operates at platform level tenant must be None
+        # SUPER_ADMIN operates at platform level tenant must be None
         admin_needs_save = False
         admin_update_fields = []
         if admin_created:
@@ -183,7 +145,7 @@ class Command(BaseCommand):
         if admin_created or admin_needs_save:
             admin.save(update_fields=[*admin_update_fields, "updated_at"])
 
- # 3. Staff Users (Ecuadorian names)
+        # 3. Staff Users (Ecuadorian names)
 
         users_data = [
             ("owner@example.com", "Carlos", "Andrade Pacheco", UserRole.OWNER),
@@ -211,7 +173,7 @@ class Command(BaseCommand):
             u.set_password(seed_password)
             u.save()
 
- # 4. Locations (Real Quito landmarks)
+        # 4. Locations (Real Quito landmarks)
 
         locations = []
         locations_data = [
@@ -248,9 +210,11 @@ class Command(BaseCommand):
             )
             locations.append(loc)
 
- # 5. Billing Active Enterprise subscription
+        # 5. Billing Active Enterprise subscription
 
-        enterprise_plan = SubscriptionPlan.objects.filter(slug="enterprise", is_active=True).first()
+        enterprise_plan = SubscriptionPlan.objects.filter(
+            slug="enterprise", is_active=True
+        ).first()
         sub, _ = Subscription.objects.get_or_create(
             tenant=tenant,
             defaults={
@@ -280,7 +244,7 @@ class Command(BaseCommand):
             ]
         )
 
- # 6. Loyalty Programs (4 real-world programs)
+        # 6. Loyalty Programs (4 real-world programs)
 
         c_stamp, _ = Card.objects.get_or_create(
             tenant=tenant,
@@ -355,7 +319,7 @@ class Command(BaseCommand):
             },
         )
 
- # 7. Mass Customers 200 with authentic Ecuadorian names
+        # 7. Mass Customers 200 with authentic Ecuadorian names
 
         self.stdout.write("  -> Generando 200+ clientes ecuatorianos...")
         customers = []
@@ -385,19 +349,21 @@ class Command(BaseCommand):
                 first_name=first,
                 last_name=full_last,
                 phone=phone,
-                date_of_birth=(now - timedelta(days=365 * random.randint(18, 55))).date(),
+                date_of_birth=(
+                    now - timedelta(days=365 * random.randint(18, 55))
+                ).date(),
             )
             Customer.objects.filter(id=c.id).update(created_at=c_date)
             customers.append(c)
 
- # Enroll in stamp program (everyone)
+            # Enroll in stamp program (everyone)
             CustomerPass.objects.create(
                 customer=c,
                 card=c_stamp,
                 pass_data={"stamp_count": random.randint(0, 5)},
                 enrolled_at=c_date,
             )
- # 60% also enroll in cashback
+            # 60% also enroll in cashback
             if random.random() > 0.4:
                 CustomerPass.objects.create(
                     customer=c,
@@ -405,7 +371,7 @@ class Command(BaseCommand):
                     pass_data={"cashback_balance": str(Decimal(random.randint(2, 45)))},
                     enrolled_at=c_date + timedelta(days=random.randint(0, 5)),
                 )
- # 20% VIP
+            # 20% VIP
             if random.random() > 0.8:
                 CustomerPass.objects.create(
                     customer=c,
@@ -413,7 +379,7 @@ class Command(BaseCommand):
                     pass_data={"membership_tier": "gold", "discount_active": True},
                     enrolled_at=c_date + timedelta(days=random.randint(1, 10)),
                 )
- # 15% referral
+            # 15% referral
             if random.random() > 0.85:
                 CustomerPass.objects.create(
                     customer=c,
@@ -425,7 +391,7 @@ class Command(BaseCommand):
                     enrolled_at=c_date + timedelta(days=random.randint(0, 7)),
                 )
 
- # 8. Mass Transactions 2000+
+        # 8. Mass Transactions 2000+
 
         self.stdout.write("  -> Generando 2000+ transacciones...")
         cashier = User.objects.get(email="staff@example.com")
@@ -466,7 +432,7 @@ class Command(BaseCommand):
 
         Transaction.objects.bulk_create(transactions_to_create)
 
- # Distribute dates
+        # Distribute dates
         all_tx = list(Transaction.objects.all())
         for tx in all_tx:
             random_date = now - timedelta(days=int(random.expovariate(0.03)))
@@ -474,17 +440,25 @@ class Command(BaseCommand):
                 random_date = now - timedelta(days=random.randint(0, 90))
             Transaction.objects.filter(id=tx.id).update(created_at=random_date)
 
- # 9. Rolling DailyAnalytics (90 days)
+        # 9. Rolling DailyAnalytics (90 days)
 
         self.stdout.write("  -> Hidratando analítica de series de tiempo (90 días)...")
         for day_offset in range(90, -1, -1):
             target_date = (now - timedelta(days=day_offset)).date()
-            daily_tx = Transaction.objects.filter(tenant=tenant, created_at__date=target_date)
+            daily_tx = Transaction.objects.filter(
+                tenant=tenant, created_at__date=target_date
+            )
 
             tx_count = daily_tx.count()
-            daily_rev = daily_tx.aggregate(Sum("amount"))["amount__sum"] or Decimal("0.00")
-            new_customers = Customer.objects.filter(tenant=tenant, created_at__date=target_date).count()
-            new_enrollments = CustomerPass.objects.filter(card__tenant=tenant, enrolled_at__date=target_date).count()
+            daily_rev = daily_tx.aggregate(Sum("amount"))["amount__sum"] or Decimal(
+                "0.00"
+            )
+            new_customers = Customer.objects.filter(
+                tenant=tenant, created_at__date=target_date
+            ).count()
+            new_enrollments = CustomerPass.objects.filter(
+                card__tenant=tenant, enrolled_at__date=target_date
+            ).count()
             rewards_issued = daily_tx.filter(
                 transaction_type__in=[
                     TransactionType.STAMP_EARNED,
@@ -511,18 +485,20 @@ class Command(BaseCommand):
                 },
             )
 
- # 10. Customer & Program Analytics Segments
+        # 10. Customer & Program Analytics Segments
 
         self.stdout.write("  -> Calculando segmentación de clientes...")
         for c in Customer.objects.filter(tenant=tenant):
-            analytics, _ = CustomerAnalytics.objects.get_or_create(customer=c, tenant=tenant)
+            analytics, _ = CustomerAnalytics.objects.get_or_create(
+                customer=c, tenant=tenant
+            )
             analytics.update_metrics()
 
         for p in Card.objects.filter(tenant=tenant):
             analytics, _ = ProgramAnalytics.objects.get_or_create(card=p, tenant=tenant)
             analytics.update_metrics()
 
- # 11. Automation Rules
+        # 11. Automation Rules
 
         self.stdout.write("  -> Creando reglas de automatización...")
         automations_data = [
@@ -566,7 +542,7 @@ class Command(BaseCommand):
                 total_executions=execs,
             )
 
- # 12. Campaign Notifications (simulated via Marketing notifications)
+        # 12. Campaign Notifications (simulated via Marketing notifications)
 
         self.stdout.write("  -> Creando campañas de notificación push...")
         campaign_customers = list(Customer.objects.filter(tenant=tenant)[:60])
@@ -627,5 +603,7 @@ class Command(BaseCommand):
             total_notifs += len(notifs)
 
         self.stdout.write(
-            self.style.SUCCESS(f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas")
+            self.style.SUCCESS(
+                f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas"
+            )
         )
