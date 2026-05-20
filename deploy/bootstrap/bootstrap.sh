@@ -214,8 +214,7 @@ auto_create_rescue_files() {
     curl -sf -k -H "X-Vault-Token: $root_token" \
         "https://127.0.0.1:33908/v1/secret/data/$VAULT_KV_PATH" \
         > "$RESCUE_DIR/vault_secrets_rescue.json" 2>/dev/null || {
-        warn "Failed to export Vault secrets via API."
-        return 1
+        warn "Failed to export Vault secrets via API. Continuing without rescue file."
     }
     chmod 0600 "$RESCUE_DIR/vault_secrets_rescue.json"
     log "Saved: $RESCUE_DIR/vault_secrets_rescue.json"
