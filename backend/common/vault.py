@@ -110,7 +110,12 @@ def _fetch_vault_secrets() -> dict:
     # TLS verification: use Vault CA certificate when available
     ssl_context = ssl.create_default_context()
     vault_ca_cert = os.environ.get("VAULT_CACERT", "/vault/certs/vault.crt")
-    if vault_ca_cert and os.path.isfile(vault_ca_cert):
+    vault_skip_verify = os.environ.get("VAULT_SKIP_VERIFY", "").lower() in ("true", "1", "yes")
+
+    if vault_skip_verify:
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+    elif vault_ca_cert and os.path.isfile(vault_ca_cert):
         ssl_context.load_verify_locations(vault_ca_cert)
     else:
         ssl_context.check_hostname = False
