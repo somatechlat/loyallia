@@ -144,7 +144,10 @@ def password(n=24, chars=None):
 
 def django_secret():
     chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#%^&*(-_=+)'
-    return ''.join(secrets.choice(chars) for _ in range(64))
+    while True:
+        result = ''.join(secrets.choice(chars) for _ in range(64))
+        if not result.startswith('@'):
+            return result
 
 def redis_pass():
     return ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(24))

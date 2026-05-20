@@ -9,6 +9,12 @@ BOOTSTRAP_VOL="loyallia_bootstrap_tmp"
 BOOTSTRAP_MODE="${LOYALLIA_BOOTSTRAP_MODE:-development}"
 VAULT_KV_PATH="loyallia/$BOOTSTRAP_MODE"
 
+# Production mode: automatically include docker-compose.prod.yml
+if [ "$BOOTSTRAP_MODE" = "production" ]; then
+    export COMPOSE_FILE="docker-compose.yml:docker-compose.prod.yml"
+    echo "[bootstrap] Production mode: using COMPOSE_FILE=$COMPOSE_FILE"
+fi
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -205,10 +211,10 @@ auto_create_rescue_files() {
     local root_token
     root_token="$(docker exec loyallia-vault sh -c 'cat /vault/file/init.json' | python3 -c 'import json,sys; print(json.load(sys.stdin)["root_token"])')"
 
-    docker exec -e VAULT_TOKEN="$root_token" loyallia-vault \
-        vault kv get -mount=secret -format=json "$VAULT_KV_PATH" \
+    curl -sf -k -H "X-Vault-Token: $root_token" \
+        "https://127.0.0.1:33908/v1/secret/data/$VAULT_KV_PATH" \
         > "$RESCUE_DIR/vault_secrets_rescue.json" 2>/dev/null || {
-        warn "Failed to export Vault secrets."
+        warn "Failed to export Vault secrets via API."
         return 1
     }
     chmod 0600 "$RESCUE_DIR/vault_secrets_rescue.json"
