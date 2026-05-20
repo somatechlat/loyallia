@@ -59,7 +59,7 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
 
     from django.core.management import call_command
 
- # Audit
+    # Audit
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -78,11 +78,22 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
     output = StringIO()
     call_command("seed_development_data", generate=True, stdout=output, stderr=output)
 
+    # DEMO ONLY: Seed real Ecuadorian business data
+    import secrets
+
+    demo_password = secrets.token_urlsafe(16)
+    call_command(
+        "seed_ecuador_businesses",
+        password=demo_password,
+        stdout=output,
+        stderr=output,
+    )
+
     logger.info("SUPER_ADMIN %s triggered demo data seed", request.user.email)
     return SeedDemoDataOut(
         success=True,
         message=get_message("ADMIN_DEMO_SEEDED"),
-        output=output.getvalue(),
+        output=output.getvalue() + f"\n\nDemo accounts password: {demo_password}",
     )
 
 
@@ -115,12 +126,14 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
         custom_friendly_name="Loyallia Platform",
     )
 
- # Store verification SID in Redis for confirm step
+    # Store verification SID in Redis for confirm step
     from django.core.cache import cache
 
-    cache.set(f"factory_reset:sid:{request.user.email}", result.get("sid", ""), timeout=300)
+    cache.set(
+        f"factory_reset:sid:{request.user.email}", result.get("sid", ""), timeout=300
+    )
 
- # Secondary: Email notification (always sent, regardless of Verify)
+    # Secondary: Email notification (always sent, regardless of Verify)
     from django.core.mail import send_mail
 
     try:
@@ -161,7 +174,9 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     )
     return MessageOut(
         success=True,
-        message=get_message("FACTORY_RESET_VERIFY_SENT", channel=result.get("channel", "SMS")),
+        message=get_message(
+            "FACTORY_RESET_VERIFY_SENT", channel=result.get("channel", "SMS")
+        ),
     )
 
 
@@ -171,7 +186,9 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     response=MessageOut,
     summary="Confirmar restauración de fábrica con código OTP",
 )
-def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) -> MessageOut:
+def factory_reset_confirm(
+    request: HttpRequest, payload: FactoryResetConfirmIn
+) -> MessageOut:
     """Verify OTP and execute factory reset. IRREVERSIBLE.
 
     Step 2 of 2: Validates the OTP from step 1, then wipes ALL tenant data
@@ -192,10 +209,12 @@ def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) 
     sid = cache.get(f"factory_reset:sid:{request.user.email}", "")
     recipient = getattr(request.user, "phone_number", "") or request.user.email
 
-    if not check_otp(recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"):
+    if not check_otp(
+        recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"
+    ):
         raise HttpError(403, get_message("ADMIN_FACTORY_OTP_INVALID"))
 
- # Audit BEFORE wipe (so the log entry is created before data is deleted)
+    # Audit BEFORE wipe (so the log entry is created before data is deleted)
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -212,7 +231,7 @@ def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) 
         logger.warning("Failed to audit factory reset", exc_info=True)
 
     with transaction.atomic():
- # Wipe order: deepest dependencies first to avoid FK violations
+        # Wipe order: deepest dependencies first to avoid FK violations
         from apps.authentication.models import RefreshToken
         from apps.automation.models import Automation, AutomationExecution
         from apps.billing.models import Subscription
@@ -241,13 +260,13 @@ def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) 
         User.objects.exclude(role=UserRole.SUPER_ADMIN).delete()
         Tenant.objects.all().delete()
 
- # Re-seed vital data (plans + settings)
+    # Re-seed vital data (plans + settings)
     from django.core.management import call_command
 
     call_command("seed_subscription_plans", stdout=StringIO())
     call_command("seed_platform_settings", stdout=StringIO())
 
- # Flush Redis cache (kill all sessions)
+    # Flush Redis cache (kill all sessions)
     from django.core.cache import cache
 
     try:

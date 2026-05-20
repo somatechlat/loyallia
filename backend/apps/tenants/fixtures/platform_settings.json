@@ -1,0 +1,32 @@
+[
+  {
+    "model": "tenants.platformsetting",
+    "fields": {
+      "key": "TRIAL_DAYS",
+      "value": "5",
+      "description": "Días de prueba por defecto para nuevos tenants",
+      "category": "billing",
+      "requires_restart": false
+    }
+  },
+  {
+    "model": "tenants.platformsetting",
+    "fields": {
+      "key": "TAX_RATE_ECUADOR",
+      "value": "0.15",
+      "description": "Tasa de IVA Ecuador (0.15 = 15%)",
+      "category": "billing",
+      "requires_restart": false
+    }
+  },
+  {
+    "model": "tenants.platformsetting",
+    "fields": {
+      "key": "DEFAULT_TIMEZONE",
+      "value": "America/Guayaquil",
+      "description": "Zona horaria por defecto de la plataforma",
+      "category": "system",
+      "requires_restart": false
+    }
+  }
+]

@@ -3,11 +3,11 @@ import secrets
 from pathlib import Path
 
 from django.conf import settings
+from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.authentication.models import User, UserRole
-from apps.billing.management.commands.seed_subscription_plans import Command as SeedPlansCommand
 from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
 from apps.tenants.models import Location, Plan, Tenant
 from common.environment_guard import enforce_settings_environment
@@ -68,31 +68,40 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         enforce_settings_environment(mode="development", databases=settings.DATABASES)
         if not settings.DEBUG:
-            raise CommandError("Refusing to provision E2E users outside DEBUG development mode.")
+            raise CommandError(
+                "Refusing to provision E2E users outside DEBUG development mode."
+            )
 
         password_file = (Path.cwd() / options["password_file"]).resolve()
         password = self._load_existing_password(password_file)
         if not password:
             if not options["generate"]:
-                raise CommandError("No local E2E credential file exists. Re-run with --generate to create one.")
+                raise CommandError(
+                    "No local E2E credential file exists. Re-run with --generate to create one."
+                )
             password = secrets.token_urlsafe(24)
 
         with transaction.atomic():
- # Seed all 4 default plans (trial, starter, professional, enterprise)
-            seed_cmd = SeedPlansCommand(stdout=self.stdout, stderr=self.stderr)
-            seed_cmd.handle()
+            # Seed all 4 default plans (trial, starter, professional, enterprise)
+            call_command(
+                "seed_subscription_plans",
+                stdout=self.stdout,
+                stderr=self.stderr,
+            )
 
             tenant = self._ensure_tenant()
             self._ensure_subscription(tenant)
             self._ensure_location(tenant)
             credentials = self._ensure_users(tenant, password)
 
- # Set Twilio test mode in Vault so SMS E2E tests can run safely
+        # Set Twilio test mode in Vault so SMS E2E tests can run safely
         put_secret("twilio_use_test_mode", "true")
 
         self._write_credentials(password_file, credentials)
         self.stdout.write(
-            self.style.SUCCESS(f"Development RBAC E2E users are active. Credentials written to {password_file}.")
+            self.style.SUCCESS(
+                f"Development RBAC E2E users are active. Credentials written to {password_file}."
+            )
         )
 
     def _load_existing_password(self, password_file: Path) -> str:
@@ -123,27 +132,12 @@ class Command(BaseCommand):
         return tenant
 
     def _ensure_subscription(self, tenant: Tenant) -> None:
-        plan, _ = SubscriptionPlan.objects.get_or_create(
-            slug="enterprise",
-            defaults={
-                "name": "Enterprise",
-                "price_monthly": "149.00",
-                "price_annual": "1490.00",
-                "max_customers": 999999,
-                "max_programs": 999999,
-                "max_locations": 999999,
-                "max_users": 999999,
-                "max_notifications_month": 999999,
-                "max_transactions_month": 999999,
-                "max_whatsapp_day": 999999,
-                "max_emails_month": 999999,
-                "max_sms_day": 999999,
-                "max_wallet_pushes_month": 999999,
-                "max_automations": 999999,
-                "features": ["automation", "advanced_analytics", "data_export"],
-                "is_active": True,
-            },
-        )
+        plan = SubscriptionPlan.objects.filter(slug="enterprise").first()
+        if plan is None:
+            raise CommandError(
+                "Enterprise subscription plan not found. "
+                "Run 'seed_subscription_plans' first."
+            )
         Subscription.objects.update_or_create(
             tenant=tenant,
             defaults={
@@ -196,11 +190,13 @@ class Command(BaseCommand):
 
     def _write_credentials(self, password_file: Path, credentials: dict) -> None:
         password_file.parent.mkdir(parents=True, exist_ok=True)
- # Read whatsapp bridge API key from shared runtime file if available
+        # Read whatsapp bridge API key from shared runtime file if available
         provider_secrets = {}
         bridge_key_file = Path("/run/loyallia-vault/whatsapp_bridge_api_key")
         if bridge_key_file.exists():
-            provider_secrets["whatsapp_bridge_api_key"] = bridge_key_file.read_text(encoding="utf-8").strip()
+            provider_secrets["whatsapp_bridge_api_key"] = bridge_key_file.read_text(
+                encoding="utf-8"
+            ).strip()
         output = {**credentials, "provider_secrets": provider_secrets}
         password_file.write_text(
             json.dumps(output, indent=2, sort_keys=True) + "\n",
