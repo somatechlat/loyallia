@@ -349,7 +349,7 @@ POLICYEOF
     if ! [ -f /vault/runtime/app-token ] || ! [ -s /vault/runtime/app-token ]; then
         log_info "Creating app token..."
         if vault token create -policy=loyallia-app -field=token > /vault/runtime/app-token 2>/dev/null; then
-            chmod 0600 /vault/runtime/app-token
+            chmod 0644 /vault/runtime/app-token
             log_info "App token created."
 
             # NOTE: Root token is retained for bootstrap rescue export.
