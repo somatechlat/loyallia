@@ -57,31 +57,31 @@ class Automation(TimestampedModel):
         verbose_name="Negocio",
     )
 
- # Basic info
+    # Basic info
     name = models.CharField(max_length=200, verbose_name="Nombre")
     description = models.TextField(blank=True, default="", verbose_name="Descripción")
 
- # Trigger configuration
+    # Trigger configuration
     trigger = models.CharField(max_length=30, choices=AutomationTrigger.choices, verbose_name="Disparador")
     trigger_config = models.JSONField(default=dict, verbose_name="Configuración del disparador")
 
- # Action configuration
+    # Action configuration
     action = models.CharField(max_length=30, choices=AutomationAction.choices, verbose_name="Acción")
     action_config = models.JSONField(default=dict, verbose_name="Configuración de la acción")
 
- # Targeting
+    # Targeting
     target_programs = models.ManyToManyField(
         Card, blank=True, related_name="automations", verbose_name="Programas objetivo"
     )
     target_segments = models.JSONField(default=list, verbose_name="Segmentos objetivo")  # List of segment names
 
- # Scheduling
+    # Scheduling
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     schedule_config = models.JSONField(
         default=dict, verbose_name="Configuración de horario"
     )  # For scheduled automations
 
- # Limits and throttling
+    # Limits and throttling
     max_executions_per_day = models.PositiveIntegerField(
         null=True, blank=True, verbose_name="Ejecuciones máximas por día"
     )
@@ -91,7 +91,7 @@ class Automation(TimestampedModel):
         verbose_name="Horas de enfriamiento",
     )
 
- # Analytics
+    # Analytics
     total_executions = models.PositiveIntegerField(default=0, verbose_name="Ejecuciones totales")
     last_executed = models.DateTimeField(null=True, blank=True, verbose_name="Última ejecución")
 
@@ -119,7 +119,7 @@ class Automation(TimestampedModel):
 
         from apps.analytics.models import CustomerAnalytics
 
- # Check if customer is in target segments
+        # Check if customer is in target segments
         if self.target_segments:
             try:
                 analytics = CustomerAnalytics.objects.get(customer=customer)
@@ -128,13 +128,13 @@ class Automation(TimestampedModel):
             except CustomerAnalytics.DoesNotExist:
                 return False
 
- # Check if customer is in target programs
+        # Check if customer is in target programs
         if self.target_programs.exists():
             customer_programs = customer.passes.filter(card__in=self.target_programs, is_active=True)
             if not customer_programs.exists():
                 return False
 
- # LYL-H-API-011: Per-customer cooldown (not global)
+        # LYL-H-API-011: Per-customer cooldown (not global)
         if self.cooldown_hours > 0:
             from datetime import timedelta
 
@@ -162,7 +162,7 @@ class Automation(TimestampedModel):
         if not self.can_execute_for_customer(customer):
             return False
 
- # LYL-H-API-016: Enforce max_executions_per_day limit
+        # LYL-H-API-016: Enforce max_executions_per_day limit
         if self.max_executions_per_day is not None:
             from django.utils import timezone
 
@@ -193,7 +193,7 @@ class Automation(TimestampedModel):
                 success = self._execute_trigger_webhook(customer, context)
 
             if success:
- # LYL-M-API-020: Use F() to prevent lost updates under concurrency
+                # LYL-M-API-020: Use F() to prevent lost updates under concurrency
                 from django.db.models import F
                 from django.utils import timezone
 
@@ -212,7 +212,7 @@ class Automation(TimestampedModel):
             )
             return success
         except Exception as e:
- # Log error but don't crash
+            # Log error but don't crash
             import logging
 
             logger = logging.getLogger(__name__)
@@ -266,7 +266,7 @@ class Automation(TimestampedModel):
         from_email = get_default_from_email()
         primary_color = getattr(self.tenant, "primary_color", "#6366f1")
 
- # Create notification record for audit trail
+        # Create notification record for audit trail
         Notification.objects.create(
             tenant=self.tenant,
             customer=customer,
@@ -388,10 +388,10 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         push_sent = False
 
         for pass_obj in passes:
- # Google Wallet
+            # Google Wallet
             if wallet_platform in ("google", "both"):
                 try:
- # First: silently PATCH object data
+                    # First: silently PATCH object data
                     from apps.customers.pass_engine.google_pass import (
                         update_wallet_object,
                     )
@@ -400,13 +400,14 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                     if gw_update.get("success"):
                         push_sent = True
 
- # Then: send visible message notification
+                    # Then: send visible message notification
                     from django.conf import settings
 
                     from apps.customers.pass_engine.google_pass import (
                         send_push_notification,
                     )
                     from apps.tenants.models import PlatformSetting
+
                     dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
                     action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
                     result = send_push_notification(pass_obj, header=title, body=message, action_url=action_url)
@@ -417,7 +418,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
                     logging.getLogger(__name__).warning("Google wallet push failed for pass %s: %s", pass_obj.id, exc)
 
- # Apple Wallet
+            # Apple Wallet
             if wallet_platform in ("apple", "both"):
                 try:
                     from apps.customers.pass_engine.apple_push import notify_pass_updated
@@ -434,14 +435,14 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
     def _execute_issue_reward(self, customer, context) -> bool:
         """Issue a reward to customer."""
- # Find customer's pass for the program
+        # Find customer's pass for the program
         program_id = self.action_config.get("program_id")
         if program_id:
             try:
                 card = Card.objects.get(id=program_id, tenant=self.tenant)
                 customer_pass = customer.passes.get(card=card, is_active=True)
 
- # Process reward transaction
+                # Process reward transaction
                 result = customer_pass.process_transaction("remote_reward")
                 return result.get("pass_updated", False)
             except (Card.DoesNotExist, customer.passes.model.DoesNotExist):
@@ -475,9 +476,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 
         webhook_url = self.action_config.get("webhook_url")
         if not webhook_url:
-            logging.getLogger(__name__).warning(
-                "No webhook URL configured for automation %s", self.id
-            )
+            logging.getLogger(__name__).warning("No webhook URL configured for automation %s", self.id)
             return False
 
         payload = {
@@ -554,12 +553,12 @@ class AutomationExecution(models.Model):
         verbose_name="Cliente",
     )
 
- # Execution details
+    # Execution details
     trigger_event = models.CharField(max_length=50, verbose_name="Evento disparador")
     execution_context = models.JSONField(default=dict, verbose_name="Contexto de ejecución")
     success = models.BooleanField(verbose_name="Éxito")
 
- # Timestamps
+    # Timestamps
     executed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

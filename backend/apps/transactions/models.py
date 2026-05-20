@@ -27,6 +27,7 @@ class TransactionType(models.TextChoices):
     REFERRAL_REWARD = "referral_reward", "Recompensa por referido"
     MULTIPASS_USED = "multipass_used", "Multipase usado"
     REMOTE_REWARD = "remote_reward", "Recompensa remota"
+    DENIED = "denied", "Denegado"
 
 
 class Transaction(models.Model):
@@ -42,7 +43,7 @@ class Transaction(models.Model):
         related_name="transactions",
         verbose_name="Negocio",
     )
- # LYL-H-ARCH-012: SET_NULL instead of CASCADE to preserve transaction history
+    # LYL-H-ARCH-012: SET_NULL instead of CASCADE to preserve transaction history
     customer_pass = models.ForeignKey(
         CustomerPass,
         on_delete=models.SET_NULL,
@@ -52,7 +53,7 @@ class Transaction(models.Model):
         verbose_name="Pase del cliente",
     )
 
- # Who performed the transaction
+    # Who performed the transaction
     staff = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -70,7 +71,7 @@ class Transaction(models.Model):
         verbose_name="Ubicación",
     )
 
- # Transaction details
+    # Transaction details
     transaction_type = models.CharField(
         max_length=30,
         choices=TransactionType.choices,
@@ -86,14 +87,44 @@ class Transaction(models.Model):
     )
     quantity = models.PositiveIntegerField(null=True, blank=True, verbose_name="Cantidad")
 
- # Transaction metadata
+    # Transaction metadata
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
     transaction_data = models.JSONField(default=dict, verbose_name="Datos de transacción")
 
- # Remote transaction flag
+    # Remote transaction flag
     is_remote = models.BooleanField(default=False, verbose_name="Transacción remota")
 
- # Timestamps
+    # NEW: Idempotency key for exactly-once semantics
+    idempotency_key = models.CharField(
+        max_length=64, db_index=True, blank=True, default="", verbose_name="Clave de idempotencia"
+    )
+
+    # NEW: Denial audit trail (when redemption is blocked)
+    denial_reason = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        choices=[
+            ("", "N/A"),
+            ("usage_limit_exceeded", "Límite de usos excedido"),
+            ("time_window_invalid", "Fuera de período válido"),
+            ("location_invalid", "Ubicación no autorizada"),
+            ("min_purchase_not_met", "Compra mínima no alcanzada"),
+            ("cooldown_active", "En período de enfriamiento"),
+            ("insufficient_balance", "Saldo insuficiente"),
+            ("reward_not_ready", "Recompensa no disponible"),
+            ("staff_role_denied", "Rol de personal no autorizado"),
+            ("card_not_published", "Programa no publicado"),
+            ("pass_expired", "Pase expirado"),
+            ("pass_inactive", "Pase inactivo"),
+        ],
+        verbose_name="Motivo de denegación",
+    )
+
+    # NEW: Which rules were evaluated (for audit)
+    rules_evaluated = models.JSONField(default=list, verbose_name="Reglas evaluadas")
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -105,7 +136,7 @@ class Transaction(models.Model):
             models.Index(fields=["tenant", "created_at"]),
             models.Index(fields=["customer_pass", "created_at"]),
             models.Index(fields=["transaction_type"]),
- # Compound indexes for production query patterns
+            # Compound indexes for production query patterns
             models.Index(
                 fields=["tenant", "customer_pass", "created_at"],
                 name="idx_txn_tenant_pass_date",
@@ -163,7 +194,7 @@ class Enrollment(models.Model):
         verbose_name="Programa",
     )
 
- # Enrollment method
+    # Enrollment method
     enrollment_method = models.CharField(
         max_length=20,
         choices=[
@@ -176,10 +207,10 @@ class Enrollment(models.Model):
         verbose_name="Método de inscripción",
     )
 
- # Referral tracking
+    # Referral tracking
     referral_code_used = models.CharField(max_length=20, blank=True, default="")
 
- # Source location (if applicable)
+    # Source location (if applicable)
     location = models.ForeignKey(
         Location,
         on_delete=models.SET_NULL,
@@ -189,11 +220,11 @@ class Enrollment(models.Model):
         verbose_name="Ubicación",
     )
 
- # Device info
+    # Device info
     user_agent = models.TextField(blank=True, default="", verbose_name="User Agent")
     ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="Dirección IP")
 
- # Timestamps
+    # Timestamps
     enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -204,7 +235,7 @@ class Enrollment(models.Model):
         indexes = [
             models.Index(fields=["tenant", "enrolled_at"]),
             models.Index(fields=["card", "enrolled_at"]),
- # Compound index for tenant-scoped enrollment lookups
+            # Compound index for tenant-scoped enrollment lookups
             models.Index(
                 fields=["tenant", "customer", "card"],
                 name="idx_enroll_tnt_cust_card",

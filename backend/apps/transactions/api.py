@@ -30,7 +30,6 @@ Called by: Scanner UI (React), Dashboard transaction page, Automation engine.
 """
 
 from decimal import Decimal
-from typing import Any
 
 from django.db.models import Q
 from django.http import HttpRequest
@@ -79,6 +78,7 @@ class ScanTransactIn(BaseModel):
     qr_code: str
     amount: float = 0
     notes: str = ""
+    idempotency_key: str = ""
 
 
 @scanner_router.post("/validate/", auth=jwt_auth, summary="Validar código QR del pase")
@@ -97,8 +97,8 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
         raise HttpError(400, get_message("PASS_QR_REQUIRED"))
 
     try:
- # PERF: single JOIN query for Pass + Customer + Card + Tenant
- # SEC: card__tenant=request.tenant ensures tenant isolation
+        # PERF: single JOIN query for Pass + Customer + Card + Tenant
+        # SEC: card__tenant=request.tenant ensures tenant isolation
         pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             qr_code=data.qr_code, is_active=True, card__tenant=request.tenant
         )
@@ -124,7 +124,7 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
 
 @scanner_router.post("/transact/", auth=jwt_auth, summary="Registrar transacción")
 def transact(request: HttpRequest, data: ScanTransactIn):
-    """Record a transaction from a QR scan and update pass balance atomically.
+    """Record a transaction from a QR scan via the Redemption Engine.
 
     This is the HOTTEST endpoint in the system  called on every customer scan
     at every POS terminal. Latency directly impacts staff experience.
@@ -140,94 +140,83 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     if not data.qr_code:
         raise HttpError(400, get_message("PASS_INVALID_QR"))
 
-    try:
- # PERF: single JOIN for pass + customer + card + tenant
- # SEC: card__tenant isolates to the staff member's tenant
-        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            qr_code=data.qr_code, is_active=True, card__tenant=request.tenant
-        )
-    except CustomerPass.DoesNotExist:
-        raise HttpError(404, get_message("PASS_NOT_FOUND"))
-
     from decimal import Decimal
 
-    from django.db import transaction as db_transaction
+    from apps.redemption.command import RedemptionCommand
+    from apps.redemption.gateway import RedemptionGateway
 
-    amount_decimal = Decimal(str(data.amount))
+    tenant = request.tenant
+    staff_id = str(request.user.id) if hasattr(request, "user") and request.user else None
+    location_id = getattr(request, "location_id", None)
 
-    with db_transaction.atomic():
- # Process the card-type-specific business logic (stamp, cashback, etc.)
-        result = pass_obj.process_transaction(
-            transaction_type="",  # Determined by card type inside process_transaction
-            amount=amount_decimal,
-            quantity=1,
-        )
+    command = RedemptionCommand(
+        tenant_id=str(tenant.id),
+        qr_code=data.qr_code,
+        intent="auto",
+        amount=Decimal(str(data.amount)),
+        quantity=1,
+        staff_id=staff_id,
+        location_id=location_id,
+        notes=data.notes,
+        idempotency_key=data.idempotency_key,
+    )
 
- # Serialize Decimal values for JSONField storage (avoids serialization errors)
-        transaction_data = _serialize_json_value(
+    gateway = RedemptionGateway()
+    result = gateway.process(command, tenant)
+
+    if not result.success:
+        raise HttpError(
+            422,
             {
-                "qr_code": data.qr_code,
-                "amount": data.amount,
-                **result,
-            }
-        )
-        transaction = Transaction.objects.create(
-            tenant=request.tenant,
-            customer_pass=pass_obj,
-            staff=request.user,
-            location=getattr(request, "location", None),
-            transaction_type=result["transaction_type"],
-            amount=data.amount if data.amount > 0 else None,
-            quantity=result.get("quantity", 1),
-            notes=data.notes,
-            transaction_data=transaction_data,
+                "success": False,
+                "denial_reasons": result.denial_reasons,
+                "rules_evaluated": result.rules_evaluated,
+            },
         )
 
- # PERF: F() atomic increment prevents lost updates when multiple POS
- # terminals scan the same customer simultaneously. No SELECT-then-UPDATE race.
-        from django.db.models import F
-
-        Customer.objects.filter(pk=pass_obj.customer.pk).update(
-            total_visits=F("total_visits") + 1,
-            total_spent=F("total_spent") + amount_decimal,
-            last_visit=transaction.created_at,
-        )
-
- # PERF: Cache invalidation delegated to 5-min TTL in analytics endpoints.
- # Aggressively deleting cache here would cause thundering herd under high TPS.
-
- # PERF: Async analytics recalc fires after 2s delay to batch rapid scans
+    # Async side effects
     from apps.analytics.tasks import update_tenant_analytics
 
-    analytics_task: Any = update_tenant_analytics
-    analytics_task.apply_async(args=[str(request.tenant.id)], countdown=2)
+    analytics_task = update_tenant_analytics
+    analytics_task.apply_async(args=[str(tenant.id)], countdown=2)
 
- # PERF: Async automation trigger does not block the scanner response
     from apps.automation.engine import fire_trigger_async
+
+    _customer_id = ""
+    _card_type = ""
+    if result.transaction_id:
+        try:
+            txn = Transaction.objects.select_related("customer_pass__customer", "customer_pass__card").get(
+                id=result.transaction_id
+            )
+            _customer_id = str(txn.customer_pass.customer.id)
+            _card_type = txn.customer_pass.card.card_type
+        except Transaction.DoesNotExist:
+            pass
 
     fire_trigger_async(
         trigger="transaction_completed",
-        customer_id=str(pass_obj.customer.id),
+        customer_id=_customer_id,
         context={
-            "transaction_id": str(transaction.id),
-            "card_type": pass_obj.card.card_type,
-            "amount": str(amount_decimal),
-            "reward_earned": result.get("reward_earned", False),
+            "transaction_id": result.transaction_id,
+            "card_type": _card_type,
+            "amount": str(data.amount),
+            "reward_earned": result.reward_earned,
         },
     )
 
- # PERF: Async wallet pass update only when pass state actually changed
-    if result.get("pass_updated"):
+    if result.pass_updated:
         import logging
 
         from apps.customers.tasks import trigger_pass_update
 
         try:
-            trigger_pass_update.delay(str(pass_obj.id))  # type: ignore[reportCallIssue]
+            if result.transaction_id:
+                txn = Transaction.objects.select_related("customer_pass").get(id=result.transaction_id)
+                trigger_pass_update.delay(str(txn.customer_pass.id))
         except Exception:
             logging.getLogger(__name__).warning(
-                "Could not queue pass update task for pass %s; transaction completes.",
-                str(pass_obj.id),
+                "Could not queue pass update task; transaction completes.",
                 exc_info=True,
             )
 
@@ -235,21 +224,23 @@ def transact(request: HttpRequest, data: ScanTransactIn):
         request=request,
         action="CREATE",
         resource_type="transaction",
-        resource_id=str(transaction.id),
+        resource_id=result.transaction_id or "",
         details={
-            "transaction_type": transaction.transaction_type,
-            "amount": str(amount_decimal) if amount_decimal else None,
-            "customer_id": str(pass_obj.customer.id),
+            "transaction_type": result.transaction_type,
+            "amount": str(data.amount) if data.amount > 0 else None,
         },
     )
+
     response_data = {
-        "transaction_id": str(transaction.id),
+        "transaction_id": result.transaction_id,
         "success": True,
         "message": get_message("TRANSACTION_RECORDED"),
-        "pass_updated": result["pass_updated"],
-        "reward_earned": result.get("reward_earned", False),
-        "reward_description": result.get("reward_description", ""),
-        **result,
+        "pass_updated": result.pass_updated,
+        "reward_earned": result.reward_earned,
+        "reward_description": result.reward_description,
+        "intent_resolved": result.intent_resolved,
+        "new_balance": result.new_balance,
+        "remaining_uses": result.remaining_uses,
     }
     return _serialize_json_value(response_data)
 
@@ -267,8 +258,8 @@ def search_customer(request: HttpRequest, query: str):
     if not query or len(query.strip()) < 2:
         raise HttpError(400, get_message("TRANSACTION_SEARCH_MIN_CHARS"))
 
- # PERF: prefetch_related loads all passes+cards in 2 queries total (not N+1)
- # SEC: tenant isolation via request.tenant filter
+    # PERF: prefetch_related loads all passes+cards in 2 queries total (not N+1)
+    # SEC: tenant isolation via request.tenant filter
     customers = (
         Customer.objects.filter(tenant=request.tenant, is_active=True)
         .filter(
@@ -282,7 +273,7 @@ def search_customer(request: HttpRequest, query: str):
 
     results = []
     for customer in customers:
- # PERF: uses prefetched passes no additional queries per customer
+        # PERF: uses prefetched passes no additional queries per customer
         results.append(
             {
                 "id": str(customer.id),
@@ -315,7 +306,7 @@ def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
     """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
- # PERF: 4-way JOIN in single query (pass → customer, pass → card → tenant, staff)
+    # PERF: 4-way JOIN in single query (pass → customer, pass → card → tenant, staff)
     transactions = (
         Transaction.objects.filter(tenant=request.tenant)
         .select_related(
@@ -359,7 +350,7 @@ def get_transaction(request: HttpRequest, transaction_id: str):
     """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
- # SEC: tenant=request.tenant prevents cross-tenant access
+    # SEC: tenant=request.tenant prevents cross-tenant access
     transaction = get_object_or_404(Transaction, id=transaction_id, tenant=request.tenant)
 
     log_action(
@@ -427,23 +418,26 @@ def remote_issue(request: HttpRequest, data: RemoteIssueIn):
     if not is_staff_or_above(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     import uuid
+    from decimal import Decimal
 
     from apps.customers.models import Customer
+    from apps.redemption.command import RedemptionCommand
+    from apps.redemption.gateway import RedemptionGateway
 
- # SEC: validate UUID format before DB lookup to prevent injection
+    # SEC: validate UUID format before DB lookup to prevent injection
     try:
         customer_uuid = uuid.UUID(data.customer_id)
         card_uuid = uuid.UUID(data.card_id)
     except ValueError:
         raise HttpError(400, get_message("NOT_FOUND"))
 
- # SEC: tenant-scoped customer lookup
+    # SEC: tenant-scoped customer lookup
     try:
         customer = Customer.objects.get(id=customer_uuid, tenant=request.tenant, is_active=True)
     except Customer.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
- # SEC: tenant-scoped pass lookup via customer ownership
+    # SEC: tenant-scoped pass lookup via customer ownership
     try:
         pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             customer=customer, card_id=card_uuid, is_active=True
@@ -451,43 +445,47 @@ def remote_issue(request: HttpRequest, data: RemoteIssueIn):
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
-    from decimal import Decimal
+    staff_id = str(request.user.id) if hasattr(request, "user") and request.user else None
 
-    result = pass_obj.process_transaction(
-        transaction_type="",
+    command = RedemptionCommand(
+        tenant_id=str(request.tenant.id),
+        qr_code=pass_obj.qr_code,
+        intent="auto",
         amount=Decimal("0"),
         quantity=data.quantity,
+        staff_id=staff_id,
+        notes=data.notes,
     )
 
-    transaction = Transaction.objects.create(
-        tenant=request.tenant,
-        customer_pass=pass_obj,
-        staff=request.user,
-        location=None,
-        transaction_type=result["transaction_type"],
-        amount=None,
-        quantity=data.quantity,
-        notes=data.notes,
-        is_remote=True,
-        transaction_data=_serialize_json_value(result),
-    )
+    gateway = RedemptionGateway()
+    result = gateway.process(command, request.tenant)
+
+    if not result.success:
+        raise HttpError(
+            422,
+            {
+                "success": False,
+                "denial_reasons": result.denial_reasons,
+                "rules_evaluated": result.rules_evaluated,
+            },
+        )
 
     log_action(
         request=request,
         action="CREATE",
         resource_type="transaction",
-        resource_id=str(transaction.id),
+        resource_id=result.transaction_id or "",
         details={
-            "transaction_type": transaction.transaction_type,
+            "transaction_type": result.transaction_type,
             "is_remote": True,
             "customer_id": str(customer.id),
         },
     )
     return {
-        "transaction_id": str(transaction.id),
+        "transaction_id": result.transaction_id,
         "success": True,
         "message": get_message("TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name),
-        "pass_updated": result["pass_updated"],
-        "reward_earned": result.get("reward_earned", False),
-        "reward_description": result.get("reward_description", ""),
+        "pass_updated": result.pass_updated,
+        "reward_earned": result.reward_earned,
+        "reward_description": result.reward_description,
     }

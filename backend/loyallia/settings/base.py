@@ -5,6 +5,7 @@ Production-sensitive values are loaded from Vault. Non-secret routing values may
 come from environment or compose configuration.
 """
 
+import os
 from pathlib import Path
 
 from decouple import Csv, config
@@ -20,6 +21,12 @@ SECRET_KEY = get_secret(
     "secret_key",
     default="",
 )
+# Fallback: read from Vault runtime file for resilient container startup
+if not SECRET_KEY:
+    _vault_sk_file = "/run/loyallia-vault/secret_key"
+    if os.path.isfile(_vault_sk_file):
+        with open(_vault_sk_file, encoding="utf-8") as _f:
+            SECRET_KEY = _f.read().strip()
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
@@ -55,6 +62,7 @@ LOCAL_APPS = [
     "apps.audit.apps.AuditConfig",
     "apps.api.apps.ApiConfig",
     "apps.backup.apps.BackupConfig",
+    "apps.redemption.apps.RedemptionConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -108,14 +116,14 @@ ASGI_APPLICATION = "loyallia.asgi.application"
 import dj_database_url
 
 DATABASES = {
- # Default: routed through PgBouncer (transaction pooling)
+    # Default: routed through PgBouncer (transaction pooling)
     "default": dj_database_url.config(
         env="PGBOUNCER_URL",
         default="postgres://loyallia@pgbouncer:6432/loyallia",
         conn_max_age=0,  # REQUIRED for PgBouncer transaction mode
         conn_health_checks=False,  # PgBouncer manages health; skip Django checks
     ),
- # Direct: bypasses PgBouncer for migrations and schema operations
+    # Direct: bypasses PgBouncer for migrations and schema operations
     "direct": dj_database_url.config(
         env="DATABASE_DIRECT_URL",
         default="postgres://loyallia@postgres:5432/loyallia",
@@ -124,6 +132,13 @@ DATABASES = {
 }
 
 _database_password = get_secret("postgres_password", default="")
+# Fallback: read from Vault runtime file for resilient container startup
+# (matches pattern used by postgres, pgbouncer, redis, minio containers)
+if not _database_password:
+    _vault_pw_file = "/run/loyallia-vault/postgres_password"
+    if os.path.isfile(_vault_pw_file):
+        with open(_vault_pw_file, encoding="utf-8") as _f:
+            _database_password = _f.read().strip()
 if _database_password:
     DATABASES["default"]["PASSWORD"] = _database_password
     DATABASES["direct"]["PASSWORD"] = _database_password
@@ -189,10 +204,18 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CACHE Redis
 
+_redis_url = get_secret("redis_url", default="redis://localhost:6379/0")
+# Fallback: read from Vault runtime file for resilient container startup
+if not _redis_url or _redis_url == "redis://localhost:6379/0":
+    _vault_redis_file = "/run/loyallia-vault/redis_url"
+    if os.path.isfile(_vault_redis_file):
+        with open(_vault_redis_file, encoding="utf-8") as _f:
+            _redis_url = _f.read().strip()
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": get_secret("redis_url", default="redis://localhost:6379/0"),
+        "LOCATION": _redis_url,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -247,11 +270,18 @@ JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 # For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
 JWT_SECRET_KEY = get_secret("jwt_secret_key", default=SECRET_KEY)  # B-001: Separate from Django SECRET_KEY
+# Fallback: read from Vault runtime file for resilient container startup
+if JWT_SECRET_KEY == SECRET_KEY:
+    _vault_jwt_file = "/run/loyallia-vault/jwt_secret_key"
+    if os.path.isfile(_vault_jwt_file):
+        with open(_vault_jwt_file, encoding="utf-8") as _f:
+            JWT_SECRET_KEY = _f.read().strip()
 JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 private key file
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
 
 # PASS SIGNING
+
 
 def vault_bool(key: str, env_name: str = "", default: bool = False) -> bool:
     """Read a feature flag from Vault using explicit boolean strings."""

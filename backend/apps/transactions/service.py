@@ -7,9 +7,7 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from django.db import transaction as db_transaction
-
-from apps.customers.models import Customer, CustomerPass
+from apps.customers.models import CustomerPass
 from apps.transactions.models import Enrollment, Transaction
 
 logger = logging.getLogger(__name__)
@@ -29,7 +27,7 @@ class TransactionService:
         location=None,
     ):
         """
-        Process a QR scan transaction.
+        Process a QR scan transaction via the Redemption Engine.
 
         Args:
             tenant: Tenant instance (for isolation)
@@ -50,55 +48,49 @@ class TransactionService:
         if not qr_code:
             raise ValueError("QR code is required")
 
- # Find pass by QR code with tenant isolation
-        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            qr_code=qr_code,
-            is_active=True,
-            card__tenant=tenant,
-        )
+        import uuid
+
+        from apps.redemption.command import RedemptionCommand
+        from apps.redemption.gateway import RedemptionGateway
 
         amount_decimal = Decimal(str(amount))
+        staff_id = str(staff.id) if staff else None
+        location_id = str(location.id) if location else None
 
-        with db_transaction.atomic():
-            result = pass_obj.process_transaction(
-                transaction_type="",
-                amount=amount_decimal,
-                quantity=quantity,
-            )
+        # Use a UUID idempotency key so every service call is treated as distinct
+        command = RedemptionCommand(
+            tenant_id=str(tenant.id),
+            qr_code=qr_code,
+            intent="auto",
+            amount=amount_decimal,
+            quantity=quantity,
+            staff_id=staff_id,
+            location_id=location_id,
+            notes=notes,
+            idempotency_key=str(uuid.uuid4()),
+        )
 
- # Serialize transaction data
-            transaction_data = TransactionService._serialize_result(result)
-            transaction_data["qr_code"] = qr_code
-            transaction_data["amount"] = float(amount)
+        gateway = RedemptionGateway()
+        result = gateway.process(command, tenant)
 
-            txn = Transaction.objects.create(
-                tenant=tenant,
-                customer_pass=pass_obj,
-                staff=staff,
-                location=location,
-                transaction_type=result["transaction_type"],
-                amount=amount if amount > 0 else None,
-                quantity=result.get("quantity", quantity),
-                notes=notes,
-                transaction_data=transaction_data,
-            )
-
- # Update customer stats atomically
-            from django.db.models import F
-
-            Customer.objects.filter(pk=pass_obj.customer.pk).update(
-                total_visits=F("total_visits") + 1,
-                total_spent=F("total_spent") + amount_decimal,
-                last_visit=txn.created_at,
-            )
+        if not result.success:
+            if result.denial_reasons and result.denial_reasons[0] == "pass_not_found":
+                raise CustomerPass.DoesNotExist("Pass not found or inactive")
+            return {
+                "success": False,
+                "pass_updated": False,
+                "denial_reasons": result.denial_reasons,
+            }
 
         return {
-            "transaction_id": str(txn.id),
+            "transaction_id": result.transaction_id,
             "success": True,
-            "pass_updated": result["pass_updated"],
-            "reward_earned": result.get("reward_earned", False),
-            "reward_description": result.get("reward_description", ""),
-            **result,
+            "pass_updated": result.pass_updated,
+            "reward_earned": result.reward_earned,
+            "reward_description": result.reward_description,
+            "intent_resolved": result.intent_resolved,
+            "new_balance": result.new_balance,
+            "remaining_uses": result.remaining_uses,
         }
 
     @staticmethod
@@ -138,7 +130,7 @@ class TransactionService:
     @staticmethod
     def remote_issue(tenant, customer, card, quantity=1, staff=None, notes=""):
         """
-        Issue stamps/rewards remotely without QR scan.
+        Issue stamps/rewards remotely without QR scan via the Redemption Engine.
 
         Args:
             tenant: Tenant instance
@@ -154,37 +146,37 @@ class TransactionService:
         Raises:
             CustomerPass.DoesNotExist: If pass not found
         """
+        from apps.redemption.command import RedemptionCommand
+        from apps.redemption.gateway import RedemptionGateway
+
         pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             customer=customer,
             card=card,
             is_active=True,
         )
 
-        result = pass_obj.process_transaction(
-            transaction_type="",
+        staff_id = str(staff.id) if staff else None
+
+        command = RedemptionCommand(
+            tenant_id=str(tenant.id),
+            qr_code=pass_obj.qr_code,
+            intent="auto",
             amount=Decimal("0"),
             quantity=quantity,
-        )
-
-        txn = Transaction.objects.create(
-            tenant=tenant,
-            customer_pass=pass_obj,
-            staff=staff,
-            location=None,
-            transaction_type=result["transaction_type"],
-            amount=None,
-            quantity=quantity,
+            staff_id=staff_id,
             notes=notes,
             is_remote=True,
-            transaction_data=TransactionService._serialize_result(result),
         )
 
+        gateway = RedemptionGateway()
+        result = gateway.process(command, tenant)
+
         return {
-            "transaction_id": str(txn.id),
-            "success": True,
-            "pass_updated": result["pass_updated"],
-            "reward_earned": result.get("reward_earned", False),
-            "reward_description": result.get("reward_description", ""),
+            "transaction_id": result.transaction_id,
+            "success": result.success,
+            "pass_updated": result.pass_updated,
+            "reward_earned": result.reward_earned,
+            "reward_description": result.reward_description,
         }
 
     @staticmethod

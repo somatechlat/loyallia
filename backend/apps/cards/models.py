@@ -47,7 +47,7 @@ class Card(TimestampedModel):
     name = models.CharField(max_length=100, verbose_name="Nombre del programa")
     description = models.TextField(blank=True, default="", verbose_name="Descripción")
 
- # Branding
+    # Branding
     logo_url = models.URLField(blank=True, default="", max_length=2000, verbose_name="URL del logo")
     background_color = models.CharField(max_length=7, default="#1a1a2e", verbose_name="Color de fondo (HEX)")
     text_color = models.CharField(max_length=7, default="#ffffff", verbose_name="Color del texto (HEX)")
@@ -60,11 +60,11 @@ class Card(TimestampedModel):
         verbose_name="Tipo de código de barras",
     )
 
- # Status
+    # Status
     is_active = models.BooleanField(default=True, verbose_name="Programa activo")
     is_published = models.BooleanField(default=False, verbose_name="Programa publicado")
 
- # Type-specific configuration (Typed columns for core metrics)
+    # Type-specific configuration (Typed columns for core metrics)
     stamps_required = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Sellos requeridos")
     cashback_percentage = models.DecimalField(
         max_digits=5,
@@ -85,11 +85,18 @@ class Card(TimestampedModel):
         default=365, null=True, blank=True, verbose_name="Días de expiración de crédito"
     )
 
- # Type-specific configuration stored as JSONB (Legacy/Dynamic)
+    # Type-specific configuration stored as JSONB (Legacy/Dynamic)
     metadata = models.JSONField(default=dict, verbose_name="Configuración específica")
 
- # Geofencing Locations (Array of dicts: {"lat": float, "lng": float, "name": str})
+    # Geofencing Locations (Array of dicts: {"lat": float, "lng": float, "name": str})
     locations = models.JSONField(default=list, blank=True, verbose_name="Ubicaciones (Geofencing)")
+
+    # NEW: Structured redemption rules (replaces loose metadata for rules)
+    redemption_rules = models.JSONField(
+        default=dict,
+        verbose_name="Reglas de canje",
+        help_text="JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}",
+    )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_cards"
@@ -118,7 +125,7 @@ class Card(TimestampedModel):
         self.metadata[key] = value
         self.save(update_fields=["metadata", "updated_at"])
 
- # Card-type specific validation and helpers
+    # Card-type specific validation and helpers
     def validate_stamp_config(self) -> None:
         """Validate stamp card configuration."""
         stamps_required = self.stamps_required or self.get_metadata_field("stamps_required", 10)
@@ -169,7 +176,7 @@ class Card(TimestampedModel):
         if not isinstance(usage_limit, int) or usage_limit < 1:
             raise ValueError("usage_limit_per_customer must be positive integer")
 
- # Date validation: end_date must be after start_date when provided
+        # Date validation: end_date must be after start_date when provided
         coupon_start = self.get_metadata_field("coupon_start_date")
         coupon_end = self.get_metadata_field("coupon_end_date")
         if coupon_start and coupon_end and str(coupon_end) <= str(coupon_start):
@@ -223,8 +230,8 @@ class Card(TimestampedModel):
 
     def validate_corporate_discount_config(self) -> None:
         """Validate corporate discount configuration."""
- # Corporate discounts are managed per customer, not per card config
- # This method exists for consistency but has no validation
+        # Corporate discounts are managed per customer, not per card config
+        # This method exists for consistency but has no validation
         pass
 
     def validate_referral_config(self) -> None:

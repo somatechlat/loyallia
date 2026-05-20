@@ -59,13 +59,13 @@ class Customer(TimestampedModel):
         verbose_name="Negocio",
     )
 
- # Contact Information
+    # Contact Information
     first_name = models.CharField(max_length=100, verbose_name="Nombre")
     last_name = models.CharField(max_length=100, verbose_name="Apellido")
     email = models.EmailField(validators=[EmailValidator()], verbose_name="Correo electrónico")
     phone = models.CharField(max_length=20, blank=True, default="", verbose_name="Teléfono")
 
- # Optional additional info
+    # Optional additional info
     date_of_birth = models.DateField(null=True, blank=True, verbose_name="Fecha de nacimiento")
     gender = models.CharField(
         max_length=1,
@@ -75,7 +75,7 @@ class Customer(TimestampedModel):
         verbose_name="Género",
     )
 
- # Referral system
+    # Referral system
     referral_code = models.CharField(max_length=20, unique=True, blank=True, default="")
     referred_by = models.ForeignKey(
         "self",
@@ -86,11 +86,11 @@ class Customer(TimestampedModel):
         verbose_name="Referido por",
     )
 
- # Status
+    # Status
     is_active = models.BooleanField(default=True, verbose_name="Cliente activo")
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
 
- # Analytics
+    # Analytics
     total_visits = models.PositiveIntegerField(default=0, verbose_name="Total de visitas")
     total_spent = models.DecimalField(
         max_digits=10,
@@ -108,23 +108,23 @@ class Customer(TimestampedModel):
         ordering = ["-created_at"]
         unique_together = ["tenant", "email"]  # One account per email per tenant
         indexes = [
- # Tenant-scoped time-series queries (analytics, sorting)
+            # Tenant-scoped time-series queries (analytics, sorting)
             models.Index(
                 fields=["tenant", "created_at"],
                 name="idx_cust_tenant_created",
             ),
- # Tenant-scoped active customer lookups
+            # Tenant-scoped active customer lookups
             models.Index(
                 fields=["tenant", "is_active", "created_at"],
                 name="idx_cust_tenant_active_date",
             ),
- # Demographics: SQL-based age aggregation
+            # Demographics: SQL-based age aggregation
             models.Index(
                 fields=["tenant", "date_of_birth"],
                 name="idx_cust_tenant_dob",
             ),
- # Customer search by name (icontains uses sequential scan,
- # but this index helps with exact prefix matches)
+            # Customer search by name (icontains uses sequential scan,
+            # but this index helps with exact prefix matches)
             models.Index(
                 fields=["tenant", "last_name", "first_name"],
                 name="idx_cust_tenant_name",
@@ -168,7 +168,7 @@ class Customer(TimestampedModel):
             if not Customer.objects.filter(referral_code=code).exists():
                 return code
 
- # Fallback: use UUID-based code (guaranteed unique)
+        # Fallback: use UUID-based code (guaranteed unique)
         fallback = uuid.uuid4().hex[:12].upper()
         logger.warning(
             "Referral code generation: exhausted %d random attempts, using UUID fallback",
@@ -198,10 +198,10 @@ class CustomerPass(models.Model):
     )
     card = models.ForeignKey(Card, on_delete=models.PROTECT, related_name="passes", verbose_name="Programa")
 
- # Pass state stored as JSONB (Legacy/Dynamic)
+    # Pass state stored as JSONB (Legacy/Dynamic)
     pass_data = models.JSONField(default=dict, verbose_name="Datos del pase")
 
- # Core metrics (Typed columns for integrity and indexing)
+    # Core metrics (Typed columns for integrity and indexing)
     stamp_count = models.PositiveIntegerField(default=0, verbose_name="Contador de sellos")
     cashback_balance = models.DecimalField(
         max_digits=12,
@@ -218,11 +218,11 @@ class CustomerPass(models.Model):
         verbose_name="Balance de certificado de regalo",
     )
 
- # Wallet pass identifiers
+    # Wallet pass identifiers
     apple_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Apple Pass ID")
     google_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Google Pass ID")
 
- # QR code for validation indexed for O(log N) scan lookups
+    # QR code for validation indexed for O(log N) scan lookups
     qr_code = models.CharField(
         max_length=100,
         unique=True,
@@ -232,10 +232,34 @@ class CustomerPass(models.Model):
         verbose_name="Código QR",
     )
 
- # Status
+    # Status
     is_active = models.BooleanField(default=True, verbose_name="Pase activo")
     enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de inscripción")
     last_updated = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+
+    # NEW: Lifecycle state machine
+    class LifecycleState(models.TextChoices):
+        ACTIVE = "active", "Activo"
+        REWARD_READY = "reward_ready", "Recompensa lista"
+        EXPIRED = "expired", "Expirado"
+        DEPLETED = "depleted", "Agotado"
+        SUSPENDED = "suspended", "Suspendido"
+
+    lifecycle_state = models.CharField(
+        max_length=20,
+        choices=LifecycleState.choices,
+        default=LifecycleState.ACTIVE,
+        verbose_name="Estado del ciclo de vida",
+    )
+
+    # NEW: Coupon usage counter (replaces boolean coupon_used)
+    coupon_redemption_count = models.PositiveIntegerField(default=0, verbose_name="Contador de canjes de cupón")
+
+    # NEW: Last redemption timestamp (for cooldown rules)
+    last_redemption_at = models.DateTimeField(null=True, blank=True, verbose_name="Último canje")
+
+    # NEW: Reward queue (JSON list of pending rewards)
+    pending_rewards = models.JSONField(default=list, verbose_name="Recompensas pendientes")
 
     class Meta:
         db_table = "loyallia_customer_passes"
@@ -283,7 +307,7 @@ class CustomerPass(models.Model):
             for k, v in updates.items():
                 locked.pass_data[k] = v
             locked.save(update_fields=["pass_data", "last_updated"])
- # Refresh in-memory instance to reflect the committed state
+        # Refresh in-memory instance to reflect the committed state
         self.refresh_from_db(fields=["pass_data", "last_updated"])
 
     def save(self, *args, **kwargs) -> None:
@@ -349,37 +373,119 @@ class CustomerPass(models.Model):
     def process_transaction(self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
         """
         Process a transaction for this pass based on card type.
-        Delegates to apps.customers.services.PassProcessor.
+        Delegates to the new Redemption Engine strategies.
         """
         if quantity < 1:
             raise ValueError("Quantity must be a positive integer")
 
-        from apps.customers.services import PassProcessor
+        from django.utils import timezone
 
-        processor = PassProcessor(self)
-        result = processor.process_transaction(transaction_type, amount, quantity)
+        from apps.redemption.context import RedemptionContext
+        from apps.redemption.strategies.registry import get_strategy
 
-        if result.get("pass_updated"):
-            self.refresh_from_db(fields=["pass_data", "last_updated"])
+        # Resolve intent (mirrors RedemptionGateway._resolve_intent)
+        resolved_intent = "auto"
+        if transaction_type in ("earn", "redeem", "validate"):
+            resolved_intent = transaction_type
+        elif self.card.card_type == "stamp":
+            is_ready = self.lifecycle_state == self.LifecycleState.REWARD_READY or self.pass_data.get(
+                "reward_ready", False
+            )
+            resolved_intent = "redeem" if is_ready else "earn"
+        elif self.card.card_type == "cashback":
+            resolved_intent = "earn"
+        elif self.card.card_type in ("vip_membership", "corporate_discount", "affiliate"):
+            resolved_intent = "validate"
+        else:
+            resolved_intent = "redeem"
 
-        return result
+        context = RedemptionContext(
+            tenant=self.card.tenant,
+            customer_pass=self,
+            card=self.card,
+            amount=amount,
+            quantity=quantity,
+            staff_id=None,
+            location_id=None,
+            scanned_at=timezone.now(),
+            intent=resolved_intent,
+        )
 
-    def _processor(self):
-        from apps.customers.services import PassProcessor
+        # Capture old state for backward-compat mapping
+        _old_stamp_count = self.stamp_count or self.pass_data.get("stamp_count", 0)
 
-        return PassProcessor(self)
+        strategy = get_strategy(self.card.card_type, resolved_intent)
+        result = strategy.execute(context)
+
+        if result.pass_updated:
+            self.refresh_from_db()
+
+        # Map RedemptionResult to legacy dict format for backward compatibility
+        card_type = self.card.card_type
+        legacy = {
+            "transaction_type": result.transaction_type,
+            "amount": amount,
+            "quantity": quantity,
+            "pass_updated": result.pass_updated,
+            "reward_earned": result.reward_earned,
+            "reward_description": result.reward_description,
+            "success": result.success,
+        }
+
+        # Coupon omits reward_earned on denial
+        if card_type == "coupon" and not result.pass_updated:
+            legacy.pop("reward_earned", None)
+            legacy.pop("reward_description", None)
+
+        if card_type == "stamp":
+            legacy["new_stamp_count"] = self.stamp_count
+            # Compute reward count
+            try:
+                stamps_required = int(self.card.metadata.get("stamps_required", 10))
+                if stamps_required <= 0:
+                    stamps_required = 10
+            except (TypeError, ValueError):
+                stamps_required = 10
+            total_stamps = _old_stamp_count + quantity
+            legacy["reward_count"] = total_stamps // stamps_required
+        elif card_type == "cashback":
+            if result.new_balance:
+                legacy["new_balance"] = Decimal(str(result.new_balance))
+                legacy["earned_amount"] = legacy["new_balance"]
+        elif card_type == "gift_certificate":
+            if result.pass_updated:
+                legacy["amount_redeemed"] = amount
+            legacy["new_balance"] = result.new_balance
+        elif card_type == "multipass":
+            legacy["stamps_used"] = 1 if result.pass_updated else 0
+            legacy["remaining_stamps"] = result.remaining_uses
+        elif card_type == "referral_pass":
+            legacy["new_referral_count"] = self.referral_count_val
+            max_ref = int(self.card.metadata.get("max_referrals_per_customer", 0)) if self.card.metadata else 0
+            legacy["limit_reached"] = not result.pass_updated and max_ref > 0 and self.referral_count_val >= max_ref
+        elif card_type == "discount":
+            legacy["discount_percentage"] = self.pass_data.get("current_discount_percentage", 0)
+            legacy["tier_name"] = self.pass_data.get("current_tier_name", "")
+        elif card_type in ("vip_membership", "affiliate"):
+            legacy["membership_valid"] = result.success
+            legacy["membership_expiry"] = self.pass_data.get("membership_expiry", "")
+            legacy["reason"] = "" if result.success else "membership_expired"
+        elif card_type == "corporate_discount":
+            legacy["membership_valid"] = result.success
+
+        return legacy
 
     def _process_stamp_transaction(self, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
-        return self._processor()._process_stamp(amount, quantity)
+        return self.process_transaction("stamp", amount, quantity)
 
     def _process_coupon_transaction(self) -> dict:
-        return self._processor()._process_coupon()
+        return self.process_transaction("coupon")
 
     def _process_referral_transaction(self) -> dict:
-        return self._processor()._process_referral()
+        return self.process_transaction("referral_pass")
 
     def _process_discount_transaction(self, amount: Decimal) -> dict:
-        return self._processor()._process_discount(amount)
+        return self.process_transaction("discount", amount=amount)
 
 
 class ApplePassRegistration(models.Model):
@@ -396,20 +502,20 @@ class ApplePassRegistration(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
- # The unique device identifier provided by the Apple device
+    # The unique device identifier provided by the Apple device
     device_library_id = models.CharField(
         max_length=255,
         db_index=True,
         verbose_name="Device Library Identifier",
     )
 
- # APNs push token used to send empty {} push to trigger pass re-download
+    # APNs push token used to send empty {} push to trigger pass re-download
     push_token = models.CharField(
         max_length=255,
         verbose_name="APNs Push Token",
     )
 
- # The customer pass this device is registered to receive updates for
+    # The customer pass this device is registered to receive updates for
     customer_pass = models.ForeignKey(
         CustomerPass,
         on_delete=models.CASCADE,
@@ -424,7 +530,7 @@ class ApplePassRegistration(models.Model):
         db_table = "loyallia_apple_pass_registrations"
         verbose_name = "Apple Pass Registration"
         verbose_name_plural = "Apple Pass Registrations"
- # One registration per device per pass (Apple spec)
+        # One registration per device per pass (Apple spec)
         unique_together = ("device_library_id", "customer_pass")
         indexes = [
             models.Index(

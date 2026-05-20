@@ -226,3 +226,14 @@ export const transactionsApi = {
 export const mediaApi = {
   listAssets: () => api.get<{ success: boolean; assets: Array<{ url: string; name: string; size: number; last_modified: string }>; count: number }>('/api/v1/upload/assets/'),
 };
+
+export const scannerApi = {
+  validate: (qr_code: string) =>
+    api.post('/api/v1/scanner/validate/', { qr_code }),
+  transact: (data: {
+    qr_code: string;
+    amount: number;
+    notes: string;
+    idempotency_key: string;
+  }) => api.post('/api/v1/scanner/transact/', data),
+};
