@@ -3,16 +3,30 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import api from '@/lib/api';
 import Cookies from 'js-cookie';
-import { useTheme } from '@/lib/theme';
-import { LOYALLIA_LOGO, LOYALLIA_LOGO_DARK } from '@/lib/loyalliaLogo';
 
 interface ScanResult {
-  success: boolean; transaction_id: string; message: string;
-  reward_earned: boolean; reward_description: string;
+  success: boolean;
+  transaction_id: string;
+  message: string;
+  reward_earned: boolean;
+  reward_description: string;
   pass_updated: boolean;
+  customer_name?: string;
+  new_balance?: string;
+  transaction_type?: string;
+}
+
+interface RecentScan {
+  id: string;
+  customer_name: string;
+  type: string;
+  amount: string;
+  time: string;
+  success: boolean;
 }
 
 export default function ScannerPage() {
+  const [mounted, setMounted] = useState(false);
   const [status, setStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [amount, setAmount] = useState('0');
@@ -20,12 +34,16 @@ export default function ScannerPage() {
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [manualQr, setManualQr] = useState('');
   const [cameraError, setCameraError] = useState(false);
+  const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const scannerDivId = 'qr-reader';
-  const { theme } = useTheme();
-  const logoSrc = theme === 'dark' ? LOYALLIA_LOGO_DARK : LOYALLIA_LOGO;
 
-  const isAuthenticated = !!Cookies.get('access_token');
+  // Check auth after mount to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+    setIsAuthenticated(!!Cookies.get('access_token'));
+  }, []);
 
   const processTransaction = useCallback(async (qrCode: string) => {
     setStatus('scanning');
@@ -37,38 +55,59 @@ export default function ScannerPage() {
       });
       setResult(data);
       setStatus('success');
+      setRecentScans(prev => [{
+        id: data.transaction_id || Date.now().toString(),
+        customer_name: data.customer_name || 'Cliente',
+        type: data.transaction_type || 'Transacción',
+        amount: amount || '0',
+        time: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
+        success: true,
+      }, ...prev.slice(0, 4)]);
     } catch (err: unknown) {
       const msg = err instanceof Error && 'response' in err
         ? (err as unknown as { response?: { data?: { detail?: string } } }).response?.data?.detail
         : undefined;
-      setResult({ success: false, transaction_id: '', message: msg || 'Error procesando transacción', reward_earned: false, reward_description: '', pass_updated: false });
+      setResult({
+        success: false,
+        transaction_id: '',
+        message: msg || 'Error procesando transacción',
+        reward_earned: false,
+        reward_description: '',
+        pass_updated: false,
+      });
       setStatus('error');
     }
   }, [amount, notes]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !mounted) return;
 
-    try {
-      scannerRef.current = new Html5QrcodeScanner(
-        scannerDivId,
-        { fps: 10, qrbox: { width: 280, height: 280 }, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
-        false
-      );
+    // Small delay to ensure DOM element exists
+    const timer = setTimeout(() => {
+      try {
+        scannerRef.current = new Html5QrcodeScanner(
+          scannerDivId,
+          { fps: 10, qrbox: { width: 280, height: 280 }, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
+          false
+        );
 
-      scannerRef.current.render(
-        (decodedText) => {
-          setPendingQr(decodedText);
-          scannerRef.current?.clear().catch(() => {});
-        },
-        () => {}
-      );
-    } catch {
-      setCameraError(true);
-    }
+        scannerRef.current.render(
+          (decodedText) => {
+            setPendingQr(decodedText);
+            scannerRef.current?.clear().catch(() => {});
+          },
+          () => {}
+        );
+      } catch {
+        setCameraError(true);
+      }
+    }, 300);
 
-    return () => { scannerRef.current?.clear().catch(() => {}); };
-  }, [isAuthenticated]);
+    return () => {
+      clearTimeout(timer);
+      scannerRef.current?.clear().catch(() => {});
+    };
+  }, [isAuthenticated, mounted]);
 
   const handleConfirm = () => {
     if (pendingQr) processTransaction(pendingQr);
@@ -80,7 +119,35 @@ export default function ScannerPage() {
     setPendingQr(null);
     setAmount('0');
     setNotes('');
+    // Re-initialize scanner after a short delay
+    setTimeout(() => {
+      try {
+        scannerRef.current = new Html5QrcodeScanner(
+          scannerDivId,
+          { fps: 10, qrbox: { width: 280, height: 280 }, supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
+          false
+        );
+        scannerRef.current.render(
+          (decodedText) => {
+            setPendingQr(decodedText);
+            scannerRef.current?.clear().catch(() => {});
+          },
+          () => {}
+        );
+      } catch {
+        setCameraError(true);
+      }
+    }, 300);
   };
+
+  // Prevent hydration mismatch: render a loading shell during SSR
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-surface-950 flex items-center justify-center">
+        <div className="spinner w-8 h-8" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -102,7 +169,9 @@ export default function ScannerPage() {
       {/* Header */}
       <header className="p-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={logoSrc} alt="Loyallia" className="w-8 h-8 object-contain" />
+          <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-sm">
+            L
+          </div>
           <span className="font-semibold">Scanner Loyallia</span>
         </div>
         <button
@@ -199,7 +268,13 @@ export default function ScannerPage() {
               <svg className="w-8 h-8 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
             </div>
             <h3 className="font-bold text-emerald-700 text-xl mb-2">¡Transacción exitosa!</h3>
+            {result.customer_name && (
+              <p className="text-surface-700 font-medium mb-1">{result.customer_name}</p>
+            )}
             <p className="text-surface-500 text-sm mb-3">{result.message}</p>
+            {result.new_balance && (
+              <p className="text-brand-600 font-semibold text-sm mb-3">Nuevo saldo: {result.new_balance}</p>
+            )}
             {result.reward_earned && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
                 <p className="text-amber-700 font-semibold text-sm flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> {result.reward_description}</p>
@@ -221,6 +296,27 @@ export default function ScannerPage() {
             <h3 className="font-bold text-red-700 text-xl mb-2">Error</h3>
             <p className="text-surface-500 text-sm mb-4">{result.message}</p>
             <button onClick={reset} className="btn-danger w-full" id="retry-scan-btn">Intentar de nuevo</button>
+          </div>
+        )}
+
+        {/* Recent Scans */}
+        {recentScans.length > 0 && status === 'idle' && !pendingQr && (
+          <div className="w-full">
+            <h4 className="text-sm font-semibold text-white/60 mb-3">Escaneos recientes</h4>
+            <div className="space-y-2">
+              {recentScans.map((scan, i) => (
+                <div key={scan.id + i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${scan.success ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                    <div>
+                      <p className="text-sm font-medium text-white">{scan.customer_name}</p>
+                      <p className="text-xs text-white/50">{scan.type} · ${parseFloat(scan.amount).toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-white/40">{scan.time}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>

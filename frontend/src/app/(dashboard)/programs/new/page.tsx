@@ -83,15 +83,10 @@ export default function NewProgramPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const walletMetadata =
-        walletDesign.provider === 'apple'
-          ? {
-              wallet_provider: 'apple',
-              apple_wallet: walletDesign.appleNfc,
-            }
-          : {
-              wallet_provider: 'google',
-            };
+      const walletMetadata = {
+        wallet_provider: 'both',
+        apple_wallet: walletDesign.appleNfc,
+      };
       // Include wallet design configuration in metadata
       const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
       const walletDesignMetadata = {

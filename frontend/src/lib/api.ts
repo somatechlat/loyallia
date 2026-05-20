@@ -152,6 +152,10 @@ export const programsApi = {
   publish: (id: string) => api.post(`/api/v1/programs/${id}/publish/`),
   delete: (id: string) => api.delete(`/api/v1/programs/${id}/`),
   stats: (id: string) => api.get(`/api/v1/programs/${id}/stats/`),
+  members: (id: string, params?: { search?: string; limit?: number; offset?: number }) =>
+    api.get(`/api/v1/programs/${id}/members/`, { params }),
+  transactions: (id: string, params?: { limit?: number; offset?: number }) =>
+    api.get(`/api/v1/programs/${id}/transactions/`, { params }),
 };
 
 export const notificationsApi = {
