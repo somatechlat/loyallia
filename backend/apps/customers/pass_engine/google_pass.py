@@ -427,6 +427,48 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
         return {"success": False, "error": str(exc)}
 
 
+def delete_wallet_class(card) -> dict:
+    """Delete the Google Wallet Class for a card. Called when card is permanently deleted."""
+    import httpx
+
+    sa_data = _load_service_account()
+    issuer_id = _get_issuer_id()
+    if not sa_data or not issuer_id:
+        return {"success": False, "error": "Google Wallet not configured"}
+
+    access_token = _get_access_token()
+    if not access_token:
+        return {"success": False, "error": "Auth failed"}
+
+    gw_type = _resolve_gw_type(card.card_type)
+    if gw_type == "offer":
+        api_endpoint = "offerClass"
+        class_id = f"{issuer_id}.offer-{card.id}"
+    elif gw_type == "giftCard":
+        api_endpoint = "giftCardClass"
+        class_id = f"{issuer_id}.giftcard-{card.id}"
+    else:
+        api_endpoint = "loyaltyClass"
+        class_id = f"{issuer_id}.loyallia-{card.id}"
+
+    url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}/{class_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    try:
+        resp = httpx.delete(url, headers=headers, timeout=10.0)
+        if resp.status_code in (200, 204):
+            logger.info("Google Wallet Class deleted: %s", class_id)
+            return {"success": True}
+        if resp.status_code == 404:
+            logger.info("Google Wallet Class already absent: %s", class_id)
+            return {"success": True}
+        logger.error("Failed to delete Google Wallet Class %s: %s", class_id, resp.text)
+        return {"success": False, "error": resp.text}
+    except Exception as exc:
+        logger.error("Error deleting Google Wallet Class %s: %s", class_id, exc)
+        return {"success": False, "error": str(exc)}
+
+
 def send_push_notification_to_class(card, header: str, body: str, action_url: str = "") -> dict:
     """Send a push notification to EVERYONE holding this card class."""
     import httpx

@@ -5,7 +5,7 @@ import {
   CardTypeIcon,
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
-} from '../constants';
+} from '../constants.tsx';
 import type { WalletDesignState } from '../WalletDesigner';
 
 /* ─── Barcode SVG (copied from WalletCardPreview) ─────────────────── */

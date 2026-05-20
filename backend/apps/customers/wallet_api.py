@@ -159,9 +159,6 @@ def download_apple_pass(request, pass_id: str):
 
     _validate_pass_is_accessible(customer_pass)
 
-    if not _is_wallet_provider_enabled(customer_pass.card, "apple"):
-        raise HttpError(404, get_message("PASS_WALLET_PROVIDER_DISABLED"))
-
     if not is_apple_wallet_configured():
         raise HttpError(503, get_message("PASS_APPLE_NOT_CONFIGURED"))
 
@@ -218,9 +215,6 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
 
     _validate_pass_is_accessible(customer_pass)
 
-    if not _is_wallet_provider_enabled(customer_pass.card, "google"):
-        raise HttpError(404, get_message("PASS_WALLET_PROVIDER_DISABLED"))
-
     if not is_google_wallet_configured():
         raise HttpError(503, get_message("PASS_GOOGLE_NOT_CONFIGURED"))
 
@@ -262,8 +256,10 @@ def get_wallet_status(request, pass_id: str):
 
     _validate_pass_is_accessible(customer_pass)
 
-    apple_available = _is_wallet_provider_enabled(customer_pass.card, "apple") and is_apple_wallet_configured()
-    google_available = _is_wallet_provider_enabled(customer_pass.card, "google") and is_google_wallet_configured()
+    # Public enrollment: always show both wallets if system is configured.
+    # Device-specific button filtering happens on the frontend.
+    apple_available = is_apple_wallet_configured()
+    google_available = is_google_wallet_configured()
 
     getattr(request, "build_absolute_uri", lambda p: p)
 
@@ -320,8 +316,10 @@ def get_public_pass(request, pass_id: str):
     card = customer_pass.card
     customer = customer_pass.customer
 
-    apple_available = _is_wallet_provider_enabled(card, "apple") and is_apple_wallet_configured()
-    google_available = _is_wallet_provider_enabled(card, "google") and is_google_wallet_configured()
+    # Public enrollment: always show both wallets if system is configured.
+    # Device-specific button filtering happens on the frontend.
+    apple_available = is_apple_wallet_configured()
+    google_available = is_google_wallet_configured()
 
     return PublicPassOut(
         pass_id=str(customer_pass.id),

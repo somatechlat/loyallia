@@ -5,8 +5,6 @@ import { useAuth } from '@/lib/auth';
 import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
 import { APP_CONFIG } from '@/lib/constants';
-import { adjustColor } from '@/components/programs/constants';
-import PremiumQrSvg from '@/components/programs/PremiumQrSvg';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import WalletDesigner, {
   type WalletDesignState,
@@ -18,6 +16,8 @@ import WalletDesigner, {
   defaultWalletDesignState,
 } from '@/components/programs/WalletDesigner';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
+import ProgramMembersModal from '@/components/programs/ProgramMembersModal';
+import ProgramTransactionsModal from '@/components/programs/ProgramTransactionsModal';
 
 /** Premium styled QR code URL */
 function styledQrUrl(data: string, size = APP_CONFIG.QR_CODE_SIZE): string {
@@ -136,7 +136,7 @@ function buildWalletDesignMetadata(state: WalletDesignState): Record<string, unk
       help_uri: state.helpUri,
     },
     apple_wallet: state.appleNfc,
-    wallet_provider: state.provider,
+    wallet_provider: 'both',
   };
 }
 
@@ -168,7 +168,13 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [processing, setProcessing] = useState(false);
+
+  // Wallet design for non-edit preview (parsed from program metadata)
+  const [previewWalletDesign, setPreviewWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
+  const [previewPlatform, setPreviewPlatform] = useState<'apple' | 'google'>('apple');
 
   const startEdit = () => {
     if (!program) return;
@@ -247,6 +253,10 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
         }
         setProgram(prog);
         setStats(statsRes.data);
+        // Parse wallet design for preview
+        const parsed = parseWalletDesignFromMetadata(prog.metadata);
+        setPreviewWalletDesign(parsed);
+        setPreviewPlatform(parsed.provider || 'apple');
       })
       .catch(() => toast.error('Error al cargar los detalles del programa'))
       .finally(() => setLoading(false));
@@ -402,14 +412,22 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card p-6 bg-surface-50 border-t-4 border-indigo-500">
-          <h3 className="text-sm font-semibold text-surface-500 uppercase">Miembros Activos</h3>
+        <button
+          onClick={() => setShowMembersModal(true)}
+          className="card p-6 bg-surface-50 border-t-4 border-indigo-500 text-left hover:shadow-lg hover:border-indigo-600 transition-all cursor-pointer group"
+        >
+          <h3 className="text-sm font-semibold text-surface-500 uppercase group-hover:text-indigo-600 transition-colors">Miembros Activos</h3>
           <p className="text-3xl font-bold mt-2">{stats?.active_passes ?? stats?.active_members ?? 0}</p>
-        </div>
-        <div className="card p-6 bg-surface-50 border-t-4 border-emerald-500">
-          <h3 className="text-sm font-semibold text-surface-500 uppercase">Recompensas Canjeadas</h3>
+          <p className="text-xs text-surface-400 mt-1">Click para ver detalles →</p>
+        </button>
+        <button
+          onClick={() => setShowTransactionsModal(true)}
+          className="card p-6 bg-surface-50 border-t-4 border-emerald-500 text-left hover:shadow-lg hover:border-emerald-600 transition-all cursor-pointer group"
+        >
+          <h3 className="text-sm font-semibold text-surface-500 uppercase group-hover:text-emerald-600 transition-colors">Recompensas Canjeadas</h3>
           <p className="text-3xl font-bold mt-2">{stats?.transactions ?? stats?.total_rewards_redeemed ?? 0}</p>
-        </div>
+          <p className="text-xs text-surface-400 mt-1">Click para ver historial →</p>
+        </button>
         <div className="card p-6 bg-surface-50 border-t-4 border-rose-500">
           <h3 className="text-sm font-semibold text-surface-500 uppercase">Tasa de Participación</h3>
           <p className="text-3xl font-bold mt-2">{stats?.engagement_rate ?? stats?.enrollments ?? 0}%</p>
@@ -417,68 +435,25 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {/* Card Preview - Premium Wallet Design */}
+        {/* Card Preview - Pixel Perfect Wallet Design with Apple/Google Toggle */}
         <div className="card p-8 text-center bg-surface-50 border-2 border-dashed border-surface-200 dark:border-surface-700">
-          <div className="relative w-full max-w-sm mx-auto">
-            <div className="relative bg-black rounded-[40px] p-3 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] border-[3px] border-transparent bg-gradient-to-b from-gray-700 to-gray-800 bg-clip-padding ring-1 ring-white/20">
-              {/* Side buttons */}
-              <div className="absolute top-20 -left-[3px] w-[2px] h-7 bg-gray-600 rounded-l-sm" />
-              <div className="absolute top-32 -left-[3px] w-[2px] h-12 bg-gray-600 rounded-l-sm" />
-              <div className="absolute top-28 -right-[3px] w-[2px] h-14 bg-gray-600 rounded-r-sm" />
-              <div className="bg-black rounded-[36px] overflow-hidden relative">
-                <div className="bg-black/60 px-20 py-2 flex justify-center">
-                  <div className="w-14 h-1.5 bg-gray-800 rounded-full" />
-                </div>
-                <div
-                  className="mx-2 mb-2 rounded-2xl p-4 min-h-[160px] flex flex-col justify-between shadow-xl relative overflow-hidden"
-                  style={{
-                    background: `linear-gradient(135deg, ${program.background_color} 0%, ${adjustColor(program.background_color, -20)} 100%)`,
-                    color: program.text_color
-                  }}
-                >
-                  <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: `radial-gradient(circle at 2px 2px, ${program.text_color} 1px, transparent 1px)`,
-                    backgroundSize: '16px 16px'
-                  }} />
-                  {/* Hero banner */}
-                  {program.strip_image_url && (
-                    <div className="relative z-10 -mx-4 -mt-4 mb-2">
-                      <img src={program.strip_image_url} alt="Hero" className="w-full h-14 object-cover rounded-t-2xl" />
-                    </div>
-                  )}
-                  {/* Top: logo + name */}
-                  <div className="relative z-10 flex items-center gap-3">
-                    {program.logo_url ? (
-                      <img src={program.logo_url} alt="Logo" className="w-12 h-12 rounded-xl object-cover border-2 border-white/30 shadow-lg" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                        <span className="font-bold text-lg">{program.name?.[0] || 'P'}</span>
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[8px] font-bold uppercase tracking-wider opacity-50">Programa de Fidelidad</p>
-                      <p className="text-lg font-bold truncate">{program.name}</p>
-                    </div>
-                  </div>
-                  {/* Description */}
-                  <div className="relative z-10 my-2">
-                    <p className="text-xs opacity-70 line-clamp-1">{program.description}</p>
-                  </div>
-                  {/* Bottom: customer + QR */}
-                  <div className="relative z-10 flex items-end justify-between">
-                    <div>
-                      <p className="text-[8px] font-semibold uppercase tracking-wider opacity-40">Cliente</p>
-                      <p className="text-xs font-bold opacity-80">Cliente</p>
-                    </div>
-                    <div className="bg-[#ffffff] rounded-xl p-1 shadow-lg">
-                      <PremiumQrSvg color={program.background_color || '#1a1a2e'} size={44} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p className="mt-4 text-xs text-surface-400">Vista previa en Apple Wallet / Google Wallet</p>
+          <WalletCardPreview
+            form={{
+              name: program.name,
+              description: program.description,
+              card_type: program.card_type,
+              background_color: program.background_color,
+              text_color: program.text_color,
+              strip_image_url: program.strip_image_url,
+            }}
+            selectedType={selectedType}
+            logoPreview={program.logo_url}
+            stripPreview={program.strip_image_url}
+            barcodeType={program.barcode_type}
+            walletPlatform={previewPlatform}
+            onWalletPlatformChange={setPreviewPlatform}
+            walletDesign={previewWalletDesign}
+          />
         </div>
 
         {/* Enrollment QR Code — Premium Styled */}
@@ -624,6 +599,23 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteModal(false)}
           loading={processing}
+        />
+      )}
+
+      {/* Members Modal */}
+      {showMembersModal && program && (
+        <ProgramMembersModal
+          programId={program.id}
+          cardType={program.card_type}
+          onClose={() => setShowMembersModal(false)}
+        />
+      )}
+
+      {/* Transactions Modal */}
+      {showTransactionsModal && program && (
+        <ProgramTransactionsModal
+          programId={program.id}
+          onClose={() => setShowTransactionsModal(false)}
         />
       )}
 

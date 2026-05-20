@@ -211,7 +211,7 @@ export function PickImageModal({
                     No hay imágenes en la biblioteca.
                   </p>
                   <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
-                    Sube imágenes desde la pestaña "Subir imagen".
+                    Sube imágenes desde la pestaña &quot;Subir imagen&quote;.
                   </p>
                 </div>
               ) : (
