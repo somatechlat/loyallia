@@ -9,7 +9,6 @@ import {
 } from './constants';
 import type { WalletDesignState } from './WalletDesigner';
 
-/* ─── Barcode SVG Previews ────────────────────────────────────────── */
 export function BarcodeSvg({ type, size = 48 }: { type: string; size?: number }) {
   if (type === 'code_128' || type === 'pdf417') {
     const h = type === 'pdf417' ? size * 0.6 : size * 0.5;
@@ -65,7 +64,6 @@ export function BarcodeSvg({ type, size = 48 }: { type: string; size?: number })
   );
 }
 
-/* ─── Barcode Type Selector (used in Step 2) ──────────────────────── */
 export function BarcodeTypeSelector({ value, onChange }: {
   value: string;
   onChange: (v: string) => void;
@@ -103,7 +101,6 @@ export function BarcodeTypeSelector({ value, onChange }: {
   );
 }
 
-/* ─── Big Platform Toggle (above phone preview only) ──────────────── */
 function PlatformToggle({ platform, onChange }: {
   platform: 'apple' | 'google';
   onChange: (p: 'apple' | 'google') => void;
@@ -140,7 +137,6 @@ function PlatformToggle({ platform, onChange }: {
   );
 }
 
-/* ─── Wallet Provider Selector ────────────────────────────────────── */
 export interface AppleWalletFeatureConfig {
   nfc_enabled: boolean;
   nfc_requires_authentication: boolean;
@@ -276,7 +272,6 @@ export function WalletProviderSelector({
   );
 }
 
-/* ─── Template resolver for preview values ────────────────────────── */
 function resolveTemplate(value: string, ctx: Record<string, string>): string {
   return value.replace(/\{(\w+)\}/g, (_, key) => ctx[key] ?? `{${key}}`);
 }
@@ -328,10 +323,6 @@ function getGoogleSampleValue(fieldPath: string, ctx: Record<string, string>): s
   return map[fieldPath] || ctx[fieldPath.replace(/\./g, '_')] || '—';
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   iPHONE 15 PRO MOCKUP — Realistic proportions (19.5:9 aspect)
-   Width: 260px, Height: ~562px for correct iPhone 15 Pro ratio
-   ════════════════════════════════════════════════════════════════════ */
 function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 562 }}>
@@ -390,9 +381,6 @@ function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   PIXEL 7 MOCKUP — Dark rounded frame, correct proportions
-   ════════════════════════════════════════════════════════════════════ */
 function Pixel7Frame({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 540 }}>
@@ -443,9 +431,6 @@ function Pixel7Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   APPLE WALLET CARD — Non-overlapping PassKit layout
-   ════════════════════════════════════════════════════════════════════ */
 function AppleWalletCard({
   form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign,
 }: CardProps & { walletDesign?: WalletDesignState }) {
@@ -646,9 +631,6 @@ function AppleWalletCard({
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   GOOGLE WALLET CARD — Non-overlapping layout with dividers
-   ════════════════════════════════════════════════════════════════════ */
 function GoogleWalletCard({
   form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign,
 }: CardProps & { walletDesign?: WalletDesignState }) {
@@ -770,9 +752,6 @@ function GoogleWalletCard({
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   APPLE WALLET BACK CARD — Info screen with backFields
-   ════════════════════════════════════════════════════════════════════ */
 function AppleWalletBackCard({
   form, walletDesign, customerName,
 }: {
@@ -828,7 +807,6 @@ function AppleWalletBackCard({
   );
 }
 
-/* ─── Type definitions ────────────────────────────────────────────── */
 export interface CardProps {
   form: {
     name: string;
@@ -845,7 +823,6 @@ export interface CardProps {
   customerName?: string;
 }
 
-/* ─── Main Wallet Preview (exported) ──────────────────────────────── */
 export default function WalletCardPreview({
   form,
   selectedType,

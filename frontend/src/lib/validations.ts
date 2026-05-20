@@ -5,7 +5,6 @@
  */
 import { z } from 'zod';
 
-/* ── Auth schemas ─────────────────────────────────────────────────────── */
 
 export const loginSchema = z.object({
   email: z
@@ -45,7 +44,6 @@ export const registerSchema = z.object({
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
-/* ── Location schema ──────────────────────────────────────────────────── */
 
 export const locationSchema = z.object({
   name: z
@@ -74,7 +72,6 @@ export const locationSchema = z.object({
 
 export type LocationFormData = z.infer<typeof locationSchema>;
 
-/* ── Program creation schema ──────────────────────────────────────────── */
 
 export const programSchema = z.object({
   name: z
@@ -93,7 +90,6 @@ export const programSchema = z.object({
 
 export type ProgramFormData = z.infer<typeof programSchema>;
 
-/* ── Password change schema ───────────────────────────────────────────── */
 
 export const passwordChangeSchema = z
   .object({
@@ -111,7 +107,6 @@ export const passwordChangeSchema = z
 
 export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
 
-/* ── Campaign schema ──────────────────────────────────────────────────── */
 
 export const campaignSchema = z.object({
   title: z

@@ -6,7 +6,6 @@
  * Decomposed from a 422-line mega-component (LYL-C-FE-002) into:
  * - LocationCard (grid card display)
  * - LocationForm (create/edit form)
- * - This page (orchestration + modal)
  *
  * Fixes applied:
  * - LYL-H-FE-014: Consistent dark mode classes
@@ -31,7 +30,6 @@ import LocationForm from '@/components/locations/LocationForm';
 import type { LocationData, LocationFormData } from '@/components/locations/types';
 import { emptyLocation } from '@/components/locations/types';
 
-/* ── Lazy-loaded heavy components (LYL-M-FE-026) ─────────────────────── */
 const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), { ssr: false });
 
 /** Info row for detail view. */
@@ -64,8 +62,7 @@ export default function LocationsPage() {
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  /* ── Data fetching ─────────────────────────────────────────────────── */
-  const loadLocations = useCallback(async () => {
+    const loadLocations = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/api/v1/tenants/locations/');
@@ -80,8 +77,7 @@ export default function LocationsPage() {
 
   useEffect(() => { loadLocations(); }, [loadLocations]);
 
-  /* ── Modal open/close helpers ──────────────────────────────────────── */
-  const openDetail = useCallback((loc: LocationData) => {
+    const openDetail = useCallback((loc: LocationData) => {
     previousFocusRef.current = document.activeElement as HTMLElement;
     setSelectedLoc(loc);
     setEditMode(false);
@@ -152,8 +148,7 @@ export default function LocationsPage() {
     };
   }, [selectedLoc, showCreate, closeModal]);
 
-  /* ── CRUD handlers ─────────────────────────────────────────────────── */
-  const handleSave = useCallback(async () => {
+    const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       if (showCreate) {
@@ -217,8 +212,7 @@ export default function LocationsPage() {
     }
   }, [selectedLoc]);
 
-  /* ── Loading skeleton ──────────────────────────────────────────────── */
-  if (loading) {
+    if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 bg-surface-200 dark:bg-surface-700 rounded-xl w-48" />
@@ -230,8 +224,7 @@ export default function LocationsPage() {
     );
   }
 
-  /* ── Derived data ──────────────────────────────────────────────────── */
-  const mapPins = locations
+    const mapPins = locations
     .filter(l => l.latitude && l.longitude)
     .map(l => ({
       id: l.id, name: l.name, address: l.address, city: l.city,

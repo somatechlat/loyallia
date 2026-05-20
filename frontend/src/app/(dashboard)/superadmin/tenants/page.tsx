@@ -104,7 +104,6 @@ const IC = {
   arrow: <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
 };
 
-/* ─── Module-level constants (QUAL-007: avoid recreation per render) ──── */
 const WIZARD_STEPS = [{ n: 1, l: 'Plan' }, { n: 2, l: 'Tipo & Datos' }, { n: 3, l: 'Propietario' }, { n: 4, l: 'Sucursales' }];
 const formatProvince = (p: string) => p.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 

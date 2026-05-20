@@ -32,9 +32,7 @@ from common.messages import get_message
 logger = logging.getLogger(__name__)
 router = Router()
 
-# ---------------------------------------------------------------------------
 # Schemas
-# ---------------------------------------------------------------------------
 
 
 class GeneratePasswordIn(Schema):
@@ -108,9 +106,7 @@ class PortalDeleteAccountOut(Schema):
     message: str
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 
 def _generate_temp_password(length: int = 12) -> str:
@@ -153,6 +149,7 @@ def _send_portal_password_email(email: str, password: str) -> None:
 """
 
     from common.email_config import get_default_from_email
+
     from_email = get_default_from_email()
     try:
         send_mail(
@@ -209,9 +206,7 @@ def _get_customer_passes(portal_customer: CustomerPortalAccount) -> list[PortalP
     return results
 
 
-# ---------------------------------------------------------------------------
 # Endpoints
-# ---------------------------------------------------------------------------
 
 
 @router.post(
@@ -220,7 +215,9 @@ def _get_customer_passes(portal_customer: CustomerPortalAccount) -> list[PortalP
     auth=None,
     summary="Generar contraseña de portal",
 )
-def generate_portal_password(request: HttpRequest, data: GeneratePasswordIn) -> GeneratePasswordOut:
+def generate_portal_password(
+    request: HttpRequest, data: GeneratePasswordIn
+) -> GeneratePasswordOut:
     """Generate a temporary password and email it to the customer.
 
     Rate limited implicitly by email delivery cost.
@@ -390,7 +387,9 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
         success=True,
         data={
             "portal_email": portal_customer.email,
-            "export_date": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+            "export_date": __import__("datetime")
+            .datetime.now(__import__("datetime").timezone.utc)
+            .isoformat(),
             "accounts": customer_data,
         },
         message="Datos exportados correctamente.",
@@ -403,7 +402,9 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
     auth=portal_auth,
     summary="Eliminar mis datos personales",
 )
-def delete_my_data(request: HttpRequest, data: PortalDeleteDataIn) -> PortalDeleteDataOut:
+def delete_my_data(
+    request: HttpRequest, data: PortalDeleteDataIn
+) -> PortalDeleteDataOut:
     """Delete personal data while keeping anonymized transaction records."""
     portal_customer = getattr(request, "portal_customer", None)
     if not portal_customer:
@@ -418,7 +419,6 @@ def delete_my_data(request: HttpRequest, data: PortalDeleteDataIn) -> PortalDele
             is_active=True,
         )
         for c in customers:
-            # Anonymize personal fields
             c.first_name = "[ELIMINADO]"
             c.last_name = "[ELIMINADO]"
             c.phone = ""
@@ -428,10 +428,20 @@ def delete_my_data(request: HttpRequest, data: PortalDeleteDataIn) -> PortalDele
             c.notes = ""
             c.referral_code = ""
             c.is_active = False
-            c.save(update_fields=[
-                "first_name", "last_name", "phone", "email", "date_of_birth",
-                "gender", "notes", "referral_code", "is_active", "updated_at",
-            ])
+            c.save(
+                update_fields=[
+                    "first_name",
+                    "last_name",
+                    "phone",
+                    "email",
+                    "date_of_birth",
+                    "gender",
+                    "notes",
+                    "referral_code",
+                    "is_active",
+                    "updated_at",
+                ]
+            )
 
     return PortalDeleteDataOut(
         success=True,
@@ -445,7 +455,9 @@ def delete_my_data(request: HttpRequest, data: PortalDeleteDataIn) -> PortalDele
     auth=portal_auth,
     summary="Eliminar mi cuenta",
 )
-def delete_my_account(request: HttpRequest, data: PortalDeleteAccountIn) -> PortalDeleteAccountOut:
+def delete_my_account(
+    request: HttpRequest, data: PortalDeleteAccountIn
+) -> PortalDeleteAccountOut:
     """Permanently delete the customer portal account and all associated data."""
     portal_customer = getattr(request, "portal_customer", None)
     if not portal_customer:
@@ -459,7 +471,6 @@ def delete_my_account(request: HttpRequest, data: PortalDeleteAccountIn) -> Port
         raise HttpError(400, f"Debes escribir exactamente: {expected}")
 
     with transaction.atomic():
-        # Delete all customer records and passes
         customers = Customer.objects.filter(email=portal_customer.email)
         for c in customers:
             CustomerPass.objects.filter(customer=c).delete()

@@ -2,7 +2,7 @@ import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { tokenManager } from './token-manager';
 
-/* ── LYL-M-FE-033: Retry with exponential backoff ────────────────────── */
+// LYL-M-FE-033: Retry with exponential backoff
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
@@ -15,7 +15,7 @@ function getRetryDelay(attempt: number, retryAfter?: string | number): number {
   return BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
 }
 
-/* ── LYL-M-FE-034: Offline detection ─────────────────────────────────── */
+// LYL-M-FE-034: Offline detection
 let _isOffline = false;
 export function isOffline(): boolean {
   return _isOffline;

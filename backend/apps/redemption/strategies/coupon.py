@@ -23,10 +23,6 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
     def __init__(self) -> None:
         super().__init__("coupon")
 
-    # ------------------------------------------------------------------
-    # Pre-lock validation (fast-fail)
-    # ------------------------------------------------------------------
-
     def validate(self, context: RedemptionContext) -> list[str]:
         """Validate the redemption request before locking.
 
@@ -41,7 +37,6 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
         customer_pass = context.customer_pass
         scanned_at = context.scanned_at
 
-        # 1. Usage limit --------------------------------------------------
         usage_limit = rules.get("usage_limit_per_customer")
         if usage_limit is not None:
             try:
@@ -57,7 +52,6 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
                 if redemption_count >= usage_limit:
                     violations.append("usage_limit_exceeded")
 
-        # 2. Time window --------------------------------------------------
         valid_from = rules.get("valid_from")
         valid_until = rules.get("valid_until")
 
@@ -71,7 +65,6 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
             if valid_until_dt and scanned_at > valid_until_dt:
                 violations.append("time_window_invalid")
 
-        # 3. Minimum purchase ---------------------------------------------
         min_purchase = rules.get("min_purchase")
         if min_purchase is not None:
             try:
@@ -84,18 +77,19 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
 
         return violations
 
-    # ------------------------------------------------------------------
-    # Post-lock mutation
-    # ------------------------------------------------------------------
-
-    def _compute_mutation(self, locked_pass, context: RedemptionContext) -> PassStateMutation:
+    def _compute_mutation(
+        self, locked_pass, context: RedemptionContext
+    ) -> PassStateMutation:
         """Compute the state change for a coupon redemption.
 
         Re-checks the usage limit after acquiring the row lock to guard
         against race conditions. Also respects legacy ``pass_data.coupon_used``.
         """
         # Legacy pass_data flag or prior redemption via new engine
-        if locked_pass.pass_data.get("coupon_used", False) or (locked_pass.coupon_redemption_count or 0) > 0:
+        if (
+            locked_pass.pass_data.get("coupon_used", False)
+            or (locked_pass.coupon_redemption_count or 0) > 0
+        ):
             return PassStateMutation(
                 is_valid=False,
                 violations=["usage_limit_exceeded"],
@@ -103,7 +97,6 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
 
         rules = context.card.redemption_rules or {}
 
-        # Defensive re-check of usage limit after locking ---------------
         usage_limit = rules.get("usage_limit_per_customer")
         if usage_limit is not None:
             try:
@@ -138,16 +131,8 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
             reward_description=reward_description,
         )
 
-    # ------------------------------------------------------------------
-    # Intent resolution
-    # ------------------------------------------------------------------
-
     def _resolve_intent(self, context) -> str:
         return "redeem"
-
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _parse_rule_datetime(value, tz=None):
@@ -170,7 +155,9 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
                 parsed = datetime.fromisoformat(value)
             except ValueError:
                 try:
-                    parsed = datetime.combine(date.fromisoformat(value), datetime.min.time())
+                    parsed = datetime.combine(
+                        date.fromisoformat(value), datetime.min.time()
+                    )
                 except ValueError:
                     return None
         elif isinstance(value, date):

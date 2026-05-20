@@ -8,7 +8,6 @@ import InfoTooltip from '@/components/ui/InfoTooltip';
 import { GananciaTab, VisitasTab, type DashboardTab, type CampaignStats } from '@/components/dashboard/DashboardTabs';
 import DashboardInsights from '@/components/dashboard/DashboardInsights';
 
-/* ─── Types that MATCH the real API response ─────────────────────────── */
 interface OverviewResponse {
   period_days: number;
   customers: { total: number; new: number; growth_rate: number };
@@ -63,7 +62,6 @@ const CHART_GRADIENTS = (
   </defs>
 );
 
-/* ─── Shared Stat Card Icons (QUAL-003: deduplicated from inline SVGs) ── */
 function IconUsers({ className = 'w-5 h-5' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 }
