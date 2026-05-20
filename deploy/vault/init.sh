@@ -352,12 +352,8 @@ POLICYEOF
             chmod 0600 /vault/runtime/app-token
             log_info "App token created."
 
-            # Revoke root token after successful app token creation
-            if [ -n "$root_token" ]; then
-                log_info "Revoking root token for security..."
-                vault token revoke "$root_token" >/dev/null 2>&1 || \
-                    log_warn "Failed to revoke root token"
-            fi
+            # NOTE: Root token is retained for bootstrap rescue export.
+            # Revoke manually after deployment: vault token revoke <root_token>
         else
             log_warn "App token creation failed - root token retained for recovery"
         fi
