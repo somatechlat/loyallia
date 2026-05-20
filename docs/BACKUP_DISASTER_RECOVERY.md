@@ -1,7 +1,7 @@
 # Loyallia — Backup & Disaster Recovery Plan
 
-**Document Version:** 1.0
-**Last Updated:** 2026-04-29
+**Document Version:** 1.1
+**Last Updated:** 2026-05-20
 **Owner:** Infrastructure & SRE Team
 **Classification:** Internal — Confidential
 
@@ -669,15 +669,182 @@ docker compose exec -T postgres pg_restore -U loyallia -d loyallia_dev < /backup
 # 3. Run migrations to catch any schema drift
 docker compose exec api python manage.py migrate
 
-# 4. Re-provision E2E users (they are lost when the DB is dropped)
+# 4. Reset admin password (production dump has unknown admin password)
+docker compose exec api python manage.py recover_admin_access \
+    --email admin@loyallia.com \
+    --password "DevPass123!"
+
+# 5. Re-provision E2E users (they are lost when the DB is dropped)
 docker compose exec api python manage.py provision_development_rbac_test_users --generate
 
-# 5. Restart application containers
+# 6. Restart application containers
 docker compose start api celery-beat celery-default celery-pass celery-push
 
-# 6. Verify Playwright auth setup still works
+# 7. Verify Playwright auth setup still works
 cd frontend && npx playwright test --project=setup
 ```
+
+### 6.7 Disaster Recovery Rescue Files
+
+Two environment-aware scripts handle complete backup and restore of the Docker runtime.
+
+#### 6.7.1 Creating Rescue Files
+
+**Script:** `deploy/disaster_recovery/create_rescue_files.sh` (389 lines)
+
+**Usage:**
+
+```bash
+# Auto-detect environment
+./deploy/disaster_recovery/create_rescue_files.sh
+
+# Force development mode
+./deploy/disaster_recovery/create_rescue_files.sh --dev
+
+# Force production mode
+./deploy/disaster_recovery/create_rescue_files.sh --prod
+```
+
+**What it does:**
+- Auto-detects compose files, DB credentials from `.env`, and container names from `COMPOSE_PROJECT_NAME`
+- Creates all 6 rescue files in `.agents/`
+
+**Files created:**
+
+| File | Description | Sensitivity |
+|------|-------------|-------------|
+| `vault_init_rescue.json` | Vault unseal key + root token | **CRITICAL — store offline** |
+| `vault_secrets_rescue.json` | All secrets from Vault KV | **CRITICAL — store offline** |
+| `pg_dump_rescue.sql` | PostgreSQL logical dump | High |
+| `runtime_files_rescue.tar.gz` | Runtime secret files + Vault TLS | High |
+| `certs_rescue.tar.gz` | Apple Wallet certs + Google SA JSON | High |
+| `redis_rdb_rescue.rdb` | Redis cache snapshot | Medium |
+
+**Post-run checklist:**
+- Copy `vault_init_rescue.json` to offline storage (USB, password manager)
+- Verify `.agents/` is chmod `0700` and files are `0600`
+- Store a second copy in a different physical location
+
+---
+
+#### 6.7.2 Restoring from Rescue Files
+
+**Script:** `deploy/disaster_recovery/recover_from_rescue.sh` (710 lines)
+
+**Usage:**
+
+```bash
+# Auto-detect environment
+./deploy/disaster_recovery/recover_from_rescue.sh
+
+# Force development mode
+./deploy/disaster_recovery/recover_from_rescue.sh --dev
+
+# Force production mode
+./deploy/disaster_recovery/recover_from_rescue.sh --prod
+
+# Dry-run mode (validate without making changes)
+DRY_RUN=1 ./deploy/disaster_recovery/recover_from_rescue.sh --dev
+```
+
+**What it restores:**
+1. **Runtime files** — extracts `runtime_files_rescue.tar.gz` into the Vault runtime volume
+2. **Vault TLS certs** — restores certificates needed for Vault HTTPS
+3. **Vault state** — re-initializes Vault using `vault_init_rescue.json`
+4. **Secrets** — re-imports all KV secrets from `vault_secrets_rescue.json`
+5. **Database** — restores PostgreSQL from `pg_dump_rescue.sql`
+6. **Redis** — restores RDB snapshot from `redis_rdb_rescue.rdb`
+7. **Validation** — runs health checks on every component
+
+**Recovery priority order:**
+```
+Vault → PostgreSQL → Redis → Application
+```
+
+**Time estimate:** 10-15 minutes (depending on database size)
+
+---
+
+### 6.8 Factory Reset Procedure
+
+**Use case:** Wipe all tenant data while preserving platform infrastructure.
+
+**⚠️ WARNING:** This destroys all tenant data. It is irreversible.
+
+#### UI Factory Reset (SuperAdmin)
+
+A SysAdmin can trigger factory reset from the web interface:
+
+1. Navigate to **Settings → "Restaurar de Fábrica"**
+2. Confirm OTP verification (sent via email/SMS)
+3. Confirm the destructive action
+
+**What is preserved:**
+- SUPER_ADMIN user (`admin@loyallia.com`)
+- 4 canonical subscription plans (Trial, Starter, Professional, Enterprise)
+- Platform settings (TRIAL_DAYS, TAX_RATE_ECUADOR, DEFAULT_TIMEZONE, etc.)
+
+**What is wiped:**
+- All tenants and their data
+- All customers, transactions, cards, passes
+- All campaigns, notifications, delivery logs
+- All automations, analytics, audit logs
+- All subscriptions, invoices, payment methods
+
+**After reset:**
+- Plans and settings are automatically re-seeded
+- The system returns to a clean, ready-for-onboarding state
+
+#### Surgical Cleanup (Developers)
+
+For local development, use the surgical cleanup script instead of a full factory reset:
+
+```bash
+docker compose exec api python backend/clean_demo_data.py
+```
+
+**What `clean_demo_data.py` does:**
+- Removes ALL demo, test, and synthetic data
+- Preserves SUPER_ADMIN, the 4 canonical plans, and PlatformSettings
+- Deletes tenants, users (except SUPER_ADMIN), customers, cards, passes
+- Clears notifications, campaigns, WhatsApp sessions, automations, analytics
+- Removes audit logs, subscriptions, invoices, and payment methods
+
+---
+
+### 6.9 Admin Account Recovery
+
+**Use case:** Regain admin access when locked out or after restoring from a production dump.
+
+#### Unlock + Reset Password
+
+```bash
+docker compose exec api python manage.py recover_admin_access \
+    --email admin@loyallia.com \
+    --password "NewStrongPass123!"
+```
+
+#### Create Admin if Missing
+
+```bash
+docker compose exec api python manage.py recover_admin_access \
+    --email admin@loyallia.com \
+    --password "NewStrongPass123!" \
+    --create
+```
+
+#### Unlock Only (no password change)
+
+```bash
+docker compose exec api python manage.py recover_admin_access \
+    --email admin@loyallia.com \
+    --unlock-only
+```
+
+**What it does:**
+- Resets the superadmin password
+- Clears any account lockout state
+- Optionally creates the account if it does not exist (`--create`)
 
 ---
 

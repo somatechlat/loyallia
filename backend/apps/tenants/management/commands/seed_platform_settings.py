@@ -21,9 +21,7 @@ FIXTURE_PATH = (
     Path(__file__).parent.parent.parent / "fixtures" / "platform_settings.json"
 )
 
-# ---------------------------------------------------------------------------
-# SYSTEM MODE SETTINGS
-# ---------------------------------------------------------------------------
+# System mode settings
 _SYSTEM_MODE_SETTINGS = [
     {
         "key": "development_mode",
@@ -57,9 +55,7 @@ _SYSTEM_MODE_SETTINGS = [
     },
 ]
 
-# ---------------------------------------------------------------------------
-# BACKUP SETTINGS
-# ---------------------------------------------------------------------------
+# Backup settings
 _BACKUP_SETTINGS = [
     {
         "key": "backup_frequency",
@@ -117,9 +113,7 @@ _BACKUP_SETTINGS = [
     },
 ]
 
-# ---------------------------------------------------------------------------
-# URL SETTINGS
-# ---------------------------------------------------------------------------
+# URL settings
 _URL_SETTINGS = [
     {
         "key": "api_base_url",
@@ -153,9 +147,7 @@ _URL_SETTINGS = [
     },
 ]
 
-# ---------------------------------------------------------------------------
-# NOTIFICATION SETTINGS
-# ---------------------------------------------------------------------------
+# Notification settings
 _NOTIFICATION_SETTINGS = [
     {
         "key": "mailjet_sender_email",
@@ -183,9 +175,7 @@ _NOTIFICATION_SETTINGS = [
     },
 ]
 
-# ---------------------------------------------------------------------------
-# RATE LIMIT & SECURITY SETTINGS
-# ---------------------------------------------------------------------------
+# Rate limit & security settings
 _RATE_LIMIT_SETTINGS = [
     {
         "key": "api_rate_limit_per_minute",
@@ -225,9 +215,7 @@ _RATE_LIMIT_SETTINGS = [
     },
 ]
 
-# ---------------------------------------------------------------------------
-# WORKER SETTINGS
-# ---------------------------------------------------------------------------
+# Worker settings
 _WORKER_SETTINGS = [
     {
         "key": "celery_worker_concurrency",

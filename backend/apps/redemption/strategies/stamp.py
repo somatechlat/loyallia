@@ -33,21 +33,15 @@ class StampEarnStrategy(BaseRedemptionStrategy):
     def __init__(self) -> None:
         super().__init__(card_type="stamp")
 
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
-
     def validate(self, context: RedemptionContext) -> list[str]:
         violations: list[str] = []
         if context.quantity <= 0:
             violations.append("invalid_quantity")
         return violations
 
-    # ------------------------------------------------------------------
-    # Mutation
-    # ------------------------------------------------------------------
-
-    def _compute_mutation(self, locked_pass: "CustomerPassType", context: RedemptionContext) -> PassStateMutation:
+    def _compute_mutation(
+        self, locked_pass: "CustomerPassType", context: RedemptionContext
+    ) -> PassStateMutation:
         metadata = context.card.metadata or {}
 
         try:
@@ -57,7 +51,9 @@ class StampEarnStrategy(BaseRedemptionStrategy):
         except (TypeError, ValueError):
             stamps_required = 10
 
-        current_stamps = locked_pass.stamp_count or locked_pass.pass_data.get("stamp_count", 0)
+        current_stamps = locked_pass.stamp_count or locked_pass.pass_data.get(
+            "stamp_count", 0
+        )
         added = context.quantity
         new_stamps = current_stamps + added
 
@@ -84,10 +80,6 @@ class StampEarnStrategy(BaseRedemptionStrategy):
             new_balance=str(new_stamps),
         )
 
-    # ------------------------------------------------------------------
-    # Intent resolution
-    # ------------------------------------------------------------------
-
     def _resolve_intent(self, context: RedemptionContext) -> str:
         return "earn"
 
@@ -104,21 +96,15 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
     def __init__(self) -> None:
         super().__init__(card_type="stamp")
 
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
-
     def validate(self, context: RedemptionContext) -> list[str]:
         violations: list[str] = []
         if not self._is_reward_ready(context.customer_pass):
             violations.append("reward_not_ready")
         return violations
 
-    # ------------------------------------------------------------------
-    # Mutation
-    # ------------------------------------------------------------------
-
-    def _compute_mutation(self, locked_pass: "CustomerPassType", context: RedemptionContext) -> PassStateMutation:
+    def _compute_mutation(
+        self, locked_pass: "CustomerPassType", context: RedemptionContext
+    ) -> PassStateMutation:
         if not self._is_reward_ready(locked_pass):
             return PassStateMutation(
                 is_valid=False,
@@ -138,14 +124,11 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
             new_balance=str(locked_pass.stamp_count),
         )
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _is_reward_ready(customer_pass: "CustomerPassType") -> bool:
-        return customer_pass.lifecycle_state == CustomerPass.LifecycleState.REWARD_READY or customer_pass.pass_data.get(
-            "reward_ready", False
+        return (
+            customer_pass.lifecycle_state == CustomerPass.LifecycleState.REWARD_READY
+            or customer_pass.pass_data.get("reward_ready", False)
         )
 
     def _resolve_intent(self, context: RedemptionContext) -> str:

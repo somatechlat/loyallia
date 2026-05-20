@@ -56,9 +56,7 @@ logger = logging.getLogger("loyallia.backup")
 router = Router()
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 
 def _job_to_schema(job: BackupJob) -> BackupJobOut:
@@ -106,9 +104,7 @@ def _audit(
     )
 
 
-# ---------------------------------------------------------------------------
 # GET /api/v1/superadmin/backups/
-# ---------------------------------------------------------------------------
 
 
 @router.get(
@@ -148,7 +144,12 @@ def list_backups(
     total = qs.count()
     jobs = list(qs[offset : offset + limit])
 
-    _audit(request, AuditAction.READ, resource_type="backup_job", details={"filters_applied": True, "count": total})
+    _audit(
+        request,
+        AuditAction.READ,
+        resource_type="backup_job",
+        details={"filters_applied": True, "count": total},
+    )
 
     return BackupListOut(
         total=total,
@@ -157,9 +158,7 @@ def list_backups(
     )
 
 
-# ---------------------------------------------------------------------------
 # GET /api/v1/superadmin/backups/status/
-# ---------------------------------------------------------------------------
 
 
 @router.get(
@@ -179,19 +178,30 @@ def get_backup_status(request: HttpRequest):
         status__in=[BackupJobStatus.PENDING.value, BackupJobStatus.RUNNING.value]
     ).count()
 
-    latest = BackupJob.objects.filter(
-        status__in=[
-            BackupJobStatus.COMPLETED.value,
-            BackupJobStatus.VERIFIED.value,
-            BackupJobStatus.FAILED.value,
-        ]
-    ).order_by("-created_at").first()
+    latest = (
+        BackupJob.objects.filter(
+            status__in=[
+                BackupJobStatus.COMPLETED.value,
+                BackupJobStatus.VERIFIED.value,
+                BackupJobStatus.FAILED.value,
+            ]
+        )
+        .order_by("-created_at")
+        .first()
+    )
 
-    last_successful = BackupJob.objects.filter(
-        status=BackupJobStatus.VERIFIED.value
-    ).order_by("-created_at").first()
+    last_successful = (
+        BackupJob.objects.filter(status=BackupJobStatus.VERIFIED.value)
+        .order_by("-created_at")
+        .first()
+    )
 
-    _audit(request, AuditAction.READ, resource_type="backup_status", details={"total": total})
+    _audit(
+        request,
+        AuditAction.READ,
+        resource_type="backup_status",
+        details={"total": total},
+    )
 
     return BackupStatusOut(
         latest_backup=_job_to_schema(latest) if latest else None,
@@ -199,13 +209,13 @@ def get_backup_status(request: HttpRequest):
         completed_backups=completed,
         failed_backups=failed,
         pending_backups=pending,
-        last_successful_at=last_successful.created_at.isoformat() if last_successful else None,
+        last_successful_at=(
+            last_successful.created_at.isoformat() if last_successful else None
+        ),
     )
 
 
-# ---------------------------------------------------------------------------
 # POST /api/v1/superadmin/backups/trigger/
-# ---------------------------------------------------------------------------
 
 
 @router.post(
@@ -256,9 +266,7 @@ def trigger_manual_backup(request: HttpRequest, payload: TriggerBackupIn):
         )
 
 
-# ---------------------------------------------------------------------------
 # GET /api/v1/superadmin/backups/{id}/
-# ---------------------------------------------------------------------------
 
 
 @router.get(
@@ -283,9 +291,7 @@ def get_backup_detail(request: HttpRequest, backup_id: str):
     return _job_to_schema(job)
 
 
-# ---------------------------------------------------------------------------
 # POST /api/v1/superadmin/backups/{id}/verify/
-# ---------------------------------------------------------------------------
 
 
 @router.post(
@@ -314,7 +320,6 @@ def verify_backup_endpoint(request: HttpRequest, backup_id: str):
         )
 
     try:
-        # Trigger async verification
         result = verify_backup.delay([], str(job.id))
 
         _audit(
@@ -342,9 +347,7 @@ def verify_backup_endpoint(request: HttpRequest, backup_id: str):
         )
 
 
-# ---------------------------------------------------------------------------
 # POST /api/v1/superadmin/backups/{id}/restore/
-# ---------------------------------------------------------------------------
 
 
 @router.post(
@@ -369,7 +372,6 @@ def restore_from_backup(
     """
     job = get_object_or_404(BackupJob, id=backup_id)
 
-    # Must confirm
     if not payload.confirm:
         return BackupActionOut(
             success=False,
@@ -384,7 +386,6 @@ def restore_from_backup(
         )
 
     try:
-        # Restore orchestration task (implemented in restore_from_backup_task)
         from apps.backup.tasks import restore_from_backup_task
 
         result = restore_from_backup_task.delay(
@@ -423,9 +424,7 @@ def restore_from_backup(
         )
 
 
-# ---------------------------------------------------------------------------
 # GET /api/v1/superadmin/backups/settings/
-# ---------------------------------------------------------------------------
 
 
 @router.get(
@@ -446,8 +445,12 @@ def get_backup_settings(request: HttpRequest):
     return BackupSettingsOut(
         backup_frequency=frequency,
         backup_retention_days=PlatformSetting.get_int("backup_retention_days", 30),
-        backup_encryption_enabled=PlatformSetting.get_bool("backup_encryption_enabled", True),
-        backup_compression_enabled=PlatformSetting.get_bool("backup_compression_enabled", True),
+        backup_encryption_enabled=PlatformSetting.get_bool(
+            "backup_encryption_enabled", True
+        ),
+        backup_compression_enabled=PlatformSetting.get_bool(
+            "backup_compression_enabled", True
+        ),
         backup_include_media=PlatformSetting.get_bool("backup_include_media", True),
         backup_include_vault=PlatformSetting.get_bool("backup_include_vault", True),
         backup_hour=hour,
@@ -455,9 +458,7 @@ def get_backup_settings(request: HttpRequest):
     )
 
 
-# ---------------------------------------------------------------------------
 # PUT /api/v1/superadmin/backups/settings/
-# ---------------------------------------------------------------------------
 
 
 @router.put(
@@ -476,14 +477,21 @@ def update_backup_settings(request: HttpRequest, payload: BackupSettingsOut):
     if payload.backup_frequency not in valid_frequencies:
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail=f"frequency must be one of {valid_frequencies}"),
+            get_message(
+                "VALIDATION_ERROR",
+                detail=f"frequency must be one of {valid_frequencies}",
+            ),
         )
 
     settings_map = {
         "backup_frequency": payload.backup_frequency,
         "backup_retention_days": str(payload.backup_retention_days),
-        "backup_encryption_enabled": "true" if payload.backup_encryption_enabled else "false",
-        "backup_compression_enabled": "true" if payload.backup_compression_enabled else "false",
+        "backup_encryption_enabled": (
+            "true" if payload.backup_encryption_enabled else "false"
+        ),
+        "backup_compression_enabled": (
+            "true" if payload.backup_compression_enabled else "false"
+        ),
         "backup_include_media": "true" if payload.backup_include_media else "false",
         "backup_include_vault": "true" if payload.backup_include_vault else "false",
         "backup_hour": str(payload.backup_hour),
@@ -511,9 +519,7 @@ def update_backup_settings(request: HttpRequest, payload: BackupSettingsOut):
     return payload
 
 
-# ---------------------------------------------------------------------------
 # POST /api/v1/superadmin/backups/cleanup/
-# ---------------------------------------------------------------------------
 
 
 @router.post(

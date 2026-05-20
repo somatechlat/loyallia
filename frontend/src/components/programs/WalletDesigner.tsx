@@ -1,5 +1,3 @@
-/* WalletDesigner.tsx — Full visual designer for Apple & Google Wallet pass customization */
-
 'use client';
 
 import React, { useState, useCallback } from 'react';
@@ -13,7 +11,6 @@ import {
   GOOGLE_DEVICE_SHARING_OPTIONS,
 } from './constants';
 
-/* ─── Inline SVGs ─────────────────────────────────────────────────── */
 function PlusIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -50,7 +47,6 @@ function InfoIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
-/* ─── Types (exact exports) ───────────────────────────────────────── */
 export interface AppleWalletFeatureConfig {
   nfc_enabled: boolean;
   nfc_requires_authentication: boolean;
@@ -177,15 +173,12 @@ export function defaultWalletDesignState(): WalletDesignState {
   };
 }
 
-/* ─── Helpers ─────────────────────────────────────────────────────── */
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-/* ─── Image Upload ────────────────────────────────────────────────── */
 import ImageUploadField from '@/components/ui/ImageUploadField';
 
-/* ─── Accordion Section ───────────────────────────────────────────── */
 function AccordionSection({
   title, children, defaultOpen = false,
 }: {
@@ -208,7 +201,6 @@ function AccordionSection({
   );
 }
 
-/* ─── Google Advanced Settings ────────────────────────────────────── */
 function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedConfig; onChange: (c: GoogleAdvancedConfig) => void }) {
   const patch = (p: Partial<GoogleAdvancedConfig>) => onChange({ ...config, ...p });
   const addLink = () => patch({ linksModuleUris: [...config.linksModuleUris, { label: '', uri: '' }] });
@@ -291,7 +283,6 @@ function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedCo
   );
 }
 
-/* ─── Apple Advanced Settings ─────────────────────────────────────── */
 function AppleAdvancedSettings({ config, onChange }: { config: AppleAdvancedConfig; onChange: (c: AppleAdvancedConfig) => void }) {
   const patch = (p: Partial<AppleAdvancedConfig>) => onChange({ ...config, ...p });
   return (
@@ -322,7 +313,6 @@ function AppleAdvancedSettings({ config, onChange }: { config: AppleAdvancedConf
   );
 }
 
-/* ─── Field Registries (card-type filtered) ───────────────────────── */
 const APPLE_FIELD_REGISTRY = [
   { label: 'Nombre del cliente', value: '{customer_name}', types: 'all' as const },
   { label: 'Sellos actuales', value: '{stamp_count}/{stamps_required}', types: ['stamp'] as const },
@@ -365,7 +355,6 @@ function getGoogleFieldOptions(cardType: string) {
   return GOOGLE_FIELD_REGISTRY.filter(f => f.types === 'all' || (Array.isArray(f.types) && f.types.includes(cardType)));
 }
 
-/* ─── Zone visual indicator helpers ───────────────────────────────── */
 const APPLE_GROUP_META: Record<string, { borderColor: string; badge: string; hint: string }> = {
   backFields: { borderColor: 'border-l-surface-400', badge: 'bg-surface-100 dark:bg-surface-700/50 text-surface-700 dark:text-surface-300', hint: '🔄 Detrás de la tarjeta' },
   headerFields:   { borderColor: 'border-l-amber-500',   badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300', hint: '↗️ Esquina superior derecha' },
@@ -374,7 +363,6 @@ const APPLE_GROUP_META: Record<string, { borderColor: string; badge: string; hin
   auxiliaryFields:{ borderColor: 'border-l-slate-400',   badge: 'bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300', hint: '📋 Parte inferior' },
 };
 
-/* ─── Google Card Template Builder ────────────────────────────────── */
 function GoogleRowBuilder({ rows, onChange, cardType }: { rows: GoogleFieldRow[]; onChange: (rows: GoogleFieldRow[]) => void; cardType: string }) {
   const fieldOptions = getGoogleFieldOptions(cardType);
 
@@ -494,7 +482,6 @@ function GoogleRowBuilder({ rows, onChange, cardType }: { rows: GoogleFieldRow[]
   );
 }
 
-/* ─── Apple Field Layout Editor ───────────────────────────────────── */
 function AppleFieldEditor({
   fields, onChange, cardType,
 }: {
@@ -671,10 +658,6 @@ function AppleFieldEditor({
     </div>
   );
 }
-
-/* ═════════════════════════════════════════════════════════════════════
-   MAIN WALLET DESIGNER COMPONENT
-   ═════════════════════════════════════════════════════════════════════ */
 
 export interface WalletDesignerProps {
   cardType: string;

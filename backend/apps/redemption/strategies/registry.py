@@ -38,9 +38,7 @@ def get_strategy(card_type: str, intent: str) -> "BaseRedemptionStrategy":
 def _resolve(card_type: str, intent: str) -> "BaseRedemptionStrategy":
     """Internal resolution logic (called once per unique key)."""
 
-    # ------------------------------------------------------------------
     # Stamp cards
-    # ------------------------------------------------------------------
     if card_type == "stamp":
         if intent == "earn":
             from .stamp import StampEarnStrategy
@@ -51,9 +49,7 @@ def _resolve(card_type: str, intent: str) -> "BaseRedemptionStrategy":
 
             return StampRedeemStrategy()
 
-    # ------------------------------------------------------------------
     # Cashback cards
-    # ------------------------------------------------------------------
     if card_type == "cashback":
         if intent == "earn":
             from .cashback import CashbackEarnStrategy
@@ -64,9 +60,7 @@ def _resolve(card_type: str, intent: str) -> "BaseRedemptionStrategy":
 
             return CashbackRedeemStrategy()
 
-    # ------------------------------------------------------------------
-    # Single-operation cards (redeem-only or validate-only)
-    # ------------------------------------------------------------------
+    # Single-operation cards
     if card_type == "coupon":
         from .coupon import CouponRedeemStrategy
 
@@ -102,10 +96,10 @@ def _resolve(card_type: str, intent: str) -> "BaseRedemptionStrategy":
 
         return CorporateValidateStrategy()
 
-    # ------------------------------------------------------------------
     # Fallback
-    # ------------------------------------------------------------------
-    raise ValueError(f"No strategy registered for card_type={card_type}, intent={intent}")
+    raise ValueError(
+        f"No strategy registered for card_type={card_type}, intent={intent}"
+    )
 
 
 def clear_cache() -> None:

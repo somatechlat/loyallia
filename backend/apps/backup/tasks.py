@@ -47,9 +47,6 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Constants & helpers
-# ---------------------------------------------------------------------------
 
 _MAX_RETRIES = 3
 _RETRY_DELAY = 120  # 2 minutes
@@ -68,13 +65,20 @@ def _scrub_error(msg: str) -> str:
             # Redact anything that looks like a credential
             import re
 
-            msg = re.sub(rf"{keyword}['\"]?\s*[:=]\s*['\"]?[^\s'\"]+", f"{keyword}=***SCRUBBED***", msg, flags=re.IGNORECASE)
+            msg = re.sub(
+                rf"{keyword}['\"]?\s*[:=]\s*['\"]?[^\s'\"]+",
+                f"{keyword}=***SCRUBBED***",
+                msg,
+                flags=re.IGNORECASE,
+            )
     return msg
 
 
 def _temp_backup_dir(prefix: str = "loyallia_backup") -> str:
     """Create a secure temp directory for this backup run."""
-    tmp = tempfile.mkdtemp(prefix=f"{prefix}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_")
+    tmp = tempfile.mkdtemp(
+        prefix=f"{prefix}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_"
+    )
     os.chmod(tmp, 0o700)
     return tmp
 
@@ -85,8 +89,12 @@ def _get_backup_settings() -> dict:
 
     return {
         "retention_days": PlatformSetting.get_int("backup_retention_days", 30),
-        "encryption_enabled": PlatformSetting.get_bool("backup_encryption_enabled", True),
-        "compression_enabled": PlatformSetting.get_bool("backup_compression_enabled", True),
+        "encryption_enabled": PlatformSetting.get_bool(
+            "backup_encryption_enabled", True
+        ),
+        "compression_enabled": PlatformSetting.get_bool(
+            "backup_compression_enabled", True
+        ),
         "include_media": PlatformSetting.get_bool("backup_include_media", True),
         "include_vault": PlatformSetting.get_bool("backup_include_vault", True),
         "gpg_key_id": PlatformSetting.get("backup_gpg_key_id", ""),
@@ -176,9 +184,7 @@ def _update_job(job_id: str, **fields) -> None:
     BackupJob.objects.filter(id=job_id).update(**fields)
 
 
-# ---------------------------------------------------------------------------
-# 1. Main orchestrator
-# ---------------------------------------------------------------------------
+# Main orchestrator
 
 
 @shared_task(
@@ -224,29 +230,25 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
     )
 
     try:
-        # Build the task group for all backup components
         task_signatures = []
 
-        # PostgreSQL (always)
         task_signatures.append(backup_postgresql.s(job_id))
 
-        # Redis (always)
         task_signatures.append(backup_redis.s(job_id))
 
-        # Vault KV (conditional)
         if config["include_vault"]:
             task_signatures.append(backup_vault.s(job_id))
 
-        # Media files (conditional)
         if config["include_media"]:
             task_signatures.append(backup_media.s(job_id))
 
-        # Execute all in parallel, then verify
         job_group = group(task_signatures)
         verify_chain = chain(job_group, verify_backup.s(job_id))
         result = verify_chain.apply_async()
 
-        logger.info("run_full_backup: job %s chained, verify task id=%s", job_id, result.id)
+        logger.info(
+            "run_full_backup: job %s chained, verify task id=%s", job_id, result.id
+        )
 
         return {
             "success": True,
@@ -267,9 +269,7 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
         raise self.retry(exc=exc)
 
 
-# ---------------------------------------------------------------------------
-# 2. PostgreSQL backup (pg_dump)
-# ---------------------------------------------------------------------------
+# PostgreSQL backup
 
 
 @shared_task(
@@ -301,14 +301,19 @@ def backup_postgresql(self, job_id: str) -> dict:
     compress_flag = "--gzip" if config["compression_enabled"] else ""
     cmd_parts = [
         "pg_dump",
-        "--host", db["host"],
-        "--port", str(db["port"]),
-        "--username", db["user"],
-        "--dbname", db["name"],
+        "--host",
+        db["host"],
+        "--port",
+        str(db["port"]),
+        "--username",
+        db["user"],
+        "--dbname",
+        db["name"],
         "--verbose",
         "--no-owner",
         "--no-privileges",
-        "--format", "custom" if not config["compression_enabled"] else "plain",
+        "--format",
+        "custom" if not config["compression_enabled"] else "plain",
     ]
     if compress_flag:
         cmd_parts.append("--gzip")
@@ -326,7 +331,9 @@ def backup_postgresql(self, job_id: str) -> dict:
             )
 
         file_size = os.path.getsize(dump_file)
-        logger.info("backup_postgresql: job %s completed, size=%d bytes", job_id, file_size)
+        logger.info(
+            "backup_postgresql: job %s completed, size=%d bytes", job_id, file_size
+        )
 
         return {
             "success": True,
@@ -345,13 +352,10 @@ def backup_postgresql(self, job_id: str) -> dict:
         logger.exception("backup_postgresql unexpected error")
         raise self.retry(exc=exc)
     finally:
-        # Cleanup env var
         env.pop("PGPASSWORD", None)
 
 
-# ---------------------------------------------------------------------------
-# 3. Redis backup (BGSAVE)
-# ---------------------------------------------------------------------------
+# Redis backup
 
 
 @shared_task(
@@ -377,11 +381,9 @@ def backup_redis(self, job_id: str) -> dict:
 
         redis_conn = get_redis_connection("default")
 
-        # Trigger BGSAVE and wait for it to complete
         redis_conn.execute_command("BGSAVE")
         logger.info("backup_redis: BGSAVE triggered for job %s", job_id)
 
-        # Poll for bgsave_in_progress to become 0 (with timeout)
         import time
 
         for _ in range(60):  # max 60 seconds
@@ -392,10 +394,13 @@ def backup_redis(self, job_id: str) -> dict:
             if "rdb_bgsave_in_progress:0" in info:
                 break
 
-        # Get the dump file path from Redis config
         config_get = redis_conn.execute_command("CONFIG", "GET", "dir")
         if isinstance(config_get, (list, tuple)) and len(config_get) >= 2:
-            redis_dir = config_get[1].decode() if isinstance(config_get[1], bytes) else config_get[1]
+            redis_dir = (
+                config_get[1].decode()
+                if isinstance(config_get[1], bytes)
+                else config_get[1]
+            )
         else:
             redis_dir = "/data"
 
@@ -403,7 +408,9 @@ def backup_redis(self, job_id: str) -> dict:
         if os.path.exists(dump_source):
             shutil.copy2(dump_source, redis_file)
             file_size = os.path.getsize(redis_file)
-            logger.info("backup_redis: job %s completed, size=%d bytes", job_id, file_size)
+            logger.info(
+                "backup_redis: job %s completed, size=%d bytes", job_id, file_size
+            )
             return {
                 "success": True,
                 "component": "redis",
@@ -412,13 +419,14 @@ def backup_redis(self, job_id: str) -> dict:
                 "file_size": file_size,
             }
         else:
-            # Try alternative paths
             for alt_dir in ("/data", "/var/lib/redis", "/var/redis", "/tmp"):
                 alt_path = os.path.join(alt_dir, "dump.rdb")
                 if os.path.exists(alt_path):
                     shutil.copy2(alt_path, redis_file)
                     file_size = os.path.getsize(redis_file)
-                    logger.info("backup_redis: job %s completed from %s", job_id, alt_dir)
+                    logger.info(
+                        "backup_redis: job %s completed from %s", job_id, alt_dir
+                    )
                     return {
                         "success": True,
                         "component": "redis",
@@ -427,16 +435,16 @@ def backup_redis(self, job_id: str) -> dict:
                         "file_size": file_size,
                     }
 
-            raise FileNotFoundError(f"dump.rdb not found in {redis_dir} or known locations")
+            raise FileNotFoundError(
+                f"dump.rdb not found in {redis_dir} or known locations"
+            )
 
     except Exception as exc:
         logger.exception("backup_redis failed for job %s", job_id)
         raise self.retry(exc=exc)
 
 
-# ---------------------------------------------------------------------------
-# 4. Vault backup (KV export)
-# ---------------------------------------------------------------------------
+# Vault backup
 
 
 @shared_task(
@@ -498,7 +506,6 @@ def backup_vault(self, job_id: str) -> dict:
         with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
             body = response.read().decode("utf-8")
 
-        # Parse and re-serialize (pretty-printed) for the backup
         secrets_data = json.loads(body)
         with open(vault_file, "w", encoding="utf-8") as f:
             json.dump(secrets_data, f, indent=2, sort_keys=True)
@@ -521,9 +528,7 @@ def backup_vault(self, job_id: str) -> dict:
         raise self.retry(exc=exc)
 
 
-# ---------------------------------------------------------------------------
-# 5. Media backup (MinIO/S3 sync)
-# ---------------------------------------------------------------------------
+# Media backup
 
 
 @shared_task(
@@ -547,7 +552,6 @@ def backup_media(self, job_id: str) -> dict:
     minio_cfg = _get_minio_config()
 
     try:
-        # Use the S3 boto3 client (already configured in settings)
         import boto3
         from botocore.client import Config
         from botocore.exceptions import ClientError
@@ -564,8 +568,9 @@ def backup_media(self, job_id: str) -> dict:
         media_dir = os.path.join(tmp_dir, "media")
         os.makedirs(media_dir, exist_ok=True)
 
-        # Download from both buckets
-        buckets = [b for b in (minio_cfg["bucket_passes"], minio_cfg["bucket_assets"]) if b]
+        buckets = [
+            b for b in (minio_cfg["bucket_passes"], minio_cfg["bucket_assets"]) if b
+        ]
         total_files = 0
         total_bytes = 0
 
@@ -586,16 +591,21 @@ def backup_media(self, job_id: str) -> dict:
                         total_files += 1
                         total_bytes += obj.get("Size", 0)
 
-                logger.info("backup_media: downloaded %d files from bucket '%s'", total_files, bucket)
+                logger.info(
+                    "backup_media: downloaded %d files from bucket '%s'",
+                    total_files,
+                    bucket,
+                )
 
             except ClientError as exc:
                 error_code = exc.response.get("Error", {}).get("Code", "Unknown")
                 if error_code == "NoSuchBucket":
-                    logger.warning("backup_media: bucket '%s' does not exist, skipping", bucket)
+                    logger.warning(
+                        "backup_media: bucket '%s' does not exist, skipping", bucket
+                    )
                     continue
                 raise
 
-        # Create tarball
         subprocess.run(
             ["tar", "-czf", media_tar, "-C", tmp_dir, "media"],
             check=True,
@@ -603,7 +613,12 @@ def backup_media(self, job_id: str) -> dict:
         )
 
         file_size = os.path.getsize(media_tar)
-        logger.info("backup_media: job %s completed, files=%d, tar_size=%d bytes", job_id, total_files, file_size)
+        logger.info(
+            "backup_media: job %s completed, files=%d, tar_size=%d bytes",
+            job_id,
+            total_files,
+            file_size,
+        )
 
         return {
             "success": True,
@@ -619,9 +634,7 @@ def backup_media(self, job_id: str) -> dict:
         raise self.retry(exc=exc)
 
 
-# ---------------------------------------------------------------------------
-# 6. Backup verification
-# ---------------------------------------------------------------------------
+# Backup verification
 
 
 @shared_task(
@@ -649,11 +662,9 @@ def verify_backup(self, component_results: list, job_id: str) -> dict:
     details_parts = []
     all_ok = True
 
-    # Handle case where component_results is empty or None (called from chain)
     if not component_results:
         component_results = []
 
-    # Filter out any None results
     results = [r for r in component_results if isinstance(r, dict)]
 
     for result in results:
@@ -697,7 +708,6 @@ def verify_backup(self, component_results: list, job_id: str) -> dict:
             details_parts.append(f"FAIL: {component} file not found: {file_path}")
             all_ok = False
 
-    # Build the final archive and upload
     try:
         s3_key = _pack_and_upload_archive(results, job_id)
     except Exception as exc:
@@ -706,19 +716,24 @@ def verify_backup(self, component_results: list, job_id: str) -> dict:
         details_parts.append(f"Archive/upload error: {exc}")
         all_ok = False
 
-    # Update job record
     verification_status = "verified" if all_ok else "corrupted"
-    job_status = BackupJobStatus.VERIFIED.value if all_ok else BackupJobStatus.CORRUPTED.value
+    job_status = (
+        BackupJobStatus.VERIFIED.value if all_ok else BackupJobStatus.CORRUPTED.value
+    )
     details_text = "\n".join(details_parts)
 
     try:
         job = BackupJob.objects.get(id=job_id)
-        job.status = BackupJobStatus.COMPLETED.value if all_ok else BackupJobStatus.FAILED.value
+        job.status = (
+            BackupJobStatus.COMPLETED.value if all_ok else BackupJobStatus.FAILED.value
+        )
         job.verification_status = verification_status
         job.verification_details = details_text
         job.s3_key = s3_key
         if results:
-            total_size = sum(r.get("file_size", 0) for r in results if isinstance(r, dict))
+            total_size = sum(
+                r.get("file_size", 0) for r in results if isinstance(r, dict)
+            )
             job.file_size_bytes = total_size
         job.completed_at = timezone.now()
         job.save()
@@ -752,34 +767,46 @@ def _pack_and_upload_archive(component_results: list, job_id: str) -> str:
     tmp_dir = _temp_backup_dir("archive")
     archive_path = os.path.join(tmp_dir, archive_name)
 
-    # Collect all component files
     files_to_archive = []
     for result in component_results:
-        if isinstance(result, dict) and result.get("file_path") and os.path.exists(result["file_path"]):
+        if (
+            isinstance(result, dict)
+            and result.get("file_path")
+            and os.path.exists(result["file_path"])
+        ):
             files_to_archive.append(result["file_path"])
 
     if not files_to_archive:
-        logger.warning("_pack_and_upload_archive: no files to archive for job %s", job_id)
+        logger.warning(
+            "_pack_and_upload_archive: no files to archive for job %s", job_id
+        )
         return ""
 
-    # Create tarball
     tar_cmd = ["tar", "-czf", archive_path] + files_to_archive
     subprocess.run(tar_cmd, check=True, capture_output=True)
 
-    # Encrypt if configured
     gpg_key_id = config.get("gpg_key_id", "")
     final_path = archive_path
     if gpg_key_id:
         encrypted_path = archive_path + ".gpg"
         subprocess.run(
-            ["gpg", "--batch", "--yes", "--recipient", gpg_key_id, "--output", encrypted_path, "--encrypt", archive_path],
+            [
+                "gpg",
+                "--batch",
+                "--yes",
+                "--recipient",
+                gpg_key_id,
+                "--output",
+                encrypted_path,
+                "--encrypt",
+                archive_path,
+            ],
             check=True,
             capture_output=True,
         )
         final_path = encrypted_path
         s3_key += ".gpg"
 
-    # Upload to S3/MinIO
     minio_cfg = _get_minio_config()
     if minio_cfg["endpoint"] and minio_cfg["access_key"]:
         import boto3
@@ -794,16 +821,19 @@ def _pack_and_upload_archive(component_results: list, job_id: str) -> str:
             verify=getattr(settings, "AWS_S3_VERIFY", True),
         )
 
-        # Ensure bucket exists
         try:
             s3.head_bucket(Bucket=s3_bucket)
         except Exception:
             s3.create_bucket(Bucket=s3_bucket)
 
         s3.upload_file(final_path, s3_bucket, s3_key)
-        logger.info("_pack_and_upload_archive: uploaded %s to s3://%s/%s", final_path, s3_bucket, s3_key)
+        logger.info(
+            "_pack_and_upload_archive: uploaded %s to s3://%s/%s",
+            final_path,
+            s3_bucket,
+            s3_key,
+        )
 
-    # Cleanup temp files
     try:
         shutil.rmtree(tmp_dir)
     except Exception:
@@ -812,9 +842,7 @@ def _pack_and_upload_archive(component_results: list, job_id: str) -> str:
     return s3_key
 
 
-# ---------------------------------------------------------------------------
-# 7. Cleanup old backups
-# ---------------------------------------------------------------------------
+# Cleanup old backups
 
 
 @shared_task(
@@ -842,13 +870,11 @@ def cleanup_old_backups(self) -> dict:
     deleted_s3_objects = 0
 
     try:
-        # Find expired completed/failed backups
         expired_jobs = BackupJob.objects.filter(
             created_at__lt=cutoff,
             status__in=["completed", "failed", "verified", "corrupted"],
         )
 
-        # Delete from S3 first
         minio_cfg = _get_minio_config()
         if minio_cfg["endpoint"] and minio_cfg["access_key"]:
             import boto3
@@ -871,15 +897,22 @@ def cleanup_old_backups(self) -> dict:
                         s3.delete_object(Bucket=s3_bucket, Key=job.s3_key)
                         deleted_s3_objects += 1
                     except Exception as exc:
-                        logger.warning("cleanup_old_backups: failed to delete s3://%s/%s: %s", s3_bucket, job.s3_key, exc)
+                        logger.warning(
+                            "cleanup_old_backups: failed to delete s3://%s/%s: %s",
+                            s3_bucket,
+                            job.s3_key,
+                            exc,
+                        )
 
-        # Delete job records
         deleted_jobs, _ = expired_jobs.delete()
 
-        # Cleanup local temp files older than 7 days
         _cleanup_local_temp_files()
 
-        logger.info("cleanup_old_backups: deleted %d jobs, %d S3 objects", deleted_jobs, deleted_s3_objects)
+        logger.info(
+            "cleanup_old_backups: deleted %d jobs, %d S3 objects",
+            deleted_jobs,
+            deleted_s3_objects,
+        )
 
         return {
             "success": True,
@@ -905,16 +938,19 @@ def _cleanup_local_temp_files() -> None:
         if item.startswith("loyallia_backup"):
             full_path = os.path.join("/tmp", item)
             try:
-                if os.path.isdir(full_path) and (now - os.path.getctime(full_path)) > max_age_seconds:
+                if (
+                    os.path.isdir(full_path)
+                    and (now - os.path.getctime(full_path)) > max_age_seconds
+                ):
                     shutil.rmtree(full_path)
                     logger.debug("_cleanup_local_temp_files: removed %s", full_path)
             except Exception as exc:
-                logger.warning("_cleanup_local_temp_files: failed to remove %s: %s", full_path, exc)
+                logger.warning(
+                    "_cleanup_local_temp_files: failed to remove %s: %s", full_path, exc
+                )
 
 
-# ---------------------------------------------------------------------------
-# 8. Restore from backup
-# ---------------------------------------------------------------------------
+# Restore from backup
 
 
 @shared_task(
@@ -950,9 +986,10 @@ def restore_from_backup_task(
     tmp_dir = _temp_backup_dir("restore")
 
     try:
-        logger.warning("restore_from_backup_task: STARTING RESTORE for backup %s", backup_id)
+        logger.warning(
+            "restore_from_backup_task: STARTING RESTORE for backup %s", backup_id
+        )
 
-        # Download from S3
         minio_cfg = _get_minio_config()
         config = _get_backup_settings()
         s3_bucket = config["s3_bucket"]
@@ -976,15 +1013,25 @@ def restore_from_backup_task(
                 download_path = archive_path + ".gpg"
 
             s3.download_file(s3_bucket, s3_key, download_path)
-            logger.info("restore: downloaded s3://%s/%s to %s", s3_bucket, s3_key, download_path)
+            logger.info(
+                "restore: downloaded s3://%s/%s to %s", s3_bucket, s3_key, download_path
+            )
 
-            # Decrypt if needed
             if download_path.endswith(".gpg"):
                 gpg_key_id = config.get("gpg_key_id", "")
                 if gpg_key_id:
                     subprocess.run(
-                        ["gpg", "--batch", "--yes", "--recipient", gpg_key_id,
-                         "--output", archive_path, "--decrypt", download_path],
+                        [
+                            "gpg",
+                            "--batch",
+                            "--yes",
+                            "--recipient",
+                            gpg_key_id,
+                            "--output",
+                            archive_path,
+                            "--decrypt",
+                            download_path,
+                        ],
                         check=True,
                         capture_output=True,
                     )
@@ -995,7 +1042,6 @@ def restore_from_backup_task(
         else:
             return {"success": False, "error": "S3/MinIO not configured"}
 
-        # Decompress
         extract_dir = os.path.join(tmp_dir, "extracted")
         os.makedirs(extract_dir, exist_ok=True)
         subprocess.run(
@@ -1012,22 +1058,18 @@ def restore_from_backup_task(
             "media": False,
         }
 
-        # Restore PostgreSQL
         pg_file = _find_file(extract_dir, "loyallia_pg_")
         if pg_file:
             results["postgresql"] = _restore_postgresql(pg_file)
 
-        # Restore Redis
         redis_file = _find_file(extract_dir, "loyallia_redis_")
         if redis_file:
             results["redis"] = _restore_redis(redis_file)
 
-        # Restore Vault
         vault_file = _find_file(extract_dir, "loyallia_vault_")
         if vault_file:
             results["vault"] = _restore_vault(vault_file)
 
-        # Restore Media
         media_tar = _find_file(extract_dir, "loyallia_media_")
         if media_tar:
             results["media"] = _restore_media(media_tar)
@@ -1035,7 +1077,8 @@ def restore_from_backup_task(
         all_ok = all(results.values())
         logger.warning(
             "restore_from_backup_task: COMPLETED for backup %s  results=%s",
-            backup_id, results,
+            backup_id,
+            results,
         )
 
         return {
@@ -1073,7 +1116,6 @@ def _restore_postgresql(dump_file: str) -> bool:
         logger.info("restore: restoring PostgreSQL from %s", dump_file)
 
         if dump_file.endswith(".gz") or dump_file.endswith(".gzip"):
-            # Compressed plain SQL  pipe through zcat to psql
             with subprocess.Popen(
                 ["zcat", dump_file],
                 stdout=subprocess.PIPE,
@@ -1081,11 +1123,16 @@ def _restore_postgresql(dump_file: str) -> bool:
                 subprocess.run(
                     [
                         "psql",
-                        "--host", db["host"],
-                        "--port", str(db["port"]),
-                        "--username", db["user"],
-                        "--dbname", db["name"],
-                        "--set", "ON_ERROR_STOP=1",
+                        "--host",
+                        db["host"],
+                        "--port",
+                        str(db["port"]),
+                        "--username",
+                        db["user"],
+                        "--dbname",
+                        db["name"],
+                        "--set",
+                        "ON_ERROR_STOP=1",
                     ],
                     stdin=zcat_proc.stdout,
                     env=env,
@@ -1093,16 +1140,21 @@ def _restore_postgresql(dump_file: str) -> bool:
                     capture_output=True,
                 )
         else:
-            # Uncompressed  direct psql
             subprocess.run(
                 [
                     "psql",
-                    "--host", db["host"],
-                    "--port", str(db["port"]),
-                    "--username", db["user"],
-                    "--dbname", db["name"],
-                    "--set", "ON_ERROR_STOP=1",
-                    "--file", dump_file,
+                    "--host",
+                    db["host"],
+                    "--port",
+                    str(db["port"]),
+                    "--username",
+                    db["user"],
+                    "--dbname",
+                    db["name"],
+                    "--set",
+                    "ON_ERROR_STOP=1",
+                    "--file",
+                    dump_file,
                 ],
                 env=env,
                 check=True,
@@ -1127,19 +1179,21 @@ def _restore_redis(rdb_file: str) -> bool:
     try:
         logger.info("restore: restoring Redis from %s", rdb_file)
 
-        # Find Redis data directory
         from django_redis import get_redis_connection
 
         redis_conn = get_redis_connection("default")
         config_get = redis_conn.execute_command("CONFIG", "GET", "dir")
         if isinstance(config_get, (list, tuple)) and len(config_get) >= 2:
-            redis_dir = config_get[1].decode() if isinstance(config_get[1], bytes) else config_get[1]
+            redis_dir = (
+                config_get[1].decode()
+                if isinstance(config_get[1], bytes)
+                else config_get[1]
+            )
         else:
             redis_dir = "/data"
 
         dump_dest = os.path.join(redis_dir, "dump.rdb")
 
-        # Shutdown save, copy file, restart
         redis_conn.execute_command("SHUTDOWN", "NOSAVE")
         shutil.copy2(rdb_file, dump_dest)
         logger.info("restore: copied Redis RDB to %s", dump_dest)
@@ -1171,7 +1225,6 @@ def _restore_vault(vault_file: str) -> bool:
         with open(vault_file, encoding="utf-8") as f:
             secrets_data = json.load(f)
 
-        # Extract the actual secrets from the Vault response structure
         data_to_restore = secrets_data
         if "data" in secrets_data and "data" in secrets_data["data"]:
             data_to_restore = secrets_data["data"]["data"]
@@ -1227,7 +1280,6 @@ def _restore_media(media_tar: str) -> bool:
             verify=getattr(settings, "AWS_S3_VERIFY", True),
         )
 
-        # Extract media tarball
         tmp_dir = _temp_backup_dir("media_restore")
         subprocess.run(
             ["tar", "-xzf", media_tar, "-C", tmp_dir],
@@ -1235,7 +1287,6 @@ def _restore_media(media_tar: str) -> bool:
             capture_output=True,
         )
 
-        # Walk the extracted directory and upload to S3
         media_root = os.path.join(tmp_dir, "media")
         for root, _dirs, files in os.walk(media_root):
             for fname in files:
@@ -1252,7 +1303,13 @@ def _restore_media(media_tar: str) -> bool:
                 try:
                     s3.upload_file(local_path, bucket, s3_key)
                 except Exception as exc:
-                    logger.warning("restore: failed to upload %s to s3://%s/%s: %s", local_path, bucket, s3_key, exc)
+                    logger.warning(
+                        "restore: failed to upload %s to s3://%s/%s: %s",
+                        local_path,
+                        bucket,
+                        s3_key,
+                        exc,
+                    )
 
         logger.info("restore: media files restored")
         shutil.rmtree(tmp_dir, ignore_errors=True)

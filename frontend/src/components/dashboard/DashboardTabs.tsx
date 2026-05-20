@@ -5,7 +5,6 @@
 'use client';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 
-/* ─── Types (match real API response shapes) ─────────────────────────── */
 export interface VisitMetrics {
   total_visits: number;
   unique_customers: number;
@@ -37,7 +36,6 @@ export interface CampaignStats {
 
 export type DashboardTab = 'ganancia' | 'visitas';
 
-/* ─── KPI Card (reusable) ─────────────────────────────────────────────── */
 function KPICard({ label, value, color, tooltip }: { label: string; value: string | number; color: string; tooltip: string }) {
   return (
     <div className="bg-surface-50 dark:bg-surface-800/60 rounded-2xl p-4 border border-surface-100 dark:border-surface-700/50">
@@ -52,7 +50,6 @@ function KPICard({ label, value, color, tooltip }: { label: string; value: strin
   );
 }
 
-/* ─── Ganancia Tab ────────────────────────────────────────────────────── */
 export function GananciaTab({ revBreakdown, visits }: { revBreakdown: RevenueBreakdown | null; visits: VisitMetrics | null }) {
   const rev = revBreakdown;
   return (
@@ -124,7 +121,6 @@ export function GananciaTab({ revBreakdown, visits }: { revBreakdown: RevenueBre
   );
 }
 
-/* ─── Visitas Tab ─────────────────────────────────────────────────────── */
 export function VisitasTab({ visits }: { visits: VisitMetrics | null }) {
   return (
     <div className="space-y-4 animate-fade-in">
@@ -178,7 +174,6 @@ export function VisitasTab({ visits }: { visits: VisitMetrics | null }) {
   );
 }
 
-/* ─── Campaigns Block ─────────────────────────────────────────────────── */
 export function CampaignsBlock({ stats }: { stats: CampaignStats | null }) {
   if (!stats) return null;
   return (

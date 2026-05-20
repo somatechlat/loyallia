@@ -54,7 +54,7 @@ L4 CTO / VP Engineering
 
 ## Runbooks
 
-- [API Down](../docs/runbooks/api-down.md)
-- [PostgreSQL Failover](../docs/runbooks/postgres-failover.md)
-- [Redis Failover](../docs/runbooks/redis-failover.md)
-- [Backup Recovery](../disaster_recovery/BACKUP_RECOVERY.md)
+- API Down
+- PostgreSQL Failover
+- Redis Failover
+- [Backup Recovery](../../docs/BACKUP_DISASTER_RECOVERY.md)

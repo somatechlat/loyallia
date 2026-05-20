@@ -2,8 +2,8 @@
 
 **Document ID:** LYL-ARCH-BOOTSTRAP-001
 **Classification:** Internal — Security Critical
-**Version:** 2.1
-**Last Updated:** 2026-05-16
+**Version:** 2.2
+**Last Updated:** 2026-05-20
 
 ## 1. Core Principles
 
@@ -19,6 +19,7 @@
 | **Certificate auto-discovery** | Certificates from `certs/` are automatically read and injected into Vault |
 | **Environment separation** | Development/testing uses `loyallia/development`; production uses `loyallia/production` |
 | **User password boundary** | User passwords are Django DB hashes only, never Vault secrets |
+| **No hardcoded passwords** | No hardcoded default passwords anywhere in the system |
 
 ## 2. Architecture Overview
 
@@ -126,20 +127,40 @@ Testing uses the development database. There is no separate Playwright testing
 database. E2E users are real active Django users in `loyallia_dev`; their
 passwords are normal Django password hashes. Vault stores system secrets only.
 
-## 4. Bootstrap Sequence (7 Steps)
+## 4. Bootstrap Sequence (10 Steps)
 
-| Step | Script | What Happens | Secrets in Env? |
-|------|--------|--------------|-----------------|
-| 1/7 | `bootstrap.sh` | Check docker, compose, files | No |
-| 2/7 | `generate_secrets.sh` | Create `.bootstrap_secrets.json` (certs + random secrets) | No |
-| 3/7 | `bootstrap.sh` | Create temp Docker volume, copy JSON, start Vault + vault-init | No |
-| 4/7 | `init.sh` | Initialize Vault, seed KV v2, create runtime files, auto-enable wallets | No |
-| 5/7 | `bootstrap.sh` | Auto-export rescue files to `.agents/` | No |
-| 6/7 | `bootstrap.sh` | Start PostgreSQL, Redis, MinIO, API, workers, monitoring | No |
-| 7/7 | `bootstrap.sh` | Verify health, shred JSON, cleanup temp volume | No |
-| 8/8 | `provision_development_rbac_test_users` | Create E2E RBAC users + tenant for Playwright | No |
+| Step | Script | What Happens |
+|------|--------|--------------|
+| 1/10 | `bootstrap.sh` | Check docker, compose, files |
+| 2/10 | `generate_secrets.sh` | Create `.bootstrap_secrets.json` |
+| 3/10 | `bootstrap.sh` | Create temp Docker volume, copy JSON |
+| 4/10 | `init.sh` | Initialize Vault, seed KV v2, create runtime files |
+| 5/10 | `bootstrap.sh` | Auto-export rescue files to `.agents/` |
+| 6/10 | `bootstrap.sh` | Start PostgreSQL, Redis, MinIO, PgBouncer |
+| 7/10 | `bootstrap.sh` | Start API, workers, web, monitoring, proxy |
+| 8/10 | `recover_admin_access` | Ensure admin account has usable password (REQUIRES `ADMIN_PASSWORD` in production; auto-generated in dev) |
+| 9/10 | `bootstrap.sh` | Cleanup — shred JSON, remove temp volume |
+| 10/10 | `bootstrap.sh` | Verify health, print status |
 
-## 5. Post-Bootstrap E2E Provisioning
+## 5. Admin Password Step
+
+Step 8/10 calls the `recover_admin_access` management command, replacing the previous inline admin creation:
+
+```bash
+docker compose exec -T api python manage.py recover_admin_access \
+    --email "$admin_email" \
+    --password "$admin_pass" \
+    --create
+```
+
+- In **production**: `ADMIN_PASSWORD` env var is REQUIRED. Bootstrap fails fast if not set.
+- In **development**: If `ADMIN_PASSWORD` not set, a random 24-char password is auto-generated and printed to console.
+- The `--create` flag ensures the admin is created if missing.
+- Default email: `admin@loyallia.com` (overridable via `ADMIN_EMAIL`)
+
+There are no hardcoded default passwords anywhere in the system.
+
+## 6. Post-Bootstrap E2E Provisioning
 
 After bootstrap completes, create the E2E test users required by Playwright:
 
@@ -154,7 +175,7 @@ This creates:
 
 Playwright auth setup reads this file to log in via the real API.
 
-## 5. Certificate Auto-Discovery
+## 7. Certificate Auto-Discovery
 
 Certificates in `certs/` are automatically detected and injected:
 
@@ -170,19 +191,27 @@ Certificates in `certs/` are automatically detected and injected:
 
 **Note:** `certs/` is still mounted into backend containers (`./certs:/app/certs:ro`) for **push notification clients** (FCM + APNs) which read credential files from disk. Wallet pass engines read from Vault exclusively.
 
-## 6. Rescue File Auto-Creation
+## 8. Rescue File Auto-Creation
 
-After vault-init succeeds, `bootstrap.sh` automatically creates:
+After vault-init succeeds, `bootstrap.sh` automatically creates 6 rescue files in `.agents/`:
 
 | File | Source | Purpose |
 |------|--------|---------|
-| `.agents/vault_init_rescue.json` | `loyallia-vault:/vault/file/init.json` | Vault unseal key + root token |
+| `.agents/vault_init_rescue.json` | `loyallia-vault:/vault/file/init.json` | Vault unseal keys + root token |
 | `.agents/vault_secrets_rescue.json` | active environment Vault path | All secrets for the active bootstrap mode |
+| `.agents/pg_dump_rescue.sql` | PostgreSQL dump | Full database dump |
+| `.agents/runtime_files_rescue.tar.gz` | All runtime files | postgres_password, redis_password, minio creds, app-token, etc. |
+| `.agents/certs_rescue.tar.gz` | All certificates from `certs/` | Complete certificate backup |
+| `.agents/redis_rdb_rescue.rdb` | Redis RDB snapshot | Redis data snapshot |
+
+**Scripts:**
+- `deploy/disaster_recovery/create_rescue_files.sh` — Creates all 6 rescue files (environment-aware: `--dev` or `--prod`)
+- `deploy/disaster_recovery/recover_from_rescue.sh` — Restores from `.agents/` rescue files (710 lines, environment-aware)
 
 **Permissions:** `0600` on all rescue files
 **Failure behavior:** If `.agents/` is not writable, bootstrap warns but does NOT abort.
 
-## 7. Secure Cleanup
+## 9. Secure Cleanup
 
 After successful bootstrap, `.bootstrap_secrets.json` is destroyed:
 
@@ -199,7 +228,7 @@ secure_delete() {
 
 The temporary Docker volume `loyallia_bootstrap_tmp` is also removed.
 
-## 8. Idempotency & Safety
+## 10. Idempotency & Safety
 
 | Scenario | Behavior |
 |----------|----------|
@@ -209,7 +238,7 @@ The temporary Docker volume `loyallia_bootstrap_tmp` is also removed.
 | vault-init fails | Keeps `.bootstrap_secrets.json` for debugging. Does NOT delete. |
 | Partial failure | Temp volume and JSON remain for forensic analysis. |
 
-## 9. Security Controls
+## 11. Security Controls
 
 | ID | Control | Implementation |
 |----|---------|---------------|
@@ -227,8 +256,9 @@ The temporary Docker volume `loyallia_bootstrap_tmp` is also removed.
 | S-12 | Feature auto-enable | Apple/Google Wallet auto-enabled if certificates present |
 | S-13 | No production testing | Playwright and development tests refuse production hosts, DB, and Vault path |
 | S-14 | No user passwords in Vault | E2E user passwords are Django DB hashes and local ignored operator credentials only |
+| S-15 | No hardcoded passwords | Admin password must be provided or auto-generated; no defaults |
 
-## 10. File Reference
+## 12. File Reference
 
 | File | Purpose | Status |
 |------|---------|--------|
@@ -239,7 +269,7 @@ The temporary Docker volume `loyallia_bootstrap_tmp` is also removed.
 | `docker-compose.yml` | Add `loyallia_bootstrap_tmp` volume | **Modified** |
 | `docs/FACTORY_RESET_PROCEDURE.md` | Reference new architecture | **Updated** |
 
-## 11. Troubleshooting
+## 13. Troubleshooting
 
 ### Bootstrap fails with "missing required Vault bootstrap value"
 **Cause:** `.bootstrap_secrets.json` is missing or vault-init cannot read it.

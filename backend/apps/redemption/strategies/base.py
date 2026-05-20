@@ -62,10 +62,6 @@ class BaseRedemptionStrategy(ABC):
     def __init__(self, card_type: str):
         self.card_type = card_type
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
     def execute(self, context: RedemptionContext) -> RedemptionResult:
         """Execute the full redemption flow (Template Method)."""
         # Step 1: Pre-lock validation (fast fail)
@@ -97,10 +93,6 @@ class BaseRedemptionStrategy(ABC):
         """
         ...
 
-    # ------------------------------------------------------------------
-    # Template method steps (may be overridden)
-    # ------------------------------------------------------------------
-
     def _lock_pass(self, customer_pass: "CustomerPass") -> "CustomerPass":
         """Acquire a pessimistic lock on the pass row."""
         from apps.customers.models import CustomerPass as CPModel
@@ -108,14 +100,18 @@ class BaseRedemptionStrategy(ABC):
         return CPModel.objects.select_for_update().get(pk=customer_pass.pk)
 
     @abstractmethod
-    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> PassStateMutation:
+    def _compute_mutation(
+        self, locked_pass: "CustomerPass", context: RedemptionContext
+    ) -> PassStateMutation:
         """Determine what state changes to apply.
 
         Called inside the atomic block with the locked pass.
         """
         ...
 
-    def _apply_mutation(self, locked_pass: "CustomerPass", mutation: PassStateMutation) -> None:
+    def _apply_mutation(
+        self, locked_pass: "CustomerPass", mutation: PassStateMutation
+    ) -> None:
         """Apply computed state changes to the locked pass."""
         from django.utils import timezone
 
@@ -125,15 +121,23 @@ class BaseRedemptionStrategy(ABC):
             if "stamp_count" in mutation.updates:
                 locked_pass.stamp_count = mutation.updates["stamp_count"]
             if "cashback_balance" in mutation.updates:
-                locked_pass.cashback_balance = Decimal(str(mutation.updates["cashback_balance"]))
+                locked_pass.cashback_balance = Decimal(
+                    str(mutation.updates["cashback_balance"])
+                )
             if "gift_balance" in mutation.updates:
-                locked_pass.gift_balance = Decimal(str(mutation.updates["gift_balance"]))
+                locked_pass.gift_balance = Decimal(
+                    str(mutation.updates["gift_balance"])
+                )
             if "multipass_remaining" in mutation.updates:
-                locked_pass.multipass_remaining = mutation.updates["multipass_remaining"]
+                locked_pass.multipass_remaining = mutation.updates[
+                    "multipass_remaining"
+                ]
             if "referral_count" in mutation.updates:
                 locked_pass.referral_count = mutation.updates["referral_count"]
             if "coupon_redemption_count" in mutation.updates:
-                locked_pass.coupon_redemption_count = mutation.updates["coupon_redemption_count"]
+                locked_pass.coupon_redemption_count = mutation.updates[
+                    "coupon_redemption_count"
+                ]
             if "lifecycle_state" in mutation.updates:
                 locked_pass.lifecycle_state = mutation.updates["lifecycle_state"]
 
@@ -178,7 +182,9 @@ class BaseRedemptionStrategy(ABC):
             rules_evaluated=context.rules_evaluated or [],
         )
 
-    def _update_customer_stats(self, context: RedemptionContext, txn: Transaction | None) -> None:
+    def _update_customer_stats(
+        self, context: RedemptionContext, txn: Transaction | None
+    ) -> None:
         """Update customer aggregate stats via F() expressions."""
         from django.db.models import F
 
@@ -189,10 +195,6 @@ class BaseRedemptionStrategy(ABC):
             total_spent=F("total_spent") + context.amount,
             last_visit=txn.created_at if txn else None,
         )
-
-    # ------------------------------------------------------------------
-    # Result builders
-    # ------------------------------------------------------------------
 
     def _build_denied_result(self, violations: list[str]) -> RedemptionResult:
         """Build a result for a denied redemption."""

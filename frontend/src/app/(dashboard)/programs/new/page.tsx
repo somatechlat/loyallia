@@ -22,7 +22,6 @@ import StepBar from '@/components/programs/new/StepBar';
 import ProgramReviewStep from '@/components/programs/new/ProgramReviewStep';
 
 
-/* ─── Main Page ───────────────────────────────────────────────────────── */
 export default function NewProgramPage() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -57,7 +56,6 @@ export default function NewProgramPage() {
     // Reset wallet design defaults for the new card type
     const defaults = defaultWalletDesignState();
     defaults.provider = walletDesign.provider;
-    // Pre-populate Apple default fields for this card type
     const typeDefaults = APPLE_DEFAULT_FIELDS[type];
     if (typeDefaults) {
       defaults.appleFields = JSON.parse(JSON.stringify(typeDefaults));

@@ -34,10 +34,6 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
     def __init__(self) -> None:
         super().__init__(card_type="cashback")
 
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
-
     def validate(self, context: RedemptionContext) -> list[str]:
         violations: list[str] = []
         metadata = context.card.metadata or {}
@@ -52,11 +48,9 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
 
         return violations
 
-    # ------------------------------------------------------------------
-    # Mutation
-    # ------------------------------------------------------------------
-
-    def _compute_mutation(self, locked_pass: "CustomerPassType", context: RedemptionContext) -> PassStateMutation:
+    def _compute_mutation(
+        self, locked_pass: "CustomerPassType", context: RedemptionContext
+    ) -> PassStateMutation:
         metadata = context.card.metadata or {}
 
         try:
@@ -64,7 +58,9 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
         except (InvalidOperation, TypeError, ValueError):
             percentage = Decimal("0")
 
-        earned = (context.amount * percentage / Decimal("100")).quantize(Decimal("0.01"))
+        earned = (context.amount * percentage / Decimal("100")).quantize(
+            Decimal("0.01")
+        )
 
         current_balance = locked_pass.cashback_balance or Decimal("0")
         new_balance = current_balance + earned
@@ -85,10 +81,6 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
             new_balance=new_balance_str,
         )
 
-    # ------------------------------------------------------------------
-    # Intent resolution
-    # ------------------------------------------------------------------
-
     def _resolve_intent(self, context: RedemptionContext) -> str:
         return "earn"
 
@@ -105,10 +97,6 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
 
     def __init__(self) -> None:
         super().__init__(card_type="cashback")
-
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
 
     def validate(self, context: RedemptionContext) -> list[str]:
         violations: list[str] = []
@@ -130,11 +118,9 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
 
         return violations
 
-    # ------------------------------------------------------------------
-    # Mutation
-    # ------------------------------------------------------------------
-
-    def _compute_mutation(self, locked_pass: "CustomerPassType", context: RedemptionContext) -> PassStateMutation:
+    def _compute_mutation(
+        self, locked_pass: "CustomerPassType", context: RedemptionContext
+    ) -> PassStateMutation:
         current_balance = locked_pass.cashback_balance or Decimal(
             str(locked_pass.pass_data.get("cashback_balance", "0"))
         )
@@ -157,13 +143,11 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
             updates=updates,
             transaction_type=TransactionType.CASHBACK_REDEEMED,
             transaction_amount=context.amount,
-            reward_description=get_message("TRANSACTION_CASHBACK_REDEEMED").format(amount=str(context.amount)),
+            reward_description=get_message("TRANSACTION_CASHBACK_REDEEMED").format(
+                amount=str(context.amount)
+            ),
             new_balance=new_balance_str,
         )
-
-    # ------------------------------------------------------------------
-    # Intent resolution
-    # ------------------------------------------------------------------
 
     def _resolve_intent(self, context: RedemptionContext) -> str:
         return "redeem"
