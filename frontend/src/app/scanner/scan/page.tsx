@@ -1,8 +1,13 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
-import api from '@/lib/api';
+import { scannerApi } from '@/lib/api';
 import Cookies from 'js-cookie';
+
+interface RuleEvaluated {
+  rule_code: string;
+  message: string;
+}
 
 interface ScanResult {
   success: boolean;
@@ -14,6 +19,10 @@ interface ScanResult {
   customer_name?: string;
   new_balance?: string;
   transaction_type?: string;
+  intent_resolved?: string;
+  remaining_uses?: number;
+  denial_reasons?: string[];
+  rules_evaluated?: RuleEvaluated[];
 }
 
 interface RecentScan {
@@ -23,6 +32,29 @@ interface RecentScan {
   amount: string;
   time: string;
   success: boolean;
+}
+
+function generateIdempotencyKey(): string {
+  return crypto.randomUUID();
+}
+
+function formatDenialReason(code: string): string {
+  const map: Record<string, string> = {
+    usage_limit_exceeded: 'Límite de usos excedido',
+    time_window_invalid: 'Fuera de período válido',
+    location_invalid: 'Ubicación no autorizada',
+    min_purchase_not_met: 'Compra mínima no alcanzada',
+    cooldown_active: 'En período de enfriamiento',
+    insufficient_balance: 'Saldo insuficiente',
+    reward_not_ready: 'Recompensa no disponible',
+    staff_role_denied: 'Rol de personal no autorizado',
+    card_not_published: 'Programa no publicado',
+    pass_expired: 'Pase expirado',
+    pass_inactive: 'Pase inactivo',
+    pass_not_found: 'Pase no encontrado',
+    no_strategy: 'Tipo de tarjeta no soportado',
+  };
+  return map[code] || code;
 }
 
 export default function ScannerPage() {
@@ -48,10 +80,12 @@ export default function ScannerPage() {
   const processTransaction = useCallback(async (qrCode: string) => {
     setStatus('scanning');
     try {
-      const { data } = await api.post('/api/v1/scanner/transact/', {
+      const idempotencyKey = generateIdempotencyKey();
+      const { data } = await scannerApi.transact({
         qr_code: qrCode,
         amount: parseFloat(amount) || 0,
         notes: notes,
+        idempotency_key: idempotencyKey,
       });
       setResult(data);
       setStatus('success');
@@ -64,16 +98,39 @@ export default function ScannerPage() {
         success: true,
       }, ...prev.slice(0, 4)]);
     } catch (err: unknown) {
-      const msg = err instanceof Error && 'response' in err
-        ? (err as unknown as { response?: { data?: { detail?: string } } }).response?.data?.detail
-        : undefined;
+      const responseData = (err as unknown as { response?: { data?: unknown } }).response?.data;
+
+      let denialReasons: string[] | undefined;
+      let rulesEvaluated: RuleEvaluated[] | undefined;
+      let message = 'Error procesando transacción';
+
+      if (responseData && typeof responseData === 'object') {
+        const data = responseData as Record<string, unknown>;
+
+        // V2 engine denial format (422)
+        if (Array.isArray(data.denial_reasons) && data.denial_reasons.length > 0) {
+          denialReasons = data.denial_reasons as string[];
+          message = denialReasons.map(formatDenialReason).join(', ');
+        }
+        if (Array.isArray(data.rules_evaluated)) {
+          rulesEvaluated = data.rules_evaluated as RuleEvaluated[];
+        }
+
+        // Legacy error format (detail string)
+        if (typeof data.detail === 'string' && data.detail) {
+          message = data.detail;
+        }
+      }
+
       setResult({
         success: false,
         transaction_id: '',
-        message: msg || 'Error procesando transacción',
+        message,
         reward_earned: false,
         reward_description: '',
         pass_updated: false,
+        denial_reasons: denialReasons,
+        rules_evaluated: rulesEvaluated,
       });
       setStatus('error');
     }
@@ -275,10 +332,18 @@ export default function ScannerPage() {
             {result.new_balance && (
               <p className="text-brand-600 font-semibold text-sm mb-3">Nuevo saldo: {result.new_balance}</p>
             )}
+            {typeof result.remaining_uses === 'number' && (
+              <p className="text-brand-600 font-semibold text-sm mb-3">Usos restantes: {result.remaining_uses}</p>
+            )}
             {result.reward_earned && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
                 <p className="text-amber-700 font-semibold text-sm flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> {result.reward_description}</p>
               </div>
+            )}
+            {result.intent_resolved && result.intent_resolved !== 'none' && (
+              <p className="text-xs text-surface-400 uppercase tracking-wide mb-2">
+                Acción: {result.intent_resolved === 'earn' ? 'Acumular' : result.intent_resolved === 'redeem' ? 'Canjear' : result.intent_resolved}
+              </p>
             )}
             <p className="text-xs text-surface-400 font-mono">TX: {result.transaction_id.slice(0, 16)}...</p>
             <button onClick={reset} className="btn-primary w-full mt-5" id="scan-again-btn">
@@ -293,8 +358,24 @@ export default function ScannerPage() {
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
             </div>
-            <h3 className="font-bold text-red-700 text-xl mb-2">Error</h3>
+            <h3 className="font-bold text-red-700 text-xl mb-2">Transacción denegada</h3>
             <p className="text-surface-500 text-sm mb-4">{result.message}</p>
+
+            {/* Rule evaluation details (v2 engine) */}
+            {result.rules_evaluated && result.rules_evaluated.length > 0 && (
+              <div className="text-left mb-4 p-3 bg-red-50/50 rounded-xl border border-red-100">
+                <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Reglas evaluadas</p>
+                <ul className="space-y-1.5">
+                  {result.rules_evaluated.map((rule, i) => (
+                    <li key={i} className="text-sm text-red-700 flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                      <span>{rule.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button onClick={reset} className="btn-danger w-full" id="retry-scan-btn">Intentar de nuevo</button>
           </div>
         )}

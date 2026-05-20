@@ -31,6 +31,7 @@ from apps.customers.segment_api import router as segment_router
 from apps.customers.wallet_api import router as wallet_router
 from apps.notifications.api import router as notifications_router
 from apps.notifications.whatsapp.api import router as whatsapp_router
+from apps.redemption.api import router as redemption_router
 from apps.tenants.api import router as tenants_router
 from apps.tenants.security_privacy_api import router as tenant_security_privacy_router
 from apps.tenants.super_admin_api import router as super_admin_router
@@ -65,7 +66,7 @@ def readiness_check(request: HttpRequest):
     checks = {}
     all_healthy = True
 
- # PostgreSQL check
+    # PostgreSQL check
     try:
         from django.db import connection
 
@@ -80,7 +81,7 @@ def readiness_check(request: HttpRequest):
         checks["database"] = {"status": "error", "detail": str(e)}
         all_healthy = False
 
- # Redis check
+    # Redis check
     try:
         from django.core.cache import cache
 
@@ -149,6 +150,7 @@ api.add_router("/customers/", customers_router, tags=["Customers"])
 api.add_router("/customers/export/", customer_export_router, tags=["Customer Export"])
 api.add_router("/customers/segments/", segment_router, tags=["Customer Segments"])
 api.add_router("/scanner/", scanner_router, tags=["Scanner"])
+api.add_router("/scanner/v2/", redemption_router, tags=["Scanner V2"])
 api.add_router("/transactions/", transactions_router, tags=["Transactions"])
 api.add_router("/notifications/", notifications_router, tags=["Push Notifications"])
 api.add_router("/whatsapp/", whatsapp_router, tags=["WhatsApp"])
