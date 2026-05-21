@@ -1,6 +1,6 @@
 # Loyallia -- Vault, Secrets & Settings Security Review
 
-**Reviewer:** KIMI-K2 (Senior DevOps Security Engineer)
+**Reviewer:** Loyallia-K2 (Senior DevOps Security Engineer)
 **Date:** 2025-06-22
 **Scope:** Vault configuration, secret management, settings separation, Docker Compose, infrastructure configs
 **Commit References:** HEAD

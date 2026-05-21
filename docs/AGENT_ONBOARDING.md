@@ -1,8 +1,22 @@
 # Loyallia — Agent Onboarding Guide
 
 > **Single source of truth for any coding agent joining this project.**
-> Updated: 2026-05-20
-> Status: Verify locally before claiming readiness
+> Updated: 2026-05-21
+> Status: Backend 576/576 passing. Frontend E2E in progress.
+
+---
+
+## ⚠️ CRITICAL: Tests Run Against Docker Cluster ONLY
+
+**NEVER** attempt to run tests against a standalone PostgreSQL, SQLite, or local Python virtual environment. The entire Loyallia stack (PostgreSQL, Redis, Vault, MinIO, PgBouncer) is containerized and tests **MUST** execute inside the `loyallia-api` container or against the running Docker cluster.
+
+| Test Suite | Correct Command | Wrong Approach |
+|---|---|---|
+| Backend | `docker exec loyallia-api pytest --ds=loyallia.settings.test --reuse-db -q` | `cd backend && pytest` (env overrides pytest.ini) |
+| Frontend E2E | `cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test` | Against remote production URLs without `E2E_ALLOW_HOSTS` |
+| Integration | `docker exec loyallia-api pytest --ds=loyallia.settings.test_integration` | Host-side pytest without Docker env |
+
+**Why:** Settings resolve hostnames like `postgres`, `redis`, `vault` via Docker network. These do not exist on the macOS/Windows host.
 
 ---
 
@@ -235,8 +249,17 @@ EOF
 ## 8. Development Workflow
 
 ```bash
-# Start everything
-docker compose up -d
+# Start everything in correct dependency order
+docker compose up -d postgres redis vault
+sleep 10
+docker compose up -d vault-init pgbouncer minio
+sleep 5
+docker compose up -d api celery-default celery-push celery-pass celery-beat
+sleep 5
+docker compose up -d web nginx
+
+# If Vault shows 503 (sealed after restart), unseal it:
+# docker exec loyallia-vault vault operator unseal -address=https://127.0.0.1:8200 -tls-skip-verify <key>
 
 # Check all containers healthy
 docker ps --format "table {{.Names}}\t{{.Status}}"
@@ -255,11 +278,11 @@ docker exec loyallia-api python manage.py seed_platform_settings
 docker exec loyallia-api python manage.py seed_subscription_plans --update-existing
 docker exec loyallia-api python manage.py seed_platform_settings --update-existing
 
-# Run backend tests (inside container — resolves Docker hostnames)
-docker exec loyallia-api python3 -m pytest -q --reuse-db
+# Run backend tests (MUST use --ds because container env overrides pytest.ini)
+docker exec loyallia-api pytest --ds=loyallia.settings.test --reuse-db -q
 
 # Run backend integration tests (through PgBouncer)
-docker exec loyallia-api python3 -m pytest -q --ds=loyallia.settings.test_integration --reuse-db
+docker exec loyallia-api pytest --ds=loyallia.settings.test_integration --reuse-db -q
 
 # Frontend dev server (hot reload)
 cd frontend && npm run dev

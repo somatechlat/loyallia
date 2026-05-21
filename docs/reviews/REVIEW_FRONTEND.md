@@ -1,4 +1,4 @@
-# Frontend Codebase Review — KIMIk2
+# Frontend Codebase Review — Loyallia
 
 **Project:** Loyallia Frontend (Next.js 14 + React 18 + TypeScript + Tailwind CSS)
 **Review Date:** 2025-06-22

@@ -14,6 +14,12 @@ const PRODUCTION_HOSTS = new Set([
   'www.loyallia.com',
 ]);
 
+// Allow overriding the safety block via env var for CI/dev deployments.
+// Comma-separated list of hostnames to allow (e.g. "rewards.loyallia.com,staging.example.com").
+const ALLOWED_EXTRA_HOSTS = new Set(
+  (process.env.E2E_ALLOW_HOSTS || '').split(',').map(h => h.trim()).filter(Boolean)
+);
+
 export function getE2EBaseURL(): string {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL;
   if (!baseURL) {
@@ -27,8 +33,11 @@ export function getE2EBaseURL(): string {
     throw new Error(`PLAYWRIGHT_BASE_URL is not a valid URL: ${baseURL}`);
   }
 
-  if (PRODUCTION_HOSTS.has(parsed.hostname)) {
-    throw new Error(`Refusing to run E2E tests against production host: ${parsed.hostname}`);
+  if (PRODUCTION_HOSTS.has(parsed.hostname) && !ALLOWED_EXTRA_HOSTS.has(parsed.hostname)) {
+    throw new Error(
+      `Refusing to run E2E tests against production host: ${parsed.hostname}. ` +
+      `Set E2E_ALLOW_HOSTS=${parsed.hostname} to override.`
+    );
   }
 
   return baseURL.replace(/\/$/, '');

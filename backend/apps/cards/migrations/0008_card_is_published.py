@@ -15,6 +15,10 @@ def reverse_backfill(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    # B-019: atomic=False prevents PostgreSQL deadlock when AddField holds
+    # ACCESS EXCLUSIVE lock and RunPython uses ORM connection pool.
+    atomic = False
+
     dependencies = [
         ("cards", "0007_alter_card_icon_url_alter_card_logo_url_and_more"),
     ]

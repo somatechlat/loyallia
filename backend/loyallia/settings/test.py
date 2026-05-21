@@ -16,7 +16,10 @@ from .base import *  # noqa: F401, F403
 # test DB creation/destruction. Route everything through direct PostgreSQL.
 if "direct" in DATABASES:  # noqa: F405
     DATABASES["default"] = DATABASES["direct"].copy()  # noqa: F405
-    DATABASES["default"]["TEST"] = {"NAME": "test_loyallia_dev"}  # noqa: F405
+    # Let Django auto-name test DB (test_loyallia_dev) so pytest-xdist can
+    # append worker suffixes (test_loyallia_dev_gw0, gw1, etc.) automatically.
+    # Hardcoding NAME breaks parallel test database creation.
+    DATABASES["default"]["TEST"] = {"NAME": None}  # noqa: F405
     del DATABASES["direct"]  # noqa: F405
     DATABASE_ROUTERS = []  # noqa: F405
 

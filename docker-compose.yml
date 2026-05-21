@@ -658,7 +658,8 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      test: ["CMD-SHELL", "ps aux | grep -q '[c]elery beat' || exit 1"]
+      # FIX: `ps` is not available in the slim image; use /proc directly
+      test: ["CMD-SHELL", "grep -q 'celery beat' /proc/*/cmdline 2>/dev/null || exit 1"]
       interval: 30s
       timeout: 15s
       retries: 3
@@ -792,7 +793,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      # B-021: Increased from 10s to 60s — Vault needs time to initialize
+      # TLS, unseal, and become healthy. Prevents compose giving up too early.
+      start_period: 60s
 
   # Vault KV v2 initialization — seeds secrets for development
   vault-init:

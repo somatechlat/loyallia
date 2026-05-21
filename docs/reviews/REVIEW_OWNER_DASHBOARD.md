@@ -2,7 +2,7 @@
 
 **Project:** Loyallia  
 **Audit Date:** 2025-01-14  
-**Auditor:** Senior Full-Stack Engineer (KIMI-K2 Review)  
+**Auditor:** Senior Full-Stack Engineer (Loyallia-K2 Review)  
 **Scope:** Backend APIs, Frontend UI/UX, RBAC Enforcement, User Creation, Team Management, Billing, Settings, Locations
 
 ---

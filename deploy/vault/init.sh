@@ -203,13 +203,24 @@ seed_secrets() {
         # Skip lines without a key
         [ -n "$key" ] || continue
 
-        # Skip base64 variant lines (handled alongside their base key)
+        # Handle base64-encoded keys: if key ends with _b64, check if plain key exists.
+        # If plain key does NOT exist, strip _b64 and decode the value.
         case "$key" in
-            *_b64) continue ;;
+            *_b64)
+                base_key="${key%_b64}"
+                if grep -q "^${base_key}=" "$BOOTSTRAP_SECRETS_FILE" 2>/dev/null; then
+                    # Plain key exists — _b64 variant will be handled by get_flat_val on plain key iteration
+                    continue
+                fi
+                # No plain key — process this _b64 line directly
+                key="$base_key"
+                val=$(printf "%s" "$line" | cut -d= -f2- | base64 -d 2>/dev/null || printf "%s" "$line" | cut -d= -f2-)
+                ;;
+            *)
+                # Get value (base64-decoded if _b64 variant exists)
+                val=$(get_flat_val "$key" "$BOOTSTRAP_SECRETS_FILE")
+                ;;
         esac
-
-        # Get value (base64-decoded if _b64 variant exists)
-        val=$(get_flat_val "$key" "$BOOTSTRAP_SECRETS_FILE")
 
         # Skip empty values
         [ -n "$val" ] || continue

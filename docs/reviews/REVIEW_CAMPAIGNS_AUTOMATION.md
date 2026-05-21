@@ -1,4 +1,4 @@
-# KIMI-K2 Review: Campaigns, Automation & Notifications
+# Loyallia-K2 Review: Campaigns, Automation & Notifications
 
 **Auditor:** Senior Full-Stack Engineer (Campaigns/Automation Focus)
 **Date:** 2025-07-01

@@ -99,7 +99,8 @@ class SubscriptionModelTest(TestCase):
             status=SubscriptionStatus.TRIALING,
             trial_end=timezone.now() + timedelta(days=5),
         )
-        self.assertEqual(sub.get_limit("customers"), 999999)
+        # C4/H4: Trial limits are finite (500 customers), not infinite
+        self.assertEqual(sub.get_limit("customers"), 500)
 
     def test_get_limit_active_plan(self):
         plan = make_plan(max_customers=500)
