@@ -53,8 +53,8 @@ test.describe('Billing — OWNER @owner @settings', () => {
   });
 
   test('OWNER has "Facturación" in navigation @owner', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const navLink = page.locator('nav, aside').getByText('Facturación');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const navLink = page.locator('nav, aside, [role="navigation"], [role="complementary"]').getByText('Facturación');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -128,8 +128,17 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
   });
 
   test('OWNER QR wizard shows instructions and controls @owner', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
+    await page.goto('/settings', { waitUntil: 'networkidle' });
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 15000 });
+
+    // If already active from previous test, cancel first
+    const cancelBtn = page.locator('#wa-cancel-btn');
+    if (await cancelBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await cancelBtn.click();
+      await page.locator('#wa-wizard-content').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      // Wait for toggle to reset
+      await page.waitForTimeout(500);
+    }
 
     // Activate to QR state
     await page.locator('#wa-toggle').click();
@@ -159,7 +168,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
     await expect(page.locator('#wa-cancel-btn')).toContainText('Cancelar');
 
     // Warning banner about session persistence
-    await expect(page.getByText('La sesion se mantiene mientras el servicio este activo')).toBeVisible();
+    await expect(page.getByText(/La sesi[oó]n se mantiene mientras el servicio est[eé] activo/)).toBeVisible();
   });
 
   test('OWNER can refresh QR code @owner', async ({ page }) => {

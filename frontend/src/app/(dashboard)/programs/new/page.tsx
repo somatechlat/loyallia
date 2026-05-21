@@ -43,7 +43,7 @@ export default function NewProgramPage() {
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
   const [selectedTemplate, setSelectedTemplate] = useState('midnight');
-  const [coordError, setCoordError] = useState(false);
+  const [coordError] = useState(false);
 
   // Keep generic uploads for backward compat (populated from wallet designer)
   const walletProvider = walletDesign.provider;
