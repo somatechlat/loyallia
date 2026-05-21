@@ -62,7 +62,8 @@ class GetTenantLimitsTest(TestCase):
         sub.subscription_plan = None
         sub.save(update_fields=["subscription_plan"])
         limits = get_tenant_limits(t)
-        self.assertEqual(limits["customers"], 999999)
+        # C4/H4: Trial limits are finite (500 customers), not infinite
+        self.assertEqual(limits["customers"], 500)
 
     def test_no_plan_returns_empty(self):
         t = make_tenant()

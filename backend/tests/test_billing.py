@@ -452,7 +452,8 @@ class TrialPeriodTest(TestCase):
     def test_trial_grants_unlimited_access(self):
         t = make_tenant()
         sub = make_subscription(t, status=SubscriptionStatus.TRIALING)
-        self.assertEqual(sub.get_limit("customers"), 999999)
+        # C4/H4: Trial limits are finite (500 customers), not infinite
+        self.assertEqual(sub.get_limit("customers"), 500)
         self.assertTrue(sub.has_feature("any_feature"))
 
     def test_trial_is_access_allowed(self):

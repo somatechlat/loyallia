@@ -139,7 +139,7 @@ class SuperAdminImpersonationTest(TestCase):
             email="owner-impersonation@example.com",
         )
 
-    def _payload(self, pin="[REDACTED]"):
+    def _payload(self, pin="123456"):
         return ImpersonateIn(owner_pin=pin, justification="Support diagnosis for owner account")
 
     def test_owner_without_pin_is_rejected(self):
@@ -202,7 +202,7 @@ class FactoryResetGuardrailsTest(TestCase):
 
         PlatformSetting.objects.create(key="PLATFORM_MODE", value="production")
         with self.assertRaises(HttpError) as ctx:
-            factory_reset_confirm(self.request, FactoryResetConfirmIn(otp="[REDACTED]"))
+            factory_reset_confirm(self.request, FactoryResetConfirmIn(otp="000000"))
         self.assertEqual(ctx.exception.status_code, 403)
 
     def test_seed_demo_blocked_in_production(self):

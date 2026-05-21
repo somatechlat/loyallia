@@ -1,7 +1,7 @@
 # Loyallia Deployment Continuation Plan
 
 ## Current State (from previous session)
-- Local repo at `/mnt/agents/loyallia/` on KIMIk2 branch
+- Local repo at `/mnt/agents/loyallia/` on Loyallia branch
 - Vault TLS configured with Let's Encrypt certs (server) / self-signed (local)
 - `deploy/vault/init.sh` is the secret seeding script run by vault-init container
 - `vault kv put -mount=secret` commands were failing with "Error making API request"
@@ -35,6 +35,6 @@ The `vault-init` container (in docker-compose.yml):
 - [ ] Verify all containers healthy
 
 ### Stage 3: Commit, push, server deploy
-- [ ] Commit all fixes to KIMIk2
+- [ ] Commit all fixes to Loyallia
 - [ ] Push to GitHub
 - [ ] Deploy on server (when connection available)

@@ -1,5 +1,10 @@
 import { defineConfig } from '@playwright/test';
 
+// ⚠️ CRITICAL: E2E tests MUST run against the LOCAL Docker cluster.
+//   cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test
+// Do NOT run against production URLs unless E2E_ALLOW_HOSTS is explicitly set.
+// The backend API (loyallia-api), database, and Vault run inside Docker only.
+//
 // ═══════════════════════════════════════════════════════════════════════════════
 // PLAYWRIGHT CONFIGURATION — Loyallia E2E Tests
 //

@@ -73,6 +73,7 @@ def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
         "name": f"Test Card {uuid.uuid4().hex[:6]}",
         "card_type": card_type,
         "is_active": True,
+        "is_published": True,
         "metadata": merged_metadata,
     }
     defaults.update(kwargs)

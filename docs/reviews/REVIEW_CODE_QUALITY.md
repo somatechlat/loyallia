@@ -1,6 +1,6 @@
-# Loyallia Code Quality Review — KIMI-K2
+# Loyallia Code Quality Review — Loyallia-K2
 
-**Reviewer:** Senior Code Quality Engineer (KIMI-K2)
+**Reviewer:** Senior Code Quality Engineer (Loyallia-K2)
 **Scope:** Full codebase — Python backend (`backend/`) + TypeScript frontend (`frontend/src/`)
 **Date:** 2025-07-08
 **Total files reviewed:** 260+ Python files, 85+ TypeScript/TSX files
@@ -393,5 +393,5 @@ The codebase demonstrates:
 
 ---
 
-*Review completed by KIMI-K2 Senior Code Quality Engineer*
+*Review completed by Loyallia-K2 Senior Code Quality Engineer*
 *All findings verified against current codebase HEAD*

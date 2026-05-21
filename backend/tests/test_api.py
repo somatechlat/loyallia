@@ -171,20 +171,20 @@ class AuthRefreshAPITest(TestCase):
 
 
 class AuthMeAPITest(TestCase):
-    """Tests for GET /api/v1/auth/me/"""
+    """Tests for GET /api/v1/auth/users/me/"""
 
     def test_me_authenticated(self):
         user = make_user(first_name="Alice")
         header = _get_auth_header(user)
         resp = self.client.get(
-            "/api/v1/auth/me/",
+            "/api/v1/auth/users/me/",
             HTTP_AUTHORIZATION=header,
         )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["first_name"], "Alice")
 
     def test_me_unauthenticated(self):
-        resp = self.client.get("/api/v1/auth/me/")
+        resp = self.client.get("/api/v1/auth/users/me/")
         self.assertIn(resp.status_code, [401, 403])
 
 
@@ -202,13 +202,13 @@ class AuthForgotPasswordAPITest(TestCase):
 
 
 class AuthProfileAPITest(TestCase):
-    """Tests for PUT /api/v1/auth/profile/"""
+    """Tests for PUT /api/v1/auth/users/profile/"""
 
     def test_update_profile(self):
         user = make_user(first_name="Old")
         header = _get_auth_header(user)
         resp = self.client.put(
-            "/api/v1/auth/profile/",
+            "/api/v1/auth/users/profile/",
             data=json.dumps({"first_name": "New"}),
             content_type="application/json",
             HTTP_AUTHORIZATION=header,
@@ -219,14 +219,14 @@ class AuthProfileAPITest(TestCase):
 
 
 class AuthChangePasswordAPITest(TestCase):
-    """Tests for POST /api/v1/auth/change-password/"""
+    """Tests for POST /api/v1/auth/users/change-password/"""
 
     def test_change_password_success(self):
         user = make_user()
         header = _get_auth_header(user)
         new_pwd = secrets.token_urlsafe(16)
         resp = self.client.post(
-            "/api/v1/auth/change-password/",
+            "/api/v1/auth/users/change-password/",
             data=json.dumps(
                 {
                     "current_password": user._test_password,
@@ -243,7 +243,7 @@ class AuthChangePasswordAPITest(TestCase):
         header = _get_auth_header(user)
         new_pwd = secrets.token_urlsafe(16)
         resp = self.client.post(
-            "/api/v1/auth/change-password/",
+            "/api/v1/auth/users/change-password/",
             data=json.dumps(
                 {
                     "current_password": user._test_password + "_wrong",
@@ -273,7 +273,7 @@ class AuthUsersAPITest(TestCase):
         owner = make_user(tenant=tenant, role=UserRole.OWNER)
         make_user(tenant=tenant, role=UserRole.STAFF)
         header = _get_auth_header(owner)
-        resp = self.client.get("/api/v1/auth/users/", HTTP_AUTHORIZATION=header)
+        resp = self.client.get("/api/v1/auth/users/users/", HTTP_AUTHORIZATION=header)
         self.assertEqual(resp.status_code, 200)
         self.assertIsInstance(resp.json(), list)
 
@@ -281,7 +281,7 @@ class AuthUsersAPITest(TestCase):
         tenant = make_tenant()
         staff = make_user(tenant=tenant, role=UserRole.STAFF)
         header = _get_auth_header(staff)
-        resp = self.client.get("/api/v1/auth/users/", HTTP_AUTHORIZATION=header)
+        resp = self.client.get("/api/v1/auth/users/users/", HTTP_AUTHORIZATION=header)
         self.assertEqual(resp.status_code, 403)
 
     def test_deactivate_user(self):
@@ -290,7 +290,7 @@ class AuthUsersAPITest(TestCase):
         target = make_user(tenant=tenant, role=UserRole.STAFF)
         header = _get_auth_header(owner)
         resp = self.client.delete(
-            f"/api/v1/auth/users/{target.id}/",
+            f"/api/v1/auth/users/users/{target.id}/",
             HTTP_AUTHORIZATION=header,
         )
         self.assertEqual(resp.status_code, 200)
@@ -302,7 +302,7 @@ class AuthUsersAPITest(TestCase):
         owner = make_user(tenant=tenant, role=UserRole.OWNER)
         header = _get_auth_header(owner)
         resp = self.client.delete(
-            f"/api/v1/auth/users/{owner.id}/",
+            f"/api/v1/auth/users/users/{owner.id}/",
             HTTP_AUTHORIZATION=header,
         )
         self.assertEqual(resp.status_code, 400)

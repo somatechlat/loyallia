@@ -11,6 +11,13 @@
 version: "3.8"
 
 services:
+  # B-022: When running behind a reverse proxy (e.g. system nginx) with CSP
+  # headers, Next.js development mode requires 'unsafe-eval' in script-src.
+  # Add this to your nginx CSP config if the UI fails to load with eval errors.
+  #
+  # Example nginx add_header:
+  #   add_header Content-Security-Policy "... script-src 'self' 'unsafe-inline' 'unsafe-eval' ...";
+
   # Example: expose frontend directly on localhost:3000
   # web:
   #   ports:

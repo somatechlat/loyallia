@@ -1,6 +1,6 @@
 # SysAdmin / SuperAdmin API - Comprehensive Security Review
 
-**Reviewer:** KIMI-K2 (Backend Security Audit)
+**Reviewer:** Loyallia-K2 (Backend Security Audit)
 **Scope:** All Super Admin API endpoints, management commands, tenant creation, impersonation, factory reset, plan management, and platform settings.
 **Date:** 2025-01-21
 **Files Reviewed:** 14 files, ~2,800 lines of code

@@ -186,10 +186,10 @@ class AutomationChoicesTest(TestCase):
         trigger_values = [t.value for t in AutomationTrigger]
         self.assertIn("birthday_coming", trigger_values)
 
-    def test_seven_actions_total(self):
-        """After hardening: 7 actions total (notification, email, sms, whatsapp,
-        issue_reward, update_segment, send_wallet)."""
-        self.assertEqual(len(AutomationAction.choices), 7)
+    def test_eight_actions_total(self):
+        """After hardening: 8 actions total (notification, email, sms, whatsapp,
+        issue_reward, update_segment, send_wallet, trigger_webhook)."""
+        self.assertEqual(len(AutomationAction.choices), 8)
 
 
 class AutomationDispatchTest(TestCase):

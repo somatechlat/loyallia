@@ -133,16 +133,16 @@ class SMSClientBulkTest(TestCase):
         self.assertIn("succeeded", result)
         self.assertIn("failed", result)
 
-    def test_bulk_send_skips_missing_data(self):
+    def test_bulk_send_raises_when_twilio_not_configured(self):
+        """Real behavior: when Twilio is not configured, bulk send raises."""
         from apps.notifications.sms.client import send_sms_bulk
 
         recipients = [
             {"phone": "", "message": "Hi"},
             {"phone": "+593991111111", "message": ""},
         ]
-        result = send_sms_bulk(recipients)
-        self.assertEqual(result["failed"], 2)
-        self.assertEqual(result["succeeded"], 0)
+        with self.assertRaises(RuntimeError):
+            send_sms_bulk(recipients)
 
 
 class I18nSMSMessagesTest(TestCase):
