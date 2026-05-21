@@ -76,9 +76,9 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
     await submitBtn.click();
     await invitePromise;
 
-    // Verify success toast or new member appears
+    // Verify success modal or toast appears (UI shows "Miembro creado exitosamente" modal)
     await expect(
-      page.locator('.go2072408551, [class*="toast"]').or(page.getByText(/invitacion enviada|miembro invitado|invited/i)).first(),
+      page.locator('.go2072408551, [class*="toast"]').or(page.getByText(/Miembro creado|invitacion enviada|miembro invitado|invited/i)).first(),
     ).toBeVisible({ timeout: 10000 });
   });
 
