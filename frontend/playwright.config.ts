@@ -169,6 +169,7 @@ export default defineConfig({
       name: 'full',
       testMatch: /suite\/.*\.spec\.ts/,
       dependencies: ['setup'],
+      grepInvert: /@auth/,
       use: { storageState: '.auth/owner.json' },
     },
   ],

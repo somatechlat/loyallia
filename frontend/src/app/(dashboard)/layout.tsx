@@ -16,6 +16,7 @@ import { LOYALLIA_LOGO, LOYALLIA_LOGO_DARK } from '@/lib/loyalliaLogo';
 import Cookies from 'js-cookie';
 
 import { APP_CONFIG } from '@/lib/constants';
+import { stripLocalMinioUrl } from '@/lib/url-utils';
 
 /** SEC-009: Banner shown when superadmin is impersonating a tenant.
  *  Auto-expires after 1 hour. Backs up admin token in sessionStorage. */
@@ -274,9 +275,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .then(data => {
         if (data?.logo_url) {
           let url = data.logo_url;
-          if (url.includes('://localhost:33903/') || url.includes('://127.0.0.1:33903/')) {
-            url = url.replace(/^https?:\/\/[^/]+:33903/, '');
-          }
+          url = stripLocalMinioUrl(url);
           setTenantLogo(url);
         }
       })
@@ -351,7 +350,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="px-4 pb-3 pt-1">
           <p className="text-[10px] text-surface-300 dark:text-surface-500 text-center tracking-wide leading-relaxed">
             <span className="font-semibold text-surface-400 dark:text-surface-400">Loyallia</span> · Intelligent Rewards
-            <br /><a href="https://yachaq.ai" target="_blank" rel="noopener noreferrer" className="text-[9px] opacity-60 hover:opacity-100 transition-opacity">powered by Yachaq.ai</a>
+            {process.env.NEXT_PUBLIC_PARTNER_URL && (
+              <><br /><a href={process.env.NEXT_PUBLIC_PARTNER_URL} target="_blank" rel="noopener noreferrer" className="text-[9px] opacity-60 hover:opacity-100 transition-opacity">powered by Yachaq.ai</a></>
+            )}
           </p>
         </div>
       </aside>

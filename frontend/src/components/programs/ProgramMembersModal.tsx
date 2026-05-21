@@ -165,7 +165,7 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
                       </span>
                     </td>
                     <td className="px-4 py-3 text-surface-700 dark:text-surface-300">{m.total_visits}</td>
-                    <td className="px-4 py-3 text-surface-700 dark:text-surface-300">${parseFloat(m.total_spent).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-surface-700 dark:text-surface-300">${!isNaN(parseFloat(m.total_spent)) ? parseFloat(m.total_spent).toFixed(2) : '0.00'}</td>
                     <td className="px-4 py-3 text-surface-500">
                       {m.last_visit ? new Date(m.last_visit).toLocaleDateString('es-EC') : '—'}
                     </td>

@@ -14,9 +14,9 @@ test.describe('Automation — OWNER @owner @automation', () => {
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('OWNER has "Automatizacion" in navigation @owner', async ({ page }) => {
+  test('OWNER has "Automatización" in navigation @owner', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const navLink = page.locator('nav, aside').getByText('Automatizacion');
+    const navLink = page.locator('nav, aside').getByText('Automatización');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -24,68 +24,52 @@ test.describe('Automation — OWNER @owner @automation', () => {
     await page.goto('/automation', { waitUntil: 'domcontentloaded' });
     await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
 
-    // Click "Nueva Regla" / add rule button
-    const newRuleBtn = page.getByRole('button', { name: /nueva regla|agregar regla|crear regla/i }).first();
-    if (await newRuleBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await newRuleBtn.click();
-    } else {
-      // Try a generic add button
-      const addBtn = page.locator('button').filter({ hasText: /nueva|agregar|crear/i }).first();
-      await addBtn.waitFor({ state: 'visible', timeout: 5000 });
-      await addBtn.click();
+    // Click create automation button
+    const createBtn = page.locator('#create-automation-btn, #create-first-automation').first();
+    await createBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await createBtn.click();
+
+    // Step 1: Fill name
+    const nameInput = page.locator('#auto-name');
+    await nameInput.waitFor({ state: 'visible', timeout: 10000 });
+    await nameInput.fill('E2E Birthday Email Rule');
+
+    // Next step
+    const nextBtn = page.getByRole('button', { name: /siguiente/i }).first();
+    await nextBtn.click();
+
+    // Step 2: Select trigger "Cumpleaños próximo"
+    const triggerCard = page.locator('button').filter({ hasText: 'Cumpleaños próximo' }).first();
+    await triggerCard.waitFor({ state: 'visible', timeout: 10000 });
+    await triggerCard.click();
+
+    // Select action "Enviar email"
+    const actionCard = page.locator('button').filter({ hasText: /enviar email|email/i }).first();
+    await actionCard.waitFor({ state: 'visible', timeout: 10000 });
+    await actionCard.click();
+
+    // Next step
+    await nextBtn.click();
+
+    // Step 3: Fill message title and body
+    const titleInput = page.locator('#action-title');
+    if (await titleInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await titleInput.fill('¡Feliz Cumpleaños!');
     }
 
-    // Rule form should appear — wait for rule name input
-    const ruleNameInput = page.locator('input[placeholder*="nombre" i], input#rule-name, input[name="name"]').first();
-    await ruleNameInput.waitFor({ state: 'visible', timeout: 10000 });
-
-    // Fill rule name
-    await ruleNameInput.fill('E2E Birthday Email Rule');
-
-    // Select trigger: "Cumpleanos" / Birthday
-    const triggerSelect = page.locator('select').filter({ has: page.locator('option:has-text("Cumpleanos")') }).first();
-    if (await triggerSelect.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await triggerSelect.selectOption({ label: 'Cumpleanos' });
-    } else {
-      // Try clicking a trigger dropdown
-      const triggerBtn = page.locator('button').filter({ hasText: /disparador|trigger/i }).first();
-      if (await triggerBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await triggerBtn.click();
-        await page.getByText('Cumpleanos').first().click();
-      }
-    }
-
-    // Select action: "Enviar Email" / Send Email
-    const actionSelect = page.locator('select').filter({ has: page.locator('option:has-text("Email")') }).first();
-    if (await actionSelect.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await actionSelect.selectOption({ label: /email/i });
-    } else {
-      const actionBtn = page.locator('button').filter({ hasText: /accion|action/i }).first();
-      if (await actionBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await actionBtn.click();
-        await page.getByText('Email').first().click();
-      }
-    }
-
-    // Fill email subject and body
-    const subjectInput = page.locator('input[placeholder*="asunto" i], input[name="subject"], #email-subject').first();
-    if (await subjectInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await subjectInput.fill('Feliz Cumpleanos!');
-    }
-
-    const bodyInput = page.locator('textarea[placeholder*="mensaje" i], textarea[name="body"], #email-body').first();
+    const bodyInput = page.locator('#action-message');
     if (await bodyInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await bodyInput.fill('Te deseamos un feliz cumpleanos con un regalo especial.');
+      await bodyInput.fill('Te deseamos un feliz cumpleaños con un regalo especial.');
     }
 
     // Save the rule
-    const saveBtn = page.getByRole('button', { name: /guardar|salvar|save/i }).first();
+    const saveBtn = page.getByRole('button', { name: /crear automatización|guardar cambios/i }).first();
     await expect(saveBtn).toBeVisible({ timeout: 5000 });
     await saveBtn.click();
 
     // Wait for API response indicating rule save
     await page.waitForResponse(
-      (resp) => resp.url().includes('/api/') && (resp.url().includes('automation') || resp.url().includes('rule')),
+      (resp) => resp.url().includes('/api/') && resp.url().includes('automation'),
       { timeout: 15000 },
     ).catch(() => {});
 
@@ -141,9 +125,9 @@ test.describe('Automation — OWNER @owner @automation', () => {
 test.describe('Automation — MANAGER Isolation @manager @automation', () => {
   test.use({ storageState: '.auth/manager.json' });
 
-  test('MANAGER does NOT have "Automatizacion" in navigation @manager', async ({ page }) => {
+  test('MANAGER does NOT have "Automatización" in navigation @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const navLink = page.locator('nav, aside').getByText('Automatizacion');
+    const navLink = page.locator('nav, aside').getByText('Automatización');
     await expect(navLink).toHaveCount(0);
   });
 

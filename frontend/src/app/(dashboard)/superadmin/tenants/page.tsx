@@ -163,10 +163,51 @@ export default function SuperAdminTenants() {
     const u = [...wLocs];
     const current = u[i];
     if (!current) return;
-    u[i] = { ...current, [f]: v };
+    // Validate coordinates before accepting
+    if (f === 'latitude' || f === 'longitude') {
+      const num = v === null || v === '' ? null : Number(v);
+      if (num !== null && (Number.isNaN(num) || !Number.isFinite(num))) {
+        toast.error(`${f === 'latitude' ? 'Latitud' : 'Longitud'} debe ser un número válido`);
+        return;
+      }
+      if (f === 'latitude' && num !== null && (num < -90 || num > 90)) {
+        toast.error('La latitud debe estar entre -90 y 90');
+        return;
+      }
+      if (f === 'longitude' && num !== null && (num < -180 || num > 180)) {
+        toast.error('La longitud debe estar entre -180 y 180');
+        return;
+      }
+      u[i] = { ...current, [f]: num };
+    } else {
+      u[i] = { ...current, [f]: v };
+    }
     setWLocs(u);
   };
+
+  const validateForm = (): string | null => {
+    if (!company.name.trim()) return 'El nombre del negocio es obligatorio';
+    if (!company.legal_name.trim()) return 'La razón social es obligatoria';
+    if (entityType === 'juridica' && !company.ruc.trim()) return 'El RUC es obligatorio para personas jurídicas';
+    if (entityType === 'natural' && !company.cedula.trim()) return 'La cédula es obligatoria para personas naturales';
+    if (!owner.owner_email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(owner.owner_email)) return 'El email del propietario no es válido';
+    if (!owner.owner_first_name.trim()) return 'El nombre del propietario es obligatorio';
+    if (!owner.owner_last_name.trim()) return 'El apellido del propietario es obligatorio';
+    const validLocs = wLocs.filter(l => l.name.trim());
+    if (validLocs.length === 0) return 'Debe registrar al menos una sucursal con nombre';
+    for (const loc of validLocs) {
+      if (loc.latitude !== null && (loc.latitude < -90 || loc.latitude > 90)) return `Latitud inválida en "${loc.name}"`;
+      if (loc.longitude !== null && (loc.longitude < -180 || loc.longitude > 180)) return `Longitud inválida en "${loc.name}"`;
+    }
+    return null;
+  };
+
   const handleSubmit = async () => {
+    const error = validateForm();
+    if (error) {
+      toast.error(error);
+      return;
+    }
     const tid = toast.loading('Registrando negocio...');
     try {
       const payload = { ...company, ...owner, entity_type: entityType, locations: wLocs.filter(l => l.name.trim()), plan_slug: planSlug, billing_cycle: billingCycle };
@@ -394,8 +435,11 @@ export default function SuperAdminTenants() {
                   <div><label className="text-xs font-medium text-surface-600 mb-1 block">Nombre *</label><input className="input text-sm" placeholder="Mall del Sol" value={loc.name} onChange={e => upWLoc(idx, 'name', e.target.value)} /></div>
                   <div><label className="text-xs font-medium text-surface-600 mb-1 block">Ciudad</label><input className="input text-sm" placeholder="Guayaquil" value={loc.city} onChange={e => upWLoc(idx, 'city', e.target.value)} /></div>
                   <div className="col-span-2"><label className="text-xs font-medium text-surface-600 mb-1 block">Dirección</label><input className="input text-sm" value={loc.address} onChange={e => upWLoc(idx, 'address', e.target.value)} /></div>
-                  <div><label className="text-xs font-medium text-surface-600 mb-1 block">Latitud</label><input type="number" step="0.000001" className="input text-sm font-mono" placeholder="-2.1537" value={loc.latitude||''} onChange={e => upWLoc(idx, 'latitude', e.target.value ? +e.target.value : null)} /></div>
-                  <div><label className="text-xs font-medium text-surface-600 mb-1 block">Longitud</label><input type="number" step="0.000001" className="input text-sm font-mono" placeholder="-79.8965" value={loc.longitude||''} onChange={e => upWLoc(idx, 'longitude', e.target.value ? +e.target.value : null)} /></div>
+                  <div className="col-span-2"><label className="text-xs font-semibold text-surface-500 mb-1 block">Ubicación en el Mapa</label><LocationPicker lat={loc.latitude ?? null} lng={loc.longitude ?? null} onChange={(lat, lng, addr) => { upWLoc(idx, 'latitude', lat); upWLoc(idx, 'longitude', lng); if (addr && !loc.address) upWLoc(idx, 'address', addr.split(',').slice(0, 3).join(',')); }} /></div>
+                  <div className="col-span-2 grid grid-cols-2 gap-3">
+                    <div><label className="text-xs font-medium text-surface-600 mb-1 block">Latitud (manual)</label><input type="number" step="0.000001" className="input text-sm font-mono" placeholder="-2.1537" value={loc.latitude ?? ''} onChange={e => upWLoc(idx, 'latitude', e.target.value ? +e.target.value : null)} /></div>
+                    <div><label className="text-xs font-medium text-surface-600 mb-1 block">Longitud (manual)</label><input type="number" step="0.000001" className="input text-sm font-mono" placeholder="-79.8965" value={loc.longitude ?? ''} onChange={e => upWLoc(idx, 'longitude', e.target.value ? +e.target.value : null)} /></div>
+                  </div>
                 </div></div>))}</div>
                 <div className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-5 border border-surface-200 dark:border-surface-700/50 space-y-2 text-sm mt-4"><h4 className="font-bold text-surface-900 dark:text-white mb-3">Resumen</h4><div className="grid grid-cols-2 gap-y-2"><span className="text-surface-500">Tipo:</span><span className="font-medium">{entityType === 'natural' ? 'Persona Natural' : 'Persona Jurídica'}</span><span className="text-surface-500">Empresa:</span><span className="font-medium">{company.name||'—'}</span><span className="text-surface-500">{entityType === 'juridica' ? 'RUC:' : 'Cédula:'}</span><span className="font-mono">{entityType === 'juridica' ? company.ruc||'—' : company.cedula||'—'}</span><span className="text-surface-500">Propietario:</span><span>{owner.owner_first_name} {owner.owner_last_name}</span><span className="text-surface-500">Email:</span><span>{owner.owner_email}</span><span className="text-surface-500">Sucursales:</span><span>{wLocs.filter(l => l.name.trim()).length}</span><span className="text-surface-500">Plan:</span><span className="font-semibold text-brand-600">{selPlan?.name || planSlug}</span></div></div>
               </div>)}

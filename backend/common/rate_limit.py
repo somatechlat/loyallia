@@ -137,8 +137,15 @@ RATE_LIMIT_RULES = [
         200,
         60,
     ),  # 200 config requests per minute per IP
-    ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP
-    ("/api/v1/auth/", "ip", 20, 60),  # 20 general auth requests per minute per IP
+    (
+        "/api/v1/auth/google/login",
+        "ip",
+        60,
+        60,
+    ),  # 60 Google login attempts per minute per IP
+    ("/api/v1/auth/users/me", "ip", 200, 60),  # 200 session checks per minute per IP
+    ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP (legacy)
+    ("/api/v1/auth/", "ip", 60, 60),  # 60 general auth requests per minute per IP
     ("/api/v1/scanner/", "user", 120, 60),  # 120 scans per minute per user
  # Dashboard loads fan out to several analytics endpoints; 60/min lets normal
  # date-filter usage work while preserving user-scoped abuse protection.

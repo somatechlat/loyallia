@@ -151,7 +151,9 @@ export default function WhatsAppWizard({ tenantId, planFeatures, planName, planL
               <p className="text-xs text-surface-400">Disponible en planes Professional y Enterprise</p>
             </div>
           </div>
-          <a href="https://avender.store/#planes" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-surface-400 bg-surface-200 dark:bg-surface-700 px-3 py-1 rounded-full hover:bg-surface-300 dark:hover:bg-surface-600 transition-colors">Actualizar Plan</a>
+          {process.env.NEXT_PUBLIC_UPGRADE_URL && (
+            <a href={process.env.NEXT_PUBLIC_UPGRADE_URL} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-surface-400 bg-surface-200 dark:bg-surface-700 px-3 py-1 rounded-full hover:bg-surface-300 dark:hover:bg-surface-600 transition-colors">Actualizar Plan</a>
+          )}
         </div>
       ) : (
       <>

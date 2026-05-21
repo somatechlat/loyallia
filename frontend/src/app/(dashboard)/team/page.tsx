@@ -19,6 +19,7 @@ export default function TeamPage() {
   const [editForm, setEditForm] = useState({ role: '', is_active: true });
   const [form, setForm] = useState({ email: '', first_name: '', last_name: '', role: UserRole.MANAGER, send_email: true });
   const [createdPassword, setCreatedPassword] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState({ first_name: false, last_name: false, email: false });
 
   const fetchTeam = () => {
     api.get('/api/v1/tenants/team/')
@@ -36,6 +37,13 @@ export default function TeamPage() {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors = {
+      first_name: !form.first_name.trim(),
+      last_name: !form.last_name.trim(),
+      email: !form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email),
+    };
+    setFormErrors(errors);
+    if (Object.values(errors).some(Boolean)) return;
     const toastId = toast.loading('Invitando...');
     try {
       const { data } = await api.post('/api/v1/tenants/team/', form);
@@ -138,15 +146,21 @@ export default function TeamPage() {
           <form onSubmit={handleInvite} className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1">Nombre</label>
-              <input required className="input" value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} />
+              <input required className={`input ${formErrors.first_name ? 'border-red-500' : ''}`} maxLength={100} value={form.first_name}
+                onChange={e => { setForm({...form, first_name: e.target.value }); setFormErrors(err => ({ ...err, first_name: false })); }} />
+              {formErrors.first_name && <p className="text-xs text-red-500 mt-1">Nombre requerido</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1">Apellido</label>
-              <input required className="input" value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} />
+              <input required className={`input ${formErrors.last_name ? 'border-red-500' : ''}`} maxLength={100} value={form.last_name}
+                onChange={e => { setForm({...form, last_name: e.target.value }); setFormErrors(err => ({ ...err, last_name: false })); }} />
+              {formErrors.last_name && <p className="text-xs text-red-500 mt-1">Apellido requerido</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1">Email</label>
-              <input required type="email" className="input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+              <input required type="email" className={`input ${formErrors.email ? 'border-red-500' : ''}`} value={form.email} maxLength={254}
+                onChange={e => { setForm({...form, email: e.target.value }); setFormErrors(err => ({ ...err, email: false })); }} />
+              {formErrors.email && <p className="text-xs text-red-500 mt-1">Email inválido</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1">Rol</label>

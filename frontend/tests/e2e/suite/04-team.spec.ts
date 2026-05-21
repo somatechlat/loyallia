@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Team — OWNER CRUD @owner @team', () => {
 
   test('OWNER sees team members list @owner', async ({ page }) => {
-    await page.goto('/team', { waitUntil: 'domcontentloaded' });
+    await page.goto('/team', { waitUntil: 'networkidle' });
     // Title is "Equipo" with h1
     await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
@@ -19,13 +19,13 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
   });
 
   test('OWNER sees "Agregar Miembro" button @owner', async ({ page }) => {
-    await page.goto('/team', { waitUntil: 'domcontentloaded' });
+    await page.goto('/team', { waitUntil: 'networkidle' });
     const addBtn = page.getByRole('button', { name: /agregar/i });
     await expect(addBtn.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('OWNER can click add to open invite form @owner', async ({ page }) => {
-    await page.goto('/team', { waitUntil: 'domcontentloaded' });
+    await page.goto('/team', { waitUntil: 'networkidle' });
     // Click "Agregar Miembro" button to open the form
     const addBtn = page.getByRole('button', { name: /agregar/i });
     await addBtn.first().click();
@@ -34,7 +34,7 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
   });
 
   test('OWNER can invite a new team member with email and role @owner', async ({ page }) => {
-    await page.goto('/team', { waitUntil: 'domcontentloaded' });
+    await page.goto('/team', { waitUntil: 'networkidle' });
 
     // Click "Agregar Miembro" button
     const addBtn = page.getByRole('button', { name: /agregar/i });
@@ -44,26 +44,27 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
     // Wait for invite form
     await expect(page.getByText('Invitar Miembro')).toBeVisible({ timeout: 10000 });
 
-    // Fill email address
-    const emailInput = page.locator('input[type="email"], input[placeholder*="correo" i], input[name="email"]').first();
+    // Fill first name, last name, and email
+    const firstNameInput = page.locator('input').nth(0);
+    await firstNameInput.waitFor({ state: 'visible', timeout: 5000 });
+    await firstNameInput.fill('E2E');
+
+    const lastNameInput = page.locator('input').nth(1);
+    await lastNameInput.fill('Test');
+
+    const emailInput = page.locator('input[type="email"]').first();
     await emailInput.waitFor({ state: 'visible', timeout: 5000 });
     const uniqueEmail = `e2e-invite-${Date.now()}@test.com`;
     await emailInput.fill(uniqueEmail);
 
     // Select role (MANAGER)
-    const roleSelect = page.locator('select').filter({ has: page.locator('option:has-text("MANAGER")') }).first();
+    const roleSelect = page.locator('select').first();
     if (await roleSelect.isVisible({ timeout: 5000 }).catch(() => false)) {
       await roleSelect.selectOption('MANAGER');
-    } else {
-      // Try role button/radio selector
-      const managerBtn = page.locator('button, label').filter({ hasText: 'MANAGER' }).first();
-      if (await managerBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await managerBtn.click();
-      }
     }
 
     // Submit the invite
-    const submitBtn = page.getByRole('button', { name: /enviar|invitar|submit|guardar/i }).first();
+    const submitBtn = page.getByRole('button', { name: /crear miembro|enviar|invitar|guardar/i }).first();
     await expect(submitBtn).toBeEnabled({ timeout: 5000 });
 
     // Wait for API response before clicking
@@ -82,7 +83,7 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
   });
 
   test('OWNER can change member role @owner', async ({ page }) => {
-    await page.goto('/team', { waitUntil: 'domcontentloaded' });
+    await page.goto('/team', { waitUntil: 'networkidle' });
     await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
 
     // Find a MANAGER row and click to change role
@@ -135,7 +136,7 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
   });
 
   test('OWNER can remove a team member @owner', async ({ page }) => {
-    await page.goto('/team', { waitUntil: 'domcontentloaded' });
+    await page.goto('/team', { waitUntil: 'networkidle' });
     await page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
 
     // Find a removable member row (not OWNER)

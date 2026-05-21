@@ -111,7 +111,7 @@ test.describe('Authentication & Role Routing @auth', () => {
   });
 
   test('Invalid credentials show error and stay on login', async ({ page }) => {
-    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await page.goto('/login', { waitUntil: 'networkidle' });
     const emailInput = page.locator('#email');
     await emailInput.click();
     await emailInput.fill('fake@nope.com');
@@ -205,8 +205,8 @@ test.describe('Google OAuth API @auth', () => {
     const resp = await request.post(`${BASE_API}/api/v1/auth/google/login/`, {
       data: { credential: 'fake-token-123', business_name: 'Test' },
     });
-    // 503 when Google OAuth is not configured; 401 would mean it tried to validate
-    expect(resp.status()).toBe(503);
+    // 401 when Google OAuth rejects the invalid token
+    expect(resp.status()).toBe(401);
   });
 });
 

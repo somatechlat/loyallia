@@ -381,7 +381,7 @@ export default function CampaignsPage() {
                   onEmojiSelect={emoji => setForm(f => ({ ...f, title: f.title + emoji }))}
                 />
               </div>
-              <input id="campaign-title" className="input" placeholder={campaignType === 'email' ? "¡Oferta especial para ti!" : campaignType === 'sms' ? "Oferta especial" : "¡Felicidades! Has ganado puntos"}
+              <input id="campaign-title" className="input" maxLength={200} placeholder={campaignType === 'email' ? "¡Oferta especial para ti!" : campaignType === 'sms' ? "Oferta especial" : "¡Felicidades! Has ganado puntos"}
                 value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             
@@ -433,7 +433,7 @@ export default function CampaignsPage() {
                 <textarea id="campaign-msg"
                   className="input min-h-[80px] resize-none"
                   placeholder={campaignType === 'sms' ? 'Escribe tu mensaje SMS (máx. 1600 caracteres)...' : "Tu clients recibirán una notificación en sus Wallet cards cuando haya un cambio en su programa (nuevo sello, puntos canjeados, etc)."}
-                  maxLength={campaignType === 'sms' ? 1600 : undefined}
+                  maxLength={campaignType === 'sms' ? 1600 : campaignType === 'wallet' ? 178 : undefined}
                   value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
               )}
             </div>

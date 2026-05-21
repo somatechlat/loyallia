@@ -56,14 +56,16 @@ export default function AuthLayout({
             <span className="font-semibold text-white/50">Loyallia</span> ·
             Intelligent Rewards
             <br />
-            <a
-              href="https://yachaq.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[9px] opacity-60 hover:opacity-100 transition-opacity"
-            >
-              powered by Yachaq.ai
-            </a>
+            {process.env.NEXT_PUBLIC_PARTNER_URL && (
+              <a
+                href={process.env.NEXT_PUBLIC_PARTNER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[9px] opacity-60 hover:opacity-100 transition-opacity"
+              >
+                powered by Yachaq.ai
+              </a>
+            )}
           </p>
         </div>
       </div>
