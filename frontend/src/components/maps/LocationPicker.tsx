@@ -3,11 +3,12 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState, useRef } from 'react';
+import { NOMINATIM_URL, NOMINATIM_REVERSE_URL, LEAFLET_ICON_URL } from '@/lib/constants';
 
 const DefaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: `${LEAFLET_ICON_URL}/marker-icon.png`,
+  iconRetinaUrl: `${LEAFLET_ICON_URL}/marker-icon-2x.png`,
+  shadowUrl: `${LEAFLET_ICON_URL}/marker-shadow.png`,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -71,7 +72,7 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ec&limit=5`;
+        const url = `${NOMINATIM_URL}?format=json&q=${encodeURIComponent(query)}&countrycodes=ec&limit=5`;
         const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
         const data: SearchResult[] = await res.json();
         setResults(data);
@@ -92,7 +93,7 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
   const handleMapClick = async (cLat: number, cLng: number) => {
     // Reverse geocode to get address
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${cLat}&lon=${cLng}&zoom=18`;
+      const url = `${NOMINATIM_REVERSE_URL}?format=json&lat=${cLat}&lon=${cLng}&zoom=18`;
       const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
       const data = await res.json();
       onChange(cLat, cLng, data.display_name || '');

@@ -18,9 +18,9 @@ test.describe('Settings — OWNER @owner @settings', () => {
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('OWNER has "Configuracion" in navigation @owner', async ({ page }) => {
+  test('OWNER has "Configuración" in navigation @owner', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const navLink = page.locator('nav, aside').getByText('Configuracion');
+    const navLink = page.locator('nav, aside').getByText('Configuración');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -52,9 +52,9 @@ test.describe('Billing — OWNER @owner @settings', () => {
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('OWNER has "Facturacion" in navigation @owner', async ({ page }) => {
+  test('OWNER has "Facturación" in navigation @owner', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const navLink = page.locator('nav, aside').getByText('Facturacion');
+    const navLink = page.locator('nav, aside').getByText('Facturación');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -89,7 +89,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
     // Title and description
     await expect(page.getByText('Integraciones')).toBeVisible();
     await expect(page.getByText('WhatsApp Business Bridge')).toBeVisible();
-    await expect(page.getByText('Vincula tu WhatsApp para enviar campanas masivas')).toBeVisible();
+    await expect(page.getByText('Vincula tu WhatsApp para enviar campañas masivas')).toBeVisible();
 
     // Toggle must be present (plan has whatsapp_campaigns feature)
     const toggle = page.locator('#wa-toggle');
@@ -144,10 +144,10 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
     // Step-by-step instructions
     await expect(page.getByText('Vincula tu dispositivo')).toBeVisible();
-    await expect(page.getByText('Abre WhatsApp en tu telefono')).toBeVisible();
-    await expect(page.getByText('Ajustes -> Dispositivos vinculados')).toBeVisible();
+    await expect(page.getByText('Abre WhatsApp en tu teléfono')).toBeVisible();
+    await expect(page.getByText('Ajustes → Dispositivos vinculados')).toBeVisible();
     await expect(page.getByText('Vincular un dispositivo')).toBeVisible();
-    await expect(page.getByText('Escanea este codigo QR')).toBeVisible();
+    await expect(page.getByText('Escanea este código QR')).toBeVisible();
 
     // Waiting indicator
     await expect(page.getByText('Esperando escaneo...')).toBeVisible();

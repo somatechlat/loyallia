@@ -12,6 +12,25 @@ export const API_CONFIG = {
   TIMEOUT: 30000,
 } as const;
 
+/** Build a QR code image URL via a configurable service (default: quickchart.io) */
+export function getQrUrl(text: string, size: number = APP_CONFIG.QR_CODE_SIZE): string {
+  const base = process.env.NEXT_PUBLIC_QR_SERVICE_URL || 'https://quickchart.io';
+  return `${base}/qr?text=${encodeURIComponent(text)}&size=${size}&margin=2&dark=1a1a2e&light=ffffff&ecLevel=M&format=png`;
+}
+
+/** Build a WhatsApp share link via a configurable base URL (default: wa.me) */
+export function getWhatsAppShareUrl(text: string): string {
+  const base = process.env.NEXT_PUBLIC_WHATSAPP_SHARE_URL || 'https://wa.me';
+  return `${base}/?text=${encodeURIComponent(text)}`;
+}
+
+/** Nominatim geocoding base URLs (configurable, with OpenStreetMap defaults) */
+export const NOMINATIM_URL = process.env.NEXT_PUBLIC_NOMINATIM_URL || 'https://nominatim.openstreetmap.org/search';
+export const NOMINATIM_REVERSE_URL = process.env.NEXT_PUBLIC_NOMINATIM_REVERSE_URL || 'https://nominatim.openstreetmap.org/reverse';
+
+/** Leaflet icon CDN prefix (configurable, with unpkg default) */
+export const LEAFLET_ICON_URL = process.env.NEXT_PUBLIC_LEAFLET_ICON_URL || 'https://unpkg.com/leaflet@1.9.4/dist/images';
+
 /** App-wide numeric constants to replace magic numbers */
 export const APP_CONFIG = {
   /** QR code image size in pixels */

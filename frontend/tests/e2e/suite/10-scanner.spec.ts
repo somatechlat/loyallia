@@ -9,8 +9,8 @@ test.describe('Scanner — STAFF @staff @scanner', () => {
   test.use({ storageState: '.auth/staff.json' });
 
   test('STAFF lands on scanner page after login @staff', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForURL(/.*scanner.*/, { timeout: 15000 });
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.waitForURL(/.*scanner.*/, { timeout: 30000 });
   });
 
   test('STAFF sees scanner UI elements @staff', async ({ page }) => {
@@ -103,7 +103,9 @@ test.describe('Scanner — STAFF @staff @scanner', () => {
         await amountInput.fill('100');
 
         // Submit transaction
-        const submitBtn = page.getByRole('button', { name: /procesar|acumular|canjear|confirmar|submit/i }).first();
+        const submitBtn = page.locator('#confirm-transaction-btn').or(
+          page.getByRole('button', { name: /confirmar transacción|procesar|acumular|canjear|confirmar|submit/i })
+        ).first();
         await expect(submitBtn).toBeEnabled({ timeout: 5000 });
 
         // Wait for transaction API

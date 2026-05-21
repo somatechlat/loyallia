@@ -31,6 +31,7 @@ function ResetForm() {
     e.preventDefault();
     if (password.length < 6) { toast.error('La contraseña debe tener al menos 6 caracteres'); return; }
     if (password !== confirm) { toast.error('Las contraseñas no coinciden'); return; }
+    if (password !== confirm) { toast.error('Las contraseñas no coinciden'); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/v1/auth/reset-password/', {

@@ -182,6 +182,7 @@ export default function AutomationPage() {
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(1);
   const [showDelete, setShowDelete] = useState<string | null>(null);
+  const [stepErrors, setStepErrors] = useState({ name: false });
 
   const load = () => {
     Promise.all([automationApi.list(), automationApi.stats()])
@@ -418,8 +419,9 @@ export default function AutomationPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="label" htmlFor="auto-name">Nombre de la automatización</label>
-                    <input id="auto-name" className="input" placeholder="Ej: Bienvenida a nuevos clientes"
-                      value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                    <input id="auto-name" className={`input ${stepErrors.name ? 'border-red-500' : ''}`} placeholder="Ej: Bienvenida a nuevos clientes" required maxLength={200}
+                      value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setStepErrors({ name: false }); }} />
+                    {stepErrors.name && <p className="text-xs text-red-500 mt-1">Ingresa un nombre</p>}
                   </div>
                   <div>
                     <label className="label" htmlFor="auto-desc">Descripción (opcional)</label>
@@ -477,7 +479,7 @@ export default function AutomationPage() {
                             onEmojiSelect={emoji => setForm(f => ({ ...f, action_config: { ...f.action_config, title: (f.action_config.title || '') + emoji } }))}
                           />
                         </div>
-                        <input id="action-title" className="input" placeholder="Ej: ¡Bienvenido a nuestro programa!"
+                        <input id="action-title" className="input" placeholder="Ej: ¡Bienvenido a nuestro programa!" maxLength={200}
                           value={(form.action_config.title as string) || ''}
                           onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, title: e.target.value } }))} />
                       </div>
@@ -488,7 +490,7 @@ export default function AutomationPage() {
                             onEmojiSelect={emoji => setForm(f => ({ ...f, action_config: { ...f.action_config, message: (f.action_config.message || '') + emoji } }))}
                           />
                         </div>
-                        <textarea id="action-message" className="input min-h-[80px] resize-none"
+                        <textarea id="action-message" className="input min-h-[80px] resize-none" maxLength={1000}
                           placeholder="Ej: Gracias por unirte. Tu primera recompensa te espera."
                           value={(form.action_config.message as string) || ''}
                           onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, message: e.target.value } }))} />
@@ -575,7 +577,8 @@ export default function AutomationPage() {
               </button>
               {step < totalSteps ? (
                 <button onClick={() => {
-                  if (step === 1 && !form.name.trim()) { toast.error('Ingresa un nombre'); return; }
+                  if (step === 1 && !form.name.trim()) { setStepErrors({ name: true }); return; }
+                  setStepErrors({ name: false });
                   setStep(step + 1);
                 }} className="btn-primary text-sm">
                   Siguiente →

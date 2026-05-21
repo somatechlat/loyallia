@@ -4,7 +4,8 @@ import { programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
-import { APP_CONFIG } from '@/lib/constants';
+import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
+import { stripLocalMinioUrl } from '@/lib/url-utils';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import WalletDesigner, {
   type WalletDesignState,
@@ -19,10 +20,7 @@ import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import ProgramMembersModal from '@/components/programs/ProgramMembersModal';
 import ProgramTransactionsModal from '@/components/programs/ProgramTransactionsModal';
 
-/** Premium styled QR code URL */
-function styledQrUrl(data: string, size = APP_CONFIG.QR_CODE_SIZE): string {
-  return `https://quickchart.io/qr?text=${encodeURIComponent(data)}&size=${size}&margin=2&dark=1a1a2e&light=ffffff&ecLevel=M&format=png`;
-}
+
 
 const CARD_TYPE_LABELS: Record<string, string> = {
   stamp: 'Sellos', points: 'Puntos', visits: 'Visitas', cashback: 'Cashback',
@@ -60,13 +58,7 @@ interface ProgramStats {
 
 /** Detect base64 / blob URLs and strip them to prevent metadata bloat. */
 function stripTempUrl(url: string | undefined): string {
-  if (typeof url !== 'string') return '';
-  if (url.startsWith('data:') || url.startsWith('blob:')) return '';
-  // Convert old hardcoded MinIO URLs to relative paths so they work from any origin
-  if (url.includes('://localhost:33903/') || url.includes('://127.0.0.1:33903/')) {
-    return url.replace(/^https?:\/\/[^/]+:33903/, '');
-  }
-  return url;
+  return stripLocalMinioUrl(url);
 }
 
 function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): WalletDesignState {
@@ -242,15 +234,9 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       .then(([progRes, statsRes]) => {
         const prog = progRes.data;
         // Clean old hardcoded MinIO URLs from legacy fields
-        if (prog.logo_url && (prog.logo_url.includes('://localhost:33903/') || prog.logo_url.includes('://127.0.0.1:33903/'))) {
-          prog.logo_url = prog.logo_url.replace(/^https?:\/\/[^/]+:33903/, '');
-        }
-        if (prog.strip_image_url && (prog.strip_image_url.includes('://localhost:33903/') || prog.strip_image_url.includes('://127.0.0.1:33903/'))) {
-          prog.strip_image_url = prog.strip_image_url.replace(/^https?:\/\/[^/]+:33903/, '');
-        }
-        if (prog.icon_url && (prog.icon_url.includes('://localhost:33903/') || prog.icon_url.includes('://127.0.0.1:33903/'))) {
-          prog.icon_url = prog.icon_url.replace(/^https?:\/\/[^/]+:33903/, '');
-        }
+        prog.logo_url = stripLocalMinioUrl(prog.logo_url);
+        prog.strip_image_url = stripLocalMinioUrl(prog.strip_image_url);
+        prog.icon_url = stripLocalMinioUrl(prog.icon_url);
         setProgram(prog);
         setStats(statsRes.data);
         // Parse wallet design for preview
@@ -464,7 +450,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           </p>
           <div className="flex justify-center mb-4">
             <img
-              src={styledQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
+              src={getQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
               alt="QR de inscripción"
               className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-[#ffffff] shadow-lg"
               id="enrollment-qr-img"
@@ -483,7 +469,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
               <svg className="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar enlace de inscripción
             </button>
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}`}
+              href={getWhatsAppShareUrl(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn w-full justify-center text-sm bg-emerald-500 hover:bg-emerald-600 text-white"
@@ -634,7 +620,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             </p>
             <div className="flex justify-center">
               <img
-                src={styledQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
+                src={getQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
                 alt="QR de inscripción"
                 className="w-56 h-56 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
               />
@@ -652,7 +638,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                 Copiar enlace de inscripción
               </button>
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}`}
+                href={getWhatsAppShareUrl(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn w-full justify-center text-sm bg-emerald-500 hover:bg-emerald-600 text-white"

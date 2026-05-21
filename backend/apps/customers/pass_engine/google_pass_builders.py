@@ -9,6 +9,8 @@ from typing import Any
 
 from django.conf import settings
 
+from apps.tenants.models import PlatformSetting
+
 logger = logging.getLogger(__name__)
 
 # Google Wallet API barcode type mapping (ref: developers.google.com/wallet/generic/rest/v1/Barcode)
@@ -108,8 +110,7 @@ def _public_placeholder_for_url(original_url: str) -> str:
     Google Wallet servers cannot reach local network IPs, so we use
     public placeholder images during development.
     """
-    # Use a branded gradient placeholder that looks professional
-    return "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&h=300&q=80"
+    return PlatformSetting.get("WALLET_PLACEHOLDER_IMAGE", default="")
 
 
 def _get_google_locations(card) -> list:
@@ -386,7 +387,7 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     logo_uri = _resolve_url(
         google_images.get("program_logo") or card.logo_url,
         base_url,
-    ) or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -420,12 +421,12 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     payload["linksModuleData"] = {
         "uris": [
             {
-                "uri": "https://loyallia.com",
+                "uri": PlatformSetting.get("BRAND_HOME_URL", default=getattr(settings, "PUBLIC_BASE_URL", "") or ""),
                 "description": "Powered by Loyallia",
                 "id": "loyallia_link",
             },
             {
-                "uri": f"https://loyallia.com/enroll/{card.id}",
+                "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",
                 "description": "Inscribete aqui",
                 "id": "enroll_link",
             },
@@ -444,7 +445,7 @@ def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str =
 
     hero_uri = _resolve_url(google_images.get("hero_image") or card.strip_image_url, base_url)
     if not hero_uri and card.card_type == "stamp":
-        hero_uri = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&h=280&q=80"
+        hero_uri = PlatformSetting.get("WALLET_PLACEHOLDER_IMAGE", default="")
     elif not hero_uri:
         hero_uri = _resolve_url(google_images.get("program_logo") or card.logo_url, base_url)
 
@@ -473,12 +474,12 @@ def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str =
         "linksModuleData": {
             "uris": [
                 {
-                    "uri": "https://loyallia.com",
+                    "uri": PlatformSetting.get("BRAND_HOME_URL", default=getattr(settings, "PUBLIC_BASE_URL", "") or ""),
                     "description": "Powered by Loyallia",
                     "id": "loyallia_link",
                 },
                 {
-                    "uri": f"https://loyallia.com/enroll/{card.id}",
+                    "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",
                     "description": "Tu Tarjeta Digital",
                     "id": "enroll_link",
                 },
@@ -556,7 +557,7 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
     logo_uri = _resolve_url(
         google_images.get("program_logo") or card.logo_url,
         base_url,
-    ) or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
     payload = {
         "id": class_id,
         "issuerName": tenant.name,
@@ -642,7 +643,7 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
     logo_uri = _resolve_url(
         google_images.get("program_logo") or card.logo_url,
         base_url,
-    ) or f"https://ui-avatars.com/api/?name={card.name[:1]}&background=5660ff&color=fff&size=256"
+    ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
     payload = {
         "id": class_id,
         "issuerName": tenant.name,

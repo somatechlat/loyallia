@@ -32,7 +32,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Message is empty after sanitization' }, { status: 400 });
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!backendUrl) {
+      return NextResponse.json(
+        { error: 'Backend URL not configured' },
+        { status: 500 }
+      );
+    }
     const authHeader = req.headers.get('Authorization') || '';
 
     const payload: Record<string, unknown> = {

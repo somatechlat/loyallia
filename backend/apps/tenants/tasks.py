@@ -49,8 +49,10 @@ def export_tenant_data(tenant_id: str, user_email: str):
 
         download_url = default_storage.url(saved_path)
         if not download_url.startswith("http"):
-            backend_url = getattr(settings, "BACKEND_URL", "http://localhost:8000").rstrip("/")
-            download_url = f"{backend_url}{download_url}"
+            backend_url = getattr(settings, "BACKEND_URL", "")
+            if not backend_url:
+                raise RuntimeError("BACKEND_URL is not configured.")
+            download_url = f"{backend_url.rstrip('/')}{download_url}"
 
         from common.messages import get_message
 

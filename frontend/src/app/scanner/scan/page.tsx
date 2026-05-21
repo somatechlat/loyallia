@@ -249,7 +249,7 @@ export default function ScannerPage() {
               <label className="label text-white/70" htmlFor="amount-input">Monto de la compra ($)</label>
               <input id="amount-input" type="number" min="0" step="0.01"
                 className="input bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-brand-400"
-                value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+                value={amount} onChange={e => { const v = e.target.value; if (v === '' || parseFloat(v) >= 0) setAmount(v); }} placeholder="0.00" />
             </div>
             <div>
               <label className="label text-white/70" htmlFor="notes-input">Notas (opcional)</label>
@@ -298,7 +298,7 @@ export default function ScannerPage() {
             <p className="font-bold text-surface-900 dark:text-white text-lg mb-1">QR escaneado</p>
             <p className="text-surface-500 text-sm mb-2 font-mono text-xs break-all">{pendingQr.slice(0, 32)}...</p>
             <div className="text-left mb-4 p-3 bg-surface-50 rounded-xl">
-              <p className="text-sm"><span className="text-surface-500">Monto:</span> <strong>${parseFloat(amount).toFixed(2)}</strong></p>
+              <p className="text-sm"><span className="text-surface-500">Monto:</span> <strong>${!isNaN(parseFloat(amount)) && parseFloat(amount) >= 0 ? parseFloat(amount).toFixed(2) : '0.00'}</strong></p>
               {notes && <p className="text-sm"><span className="text-surface-500">Notas:</span> {notes}</p>}
             </div>
             <div className="flex gap-3">
@@ -391,7 +391,7 @@ export default function ScannerPage() {
                     <div className={`w-2 h-2 rounded-full ${scan.success ? 'bg-emerald-400' : 'bg-red-400'}`} />
                     <div>
                       <p className="text-sm font-medium text-white">{scan.customer_name}</p>
-                      <p className="text-xs text-white/50">{scan.type} · ${parseFloat(scan.amount).toFixed(2)}</p>
+                      <p className="text-xs text-white/50">{scan.type} · ${!isNaN(parseFloat(scan.amount)) && parseFloat(scan.amount) >= 0 ? parseFloat(scan.amount).toFixed(2) : '0.00'}</p>
                     </div>
                   </div>
                   <span className="text-xs text-white/40">{scan.time}</span>

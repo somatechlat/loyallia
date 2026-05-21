@@ -39,6 +39,7 @@ def send_email_campaign(
     """
     import uuid
 
+    from django.conf import settings
     from django.core.mail import EmailMultiAlternatives
     from django.utils import timezone
 
@@ -52,7 +53,7 @@ def send_email_campaign(
         NotificationChannel,
         NotificationType,
     )
-    from apps.tenants.models import Tenant
+    from apps.tenants.models import PlatformSetting, Tenant
 
     try:
         tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))
@@ -148,7 +149,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
   {html_body}
 </div>
 <div class="footer">
-  <p>Powered by <a href="https://loyallia.com">Loyallia</a>  Intelligent Rewards</p>
+  <p>Powered by <a href="{PlatformSetting.get('BRAND_HOME_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}">Loyallia</a>  Intelligent Rewards</p>
   <p style="margin-top:4px;">© 2024 {tenant.name}. Todos los derechos reservados.</p>
   <p style="margin-top:8px; font-size:10px;">¿No quieres recibir más correos? Visita tu perfil para gestionar tus preferencias.</p>
 </div>
@@ -158,7 +159,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
  # Generate a stable Message-ID for webhook correlation
                 import uuid as _uuid
 
-                message_id = f"{_uuid.uuid4().hex}@loyallia.com"
+                message_id = f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"
                 msg = EmailMultiAlternatives(subject=subject, from_email=from_email, to=[customer.email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.extra_headers["Message-ID"] = f"<{message_id}>"

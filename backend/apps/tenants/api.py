@@ -403,10 +403,12 @@ def ai_chat_proxy(request, payload: AIChatIn):
         logger.error("AI_AGENT_API_KEY not found in Vault.")
         raise HttpError(503, "AI agent service is not configured correctly.")
 
-    agent_base_url = get_secret(
-        "ai_agent_base_url",
-        default=getattr(settings, "AI_AGENT_BASE_URL", "https://agente.ingelsi.com.ec"),
-    )
+    agent_base_url = get_secret("ai_agent_base_url")
+    if not agent_base_url:
+        agent_base_url = getattr(settings, "AI_AGENT_BASE_URL", "")
+    if not agent_base_url:
+        logger.error("AI_AGENT_BASE_URL not configured.")
+        raise HttpError(503, "AI agent service is not configured correctly.")
 
     request_data = {
         "message": payload.message,

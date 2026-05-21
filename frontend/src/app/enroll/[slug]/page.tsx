@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import { adjustColor } from '@/components/programs/constants';
+import { stripLocalMinioUrl } from '@/lib/url-utils';
 
 // Global helper for local host environment detection
 const getBaseUrl = () => {
@@ -151,12 +152,8 @@ export default function EnrollPage() {
       })
       .then(data => {
         // Clean old hardcoded MinIO URLs
-        if (data.logo_url && (data.logo_url.includes('://localhost:33903/') || data.logo_url.includes('://127.0.0.1:33903/'))) {
-          data.logo_url = data.logo_url.replace(/^https?:\/\/[^/]+:33903/, '');
-        }
-        if (data.strip_image_url && (data.strip_image_url.includes('://localhost:33903/') || data.strip_image_url.includes('://127.0.0.1:33903/'))) {
-          data.strip_image_url = data.strip_image_url.replace(/^https?:\/\/[^/]+:33903/, '');
-        }
+        data.logo_url = stripLocalMinioUrl(data.logo_url);
+        data.strip_image_url = stripLocalMinioUrl(data.strip_image_url);
         setCard(data);
       })
       .catch(() => setCard(null))
