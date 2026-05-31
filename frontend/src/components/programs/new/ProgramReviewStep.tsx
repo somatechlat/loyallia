@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CardTypeIcon, BARCODE_TYPES } from '@/components/programs/constants';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import type { AppleWalletFeatureConfig } from '@/components/programs/WalletCardPreview';
-import type { WalletDesignState } from '@/components/programs/WalletDesigner';
+import type { WalletDesignState } from '@/components/wallet/types';
 import { APPLE_FIELD_GROUPS } from '@/components/programs/constants';
 
 /** Spanish labels for all program metadata keys — prevents mixed languages in review step. */

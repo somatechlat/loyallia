@@ -1,6 +1,6 @@
 import React from 'react';
 import { APPLE_PASS_STYLES, CardTypeIcon, adjustColor } from './constants';
-import type { WalletDesignState } from './WalletDesigner';
+import type { WalletDesignState } from '@/components/wallet/types';
 
 /* ── Type-specific visual content for hover preview ─────────────────── */
 const TYPE_VISUALS: Record<string, { title: string; headerLabel: string; headerValue: string; detail: string; visual: React.ReactNode }> = {

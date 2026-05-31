@@ -1,4 +1,4 @@
-import type { WalletDesignState } from '@/components/programs/WalletDesigner';
+import type { WalletDesignState } from './types';
 import { Pixel7Frame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, GOOGLE_WALLET_TYPES } from '@/components/programs/constants';

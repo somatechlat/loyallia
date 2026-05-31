@@ -11,9 +11,9 @@ export type {
   WalletLocation,
   WalletBeacon,
   WalletLink,
-} from '../WalletDesigner';
+} from '@/components/wallet/types';
 
-export { defaultWalletDesignState } from '../WalletDesigner';
+export { defaultWalletDesignState } from '@/components/wallet/types';
 
 /* V2-only UI state (not persisted) */
 export type DesignerNavItem =

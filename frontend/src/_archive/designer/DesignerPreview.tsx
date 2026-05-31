@@ -6,7 +6,7 @@ import {
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
 } from '../constants.tsx';
-import type { WalletDesignState } from '../WalletDesigner';
+import type { WalletDesignState } from '@/components/wallet/types';
 
 /* ─── Barcode SVG (copied from WalletCardPreview) ─────────────────── */
 function BarcodeSvg({ type, size = 48 }: { type: string; size?: number }) {

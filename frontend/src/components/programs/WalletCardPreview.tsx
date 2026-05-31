@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
-  BARCODE_TYPES,
   CARD_TYPES,
-  CardTypeIcon,
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
   APPLE_IMAGE_SUPPORT,
 } from './constants';
-import type { WalletDesignState } from './WalletDesigner';
+import type { WalletDesignState } from '@/components/wallet/types';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 

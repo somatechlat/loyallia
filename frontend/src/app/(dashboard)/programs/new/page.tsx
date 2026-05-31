@@ -14,10 +14,8 @@ import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
-import WalletDesigner, {
-  type WalletDesignState,
-  defaultWalletDesignState,
-} from '@/components/programs/WalletDesigner';
+import WalletDesigner from '@/components/programs/WalletDesigner';
+import { type WalletDesignState, defaultWalletDesignState } from '@/components/wallet/types';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 import StepBar from '@/components/programs/new/StepBar';
 import ProgramReviewStep from '@/components/programs/new/ProgramReviewStep';
