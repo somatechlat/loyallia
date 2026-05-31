@@ -227,6 +227,15 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 )
  # Increment campaign run counter
                 CampaignRun.objects.filter(id=log.campaign_run_id).update(sent_count=models.F("sent_count") + 1)
+ # Increment tenant WhatsApp daily counter (LYL-SRS-008)
+                try:
+                    from apps.tenants.models import Tenant
+                    tenant = Tenant.objects.get(id=payload.tenant_id)
+                    session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
+                    session.messages_sent_today += 1
+                    session.save(update_fields=["messages_sent_today", "updated_at"])
+                except Exception:
+                    logger.debug("Could not increment messages_sent_today for tenant %s", payload.tenant_id)
 
             elif payload.status == "delivered":
                 log.status = DeliveryStatus.DELIVERED
