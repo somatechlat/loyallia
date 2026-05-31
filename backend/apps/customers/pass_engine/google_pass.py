@@ -17,7 +17,7 @@ from typing import Any
 
 import jwt  # PyJWT
 
-from apps.customers.pass_engine.google_pass_builders import (
+from apps.customers.pass_engine.builders import (
     _build_gift_card_class,
     _build_gift_card_object,
     _build_loyalty_class,
