@@ -404,7 +404,7 @@ export default function CustomersPage() {
                   <td className="text-surface-500">{c.email}</td>
                   <td className="text-surface-500">{c.phone || "—"}</td>
                   <td>{c.total_visits}</td>
-                  <td>${parseFloat(c.total_spent).toFixed(2)}</td>
+                  <td>${!isNaN(parseFloat(c.total_spent)) ? parseFloat(c.total_spent).toFixed(2) : '0.00'}</td>
                   <td className="text-surface-500 text-xs">
                     {c.last_visit
                       ? new Date(c.last_visit).toLocaleDateString("es-EC")

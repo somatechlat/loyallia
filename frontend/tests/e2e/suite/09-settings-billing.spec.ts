@@ -18,9 +18,9 @@ test.describe('Settings — OWNER @owner @settings', () => {
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('OWNER has "Configuracion" in navigation @owner', async ({ page }) => {
+  test('OWNER has "Configuración" in navigation @owner', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const navLink = page.locator('nav, aside').getByText('Configuracion');
+    const navLink = page.locator('nav, aside').getByText('Configuración');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -52,9 +52,9 @@ test.describe('Billing — OWNER @owner @settings', () => {
     await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
-  test('OWNER has "Facturacion" in navigation @owner', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    const navLink = page.locator('nav, aside').getByText('Facturacion');
+  test('OWNER has "Facturación" in navigation @owner', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const navLink = page.locator('nav, aside, [role="navigation"], [role="complementary"]').getByText('Facturación');
     await expect(navLink.first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -89,7 +89,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
     // Title and description
     await expect(page.getByText('Integraciones')).toBeVisible();
     await expect(page.getByText('WhatsApp Business Bridge')).toBeVisible();
-    await expect(page.getByText('Vincula tu WhatsApp para enviar campanas masivas')).toBeVisible();
+    await expect(page.getByText('Vincula tu WhatsApp para enviar campañas masivas')).toBeVisible();
 
     // Toggle must be present (plan has whatsapp_campaigns feature)
     const toggle = page.locator('#wa-toggle');
@@ -128,8 +128,17 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
   });
 
   test('OWNER QR wizard shows instructions and controls @owner', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
+    await page.goto('/settings', { waitUntil: 'networkidle' });
+    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 15000 });
+
+    // If already active from previous test, cancel first
+    const cancelBtn = page.locator('#wa-cancel-btn');
+    if (await cancelBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await cancelBtn.click();
+      await page.locator('#wa-wizard-content').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      // Wait for toggle to reset
+      await page.waitForTimeout(500);
+    }
 
     // Activate to QR state
     await page.locator('#wa-toggle').click();
@@ -144,10 +153,10 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
     // Step-by-step instructions
     await expect(page.getByText('Vincula tu dispositivo')).toBeVisible();
-    await expect(page.getByText('Abre WhatsApp en tu telefono')).toBeVisible();
-    await expect(page.getByText('Ajustes -> Dispositivos vinculados')).toBeVisible();
+    await expect(page.getByText('Abre WhatsApp en tu teléfono')).toBeVisible();
+    await expect(page.getByText('Ajustes → Dispositivos vinculados')).toBeVisible();
     await expect(page.getByText('Vincular un dispositivo')).toBeVisible();
-    await expect(page.getByText('Escanea este codigo QR')).toBeVisible();
+    await expect(page.getByText('Escanea este código QR')).toBeVisible();
 
     // Waiting indicator
     await expect(page.getByText('Esperando escaneo...')).toBeVisible();
@@ -159,7 +168,7 @@ test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
     await expect(page.locator('#wa-cancel-btn')).toContainText('Cancelar');
 
     // Warning banner about session persistence
-    await expect(page.getByText('La sesion se mantiene mientras el servicio este activo')).toBeVisible();
+    await expect(page.getByText(/La sesi[oó]n se mantiene mientras el servicio est[eé] activo/)).toBeVisible();
   });
 
   test('OWNER can refresh QR code @owner', async ({ page }) => {

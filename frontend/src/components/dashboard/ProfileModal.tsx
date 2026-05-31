@@ -34,6 +34,8 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwError, setPwError] = useState('');
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -49,14 +51,19 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
   };
 
   const handleChangePw = async () => {
-    if (!currentPw || !newPw) {
-      toast.error('Completa ambos campos de contraseña');
+    if (!currentPw || !newPw || !confirmPw) {
+      setPwError('Completa todos los campos de contraseña');
       return;
     }
     if (newPw.length < 8) {
-      toast.error('La nueva contraseña debe tener al menos 8 caracteres');
+      setPwError('La nueva contraseña debe tener al menos 8 caracteres');
       return;
     }
+    if (newPw !== confirmPw) {
+      setPwError('Las contraseñas no coinciden');
+      return;
+    }
+    setPwError('');
     setSavingPw(true);
     try {
       await authApi.changePassword({ current_password: currentPw, new_password: newPw });
@@ -64,6 +71,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
       setShowPwChange(false);
       setCurrentPw('');
       setNewPw('');
+      setConfirmPw('');
     } catch {
       toast.error('Contraseña actual incorrecta');
     } finally {
@@ -107,6 +115,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
               <input
                 type="text"
                 value={firstName}
+                maxLength={100}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="input w-full"
               />
@@ -116,6 +125,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
               <input
                 type="text"
                 value={lastName}
+                maxLength={100}
                 onChange={(e) => setLastName(e.target.value)}
                 className="input w-full"
               />
@@ -174,6 +184,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
                     <input
                       type={showCurrentPw ? 'text' : 'password'}
                       value={currentPw}
+                      minLength={1}
                       onChange={(e) => setCurrentPw(e.target.value)}
                       className="input w-full pr-10"
                       placeholder="••••••••"
@@ -195,6 +206,8 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
                     <input
                       type={showNewPw ? 'text' : 'password'}
                       value={newPw}
+                      minLength={8}
+                      maxLength={128}
                       onChange={(e) => setNewPw(e.target.value)}
                       className="input w-full pr-10"
                       placeholder="Mínimo 8 caracteres"
@@ -210,6 +223,18 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
                     </button>
                   </div>
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1">Confirmar nueva contraseña</label>
+                  <input
+                    type="password"
+                    value={confirmPw}
+                    onChange={(e) => { setConfirmPw(e.target.value); setPwError(''); }}
+                    className="input w-full"
+                    placeholder="Repite la contraseña"
+                    maxLength={128}
+                  />
+                </div>
+                {pwError && <p className="text-xs text-red-500">{pwError}</p>}
                 <button
                   onClick={handleChangePw}
                   disabled={savingPw}

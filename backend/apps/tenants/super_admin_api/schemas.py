@@ -74,6 +74,32 @@ class LocationIn(BaseModel):
     longitude: float | None = None
     is_primary: bool = False
 
+    @field_validator("latitude", mode="before")
+    @classmethod
+    def validate_latitude(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            f = float(v)
+        except (ValueError, TypeError):
+            raise ValueError("La latitud debe ser un número válido")
+        if not -90 <= f <= 90:
+            raise ValueError("La latitud debe estar entre -90 y 90")
+        return f
+
+    @field_validator("longitude", mode="before")
+    @classmethod
+    def validate_longitude(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            f = float(v)
+        except (ValueError, TypeError):
+            raise ValueError("La longitud debe ser un número válido")
+        if not -180 <= f <= 180:
+            raise ValueError("La longitud debe estar entre -180 y 180")
+        return f
+
 
 class LocationOut(BaseModel):
     id: str

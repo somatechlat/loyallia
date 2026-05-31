@@ -13,6 +13,7 @@
  * @param isCreate - Whether this is a create (vs edit) form
  */
 import { useRef, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import type { LocationFormData } from './types';
 
 interface LocationFormProps {
@@ -68,8 +69,22 @@ export default function LocationForm({ form, onChange, onSave, onCancel, saving,
         <FormField label="Teléfono" value={form.phone} onChange={v => onChange(f => ({ ...f, phone: v }))} placeholder="+593 4 268 3200" />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <FormField label="Latitud" value={form.latitude?.toString() || ''} onChange={v => onChange(f => ({ ...f, latitude: v ? parseFloat(v) : null }))} placeholder="-2.1543" />
-        <FormField label="Longitud" value={form.longitude?.toString() || ''} onChange={v => onChange(f => ({ ...f, longitude: v ? parseFloat(v) : null }))} placeholder="-79.8963" />
+        <FormField label="Latitud" value={form.latitude?.toString() || ''} onChange={v => {
+          const num = v ? parseFloat(v) : null;
+          if (num !== null && (Number.isNaN(num) || num < -90 || num > 90)) {
+            toast.error('La latitud debe estar entre -90 y 90');
+            return;
+          }
+          onChange(f => ({ ...f, latitude: num }));
+        }} placeholder="-2.1543" />
+        <FormField label="Longitud" value={form.longitude?.toString() || ''} onChange={v => {
+          const num = v ? parseFloat(v) : null;
+          if (num !== null && (Number.isNaN(num) || num < -180 || num > 180)) {
+            toast.error('La longitud debe estar entre -180 y 180');
+            return;
+          }
+          onChange(f => ({ ...f, longitude: num }));
+        }} placeholder="-79.8963" />
       </div>
 
       {/* Toggles */}

@@ -202,6 +202,7 @@ function AccordionSection({
 }
 
 function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedConfig; onChange: (c: GoogleAdvancedConfig) => void }) {
+  const [urlErrors, setUrlErrors] = useState({ homepage: false, help: false });
   const patch = (p: Partial<GoogleAdvancedConfig>) => onChange({ ...config, ...p });
   const addLink = () => patch({ linksModuleUris: [...config.linksModuleUris, { label: '', uri: '' }] });
   const updateLink = (i: number, p: Partial<{ label: string; uri: string }>) => {
@@ -242,11 +243,13 @@ function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedCo
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-xs font-medium text-surface-600 dark:text-surface-300">URL de inicio</label>
-          <input type="url" value={config.homepageUri} onChange={e => patch({ homepageUri: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="https://..." />
+          <input type="url" value={config.homepageUri} onChange={e => { patch({ homepageUri: e.target.value }); setUrlErrors(err => ({ ...err, homepage: false })); }} onBlur={e => setUrlErrors(err => ({ ...err, homepage: !!e.target.value && !(e.target as HTMLInputElement).checkValidity() }))} className={`w-full text-sm rounded-lg border ${urlErrors.homepage ? 'border-red-500' : 'border-surface-200 dark:border-surface-600'} px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500`} placeholder="https://..." />
+          {urlErrors.homepage && <p className="text-xs text-red-500 mt-0.5">URL inválida</p>}
         </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-surface-600 dark:text-surface-300">URL de ayuda</label>
-          <input type="url" value={config.helpUri} onChange={e => patch({ helpUri: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="https://..." />
+          <input type="url" value={config.helpUri} onChange={e => { patch({ helpUri: e.target.value }); setUrlErrors(err => ({ ...err, help: false })); }} onBlur={e => setUrlErrors(err => ({ ...err, help: !!e.target.value && !(e.target as HTMLInputElement).checkValidity() }))} className={`w-full text-sm rounded-lg border ${urlErrors.help ? 'border-red-500' : 'border-surface-200 dark:border-surface-600'} px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500`} placeholder="https://..." />
+          {urlErrors.help && <p className="text-xs text-red-500 mt-0.5">URL inválida</p>}
         </div>
       </div>
       <div className="space-y-2">
@@ -269,8 +272,8 @@ function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedCo
         </div>
         {config.messages.map((m, i) => (
           <div key={i} className="flex gap-2">
-            <input type="text" placeholder="Encabezado" value={m.header} onChange={e => updateMsg(i, { header: e.target.value })} className="flex-1 text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-            <input type="text" placeholder="Mensaje" value={m.body} onChange={e => updateMsg(i, { body: e.target.value })} className="flex-[2] text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            <input type="text" placeholder="Encabezado" value={m.header} onChange={e => updateMsg(i, { header: e.target.value })} className="flex-1 text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" maxLength={200} />
+            <input type="text" placeholder="Mensaje" value={m.body} onChange={e => updateMsg(i, { body: e.target.value })} className="flex-[2] text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-1.5 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" maxLength={1000} />
             <button onClick={() => removeMsg(i)} className="text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300"><TrashIcon className="w-4 h-4" /></button>
           </div>
         ))}
@@ -303,7 +306,7 @@ function AppleAdvancedSettings({ config, onChange }: { config: AppleAdvancedConf
       </div>
       <div className="space-y-1">
         <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Mensaje NFC (requiere NFC activado)</label>
-        <input type="text" value={config.nfcMessage} onChange={e => patch({ nfcMessage: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="Texto que aparece al escanear con NFC" />
+        <input type="text" value={config.nfcMessage} onChange={e => patch({ nfcMessage: e.target.value })} className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" placeholder="Texto que aparece al escanear con NFC" maxLength={200} />
       </div>
       <div className="space-y-1">
         <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Fecha de expiración</label>
@@ -628,6 +631,7 @@ function AppleFieldEditor({
                                 updateGroup(group.key, updated);
                               }}
                               className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                              maxLength={200}
                             />
                           </div>
                         </div>

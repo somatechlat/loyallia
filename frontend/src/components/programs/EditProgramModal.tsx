@@ -50,6 +50,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
   const [logoPreview, setLogoPreview] = useState<string | null>(program.logo_url || null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('custom');
+  const [errors, setErrors] = useState({ name: false, desc: false, heroUrl: false, iconUrl: false });
   const fileRef = useRef<HTMLInputElement>(null);
   const iconFileRef = useRef<HTMLInputElement>(null);
   const heroFileRef = useRef<HTMLInputElement>(null);
@@ -81,6 +82,14 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
   };
 
   const handleEditSave = async () => {
+    const errs = {
+      name: !editForm.name.trim(),
+      desc: editForm.description.length > 1000,
+      heroUrl: !!editForm.strip_image_url && !/^https?:\/\/.+/.test(editForm.strip_image_url),
+      iconUrl: !!editForm.icon_url && !/^https?:\/\/.+/.test(editForm.icon_url),
+    };
+    setErrors(errs);
+    if (Object.values(errs).some(Boolean)) return;
     setEditSaving(true);
     try {
       await programsApi.update(id, editForm);
@@ -127,24 +136,28 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
             <div>
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Nombre del programa</label>
               <input
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border ${errors.name ? 'border-red-500' : 'border-slate-200'} text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm`}
                 value={editForm.name}
-                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                onChange={e => { setEditForm(f => ({ ...f, name: e.target.value })); setErrors(err => ({ ...err, name: false })); }}
                 placeholder="Ej: Café Frecuente"
                 id="edit-name"
+                maxLength={200}
               />
+              {errors.name && <p className="text-xs text-red-500 mt-1">Nombre requerido</p>}
             </div>
 
             <div>
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Descripción</label>
               <textarea
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border ${errors.desc ? 'border-red-500' : 'border-slate-200'} text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm`}
                 rows={2}
                 value={editForm.description}
-                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                onChange={e => { setEditForm(f => ({ ...f, description: e.target.value })); setErrors(err => ({ ...err, desc: false })); }}
                 placeholder="Describe los beneficios de tu programa..."
                 id="edit-desc"
+                maxLength={1000}
               />
+              {errors.desc && <p className="text-xs text-red-500 mt-1">Máximo 1000 caracteres</p>}
             </div>
 
             {/* Logo */}
@@ -190,15 +203,17 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
               )}
               <div className="flex gap-2">
                 <input
-                  className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm"
+                  className={`flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border ${errors.heroUrl ? 'border-red-500' : 'border-slate-200'} text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm`}
                   placeholder="https://... URL de imagen"
+                  type="url"
                   value={editForm.strip_image_url}
-                  onChange={e => setEditForm(f => ({ ...f, strip_image_url: e.target.value }))}
+                  onChange={e => { setEditForm(f => ({ ...f, strip_image_url: e.target.value })); setErrors(err => ({ ...err, heroUrl: false })); }}
                   id="edit-hero-url"
                 />
                 <button type="button" onClick={() => heroFileRef.current?.click()}
                   className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs border border-slate-200 transition-all font-medium" id="upload-hero-btn">Subir</button>
               </div>
+              {errors.heroUrl && <p className="text-xs text-red-500 mt-1">URL inválida</p>}
               <input ref={heroFileRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'strip_image_url')} />
             </div>
 
@@ -207,15 +222,17 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Ícono de recompensa</label>
               <div className="flex gap-2">
                 <input
-                  className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm"
+                  className={`flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border ${errors.iconUrl ? 'border-red-500' : 'border-slate-200'} text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm`}
                   placeholder="https://... URL del ícono"
+                  type="url"
                   value={editForm.icon_url}
-                  onChange={e => setEditForm(f => ({ ...f, icon_url: e.target.value }))}
+                  onChange={e => { setEditForm(f => ({ ...f, icon_url: e.target.value })); setErrors(err => ({ ...err, iconUrl: false })); }}
                   id="edit-icon-url"
                 />
                 <button type="button" onClick={() => iconFileRef.current?.click()}
                   className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs border border-slate-200 transition-all font-medium" id="upload-icon-btn">Subir</button>
               </div>
+              {errors.iconUrl && <p className="text-xs text-red-500 mt-1">URL inválida</p>}
               <input ref={iconFileRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'icon_url')} />
             </div>
 
