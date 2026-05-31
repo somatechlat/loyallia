@@ -26,16 +26,27 @@ APPLE_PASS_STYLES = {
 }
 
 
-def _substitute_template_values(value: str, card, customer) -> str:
+def _substitute_template_values(value: str, card, customer_pass) -> str:
     """Replace template placeholders with actual customer/card data."""
     if not isinstance(value, str):
         return value
+    customer = customer_pass.customer
     customer_name = f"{customer.first_name} {customer.last_name}".strip()
+    pass_data = customer_pass.pass_data or {}
+    metadata = card.metadata or {}
+    total_stamps = metadata.get("stamps_required", metadata.get("total_stamps", 6))
+    current_stamps = pass_data.get("stamp_count", 0) if isinstance(pass_data, dict) else 0
+    reward = metadata.get("reward_description", "Recompensa")
+    stamps_display = "⬛" * current_stamps + "⬜" * (total_stamps - current_stamps)
     replacements = {
         "{description}": card.description or "",
         "{customer_name}": customer_name,
         "{program_name}": card.name or "",
-        "{qr_code}": customer_pass.qr_code if 'customer_pass' in dir() else "",
+        "{qr_code}": customer_pass.qr_code or "",
+        "{stamp_count}": str(current_stamps),
+        "{stamps_required}": str(total_stamps),
+        "{reward_description}": reward,
+        "{stamp_display}": stamps_display,
     }
     for placeholder, replacement in replacements.items():
         value = value.replace(placeholder, replacement)
@@ -52,14 +63,14 @@ def _substitute_fields(fields: dict, card, customer_pass) -> dict:
             for item in value:
                 if isinstance(item, dict) and "value" in item:
                     new_item = dict(item)
-                    new_item["value"] = _substitute_template_values(str(item["value"]), card, customer)
+                    new_item["value"] = _substitute_template_values(str(item["value"]), card, customer_pass)
                     result[key].append(new_item)
                 else:
                     result[key].append(item)
         elif isinstance(value, dict):
             result[key] = _substitute_fields(value, card, customer_pass)
         elif isinstance(value, str):
-            result[key] = _substitute_template_values(value, card, customer)
+            result[key] = _substitute_template_values(value, card, customer_pass)
         else:
             result[key] = value
     return result
