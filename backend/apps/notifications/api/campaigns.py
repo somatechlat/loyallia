@@ -43,6 +43,7 @@ def _get_campaign_task(data: CampaignCreateIn):
             "message": data.message,
             "segment_id": data.segment_id,
             "wallet_platform": data.wallet_platform,
+            "action_url": data.action_url or "",
         }
     elif data.channel == "whatsapp":
         from apps.notifications.tasks import send_whatsapp_campaign
@@ -83,9 +84,19 @@ class CampaignCreateIn(BaseModel):
     channel: str | None = "email"  # 'email', 'wallet', 'whatsapp', or 'sms'
     sender_domain: str | None = "loyallia"  # 'loyallia' or 'custom'
     wallet_platform: str = "both"  # 'apple', 'google', or 'both'
+    action_url: str | None = ""  # Custom link for wallet push notifications (optional)
     schedule_type: str = "immediate"  # 'immediate' or 'scheduled'
     scheduled_at: str | None = None  # ISO datetime string for scheduled campaigns
 
+
+SEGMENT_NAMES = {
+    "all": "Todos los clientes",
+    "vip": "VIP",
+    "active": "Activos",
+    "at_risk": "En riesgo",
+    "inactive": "Inactivos",
+    "new": "Nuevos",
+}
 
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
 def list_campaigns(request: HttpRequest) -> dict:
@@ -101,15 +112,18 @@ def list_campaigns(request: HttpRequest) -> dict:
                     "id": str(run.id),
                     "title": run.title or "Sin título",
                     "message": run.message_preview or "",
-                    "segment": run.segment_id or "all",
+                    "segment": SEGMENT_NAMES.get(run.segment_id, run.segment_id or "all"),
                     "status": run.status,
                     "sent_count": run.sent_count,
+                    "failed_count": run.failed_count,
+                    "total_recipients": run.total_recipients,
                     "created_at": run.created_at.isoformat() if run.created_at else "",
                     "channel": run.channel,
+                    "error_summary": run.error_summary or "",
                 }
                 for run in runs
             ],
-            "total": len(runs),
+            "total": CampaignRun.objects.filter(tenant=request.tenant).count(),
         }
 
     notifications = Notification.objects.filter(

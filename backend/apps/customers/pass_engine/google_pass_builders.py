@@ -27,7 +27,17 @@ def _get_barcode_type(card) -> str:
 
 
 def _get_issuer_id() -> str:
-    """Return the Google Wallet Issuer ID from settings."""
+    """Return the Google Wallet Issuer ID from Vault (not cached settings).
+
+    This ensures the real issuer ID is always used, even if Django settings
+    were loaded before the Vault secret was set.
+    """
+    from common.vault import get_secret
+
+    issuer_id = get_secret("google_wallet_issuer_id", default="")
+    if issuer_id and issuer_id not in ("", "n/a", "PLACEHOLDER_ISSUER_ID"):
+        return issuer_id
+    # Fallback to settings for backward compatibility
     return getattr(settings, "GOOGLE_WALLET_ISSUER_ID", "")
 
 
