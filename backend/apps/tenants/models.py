@@ -1,5 +1,5 @@
 """
-Loyallia  Tenant & Location Models
+Loyallia Tenant & Location Models
 Core multi-tenant entity. All business data ties to Tenant.
 Ecuadorian business fields for SRI compliance.
 """
@@ -16,7 +16,6 @@ from common.models import TimestampedModel
 
 # VALIDATORS Ecuadorian Identity Documents
 
-
 def validate_ruc(value: str) -> None:
     """Validate Ecuadorian RUC (Registro Único de Contribuyentes).
     Rules: 13 digits. First 2 = province (01-24, or 30 for foreign).
@@ -27,7 +26,6 @@ def validate_ruc(value: str) -> None:
     province = int(value[:2])
     if province < 1 or (province > 24 and province not in (30,)):
         raise ValidationError(f"Los primeros 2 dígitos del RUC ({value[:2]}) no corresponden a una provincia válida.")
-
 
 def validate_cedula(value: str) -> None:
     """Validate Ecuadorian Cédula de Identidad.
@@ -48,15 +46,12 @@ def validate_cedula(value: str) -> None:
     if check != int(value[9]):
         raise ValidationError("El dígito verificador de la cédula no es válido.")
 
-
 # ENUMS
-
 
 class Plan(models.TextChoices):
     TRIAL = "trial", "Trial Gratuito"
     FULL = "full", "FULL"
     SUSPENDED = "suspended", "Suspendido"
-
 
 class IndustryType(models.TextChoices):
     FOOD_BEVERAGE = "food_beverage", "Alimentos y Bebidas"
@@ -70,7 +65,6 @@ class IndustryType(models.TextChoices):
     HOSPITALITY = "hospitality", "Hotelería y Turismo"
     TECHNOLOGY = "technology", "Tecnología"
     OTHER = "other", "Otro"
-
 
 class EcuadorProvince(models.TextChoices):
     AZUAY = "azuay", "Azuay"
@@ -98,14 +92,11 @@ class EcuadorProvince(models.TextChoices):
     TUNGURAHUA = "tungurahua", "Tungurahua"
     ZAMORA_CHINCHIPE = "zamora_chinchipe", "Zamora Chinchipe"
 
-
 class EntityType(models.TextChoices):
     NATURAL = "natural", "Persona Natural"
     JURIDICA = "juridica", "Persona Jurídica (Empresa)"
 
-
 # TENANT MODEL
-
 
 class Tenant(TimestampedModel):
     """
@@ -116,7 +107,7 @@ class Tenant(TimestampedModel):
 
     name = models.CharField(max_length=200, verbose_name="Nombre comercial")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
- # DEPRECATED (LYL-H-ARCH-011): plan is a denormalized cache of Subscription.status.
+ #
  # Use effective_plan property or Subscription directly as the source of truth.
  # This field will be removed in a future migration once all reads are migrated.
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
@@ -204,7 +195,7 @@ class Tenant(TimestampedModel):
         help_text="ISO 639-1: es, en, fr, de. Set at tenant registration.",
     )
 
- # LOPDP Art. 18 Scheduled account deletion (LYL-FR-DPR-025.8)
+    # LOPDP Art. 18 Scheduled account deletion
     scheduled_deletion_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -235,7 +226,7 @@ class Tenant(TimestampedModel):
 
     @property
     def effective_plan(self) -> str:
-        """Canonical plan status derived from Subscription (LYL-H-ARCH-011).
+        """Canonical plan status derived from Subscription.
 
         Returns the Subscription status mapped to the legacy Plan choices.
         Falls back to the denormalized Tenant.plan field if no Subscription exists.
@@ -263,7 +254,6 @@ class Tenant(TimestampedModel):
     def is_trial_active(self) -> bool:
         """True if tenant is in active trial period.
 
-        LYL-H-ARCH-011: Delegates to Subscription as source of truth.
         """
         from apps.billing.models import Subscription
 
@@ -308,7 +298,6 @@ class Tenant(TimestampedModel):
     def has_active_subscription(self) -> bool:
         """True if tenant has paid subscription OR active trial.
 
-        LYL-H-ARCH-011: Delegates to Subscription as source of truth.
         """
         from apps.billing.models import Subscription
 
@@ -326,7 +315,6 @@ class Tenant(TimestampedModel):
     def activate_trial(self) -> None:
         """Set trial_end to now + TRIAL_DAYS. Called on registration.
 
-        LYL-H-ARCH-011: Updates Subscription as the authoritative source.
         Also syncs the denormalized Tenant.plan field for backward compatibility.
         """
         from datetime import timedelta
@@ -349,7 +337,6 @@ class Tenant(TimestampedModel):
             subscription.status = SubscriptionStatus.TRIALING
             subscription.plan = "trial"
             subscription.save(update_fields=["trial_end", "status", "plan", "updated_at"])
-
 
 class Location(TimestampedModel):
     """Physical business location. Each tenant can have multiple."""
@@ -396,15 +383,12 @@ class Location(TimestampedModel):
     def has_coordinates(self) -> bool:
         return self.latitude is not None and self.longitude is not None
 
-
 # PLATFORM SETTINGS Runtime-configurable without restart
-
 
 from django.core.cache import cache
 
 _PLATFORM_SETTING_CACHE_PREFIX = "platform_setting"
-_PLATFORM_SETTING_CACHE_TTL = 300  # 5 minutes (LYL-PERF-001)
-
+_PLATFORM_SETTING_CACHE_TTL = 300  # 5 minutes
 
 class PlatformSetting(models.Model):
     """A single runtime-configurable platform setting.

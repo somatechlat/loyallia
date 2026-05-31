@@ -1,5 +1,5 @@
 """
-Loyallia  Super Admin API Schemas (Pydantic models)
+Loyallia Super Admin API Schemas (Pydantic models)
 Used by all super_admin_api endpoint modules.
 """
 
@@ -12,7 +12,6 @@ from apps.billing.models import PlanFeature, SubscriptionPlan
 from apps.tenants.models import Location, Tenant
 
 # TENANT SCHEMAS
-
 
 class TenantAdminOut(BaseModel):
     id: str
@@ -47,7 +46,7 @@ class TenantAdminOut(BaseModel):
             id=str(t.id),
             name=t.name,
             slug=t.slug,
-            plan=plan,  # LYL-H-ARCH-011: derive from Subscription
+            plan=plan,  #
             is_active=t.is_active,
             trial_days_remaining=t.trial_days_remaining,
             country=t.country,
@@ -64,7 +63,6 @@ class TenantAdminOut(BaseModel):
             user_count=User.objects.filter(tenant=t).count(),
             location_count=Location.objects.filter(tenant=t).count(),
         )
-
 
 class LocationIn(BaseModel):
     name: str
@@ -100,7 +98,6 @@ class LocationIn(BaseModel):
             raise ValueError("La longitud debe estar entre -180 y 180")
         return f
 
-
 class LocationOut(BaseModel):
     id: str
     name: str
@@ -123,7 +120,6 @@ class LocationOut(BaseModel):
             is_primary=loc.is_primary,
             is_active=loc.is_active,
         )
-
 
 class CreateTenantWizardIn(BaseModel):
     """Full 4-step wizard payload for creating a tenant."""
@@ -152,7 +148,6 @@ class CreateTenantWizardIn(BaseModel):
     plan_slug: str = "starter"
     billing_cycle: str = "monthly"
 
-
 class TenantAdminUpdateIn(BaseModel):
     name: str | None = None
     legal_name: str | None = None
@@ -164,12 +159,10 @@ class TenantAdminUpdateIn(BaseModel):
     phone: str | None = None
     email: str | None = None
     website: str | None = None
- # LYL-H-ARCH-011: plan removed use Subscription endpoints to change plan
+ #
     is_active: bool | None = None
 
-
 # COMMON SCHEMAS
-
 
 class CreateTenantOut(BaseModel):
     success: bool
@@ -178,7 +171,6 @@ class CreateTenantOut(BaseModel):
     owner_id: str
     owner_email: str = ""
     temp_password: str = ""
-
 
 class PlatformMetricsOut(BaseModel):
     total_tenants: int
@@ -191,11 +183,9 @@ class PlatformMetricsOut(BaseModel):
     mrr: float
     recent_tenants: list
 
-
 class MessageOut(BaseModel):
     success: bool
     message: str
-
 
 class PlatformIntegrationOut(BaseModel):
     key: str
@@ -207,27 +197,22 @@ class PlatformIntegrationOut(BaseModel):
     diagnostics: dict = Field(default_factory=dict)
     preview_values: dict = Field(default_factory=dict)
 
-
 class ExtendTrialIn(BaseModel):
     days: int
-
 
 class BroadcastIn(BaseModel):
     subject: str
     message: str
 
-
 class ImpersonateIn(BaseModel):
     owner_pin: str
     justification: str = Field(..., min_length=10)
-
 
 class ImpersonateOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     impersonated_tenant_id: str
     impersonated_user_id: str
-
 
 class InvoiceOut(BaseModel):
     id: str
@@ -241,9 +226,7 @@ class InvoiceOut(BaseModel):
     paid_at: datetime | None = None
     created_at: datetime
 
-
 # PLAN SCHEMAS
-
 
 class PlanOut(BaseModel):
     id: str
@@ -306,7 +289,6 @@ class PlanOut(BaseModel):
             sort_order=p.sort_order,
         )
 
-
 class PlanCreateIn(BaseModel):
     name: str
     slug: str
@@ -342,7 +324,6 @@ class PlanCreateIn(BaseModel):
         if unknown:
             raise ValueError(f"Unknown plan feature(s): {', '.join(unknown)}")
         return list(dict.fromkeys(value))
-
 
 class PlanUpdateIn(BaseModel):
     name: str | None = None
@@ -382,15 +363,12 @@ class PlanUpdateIn(BaseModel):
             raise ValueError(f"Unknown plan feature(s): {', '.join(unknown)}")
         return list(dict.fromkeys(value))
 
-
-# WHATSAPP OVERRIDE (LYL-SRS-008)
-
+# WHATSAPP OVERRIDE
 
 class WhatsAppOverrideIn(BaseModel):
     """Per-tenant WA daily limit override. 0 = use plan default."""
 
     daily_limit_override: int = 0
-
 
 class VaultSecretUpdateIn(BaseModel):
     """Update a secret in HashiCorp Vault. Only SUPER_ADMIN can use this."""
@@ -398,9 +376,7 @@ class VaultSecretUpdateIn(BaseModel):
     key: str
     value: str
 
-
 # PLATFORM SETTINGS Runtime configuration without restart
-
 
 class PlatformSettingOut(BaseModel):
     """A single platform setting exposed to the SuperAdmin UI."""
@@ -412,12 +388,10 @@ class PlatformSettingOut(BaseModel):
     requires_restart: bool
     updated_at: datetime
 
-
 class PlatformSettingUpdateIn(BaseModel):
     """Update a platform setting value. Only SUPER_ADMIN can use this."""
 
     value: str
-
 
 class PlatformSettingsSummaryOut(BaseModel):
     """Grouped platform settings by category."""
@@ -425,19 +399,16 @@ class PlatformSettingsSummaryOut(BaseModel):
     category: str
     settings: list[PlatformSettingOut]
 
-
 class PlatformSettingsBulkUpdateItem(BaseModel):
     """Single setting update item for bulk update."""
 
     key: str
     value: str
 
-
 class PlatformSettingsBulkUpdateIn(BaseModel):
     """Bulk update multiple platform settings at once."""
 
     settings: list[PlatformSettingsBulkUpdateItem]
-
 
 class PlatformSettingsBulkUpdateOut(BaseModel):
     """Response from a bulk update operation."""
@@ -448,7 +419,6 @@ class PlatformSettingsBulkUpdateOut(BaseModel):
     skipped: int
     errors: list[str] = Field(default_factory=list)
 
-
 class PlatformSettingsRefreshCacheOut(BaseModel):
     """Response from cache refresh operation."""
 
@@ -458,16 +428,13 @@ class PlatformSettingsRefreshCacheOut(BaseModel):
     failed: int
     total: int
 
-
-# PLATFORM MODE (LYL-SRS-MODE-001)
-
+# PLATFORM MODE ()
 
 class PlatformModeOut(BaseModel):
     """Current platform mode (development / production)."""
 
     mode: str
     updated_at: datetime | None = None
-
 
 class PlatformModeToggleIn(BaseModel):
     """Toggle platform mode. Must be development or production."""
@@ -481,9 +448,7 @@ class PlatformModeToggleIn(BaseModel):
             raise ValueError("mode must be 'development' or 'production'")
         return value
 
-
-# SYSADMIN OPERATIONS (LYL-BOOT-001)
-
+# SYSADMIN OPERATIONS
 
 class FactoryResetConfirmIn(BaseModel):
     """OTP confirmation for factory reset. IRREVERSIBLE.
@@ -493,7 +458,6 @@ class FactoryResetConfirmIn(BaseModel):
     """
 
     otp: str = Field(..., min_length=6, max_length=6)
-
 
 class SeedDemoDataOut(BaseModel):
     """Response from the seed demo data endpoint."""

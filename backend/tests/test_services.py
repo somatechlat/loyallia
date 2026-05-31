@@ -1,5 +1,5 @@
 """
-Loyallia  Service Layer Tests
+Loyallia Service Layer Tests
 Tests for TransactionService, BillingService, AutomationService, CustomerService.
 """
 
@@ -27,7 +27,6 @@ from tests.factories import (
 )
 
 # TransactionService Tests
-
 
 class TransactionServiceScanQRTest(TestCase):
     """Tests for TransactionService.scan_qr"""
@@ -75,7 +74,6 @@ class TransactionServiceScanQRTest(TestCase):
         result2 = TransactionService.scan_qr(t, cp.qr_code)
         self.assertFalse(result2["pass_updated"])
 
-
 class TransactionServiceEnrollTest(TestCase):
     """Tests for TransactionService.enroll_customer"""
 
@@ -103,7 +101,6 @@ class TransactionServiceEnrollTest(TestCase):
         with self.assertRaises(ValueError):
             TransactionService.enroll_customer(t, customer, card)
 
-
 class TransactionServiceRemoteIssueTest(TestCase):
     """Tests for TransactionService.remote_issue"""
 
@@ -121,7 +118,6 @@ class TransactionServiceRemoteIssueTest(TestCase):
         self.assertIsNotNone(txn)
         assert txn is not None
         self.assertTrue(txn.is_remote)
-
 
 class TransactionServiceListTest(TestCase):
     """Tests for TransactionService.list_transactions"""
@@ -144,9 +140,7 @@ class TransactionServiceListTest(TestCase):
         result = TransactionService.list_transactions(t, limit=3)
         self.assertLessEqual(len(result), 3)
 
-
 # BillingService Tests
-
 
 class BillingServicePlansTest(TestCase):
     """Tests for BillingService.get_plans"""
@@ -166,7 +160,6 @@ class BillingServicePlansTest(TestCase):
         if plans:
             self.assertIn("limits", plans[0])
             self.assertIn("max_customers", plans[0]["limits"])
-
 
 class BillingServiceCheckUsageTest(TestCase):
     """Tests for BillingService.check_usage"""
@@ -214,9 +207,7 @@ class BillingServiceCheckUsageTest(TestCase):
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["percentage"], 50.0)
 
-
 # AutomationService Tests
-
 
 class AutomationServiceFireTriggerTest(TestCase):
     """Tests for AutomationService.fire_trigger"""
@@ -247,7 +238,6 @@ class AutomationServiceFireTriggerTest(TestCase):
 
         count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
         self.assertEqual(count, 0)
-
 
 class AutomationServiceCreateTest(TestCase):
     """Tests for AutomationService.create_automation"""
@@ -312,7 +302,6 @@ class AutomationServiceCreateTest(TestCase):
         )
         self.assertEqual(auto.target_programs.count(), 1)
 
-
 class AutomationServiceUpdateTest(TestCase):
     """Tests for AutomationService.update_automation"""
 
@@ -332,7 +321,6 @@ class AutomationServiceUpdateTest(TestCase):
         updated = AutomationService.update_automation(auto, {"is_active": False})
         updated.refresh_from_db()
         self.assertFalse(updated.is_active)
-
 
 class AutomationServiceGetStatsTest(TestCase):
     """Tests for AutomationService.get_stats"""
@@ -355,9 +343,7 @@ class AutomationServiceGetStatsTest(TestCase):
         self.assertEqual(stats["total_automations"], 2)
         self.assertEqual(stats["active_automations"], 2)
 
-
 # CustomerService Tests
-
 
 class CustomerServiceCreateTest(TestCase):
     """Tests for CustomerService.create"""
@@ -427,7 +413,6 @@ class CustomerServiceCreateTest(TestCase):
         )
         self.assertEqual(customer.gender, "M")
 
-
 class CustomerServiceUpdateTest(TestCase):
     """Tests for CustomerService.update"""
 
@@ -457,7 +442,6 @@ class CustomerServiceUpdateTest(TestCase):
         CustomerService.update(customer, {})
         customer.refresh_from_db()
         self.assertEqual(customer.first_name, "Alice")
-
 
 class CustomerServiceSearchTest(TestCase):
     """Tests for CustomerService.search"""
@@ -492,7 +476,6 @@ class CustomerServiceSearchTest(TestCase):
         results = CustomerService.search(t, "Searchable", limit=3)
         self.assertLessEqual(len(results), 3)
 
-
 class CustomerServiceEnrollTest(TestCase):
     """Tests for CustomerService.enroll_in_program"""
 
@@ -511,9 +494,7 @@ class CustomerServiceEnrollTest(TestCase):
         with self.assertRaises(ValueError):
             CustomerService.enroll_in_program(t, customer, card)
 
-
 # TransactionService._serialize_result Tests
-
 
 class SerializeResultTest(TestCase):
     """Tests for TransactionService._serialize_result"""

@@ -1,5 +1,5 @@
 """
-Loyallia  Super Admin API: Seed Demo Data and Factory Reset
+Loyallia Super Admin API: Seed Demo Data and Factory Reset
 """
 
 import logging
@@ -153,7 +153,7 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
             )
 
         send_mail(
-            subject="Loyallia  Código de Verificación para Restaurar de Fábrica",
+            subject="Loyallia Código de Verificación para Restaurar de Fábrica",
             message=msg_body,
             from_email=get_default_from_email(),
             recipient_list=[request.user.email],

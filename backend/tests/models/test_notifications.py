@@ -1,5 +1,5 @@
 """
-Loyallia  Notification Model Tests
+Loyallia Notification Model Tests
 
 Tests for CampaignRun, CampaignDeliveryLog, PushDevice, and WhatsAppSession.
 """

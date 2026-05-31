@@ -1,5 +1,5 @@
 """
-Loyallia  Authentication Helpers
+Loyallia Authentication Helpers
 Internal utility functions for the authentication module.
 """
 
@@ -25,7 +25,6 @@ from common.email_config import get_default_from_email
 
 logger = logging.getLogger(__name__)
 
-
 def slugify_business(name: str) -> str:
     """Generate a unique slug from business name."""
     slug_base = re.sub(r"[^a-z0-9]+", "-", name.lower().strip()).strip("-")
@@ -36,7 +35,6 @@ def slugify_business(name: str) -> str:
         candidate = f"{slug}-{counter}"
         counter += 1
     return candidate
-
 
 def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
     """Send OTP email. Logs failure but does not raise  prevents timing attacks."""
@@ -51,19 +49,17 @@ def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
     except Exception as exc:
         logger.error("Failed to send OTP email to %s: %s", email, exc)
 
-
 def _hash_otp(otp: str, salt: str) -> str:
     """Hash an OTP using salted SHA-256 for secure storage.
 
-    SECURITY (LYL-M-SEC-012): Per-OTP salt prevents rainbow table attacks.
+    Per-OTP salt prevents rainbow table attacks.
     """
     return hashlib.sha256((salt + otp).encode("utf-8")).hexdigest()
-
 
 def store_otp(email: str, otp: str, purpose: str) -> None:
     """Store hashed OTP with its salt in Django cache with 15-minute TTL.
 
-    SECURITY (LYL-M-SEC-012): Generates a random salt per OTP and stores
+    Generates a random salt per OTP and stores
     both the hash and salt in cache. Salt is stored in a separate key.
     """
     from django.core.cache import cache
@@ -72,14 +68,13 @@ def store_otp(email: str, otp: str, purpose: str) -> None:
     cache.set(f"otp:{purpose}:{email}", _hash_otp(otp, salt), timeout=900)
     cache.set(f"otp_salt:{purpose}:{email}", salt, timeout=900)
 
-
 def verify_otp(email: str, otp: str, purpose: str) -> bool:
     """Verify OTP from cache using constant-time comparison.
 
     Tracks failed attempts: after 5 failures the OTP is deleted (lockout).
     Successful verification clears both the OTP and the attempt counter.
 
-    SECURITY (LYL-M-SEC-012): Retrieves salt from cache and uses it for hashing.
+    Retrieves salt from cache and uses it for hashing.
     """
     from django.core.cache import cache
 
@@ -106,7 +101,6 @@ def verify_otp(email: str, otp: str, purpose: str) -> bool:
 
     cache.set(attempts_key, attempts + 1, 900)
     return False
-
 
 def issue_tokens(user: User) -> dict:
     """Create access + refresh token pair, persist refresh token hash in DB."""

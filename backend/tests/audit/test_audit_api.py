@@ -1,5 +1,5 @@
 """
-Tests for audit API endpoint fixes  audit findings LYL-C-API-002, LYL-C-API-003, LYL-H-ARCH-003.
+Tests for audit API endpoint fixes audit findings .
 Uses Django's TestCase with PostgreSQL.
 """
 
@@ -10,14 +10,12 @@ from django.test import RequestFactory, TestCase, override_settings
 
 # Helpers
 
-
 def _make_tenant(**kwargs):
     from apps.tenants.models import Tenant
 
     defaults = {"name": "Test Tenant", "slug": f"test-{uuid.uuid4().hex[:8]}"}
     defaults.update(kwargs)
     return Tenant.objects.create(**defaults)
-
 
 def _make_user(tenant, **kwargs):
     from apps.authentication.models import User, UserManager
@@ -37,7 +35,6 @@ def _make_user(tenant, **kwargs):
         user.tenant = tenant
         user.save(update_fields=["tenant"])
     return user
-
 
 def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     from apps.cards.models import Card
@@ -79,7 +76,6 @@ def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     defaults.update(kwargs)
     return Card.objects.create(tenant=tenant, **defaults)
 
-
 def _make_customer(tenant, **kwargs):
     from apps.customers.models import Customer
 
@@ -91,15 +87,12 @@ def _make_customer(tenant, **kwargs):
     defaults.update(kwargs)
     return Customer.objects.create(tenant=tenant, **defaults)
 
-
 def _make_pass(customer, card):
     from apps.customers.models import CustomerPass
 
     return CustomerPass.objects.create(customer=customer, card=card)
 
-
-# FIX 2 LYL-C-API-002: Plan enforcement decorators
-
+# Plan enforcement decorators
 
 class PlanEnforcementDecoratorsTest(TestCase):
     """Verify that plan enforcement decorators are applied to endpoints via runtime behavior."""
@@ -170,9 +163,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
         result = create_location(req, payload)
         self.assertIsNotNone(result)
 
-
-# FIX 3 LYL-C-API-003: Enrollment rate limiting + no data overwrite
-
+# Enrollment rate limiting + no data overwrite
 
 class EnrollmentEndpointTest(TestCase):
     """Verify enrollment rate limiting and data preservation."""
@@ -250,9 +241,7 @@ class EnrollmentEndpointTest(TestCase):
  # Customer should have two passes
         self.assertEqual(customer.passes.count(), 2)
 
-
-# FIX 6 LYL-H-ARCH-003: Agent API crash (txn.metadata → txn.transaction_data)
-
+#
 
 class AgentAPIFixTest(TestCase):
     """Verify Agent API uses transaction_data instead of metadata."""

@@ -1,5 +1,5 @@
 """
-Loyallia  Automation Celery Tasks
+Loyallia Automation Celery Tasks
 """
 
 import logging
@@ -7,7 +7,6 @@ import logging
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
-
 
 @shared_task(
     bind=True,
@@ -48,7 +47,6 @@ def evaluate_trigger_for_customer(
     except Exception as exc:
         logger.error("evaluate_trigger failed: %s", exc)
         raise self.retry(exc=exc)
-
 
 @shared_task(
     queue="default",
@@ -104,7 +102,6 @@ def evaluate_scheduled_automations() -> dict:
     logger.info("evaluate_scheduled_automations: %d executions", total_executed)
     return {"executed": total_executed}
 
-
 @shared_task(
     queue="default",
     name="apps.automation.tasks.evaluate_inactive_triggers",
@@ -140,7 +137,6 @@ def evaluate_inactive_triggers(days_threshold: int = 30) -> dict:
     logger.info("evaluate_inactive_triggers: %d automation triggers fired", triggered)
     return {"triggered": triggered, "days_threshold": days_threshold}
 
-
 @shared_task(
     queue="default",
     name="apps.automation.tasks.evaluate_birthday_triggers",
@@ -149,7 +145,6 @@ def evaluate_birthday_triggers() -> dict:
     """Daily task: fire BIRTHDAY_COMING trigger for customers with birthdays
     in the next 0-3 days.
 
-    LYL-SRS-009: Bridges the existing birthday notification system with the
     automation engine so tenant owners can configure custom birthday actions
     (email, SMS, WhatsApp, wallet push) beyond the default push notification.
     """
@@ -183,7 +178,6 @@ def evaluate_birthday_triggers() -> dict:
 
     logger.info("evaluate_birthday_triggers: %d automation triggers fired", triggered)
     return {"triggered": triggered}
-
 
 @shared_task(
     queue="default",

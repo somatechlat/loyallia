@@ -1,5 +1,5 @@
 """
-Loyallia  Analytics API Router (apps/analytics/api.py)
+Loyallia Analytics API Router (apps/analytics/api.py)
 
 Business intelligence endpoints: dashboard overview, customer analytics,
 program analytics, time-series trends, and customer segmentation.
@@ -42,12 +42,10 @@ from common.permissions import is_manager_or_owner, jwt_auth
 
 router = Router()
 
-
 # Pydantic Schemas
 class AnalyticsDateRange(BaseModel):
     start_date: str  # ISO format
     end_date: str  # ISO format
-
 
 class CustomerAnalyticsSchema(BaseModel):
     customer_id: str
@@ -59,7 +57,6 @@ class CustomerAnalyticsSchema(BaseModel):
     total_rewards_redeemed: int
     segment: str
     last_visit: str | None = None
-
 
 class ProgramAnalyticsSchema(BaseModel):
     program_id: str
@@ -74,7 +71,6 @@ class ProgramAnalyticsSchema(BaseModel):
     redemption_rate: float
     engagement_rate: float
     repeat_purchase_rate: float
-
 
 # Dashboard Overview
 @router.get("/overview/", auth=jwt_auth, summary="Get business overview analytics")
@@ -131,7 +127,6 @@ def get_overview_analytics(request, days: int = 30):
         },
     }
 
-
 # Customer Analytics
 @router.get("/customers/", auth=jwt_auth, summary="Get customer analytics")
 def get_customer_analytics(request, segment: str | None = None, limit: int = 50, offset: int = 0):
@@ -178,7 +173,6 @@ def get_customer_analytics(request, segment: str | None = None, limit: int = 50,
         ],
     }
 
-
 @router.get(
     "/customers/{customer_id}/",
     auth=jwt_auth,
@@ -201,16 +195,12 @@ def get_customer_detail_analytics(request, customer_id: str):
     analytics, created = CustomerAnalytics.objects.get_or_create(customer=customer, defaults={"tenant": request.tenant})
  # Analytics are pre-calculated by background tasks on transaction boundaries.
 
- # PERF: select_related prevents N+1 when accessing card name in serialization
     recent_transactions = (
         Transaction.objects.filter(customer_pass__customer=customer)
         .select_related("customer_pass__card")
         .order_by("-created_at")[:10]
     )
-
- # PERF: select_related("card") prevents N+1 when serializing card names
     enrollments = CustomerPass.objects.filter(customer=customer, is_active=True).select_related("card")
-
     return {
         "customer": {
             "id": str(customer.id),
@@ -249,7 +239,6 @@ def get_customer_detail_analytics(request, customer_id: str):
         ],
     }
 
-
 # Program Analytics
 @router.get("/programs/", auth=jwt_auth, summary="Get program analytics")
 def get_program_analytics(request, limit: int = 50, offset: int = 0):
@@ -268,11 +257,9 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
  # Analytics metrics are updated asynchronously. The synchronous O(N) update loop
  # has been removed to prevent database lockups under production loads.
 
- # PERF: select_related("card") prevents N+1 on card.name access in serialization
     query = ProgramAnalytics.objects.filter(tenant=tenant).select_related("card")
     total = query.count()
     analytics = query[offset : offset + limit]
-
     return {
         "total": total,
         "count": len(analytics),
@@ -295,7 +282,6 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
             for a in analytics
         ],
     }
-
 
 @router.get("/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics")
 def get_program_detail_analytics(request, program_id: str):
@@ -353,7 +339,6 @@ def get_program_detail_analytics(request, program_id: str):
         ],
     }
 
-
 # Time Series Analytics
 @router.get("/trends/", auth=jwt_auth, summary="Get time series analytics")
 def get_trends_analytics(request, days: int = 30):
@@ -393,7 +378,6 @@ def get_trends_analytics(request, days: int = 30):
             for d in daily_data
         ],
     }
-
 
 # Segmentation Analytics
 @router.get("/segments/", auth=jwt_auth, summary="Get customer segmentation analytics")
@@ -443,7 +427,6 @@ def get_segmentation_analytics(request):
             for s in segments
         ],
     }
-
 
 # Advanced Analytics (split for Rule 245)
 from apps.analytics.advanced_api import router as advanced_router  # noqa: E402

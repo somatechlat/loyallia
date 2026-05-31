@@ -1,1 +1,1 @@
-# SMS package (LYL-SRS-009)
+# SMS package

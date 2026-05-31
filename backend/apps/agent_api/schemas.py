@@ -1,5 +1,5 @@
 """
-Loyallia  Agent API Response Schemas (Django Ninja / Pydantic)
+Loyallia Agent API Response Schemas (Django Ninja / Pydantic)
 Typed response models for serialization performance at scale.
 """
 

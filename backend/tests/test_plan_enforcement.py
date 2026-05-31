@@ -1,5 +1,5 @@
 """
-Loyallia  Plan Enforcement Tests
+Loyallia Plan Enforcement Tests
 Tests for check_plan_limit, check_feature_access, get_tenant_limits,
 get_current_usage, and all enforcement decorators.
 """

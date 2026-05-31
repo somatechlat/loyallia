@@ -1,5 +1,5 @@
 """
-Loyallia  Miscellaneous Notification Models
+Loyallia Miscellaneous Notification Models
 
 Core notification records and WhatsApp session management.
 """
@@ -12,7 +12,6 @@ from apps.customers.models import Customer, CustomerPass
 from apps.tenants.models import Tenant
 
 from .base import NotificationChannel, NotificationType
-
 
 class Notification(models.Model):
     """
@@ -118,7 +117,6 @@ class Notification(models.Model):
         self.clicked_at = timezone.now()
         self.save(update_fields=["is_clicked", "clicked_at"])
 
-
 class WhatsAppSession(models.Model):
     """Per-tenant WhatsApp bridge session state.
 
@@ -154,7 +152,7 @@ class WhatsAppSession(models.Model):
         help_text="0=new number, 7=fully warmed up. Limit scales linearly.",
     )
 
- # LYL-SRS-008: Tenant override set by SuperAdmin per-tenant
+ #
  # When set (> 0), overrides the plan's max_whatsapp_day for this tenant.
     daily_limit_override = models.PositiveIntegerField(
         default=0,
@@ -178,7 +176,6 @@ class WhatsAppSession(models.Model):
     def plan_daily_limit(self) -> int:
         """Plan-based daily limit from SubscriptionPlan.max_whatsapp_day.
 
-        LYL-SRS-008: Resolves the ceiling in this priority:
         1. Tenant override (SuperAdmin set) if > 0
         2. SubscriptionPlan.max_whatsapp_day if plan exists
         3. Legacy self.daily_limit as fallback
@@ -203,7 +200,7 @@ class WhatsAppSession(models.Model):
     def effective_daily_limit(self) -> int:
         """Effective daily limit = min(plan_ceiling, warmup_limit).
 
-        LYL-SRS-008: The plan (or tenant override) sets the ceiling.
+        The plan (or tenant override) sets the ceiling.
         The warm-up progression sets the floor to prevent WhatsApp bans.
         New numbers start at 20/day and scale linearly over 7 days.
         """

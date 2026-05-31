@@ -1,11 +1,11 @@
 """
-Loyallia  Logging Utilities
+Loyallia Logging Utilities
 Structured JSON log formatter for production log aggregation.
 Falls back to standard text formatting if JSON dependencies are unavailable.
 
-LYL-L-ARCH-036: PII masking  email addresses and phone numbers are redacted
+PII masking: email addresses and phone numbers are redacted
 in log output to comply with LOPDP (Ecuador data protection) requirements.
-LYL-M-ARCH-021: JSON format in production, verbose in dev (configured in settings).
+
 """
 
 import json
@@ -19,7 +19,6 @@ UTC = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
 # Regex patterns for PII detection
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 _PHONE_RE = re.compile(r"\+?\d[\d\s\-]{7,}\d")
-
 
 def mask_pii(text: str) -> str:
     """Mask PII (emails, phone numbers) in log messages.
@@ -49,7 +48,6 @@ def mask_pii(text: str) -> str:
     text = _PHONE_RE.sub(_mask_phone, text)
     return text
 
-
 class JsonFormatter(logging.Formatter):
     """
     Structured JSON log formatter.
@@ -60,7 +58,7 @@ class JsonFormatter(logging.Formatter):
     Includes exception traceback as 'exc_info' field when present.
     Compatible with ELK, CloudWatch, Datadog, and Loki log aggregators.
 
-    LYL-L-ARCH-036: All log messages pass through PII masking.
+    All log messages pass through PII masking.
     """
 
     def format(self, record: logging.LogRecord) -> str:

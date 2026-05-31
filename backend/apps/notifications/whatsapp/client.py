@@ -1,5 +1,5 @@
 """
-Loyallia  WhatsApp Bridge HTTP Client (LYL-SRS-006)
+Loyallia WhatsApp Bridge HTTP Client
 
 Communicates with the whatsapp-bridge Node.js sidecar via REST API.
 All operations are synchronous (using httpx)  async handled by Celery.
@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 # Connection timeout: 10s connect, 30s read (QR gen can take time)
 _TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0)
-
 
 def _get_client() -> httpx.Client:
     """Build an httpx client for the WhatsApp bridge.
@@ -42,7 +41,6 @@ def _get_client() -> httpx.Client:
 
     return httpx.Client(base_url=base_url, headers=headers, timeout=_TIMEOUT)
 
-
 def get_qr(tenant_id: str) -> dict:
     """Request QR code for WhatsApp pairing.
 
@@ -54,7 +52,6 @@ def get_qr(tenant_id: str) -> dict:
         resp.raise_for_status()
         return resp.json()
 
-
 def get_status(tenant_id: str) -> dict:
     """Get current connection status for a tenant.
 
@@ -65,7 +62,6 @@ def get_status(tenant_id: str) -> dict:
         resp = client.get(f"/status/{tenant_id}")
         resp.raise_for_status()
         return resp.json()
-
 
 def send_message(
     tenant_id: str,
@@ -105,7 +101,6 @@ def send_message(
         resp.raise_for_status()
         return resp.json()
 
-
 def disconnect(tenant_id: str) -> dict:
     """Disconnect and clean up a tenant's WhatsApp session.
 
@@ -116,7 +111,6 @@ def disconnect(tenant_id: str) -> dict:
         resp = client.post(f"/disconnect/{tenant_id}")
         resp.raise_for_status()
         return resp.json()
-
 
 def get_health() -> dict:
     """Check bridge health status.
@@ -129,7 +123,6 @@ def get_health() -> dict:
         resp.raise_for_status()
         return resp.json()
 
-
 def is_bridge_available() -> bool:
     """Check if the WhatsApp bridge service is reachable."""
     try:
@@ -139,14 +132,12 @@ def is_bridge_available() -> bool:
         logger.warning("WhatsApp bridge not available: %s", exc)
         return False
 
-
 def check_whatsapp_cooldown(phone: str, cooldown_seconds: int = 3600) -> bool:
     """Check if a phone number is within the cooldown period.
 
     Uses Redis to track the last sent time per phone number.
     Returns True if the phone is on cooldown (should skip), False if allowed.
 
-    LYL-SRS-008: Prevents spamming the same recipient within a short window.
     """
     import time
 
@@ -163,7 +154,6 @@ def check_whatsapp_cooldown(phone: str, cooldown_seconds: int = 3600) -> bool:
     # Set/update the cooldown timestamp
     cache.set(key, now, timeout=cooldown_seconds)
     return False  # Not on cooldown, proceed
-
 
 def clear_whatsapp_cooldown(phone: str) -> None:
     """Manually clear cooldown for a phone number (e.g., for testing)."""

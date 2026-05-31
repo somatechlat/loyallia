@@ -1,5 +1,5 @@
 """
-Loyallia  Authentication Model Unit Tests
+Loyallia Authentication Model Unit Tests
 Tests for User, OTP, Token, and related authentication models.
 """
 

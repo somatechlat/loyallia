@@ -1,5 +1,5 @@
 """
-Loyallia  Push Notification Models
+Loyallia Push Notification Models
 
 Device registration and push notification state.
 """

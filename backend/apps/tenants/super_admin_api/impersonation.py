@@ -1,5 +1,5 @@
 """
-Loyallia  Super Admin Impersonation API
+Loyallia Super Admin Impersonation API
 PIN-gated tenant owner impersonation with audit logging.
 """
 

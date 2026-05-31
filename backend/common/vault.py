@@ -4,7 +4,7 @@ Loyallia -- Vault Secret Client.
 Production and development runtime callers read Vault through the mounted token
 file. User passwords are never Vault secrets.
 
-SECURITY (LYL-M-SEC-015): Cache has a configurable TTL (default 5 minutes) so
+Cache has a configurable TTL (default 5 minutes) so
 secret rotation takes effect without requiring a process restart.
 """
 
@@ -33,7 +33,6 @@ _test_overrides: dict[str, str] = {}
 
 _VAULT_CACHE_VERSION_KEY = "vault:secrets:version"
 
-
 def _read_shared_cache_version() -> str:
     """Read cross-process Vault cache version from Django cache when available."""
     try:
@@ -44,7 +43,6 @@ def _read_shared_cache_version() -> str:
         logger.debug("Vault: shared cache version unavailable: %s", exc)
         return ""
 
-
 def _publish_shared_cache_invalidation() -> None:
     """Publish a cache version bump so other workers drop stale Vault values."""
     try:
@@ -53,7 +51,6 @@ def _publish_shared_cache_invalidation() -> None:
         cache.set(_VAULT_CACHE_VERSION_KEY, str(time.time()), None)
     except Exception as exc:
         logger.debug("Vault: shared cache invalidation unavailable: %s", exc)
-
 
 def _clear_cache_if_shared_version_changed() -> None:
     """Clear process cache when another worker has written Vault secrets."""
@@ -64,7 +61,6 @@ def _clear_cache_if_shared_version_changed() -> None:
         return
     clear_cache()
     _cache_seen_version = current_version
-
 
 def _get_vault_token() -> str:
     """Return the Vault token from the mounted runtime secret file."""
@@ -77,7 +73,6 @@ def _get_vault_token() -> str:
         except OSError as exc:
             logger.warning("Vault token file is not readable: %s", exc)
     return ""
-
 
 def _fetch_vault_secrets() -> dict:
     """
@@ -141,11 +136,9 @@ def _fetch_vault_secrets() -> dict:
         logger.warning("Vault: unexpected error (%s).", exc)
         return _secrets_cache
 
-
 def fetch_vault_secrets() -> dict:
     """Return the cached Vault secret mapping without exposing values."""
     return _fetch_vault_secrets().copy()
-
 
 def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False) -> str:
     """
@@ -190,7 +183,6 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict
 
  # 3. Default for non-strict callers.
     return default
-
 
 def put_secret(vault_key: str, value: str) -> bool:
     """Write a secret value to Vault KV v2.
@@ -273,14 +265,12 @@ def put_secret(vault_key: str, value: str) -> bool:
 
     return False
 
-
 def clear_cache() -> None:
     """Clear the cached Vault secrets. Call this to force a re-fetch."""
     global _secrets_cache, _cache_fetched_at
     _secrets_cache = {}
     _cache_fetched_at = 0.0
     logger.info("Vault: secret cache cleared")
-
 
 def set_test_override(key: str, value: str) -> None:
     """Set a test override for a Vault key.
@@ -291,12 +281,10 @@ def set_test_override(key: str, value: str) -> None:
     global _test_overrides
     _test_overrides[key] = value
 
-
 def clear_test_override(key: str) -> None:
     """Clear a single test override."""
     global _test_overrides
     _test_overrides.pop(key, None)
-
 
 def clear_test_overrides() -> None:
     """Clear all test overrides. Call this in test tearDown."""

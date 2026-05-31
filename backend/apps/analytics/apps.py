@@ -1,5 +1,5 @@
 """
-Loyallia  Analytics App Configuration
+Loyallia Analytics App Configuration
 """
 
 from django.apps import AppConfig

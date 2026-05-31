@@ -1,12 +1,12 @@
 """
-Loyallia  API Security Tests
+Loyallia API Security Tests
 
 Tests for API-level security findings.
 
 Covers:
-- LYL-H-SEC-003: Webhook replay protection
-- LYL-H-SEC-004: X-Forwarded-For spoofing prevention
-- LYL-H-SEC-009: SSRF protection
+-
+-
+-
 """
 
 import time
@@ -15,8 +15,7 @@ from django.test import RequestFactory, TestCase
 
 from common.url_validator import BLOCKED_NETWORKS, SSRFError, validate_external_url
 
-# LYL-H-SEC-004: X-Forwarded-For Spoofing Tests
-
+#
 
 class TestClientIPExtraction(TestCase):
     """Verify _get_client_ip uses REMOTE_ADDR, not X-Forwarded-For."""
@@ -54,9 +53,7 @@ class TestClientIPExtraction(TestCase):
         ip = _get_client_ip(request)
         self.assertEqual(ip, "unknown")
 
-
-# LYL-H-SEC-003: Webhook Replay Protection Tests
-
+# Webhook Replay Protection Tests
 
 class TestWebhookReplayProtection(TestCase):
     """Verify webhook timestamp validation and idempotency."""
@@ -92,9 +89,7 @@ class TestWebhookReplayProtection(TestCase):
         self.assertIn("payload_hash", field_names)
         self.assertIn("processed_at", field_names)
 
-
-# LYL-H-SEC-009: SSRF Protection Tests
-
+#
 
 class TestSSRFProtection(TestCase):
     """Verify SSRF validation blocks private/reserved IPs."""
@@ -163,9 +158,7 @@ class TestSSRFProtection(TestCase):
         """SSRFError should be a subclass of ValueError."""
         self.assertTrue(issubclass(SSRFError, ValueError))
 
-
 # Cross-Tenant Isolation Tests
-
 
 class TestCrossTenantIsolation(TestCase):
     """Verify tenants cannot access each other's data via ID manipulation."""
@@ -215,9 +208,7 @@ class TestCrossTenantIsolation(TestCase):
         if hasattr(ctx.exception, "status_code"):
             self.assertIn(ctx.exception.status_code, (403, 404))
 
-
 # Role Boundary API Tests
-
 
 class TestRoleBoundariesAPI(TestCase):
     """Verify MANAGER cannot perform OWNER-only API operations."""
@@ -262,9 +253,7 @@ class TestRoleBoundariesAPI(TestCase):
             add_team_member(req, payload)
         self.assertEqual(ctx.exception.status_code, 403)
 
-
 # Rate Limit Rule Coverage Tests
-
 
 class TestRateLimitRules(TestCase):
     """Verify rate limit rules cover newly added endpoint prefixes."""
@@ -300,9 +289,7 @@ class TestRateLimitRules(TestCase):
         general_index = paths.index("/api/v1/")
         self.assertEqual(general_index, len(paths) - 1)
 
-
 # Rate Limiter Runtime Behavior Tests
-
 
 class TestRateLimiterRuntimeBehavior(TestCase):
     """Verify rate limiter behavior at runtime (no source-code reading)."""

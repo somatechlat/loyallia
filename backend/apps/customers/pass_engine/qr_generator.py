@@ -1,5 +1,5 @@
 """
-Loyallia  QR Code Generator
+Loyallia QR Code Generator
 Generates HMAC-SHA256-signed QR codes for customer wallet passes.
 
 QR token format (URL-safe):  {serial}:{timestamp}:{hex_hmac}

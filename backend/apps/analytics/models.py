@@ -1,5 +1,5 @@
 """
-Loyallia  Analytics Models
+Loyallia Analytics Models
 Track customer behavior, program performance, and business metrics.
 """
 

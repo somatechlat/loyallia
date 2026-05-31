@@ -56,7 +56,6 @@ from apps.transactions.models import Transaction
 OPERATIONAL_PLAN_SLUGS = {"trial", "starter", "professional", "enterprise"}
 SUPERADMIN_EMAIL = "admin@loyallia.com"
 
-
 def delete_model_qs(qs, description):
     """Helper to delete a queryset and report counts."""
     count = qs.count()
@@ -67,7 +66,6 @@ def delete_model_qs(qs, description):
     else:
         print(f"  - No {description} to delete")
         return 0
-
 
 def main():
     print("=" * 70)
@@ -237,7 +235,6 @@ def main():
         print()
         print(" System is clean. Only operational infrastructure remains.")
         sys.exit(0)
-
 
 if __name__ == "__main__":
     main()

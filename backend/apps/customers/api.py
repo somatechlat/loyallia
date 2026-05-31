@@ -1,5 +1,5 @@
 """
-Loyallia  Customers API router.
+Loyallia Customers API router.
 Phase 5 implementation of customer + pass management endpoints.
 """
 
@@ -36,9 +36,7 @@ from common.request import require_tenant
 logger = logging.getLogger(__name__)
 router = Router()
 
-
 # ENDPOINTS
-
 
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
 @require_active_subscription
@@ -73,7 +71,6 @@ def list_customers(request: HttpRequest, search: str | None = None, limit: int =
     )
 
     return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
-
 
 @router.post("/", auth=jwt_auth, response=CustomerOut, summary="Crear cliente")
 def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut:
@@ -116,7 +113,6 @@ def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut
         details={"email": customer.email},
     )
     return CustomerOut.from_model(customer)
-
 
 @router.post("/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)")
 def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
@@ -165,7 +161,6 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     )
 
     return result
-
 
 @router.post("/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente")
 def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: CustomerCreateIn) -> CustomerPassOut:
@@ -277,7 +272,6 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
     )
     return CustomerPassOut.from_model(pass_obj)
 
-
 @router.post("/resend-pass/", response=MessageOut, summary="Reenviar pase por email")
 def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     """Public endpoint to resend a customer's pass link via email.
@@ -368,9 +362,7 @@ Equipo {card.tenant.name}
 
     return MessageOut(success=True, message=get_message("PASS_RESENT", email=customer.email))
 
-
 # CUSTOMER CRUD
-
 
 @router.get("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente")
 def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
@@ -388,7 +380,6 @@ def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
     )
 
     return CustomerOut.from_model(customer)
-
 
 @router.patch("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
@@ -435,19 +426,17 @@ def update_customer(request: HttpRequest, customer_id: str, data: CustomerUpdate
 
     return CustomerOut.from_model(customer)
 
-
 @router.put("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
 def replace_customer(request: HttpRequest, customer_id: str, data: CustomerUpdateIn) -> CustomerOut:
     """Compatibility alias for clients that send PUT for partial customer updates."""
     return update_customer(request, customer_id, data)
 
-
 @router.delete("/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente")
 @require_active_subscription
 def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
     """Permanent delete of a customer and all associated data. OWNER only.
-    LYL-M-API-023: Return 204 No Content on successful delete.
+
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -465,7 +454,6 @@ def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
 
     return HttpResponse(status=204)
 
-
 @router.get(
     "/{customer_id}/passes/",
     auth=jwt_auth,
@@ -479,7 +467,6 @@ def get_customer_passes(request: HttpRequest, customer_id: str) -> list[Customer
     customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
     passes = CustomerPass.objects.filter(customer=customer).select_related("card")
     return [CustomerPassOut.from_model(pass_obj) for pass_obj in passes]
-
 
 @router.post(
     "/{customer_id}/enroll/",

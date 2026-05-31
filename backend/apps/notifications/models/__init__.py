@@ -1,5 +1,5 @@
 """
-Loyallia  Notifications Models Package
+Loyallia Notifications Models Package
 
 Re-exports all model classes and enums for backward compatibility.
 Existing imports like ``from apps.notifications.models import PushDevice``

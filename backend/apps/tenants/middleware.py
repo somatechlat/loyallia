@@ -1,8 +1,8 @@
 """
-Loyallia  Tenant Resolution Middleware (apps/tenants/middleware.py)
+Loyallia Tenant Resolution Middleware (apps/tenants/middleware.py)
 
 Resolves the active tenant from the authenticated user on every request.
-Attaches `request.tenant` for downstream API code. LYL-M-ARCH-020.
+Attaches `request.tenant` for downstream API code.
 
 Architecture:
     Runs AFTER Django's AuthenticationMiddleware and AFTER JWTAuth.authenticate().
@@ -34,7 +34,6 @@ from django.http import HttpRequest, HttpResponse
 from common.request import as_tenant_request
 
 logger = logging.getLogger(__name__)
-
 
 class TenantMiddleware:
     """Resolve request.tenant from the authenticated user's FK relationship.

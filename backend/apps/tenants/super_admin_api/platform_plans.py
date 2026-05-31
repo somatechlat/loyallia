@@ -1,5 +1,5 @@
 """
-Loyallia  Super Admin API: Subscription Plan CRUD
+Loyallia Super Admin API: Subscription Plan CRUD
 """
 
 import logging

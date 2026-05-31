@@ -1,4 +1,4 @@
-# Generated for LYL-FR-DPR-025 account deletion scheduling.
+# Account deletion scheduling.
 
 from django.db import migrations, models
 

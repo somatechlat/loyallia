@@ -1,5 +1,5 @@
 """
-Loyallia  Billing Models (REQ-PAY-001, REQ-PLAN-001)
+Loyallia Billing Models (REQ-PAY-001, REQ-PLAN-001)
 Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
@@ -16,10 +16,28 @@ from common.models import TimestampedModel
 
 # PLAN FEATURE FLAGS (REQ-PLAN-003)
 
+# SEC: Trial tenants get generous but finite limits — not infinity (C4/H4).
+TRIAL_LIMITS = {
+    "customers": 500,
+    "programs": 50,
+    "locations": 10,
+    "users": 10,
+    "notifications_month": 1000,
+    "transactions_month": 5000,
+    "whatsapp_day": 100,
+    "emails_month": 500,
+    "sms_day": 50,
+    "wallet_pushes_month": 200,
+    "automations": 10,
+    "automation_executions_day": 100,
+    "ai_queries_month": 500,
+    "api_calls_day": 1000,
+    "exports_month": 10,
+}
+
 
 class PlanFeature:
-    """
-    Feature flags for plan-based gating.
+    """Feature flags for plan-based gating.
     Stored in SubscriptionPlan.features JSONField as a list of strings.
     """
 
@@ -51,9 +69,7 @@ class PlanFeature:
         SMS_CAMPAIGNS,
     ]
 
-
 # SUBSCRIPTION PLAN (DB-driven, managed by SUPER_ADMIN)
-
 
 class SubscriptionPlan(TimestampedModel):
     """
@@ -90,7 +106,7 @@ class SubscriptionPlan(TimestampedModel):
     max_notifications_month = models.PositiveIntegerField(default=1000, verbose_name="Máx. notificaciones/mes")
     max_transactions_month = models.PositiveIntegerField(default=5000, verbose_name="Máx. transacciones/mes")
 
- # Messaging channel quotas (LYL-SRS-008)
+    # Messaging channel quotas
  # 0 = disabled (channel not available for this plan)
     max_whatsapp_day = models.PositiveIntegerField(
         default=0,
@@ -206,9 +222,7 @@ class SubscriptionPlan(TimestampedModel):
         """Check if this plan includes a specific feature."""
         return feature in (self.features or [])
 
-
 # SUBSCRIPTION STATUS
-
 
 class SubscriptionStatus(models.TextChoices):
     """Subscription lifecycle states."""
@@ -219,9 +233,7 @@ class SubscriptionStatus(models.TextChoices):
     SUSPENDED = "suspended", "Suspendido"
     CANCELED = "canceled", "Cancelado"
 
-
 # SUBSCRIPTION
-
 
 class Subscription(TimestampedModel):
     """
@@ -343,8 +355,8 @@ class Subscription(TimestampedModel):
         return self.subscription_plan
 
     def get_limit(self, resource: str) -> int:
-        """
-        Get the plan limit for a resource.
+        """Get the plan limit for a resource.
+
         Trial plan = generous finite limits (C4/H4 fix) during trial period.
         Paid plans = from SubscriptionPlan model, even during trial.
         """
@@ -352,25 +364,7 @@ class Subscription(TimestampedModel):
         is_trial_plan = (plan.slug == "trial") if plan else (self.plan == "trial")
 
         if self.status == SubscriptionStatus.TRIALING and self.is_trial_active and is_trial_plan:
-            # SEC: Trial tenants get generous but finite limits — not infinity (C4/H4).
-            trial_limits = {
-                "customers": 500,
-                "programs": 50,
-                "locations": 10,
-                "users": 10,
-                "notifications_month": 1000,
-                "transactions_month": 5000,
-                "whatsapp_day": 100,
-                "emails_month": 500,
-                "sms_day": 50,
-                "wallet_pushes_month": 200,
-                "automations": 10,
-                "automation_executions_day": 100,
-                "ai_queries_month": 500,
-                "api_calls_day": 1000,
-                "exports_month": 10,
-            }
-            return trial_limits.get(resource, 0)
+            return TRIAL_LIMITS.get(resource, 0)
 
         if not plan:
             return 0  # No plan = no access
@@ -412,7 +406,7 @@ class Subscription(TimestampedModel):
 
         trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
- # Enforce trial extension limits (LYL-H-API-013)
+ # Enforce trial extension limits
         if self.trial_start is not None:
             if self.trial_extended_count >= 1:
                 raise ValueError("Trial cannot be extended more than once.")
@@ -499,8 +493,6 @@ class Subscription(TimestampedModel):
             ]
         )
 
-
 # RE-EXPORTS (split per 600-line limit see payment_models.py)
-
 
 from apps.billing.payment_models import Invoice, PaymentMethod  # noqa: E402, F401

@@ -16,7 +16,6 @@ from tests.factories import (
     make_tenant,
 )
 
-
 class CampaignAccountingTest(TestCase):
     def test_email_campaign_creates_run_delivery_logs_and_usage(self):
         from apps.notifications.tasks.email import send_email_campaign

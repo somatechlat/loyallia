@@ -1,5 +1,5 @@
 """
-Loyallia  Push Notification Celery Tasks (apps/notifications/tasks/push.py)
+Loyallia Push Notification Celery Tasks (apps/notifications/tasks/push.py)
 
 Single notification dispatch task.
 """

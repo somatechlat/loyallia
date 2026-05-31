@@ -1,5 +1,5 @@
 """
-Loyallia  WhatsApp Bridge Celery Tasks
+Loyallia WhatsApp Bridge Celery Tasks
 
 Periodic tasks for WhatsApp session maintenance and rate-limit resets.
 """

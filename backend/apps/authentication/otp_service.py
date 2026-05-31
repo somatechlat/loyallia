@@ -1,5 +1,5 @@
 """
-Loyallia  OTP Service Strategy Pattern (LYL-SRS-VERIFY-001)
+Loyallia OTP Service Strategy Pattern
 
 REAL PRODUCTION CODE. NO MOCKS. NO BYPASSES.
 
@@ -33,7 +33,6 @@ OTP_REDIS_PREFIX = "otp:"
 OTP_TTL_SECONDS = 300  # 5 minutes
 OTP_MAX_ATTEMPTS = 3
 OTP_ATTEMPT_WINDOW = 3600  # 1 hour
-
 
 class OTPStrategy(ABC):
     """Abstract base for OTP strategies."""
@@ -80,7 +79,6 @@ class OTPStrategy(ABC):
         """Reset attempt counter for recipient."""
         key = f"{OTP_REDIS_PREFIX}attempts:{recipient}"
         cache.delete(key)
-
 
 class VerifyOTPStrategy(OTPStrategy):
     """Twilio Verify v2 OTP strategy.
@@ -145,7 +143,6 @@ class VerifyOTPStrategy(OTPStrategy):
             self._increment_attempts(recipient)
         return is_valid
 
-
 class LocalOTPStrategy(OTPStrategy):
     """Local OTP generation with multi-channel delivery.
 
@@ -189,7 +186,7 @@ class LocalOTPStrategy(OTPStrategy):
 
         try:
             result = send_mail(
-                subject="Loyallia  Código de verificación",
+                subject="Loyallia Código de verificación",
                 message=(
                     f"Tu código de verificación Loyallia es: {code}\n\n"
                     f"Este código expira en {OTP_TTL_SECONDS // 60} minutos.\n"
@@ -285,7 +282,6 @@ class LocalOTPStrategy(OTPStrategy):
             self._increment_attempts(recipient)
         return is_valid
 
-
 def get_otp_strategy() -> OTPStrategy:
     """Return the active OTP strategy based on current Vault config.
 
@@ -305,7 +301,6 @@ def get_otp_strategy() -> OTPStrategy:
 
     logger.debug("Using LocalOTPStrategy")
     return LocalOTPStrategy()
-
 
 def send_otp(
     recipient: str,
@@ -334,7 +329,6 @@ def send_otp(
         result.get("status"),
     )
     return result
-
 
 def check_otp(
     recipient: str,

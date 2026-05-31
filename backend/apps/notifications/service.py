@@ -1,5 +1,5 @@
 """
-Loyallia  Notification Service
+Loyallia Notification Service
 Handles sending push notifications, emails, and SMS.
 """
 

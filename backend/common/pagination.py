@@ -1,5 +1,5 @@
 """
-Loyallia  Pagination Utilities (common/pagination.py)
+Loyallia Pagination Utilities (common/pagination.py)
 
 Standard page-based pagination for all Django Ninja list endpoints.
 Provides a generic PaginatedResponse envelope and a paginate_queryset() helper.

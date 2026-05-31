@@ -1,5 +1,5 @@
 """
-Loyallia  Birthday SMS Integration Tests (LYL-SRS-009)
+Loyallia Birthday SMS Integration Tests
 
 Tests for:
   1. Birthday trigger task (apps.automation.tasks.evaluate_birthday_triggers)
@@ -18,7 +18,6 @@ from tests.factories import (
     make_customer,
     make_tenant,
 )
-
 
 class BirthdayTriggerTaskTest(TestCase):
     """Tests for evaluate_birthday_triggers Celery task."""

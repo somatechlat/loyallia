@@ -1,5 +1,5 @@
 """
-Loyallia  Backup SuperAdmin API (apps/backup/api.py)
+Loyallia Backup SuperAdmin API (apps/backup/api.py)
 
 Django Ninja router for backup management.
 All endpoints require SUPER_ADMIN role.
@@ -15,10 +15,6 @@ Endpoints:
     PUT    /api/v1/superadmin/backups/settings/      -- Update backup settings
 
 Security (SEC):
-    - SEC: All endpoints require SUPER_ADMIN role (via @require_role).
-    - SEC: Restore requires explicit confirmation flag (prevent accidental restores).
-    - SEC: All backup operations are logged to the audit trail.
-
 Called by: SuperAdmin dashboard (Backup & Restore page).
 """
 
@@ -55,9 +51,7 @@ logger = logging.getLogger("loyallia.backup")
 
 router = Router()
 
-
 # Helpers
-
 
 def _job_to_schema(job: BackupJob) -> BackupJobOut:
     """Convert a BackupJob model instance to a response schema."""
@@ -84,7 +78,6 @@ def _job_to_schema(job: BackupJob) -> BackupJobOut:
         updated_at=job.updated_at.isoformat(),
     )
 
-
 def _audit(
     request: HttpRequest,
     action: str,
@@ -103,9 +96,7 @@ def _audit(
         status=status,
     )
 
-
 # GET /api/v1/superadmin/backups/
-
 
 @router.get(
     "/",
@@ -157,9 +148,7 @@ def list_backups(
         jobs=[_job_to_schema(j) for j in jobs],
     )
 
-
 # GET /api/v1/superadmin/backups/status/
-
 
 @router.get(
     "/status/",
@@ -214,9 +203,7 @@ def get_backup_status(request: HttpRequest):
         ),
     )
 
-
 # POST /api/v1/superadmin/backups/trigger/
-
 
 @router.post(
     "/trigger/",
@@ -265,9 +252,7 @@ def trigger_manual_backup(request: HttpRequest, payload: TriggerBackupIn):
             message=get_message("BACKUP_TRIGGER_FAILED", detail=str(exc)),
         )
 
-
 # GET /api/v1/superadmin/backups/{id}/
-
 
 @router.get(
     "/{backup_id}/",
@@ -290,9 +275,7 @@ def get_backup_detail(request: HttpRequest, backup_id: str):
 
     return _job_to_schema(job)
 
-
 # POST /api/v1/superadmin/backups/{id}/verify/
-
 
 @router.post(
     "/{backup_id}/verify/",
@@ -346,9 +329,7 @@ def verify_backup_endpoint(request: HttpRequest, backup_id: str):
             details=str(exc),
         )
 
-
 # POST /api/v1/superadmin/backups/{id}/restore/
-
 
 @router.post(
     "/{backup_id}/restore/",
@@ -423,9 +404,7 @@ def restore_from_backup(
             message=get_message("BACKUP_RESTORE_FAILED", detail=str(exc)),
         )
 
-
 # GET /api/v1/superadmin/backups/settings/
-
 
 @router.get(
     "/settings/",
@@ -457,9 +436,7 @@ def get_backup_settings(request: HttpRequest):
         backup_minute=minute,
     )
 
-
 # PUT /api/v1/superadmin/backups/settings/
-
 
 @router.put(
     "/settings/",
@@ -518,9 +495,7 @@ def update_backup_settings(request: HttpRequest, payload: BackupSettingsOut):
 
     return payload
 
-
 # POST /api/v1/superadmin/backups/cleanup/
-
 
 @router.post(
     "/cleanup/",

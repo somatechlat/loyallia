@@ -1,5 +1,5 @@
 """
-Loyallia  Shared Test Fixtures (pytest conftest)
+Loyallia Shared Test Fixtures (pytest conftest)
 Provides reusable fixtures for pytest-based tests.
 Django TestCase setUp methods are used for Django-native tests.
 """

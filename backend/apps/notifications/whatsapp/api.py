@@ -1,5 +1,5 @@
 """
-Loyallia  WhatsApp Bridge API Routes (LYL-SRS-006)
+Loyallia WhatsApp Bridge API Routes
 
 Django Ninja router for WhatsApp session management and delivery webhooks.
 Endpoints:
@@ -33,15 +33,12 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-
 # SCHEMAS
-
 
 class QROut(Schema):
     qr: str | None
     connected: bool
     phone: str = ""
-
 
 class StatusOut(Schema):
     connected: bool
@@ -51,11 +48,9 @@ class StatusOut(Schema):
     daily_limit: int = 200
     messages_remaining: int = 200
 
-
 class MessageOut(Schema):
     success: bool
     message: str = ""
-
 
 class DeliveryWebhookIn(Schema):
     tenant_id: str
@@ -67,15 +62,12 @@ class DeliveryWebhookIn(Schema):
     error_message: str | None = None
     timestamp: str | None = None
 
-
 class SessionWebhookIn(Schema):
     tenant_id: str
     event: str  # "connected", "disconnected"
     phone: str | None = None
 
-
 # SESSION MANAGEMENT (authenticated owner only)
-
 
 def _require_tenant(request):
     """Get the tenant from the authenticated user. OWNER only.
@@ -92,7 +84,6 @@ def _require_tenant(request):
     if not hasattr(user, "tenant") or not user.tenant:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     return user.tenant
-
 
 @router.get("/qr/{tenant_id}/", auth=jwt_auth, response=QROut)
 @require_feature("whatsapp_campaigns")
@@ -122,7 +113,6 @@ def get_qr_code(request, tenant_id: str):
     except Exception as exc:
         logger.error("WhatsApp QR request failed for %s: %s", tenant_id, exc)
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
-
 
 @router.get("/status/{tenant_id}/", auth=jwt_auth, response=StatusOut)
 @require_feature("whatsapp_campaigns")
@@ -155,7 +145,6 @@ def get_session_status(request, tenant_id: str):
             phone=result.get("phone", ""),
         )
 
-
 @router.post("/disconnect/{tenant_id}/", auth=jwt_auth, response=MessageOut)
 @require_feature("whatsapp_campaigns")
 def disconnect_session(request, tenant_id: str):
@@ -176,9 +165,7 @@ def disconnect_session(request, tenant_id: str):
         logger.error("WhatsApp disconnect failed for %s: %s", tenant_id, exc)
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
 
-
 # WEBHOOKS (bridge → Django, API key authenticated)
-
 
 def _verify_bridge_api_key(request) -> None:
     """Verify the bridge API key from the request header.
@@ -197,7 +184,6 @@ def _verify_bridge_api_key(request) -> None:
     key = auth.replace("Bearer ", "").strip()
     if key != expected_key:
         raise HttpError(401, "Unauthorized")
-
 
 @router.post("/webhook/delivery/")
 def delivery_webhook(request, payload: DeliveryWebhookIn):
@@ -227,7 +213,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 )
  # Increment campaign run counter
                 CampaignRun.objects.filter(id=log.campaign_run_id).update(sent_count=models.F("sent_count") + 1)
- # Increment tenant WhatsApp daily counter (LYL-SRS-008)
+        # Increment tenant WhatsApp daily counter
                 try:
                     from apps.tenants.models import Tenant
                     tenant = Tenant.objects.get(id=payload.tenant_id)
@@ -288,7 +274,6 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
             )
 
     return {"ok": True}
-
 
 @router.post("/webhook/session/")
 def session_webhook(request, payload: SessionWebhookIn):

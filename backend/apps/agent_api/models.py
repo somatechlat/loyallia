@@ -1,5 +1,5 @@
 """
-Loyallia  Agent API Models (REQ-AGENT-001)
+Loyallia Agent API Models (REQ-AGENT-001)
 API key management for external AI agent access.
 Keys are SHA-256 hashed  raw key shown only once at creation.
 """

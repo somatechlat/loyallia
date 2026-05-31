@@ -1,5 +1,5 @@
 """
-Loyallia  APNs Client (Apple Push Notification service)
+Loyallia APNs Client (Apple Push Notification service)
 
 Uses the APNs HTTP/2 token-based authentication (JWT Provider Token).
 Reference: https://developer.apple.com/documentation/usernotifications/establishing_a_token-based_connection_to_apns

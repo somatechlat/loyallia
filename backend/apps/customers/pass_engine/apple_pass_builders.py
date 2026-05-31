@@ -1,5 +1,5 @@
 """
-Loyallia  Apple Wallet Pass Builders
+Loyallia Apple Wallet Pass Builders
 Internal builder functions for Apple PKPass field layouts.
 Used by apple_pass.py  not imported directly from outside pass_engine.
 """

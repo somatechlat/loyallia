@@ -20,13 +20,13 @@ _MESSAGES_ES: dict[str, str] = {
     "NOTIFICATION_BIRTHDAY_MSG": "Te deseamos un excelente día. ¡Visita {program_name} y reclama tu regalo especial!",
     "NOTIFICATION_REMINDER_TITLE": "¿Nos extranas?",
     "NOTIFICATION_REMINDER_MSG": "Tienes puntos esperando en {program_name}. ¡Ven a visitarnos!",
-    # SMS / Twilio (LYL-SRS-009)
+    # SMS / Twilio
     "SMS_CAMPAIGN_STARTED": "Campaña de SMS iniciada para segmento '{segment}'. Los mensajes se enviarán via Twilio.",
     "SMS_SEND_FAILED": "Error al enviar SMS a {phone}: {detail}",
     "SMS_NOT_CONFIGURED": "El servicio de SMS (Twilio) no está configurado. Configure las credenciales en Vault.",
     "TWILIO_TEST_SENT": "SMS de prueba enviado exitosamente a {phone}.",
     "TWILIO_TEST_FAILED": "Error al enviar SMS de prueba: {detail}",
-    # WhatsApp Bridge (LYL-SRS-006)
+    # WhatsApp Bridge
     "WHATSAPP_BRIDGE_UNAVAILABLE": "El servicio de WhatsApp no está disponible en este momento. Intente más tarde.",
     "WHATSAPP_SESSION_NOT_CONNECTED": "La sesión de WhatsApp no está conectada. Escanea el código QR primero.",
     "WHATSAPP_BRIDGE_ERROR": "Error al enviar mensaje de WhatsApp: {detail}",
@@ -53,13 +53,13 @@ _MESSAGES_EN: dict[str, str] = {
     "NOTIFICATION_BIRTHDAY_MSG": "We wish you an excellent day. Visit {program_name} and claim your special gift!",
     "NOTIFICATION_REMINDER_TITLE": "Miss us?",
     "NOTIFICATION_REMINDER_MSG": "You have points waiting at {program_name}. Come visit us!",
-    # SMS / Twilio (LYL-SRS-009)
+    # SMS / Twilio
     "SMS_CAMPAIGN_STARTED": "SMS campaign started for segment '{segment}'. Messages will be sent via Twilio.",
     "SMS_SEND_FAILED": "Error sending SMS to {phone}: {detail}",
     "SMS_NOT_CONFIGURED": "SMS service (Twilio) is not configured. Set credentials in Vault.",
     "TWILIO_TEST_SENT": "Test SMS sent successfully to {phone}.",
     "TWILIO_TEST_FAILED": "Error sending test SMS: {detail}",
-    # WhatsApp Bridge (LYL-SRS-006)
+    # WhatsApp Bridge
     "WHATSAPP_BRIDGE_UNAVAILABLE": "WhatsApp service is not available at this time. Please try later.",
     "WHATSAPP_SESSION_NOT_CONNECTED": "WhatsApp session is not connected. Scan the QR code first.",
     "WHATSAPP_BRIDGE_ERROR": "Error sending WhatsApp message: {detail}",

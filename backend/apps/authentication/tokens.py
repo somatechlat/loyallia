@@ -1,8 +1,7 @@
 """
-Loyallia  JWT Token Utilities
+Loyallia JWT Token Utilities
 Issue and verify access + refresh tokens.
 
-LYL-H-SEC-005: Supports both HS256 (symmetric, default) and RS256 (asymmetric).
 RS256 uses a private key for signing and public key for verification.
 Private key is loaded from Vault or file path; public key is derived automatically.
 When JWT_ALGORITHM is set to "RS256", the system uses asymmetric signing.
@@ -30,7 +29,6 @@ UTC = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
 _signing_key: str | None = None
 _verification_key: str | None = None
 _keys_loaded: bool = False
-
 
 def _load_keys() -> tuple[str, str]:
     """Load JWT signing and verification keys based on algorithm config.
@@ -96,18 +94,15 @@ def _load_keys() -> tuple[str, str]:
         raise RuntimeError("JWT key loading failed: signing or verification key is missing.")
     return _signing_key, _verification_key
 
-
 def _get_signing_key() -> str:
     """Get the key used for signing JWTs."""
     key, _ = _load_keys()
     return key
 
-
 def _get_verification_key() -> str:
     """Get the key used for verifying JWTs."""
     _, key = _load_keys()
     return key
-
 
 def create_access_token(user_id: str, tenant_id: str | None, role: str) -> str:
     """Create a short-lived JWT access token.
@@ -133,20 +128,16 @@ def create_access_token(user_id: str, tenant_id: str | None, role: str) -> str:
     }
     return jwt.encode(payload, _get_signing_key(), algorithm=settings.JWT_ALGORITHM)
 
-
 def _utcnow() -> datetime:
     return datetime.now(tz=UTC)
-
 
 def create_refresh_token_string() -> str:
     """Generate a cryptographically secure random refresh token string."""
     return secrets.token_urlsafe(64)
 
-
 def hash_token(token: str) -> str:
     """SHA-256 hash for storing refresh tokens in DB."""
     return hashlib.sha256(token.encode()).hexdigest()
-
 
 def decode_access_token(token: str) -> dict | None:
     """Decode and verify a JWT access token.

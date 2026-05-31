@@ -1,5 +1,5 @@
 """
-Loyallia  Shared Schemas (DRY)
+Loyallia Shared Schemas (DRY)
 Common Pydantic/Ninja schemas used across multiple apps.
 Import from here instead of defining duplicates in each app.
 """

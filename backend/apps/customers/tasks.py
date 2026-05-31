@@ -1,5 +1,5 @@
 """
-Loyallia  Customers Celery Tasks (apps/customers/tasks.py)
+Loyallia Customers Celery Tasks (apps/customers/tasks.py)
 
 Async pass generation, wallet update notifications, and customer analytics recalculation.
 

@@ -1,5 +1,5 @@
 """
-Loyallia  Audit Models (REQ-DPR-002)
+Loyallia Audit Models (REQ-DPR-002)
 Immutable audit trail for data access and mutations.
 Compliant with LOPDP Art. 47 (Ecuador) and GDPR Art. 30 (EU).
 Entries cannot be edited or deleted. 7-year retention.

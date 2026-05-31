@@ -1,5 +1,5 @@
 """
-Loyallia  Super Admin API: Platform metrics, locations map, broadcast, and plan CRUD
+Loyallia Super Admin API: Platform metrics, locations map, broadcast, and plan CRUD
 """
 
 import logging
@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-
 SENSITIVE_PLATFORM_SETTING_TOKENS = (
     "SECRET",
     "PASSWORD",
@@ -56,11 +55,9 @@ SENSITIVE_PLATFORM_SETTING_TOKENS = (
     "CREDENTIAL",
 )
 
-
 def _require_super_admin(request) -> None:
     if not is_super_admin(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
 
 def _is_production_environment() -> bool:
     """Check if the platform is running in production mode.
@@ -71,11 +68,9 @@ def _is_production_environment() -> bool:
     setting = PlatformSetting.objects.filter(key="PLATFORM_MODE").first()
     return bool((setting and setting.value == "production") or getattr(settings, "ENVIRONMENT", "") == "production")
 
-
 def _is_sensitive_platform_setting_key(key: str) -> bool:
     normalized = key.upper()
     return any(token in normalized for token in SENSITIVE_PLATFORM_SETTING_TOKENS)
-
 
 @router.get("/platform/mode/", auth=jwt_auth, response=PlatformModeOut)
 def get_platform_mode(request):
@@ -90,7 +85,6 @@ def get_platform_mode(request):
         mode=mode,
         updated_at=setting.updated_at if setting else None,
     )
-
 
 @router.post("/platform/mode/toggle/", auth=jwt_auth, response=PlatformModeOut)
 def toggle_platform_mode(request, payload: PlatformModeToggleIn):
@@ -129,7 +123,6 @@ def toggle_platform_mode(request, payload: PlatformModeToggleIn):
         logger.warning("Failed to audit platform mode toggle", exc_info=True)
 
     return PlatformModeOut(mode=setting.value, updated_at=setting.updated_at)
-
 
 @router.get("/platform/metrics/", auth=jwt_auth, response=PlatformMetricsOut)
 def platform_metrics(request):
@@ -188,7 +181,6 @@ def platform_metrics(request):
         recent_tenants=recent_list,
     )
 
-
 @router.get("/platform/locations/", auth=jwt_auth, response=list[dict])
 def all_platform_locations(request):
     """Returns all locations with GPS for the SuperAdmin map widget."""
@@ -210,7 +202,6 @@ def all_platform_locations(request):
         }
         for loc in locations
     ]
-
 
 @router.get(
     "/platform/integrations/",
@@ -244,9 +235,7 @@ def platform_integrations(request):
     payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
     mailjet_api_key = get_secret("mailjet_api_key", default="")
     mailjet_secret_key = get_secret("mailjet_secret_key", default="")
-    # SEC: sender email is a PlatformSetting (not Vault) so SysAdmin can edit it via UI
     from apps.tenants.models import PlatformSetting
-
     mailjet_sender_email = PlatformSetting.get("mailjet_sender_email", "")
     mailjet_configured = bool(mailjet_api_key and mailjet_secret_key and mailjet_sender_email)
 
@@ -314,7 +303,6 @@ def platform_integrations(request):
         *additional_integrations(),
     ]
 
-
 @router.put(
     "/platform/integrations/{integration_key}/secret/",
     auth=jwt_auth,
@@ -345,10 +333,8 @@ def update_integration_secret(request, integration_key: str, payload: VaultSecre
     if not success:
         raise HttpError(500, get_message("SERVER_ERROR"))
 
- # SEC: Audit log for Vault secret writes (who changed what)
     from apps.audit.models import AuditAction, AuditStatus
     from apps.audit.service import log_action
-
     log_action(
         request=request,
         action=AuditAction.UPDATE,
@@ -368,7 +354,6 @@ def update_integration_secret(request, integration_key: str, payload: VaultSecre
         success=True,
         message=get_message("ADMIN_PLAN_UPDATED", name=f"{integration_key}.{payload.key}"),
     )
-
 
 @router.get("/platform/settings/", auth=jwt_auth, response=list[PlatformSettingOut])
 def list_platform_settings(request):
@@ -391,7 +376,6 @@ def list_platform_settings(request):
         )
         for s in settings
     ]
-
 
 @router.put("/platform/settings/{key}/", auth=jwt_auth, response=MessageOut)
 def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn):
@@ -432,7 +416,6 @@ def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn)
 
     return MessageOut(success=True, message=msg)
 
-
 @router.get("/platform/settings/{key}/", auth=jwt_auth, response=PlatformSettingOut)
 def get_platform_setting(request, key: str):
     """Get a single platform setting by key.
@@ -455,7 +438,6 @@ def get_platform_setting(request, key: str):
         requires_restart=setting.requires_restart,
         updated_at=setting.updated_at,
     )
-
 
 @router.post("/platform/settings/bulk-update/", auth=jwt_auth, response=PlatformSettingsBulkUpdateOut)
 def bulk_update_platform_settings(request, payload: PlatformSettingsBulkUpdateIn):
@@ -528,7 +510,6 @@ def bulk_update_platform_settings(request, payload: PlatformSettingsBulkUpdateIn
         errors=errors,
     )
 
-
 @router.post("/platform/settings/refresh-cache/", auth=jwt_auth, response=PlatformSettingsRefreshCacheOut)
 def refresh_platform_settings_cache(request):
     """Invalidate and refresh the entire settings Redis cache from the database.
@@ -555,5 +536,4 @@ def refresh_platform_settings_cache(request):
         total=result["total"],
     )
 
-
-# SYSADMIN OPERATIONS (LYL-BOOT-001)
+# SYSADMIN OPERATIONS

@@ -1,5 +1,5 @@
 """
-Loyallia  Audit API Endpoints (REQ-DPR-003)
+Loyallia Audit API Endpoints (REQ-DPR-003)
 Super Admin audit dashboard using Django Ninja with typed schemas.
 Self-auditing: viewing the audit log creates an audit entry.
 """

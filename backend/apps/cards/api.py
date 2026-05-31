@@ -1,5 +1,5 @@
 """
-Loyallia  Cards (Loyalty Programs) API router.
+Loyallia Cards (Loyalty Programs) API router.
 Phase 3 implementation of all program CRUD endpoints.
 """
 
@@ -25,9 +25,7 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-
 # SCHEMAS
-
 
 class CardCreateIn(BaseModel):
     name: str
@@ -72,7 +70,6 @@ class CardCreateIn(BaseModel):
             raise ValueError("Invalid hex color format")
         return v
 
-
 class CardUpdateIn(BaseModel):
     name: str | None = None
     description: str | None = None
@@ -105,7 +102,6 @@ class CardUpdateIn(BaseModel):
         if v is not None and len(v.strip()) < 2:
             raise ValueError("Program name must be at least 2 characters")
         return v.strip() if v else v
-
 
 class CardOut(BaseModel):
     id: str
@@ -152,19 +148,15 @@ class CardOut(BaseModel):
             ),
         )
 
-
 class MessageOut(BaseModel):
     success: bool
     message: str
 
-
 # ENDPOINTS
-
 
 class CardListOut(BaseModel):
     programs: list[CardOut]
     total: int
-
 
 @router.get("/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización")
 def list_programs(request: HttpRequest) -> CardListOut:
@@ -187,7 +179,6 @@ def list_programs(request: HttpRequest) -> CardListOut:
         ],
         "total": len(cards),
     }
-
 
 @router.post("/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización")
 @require_active_subscription
@@ -232,7 +223,6 @@ def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
     )
     return CardOut.from_model(card)
 
-
 @router.get("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa")
 def get_program(request: HttpRequest, program_id: str) -> CardOut:
     """Returns a single loyalty program. MANAGER+ only."""
@@ -240,7 +230,6 @@ def get_program(request: HttpRequest, program_id: str) -> CardOut:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
     return CardOut.from_model(card)
-
 
 @router.patch("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa")
 def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) -> CardOut:
@@ -330,7 +319,6 @@ def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) ->
 
     return CardOut.from_model(card)
 
-
 @router.post(
     "/{program_id}/publish/",
     auth=jwt_auth,
@@ -356,7 +344,6 @@ def publish_program(request: HttpRequest, program_id: str) -> CardOut:
     )
 
     return CardOut.from_model(card)
-
 
 @router.post(
     "/{program_id}/suspend/",
@@ -387,7 +374,6 @@ def suspend_program(request: HttpRequest, program_id: str) -> MessageOut:
         message=get_message(msg_code),
     )
 
-
 @router.delete(
     "/{program_id}/",
     auth=jwt_auth,
@@ -410,9 +396,8 @@ def delete_program(request: HttpRequest, program_id: str) -> HttpResponse:
 
     card.delete()
 
- # LYL-M-API-023: Return 204 No Content on successful delete
+ #
     return HttpResponse(status=204)
-
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
 def program_stats(request: HttpRequest, program_id: str) -> dict:
@@ -441,7 +426,6 @@ def program_stats(request: HttpRequest, program_id: str) -> dict:
         "card_type": card.card_type,
         "is_active": card.is_active,
     }
-
 
 @router.get("/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)")
 def public_program(request: HttpRequest, slug: str) -> dict:

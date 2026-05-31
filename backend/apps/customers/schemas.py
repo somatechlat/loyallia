@@ -1,5 +1,5 @@
 """
-Loyallia  Customer API Schemas (Pydantic models)
+Loyallia Customer API Schemas (Pydantic models)
 """
 
 from pydantic import BaseModel, EmailStr, field_validator

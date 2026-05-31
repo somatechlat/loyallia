@@ -1,5 +1,5 @@
 """
-Loyallia  Test Data Factories
+Loyallia Test Data Factories
 Reusable factory functions for creating test data across all test modules.
 Each factory creates minimal valid objects with sensible defaults.
 
@@ -24,7 +24,6 @@ from apps.customers.models import Customer, CustomerPass
 from apps.tenants.models import Location, Tenant
 from apps.transactions.models import Enrollment, Transaction, TransactionType
 
-
 def make_tenant(**kwargs):
     """Create a Tenant with sensible defaults."""
     defaults = {
@@ -37,7 +36,6 @@ def make_tenant(**kwargs):
     }
     defaults.update(kwargs)
     return Tenant.objects.create(**defaults)
-
 
 def make_user(
     tenant=None,
@@ -67,7 +65,6 @@ def make_user(
         user.tenant = tenant
         user.save(update_fields=["tenant"])
     return user
-
 
 def make_card(tenant, card_type=CardType.STAMP, metadata=None, **kwargs):
     """Create a Card with sensible defaults for the given card type."""
@@ -132,7 +129,6 @@ def make_card(tenant, card_type=CardType.STAMP, metadata=None, **kwargs):
         card.refresh_from_db()
         return card
 
-
 def make_customer(tenant, **kwargs):
     """Create a Customer with sensible defaults."""
     uid = uuid.uuid4().hex[:6]
@@ -146,7 +142,6 @@ def make_customer(tenant, **kwargs):
     defaults.update(kwargs)
     return Customer.objects.create(tenant=tenant, **defaults)
 
-
 def make_customer_pass(customer, card, pass_data=None, **kwargs):
     """Create a CustomerPass (enrollment) with sensible defaults."""
     defaults = {
@@ -155,7 +150,6 @@ def make_customer_pass(customer, card, pass_data=None, **kwargs):
     }
     defaults.update(kwargs)
     return CustomerPass.objects.create(customer=customer, card=card, **defaults)
-
 
 def make_subscription(tenant, plan=None, status=SubscriptionStatus.ACTIVE, **kwargs):
     """Create a Subscription with sensible defaults.
@@ -212,7 +206,6 @@ def make_subscription(tenant, plan=None, status=SubscriptionStatus.ACTIVE, **kwa
         sub.save(update_fields=[*defaults.keys(), "updated_at"])
     return sub
 
-
 def make_plan(**kwargs):
     """Create a SubscriptionPlan with sensible defaults."""
     uid = uuid.uuid4().hex[:6]
@@ -239,7 +232,6 @@ def make_plan(**kwargs):
     defaults.update(kwargs)
     return SubscriptionPlan.objects.create(**defaults)
 
-
 def make_location(tenant, **kwargs):
     """Create a Location with sensible defaults."""
     defaults = {
@@ -252,7 +244,6 @@ def make_location(tenant, **kwargs):
     }
     defaults.update(kwargs)
     return Location.objects.create(tenant=tenant, **defaults)
-
 
 def make_automation(
     tenant,
@@ -272,13 +263,11 @@ def make_automation(
     defaults.update(kwargs)
     return Automation.objects.create(tenant=tenant, **defaults)
 
-
 def make_enrollment(tenant, customer, card, **kwargs):
     """Create an Enrollment record."""
     defaults = {"enrollment_method": "manual"}
     defaults.update(kwargs)
     return Enrollment.objects.create(tenant=tenant, customer=customer, card=card, **defaults)
-
 
 def make_transaction(
     tenant,
@@ -296,29 +285,23 @@ def make_transaction(
     defaults.update(kwargs)
     return Transaction.objects.create(tenant=tenant, customer_pass=customer_pass, **defaults)
 
-
 # Explicit role factories
-
 
 def make_owner(tenant=None, **kwargs):
     """Create an OWNER user."""
     return make_user(tenant=tenant, role=UserRole.OWNER, **kwargs)
 
-
 def make_manager(tenant=None, **kwargs):
     """Create a MANAGER user."""
     return make_user(tenant=tenant, role=UserRole.MANAGER, **kwargs)
-
 
 def make_staff(tenant=None, **kwargs):
     """Create a STAFF user."""
     return make_user(tenant=tenant, role=UserRole.STAFF, **kwargs)
 
-
 def make_superadmin(**kwargs):
     """Create a SUPER_ADMIN user (platform-level, no tenant)."""
     return make_user(role=UserRole.SUPER_ADMIN, **kwargs)
-
 
 def make_full_stack(
     tenant=None,

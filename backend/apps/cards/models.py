@@ -1,5 +1,5 @@
 """
-Loyallia  Card Models (Loyalty Programs)
+Loyallia Card Models (Loyalty Programs)
 Core models for all 10 card types with shared base properties and type-specific metadata.
 """
 

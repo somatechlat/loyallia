@@ -1,5 +1,5 @@
 """
-Loyallia  Transactions API Router (apps/transactions/api.py)
+Loyallia Transactions API Router (apps/transactions/api.py)
 
 Handles the two highest-traffic operations in the system:
 1. QR scanner validation and transaction recording (STAFF endpoints).
@@ -46,7 +46,6 @@ from common.permissions import is_manager_or_owner, is_staff_or_above, jwt_auth
 
 router = Router()
 
-
 def _serialize_json_value(value):
     """Recursively convert Decimal values to strings for JSON serialization.
 
@@ -61,16 +60,13 @@ def _serialize_json_value(value):
         return [_serialize_json_value(v) for v in value]
     return value
 
-
 # Scanner sub-router for /scanner/ endpoints (POS terminal operations)
 scanner_router = Router()
-
 
 class ScanValidateIn(BaseModel):
     """Input schema for QR code validation (scan-to-check)."""
 
     qr_code: str
-
 
 class ScanTransactIn(BaseModel):
     """Input schema for QR code transaction (scan-to-transact)."""
@@ -79,7 +75,6 @@ class ScanTransactIn(BaseModel):
     amount: float = 0
     notes: str = ""
     idempotency_key: str = ""
-
 
 @scanner_router.post("/validate/", auth=jwt_auth, summary="Validar código QR del pase")
 def validate_qr(request: HttpRequest, data: ScanValidateIn):
@@ -120,7 +115,6 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
         "pass_data": pass_obj.pass_data,
         "is_valid": True,
     }
-
 
 @scanner_router.post("/transact/", auth=jwt_auth, summary="Registrar transacción")
 def transact(request: HttpRequest, data: ScanTransactIn):
@@ -244,7 +238,6 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     }
     return _serialize_json_value(response_data)
 
-
 @scanner_router.get("/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono")
 def search_customer(request: HttpRequest, query: str):
     """Search customer by name/email/phone for remote stamp issuance.
@@ -295,7 +288,6 @@ def search_customer(request: HttpRequest, query: str):
 
     return {"results": results}
 
-
 # Transaction list endpoints (/transactions/)
 @router.get("/", auth=jwt_auth, summary="Listar transacciones")
 def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
@@ -340,7 +332,6 @@ def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
         details={"limit": limit, "offset": offset, "count": len(results)},
     )
     return {"transactions": results}
-
 
 @router.get("/{transaction_id}/", auth=jwt_auth, summary="Detalle de transacción")
 def get_transaction(request: HttpRequest, transaction_id: str):
@@ -396,7 +387,6 @@ def get_transaction(request: HttpRequest, transaction_id: str):
         "created_at": transaction.created_at.isoformat(),
     }
 
-
 class RemoteIssueIn(BaseModel):
     """Input schema for remote stamp/reward issuance without QR scan."""
 
@@ -404,7 +394,6 @@ class RemoteIssueIn(BaseModel):
     card_id: str
     quantity: int = 1
     notes: str = ""
-
 
 @router.post("/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota")
 def remote_issue(request: HttpRequest, data: RemoteIssueIn):

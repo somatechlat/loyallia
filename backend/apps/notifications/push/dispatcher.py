@@ -1,5 +1,5 @@
 """
-Loyallia  Push Notification Dispatcher
+Loyallia Push Notification Dispatcher
 
 Central entry point for all push delivery.
 Dispatches to APNs (iOS) or FCM (Android) based on device type.

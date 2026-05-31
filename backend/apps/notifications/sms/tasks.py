@@ -1,5 +1,5 @@
 """
-Loyallia  SMS Campaign Celery Task (LYL-SRS-009)
+Loyallia SMS Campaign Celery Task
 
 Extracted from tasks.py for Rule 245 compliance (600-line limit).
 Real SMS delivery via Twilio with per-message tracking using
@@ -24,7 +24,6 @@ from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
-
 @shared_task(
     bind=True,
     max_retries=1,
@@ -41,7 +40,7 @@ def send_sms_campaign(
     message: str,
     segment_id: str = "all",
 ) -> dict:
-    """LYL-SRS-009: SMS campaign via Twilio with per-message tracking.
+    """: SMS campaign via Twilio with per-message tracking.
 
     Creates a CampaignRun and CampaignDeliveryLog rows, then sends messages
     through the Twilio SMS client. Follows the same architecture as
@@ -120,7 +119,7 @@ def send_sms_campaign(
                 status=DeliveryStatus.QUEUED,
             )
 
- # Create notification record upfront for campaign list visibility (LYL-SRS-009)
+        # Create notification record upfront for campaign list visibility
             notification = Notification.objects.create(
                 tenant=tenant,
                 customer=customer,

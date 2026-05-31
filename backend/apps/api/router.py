@@ -1,5 +1,5 @@
 """
-Loyallia  API Router (Django Ninja)
+Loyallia API Router (Django Ninja)
 Central registration of all sub-routers.
 Mounted at /api/v1/ in loyallia/urls.py
 """

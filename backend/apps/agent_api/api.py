@@ -1,5 +1,5 @@
 """
-Loyallia  Agent API Endpoints (REQ-AGENT-002)
+Loyallia Agent API Endpoints (REQ-AGENT-002)
 Read-only endpoints for external AI agents using Django Ninja.
 All data is aggregated or anonymized  no PII exposed.
 Enterprise plan only  gated by AgentAPIKeyAuth.

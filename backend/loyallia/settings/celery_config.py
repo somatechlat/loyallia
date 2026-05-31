@@ -1,5 +1,5 @@
 """
-Loyallia  Celery Configuration
+Loyallia Celery Configuration
 Extracted from base.py for Rule 245 compliance.
 All Celery settings are imported via `from loyallia.settings.celery_config import *`
 """

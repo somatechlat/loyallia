@@ -73,11 +73,11 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "common.middleware.RequestIDMiddleware",  # B-011: Request tracing
-    "common.middleware.CSPNonceMiddleware",  # LYL-H-SEC-010: CSP nonce generation
+    "common.middleware.CSPNonceMiddleware",  #
     "common.rate_limit.RateLimitMiddleware",  # Rate limiting (Redis-backed, fails open)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # i18n language detection
-    "common.middleware.CSRFExemptAPIMiddleware",  # LYL-M-SEC-018: CSRF for non-API routes
+    "common.middleware.CSRFExemptAPIMiddleware",  #
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -151,7 +151,7 @@ DATABASE_ROUTERS = ["common.db_routers.PgBouncerRouter"]
 AUTH_USER_MODEL = "authentication.User"
 
 # PASSWORD VALIDATION
-# SECURITY (LYL-M-SEC-014): 12+ chars with complexity requirements.
+# 12+ chars with complexity requirements.
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -245,7 +245,7 @@ AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
 AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_ASSETS
 AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 AWS_DEFAULT_ACL = None
-AWS_S3_VERIFY = False  # LYL-M-SEC-017: Overridden to True in production.py
+AWS_S3_VERIFY = False  #
 
 STORAGES = {
     "default": {
@@ -266,7 +266,7 @@ STORAGES = {
 
 JWT_ACCESS_TOKEN_LIFETIME_MINUTES = 60  # FR-008: 60 minutes per spec
 JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
-# LYL-H-SEC-005: Algorithm selection. HS256 (default) or RS256 (asymmetric).
+#
 # For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
 JWT_SECRET_KEY = get_secret("jwt_secret_key", default=SECRET_KEY)  # B-001: Separate from Django SECRET_KEY
@@ -279,15 +279,12 @@ if JWT_SECRET_KEY == SECRET_KEY:
 JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 private key file
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
-
 # PASS SIGNING
-
 
 def vault_bool(key: str, env_name: str = "", default: bool = False) -> bool:
     """Read a feature flag from Vault using explicit boolean strings."""
     value = get_secret(key, default=str(default).lower())
     return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
-
 
 APPLE_WALLET_ENABLED = vault_bool("apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False)
 GOOGLE_WALLET_ENABLED = vault_bool("google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True)
@@ -343,7 +340,6 @@ PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
     default="",
 )
 
-
 # EMAIL
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -358,7 +354,7 @@ EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", default="")
 # fallback for code paths that do not (yet) use the helper.
 DEFAULT_FROM_EMAIL = "noreply@loyallia.com"
 
-# WHATSAPP BRIDGE (LYL-SRS-006)
+# WHATSAPP BRIDGE
 
 WHATSAPP_BRIDGE_URL = config("WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001")
 WHATSAPP_BRIDGE_API_KEY = get_secret(
@@ -368,14 +364,14 @@ WHATSAPP_BRIDGE_API_KEY = get_secret(
 WHATSAPP_MAX_PER_MINUTE = config("WHATSAPP_MAX_PER_MINUTE", default=8, cast=int)
 WHATSAPP_MAX_PER_HOUR = config("WHATSAPP_MAX_PER_HOUR", default=200, cast=int)
 
-# TWILIO SMS (LYL-SRS-009)
+# TWILIO SMS
 
 TWILIO_ACCOUNT_SID = get_secret("twilio_account_sid", default="")
 TWILIO_AUTH_TOKEN = get_secret("twilio_auth_token", default="")
 TWILIO_FROM_NUMBER = get_secret("twilio_from_number", default="")
 TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 
-# TWILIO VERIFY v2 (LYL-SRS-VERIFY-001)
+# TWILIO VERIFY v2 ()
 
 TWILIO_VERIFY_SERVICE_SID = get_secret("twilio_verify_service_sid", default="")
 TWILIO_VERIFY_ENABLED = get_secret("twilio_verify_enabled", default="false").lower() == "true"
@@ -408,7 +404,7 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
 # Content-Security-Policy set via custom middleware or Nginx in production
 # Default CSP header (can be overridden in production settings)
-# LYL-H-SEC-010: CSP is now set via CSPNonceMiddleware with per-request nonces.
+# CSP is set via CSPNonceMiddleware with per-request nonces.
 # These settings are kept as documentation; the middleware generates the actual header.
 CSP_DEFAULT_SRC = "'self'"
 CSP_IMG_SRC = "'self' data: https:"
@@ -416,7 +412,7 @@ CSP_FONT_SRC = "'self' https://fonts.gstatic.com"
 CSP_CONNECT_SRC = "'self' https://oauth2.googleapis.com"
 CSP_FRAME_SRC = "'self' https://accounts.google.com"
 
-# LYL-M-SEC-019: HttpOnly session cookie (set in base so all envs inherit)
+#
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 

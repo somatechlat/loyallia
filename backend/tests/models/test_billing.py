@@ -1,5 +1,5 @@
 """
-Loyallia  Billing Model Unit Tests
+Loyallia Billing Model Unit Tests
 Tests for Subscription, Invoice, Plan, and related billing models.
 """
 

@@ -1,5 +1,5 @@
 """
-Loyallia  Customer Models
+Loyallia Customer Models
 Customer profiles, passes, and enrollment management.
 """
 
@@ -13,7 +13,6 @@ from django.db import models
 from apps.cards.models import Card
 from apps.tenants.models import Tenant
 from common.models import TimestampedModel
-
 
 class CustomerPortalAccount(models.Model):
     """
@@ -44,7 +43,6 @@ class CustomerPortalAccount(models.Model):
         from django.contrib.auth.hashers import check_password as django_check
 
         return django_check(raw_password, self.password)
-
 
 class Customer(TimestampedModel):
     """
@@ -153,7 +151,6 @@ class Customer(TimestampedModel):
     def generate_referral_code(self) -> str:
         """Generate a unique referral code for this customer.
 
-        LYL-M-API-018: Includes a max-attempts guard to prevent infinite loops
         if the code space is exhausted or there's a DB issue.
         """
         import logging
@@ -181,7 +178,6 @@ class Customer(TimestampedModel):
         if not self.referral_code:
             self.referral_code = self.generate_referral_code()
         super().save(*args, **kwargs)
-
 
 class CustomerPass(models.Model):
     """
@@ -486,7 +482,6 @@ class CustomerPass(models.Model):
 
     def _process_discount_transaction(self, amount: Decimal) -> dict:
         return self.process_transaction("discount", amount=amount)
-
 
 class ApplePassRegistration(models.Model):
     """

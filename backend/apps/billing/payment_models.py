@@ -1,5 +1,5 @@
 """
-Loyallia  Payment & Invoice Models (REQ-PAY-001)
+Loyallia Payment & Invoice Models (REQ-PAY-001)
 Split from billing/models.py per the 600-line architectural limit.
 Contains PaymentMethod and Invoice models.
 """
@@ -16,7 +16,6 @@ from apps.tenants.models import Tenant
 from common.models import TimestampedModel
 
 # PAYMENT METHOD
-
 
 class PaymentMethod(TimestampedModel):
     """
@@ -61,9 +60,7 @@ class PaymentMethod(TimestampedModel):
     def display_name(self) -> str:
         return f"{self.card_brand} terminada en {self.card_last_four}"
 
-
 # INVOICE
-
 
 class Invoice(TimestampedModel):
     """
@@ -204,9 +201,7 @@ class Invoice(TimestampedModel):
         self.paid_at = timezone.now()
         self.save(update_fields=["status", "gateway_charge_id", "paid_at", "updated_at"])
 
-
-# WEBHOOK EVENT (LYL-H-SEC-003: Replay protection / idempotency)
-
+# WEBHOOK EVENT ()
 
 class WebhookEvent(models.Model):
     """

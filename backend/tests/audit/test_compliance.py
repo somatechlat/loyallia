@@ -1,5 +1,5 @@
 """
-Tests for compliance-related audit fixes  audit findings LYL-H-ARCH-004, LYL-H-API-010.
+Tests for compliance-related audit fixes audit findings
 Uses Django's TestCase with PostgreSQL.
 """
 
@@ -12,15 +12,12 @@ from django.utils import timezone
 
 # Helpers
 
-
-
 def _make_tenant(**kwargs):
     from apps.tenants.models import Tenant
 
     defaults = {"name": "Test Tenant", "slug": f"test-{uuid.uuid4().hex[:8]}"}
     defaults.update(kwargs)
     return Tenant.objects.create(**defaults)
-
 
 def _make_user(tenant, **kwargs):
     from apps.authentication.models import User, UserManager
@@ -40,7 +37,6 @@ def _make_user(tenant, **kwargs):
         user.tenant = tenant
         user.save(update_fields=["tenant"])
     return user
-
 
 def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     from apps.cards.models import Card
@@ -81,7 +77,6 @@ def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     defaults.update(kwargs)
     return Card.objects.create(tenant=tenant, **defaults)
 
-
 def _make_customer(tenant, **kwargs):
     from apps.customers.models import Customer
 
@@ -93,15 +88,12 @@ def _make_customer(tenant, **kwargs):
     defaults.update(kwargs)
     return Customer.objects.create(tenant=tenant, **defaults)
 
-
 def _make_pass(customer, card):
     from apps.customers.models import CustomerPass
 
     return CustomerPass.objects.create(customer=customer, card=card)
 
-
-# FIX 10 LYL-H-API-010: Automation max_executions_per_day
-
+#
 
 class AutomationMaxExecutionsPerDayTest(TestCase):
     """Verify automation enforces max_executions_per_day."""

@@ -1,5 +1,5 @@
 """
-Loyallia  Backup API Schemas (apps/backup/schemas.py)
+Loyallia Backup API Schemas (apps/backup/schemas.py)
 
 Django Ninja request/response schemas for the SuperAdmin backup API.
 All timestamps are ISO-8601 strings.

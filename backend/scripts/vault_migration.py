@@ -24,7 +24,6 @@ import requests
 
 DEFAULT_VAULT_PATH = "secret/data/loyallia/production"
 
-
 def _load_secret_payload(path: Path) -> dict[str, str]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
@@ -46,13 +45,11 @@ def _load_secret_payload(path: Path) -> dict[str, str]:
         payload[key] = value
     return payload
 
-
 def _require_env(name: str) -> str:
     value = os.environ.get(name, "")
     if not value:
         raise SystemExit(f"{name} is required and must be provided by the operator.")
     return value
-
 
 def migrate() -> None:
     parser = argparse.ArgumentParser(description="Import operator-provided secrets into Vault KV v2.")
@@ -89,7 +86,6 @@ def migrate() -> None:
         raise SystemExit(f"Vault import failed with HTTP {response.status_code}.")
 
     print(f"Imported {len(payload['data'])} Vault keys into {args.path}. Values were not printed.")
-
 
 if __name__ == "__main__":
     migrate()

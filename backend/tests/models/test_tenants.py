@@ -1,5 +1,5 @@
 """
-Loyallia  Tenant & Location Model Unit Tests
+Loyallia Tenant & Location Model Unit Tests
 Tests for Tenant, Location, and related models.
 """
 

@@ -1,5 +1,5 @@
 """
-Loyallia  Automation Tests
+Loyallia Automation Tests
 Tests for Automation model: trigger matching, action execution,
 cooldown enforcement, daily limits, and AutomationExecution log.
 """
@@ -25,7 +25,6 @@ from tests.factories import (
 )
 
 # Automation Model Tests
-
 
 class AutomationCreateTest(TestCase):
     """Tests for Automation creation and basic properties."""
@@ -74,9 +73,7 @@ class AutomationCreateTest(TestCase):
         auto.refresh_from_db()
         self.assertEqual(auto.action_config["title"], "Hi!")
 
-
 # can_execute_for_customer Tests
-
 
 class CanExecuteForCustomerTest(TestCase):
     """Tests for Automation.can_execute_for_customer cooldown logic."""
@@ -150,9 +147,7 @@ class CanExecuteForCustomerTest(TestCase):
         )
         self.assertTrue(auto.can_execute_for_customer(self.customer))
 
-
 # Automation Execution Tests
-
 
 class AutomationExecuteTest(TestCase):
     """Tests for Automation.execute method."""
@@ -220,9 +215,7 @@ class AutomationExecuteTest(TestCase):
         result = auto.execute(self.customer)
         self.assertFalse(result)
 
-
 # Daily Limits Tests
-
 
 class AutomationDailyLimitsTest(TestCase):
     """Tests for max_executions_per_day enforcement."""
@@ -311,9 +304,7 @@ class AutomationDailyLimitsTest(TestCase):
         result = auto.execute(self.customer)
         self.assertFalse(result)
 
-
 # Action Execution Tests
-
 
 class AutomationActionTest(TestCase):
     """Tests for individual automation actions."""
@@ -387,9 +378,7 @@ class AutomationActionTest(TestCase):
         result = auto._execute_update_segment(self.customer, {})
         self.assertFalse(result)
 
-
 # AutomationExecution Model Tests
-
 
 class AutomationExecutionModelTest(TestCase):
     """Tests for AutomationExecution log model."""

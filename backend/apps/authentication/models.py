@@ -1,5 +1,5 @@
 """
-Loyallia  Custom User Model
+Loyallia Custom User Model
 Extends AbstractBaseUser for full control.
 Supports per-tenant RBAC with OWNER, MANAGER, STAFF, SUPER_ADMIN roles.
 """
@@ -98,7 +98,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text="ISO 639-1 code (es, en, fr, de). Empty = tenant default.",
     )
 
- # Security PIN for impersonation verification (LYL-SEC-030/031)
+    # Security PIN for impersonation verification
     security_pin_hash = models.CharField(
         max_length=128,
         blank=True,
@@ -147,7 +147,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def record_failed_login(self) -> None:
         """Increment failed login counter. Lock after 5 failures.
 
-        LYL-L-SEC-021: Sends an email notification when account is locked.
+        Sends an email notification when account is locked.
         """
         import logging
         from datetime import timedelta
@@ -162,7 +162,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             self.locked_until = timezone.now() + timedelta(minutes=15)
         self.save(update_fields=["failed_login_count", "locked_until", "updated_at"])
 
- # LYL-L-SEC-021: Notify user on first lockout (not repeated lockouts)
+        # Notify user on first lockout (not repeated lockouts)
         if self.is_locked and not was_locked:
             try:
                 from django.core.mail import send_mail
@@ -194,7 +194,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.locked_until = None
         self.save(update_fields=["failed_login_count", "locked_until", "updated_at"])
 
- # Security PIN (LYL-SEC-030/031)
+        # Security PIN
 
     def set_security_pin(self, pin: str) -> None:
         """Hash and store a 6-digit security PIN for impersonation verification."""

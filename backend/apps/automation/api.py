@@ -1,5 +1,5 @@
 """
-Loyallia  Automation API router
+Loyallia Automation API router
 Campaign automation and workflow management.
 """
 
@@ -22,7 +22,6 @@ from common.plan_enforcement import check_plan_limit
 
 router = Router()
 
-
 # Pydantic Schemas
 class AutomationSchema(BaseModel):
     id: str
@@ -34,7 +33,6 @@ class AutomationSchema(BaseModel):
     total_executions: int
     last_executed: str | None = None
     created_at: str
-
 
 class CreateAutomationSchema(BaseModel):
     name: str
@@ -49,7 +47,6 @@ class CreateAutomationSchema(BaseModel):
     max_executions_per_day: int | None = None
     cooldown_hours: int = 24
 
-
 class UpdateAutomationSchema(BaseModel):
     name: str | None = None
     description: str | None = None
@@ -61,7 +58,6 @@ class UpdateAutomationSchema(BaseModel):
     max_executions_per_day: int | None = None
     cooldown_hours: int | None = None
     is_active: bool | None = None
-
 
 # Automation Analytics
 @router.get("/stats/", auth=jwt_auth, summary="Get automation statistics")
@@ -97,7 +93,6 @@ def get_automation_stats(request):
         "action_breakdown": {item["automation__action"]: item["count"] for item in action_stats},
     }
 
-
 # Automation Management
 @router.get("/", auth=jwt_auth, summary="List automations")
 def list_automations(request, active_only: bool = False):
@@ -125,7 +120,6 @@ def list_automations(request, active_only: bool = False):
         }
         for a in automations
     ]
-
 
 @router.post("/", auth=jwt_auth, summary="Create automation")
 @require_role("OWNER")
@@ -168,15 +162,13 @@ def create_automation(request, data: CreateAutomationSchema):
         "message": get_message("AUTOMATION_CREATED", name=automation.name),
     }
 
-
 # Moved to the bottom to avoid matching /stats/ as an automation_id
-
 
 @router.put("/{automation_id}/", auth=jwt_auth, summary="Update automation")
 @require_role("OWNER")
 def update_automation(request, automation_id: str, data: UpdateAutomationSchema):
     """Update an automation. OWNER only.
-    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+
     """
     automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
@@ -229,17 +221,12 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
 
     return {"message": get_message("AUTOMATION_UPDATED")}
 
-
 @router.delete("/{automation_id}/", auth=jwt_auth, summary="Delete automation")
 @require_role("OWNER")
 def delete_automation(request, automation_id: str):
-    """Delete an automation. OWNER only.
-    LYL-M-API-023: Return 204 No Content on successful delete.
-    LYL-M-API-022: Accept both slug and UUID for automation_id.
-    """
+    """Delete an automation. OWNER only."""
     import uuid
 
- # LYL-M-API-022: Try UUID first, then slug
     try:
         uuid.UUID(automation_id)
         automation = get_object_or_404(Automation, id=automation_id, tenant=request.tenant)
@@ -248,17 +235,16 @@ def delete_automation(request, automation_id: str):
 
     automation.delete()
 
- # LYL-M-API-023: Return 204 No Content
+        # Return 204 No Content
     from django.http import HttpResponse
 
     return HttpResponse(status=204)
-
 
 @router.post("/{automation_id}/toggle/", auth=jwt_auth, summary="Toggle automation active status")
 @require_role("OWNER")
 def toggle_automation(request, automation_id: str):
     """Enable or disable an automation. OWNER only.
-    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+
     """
     automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
@@ -268,13 +254,12 @@ def toggle_automation(request, automation_id: str):
     status_key = "AUTOMATION_ENABLED" if automation.is_active else "AUTOMATION_DISABLED"
     return {"message": get_message(status_key, name=automation.name)}
 
-
 # Manual Execution
 @router.post("/{automation_id}/execute/", auth=jwt_auth, summary="Execute automation manually")
 @require_role("OWNER")
 def execute_automation_manually(request, automation_id: str, customer_id: str):
     """Manually execute an automation for a specific customer. OWNER only.
-    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+
     """
     automation = _get_automation_by_id_or_slug(automation_id, request.tenant)
 
@@ -299,9 +284,8 @@ def execute_automation_manually(request, automation_id: str, customer_id: str):
         "message": (get_message("AUTOMATION_EXECUTED") if success else get_message("AUTOMATION_FAILED")),
     }
 
-
 def _get_automation_by_id_or_slug(automation_id: str, tenant) -> Automation:
-    """LYL-M-API-022: Resolve automation by UUID or name (slug-like) identifier."""
+    """"""
     import uuid
 
     try:
@@ -310,11 +294,10 @@ def _get_automation_by_id_or_slug(automation_id: str, tenant) -> Automation:
     except ValueError:
         return get_object_or_404(Automation, name=automation_id, tenant=tenant)
 
-
 @router.get("/{automation_id}/", auth=jwt_auth, summary="Get automation details")
 def get_automation(request, automation_id: str):
     """Get detailed information about an automation. MANAGER+ only.
-    LYL-M-API-022: Accepts both UUID and name-based identifiers.
+
     """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))

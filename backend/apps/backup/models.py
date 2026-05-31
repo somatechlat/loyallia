@@ -1,5 +1,5 @@
 """
-Loyallia  Backup Models (apps/backup/models.py)
+Loyallia Backup Models (apps/backup/models.py)
 
 BackupJob model tracks every backup/restore operation with full lifecycle:
 PENDING → RUNNING → COMPLETED/FAILED → VERIFIED/CORRUPTED.

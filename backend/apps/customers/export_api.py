@@ -1,5 +1,5 @@
 """
-Loyallia  Customer CSV Export API
+Loyallia Customer CSV Export API
 Extracted from customers/api.py for Rule 245 compliance.
 """
 

@@ -1,5 +1,5 @@
 """
-Loyallia  Wallet API (Public Endpoints)
+Loyallia Wallet API (Public Endpoints)
 Serves Apple Wallet .pkpass files and Google Wallet save URLs.
 These endpoints are PUBLIC (no auth)  customers call them after enrollment.
 

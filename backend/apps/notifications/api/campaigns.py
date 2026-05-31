@@ -64,7 +64,6 @@ def _get_campaign_task(data: CampaignCreateIn):
         }
     return None, {}
 
-
 class CampaignOut(BaseModel):
     id: str
     title: str
@@ -74,7 +73,6 @@ class CampaignOut(BaseModel):
     sent_count: int
     created_at: str
     channel: str | None = None
-
 
 class CampaignCreateIn(BaseModel):
     title: str
@@ -87,7 +85,6 @@ class CampaignCreateIn(BaseModel):
     action_url: str | None = ""  # Custom link for wallet push notifications (optional)
     schedule_type: str = "immediate"  # 'immediate' or 'scheduled'
     scheduled_at: str | None = None  # ISO datetime string for scheduled campaigns
-
 
 SEGMENT_NAMES = {
     "all": "Todos los clientes",
@@ -163,7 +160,6 @@ def list_campaigns(request: HttpRequest) -> dict:
     campaign_list = list(campaigns_dict.values())
     return {"campaigns": campaign_list, "total": len(campaign_list)}
 
-
 @router.post("/campaigns/", auth=jwt_auth, response=dict, summary="Crear campaña")
 def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     """Send an email, wallet, or WhatsApp notification campaign to customers in a segment.
@@ -229,10 +225,8 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
 
     # -- Immediate dispatch (existing flow) -----------------------------------
     if data.channel == "email":
- # LYL-SRS-008: Gate email campaigns by plan feature + monthly quota
         check_feature_access(request.tenant, "email_campaigns")
         check_plan_limit(request.tenant, "emails_month", write=True)
-
         from apps.notifications.tasks import send_email_campaign
 
         task_fn: Any = send_email_campaign
@@ -254,10 +248,8 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=data.segment_id),
         }
     elif data.channel == "wallet":
- # LYL-SRS-008: Gate wallet campaigns by plan feature + monthly quota
         check_feature_access(request.tenant, "wallet_campaigns")
         check_plan_limit(request.tenant, "wallet_pushes_month", write=True)
-
         from apps.notifications.tasks import send_wallet_notification_campaign
 
         task_fn: Any = send_wallet_notification_campaign
@@ -280,10 +272,8 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_WALLET_STARTED", segment=data.segment_id),
         }
     elif data.channel == "whatsapp":
- # LYL-SRS-008: Gate WhatsApp campaigns by plan feature + daily quota
         check_feature_access(request.tenant, "whatsapp_campaigns")
         check_plan_limit(request.tenant, "whatsapp_day", write=True)
-
         from apps.notifications.tasks import send_whatsapp_campaign
 
         task_fn: Any = send_whatsapp_campaign
@@ -305,10 +295,8 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id),
         }
     elif data.channel == "sms":
- # LYL-SRS-009: Gate SMS campaigns by plan feature + daily quota
         check_feature_access(request.tenant, "sms_campaigns")
         check_plan_limit(request.tenant, "sms_day", write=True)
-
         from apps.notifications.sms.tasks import send_sms_campaign
 
         task_fn: Any = send_sms_campaign
