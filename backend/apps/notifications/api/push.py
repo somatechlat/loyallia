@@ -7,6 +7,7 @@ from common.permissions import jwt_auth
 
 from .base import PushDeviceSchema, _get_customer_or_403, router
 
+
 @router.post(
     "/devices/register/",
     auth=jwt_auth,
@@ -16,7 +17,7 @@ def register_device(request, data: PushDeviceSchema):
     """Register a device for push notifications."""
     customer = _get_customer_or_403(request)
 
- # Get or create device
+    # Get or create device
     device, created = PushDevice.objects.update_or_create(
         customer=customer,
         device_token=data.device_token,
@@ -35,17 +36,17 @@ def register_device(request, data: PushDeviceSchema):
         "device_id": str(device.id),
     }
 
+
 @router.delete("/devices/{device_id}/", auth=jwt_auth, summary="Unregister device")
 def unregister_device(request, device_id: str):
-    """Unregister a device from push notifications.
-
-    """
+    """Unregister a device from push notifications."""
     customer = _get_customer_or_403(request)
     device = get_object_or_404(PushDevice, id=device_id, customer=customer)
     device.is_active = False
     device.save()
 
     return {"success": True, "message": "Device unregistered"}
+
 
 @router.get("/devices/", auth=jwt_auth, summary="List registered devices")
 def list_devices(request):

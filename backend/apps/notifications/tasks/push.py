@@ -30,7 +30,9 @@ def send_single_notification(self, notification_id: str) -> dict:
     from apps.notifications.service import NotificationService
 
     try:
-        notification = Notification.objects.select_related("customer", "tenant").get(id=uuid.UUID(notification_id))
+        notification = Notification.objects.select_related("customer", "tenant").get(
+            id=uuid.UUID(notification_id)
+        )
     except Notification.DoesNotExist:
         return {"success": False, "error": "Notification not found"}
 

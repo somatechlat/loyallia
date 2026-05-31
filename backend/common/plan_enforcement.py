@@ -67,6 +67,7 @@ def usage_pct(used: int, limit: int) -> float:
 
 # TENANT LIMITS RESOLUTION
 
+
 def get_tenant_limits(tenant) -> dict:
     """Get the effective resource limits for a tenant based on their subscription plan.
 
@@ -82,6 +83,7 @@ def get_tenant_limits(tenant) -> dict:
     plan = subscription.subscription_plan
     if not plan and subscription.is_trial_active:
         from apps.billing.models import TRIAL_LIMITS
+
         return dict(TRIAL_LIMITS)
 
     if not plan:
@@ -105,6 +107,7 @@ def get_tenant_limits(tenant) -> dict:
         "exports_month": plan.max_exports_month,
     }
 
+
 def get_current_usage(tenant, resource: str) -> int:
     """Get current usage count for a specific resource.
 
@@ -122,15 +125,21 @@ def get_current_usage(tenant, resource: str) -> int:
         "programs": lambda: Card.objects.filter(tenant=tenant).count(),
         "locations": lambda: tenant.locations.count(),
         "users": lambda: tenant.users.filter(is_active=True).count(),
-        "notifications_month": lambda: _count_monthly("apps.notifications.models", "Notification", tenant, month_start),
-        "transactions_month": lambda: _count_monthly("apps.transactions.models", "Transaction", tenant, month_start),
+        "notifications_month": lambda: _count_monthly(
+            "apps.notifications.models", "Notification", tenant, month_start
+        ),
+        "transactions_month": lambda: _count_monthly(
+            "apps.transactions.models", "Transaction", tenant, month_start
+        ),
         "whatsapp_day": lambda: _get_whatsapp_today(tenant),
         "emails_month": lambda: _count_emails_month(tenant, month_start),
         "sms_day": lambda: _count_sms_today(tenant),
         "wallet_pushes_month": lambda: _count_wallet_pushes_month(tenant, month_start),
         "automations": lambda: _count_automations(tenant),
         "automation_executions_day": lambda: _count_automation_executions_today(tenant),
-        "ai_queries_month": lambda: _count_monthly("apps.tenants.models", "AIQueryLog", tenant, month_start),
+        "ai_queries_month": lambda: _count_monthly(
+            "apps.tenants.models", "AIQueryLog", tenant, month_start
+        ),
         "api_calls_day": lambda: _count_api_calls_today(tenant),
         "exports_month": lambda: _count_exports_month(tenant, month_start),
     }
@@ -140,6 +149,7 @@ def get_current_usage(tenant, resource: str) -> int:
         logger.warning("Unknown resource for usage check: %s", resource)
         return 0
     return counter()
+
 
 def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> int:
     """Dynamic import and COUNT for monthly-capped resources (notifications, transactions).
@@ -151,7 +161,10 @@ def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> in
 
     module = importlib.import_module(module_path)
     model_class = getattr(module, model_name)
-    return model_class.objects.filter(tenant=tenant, created_at__gte=month_start).count()
+    return model_class.objects.filter(
+        tenant=tenant, created_at__gte=month_start
+    ).count()
+
 
 def _get_whatsapp_today(tenant) -> int:
     """Get today's WhatsApp message count from WhatsAppSession.
@@ -166,6 +179,7 @@ def _get_whatsapp_today(tenant) -> int:
         return session.messages_sent_today
     return 0
 
+
 def _count_emails_month(tenant, month_start) -> int:
     """Count email campaign deliveries this month.
 
@@ -178,6 +192,7 @@ def _count_emails_month(tenant, month_start) -> int:
         campaign_run__channel="email",
         created_at__gte=month_start,
     ).count()
+
 
 def _count_sms_today(tenant) -> int:
     """Count today's SMS deliveries for a tenant.
@@ -193,6 +208,7 @@ def _count_sms_today(tenant) -> int:
         created_at__gte=today_start,
     ).count()
 
+
 def _count_wallet_pushes_month(tenant, month_start) -> int:
     """Count wallet push notifications this month.
 
@@ -206,6 +222,7 @@ def _count_wallet_pushes_month(tenant, month_start) -> int:
         created_at__gte=month_start,
     ).count()
 
+
 def _count_automations(tenant) -> int:
     """Count total automation rules for a tenant.
 
@@ -214,6 +231,7 @@ def _count_automations(tenant) -> int:
     from apps.automation.models import Automation
 
     return Automation.objects.filter(tenant=tenant).count()
+
 
 def _count_automation_executions_today(tenant) -> int:
     """Count today's automation executions across all rules for a tenant.
@@ -227,6 +245,7 @@ def _count_automation_executions_today(tenant) -> int:
         automation__tenant=tenant,
         executed_at__gte=today_start,
     ).count()
+
 
 def _count_api_calls_today(tenant) -> int:
     """Count today's Agent API calls for a tenant.
@@ -248,6 +267,7 @@ def _count_api_calls_today(tenant) -> int:
         logger.warning("Agent API call log table is unavailable; returning usage=0.")
         return 0
 
+
 def _count_exports_month(tenant, month_start) -> int:
     """Count data exports this month.
 
@@ -261,7 +281,9 @@ def _count_exports_month(tenant, month_start) -> int:
         created_at__gte=month_start,
     ).count()
 
+
 # CHECK FUNCTIONS
+
 
 def check_plan_limit(tenant, resource: str, write: bool = False) -> None:
     """Check if tenant has exceeded their plan limit for a resource.
@@ -298,6 +320,7 @@ def check_plan_limit(tenant, resource: str, write: bool = False) -> None:
                 get_message("PLAN_LIMIT_EXCEEDED", resource=resource, limit=limit),
             )
 
+
 def check_feature_access(tenant, feature: str) -> None:
     """Check if the tenant's plan includes a specific feature.
 
@@ -320,7 +343,9 @@ def check_feature_access(tenant, feature: str) -> None:
             get_message("PLAN_FEATURE_UNAVAILABLE"),
         )
 
+
 # DECORATORS
+
 
 def require_active_subscription(func):
     """Decorator: block request if tenant has no active subscription.
@@ -341,6 +366,7 @@ def require_active_subscription(func):
 
     return wrapper
 
+
 def enforce_limit(resource: str):
     """Decorator factory: check plan limit for a specific resource before execution.
 
@@ -357,6 +383,7 @@ def enforce_limit(resource: str):
         return wrapper
 
     return decorator
+
 
 def require_feature(feature: str):
     """Decorator factory: check if plan includes a specific feature.

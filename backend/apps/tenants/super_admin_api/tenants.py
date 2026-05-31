@@ -45,9 +45,11 @@ router = Router()
 
 # HELPERS
 
+
 def _require_super_admin(request) -> None:
     if not is_super_admin(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
 
 def _get_tenant_or_404(tenant_id: str) -> Tenant:
     try:
@@ -55,7 +57,9 @@ def _get_tenant_or_404(tenant_id: str) -> Tenant:
     except (Tenant.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
 
+
 # TENANT CRUD
+
 
 @router.get(
     "/tenants/",
@@ -71,7 +75,7 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         .prefetch_related("users", "locations")
         .order_by("-created_at")
     )
- #
+    #
     if plan:
         from apps.billing.models import Subscription, SubscriptionStatus
 
@@ -82,15 +86,18 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         }
         target_status = plan_status_map.get(plan)
         if target_status:
-            tenant_ids = Subscription.objects.filter(status=target_status).values_list("tenant_id", flat=True)
+            tenant_ids = Subscription.objects.filter(status=target_status).values_list(
+                "tenant_id", flat=True
+            )
             qs = qs.filter(id__in=tenant_ids)
         else:
             qs = qs.filter(plan=plan)
     if is_active is not None:
         qs = qs.filter(is_active=is_active)
- # Hide tenants scheduled for deletion (cascade delete in progress)
+    # Hide tenants scheduled for deletion (cascade delete in progress)
     qs = qs.filter(scheduled_deletion_at__isnull=True)
     return [TenantAdminOut.from_tenant(t) for t in qs]
+
 
 @router.post(
     "/tenants/",
@@ -104,7 +111,9 @@ def create_tenant(request, payload: CreateTenantWizardIn):
     if User.objects.filter(email=payload.owner_email).exists():
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="Email ya registrado en la plataforma"),
+            get_message(
+                "VALIDATION_ERROR", detail="Email ya registrado en la plataforma"
+            ),
         )
 
     try:
@@ -113,23 +122,33 @@ def create_tenant(request, payload: CreateTenantWizardIn):
             if plan_obj is None:
                 raise HttpError(
                     400,
-                    get_message("VALIDATION_ERROR", detail=f"Plan '{payload.plan_slug}' no encontrado"),
+                    get_message(
+                        "VALIDATION_ERROR",
+                        detail=f"Plan '{payload.plan_slug}' no encontrado",
+                    ),
                 )
             if not plan_obj.is_active:
                 raise HttpError(
                     400,
-                    get_message("VALIDATION_ERROR", detail="Plan seleccionado no está activo"),
+                    get_message(
+                        "VALIDATION_ERROR", detail="Plan seleccionado no está activo"
+                    ),
                 )
             # SEC-H5: Validate plan capacity — prevent over-subscription
             active_sub_count = Subscription.objects.filter(
                 subscription_plan=plan_obj,
                 status__in=[SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE],
             ).count()
-            plan_capacity = PlatformSetting.get_int(f"PLAN_CAPACITY_{plan_obj.slug.upper()}", 0)
+            plan_capacity = PlatformSetting.get_int(
+                f"PLAN_CAPACITY_{plan_obj.slug.upper()}", 0
+            )
             if plan_capacity > 0 and active_sub_count >= plan_capacity:
                 raise HttpError(
                     400,
-                    get_message("VALIDATION_ERROR", detail=f"Capacidad máxima alcanzada para plan '{plan_obj.name}'"),
+                    get_message(
+                        "VALIDATION_ERROR",
+                        detail=f"Capacidad máxima alcanzada para plan '{plan_obj.name}'",
+                    ),
                 )
             trial_days = plan_obj.trial_days
             plan_slug = plan_obj.slug
@@ -137,7 +156,10 @@ def create_tenant(request, payload: CreateTenantWizardIn):
             if payload.billing_cycle not in ["monthly", "annual"]:
                 raise HttpError(
                     400,
-                    get_message("VALIDATION_ERROR", detail="billing_cycle must be 'monthly' or 'annual'"),
+                    get_message(
+                        "VALIDATION_ERROR",
+                        detail="billing_cycle must be 'monthly' or 'annual'",
+                    ),
                 )
 
             tenant = Tenant.objects.create(
@@ -179,7 +201,11 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                     is_primary=loc.is_primary or (i == 0),
                 )
 
-            sub_status = SubscriptionStatus.TRIALING if plan_slug == "trial" else SubscriptionStatus.ACTIVE
+            sub_status = (
+                SubscriptionStatus.TRIALING
+                if plan_slug == "trial"
+                else SubscriptionStatus.ACTIVE
+            )
             is_trial = sub_status == SubscriptionStatus.TRIALING
 
             sub = Subscription.objects.create(
@@ -189,18 +215,26 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 billing_cycle=payload.billing_cycle,
                 status=sub_status,
                 trial_start=dj_timezone.now() if is_trial else None,
-                trial_end=dj_timezone.now() + timedelta(days=trial_days) if is_trial else None,
+                trial_end=(
+                    dj_timezone.now() + timedelta(days=trial_days) if is_trial else None
+                ),
                 current_period_start=dj_timezone.now() if not is_trial else None,
-                current_period_end=dj_timezone.now() + timedelta(days=365 if payload.billing_cycle == "annual" else 30)
-                if not is_trial
-                else None,
+                current_period_end=(
+                    dj_timezone.now()
+                    + timedelta(days=365 if payload.billing_cycle == "annual" else 30)
+                    if not is_trial
+                    else None
+                ),
             )
             tenant.trial_end = sub.trial_end
             tenant.save(update_fields=["trial_end"])
 
             def _send_owner_welcome() -> None:
                 from apps.tenants.models import PlatformSetting
-                dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
+
+                dashboard_url = PlatformSetting.get(
+                    "dashboard_url", settings.FRONTEND_URL
+                )
                 login_url = f"{dashboard_url.rstrip('/')}/login"
                 try:
                     send_mail(
@@ -219,7 +253,9 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                         fail_silently=False,
                     )
                 except Exception:
-                    logger.exception("Failed to send owner welcome email to %s", owner.email)
+                    logger.exception(
+                        "Failed to send owner welcome email to %s", owner.email
+                    )
 
             transaction.on_commit(_send_owner_welcome)
 
@@ -242,6 +278,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
         logger.error("Tenant creation failed: %s", e)
         raise HttpError(500, get_message("ADMIN_TENANT_CREATION_FAILED", detail=str(e)))
 
+
 @router.get(
     "/tenants/{tenant_id}/",
     auth=jwt_auth,
@@ -251,6 +288,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
 def get_tenant_detail(request, tenant_id: str):
     _require_super_admin(request)
     return TenantAdminOut.from_tenant(_get_tenant_or_404(tenant_id))
+
 
 @router.patch(
     "/tenants/{tenant_id}/",
@@ -266,11 +304,13 @@ def update_tenant_admin(request, tenant_id: str):
         body = json.loads(request.body)
         payload = TenantAdminUpdateIn(**body)
     except Exception:
-        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
+        raise HttpError(
+            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
+        )
 
     update_fields = ["updated_at"]
- #
- # Tenant.plan is a denormalized cache; Subscription is authoritative.
+    #
+    # Tenant.plan is a denormalized cache; Subscription is authoritative.
     for field in [
         "name",
         "legal_name",
@@ -297,7 +337,9 @@ def update_tenant_admin(request, tenant_id: str):
     )
     return TenantAdminOut.from_tenant(tenant)
 
+
 # LOCATIONS
+
 
 @router.get(
     "/tenants/{tenant_id}/locations/",
@@ -308,7 +350,10 @@ def update_tenant_admin(request, tenant_id: str):
 def list_tenant_locations(request, tenant_id: str):
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
-    return [LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)]
+    return [
+        LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)
+    ]
+
 
 @router.post(
     "/tenants/{tenant_id}/locations/",
@@ -331,7 +376,9 @@ def add_tenant_location(request, tenant_id: str, payload: LocationIn):
     )
     return LocationOut.from_location(loc)
 
+
 # INVOICES
+
 
 @router.get(
     "/tenants/{tenant_id}/invoices/",
@@ -359,7 +406,9 @@ def list_tenant_invoices(request, tenant_id: str):
         for inv in invoices
     ]
 
+
 # TENANT ACTIONS (Suspend, Reactivate, Extend Trial, Impersonate)
+
 
 @router.post("/tenants/{tenant_id}/suspend/", auth=jwt_auth, response=MessageOut)
 def suspend_tenant(request, tenant_id: str):
@@ -369,7 +418,7 @@ def suspend_tenant(request, tenant_id: str):
     tenant.is_active = False
     tenant.save(update_fields=["is_active", "updated_at"])
 
- # Update Subscription as authoritative plan state
+    # Update Subscription as authoritative plan state
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription:
         subscription.status = SubscriptionStatus.SUSPENDED
@@ -383,17 +432,24 @@ def suspend_tenant(request, tenant_id: str):
     )
     return MessageOut(success=True, message=get_message("TENANT_SUSPENDED"))
 
+
 @router.delete("/tenants/{tenant_id}/", auth=jwt_auth, response=MessageOut)
 def delete_tenant(request, tenant_id: str):
     """SuperAdmin hard-delete: synchronously delete all tenant data with audit."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
 
- # Prevent deleting tenants already scheduled for deletion
+    # Prevent deleting tenants already scheduled for deletion
     if tenant.scheduled_deletion_at is not None:
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail="El negocio ya está programado para eliminación"))
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR",
+                detail="El negocio ya está programado para eliminación",
+            ),
+        )
 
- # Require justification
+    # Require justification
     try:
         body = json.loads(request.body) if request.body else {}
     except Exception:
@@ -402,18 +458,21 @@ def delete_tenant(request, tenant_id: str):
     if len(justification) < 10:
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="Justificación requerida (mínimo 10 caracteres)"),
+            get_message(
+                "VALIDATION_ERROR",
+                detail="Justificación requerida (mínimo 10 caracteres)",
+            ),
         )
 
     tenant_name = tenant.name
     tenant_id_str = str(tenant.id)
 
- # SYNCHRONOUS hard delete data is gone before response returns
+    # SYNCHRONOUS hard delete data is gone before response returns
     from apps.tenants.tasks import hard_delete_tenant
 
     hard_delete_tenant(tenant_id_str, require_scheduled_deletion=False)
 
- # Audit log with ACTUAL SuperAdmin identity
+    # Audit log with ACTUAL SuperAdmin identity
     try:
         from apps.audit.models import AuditAction, AuditStatus
         from apps.audit.service import log_action
@@ -424,7 +483,10 @@ def delete_tenant(request, tenant_id: str):
             resource_type="tenant",
             resource_id=tenant_id_str,
             justification=justification,
-            details={"tenant_name": tenant_name, "deletion_type": "superadmin_hard_delete"},
+            details={
+                "tenant_name": tenant_name,
+                "deletion_type": "superadmin_hard_delete",
+            },
             status=AuditStatus.SUCCESS,
         )
     except Exception:
@@ -438,6 +500,7 @@ def delete_tenant(request, tenant_id: str):
     )
     return MessageOut(success=True, message=get_message("TENANT_DELETED"))
 
+
 @router.post("/tenants/{tenant_id}/reactivate/", auth=jwt_auth, response=MessageOut)
 def reactivate_tenant(request, tenant_id: str):
     """"""
@@ -446,7 +509,7 @@ def reactivate_tenant(request, tenant_id: str):
     tenant.is_active = True
     tenant.save(update_fields=["is_active", "updated_at"])
 
- # Update Subscription as authoritative plan state
+    # Update Subscription as authoritative plan state
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription:
         subscription.status = SubscriptionStatus.ACTIVE
@@ -460,10 +523,11 @@ def reactivate_tenant(request, tenant_id: str):
     )
     return MessageOut(success=True, message=get_message("TENANT_UPDATED"))
 
+
 @router.post("/tenants/{tenant_id}/extend-trial/", auth=jwt_auth, response=MessageOut)
 def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     """
- to prevent unlimited trials.
+    to prevent unlimited trials.
     """
     _require_super_admin(request)
     if payload.days < 1 or payload.days > 365:
@@ -473,14 +537,14 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
         )
     tenant = _get_tenant_or_404(tenant_id)
 
-        # Prevent unlimited trial extensions
- # Cap total trial period at 90 days from first trial start
+    # Prevent unlimited trial extensions
+    # Cap total trial period at 90 days from first trial start
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription and subscription.trial_start:
         max_trial_end = subscription.trial_start + timedelta(days=90)
-        proposed_end = max(subscription.trial_end or dj_timezone.now(), dj_timezone.now()) + timedelta(
-            days=payload.days
-        )
+        proposed_end = max(
+            subscription.trial_end or dj_timezone.now(), dj_timezone.now()
+        ) + timedelta(days=payload.days)
         if proposed_end > max_trial_end:
             raise HttpError(
                 400,
@@ -499,7 +563,7 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     tenant.is_active = True
     tenant.save(update_fields=["trial_end", "is_active", "updated_at"])
 
- # Update Subscription trial_end
+    # Update Subscription trial_end
     if subscription:
         subscription.trial_end = new_trial_end
         subscription.status = SubscriptionStatus.TRIALING
@@ -510,7 +574,9 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
         message=get_message("TENANT_TRIAL_EXPIRING", days=tenant.trial_days_remaining),
     )
 
+
 # WHATSAPP OVERRIDE
+
 
 @router.patch(
     "/tenants/{tenant_id}/whatsapp-override/",
@@ -535,7 +601,9 @@ def set_whatsapp_override(request, tenant_id: str):
 
         payload = WhatsAppOverrideIn(**body)
     except Exception:
-        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
+        raise HttpError(
+            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
+        )
 
     if payload.daily_limit_override < 0 or payload.daily_limit_override > 200:
         raise HttpError(

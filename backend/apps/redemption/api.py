@@ -27,8 +27,10 @@ router = Router()
 # Schemas
 # ------------------------------------------------------------------
 
+
 class ScanValidateIn(BaseModel):
     qr_code: str
+
 
 class ScanTransactIn(BaseModel):
     qr_code: str
@@ -36,7 +38,10 @@ class ScanTransactIn(BaseModel):
     quantity: int = 1
     notes: str = ""
     intent: Literal["earn", "redeem", "auto"] = "auto"
-    idempotency_key: str = Field(default="", description="UUIDv4 for exactly-once semantics")
+    idempotency_key: str = Field(
+        default="", description="UUIDv4 for exactly-once semantics"
+    )
+
 
 class RedemptionOut(BaseModel):
     success: bool
@@ -52,9 +57,11 @@ class RedemptionOut(BaseModel):
     remaining_uses: int | None = None
     new_state: dict = {}
 
+
 # ------------------------------------------------------------------
 # Endpoints
 # ------------------------------------------------------------------
+
 
 @router.post("/validate/", auth=jwt_auth, summary="Validar código QR (v2)")
 def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
@@ -91,6 +98,7 @@ def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
         "is_valid": True,
     }
 
+
 @router.post("/transact/", auth=jwt_auth, summary="Registrar transacción (v2)")
 def transact_v2(request: HttpRequest, data: ScanTransactIn):
     """Record a transaction via the new RedemptionGateway.
@@ -106,7 +114,9 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
         raise HttpError(400, get_message("PASS_INVALID_QR"))
 
     tenant: Tenant = request.tenant
-    staff_id = str(request.user.id) if hasattr(request, "user") and request.user else None
+    staff_id = (
+        str(request.user.id) if hasattr(request, "user") and request.user else None
+    )
     location_id = getattr(request, "location_id", None)
 
     command = RedemptionCommand(

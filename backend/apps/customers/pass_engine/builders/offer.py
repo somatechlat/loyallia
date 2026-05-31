@@ -1,16 +1,17 @@
 """
 Offer pass builders for Google Wallet.
 """
+
 from apps.tenants.models import PlatformSetting
 
 from .base import (
+    _apply_card_template_override,
+    _apply_google_advanced_to_class,
+    _apply_google_advanced_to_object,
     _get_barcode_type,
     _get_google_images,
     _get_google_locations,
     _get_issuer_id,
-    _apply_card_template_override,
-    _apply_google_advanced_to_class,
-    _apply_google_advanced_to_object,
     _resolve_url,
 )
 from .images import _build_class_images
@@ -33,7 +34,9 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
         "redemptionChannel": "BOTH",
         "titleImage": {
             "sourceUri": {"uri": logo_uri},
-            "contentDescription": {"defaultValue": {"language": "es", "value": card.name}},
+            "contentDescription": {
+                "defaultValue": {"language": "es", "value": card.name}
+            },
         },
         "hexBackgroundColor": card.background_color or "#1A1A2E",
         "reviewStatus": "UNDER_REVIEW",
@@ -50,7 +53,9 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
     return payload
 
 
-def _build_offer_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
+def _build_offer_object(
+    customer_pass, card, customer, tenant, base_url: str = ""
+) -> dict:
     """Build a Google Wallet OfferObject instance."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.offer-{card.id}"
@@ -71,15 +76,22 @@ def _build_offer_object(customer_pass, card, customer, tenant, base_url: str = "
         ],
     }
 
-    hero_uri = _resolve_url(google_images.get("hero_image") or card.strip_image_url, base_url)
+    hero_uri = _resolve_url(
+        google_images.get("hero_image") or card.strip_image_url, base_url
+    )
     if hero_uri:
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
-            "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
+            "contentDescription": {
+                "defaultValue": {"language": "es", "value": "Banner de " + card.name}
+            },
         }
 
     image_module_url = _resolve_url(
-        google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url,
+        google_images.get("image_module")
+        or google_images.get("program_logo")
+        or card.icon_url
+        or card.logo_url,
         base_url,
     )
     if image_module_url:

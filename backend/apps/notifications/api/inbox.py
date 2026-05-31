@@ -9,10 +9,13 @@ from common.permissions import jwt_auth
 
 from .base import _get_customer_or_403, router
 
+
 @router.get("/inbox/", auth=jwt_auth, summary="Get notification inbox")
-def get_notifications(request, limit: int = 20, offset: int = 0, unread_only: bool = False):
+def get_notifications(
+    request, limit: int = 20, offset: int = 0, unread_only: bool = False
+):
     """Get customer's notification inbox."""
- # Handle non-customer users (like Owner/Admin)
+    # Handle non-customer users (like Owner/Admin)
     if not hasattr(request.user, "customer") or not request.user.customer:
         return {"total": 0, "count": 0, "notifications": []}
 
@@ -45,10 +48,14 @@ def get_notifications(request, limit: int = 20, offset: int = 0, unread_only: bo
         ],
     }
 
+
 @router.get("/", auth=jwt_auth, summary="Get notification inbox")
-def list_notifications(request, limit: int = 20, offset: int = 0, unread_only: bool = False):
+def list_notifications(
+    request, limit: int = 20, offset: int = 0, unread_only: bool = False
+):
     """Compatibility alias for notification inbox."""
     return get_notifications(request, limit, offset, unread_only)
+
 
 @router.post(
     "/notifications/{notification_id}/read/",
@@ -60,13 +67,14 @@ def mark_notification_read(request, notification_id: str):
     customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
- # Verify ownership
+    # Verify ownership
     if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
     notification.mark_as_read()
 
     return {"success": True, "message": "Notification marked as read"}
+
 
 @router.post(
     "/notifications/{notification_id}/click/",
@@ -78,7 +86,7 @@ def mark_notification_clicked(request, notification_id: str):
     customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
- # Verify ownership
+    # Verify ownership
     if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
@@ -86,19 +94,22 @@ def mark_notification_clicked(request, notification_id: str):
 
     return {"success": True, "message": "Notification action recorded"}
 
-@router.delete("/notifications/{notification_id}/", auth=jwt_auth, summary="Delete notification")
+
+@router.delete(
+    "/notifications/{notification_id}/", auth=jwt_auth, summary="Delete notification"
+)
 def delete_notification(request, notification_id: str):
     """Delete a notification."""
     customer = _get_customer_or_403(request)
     notification = get_object_or_404(Notification, id=notification_id)
 
- # Verify ownership
+    # Verify ownership
     if notification.customer.id != customer.id:
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
     notification.delete()
 
- #
+    #
     from django.http import HttpResponse
 
     return HttpResponse(status=204)

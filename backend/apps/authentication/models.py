@@ -58,13 +58,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100, blank=True, default="")
     last_name = models.CharField(max_length=100, blank=True, default="")
-    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.STAFF, db_index=True)
+    role = models.CharField(
+        max_length=20, choices=UserRole.choices, default=UserRole.STAFF, db_index=True
+    )
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Django admin access
     is_email_verified = models.BooleanField(default=False)
 
- # Phone verification
+    # Phone verification
     phone_number = models.CharField(
         max_length=20,
         blank=True,
@@ -74,7 +76,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     is_phone_verified = models.BooleanField(default=False)
 
- # Invitation tracking
+    # Invitation tracking
     invited_by = models.ForeignKey(
         "self",
         null=True,
@@ -85,11 +87,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     invitation_token = models.CharField(max_length=200, blank=True, default="")
     invitation_accepted_at = models.DateTimeField(null=True, blank=True)
 
- # Failed login tracking
+    # Failed login tracking
     failed_login_count = models.SmallIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
 
- # i18n user language preference (REQ-I18N-001)
+    # i18n user language preference (REQ-I18N-001)
     preferred_language = models.CharField(
         max_length=5,
         default="",
@@ -225,7 +227,9 @@ class RefreshToken(models.Model):
     """Stores issued refresh tokens for revocation support."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refresh_tokens")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="refresh_tokens"
+    )
     token_hash = models.CharField(max_length=64, unique=True)  # SHA-256 hash
     device_name = models.CharField(max_length=200, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)

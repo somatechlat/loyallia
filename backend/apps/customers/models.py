@@ -14,6 +14,7 @@ from apps.cards.models import Card
 from apps.tenants.models import Tenant
 from common.models import TimestampedModel
 
+
 class CustomerPortalAccount(models.Model):
     """
     Global customer portal account for self-service access.
@@ -22,7 +23,9 @@ class CustomerPortalAccount(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, verbose_name="Correo electrónico")
-    password = models.CharField(max_length=128, blank=True, default="", verbose_name="Contraseña")
+    password = models.CharField(
+        max_length=128, blank=True, default="", verbose_name="Contraseña"
+    )
     is_active = models.BooleanField(default=True, verbose_name="Cuenta activa")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -44,6 +47,7 @@ class CustomerPortalAccount(models.Model):
 
         return django_check(raw_password, self.password)
 
+
 class Customer(TimestampedModel):
     """
     Customer profile with contact information.
@@ -60,11 +64,17 @@ class Customer(TimestampedModel):
     # Contact Information
     first_name = models.CharField(max_length=100, verbose_name="Nombre")
     last_name = models.CharField(max_length=100, verbose_name="Apellido")
-    email = models.EmailField(validators=[EmailValidator()], verbose_name="Correo electrónico")
-    phone = models.CharField(max_length=20, blank=True, default="", verbose_name="Teléfono")
+    email = models.EmailField(
+        validators=[EmailValidator()], verbose_name="Correo electrónico"
+    )
+    phone = models.CharField(
+        max_length=20, blank=True, default="", verbose_name="Teléfono"
+    )
 
     # Optional additional info
-    date_of_birth = models.DateField(null=True, blank=True, verbose_name="Fecha de nacimiento")
+    date_of_birth = models.DateField(
+        null=True, blank=True, verbose_name="Fecha de nacimiento"
+    )
     gender = models.CharField(
         max_length=1,
         choices=[("M", "Masculino"), ("F", "Femenino"), ("O", "Otro")],
@@ -89,7 +99,9 @@ class Customer(TimestampedModel):
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
 
     # Analytics
-    total_visits = models.PositiveIntegerField(default=0, verbose_name="Total de visitas")
+    total_visits = models.PositiveIntegerField(
+        default=0, verbose_name="Total de visitas"
+    )
     total_spent = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -97,7 +109,9 @@ class Customer(TimestampedModel):
         validators=[MinValueValidator(0)],
         verbose_name="Total gastado",
     )
-    last_visit = models.DateTimeField(null=True, blank=True, verbose_name="Última visita")
+    last_visit = models.DateTimeField(
+        null=True, blank=True, verbose_name="Última visita"
+    )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         db_table = "loyallia_customers"
@@ -161,7 +175,9 @@ class Customer(TimestampedModel):
         max_attempts = 20
 
         for _attempt in range(max_attempts):
-            code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            code = "".join(
+                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
+            )
             if not Customer.objects.filter(referral_code=code).exists():
                 return code
 
@@ -179,6 +195,7 @@ class Customer(TimestampedModel):
             self.referral_code = self.generate_referral_code()
         super().save(*args, **kwargs)
 
+
 class CustomerPass(models.Model):
     """
     A customer's enrollment in a specific loyalty program.
@@ -192,21 +209,29 @@ class CustomerPass(models.Model):
         related_name="passes",
         verbose_name="Cliente",
     )
-    card = models.ForeignKey(Card, on_delete=models.PROTECT, related_name="passes", verbose_name="Programa")
+    card = models.ForeignKey(
+        Card, on_delete=models.PROTECT, related_name="passes", verbose_name="Programa"
+    )
 
     # Pass state stored as JSONB (Legacy/Dynamic)
     pass_data = models.JSONField(default=dict, verbose_name="Datos del pase")
 
     # Core metrics (Typed columns for integrity and indexing)
-    stamp_count = models.PositiveIntegerField(default=0, verbose_name="Contador de sellos")
+    stamp_count = models.PositiveIntegerField(
+        default=0, verbose_name="Contador de sellos"
+    )
     cashback_balance = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=0,
         verbose_name="Balance de cashback",
     )
-    referral_count = models.PositiveIntegerField(default=0, verbose_name="Contador de referidos")
-    multipass_remaining = models.PositiveIntegerField(default=0, verbose_name="Usos restantes multipase")
+    referral_count = models.PositiveIntegerField(
+        default=0, verbose_name="Contador de referidos"
+    )
+    multipass_remaining = models.PositiveIntegerField(
+        default=0, verbose_name="Usos restantes multipase"
+    )
     gift_balance = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -215,8 +240,12 @@ class CustomerPass(models.Model):
     )
 
     # Wallet pass identifiers
-    apple_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Apple Pass ID")
-    google_pass_id = models.CharField(max_length=100, blank=True, default="", verbose_name="Google Pass ID")
+    apple_pass_id = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Apple Pass ID"
+    )
+    google_pass_id = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Google Pass ID"
+    )
 
     # QR code for validation indexed for O(log N) scan lookups
     qr_code = models.CharField(
@@ -230,8 +259,12 @@ class CustomerPass(models.Model):
 
     # Status
     is_active = models.BooleanField(default=True, verbose_name="Pase activo")
-    enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de inscripción")
-    last_updated = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+    enrolled_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Fecha de inscripción"
+    )
+    last_updated = models.DateTimeField(
+        auto_now=True, verbose_name="Última actualización"
+    )
 
     # NEW: Lifecycle state machine
     class LifecycleState(models.TextChoices):
@@ -249,13 +282,19 @@ class CustomerPass(models.Model):
     )
 
     # NEW: Coupon usage counter (replaces boolean coupon_used)
-    coupon_redemption_count = models.PositiveIntegerField(default=0, verbose_name="Contador de canjes de cupón")
+    coupon_redemption_count = models.PositiveIntegerField(
+        default=0, verbose_name="Contador de canjes de cupón"
+    )
 
     # NEW: Last redemption timestamp (for cooldown rules)
-    last_redemption_at = models.DateTimeField(null=True, blank=True, verbose_name="Último canje")
+    last_redemption_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Último canje"
+    )
 
     # NEW: Reward queue (JSON list of pending rewards)
-    pending_rewards = models.JSONField(default=list, verbose_name="Recompensas pendientes")
+    pending_rewards = models.JSONField(
+        default=list, verbose_name="Recompensas pendientes"
+    )
 
     class Meta:
         db_table = "loyallia_customer_passes"
@@ -315,7 +354,11 @@ class CustomerPass(models.Model):
     @property
     def stamp_count_val(self) -> int:
         """Current stamp count for stamp cards (prefers typed column)."""
-        return self.stamp_count if self.stamp_count > 0 else self.get_pass_field("stamp_count", 0)
+        return (
+            self.stamp_count
+            if self.stamp_count > 0
+            else self.get_pass_field("stamp_count", 0)
+        )
 
     @property
     def cashback_balance_val(self) -> Decimal:
@@ -339,7 +382,11 @@ class CustomerPass(models.Model):
     @property
     def gift_balance_val(self) -> Decimal:
         """Current gift certificate balance (prefers typed column)."""
-        return self.gift_balance if self.gift_balance > 0 else Decimal(str(self.get_pass_field("gift_balance", "0")))
+        return (
+            self.gift_balance
+            if self.gift_balance > 0
+            else Decimal(str(self.get_pass_field("gift_balance", "0")))
+        )
 
     @property
     def membership_expiry(self) -> datetime | None:
@@ -357,16 +404,24 @@ class CustomerPass(models.Model):
     @property
     def referral_count_val(self) -> int:
         """Number of successful referrals (prefers typed column)."""
-        return self.referral_count if self.referral_count > 0 else self.get_pass_field("referral_count", 0)
+        return (
+            self.referral_count
+            if self.referral_count > 0
+            else self.get_pass_field("referral_count", 0)
+        )
 
     @property
     def multipass_remaining_val(self) -> int:
         """Remaining prepaid stamps in multipass (prefers typed column)."""
         return (
-            self.multipass_remaining if self.multipass_remaining > 0 else self.get_pass_field("multipass_remaining", 0)
+            self.multipass_remaining
+            if self.multipass_remaining > 0
+            else self.get_pass_field("multipass_remaining", 0)
         )
 
-    def process_transaction(self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
+    def process_transaction(
+        self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1
+    ) -> dict:
         """
         Process a transaction for this pass based on card type.
         Delegates to the new Redemption Engine strategies.
@@ -384,13 +439,18 @@ class CustomerPass(models.Model):
         if transaction_type in ("earn", "redeem", "validate"):
             resolved_intent = transaction_type
         elif self.card.card_type == "stamp":
-            is_ready = self.lifecycle_state == self.LifecycleState.REWARD_READY or self.pass_data.get(
-                "reward_ready", False
+            is_ready = (
+                self.lifecycle_state == self.LifecycleState.REWARD_READY
+                or self.pass_data.get("reward_ready", False)
             )
             resolved_intent = "redeem" if is_ready else "earn"
         elif self.card.card_type == "cashback":
             resolved_intent = "earn"
-        elif self.card.card_type in ("vip_membership", "corporate_discount", "affiliate"):
+        elif self.card.card_type in (
+            "vip_membership",
+            "corporate_discount",
+            "affiliate",
+        ):
             resolved_intent = "validate"
         else:
             resolved_intent = "redeem"
@@ -457,10 +517,20 @@ class CustomerPass(models.Model):
             legacy["remaining_stamps"] = result.remaining_uses
         elif card_type == "referral_pass":
             legacy["new_referral_count"] = self.referral_count_val
-            max_ref = int(self.card.metadata.get("max_referrals_per_customer", 0)) if self.card.metadata else 0
-            legacy["limit_reached"] = not result.pass_updated and max_ref > 0 and self.referral_count_val >= max_ref
+            max_ref = (
+                int(self.card.metadata.get("max_referrals_per_customer", 0))
+                if self.card.metadata
+                else 0
+            )
+            legacy["limit_reached"] = (
+                not result.pass_updated
+                and max_ref > 0
+                and self.referral_count_val >= max_ref
+            )
         elif card_type == "discount":
-            legacy["discount_percentage"] = self.pass_data.get("current_discount_percentage", 0)
+            legacy["discount_percentage"] = self.pass_data.get(
+                "current_discount_percentage", 0
+            )
             legacy["tier_name"] = self.pass_data.get("current_tier_name", "")
         elif card_type in ("vip_membership", "affiliate"):
             legacy["membership_valid"] = result.success
@@ -471,7 +541,9 @@ class CustomerPass(models.Model):
 
         return legacy
 
-    def _process_stamp_transaction(self, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
+    def _process_stamp_transaction(
+        self, amount: Decimal = Decimal("0"), quantity: int = 1
+    ) -> dict:
         return self.process_transaction("stamp", amount, quantity)
 
     def _process_coupon_transaction(self) -> dict:
@@ -482,6 +554,7 @@ class CustomerPass(models.Model):
 
     def _process_discount_transaction(self, amount: Decimal) -> dict:
         return self.process_transaction("discount", amount=amount)
+
 
 class ApplePassRegistration(models.Model):
     """

@@ -24,10 +24,12 @@ from .base import router
 # Scheduled campaign support
 # ---------------------------------------------------------------------------
 
+
 def _get_campaign_task(data: CampaignCreateIn):
     """Return the Celery task function and kwargs for a campaign channel."""
     if data.channel == "email":
         from apps.notifications.tasks import send_email_campaign
+
         return send_email_campaign, {
             "tenant_id": None,  # filled at dispatch time
             "subject": data.title,
@@ -37,6 +39,7 @@ def _get_campaign_task(data: CampaignCreateIn):
         }
     elif data.channel == "wallet":
         from apps.notifications.tasks import send_wallet_notification_campaign
+
         return send_wallet_notification_campaign, {
             "tenant_id": None,
             "title": data.title,
@@ -47,6 +50,7 @@ def _get_campaign_task(data: CampaignCreateIn):
         }
     elif data.channel == "whatsapp":
         from apps.notifications.tasks import send_whatsapp_campaign
+
         return send_whatsapp_campaign, {
             "tenant_id": None,
             "title": data.title,
@@ -56,6 +60,7 @@ def _get_campaign_task(data: CampaignCreateIn):
         }
     elif data.channel == "sms":
         from apps.notifications.sms.tasks import send_sms_campaign
+
         return send_sms_campaign, {
             "tenant_id": None,
             "title": data.title,
@@ -63,6 +68,7 @@ def _get_campaign_task(data: CampaignCreateIn):
             "segment_id": data.segment_id,
         }
     return None, {}
+
 
 class CampaignOut(BaseModel):
     id: str
@@ -73,6 +79,7 @@ class CampaignOut(BaseModel):
     sent_count: int
     created_at: str
     channel: str | None = None
+
 
 class CampaignCreateIn(BaseModel):
     title: str
@@ -86,6 +93,7 @@ class CampaignCreateIn(BaseModel):
     schedule_type: str = "immediate"  # 'immediate' or 'scheduled'
     scheduled_at: str | None = None  # ISO datetime string for scheduled campaigns
 
+
 SEGMENT_NAMES = {
     "all": "Todos los clientes",
     "vip": "VIP",
@@ -95,13 +103,16 @@ SEGMENT_NAMES = {
     "new": "Nuevos",
 }
 
+
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
 def list_campaigns(request: HttpRequest) -> dict:
     """List all push campaigns."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[:50]
+    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[
+        :50
+    ]
     if runs:
         return {
             "campaigns": [
@@ -109,7 +120,9 @@ def list_campaigns(request: HttpRequest) -> dict:
                     "id": str(run.id),
                     "title": run.title or "Sin título",
                     "message": run.message_preview or "",
-                    "segment": SEGMENT_NAMES.get(run.segment_id, run.segment_id or "all"),
+                    "segment": SEGMENT_NAMES.get(
+                        run.segment_id, run.segment_id or "all"
+                    ),
                     "status": run.status,
                     "sent_count": run.sent_count,
                     "failed_count": run.failed_count,
@@ -127,13 +140,13 @@ def list_campaigns(request: HttpRequest) -> dict:
         tenant=request.tenant, notification_type=NotificationType.MARKETING
     ).order_by("-created_at")[:50]
 
- # Group notifications by campaign (using created_at date as grouping key)
+    # Group notifications by campaign (using created_at date as grouping key)
     campaigns_dict = {}
     for n in notifications:
- # Use title + date as unique campaign key
+        # Use title + date as unique campaign key
         campaign_key = f"{n.title}_{n.created_at.date() if n.created_at else 'unknown'}"
         if campaign_key not in campaigns_dict:
- # Determine status based on is_sent and is_read (sent = delivered to at least one)
+            # Determine status based on is_sent and is_read (sent = delivered to at least one)
             if n.is_sent and n.is_read:
                 status = "delivered"
             elif n.is_sent:
@@ -141,7 +154,7 @@ def list_campaigns(request: HttpRequest) -> dict:
             else:
                 status = "pending"
 
- # Determine campaign type from channel
+            # Determine campaign type from channel
             channel = n.channel if n.channel else "email"
 
             campaigns_dict[campaign_key] = {
@@ -159,6 +172,7 @@ def list_campaigns(request: HttpRequest) -> dict:
 
     campaign_list = list(campaigns_dict.values())
     return {"campaigns": campaign_list, "total": len(campaign_list)}
+
 
 @router.post("/campaigns/", auth=jwt_auth, response=dict, summary="Crear campaña")
 def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
@@ -183,17 +197,35 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
         from django.utils import timezone
 
         try:
-            scheduled_time = datetime.fromisoformat(data.scheduled_at.replace("Z", "+00:00"))
+            scheduled_time = datetime.fromisoformat(
+                data.scheduled_at.replace("Z", "+00:00")
+            )
         except ValueError:
-            raise HttpError(400, get_message("VALIDATION_ERROR", detail="Invalid scheduled_at format. Use ISO 8601."))
+            raise HttpError(
+                400,
+                get_message(
+                    "VALIDATION_ERROR",
+                    detail="Invalid scheduled_at format. Use ISO 8601.",
+                ),
+            )
 
         if scheduled_time < timezone.now():
-            raise HttpError(400, get_message("VALIDATION_ERROR", detail="scheduled_at must be in the future."))
+            raise HttpError(
+                400,
+                get_message(
+                    "VALIDATION_ERROR", detail="scheduled_at must be in the future."
+                ),
+            )
 
         # Resolve task for the channel
         task_fn, task_kwargs = _get_campaign_task(data)
         if task_fn is None:
-            raise HttpError(400, get_message("VALIDATION_ERROR", detail="Canal no válido para programación."))
+            raise HttpError(
+                400,
+                get_message(
+                    "VALIDATION_ERROR", detail="Canal no válido para programación."
+                ),
+            )
 
         # Fill tenant_id
         task_kwargs["tenant_id"] = str(request.tenant.id)
@@ -241,7 +273,11 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             request=request,
             action="CREATE",
             resource_type="campaign",
-            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
+            details={
+                "channel": data.channel,
+                "segment_id": data.segment_id,
+                "title": data.title,
+            },
         )
         return {
             "success": True,
@@ -265,7 +301,11 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             request=request,
             action="CREATE",
             resource_type="campaign",
-            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
+            details={
+                "channel": data.channel,
+                "segment_id": data.segment_id,
+                "title": data.title,
+            },
         )
         return {
             "success": True,
@@ -288,11 +328,17 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             request=request,
             action="CREATE",
             resource_type="campaign",
-            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
+            details={
+                "channel": data.channel,
+                "segment_id": data.segment_id,
+                "title": data.title,
+            },
         )
         return {
             "success": True,
-            "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id),
+            "message": get_message(
+                "CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id
+            ),
         }
     elif data.channel == "sms":
         check_feature_access(request.tenant, "sms_campaigns")
@@ -310,7 +356,11 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             request=request,
             action="CREATE",
             resource_type="campaign",
-            details={"channel": data.channel, "segment_id": data.segment_id, "title": data.title},
+            details={
+                "channel": data.channel,
+                "segment_id": data.segment_id,
+                "title": data.title,
+            },
         )
         return {
             "success": True,

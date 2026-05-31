@@ -61,12 +61,16 @@ class DiscountTrackStrategy(BaseRedemptionStrategy):
     # Mutation
     # ------------------------------------------------------------------
 
-    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> DiscountStateMutation:
+    def _compute_mutation(
+        self, locked_pass: "CustomerPass", context: RedemptionContext
+    ) -> DiscountStateMutation:
         tiers = context.card.get_metadata_field("tiers", [])
 
         # Current lifetime spend (stored as string in JSONB)
         try:
-            current_total = Decimal(str(locked_pass.pass_data.get("total_spent_at_business", "0")))
+            current_total = Decimal(
+                str(locked_pass.pass_data.get("total_spent_at_business", "0"))
+            )
         except (InvalidOperation, TypeError, ValueError):
             logger.warning(
                 "Invalid total_spent_at_business for pass %s, resetting to 0",

@@ -27,7 +27,9 @@ router = Router()
 
 
 # Revenue Breakdown
-@router.get("/revenue-breakdown/", auth=jwt_auth, summary="Get revenue breakdown by source")
+@router.get(
+    "/revenue-breakdown/", auth=jwt_auth, summary="Get revenue breakdown by source"
+)
 def get_revenue_breakdown(request, days: int = 30):
     """Revenue breakdown: loyalty, referral, non-loyalty. Cached 5min. MANAGER+ only."""
     if not is_manager_or_owner(request):
@@ -49,16 +51,31 @@ def get_revenue_breakdown(request, days: int = 30):
         "membership_validated",
         "multipass_used",
     ]
-    loyalty_rev = txns.filter(transaction_type__in=loyalty_types).aggregate(Sum("amount"))["amount__sum"] or 0
+    loyalty_rev = (
+        txns.filter(transaction_type__in=loyalty_types).aggregate(Sum("amount"))[
+            "amount__sum"
+        ]
+        or 0
+    )
 
-    referral_rev = txns.filter(transaction_type="referral_reward").aggregate(Sum("amount"))["amount__sum"] or 0
+    referral_rev = (
+        txns.filter(transaction_type="referral_reward").aggregate(Sum("amount"))[
+            "amount__sum"
+        ]
+        or 0
+    )
 
     non_loyalty_types = [
         "coupon_redeemed",
         "gift_redeemed",
         "corporate_validated",
     ]
-    non_loyalty_rev = txns.filter(transaction_type__in=non_loyalty_types).aggregate(Sum("amount"))["amount__sum"] or 0
+    non_loyalty_rev = (
+        txns.filter(transaction_type__in=non_loyalty_types).aggregate(Sum("amount"))[
+            "amount__sum"
+        ]
+        or 0
+    )
 
     total = float(loyalty_rev) + float(referral_rev) + float(non_loyalty_rev)
 
@@ -91,7 +108,9 @@ def get_visit_metrics(request, days: int = 30):
 
     start_date = timezone.now() - timedelta(days=days)
 
-    total_visits = Transaction.objects.filter(tenant=tenant, created_at__gte=start_date).count()
+    total_visits = Transaction.objects.filter(
+        tenant=tenant, created_at__gte=start_date
+    ).count()
 
     unique_customers = (
         Transaction.objects.filter(tenant=tenant, created_at__gte=start_date)
@@ -122,7 +141,9 @@ def get_visit_metrics(request, days: int = 30):
     total_all_customers = Customer.objects.filter(tenant=tenant).count()
     non_returning = total_all_customers - unique_customers
 
-    retention_rate = (recurring_visitors / unique_customers * 100) if unique_customers > 0 else 0
+    retention_rate = (
+        (recurring_visitors / unique_customers * 100) if unique_customers > 0 else 0
+    )
 
     result = {
         "period_days": days,
@@ -202,7 +223,7 @@ def notify_top_buyers(request):
 
     from apps.notifications.models import Notification, NotificationType
 
- # PERF-F6: bulk_create instead of N individual INSERT statements
+    # PERF-F6: bulk_create instead of N individual INSERT statements
     notifications_to_create = [
         Notification(
             tenant=tenant,
@@ -231,7 +252,7 @@ def get_demographics(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
- # Check cache first (5-minute TTL)
+    # Check cache first (5-minute TTL)
     cache_key = f"analytics:demographics:{tenant.id}"
     cached = cache.get(cache_key)
     if cached:
@@ -239,14 +260,19 @@ def get_demographics(request):
 
     customers = Customer.objects.filter(tenant=tenant)
 
- # Gender distribution pure SQL aggregate
-    gender_data = customers.exclude(gender="").values("gender").annotate(count=Count("id")).order_by("-count")
+    # Gender distribution pure SQL aggregate
+    gender_data = (
+        customers.exclude(gender="")
+        .values("gender")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
     gender_labels = {"M": "Masculino", "F": "Femenino", "O": "Otro"}
 
     total = customers.count()
 
- # Age distribution single SQL query using ExtractYear + conditional Count
- # No Python iteration; computation is entirely database-side.
+    # Age distribution single SQL query using ExtractYear + conditional Count
+    # No Python iteration; computation is entirely database-side.
     today_year = date.today().year
     age_dist = (
         customers.exclude(date_of_birth=None)

@@ -74,7 +74,10 @@ router = Router()
 
 # AUTH ENDPOINTS
 
-@router.post("/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio")
+
+@router.post(
+    "/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio"
+)
 def register(request, payload: RegisterIn):
     """Create a new tenant (business) with its OWNER user atomically.
 
@@ -90,22 +93,29 @@ def register(request, payload: RegisterIn):
             success=True,
             message=get_message(
                 "TENANT_CREATED",
-                days=PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)),
+                days=PlatformSetting.get_int(
+                    "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
+                ),
             ),
             tenant_id="",
             user_id="",
         )
- # Server-side phone verification (NO BYPASS)
+    # Server-side phone verification (NO BYPASS)
     is_phone_verified = False
     if payload.phone_number.strip() and payload.phone_verification_sid:
         try:
-            from apps.notifications.twilio_verify.client import VerifyClient, VerifyServiceError
+            from apps.notifications.twilio_verify.client import (
+                VerifyClient,
+                VerifyServiceError,
+            )
 
             client = VerifyClient()
             verification = client.fetch_verification(payload.phone_verification_sid)
             if verification.get("status") == "approved":
                 is_phone_verified = True
-                logger.info("Registration phone verified via Twilio: %s", payload.phone_number)
+                logger.info(
+                    "Registration phone verified via Twilio: %s", payload.phone_number
+                )
         except VerifyServiceError as exc:
             logger.warning(
                 "Registration phone verification failed for %s: %s",
@@ -146,6 +156,7 @@ def register(request, payload: RegisterIn):
         user_id=str(user.id),
     )
 
+
 @router.post("/login/", auth=None, response=TokenOut, summary="Iniciar sesion")
 def login(request, payload: LoginIn):
     """Authenticate via email+password, return JWT access + refresh tokens.
@@ -162,7 +173,9 @@ def login(request, payload: LoginIn):
     if user.is_locked:
         if user.locked_until is None:
             raise HttpError(423, get_message("AUTH_ACCOUNT_LOCKED", minutes=15))
-        remaining = max(0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60))
+        remaining = max(
+            0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60)
+        )
         raise HttpError(423, get_message("AUTH_ACCOUNT_LOCKED", minutes=remaining))
     if not user.is_active:
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
@@ -204,7 +217,10 @@ def login(request, payload: LoginIn):
         pass
     return tokens
 
-@router.post("/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso")
+
+@router.post(
+    "/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso"
+)
 def refresh_token(request, payload: RefreshIn):
     """Validate refresh token and issue a new access+refresh pair.
 
@@ -228,13 +244,14 @@ def refresh_token(request, payload: RefreshIn):
             if not user.is_active:
                 raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
 
- # B-002: Revoke the old refresh token (one-time use)
+            # B-002: Revoke the old refresh token (one-time use)
             db_token.revoked_at = dj_timezone.now()
             db_token.save(update_fields=["revoked_at"])
     except RefreshToken.DoesNotExist:
         raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
 
     return issue_tokens(user)
+
 
 @router.post("/logout/", auth=jwt_auth, response=MessageOut, summary="Cerrar sesion")
 def logout(request, payload: LogoutIn):
@@ -244,9 +261,9 @@ def logout(request, payload: LogoutIn):
     the RefreshToken object into Python memory.
     """
     token_hash = hash_token(payload.refresh_token)
-    RefreshToken.objects.filter(token_hash=token_hash, user=request.user, revoked_at__isnull=True).update(
-        revoked_at=dj_timezone.now()
-    )
+    RefreshToken.objects.filter(
+        token_hash=token_hash, user=request.user, revoked_at__isnull=True
+    ).update(revoked_at=dj_timezone.now())
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -256,13 +273,18 @@ def logout(request, payload: LogoutIn):
             action=AuditAction.LOGOUT,
             resource_type="user",
             resource_id=str(request.user.id),
-            tenant_id=str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None,
+            tenant_id=(
+                str(request.tenant.id)
+                if hasattr(request, "tenant") and request.tenant
+                else None
+            ),
             details={"method": "refresh_token_revocation"},
             status="success",
         )
     except Exception:
         pass
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
+
 
 @router.post(
     "/verify-email/",
@@ -278,7 +300,7 @@ def verify_email(request, payload: VerifyEmailIn):
     """
     from django.core.cache import cache
 
- # Rate limit OTP verification attempts 5 per 15 min per email
+    # Rate limit OTP verification attempts 5 per 15 min per email
     cache_key = f"otp_attempts:verify_email:{payload.email}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 5:
@@ -295,7 +317,9 @@ def verify_email(request, payload: VerifyEmailIn):
     user.save(update_fields=["is_email_verified", "updated_at"])
     return MessageOut(success=True, message=get_message("AUTH_EMAIL_VERIFIED"))
 
+
 # FORGOT PASSWORD (unauthenticated) Request + Confirm
+
 
 @router.post(
     "/forgot-password/",
@@ -313,7 +337,7 @@ def forgot_password(request, payload: ForgotPasswordIn):
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
 
- # B-003: Rate limit 3 password reset requests per hour per email
+    # B-003: Rate limit 3 password reset requests per hour per email
     cache_key = f"pwd_reset_rate:{payload.email}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 3:
@@ -328,6 +352,7 @@ def forgot_password(request, payload: ForgotPasswordIn):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     from apps.tenants.models import PlatformSetting
+
     app_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
     reset_link = f"{app_url}/reset-password?uid={uid}&token={token}"
 
@@ -350,6 +375,7 @@ def forgot_password(request, payload: ForgotPasswordIn):
     logger.info("Password reset requested for %s", payload.email)
     return MessageOut(success=True, message=get_message("AUTH_RESET_EMAIL_SENT"))
 
+
 @router.post(
     "/reset-password/",
     response=MessageOut,
@@ -371,13 +397,17 @@ def reset_password(request, payload: ResetPasswordIn):
 
     user.set_password(payload.new_password)
     user.save(update_fields=["password", "updated_at"])
-    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
+    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
+        revoked_at=dj_timezone.now()
+    )
     logger.info("Password reset completed for %s", user.email)
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
+
 
 # GOOGLE OAUTH 2.0 Social Login
 
 from apps.authentication.schemas import GoogleTokenIn  # noqa: E402
+
 
 @router.get(
     "/google/config/",
@@ -403,6 +433,7 @@ def google_oauth_config(request):
         "client_id": client_id,
     }
 
+
 @router.post(
     "/google/login/",
     auth=None,
@@ -423,7 +454,7 @@ def google_login(request, payload: GoogleTokenIn):
     import httpx
     from django.core.cache import cache
 
-        # Rate limit Google OAuth login (20/hour per IP)
+    # Rate limit Google OAuth login (20/hour per IP)
     client_ip = get_client_ip(request)
     cache_key = f"gauth_rate:{client_ip}"
     attempt_count = cache.get(cache_key, 0)
@@ -435,7 +466,7 @@ def google_login(request, payload: GoogleTokenIn):
     if not client_id:
         raise HttpError(503, get_message("AUTH_GOOGLE_NOT_CONFIGURED"))
 
- # Verify the ID token with Google's tokeninfo endpoint
+    # Verify the ID token with Google's tokeninfo endpoint
     try:
         resp = httpx.get(
             "https://oauth2.googleapis.com/tokeninfo",
@@ -450,7 +481,7 @@ def google_login(request, payload: GoogleTokenIn):
         logger.error("Google token verification network error: %s", exc)
         raise HttpError(502, get_message("AUTH_GOOGLE_FAILED"))
 
- # Validate the audience (must match our client ID)
+    # Validate the audience (must match our client ID)
     if google_data.get("aud") != client_id:
         logger.warning(
             "Google token audience mismatch: got %s, expected %s",
@@ -459,7 +490,7 @@ def google_login(request, payload: GoogleTokenIn):
         )
         raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
 
- # Validate email is verified by Google
+    # Validate email is verified by Google
     if google_data.get("email_verified") != "true":
         raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
 
@@ -470,12 +501,12 @@ def google_login(request, payload: GoogleTokenIn):
     first_name = google_data.get("given_name", "")
     last_name = google_data.get("family_name", "")
 
- # Check if user already exists
+    # Check if user already exists
     try:
         user = User.objects.select_related("tenant").get(email=email)
         if not user.is_active:
             raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
- # Mark email as verified (Google already verified it)
+        # Mark email as verified (Google already verified it)
         if not user.is_email_verified:
             user.is_email_verified = True
             user.save(update_fields=["is_email_verified", "updated_at"])
@@ -487,12 +518,12 @@ def google_login(request, payload: GoogleTokenIn):
             logger.warning("Google OAuth login failed: unregistered user %s", email)
             raise HttpError(404, get_message("AUTH_USER_NOT_FOUND_REGISTER"))
 
- # New user create tenant + OWNER
+    # New user create tenant + OWNER
     from django.db import transaction
 
     business_name = payload.business_name.strip()
     if not business_name:
- # Use the user's name as default business name
+        # Use the user's name as default business name
         business_name = f"{first_name} {last_name}".strip() or email.split("@")[0]
 
     with transaction.atomic():
@@ -502,7 +533,9 @@ def google_login(request, payload: GoogleTokenIn):
         user_manager = cast(UserManager, User.objects)
         user = user_manager.create_user(
             email=email,
-            password=secrets.token_urlsafe(32),  # Random password (user logs in via Google)
+            password=secrets.token_urlsafe(
+                32
+            ),  # Random password (user logs in via Google)
             first_name=first_name,
             last_name=last_name,
             tenant=tenant,

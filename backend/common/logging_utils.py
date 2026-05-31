@@ -20,6 +20,7 @@ UTC = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 _PHONE_RE = re.compile(r"\+?\d[\d\s\-]{7,}\d")
 
+
 def mask_pii(text: str) -> str:
     """Mask PII (emails, phone numbers) in log messages.
 
@@ -27,7 +28,7 @@ def mask_pii(text: str) -> str:
     Phones: +593***1234 (keep first 3 + last 4 digits)
     """
 
- # Mask emails: show first char + @domain
+    # Mask emails: show first char + @domain
     def _mask_email(match: re.Match) -> str:
         addr = match.group(0)
         local, _, domain = addr.partition("@")
@@ -37,7 +38,7 @@ def mask_pii(text: str) -> str:
 
     text = _EMAIL_RE.sub(_mask_email, text)
 
- # Mask phone numbers: keep first 3 and last 4 digits
+    # Mask phone numbers: keep first 3 and last 4 digits
     def _mask_phone(match: re.Match) -> str:
         phone = match.group(0)
         digits = re.sub(r"[^\d]", "", phone)
@@ -47,6 +48,7 @@ def mask_pii(text: str) -> str:
 
     text = _PHONE_RE.sub(_mask_phone, text)
     return text
+
 
 class JsonFormatter(logging.Formatter):
     """
@@ -76,12 +78,12 @@ class JsonFormatter(logging.Formatter):
             "thread": record.thread,
         }
 
- # Include exception info if present (also mask PII)
+        # Include exception info if present (also mask PII)
         if record.exc_info and record.exc_info[0] is not None:
             exc_text = traceback.format_exception(*record.exc_info)
             log_entry["exc_info"] = [mask_pii(line) for line in exc_text]
 
- # Include extra fields if any
+        # Include extra fields if any
         for key in ("request_id", "tenant_id", "user_id", "ip", "path"):
             if hasattr(record, key):
                 log_entry[key] = getattr(record, key)

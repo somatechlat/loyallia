@@ -26,9 +26,11 @@ from apps.tenants.schemas import (
     TenantUpdateIn,
 )
 
+
 class AIChatIn(Schema):
     message: str
     context_id: str | None = None
+
 
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
@@ -43,6 +45,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 # PLAN FEATURES ENDPOINT
+
 
 @router.get(
     "/me/plan-features/",
@@ -82,7 +85,9 @@ def get_plan_features(request):
             "whatsapp_today": get_current_usage(tenant, "whatsapp_day"),
             "emails_this_month": get_current_usage(tenant, "emails_month"),
             "sms_today": get_current_usage(tenant, "sms_day"),
-            "wallet_pushes_this_month": get_current_usage(tenant, "wallet_pushes_month"),
+            "wallet_pushes_this_month": get_current_usage(
+                tenant, "wallet_pushes_month"
+            ),
             "customers": get_current_usage(tenant, "customers"),
         }
 
@@ -93,13 +98,20 @@ def get_plan_features(request):
         "usage": usage,
     }
 
+
 # TENANT ENDPOINTS
 
-@router.get("/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual")
+
+@router.get(
+    "/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual"
+)
 def get_tenant(request):
     return TenantOut.from_tenant(request.tenant)
 
-@router.patch("/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio")
+
+@router.patch(
+    "/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio"
+)
 def update_tenant(request, payload: TenantUpdateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -135,9 +147,13 @@ def update_tenant(request, payload: TenantUpdateIn):
     tenant.save(update_fields=update_fields)
     return TenantOut.from_tenant(tenant)
 
-@router.get("/settings/", auth=jwt_auth, response=TenantOut, summary="Configuración del negocio")
+
+@router.get(
+    "/settings/", auth=jwt_auth, response=TenantOut, summary="Configuración del negocio"
+)
 def get_tenant_settings(request):
     return get_tenant(request)
+
 
 @router.put(
     "/settings/",
@@ -148,7 +164,9 @@ def get_tenant_settings(request):
 def update_tenant_settings(request, payload: TenantUpdateIn):
     return update_tenant(request, payload)
 
+
 # LOCATION ENDPOINTS
+
 
 @router.get(
     "/locations/",
@@ -162,6 +180,7 @@ def list_locations(request):
 
     locations = Location.objects.filter(tenant=request.tenant)
     return [LocationOut.from_location(loc) for loc in locations]
+
 
 @router.post(
     "/locations/",
@@ -187,9 +206,12 @@ def create_location(request, payload: LocationCreateIn):
     )
 
     if payload.is_primary:
-        Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(is_primary=False)
+        Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(
+            is_primary=False
+        )
 
     return LocationOut.from_location(loc)
+
 
 @router.patch(
     "/locations/{location_id}/",
@@ -212,7 +234,9 @@ def update_location(request, location_id: str):
         body = json.loads(request.body)
         payload = LocationUpdateIn(**body)
     except Exception:
-        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
+        raise HttpError(
+            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
+        )
 
     update_fields = ["updated_at"]
 
@@ -241,10 +265,13 @@ def update_location(request, location_id: str):
         loc.is_primary = payload.is_primary
         update_fields.append("is_primary")
         if payload.is_primary:
-            Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(is_primary=False)
+            Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(
+                is_primary=False
+            )
 
     loc.save(update_fields=update_fields)
     return LocationOut.from_location(loc)
+
 
 @router.delete(
     "/locations/{location_id}/",
@@ -267,7 +294,9 @@ def delete_location(request, location_id: str):
 
     return HttpResponse(status=204)
 
+
 # TEAM ENDPOINTS
+
 
 @router.get(
     "/team/",
@@ -281,8 +310,13 @@ def list_team(request):
 
     from apps.authentication.models import User
 
-    users = User.objects.filter(tenant=request.tenant).exclude(role="SUPER_ADMIN").order_by("-date_joined")
+    users = (
+        User.objects.filter(tenant=request.tenant)
+        .exclude(role="SUPER_ADMIN")
+        .order_by("-date_joined")
+    )
     return [TeamMemberOut.from_user(u) for u in users]
+
 
 @router.post(
     "/team/",
@@ -300,10 +334,14 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     from apps.authentication.models import User, UserManager, UserRole
 
     if payload.role not in (UserRole.MANAGER, UserRole.STAFF):
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF"))
+        raise HttpError(
+            400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF")
+        )
 
     if User.objects.filter(email=payload.email).exists():
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Email ya registrado"))
+        raise HttpError(
+            400, get_message("VALIDATION_ERROR", detail="Email ya registrado")
+        )
 
     temp_password = secrets.token_urlsafe(8)
     user = cast(UserManager, User.objects).create_user(
@@ -335,11 +373,17 @@ def add_team_member(request, payload: TeamMemberCreateIn):
             role_label = role_labels.get(payload.role, payload.role)
             tenant_name = request.tenant.name
             from apps.tenants.models import PlatformSetting
-            dashboard_url = PlatformSetting.get("dashboard_url", django_settings.FRONTEND_URL)
+
+            dashboard_url = PlatformSetting.get(
+                "dashboard_url", django_settings.FRONTEND_URL
+            )
             login_url = dashboard_url.rstrip("/") + "/login"
             from common.email_config import get_default_from_email
+
             from_email = get_default_from_email()
-            primary_color = getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
+            primary_color = (
+                getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
+            )
 
             from datetime import datetime as _dt
 
@@ -360,10 +404,13 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
     return {
         "success": True,
-        "message": get_message("TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"),
+        "message": get_message(
+            "TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"
+        ),
         "user_id": str(user.id),
         "temp_password": temp_password,
     }
+
 
 @router.post("/me/ai-chat/", auth=jwt_auth, summary="Proxy to AI Agent via Vault")
 def ai_chat_proxy(request, payload: AIChatIn):
@@ -408,11 +455,14 @@ def ai_chat_proxy(request, payload: AIChatIn):
             resp.raise_for_status()
             return resp.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"AI Agent returned status {e.response.status_code}: {e.response.text}")
+        logger.error(
+            f"AI Agent returned status {e.response.status_code}: {e.response.text}"
+        )
         raise HttpError(e.response.status_code, "Failed to fetch from AI agent")
     except Exception as e:
         logger.error(f"Error calling AI agent: {str(e)}")
         raise HttpError(500, "Internal server error while contacting AI agent")
+
 
 @router.patch(
     "/team/{user_id}/",
@@ -432,7 +482,7 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
     except (User.DoesNotExist, ValueError):
         raise HttpError(404, get_message("USER_NOT_FOUND"))
 
- # Cannot edit self
+    # Cannot edit self
     if member.id == request.user.id:
         raise HttpError(400, get_message("TEAM_CANNOT_EDIT_SELF"))
 
@@ -463,6 +513,7 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
     )
 
     return {"success": True, "message": get_message("TEAM_MEMBER_UPDATED")}
+
 
 @router.delete(
     "/team/{user_id}/",

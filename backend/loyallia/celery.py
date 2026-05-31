@@ -19,6 +19,7 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # Auto-discover tasks in all INSTALLED_APPS
 app.autodiscover_tasks()
 
+
 # Dynamic backup beat schedule  reads frequency from PlatformSetting
 def get_backup_schedule():
     """Return crontab for backup based on PlatformSetting 'backup_frequency'."""
@@ -45,6 +46,7 @@ def get_backup_schedule():
         # Default: daily
         return crontab(hour=str(hour), minute=str(minute))
 
+
 # Programmatically add the backup schedule when Celery starts
 _backup_schedule = get_backup_schedule()
 if _backup_schedule is not None:
@@ -61,6 +63,7 @@ if _backup_schedule is not None:
         "schedule": crontab(hour="4", minute="0"),
         "options": {"queue": "default"},
     }
+
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):

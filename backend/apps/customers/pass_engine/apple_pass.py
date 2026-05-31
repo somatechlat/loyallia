@@ -34,12 +34,14 @@ from apps.customers.pass_engine.apple_pass_builders import (
 
 logger = logging.getLogger(__name__)
 
+
 def _get_apple_config() -> dict:
     """Return Apple configuration from Django settings."""
     return {
         "pass_type_id": getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", ""),
         "team_id": getattr(settings, "APPLE_TEAM_IDENTIFIER", ""),
     }
+
 
 def _check_config_ready() -> bool:
     """Check that all required Apple PKPass configuration is set and parseable."""
@@ -66,6 +68,7 @@ def _check_config_ready() -> bool:
 
     return True
 
+
 def get_apple_wallet_diagnostics() -> dict:
     """Return diagnostic info about Apple Wallet configuration (no secrets exposed)."""
     from common.vault import get_secret
@@ -87,7 +90,9 @@ def get_apple_wallet_diagnostics() -> dict:
         diagnostics["errors"].append("APPLE_WALLET_ENABLED is false in Vault")
 
     pass_type_id = get_secret("apple_pass_type_identifier", default="")
-    diagnostics["pass_type_id_present"] = bool(pass_type_id and pass_type_id not in ("", "n/a"))
+    diagnostics["pass_type_id_present"] = bool(
+        pass_type_id and pass_type_id not in ("", "n/a")
+    )
     if not diagnostics["pass_type_id_present"]:
         diagnostics["errors"].append("Missing APPLE_PASS_TYPE_IDENTIFIER in Vault")
 
@@ -107,11 +112,13 @@ def get_apple_wallet_diagnostics() -> dict:
         diagnostics["errors"].append("Missing APPLE_CERT_KEY_PEM in Vault")
 
     wwdr_pem = get_secret("apple_wwdr_cert_pem", default="")
-    diagnostics["wwdr_cert_pem_present"] = bool(wwdr_pem and wwdr_pem not in ("", "n/a"))
+    diagnostics["wwdr_cert_pem_present"] = bool(
+        wwdr_pem and wwdr_pem not in ("", "n/a")
+    )
     if not diagnostics["wwdr_cert_pem_present"]:
         diagnostics["errors"].append("Missing APPLE_WWDR_CERT_PEM in Vault")
 
- # Only try crypto validation if all PEMs are present
+    # Only try crypto validation if all PEMs are present
     if all(
         [
             diagnostics["cert_pem_present"],
@@ -127,9 +134,12 @@ def get_apple_wallet_diagnostics() -> dict:
             crypto.load_certificate(crypto.FILETYPE_PEM, wwdr_pem.encode("utf-8"))
             diagnostics["certs_cryptographically_valid"] = True
         except Exception as exc:
-            diagnostics["errors"].append(f"Apple certificates failed cryptographic validation: {exc}")
+            diagnostics["errors"].append(
+                f"Apple certificates failed cryptographic validation: {exc}"
+            )
 
     return diagnostics
+
 
 # Mapping from Card.barcode_type to Apple PKBarcodeFormat constants.
 # Per Apple docs: QR, Aztec, Code128, PDF417 are valid on iOS 9+.
@@ -143,7 +153,10 @@ APPLE_BARCODE_FORMATS = {
     "data_matrix": "PKBarcodeFormatQR",  # No Apple DataMatrix fallback
 }
 
-def _build_nfc_payload(card, customer_pass, barcode_value: str, override_message: str = "") -> dict | None:
+
+def _build_nfc_payload(
+    card, customer_pass, barcode_value: str, override_message: str = ""
+) -> dict | None:
     """Build the optional Apple NFC payload from card metadata and Vault config."""
     metadata = card.metadata if isinstance(card.metadata, dict) else {}
     apple_config = metadata.get("apple_wallet", {})
@@ -154,7 +167,9 @@ def _build_nfc_payload(card, customer_pass, barcode_value: str, override_message
 
     nfc_public_key = get_secret("apple_nfc_encryption_public_key", default="")
     if not nfc_public_key:
-        raise ValueError("Apple NFC is enabled but apple_nfc_encryption_public_key is missing")
+        raise ValueError(
+            "Apple NFC is enabled but apple_nfc_encryption_public_key is missing"
+        )
 
     message = override_message or str(apple_config.get("nfc_message") or barcode_value)
     if len(message.encode("utf-8")) > 64:
@@ -167,6 +182,7 @@ def _build_nfc_payload(card, customer_pass, barcode_value: str, override_message
     if apple_config.get("nfc_requires_authentication"):
         nfc_payload["requiresAuthentication"] = True
     return nfc_payload
+
 
 def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     """Build the pass.json structure per Apple PassKit specification."""
@@ -209,9 +225,17 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         pass_json["maxDistance"] = 100
 
     metadata = card.metadata or {}
-    wallet_design = metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
-    apple_advanced = wallet_design.get("apple_advanced", {}) if isinstance(wallet_design, dict) else {}
-    nfc_override = apple_advanced.get("nfcMessage", "") if isinstance(apple_advanced, dict) else ""
+    wallet_design = (
+        metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
+    )
+    apple_advanced = (
+        wallet_design.get("apple_advanced", {})
+        if isinstance(wallet_design, dict)
+        else {}
+    )
+    nfc_override = (
+        apple_advanced.get("nfcMessage", "") if isinstance(apple_advanced, dict) else ""
+    )
     nfc_payload = _build_nfc_payload(card, customer_pass, barcode_value, nfc_override)
     if nfc_payload:
         pass_json["nfc"] = nfc_payload
@@ -229,12 +253,14 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     web_service_url = getattr(settings, "PASS_WEB_SERVICE_URL", "")
     if not web_service_url:
         from apps.tenants.models import PlatformSetting
+
         web_service_url = PlatformSetting.get("wallet_web_service_url", "")
     if web_service_url:
         pass_json["webServiceURL"] = web_service_url
         pass_json["authenticationToken"] = str(customer_pass.id).replace("-", "")
 
     return pass_json
+
 
 def _sign_manifest(manifest_json: bytes) -> bytes | None:
     """Sign the manifest.json using PKCS#7 detached signature.
@@ -261,17 +287,17 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         from cryptography.hazmat.primitives.serialization import Encoding
         from cryptography.hazmat.primitives.serialization import pkcs7 as pkcs7_module
 
- # Load the signing certificate
+        # Load the signing certificate
         cert = x509.load_pem_x509_certificate(cert_pem.encode("utf-8"))
 
- # Load the private key (no passphrase)
+        # Load the private key (no passphrase)
         key = serialization.load_pem_private_key(key_pem.encode("utf-8"), password=None)
 
- # Load the WWDR intermediate certificate
+        # Load the WWDR intermediate certificate
         wwdr = x509.load_pem_x509_certificate(wwdr_pem.encode("utf-8"))
 
- # Build the PKCS#7 detached signature using the stable API
- # Apple requires: SHA256 hash, DER encoding, detached + binary flags
+        # Build the PKCS#7 detached signature using the stable API
+        # Apple requires: SHA256 hash, DER encoding, detached + binary flags
         signature = (
             pkcs7_module.PKCS7SignatureBuilder()
             .set_data(manifest_json)
@@ -293,10 +319,13 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         logger.error("Failed to sign Apple pass manifest: %s", exc)
         return None
 
+
 def generate_pkpass(customer_pass) -> bytes | None:
     """Generate a real .pkpass file (signed ZIP) for Apple Wallet."""
     if not _check_config_ready():
-        logger.warning("Apple Wallet configuration missing. Provide: APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER")
+        logger.warning(
+            "Apple Wallet configuration missing. Provide: APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER"
+        )
         return None
 
     card = customer_pass.card
@@ -307,7 +336,9 @@ def generate_pkpass(customer_pass) -> bytes | None:
     try:
         pass_json = _build_pass_json(customer_pass, card, customer, tenant)
     except ValueError as exc:
-        logger.error("Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc)
+        logger.error(
+            "Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc
+        )
         return None
     pass_json_bytes = json.dumps(pass_json, ensure_ascii=False).encode("utf-8")
 
@@ -323,7 +354,9 @@ def generate_pkpass(customer_pass) -> bytes | None:
             if public_base:
                 url = public_base + url
             else:
-                logger.warning("Cannot resolve relative image URL %s: PUBLIC_BASE_URL not set", url)
+                logger.warning(
+                    "Cannot resolve relative image URL %s: PUBLIC_BASE_URL not set", url
+                )
                 return None
         SSRFError = Exception
         try:
@@ -333,13 +366,17 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
             import httpx
 
-            with httpx.Client(timeout=10.0, follow_redirects=False, max_redirects=0) as client:
+            with httpx.Client(
+                timeout=10.0, follow_redirects=False, max_redirects=0
+            ) as client:
                 resp = client.get(url)
                 if resp.status_code == 200:
- # Enforce 5MB max size
+                    # Enforce 5MB max size
                     content = resp.content
                     if len(content) > 5 * 1024 * 1024:
-                        logger.warning("Image too large (%d bytes): %s", len(content), url)
+                        logger.warning(
+                            "Image too large (%d bytes): %s", len(content), url
+                        )
                         return None
                     return content
         except SSRFError as exc:
@@ -348,8 +385,14 @@ def generate_pkpass(customer_pass) -> bytes | None:
             logger.warning("Failed to fetch image from %s: %s", url, exc)
         return None
 
-    wallet_design = (card.metadata or {}).get("wallet_design", {}) if isinstance(card.metadata, dict) else {}
-    apple_images = wallet_design.get("apple_images", {}) if isinstance(wallet_design, dict) else {}
+    wallet_design = (
+        (card.metadata or {}).get("wallet_design", {})
+        if isinstance(card.metadata, dict)
+        else {}
+    )
+    apple_images = (
+        wallet_design.get("apple_images", {}) if isinstance(wallet_design, dict) else {}
+    )
 
     logo_bytes = fetch_image_bytes(apple_images.get("logo") or card.logo_url)
     logo_2x_bytes = fetch_image_bytes(apple_images.get("logo_2x"))
@@ -371,7 +414,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
     from PIL import Image
 
- # Default fallbacks
+    # Default fallbacks
     icon_29 = _generate_placeholder_icon(card.name, bg_color, 29)
     icon_58 = _generate_placeholder_icon(card.name, bg_color, 58)
     # Apple logo spec: 160x50 pt (@1x) and 320x100 pt (@2x) — wide, not square
@@ -429,10 +472,10 @@ def generate_pkpass(customer_pass) -> bytes | None:
     if strip_bytes:
         try:
             img = Image.open(io.BytesIO(strip_bytes)).convert("RGBA")
- # Per Apple docs: strip.png is only valid for storeCard and coupon.
- # generic passes use thumbnail.png instead (90×90pt, up to 3:2 aspect).
+            # Per Apple docs: strip.png is only valid for storeCard and coupon.
+            # generic passes use thumbnail.png instead (90×90pt, up to 3:2 aspect).
             if pass_style in ("storeCard", "coupon"):
- # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
+                # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
                 files["strip.png"] = _resize_image(img, 375, 123)
                 if strip_2x_bytes:
                     img_2x = Image.open(io.BytesIO(strip_2x_bytes)).convert("RGBA")
@@ -440,7 +483,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
                 else:
                     files["strip@2x.png"] = _resize_image(img, 750, 246)
             elif pass_style == "generic":
- # Apple Wallet thumbnail: 90x90 (@1x), 180x180 (@2x)
+                # Apple Wallet thumbnail: 90x90 (@1x), 180x180 (@2x)
                 files["thumbnail.png"] = _resize_image(img, 90, 90)
                 if strip_2x_bytes:
                     img_2x = Image.open(io.BytesIO(strip_2x_bytes)).convert("RGBA")
@@ -475,6 +518,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
         customer.email,
     )
     return pkpass_bytes
+
 
 def is_apple_wallet_configured() -> bool:
     """Check if Apple Wallet is properly configured."""

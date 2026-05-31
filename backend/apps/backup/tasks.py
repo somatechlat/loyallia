@@ -18,6 +18,7 @@ from celery import chain, group, shared_task
 from django.utils import timezone
 
 from apps.backup.services.cleanup import cleanup_old_backups
+from apps.backup.services.cleanup import cleanup_old_backups as cleanup_old_backups_svc
 from apps.backup.services.config import (
     create_job_record,
     get_backup_settings,
@@ -31,7 +32,6 @@ from apps.backup.services.redis import backup_redis as backup_redis_svc
 from apps.backup.services.restore import restore_from_backup
 from apps.backup.services.vault import backup_vault as backup_vault_svc
 from apps.backup.services.verification import verify_backup as verify_backup_svc
-from apps.backup.services.cleanup import cleanup_old_backups as cleanup_old_backups_svc
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,9 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
         verify_chain = chain(job_group, verify_backup_task.s(job_id))
         result = verify_chain.apply_async()
 
-        logger.info("run_full_backup: job %s chained, verify task id=%s", job_id, result.id)
+        logger.info(
+            "run_full_backup: job %s chained, verify task id=%s", job_id, result.id
+        )
         return {"success": True, "job_id": job_id, "celery_chain_id": result.id}
 
     except Exception as exc:
@@ -100,8 +102,12 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
 
 
 @shared_task(
-    bind=True, max_retries=_MAX_RETRIES, default_retry_delay=_RETRY_DELAY,
-    queue=_BACKUP_QUEUE, name="apps.backup.tasks.backup_postgresql", time_limit=900,
+    bind=True,
+    max_retries=_MAX_RETRIES,
+    default_retry_delay=_RETRY_DELAY,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.backup_postgresql",
+    time_limit=900,
 )
 def backup_postgresql(self, job_id: str) -> dict:
     """Celery wrapper for PostgreSQL backup service."""
@@ -113,8 +119,12 @@ def backup_postgresql(self, job_id: str) -> dict:
 
 
 @shared_task(
-    bind=True, max_retries=_MAX_RETRIES, default_retry_delay=_RETRY_DELAY,
-    queue=_BACKUP_QUEUE, name="apps.backup.tasks.backup_redis", time_limit=300,
+    bind=True,
+    max_retries=_MAX_RETRIES,
+    default_retry_delay=_RETRY_DELAY,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.backup_redis",
+    time_limit=300,
 )
 def backup_redis(self, job_id: str) -> dict:
     """Celery wrapper for Redis backup service."""
@@ -126,8 +136,12 @@ def backup_redis(self, job_id: str) -> dict:
 
 
 @shared_task(
-    bind=True, max_retries=_MAX_RETRIES, default_retry_delay=_RETRY_DELAY,
-    queue=_BACKUP_QUEUE, name="apps.backup.tasks.backup_vault", time_limit=300,
+    bind=True,
+    max_retries=_MAX_RETRIES,
+    default_retry_delay=_RETRY_DELAY,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.backup_vault",
+    time_limit=300,
 )
 def backup_vault(self, job_id: str) -> dict:
     """Celery wrapper for Vault backup service."""
@@ -139,8 +153,12 @@ def backup_vault(self, job_id: str) -> dict:
 
 
 @shared_task(
-    bind=True, max_retries=_MAX_RETRIES, default_retry_delay=_RETRY_DELAY,
-    queue=_BACKUP_QUEUE, name="apps.backup.tasks.backup_media", time_limit=1800,
+    bind=True,
+    max_retries=_MAX_RETRIES,
+    default_retry_delay=_RETRY_DELAY,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.backup_media",
+    time_limit=1800,
 )
 def backup_media(self, job_id: str) -> dict:
     """Celery wrapper for Media backup service."""
@@ -152,8 +170,12 @@ def backup_media(self, job_id: str) -> dict:
 
 
 @shared_task(
-    bind=True, max_retries=1, default_retry_delay=60,
-    queue=_BACKUP_QUEUE, name="apps.backup.tasks.verify_backup", time_limit=600,
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.verify_backup",
+    time_limit=600,
 )
 def verify_backup(self, component_results: list, job_id: str) -> dict:
     """Celery wrapper for backup verification service."""
@@ -165,8 +187,12 @@ def verify_backup(self, component_results: list, job_id: str) -> dict:
 
 
 @shared_task(
-    bind=True, max_retries=2, default_retry_delay=60,
-    queue=_BACKUP_QUEUE, name="apps.backup.tasks.cleanup_old_backups", time_limit=600,
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.cleanup_old_backups",
+    time_limit=600,
 )
 def cleanup_old_backups(self) -> dict:
     """Celery wrapper for backup cleanup service."""
@@ -178,8 +204,12 @@ def cleanup_old_backups(self) -> dict:
 
 
 @shared_task(
-    bind=True, max_retries=1, default_retry_delay=300,
-    queue=_BACKUP_QUEUE, name="apps.backup.tasks.restore_from_backup_task", time_limit=3600,
+    bind=True,
+    max_retries=1,
+    default_retry_delay=300,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.restore_from_backup_task",
+    time_limit=3600,
 )
 def restore_from_backup_task(
     self, backup_id: str, s3_key: str, target_tenant_id: str = ""

@@ -5,7 +5,6 @@ Django Ninja request/response schemas for the SuperAdmin backup API.
 All timestamps are ISO-8601 strings.
 """
 
-
 from ninja import Schema
 
 # -- Request schemas --

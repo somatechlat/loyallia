@@ -22,11 +22,11 @@ logger = logging.getLogger(__name__)
 class CustomerImportService:
     """Service to handle customer database imports."""
 
- # AGENT.md business rule: max import file size 10MB, max 50,000 rows.
+    # AGENT.md business rule: max import file size 10MB, max 50,000 rows.
     MAX_FILE_SIZE = 10 * 1024 * 1024
     MAX_ROWS = 50_000
 
- # Supported gender mappings for normalization
+    # Supported gender mappings for normalization
     GENDER_MAP = {
         "m": "M",
         "masculino": "M",
@@ -41,7 +41,7 @@ class CustomerImportService:
         "other": "O",
     }
 
- # Email regex for basic validation before DB hit
+    # Email regex for basic validation before DB hit
     EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
     def __init__(self, tenant):
@@ -86,7 +86,7 @@ class CustomerImportService:
                 ),
             }
 
- # Normalize column names
+        # Normalize column names
         df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
 
         col_map = self._detect_columns(df)
@@ -114,17 +114,29 @@ class CustomerImportService:
             "first_name": _find_col(["nombre", "first_name", "first", "name"]),
             "last_name": _find_col(["apellido", "last_name", "last", "surname"]),
             "email": _find_col(["email", "correo", "mail", "e-mail"]),
-            "phone": _find_col(["telefono", "teléfono", "phone", "cel", "movil", "móvil"]),
-            "dob": _find_col(["fecha_nac", "nacimiento", "birth", "dob", "fecha_de_nacimiento"]),
+            "phone": _find_col(
+                ["telefono", "teléfono", "phone", "cel", "movil", "móvil"]
+            ),
+            "dob": _find_col(
+                ["fecha_nac", "nacimiento", "birth", "dob", "fecha_de_nacimiento"]
+            ),
             "gender": _find_col(["genero", "género", "gender", "sexo"]),
-            "notes": _find_col(["notas", "notes", "nota", "observaciones", "comentarios"]),
-            "total_spent": _find_col(["gasto", "spent", "total_spent", "compras", "monto"]),
-            "total_visits": _find_col(["visitas", "visits", "total_visits", "frecuencia", "scan"]),
+            "notes": _find_col(
+                ["notas", "notes", "nota", "observaciones", "comentarios"]
+            ),
+            "total_spent": _find_col(
+                ["gasto", "spent", "total_spent", "compras", "monto"]
+            ),
+            "total_visits": _find_col(
+                ["visitas", "visits", "total_visits", "frecuencia", "scan"]
+            ),
         }
 
     def _ingest_data(self, df: pd.DataFrame, col_map: dict) -> dict:
         """Iterate through rows and perform bulk ingestion."""
-        existing_emails = set(Customer.objects.filter(tenant=self.tenant).values_list("email", flat=True))
+        existing_emails = set(
+            Customer.objects.filter(tenant=self.tenant).values_list("email", flat=True)
+        )
 
         customers_to_create = []
         seen_in_file = set()
@@ -152,13 +164,25 @@ class CustomerImportService:
 
             first_name = str(row.get(col_map["first_name"], "")).strip().title()
             if not first_name:
-                errors.append(get_message("VALIDATION_ERROR", detail=f"Fila {lineno}: nombre vacio"))
+                errors.append(
+                    get_message(
+                        "VALIDATION_ERROR", detail=f"Fila {lineno}: nombre vacio"
+                    )
+                )
                 skipped_invalid += 1
                 continue
 
- # Normalized data extraction
-            last_name = str(row.get(col_map["last_name"], "")).strip().title() if col_map["last_name"] else ""
-            phone = re.sub(r"[^\d\+\- ]", "", str(row.get(col_map["phone"], "")))[:20] if col_map["phone"] else ""
+            # Normalized data extraction
+            last_name = (
+                str(row.get(col_map["last_name"], "")).strip().title()
+                if col_map["last_name"]
+                else ""
+            )
+            phone = (
+                re.sub(r"[^\d\+\- ]", "", str(row.get(col_map["phone"], "")))[:20]
+                if col_map["phone"]
+                else ""
+            )
 
             date_of_birth = None
             if col_map["dob"]:
@@ -172,12 +196,16 @@ class CustomerImportService:
                 gender_raw = str(row.get(col_map["gender"], "")).strip().lower()
                 gender = self.GENDER_MAP.get(gender_raw, "")
 
-            notes = str(row.get(col_map["notes"], ""))[:2000] if col_map["notes"] else ""
+            notes = (
+                str(row.get(col_map["notes"], ""))[:2000] if col_map["notes"] else ""
+            )
 
             total_spent = 0.0
             if col_map["total_spent"]:
                 try:
-                    spent_raw = re.sub(r"[^\d\.]", "", str(row.get(col_map["total_spent"], "0")))
+                    spent_raw = re.sub(
+                        r"[^\d\.]", "", str(row.get(col_map["total_spent"], "0"))
+                    )
                     total_spent = float(spent_raw) if spent_raw else 0.0
                 except ValueError:
                     pass
@@ -185,7 +213,9 @@ class CustomerImportService:
             total_visits = 0
             if col_map["total_visits"]:
                 try:
-                    visits_raw = re.sub(r"[^\d]", "", str(row.get(col_map["total_visits"], "0")))
+                    visits_raw = re.sub(
+                        r"[^\d]", "", str(row.get(col_map["total_visits"], "0"))
+                    )
                     total_visits = int(visits_raw) if visits_raw else 0
                 except ValueError:
                     pass
@@ -225,7 +255,9 @@ class CustomerImportService:
             "message": (
                 get_message("CUSTOMER_CREATED")
                 if len(customers_to_create) > 0
-                else get_message("VALIDATION_ERROR", detail="No se importaron nuevos clientes.")
+                else get_message(
+                    "VALIDATION_ERROR", detail="No se importaron nuevos clientes."
+                )
             ),
         }
 

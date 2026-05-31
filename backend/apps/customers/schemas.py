@@ -16,7 +16,7 @@ class CustomerCreateIn(BaseModel):
     gender: str | None = ""
     notes: str | None = ""
 
- # Allow dynamic custom fields from the Form Builder to be captured
+    # Allow dynamic custom fields from the Form Builder to be captured
     model_config = {"extra": "allow"}
 
     @field_validator("first_name", "last_name")
@@ -75,7 +75,9 @@ class CustomerOut(BaseModel):
             last_name=customer.last_name,
             email=customer.email,
             phone=customer.phone,
-            date_of_birth=(customer.date_of_birth.isoformat() if customer.date_of_birth else None),
+            date_of_birth=(
+                customer.date_of_birth.isoformat() if customer.date_of_birth else None
+            ),
             gender=customer.gender,
             referral_code=customer.referral_code,
             is_active=customer.is_active,
@@ -101,7 +103,9 @@ class CustomerPassOut(BaseModel):
     already_enrolled: bool = False
 
     @staticmethod
-    def from_model(pass_obj: CustomerPass, already_enrolled: bool = False) -> "CustomerPassOut":
+    def from_model(
+        pass_obj: CustomerPass, already_enrolled: bool = False
+    ) -> "CustomerPassOut":
         pass_id = str(pass_obj.id)
         return CustomerPassOut(
             id=pass_id,

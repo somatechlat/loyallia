@@ -6,23 +6,37 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('authentication', '0005_ensure_superadmin'),
-        ('tenants', '0009_alter_tenant_scheduled_deletion_at'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("authentication", "0005_ensure_superadmin"),
+        ("tenants", "0009_alter_tenant_scheduled_deletion_at"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('SUPER_ADMIN', 'Super Administrador'), ('OWNER', 'Propietario'), ('MANAGER', 'Gerente'), ('STAFF', 'Personal')], db_index=True, default='STAFF', max_length=20),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("SUPER_ADMIN", "Super Administrador"),
+                    ("OWNER", "Propietario"),
+                    ("MANAGER", "Gerente"),
+                    ("STAFF", "Personal"),
+                ],
+                db_index=True,
+                default="STAFF",
+                max_length=20,
+            ),
         ),
         migrations.AddIndex(
-            model_name='refreshtoken',
-            index=models.Index(fields=['user', 'created_at'], name='loyallia_re_user_id_2522d7_idx'),
+            model_name="refreshtoken",
+            index=models.Index(
+                fields=["user", "created_at"], name="loyallia_re_user_id_2522d7_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='user',
-            index=models.Index(fields=['tenant'], name='loyallia_us_tenant__cfb243_idx'),
+            model_name="user",
+            index=models.Index(
+                fields=["tenant"], name="loyallia_us_tenant__cfb243_idx"
+            ),
         ),
     ]

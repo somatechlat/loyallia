@@ -30,7 +30,7 @@ class TenantEmailConfig(models.Model):
         verbose_name="Negocio",
     )
 
- # Custom sender identity
+    # Custom sender identity
     sender_name = models.CharField(
         max_length=200,
         blank=True,
@@ -45,7 +45,7 @@ class TenantEmailConfig(models.Model):
         help_text="From address: promotions@hm-ecuador.com",
     )
 
- # Custom SMTP relay (optional falls back to platform default)
+    # Custom SMTP relay (optional falls back to platform default)
     smtp_host = models.CharField(
         max_length=255,
         blank=True,
@@ -68,13 +68,15 @@ class TenantEmailConfig(models.Model):
     )
     use_tls = models.BooleanField(default=True, verbose_name="Usar TLS")
 
- # Verification status
+    # Verification status
     is_verified = models.BooleanField(
         default=False,
         verbose_name="Verificado",
         help_text="Set to True after successful test email delivery",
     )
-    verified_at = models.DateTimeField(null=True, blank=True, verbose_name="Verificado el")
+    verified_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Verificado el"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -92,4 +94,9 @@ class TenantEmailConfig(models.Model):
     @property
     def is_configured(self) -> bool:
         """Whether all required SMTP fields are set."""
-        return bool(self.sender_email and self.smtp_host and self.smtp_user and self.smtp_password)
+        return bool(
+            self.sender_email
+            and self.smtp_host
+            and self.smtp_user
+            and self.smtp_password
+        )

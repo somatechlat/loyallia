@@ -152,9 +152,9 @@ def download_apple_pass(request, pass_id: str):
     )
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -163,7 +163,7 @@ def download_apple_pass(request, pass_id: str):
     if not is_apple_wallet_configured():
         raise HttpError(503, get_message("PASS_APPLE_NOT_CONFIGURED"))
 
- # Cache the heavily CPU/Network bound .pkpass generation
+    # Cache the heavily CPU/Network bound .pkpass generation
     from django.core.cache import cache
 
     cache_key = f"pkpass:{pass_id}:{customer_pass.last_updated.timestamp()}"
@@ -173,14 +173,16 @@ def download_apple_pass(request, pass_id: str):
         pkpass_bytes = generate_pkpass(customer_pass)
         if pkpass_bytes is None:
             raise HttpError(500, get_message("PASS_APPLE_GEN_ERROR"))
- # Cache for 24 hours (it will auto-invalidate if last_updated changes)
+        # Cache for 24 hours (it will auto-invalidate if last_updated changes)
         cache.set(cache_key, pkpass_bytes, timeout=86400)
 
     response = HttpResponse(
         pkpass_bytes,
         content_type="application/vnd.apple.pkpass",
     )
-    response["Content-Disposition"] = f'attachment; filename="{customer_pass.card.name}.pkpass"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="{customer_pass.card.name}.pkpass"'
+    )
     return response
 
 
@@ -208,9 +210,9 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     )
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -219,7 +221,9 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     if not is_google_wallet_configured():
         raise HttpError(503, get_message("PASS_GOOGLE_NOT_CONFIGURED"))
 
-    base_url = getattr(settings, "PUBLIC_BASE_URL", "") or request.build_absolute_uri("/").rstrip("/")
+    base_url = getattr(settings, "PUBLIC_BASE_URL", "") or request.build_absolute_uri(
+        "/"
+    ).rstrip("/")
     save_url = generate_google_wallet_url(customer_pass, base_url=base_url)
     if save_url is None:
         raise HttpError(500, get_message("PASS_GOOGLE_GEN_ERROR"))
@@ -249,9 +253,9 @@ def get_wallet_status(request, pass_id: str):
     from apps.customers.pass_engine.google_pass import is_google_wallet_configured
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -306,9 +310,9 @@ def get_public_pass(request, pass_id: str):
     from apps.customers.pass_engine.google_pass import is_google_wallet_configured
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 

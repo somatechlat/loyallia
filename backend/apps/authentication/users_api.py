@@ -38,6 +38,7 @@ router = Router()
 
 # USER & PROFILE ENDPOINTS
 
+
 @router.get("/me/", auth=jwt_auth, summary="Perfil del usuario actual")
 def me(request):
     """Returns the authenticated user's profile with tenant info."""
@@ -58,7 +59,10 @@ def me(request):
         "date_joined": u.date_joined.isoformat(),
     }
 
-@router.put("/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil")
+
+@router.put(
+    "/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil"
+)
 def update_profile(request, payload: ProfileUpdateIn):
     """Update the authenticated user's profile (name fields only)."""
     u = request.user
@@ -72,6 +76,7 @@ def update_profile(request, payload: ProfileUpdateIn):
     if update_fields:
         u.save(update_fields=update_fields + ["updated_at"])
     return MessageOut(success=True, message=get_message("AUTH_PROFILE_UPDATED"))
+
 
 @router.post(
     "/change-password/",
@@ -95,7 +100,11 @@ def change_password(request, payload: ChangePasswordIn):
             action=AuditAction.UPDATE,
             resource_type="user_password",
             resource_id=str(u.id),
-            tenant_id=str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None,
+            tenant_id=(
+                str(request.tenant.id)
+                if hasattr(request, "tenant") and request.tenant
+                else None
+            ),
             details={"event": "password_changed"},
             status="success",
         )
@@ -103,9 +112,13 @@ def change_password(request, payload: ChangePasswordIn):
         pass
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
+
 # TEAM MANAGEMENT (OWNER ONLY)
 
-@router.post("/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo")
+
+@router.post(
+    "/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo"
+)
 def invite_user(request, payload: InviteIn):
     """OWNER invites a MANAGER or STAFF user."""
     tenant = require_tenant(request)
@@ -144,7 +157,10 @@ def invite_user(request, payload: InviteIn):
         body=f"Has sido invitado a unirte a {tenant.name} en Loyallia como {payload.role}.\n\n"
         f"Haz clic en el siguiente enlace para aceptar la invitacion:\n{invite_url}\n\nEste enlace expirara en 7 dias.\n\n-- Loyallia",
     )
-    return MessageOut(success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email))
+    return MessageOut(
+        success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email)
+    )
+
 
 @router.get(
     "/users/",
@@ -159,6 +175,7 @@ def list_users(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     users = User.objects.filter(tenant=tenant).order_by("role", "email")
     return [UserOut.from_user(u) for u in users]
+
 
 @router.delete(
     "/users/{user_id}/",
@@ -182,10 +199,14 @@ def deactivate_user(request, user_id: str):
 
     from django.utils import timezone as dj_timezone
 
-    RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
+    RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
+        revoked_at=dj_timezone.now()
+    )
     return MessageOut(success=True, message=get_message("AUTH_USER_DEACTIVATED"))
 
+
 # PHONE NUMBER VERIFICATION
+
 
 @router.post(
     "/phone/verify/request/",
@@ -215,13 +236,15 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
             custom_friendly_name="Loyallia",
         )
     except Exception as exc:
-        logger.error("Phone verify request failed for %s: %s", payload.phone_number, exc)
+        logger.error(
+            "Phone verify request failed for %s: %s", payload.phone_number, exc
+        )
         return PhoneVerifyStartOut(
             success=False,
             message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),
         )
 
- # Store SID in Redis for confirm step
+    # Store SID in Redis for confirm step
     cache.set(
         f"phone_verify_sid:{payload.phone_number}",
         result.get("sid", ""),
@@ -235,6 +258,7 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
         strategy=result.get("strategy", ""),
         channel=result.get("channel", ""),
     )
+
 
 @router.post(
     "/phone/verify/confirm/",
@@ -251,7 +275,7 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
 
     from apps.authentication.otp_service import check_otp
 
- # Rate limit check
+    # Rate limit check
     cache_key = f"otp_attempts:phone_verify:{payload.phone_number}"
     attempts = cache.get(cache_key, 0)
     if attempts >= 5:
@@ -262,7 +286,7 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
         )
     cache.set(cache_key, attempts + 1, 900)
 
- # Retrieve SID from Redis
+    # Retrieve SID from Redis
     sid = cache.get(f"phone_verify_sid:{payload.phone_number}", "")
 
     try:
@@ -273,7 +297,9 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
             purpose="phone_verification",
         )
     except Exception as exc:
-        logger.error("Phone verify confirm failed for %s: %s", payload.phone_number, exc)
+        logger.error(
+            "Phone verify confirm failed for %s: %s", payload.phone_number, exc
+        )
         return PhoneVerifyCheckOut(
             success=False,
             message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),
@@ -298,7 +324,7 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
     user.is_phone_verified = True
     user.save(update_fields=["is_phone_verified", "updated_at"])
 
- # Clean up
+    # Clean up
     cache.delete(f"phone_verify_sid:{payload.phone_number}")
     cache.delete(cache_key)
 

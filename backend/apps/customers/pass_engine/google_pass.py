@@ -39,7 +39,7 @@ def _load_service_account() -> dict | None:
     from common.vault import get_secret
 
     try:
- # Fetching directly from Vault as a JSON string
+        # Fetching directly from Vault as a JSON string
         sa_json_str = get_secret("google_service_account_json", strict=True)
         if not sa_json_str:
             return None
@@ -48,7 +48,9 @@ def _load_service_account() -> dict | None:
         if sa_data and "private_key" in sa_data and "client_email" in sa_data:
             return sa_data
 
-        logger.warning("Google Service Account JSON in Vault is missing required fields")
+        logger.warning(
+            "Google Service Account JSON in Vault is missing required fields"
+        )
         return None
     except Exception as exc:
         logger.error("Failed to load Google Service Account from Vault: %s", exc)
@@ -72,9 +74,13 @@ def get_google_wallet_diagnostics() -> dict:
     diagnostics["enabled"] = enabled.strip().lower() in {"1", "true", "yes", "on"}
 
     issuer_id = get_secret("google_wallet_issuer_id", default="")
-    diagnostics["issuer_id_present"] = bool(issuer_id and issuer_id not in ("", "n/a", "dummy_issuer_id"))
+    diagnostics["issuer_id_present"] = bool(
+        issuer_id and issuer_id not in ("", "n/a", "dummy_issuer_id")
+    )
     if not diagnostics["issuer_id_present"]:
-        diagnostics["errors"].append("Missing or dummy GOOGLE_WALLET_ISSUER_ID in Vault")
+        diagnostics["errors"].append(
+            "Missing or dummy GOOGLE_WALLET_ISSUER_ID in Vault"
+        )
 
     sa_json_str = get_secret("google_service_account_json", default="")
     diagnostics["service_account_present"] = bool(sa_json_str)
@@ -86,19 +92,25 @@ def get_google_wallet_diagnostics() -> dict:
         sa_data = json.loads(sa_json_str)
         diagnostics["service_account_valid_json"] = True
     except json.JSONDecodeError as exc:
-        diagnostics["errors"].append(f"GOOGLE_SERVICE_ACCOUNT_JSON is invalid JSON: {exc}")
+        diagnostics["errors"].append(
+            f"GOOGLE_SERVICE_ACCOUNT_JSON is invalid JSON: {exc}"
+        )
         return diagnostics
 
     has_private_key = "private_key" in sa_data and bool(sa_data["private_key"])
     has_client_email = "client_email" in sa_data and bool(sa_data["client_email"])
-    diagnostics["service_account_has_required_fields"] = has_private_key and has_client_email
+    diagnostics["service_account_has_required_fields"] = (
+        has_private_key and has_client_email
+    )
     if not diagnostics["service_account_has_required_fields"]:
         missing = []
         if not has_private_key:
             missing.append("private_key")
         if not has_client_email:
             missing.append("client_email")
-        diagnostics["errors"].append(f"GOOGLE_SERVICE_ACCOUNT_JSON missing fields: {', '.join(missing)}")
+        diagnostics["errors"].append(
+            f"GOOGLE_SERVICE_ACCOUNT_JSON missing fields: {', '.join(missing)}"
+        )
 
     return diagnostics
 
@@ -144,12 +156,16 @@ def generate_google_wallet_url(customer_pass, base_url: str = "") -> str | None:
         payload_key_object = "offerObjects"
     elif gw_type == "giftCard":
         gw_class = _build_gift_card_class(card, tenant, base_url)
-        gw_object = _build_gift_card_object(customer_pass, card, customer, tenant, base_url)
+        gw_object = _build_gift_card_object(
+            customer_pass, card, customer, tenant, base_url
+        )
         payload_key_class = "giftCardClasses"
         payload_key_object = "giftCardObjects"
     else:
         gw_class = _build_loyalty_class(card, tenant, base_url)
-        gw_object = _build_loyalty_object(customer_pass, card, customer, tenant, base_url)
+        gw_object = _build_loyalty_object(
+            customer_pass, card, customer, tenant, base_url
+        )
         payload_key_class = "loyaltyClasses"
         payload_key_object = "loyaltyObjects"
 
@@ -210,7 +226,9 @@ def _get_access_token() -> str | None:
         return None
 
 
-def send_push_notification(customer_pass, header: str, body: str, action_url: str = "") -> dict:
+def send_push_notification(
+    customer_pass, header: str, body: str, action_url: str = ""
+) -> dict:
     """
     Send a push notification to a Google Wallet pass using the Add Message API.
     Reference: https://developers.google.com/wallet/generic/use-cases/trigger-push-notifications
@@ -272,7 +290,9 @@ def send_push_notification(customer_pass, header: str, body: str, action_url: st
             timeout=10.0,
         )
         if response.status_code in (200, 201):
-            logger.info("Push notification sent to pass %s: %s", customer_pass.id, header)
+            logger.info(
+                "Push notification sent to pass %s: %s", customer_pass.id, header
+            )
             return {"success": True, "message_id": message_id}
         else:
             logger.error(
@@ -321,24 +341,32 @@ def update_loyalty_class(card, base_url: str = "") -> dict:
         api_endpoint = "loyaltyClass"
 
     class_id = payload["id"]
-    api_base_url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
+    api_base_url = (
+        f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
+    )
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {access_token}",
     }
 
     try:
-        patch_resp = httpx.patch(f"{api_base_url}/{class_id}", json=payload, headers=headers, timeout=10.0)
+        patch_resp = httpx.patch(
+            f"{api_base_url}/{class_id}", json=payload, headers=headers, timeout=10.0
+        )
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Class patched successfully: %s", class_id)
             return {"success": True, "action": "patch"}
         if patch_resp.status_code == 404:
             logger.info("Class %s not found  creating via POST", class_id)
-            post_resp = httpx.post(api_base_url, json=payload, headers=headers, timeout=10.0)
+            post_resp = httpx.post(
+                api_base_url, json=payload, headers=headers, timeout=10.0
+            )
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Class created: %s", class_id)
                 return {"success": True, "action": "create"}
-            logger.error("Failed to create Google Wallet Class %s: %s", class_id, post_resp.text)
+            logger.error(
+                "Failed to create Google Wallet Class %s: %s", class_id, post_resp.text
+            )
             return {"success": False, "error": post_resp.text}
         logger.error(
             "Unexpected response patching Google Wallet Class %s: %s",
@@ -384,7 +412,9 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
         api_endpoint = "offerObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.offer-pass-{customer_pass.id}"
     elif gw_type == "giftCard":
-        payload = _build_gift_card_object(customer_pass, card, customer, tenant, base_url)
+        payload = _build_gift_card_object(
+            customer_pass, card, customer, tenant, base_url
+        )
         api_endpoint = "giftCardObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
     else:
@@ -392,21 +422,27 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
         api_endpoint = "loyaltyObject"  # singular for PATCH/POST
         object_id = f"{issuer_id}.loyallia-pass-{customer_pass.id}"
 
-    api_base_url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
+    api_base_url = (
+        f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}"
+    )
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {access_token}",
     }
 
     try:
-        patch_resp = httpx.patch(f"{api_base_url}/{object_id}", json=payload, headers=headers, timeout=10.0)
+        patch_resp = httpx.patch(
+            f"{api_base_url}/{object_id}", json=payload, headers=headers, timeout=10.0
+        )
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Object patched: %s", object_id)
             return {"success": True, "action": "patch", "object_id": object_id}
         if patch_resp.status_code == 404:
- # Object doesn't exist yet create it
+            # Object doesn't exist yet create it
             logger.info("Object %s not found  creating via POST", object_id)
-            post_resp = httpx.post(api_base_url, json=payload, headers=headers, timeout=10.0)
+            post_resp = httpx.post(
+                api_base_url, json=payload, headers=headers, timeout=10.0
+            )
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Object created: %s", object_id)
                 return {"success": True, "action": "create", "object_id": object_id}
@@ -469,7 +505,9 @@ def delete_wallet_class(card) -> dict:
         return {"success": False, "error": str(exc)}
 
 
-def send_push_notification_to_class(card, header: str, body: str, action_url: str = "") -> dict:
+def send_push_notification_to_class(
+    card, header: str, body: str, action_url: str = ""
+) -> dict:
     """Send a push notification to EVERYONE holding this card class."""
     import httpx
 

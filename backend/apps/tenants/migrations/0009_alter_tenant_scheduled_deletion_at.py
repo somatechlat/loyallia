@@ -6,13 +6,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenants', '0008_seed_platform_settings'),
+        ("tenants", "0008_seed_platform_settings"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='tenant',
-            name='scheduled_deletion_at',
-            field=models.DateTimeField(blank=True, db_index=True, help_text='When set, Celery will hard-delete all tenant data after this timestamp.', null=True, verbose_name='Eliminación programada'),
+            model_name="tenant",
+            name="scheduled_deletion_at",
+            field=models.DateTimeField(
+                blank=True,
+                db_index=True,
+                help_text="When set, Celery will hard-delete all tenant data after this timestamp.",
+                null=True,
+                verbose_name="Eliminación programada",
+            ),
         ),
     ]

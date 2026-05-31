@@ -27,6 +27,7 @@ router = Router()
 
 # SCHEMAS
 
+
 class CardCreateIn(BaseModel):
     name: str
     description: str | None = ""
@@ -49,7 +50,9 @@ class CardCreateIn(BaseModel):
 
             size = len(json.dumps(v))
             if size > 10240:
-                raise ValueError(f"Metadata too large ({size} bytes). Maximum allowed is 10KB.")
+                raise ValueError(
+                    f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
+                )
         return v
 
     @field_validator("name")
@@ -69,6 +72,7 @@ class CardCreateIn(BaseModel):
         except ValueError:
             raise ValueError("Invalid hex color format")
         return v
+
 
 class CardUpdateIn(BaseModel):
     name: str | None = None
@@ -93,7 +97,9 @@ class CardUpdateIn(BaseModel):
 
             size = len(json.dumps(v))
             if size > 10240:
-                raise ValueError(f"Metadata too large ({size} bytes). Maximum allowed is 10KB.")
+                raise ValueError(
+                    f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
+                )
         return v
 
     @field_validator("name")
@@ -102,6 +108,7 @@ class CardUpdateIn(BaseModel):
         if v is not None and len(v.strip()) < 2:
             raise ValueError("Program name must be at least 2 characters")
         return v.strip() if v else v
+
 
 class CardOut(BaseModel):
     id: str
@@ -144,21 +151,29 @@ class CardOut(BaseModel):
             created_at=card.created_at.isoformat(),
             updated_at=card.updated_at.isoformat(),
             enrollments_count=(
-                enrollments_count if enrollments_count is not None else CustomerPass.objects.filter(card=card).count()
+                enrollments_count
+                if enrollments_count is not None
+                else CustomerPass.objects.filter(card=card).count()
             ),
         )
+
 
 class MessageOut(BaseModel):
     success: bool
     message: str
 
+
 # ENDPOINTS
+
 
 class CardListOut(BaseModel):
     programs: list[CardOut]
     total: int
 
-@router.get("/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización")
+
+@router.get(
+    "/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización"
+)
 def list_programs(request: HttpRequest) -> CardListOut:
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     tenant = require_tenant(request)
@@ -173,14 +188,19 @@ def list_programs(request: HttpRequest) -> CardListOut:
         "programs": [
             CardOut.from_model(
                 c,
-                getattr(c, "_enrollments_count", CustomerPass.objects.filter(card=c).count()),
+                getattr(
+                    c, "_enrollments_count", CustomerPass.objects.filter(card=c).count()
+                ),
             )
             for c in cards
         ],
         "total": len(cards),
     }
 
-@router.post("/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización")
+
+@router.post(
+    "/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización"
+)
 @require_active_subscription
 def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
     """Create a new loyalty program. OWNER only."""
@@ -192,7 +212,7 @@ def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
 
     check_plan_limit(tenant, "programs", write=True)
 
- # Check for duplicate name
+    # Check for duplicate name
     if Card.objects.filter(tenant=tenant, name=data.name).exists():
         raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
 
@@ -223,7 +243,10 @@ def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
     )
     return CardOut.from_model(card)
 
-@router.get("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa")
+
+@router.get(
+    "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa"
+)
 def get_program(request: HttpRequest, program_id: str) -> CardOut:
     """Returns a single loyalty program. MANAGER+ only."""
     if not is_manager_or_owner(request):
@@ -231,18 +254,27 @@ def get_program(request: HttpRequest, program_id: str) -> CardOut:
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
     return CardOut.from_model(card)
 
-@router.patch("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa")
-def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) -> CardOut:
+
+@router.patch(
+    "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa"
+)
+def update_program(
+    request: HttpRequest, program_id: str, data: CardUpdateIn
+) -> CardOut:
     """Update a loyalty program. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
- # Update fields if provided
+    # Update fields if provided
     update_fields = []
     if data.name is not None:
- # Check for duplicate name (excluding current card)
-        if Card.objects.filter(tenant=request.tenant, name=data.name).exclude(id=card.id).exists():
+        # Check for duplicate name (excluding current card)
+        if (
+            Card.objects.filter(tenant=request.tenant, name=data.name)
+            .exclude(id=card.id)
+            .exists()
+        ):
             raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
         card.name = data.name
         update_fields.append("name")
@@ -305,7 +337,7 @@ def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) ->
             details={"updated_fields": update_fields},
         )
 
- # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
+        # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
         try:
             from apps.customers.pass_engine.google_pass import update_loyalty_class
 
@@ -318,6 +350,7 @@ def update_program(request: HttpRequest, program_id: str, data: CardUpdateIn) ->
             )
 
     return CardOut.from_model(card)
+
 
 @router.post(
     "/{program_id}/publish/",
@@ -344,6 +377,7 @@ def publish_program(request: HttpRequest, program_id: str) -> CardOut:
     )
 
     return CardOut.from_model(card)
+
 
 @router.post(
     "/{program_id}/suspend/",
@@ -374,6 +408,7 @@ def suspend_program(request: HttpRequest, program_id: str) -> MessageOut:
         message=get_message(msg_code),
     )
 
+
 @router.delete(
     "/{program_id}/",
     auth=jwt_auth,
@@ -396,8 +431,9 @@ def delete_program(request: HttpRequest, program_id: str) -> HttpResponse:
 
     card.delete()
 
- #
+    #
     return HttpResponse(status=204)
+
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
 def program_stats(request: HttpRequest, program_id: str) -> dict:
@@ -406,13 +442,13 @@ def program_stats(request: HttpRequest, program_id: str) -> dict:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
 
- # Get enrollment count
+    # Get enrollment count
     enrollment_count = Enrollment.objects.filter(card=card).count()
 
- # Get active passes count
+    # Get active passes count
     active_passes = CustomerPass.objects.filter(card=card, is_active=True).count()
 
- # Get transaction count for this program
+    # Get transaction count for this program
     from apps.transactions.models import Transaction
 
     transaction_count = Transaction.objects.filter(customer_pass__card=card).count()
@@ -427,7 +463,10 @@ def program_stats(request: HttpRequest, program_id: str) -> dict:
         "is_active": card.is_active,
     }
 
-@router.get("/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)")
+
+@router.get(
+    "/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)"
+)
 def public_program(request: HttpRequest, slug: str) -> dict:
     """
     Public program info for the enrollment page. No authentication required.

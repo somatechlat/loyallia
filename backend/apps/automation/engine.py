@@ -36,6 +36,7 @@ _MAX_TRIGGER_DEPTH = 3
 # Trigger condition evaluators
 # ---------------------------------------------------------------------------
 
+
 def check_points_threshold(automation, customer) -> bool:
     """Check if customer's total points meet or exceed the configured threshold.
 
@@ -49,9 +50,9 @@ def check_points_threshold(automation, customer) -> bool:
     from apps.transactions.models import Transaction
 
     customer_points = (
-        Transaction.objects.filter(customer=customer, tenant=automation.tenant).aggregate(
-            total=models.Sum("points")
-        )["total"]
+        Transaction.objects.filter(
+            customer=customer, tenant=automation.tenant
+        ).aggregate(total=models.Sum("points"))["total"]
         or 0
     )
     logger.debug(
@@ -61,6 +62,7 @@ def check_points_threshold(automation, customer) -> bool:
         customer_points,
     )
     return customer_points >= threshold
+
 
 def check_inactivity(automation, customer) -> bool:
     """Check if customer has been inactive for the configured number of days.
@@ -101,6 +103,7 @@ def check_inactivity(automation, customer) -> bool:
     )
     return is_inactive
 
+
 def check_milestone(automation, customer) -> bool:
     """Check if customer has reached the configured milestone.
 
@@ -139,6 +142,7 @@ def check_milestone(automation, customer) -> bool:
         "PASS" if (meets_visits and meets_points) else "FAIL",
     )
     return meets_visits and meets_points
+
 
 def fire_trigger(
     trigger: str,
@@ -190,7 +194,7 @@ def fire_trigger(
 
     executed = 0
     ctx = dict(context or {})
- # Track trigger chain for loop detection
+    # Track trigger chain for loop detection
     ctx["_trigger_chain"] = [*trigger_chain, trigger]
 
     for automation in matching:
@@ -231,6 +235,7 @@ def fire_trigger(
         matching.count(),
     )
     return executed
+
 
 def fire_trigger_async(
     trigger: str,

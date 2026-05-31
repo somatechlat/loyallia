@@ -35,10 +35,12 @@ router = Router()
 
 # SCHEMAS
 
+
 class QROut(Schema):
     qr: str | None
     connected: bool
     phone: str = ""
+
 
 class StatusOut(Schema):
     connected: bool
@@ -48,9 +50,11 @@ class StatusOut(Schema):
     daily_limit: int = 200
     messages_remaining: int = 200
 
+
 class MessageOut(Schema):
     success: bool
     message: str = ""
+
 
 class DeliveryWebhookIn(Schema):
     tenant_id: str
@@ -62,12 +66,15 @@ class DeliveryWebhookIn(Schema):
     error_message: str | None = None
     timestamp: str | None = None
 
+
 class SessionWebhookIn(Schema):
     tenant_id: str
     event: str  # "connected", "disconnected"
     phone: str | None = None
 
+
 # SESSION MANAGEMENT (authenticated owner only)
+
 
 def _require_tenant(request):
     """Get the tenant from the authenticated user. OWNER only.
@@ -85,6 +92,7 @@ def _require_tenant(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     return user.tenant
 
+
 @router.get("/qr/{tenant_id}/", auth=jwt_auth, response=QROut)
 @require_feature("whatsapp_campaigns")
 def get_qr_code(request, tenant_id: str):
@@ -100,7 +108,7 @@ def get_qr_code(request, tenant_id: str):
     try:
         result = wa_client.get_qr(tenant_id)
 
- # Update session record
+        # Update session record
         session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
         session.last_qr_at = timezone.now()
         session.save(update_fields=["last_qr_at", "updated_at"])
@@ -113,6 +121,7 @@ def get_qr_code(request, tenant_id: str):
     except Exception as exc:
         logger.error("WhatsApp QR request failed for %s: %s", tenant_id, exc)
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
+
 
 @router.get("/status/{tenant_id}/", auth=jwt_auth, response=StatusOut)
 @require_feature("whatsapp_campaigns")
@@ -127,7 +136,7 @@ def get_session_status(request, tenant_id: str):
     except Exception:
         result = {"connected": False, "qr": None, "phone": ""}
 
- # Merge with local session data
+    # Merge with local session data
     try:
         session = WhatsAppSession.objects.get(tenant=tenant)
         return StatusOut(
@@ -145,6 +154,7 @@ def get_session_status(request, tenant_id: str):
             phone=result.get("phone", ""),
         )
 
+
 @router.post("/disconnect/{tenant_id}/", auth=jwt_auth, response=MessageOut)
 @require_feature("whatsapp_campaigns")
 def disconnect_session(request, tenant_id: str):
@@ -156,8 +166,10 @@ def disconnect_session(request, tenant_id: str):
     try:
         wa_client.disconnect(tenant_id)
 
- # Update local session
-        WhatsAppSession.objects.filter(tenant=tenant).update(is_connected=False, phone_number="")
+        # Update local session
+        WhatsAppSession.objects.filter(tenant=tenant).update(
+            is_connected=False, phone_number=""
+        )
 
         logger.info("WhatsApp disconnected for tenant %s", tenant_id)
         return MessageOut(success=True, message="WhatsApp desconectado")
@@ -165,7 +177,9 @@ def disconnect_session(request, tenant_id: str):
         logger.error("WhatsApp disconnect failed for %s: %s", tenant_id, exc)
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
 
+
 # WEBHOOKS (bridge → Django, API key authenticated)
+
 
 def _verify_bridge_api_key(request) -> None:
     """Verify the bridge API key from the request header.
@@ -185,6 +199,7 @@ def _verify_bridge_api_key(request) -> None:
     if key != expected_key:
         raise HttpError(401, "Unauthorized")
 
+
 @router.post("/webhook/delivery/")
 def delivery_webhook(request, payload: DeliveryWebhookIn):
     """Receive delivery status updates from the WhatsApp bridge.
@@ -194,7 +209,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
     """
     _verify_bridge_api_key(request)
 
- # Update specific delivery log if ID provided
+    # Update specific delivery log if ID provided
     if payload.delivery_log_id:
         try:
             log = CampaignDeliveryLog.objects.get(id=payload.delivery_log_id)
@@ -211,17 +226,23 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                         "external_message_id",
                     ]
                 )
- # Increment campaign run counter
-                CampaignRun.objects.filter(id=log.campaign_run_id).update(sent_count=models.F("sent_count") + 1)
-        # Increment tenant WhatsApp daily counter
+                # Increment campaign run counter
+                CampaignRun.objects.filter(id=log.campaign_run_id).update(
+                    sent_count=models.F("sent_count") + 1
+                )
+                # Increment tenant WhatsApp daily counter
                 try:
                     from apps.tenants.models import Tenant
+
                     tenant = Tenant.objects.get(id=payload.tenant_id)
                     session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
                     session.messages_sent_today += 1
                     session.save(update_fields=["messages_sent_today", "updated_at"])
                 except Exception:
-                    logger.debug("Could not increment messages_sent_today for tenant %s", payload.tenant_id)
+                    logger.debug(
+                        "Could not increment messages_sent_today for tenant %s",
+                        payload.tenant_id,
+                    )
 
             elif payload.status == "delivered":
                 log.status = DeliveryStatus.DELIVERED
@@ -235,7 +256,9 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 log.status = DeliveryStatus.READ
                 log.read_at = now
                 log.save(update_fields=["status", "read_at"])
-                CampaignRun.objects.filter(id=log.campaign_run_id).update(read_count=models.F("read_count") + 1)
+                CampaignRun.objects.filter(id=log.campaign_run_id).update(
+                    read_count=models.F("read_count") + 1
+                )
 
             elif payload.status == "failed":
                 log.status = DeliveryStatus.FAILED
@@ -250,7 +273,9 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                         "error_message",
                     ]
                 )
-                CampaignRun.objects.filter(id=log.campaign_run_id).update(failed_count=models.F("failed_count") + 1)
+                CampaignRun.objects.filter(id=log.campaign_run_id).update(
+                    failed_count=models.F("failed_count") + 1
+                )
 
         except CampaignDeliveryLog.DoesNotExist:
             logger.warning(
@@ -258,14 +283,20 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 payload.delivery_log_id,
             )
 
- # Also try matching by external message_id (for receipts from Baileys)
+    # Also try matching by external message_id (for receipts from Baileys)
     elif payload.message_id and payload.campaign_run_id:
         updated = CampaignDeliveryLog.objects.filter(
             campaign_run_id=payload.campaign_run_id,
             external_message_id=payload.message_id,
         ).update(
             status=payload.status,
-            **{f"{payload.status}_at": (timezone.now() if payload.status in ("delivered", "read", "failed") else None)},
+            **{
+                f"{payload.status}_at": (
+                    timezone.now()
+                    if payload.status in ("delivered", "read", "failed")
+                    else None
+                )
+            },
         )
         if updated and payload.status in ("delivered", "read", "failed"):
             counter_field = f"{payload.status}_count"
@@ -274,6 +305,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
             )
 
     return {"ok": True}
+
 
 @router.post("/webhook/session/")
 def session_webhook(request, payload: SessionWebhookIn):
@@ -290,7 +322,9 @@ def session_webhook(request, payload: SessionWebhookIn):
     try:
         tenant_uuid = uuid.UUID(payload.tenant_id)
     except (ValueError, TypeError):
-        logger.warning("SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id)
+        logger.warning(
+            "SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id
+        )
         raise HttpError(400, "Invalid tenant_id")
 
     try:

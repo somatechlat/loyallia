@@ -7,14 +7,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0006_remove_card_idx_card_tenant_active'),
-        ('customers', '0006_apple_pass_registration'),
+        ("cards", "0006_remove_card_idx_card_tenant_active"),
+        ("customers", "0006_apple_pass_registration"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='customerpass',
-            name='card',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='passes', to='cards.card', verbose_name='Programa'),
+            model_name="customerpass",
+            name="card",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="passes",
+                to="cards.card",
+                verbose_name="Programa",
+            ),
         ),
     ]

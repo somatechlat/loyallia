@@ -35,7 +35,9 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
     pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
     total_stamps = metadata.get("stamps_required", metadata.get("total_stamps", 6))
-    current_stamps = pass_data.get("stamp_count", 0) if isinstance(pass_data, dict) else 0
+    current_stamps = (
+        pass_data.get("stamp_count", 0) if isinstance(pass_data, dict) else 0
+    )
     reward = metadata.get("reward_description", "Recompensa")
     stamps_display = "⬛" * current_stamps + "⬜" * (total_stamps - current_stamps)
     replacements = {
@@ -63,7 +65,9 @@ def _substitute_fields(fields: dict, card, customer_pass) -> dict:
             for item in value:
                 if isinstance(item, dict) and "value" in item:
                     new_item = dict(item)
-                    new_item["value"] = _substitute_template_values(str(item["value"]), card, customer_pass)
+                    new_item["value"] = _substitute_template_values(
+                        str(item["value"]), card, customer_pass
+                    )
                     result[key].append(new_item)
                 else:
                     result[key].append(item)
@@ -83,8 +87,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     customer = customer_pass.customer
     customer_name = f"{customer.first_name} {customer.last_name}"
 
-    wallet_design = metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
-    apple_fields = wallet_design.get("apple_fields") if isinstance(wallet_design, dict) else None
+    wallet_design = (
+        metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
+    )
+    apple_fields = (
+        wallet_design.get("apple_fields") if isinstance(wallet_design, dict) else None
+    )
     if apple_fields and isinstance(apple_fields, dict):
         # Substitute template placeholders like {description}, {customer_name}, {program_name}
         return _substitute_fields(apple_fields, card, customer_pass)
@@ -95,9 +103,15 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         reward = metadata.get("reward_description", "Recompensa")
         stamps_display = "\u2b1b" * current + "\u2b1c" * (total - current)
         return {
-            "headerFields": [{"key": "stamps", "label": "SELLOS", "value": f"{current}/{total}"}],
-            "primaryFields": [{"key": "reward", "label": "RECOMPENSA", "value": reward}],
-            "secondaryFields": [{"key": "progress", "label": "PROGRESO", "value": stamps_display}],
+            "headerFields": [
+                {"key": "stamps", "label": "SELLOS", "value": f"{current}/{total}"}
+            ],
+            "primaryFields": [
+                {"key": "reward", "label": "RECOMPENSA", "value": reward}
+            ],
+            "secondaryFields": [
+                {"key": "progress", "label": "PROGRESO", "value": stamps_display}
+            ],
             "backFields": [
                 {"key": "name", "label": "Cliente", "value": customer_name},
                 {"key": "program", "label": "Programa", "value": card.name},
@@ -121,20 +135,30 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "currencyCode": "USD",
                 }
             ],
-            "primaryFields": [{"key": "program", "label": "PROGRAMA", "value": card.name}],
+            "primaryFields": [
+                {"key": "program", "label": "PROGRAMA", "value": card.name}
+            ],
             "secondaryFields": [
                 {"key": "rate", "label": "% CASHBACK", "value": f"{pct}%"},
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
-            "backFields": [{"key": "desc", "label": "Descripcion", "value": card.description or ""}],
+            "backFields": [
+                {"key": "desc", "label": "Descripcion", "value": card.description or ""}
+            ],
         }
 
     elif card.card_type == "vip_membership":
         tier = pass_data.get("membership_tier", "VIP")
         return {
-            "headerFields": [{"key": "tier", "label": "MEMBRESIA", "value": tier.upper()}],
-            "primaryFields": [{"key": "name", "label": "MIEMBRO", "value": customer_name}],
-            "secondaryFields": [{"key": "program", "label": "CLUB", "value": card.name}],
+            "headerFields": [
+                {"key": "tier", "label": "MEMBRESIA", "value": tier.upper()}
+            ],
+            "primaryFields": [
+                {"key": "name", "label": "MIEMBRO", "value": customer_name}
+            ],
+            "secondaryFields": [
+                {"key": "program", "label": "CLUB", "value": card.name}
+            ],
             "backFields": [
                 {
                     "key": "perks",
@@ -154,7 +178,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "value": card.description or "Descuento especial",
                 }
             ],
-            "secondaryFields": [{"key": "customer", "label": "CLIENTE", "value": customer_name}],
+            "secondaryFields": [
+                {"key": "customer", "label": "CLIENTE", "value": customer_name}
+            ],
             "backFields": [],
         }
 
@@ -162,9 +188,13 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         referrals = pass_data.get("referrals_made", 0)
         ref_code = pass_data.get("referral_code", "N/A")
         return {
-            "headerFields": [{"key": "refs", "label": "REFERIDOS", "value": str(referrals)}],
+            "headerFields": [
+                {"key": "refs", "label": "REFERIDOS", "value": str(referrals)}
+            ],
             "primaryFields": [{"key": "code", "label": "TU CODIGO", "value": ref_code}],
-            "secondaryFields": [{"key": "customer", "label": "EMBAJADOR", "value": customer_name}],
+            "secondaryFields": [
+                {"key": "customer", "label": "EMBAJADOR", "value": customer_name}
+            ],
             "backFields": [
                 {
                     "key": "desc",
@@ -175,8 +205,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "discount":
- # Discount cards use tiered progression from card.metadata["tiers"]
- # pass_data stores "discount_tier" (current tier name) and "total_spent"
+        # Discount cards use tiered progression from card.metadata["tiers"]
+        # pass_data stores "discount_tier" (current tier name) and "total_spent"
         tiers = metadata.get("tiers", [])
         current_tier = pass_data.get("discount_tier", "")
         current_discount = 0
@@ -227,12 +257,16 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "affiliate":
- # Affiliate/membership card generic Apple style with member info
+        # Affiliate/membership card generic Apple style with member info
         member_since = pass_data.get("enrolled_date", "")
         affiliate_code = pass_data.get("affiliate_code", "N/A")
         return {
-            "headerFields": [{"key": "program", "label": "PROGRAMA", "value": card.name}],
-            "primaryFields": [{"key": "member", "label": "AFILIADO", "value": customer_name}],
+            "headerFields": [
+                {"key": "program", "label": "PROGRAMA", "value": card.name}
+            ],
+            "primaryFields": [
+                {"key": "member", "label": "AFILIADO", "value": customer_name}
+            ],
             "secondaryFields": [
                 {"key": "code", "label": "CÓDIGO", "value": affiliate_code},
                 {
@@ -245,14 +279,16 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {
                     "key": "benefits",
                     "label": "Beneficios",
-                    "value": ", ".join(metadata.get("benefits", [])) or card.description or "",
+                    "value": ", ".join(metadata.get("benefits", []))
+                    or card.description
+                    or "",
                 },
             ],
         }
 
     elif card.card_type == "gift_certificate":
- # Gift certificate storeCard style showing balance
- # Prefers typed column gift_balance, falls back to pass_data
+        # Gift certificate storeCard style showing balance
+        # Prefers typed column gift_balance, falls back to pass_data
         balance = pass_data.get("gift_balance", "0")
         currency = metadata.get("currency", "USD")
         return {
@@ -264,7 +300,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "currencyCode": currency,
                 }
             ],
-            "primaryFields": [{"key": "program", "label": "CERTIFICADO", "value": card.name}],
+            "primaryFields": [
+                {"key": "program", "label": "CERTIFICADO", "value": card.name}
+            ],
             "secondaryFields": [
                 {"key": "recipient", "label": "BENEFICIARIO", "value": customer_name},
             ],
@@ -283,12 +321,14 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "corporate_discount":
- # Corporate discount generic Apple style
- # pass_data stores "corporate_discount" percentage and "company_name"
+        # Corporate discount generic Apple style
+        # pass_data stores "corporate_discount" percentage and "company_name"
         discount_pct = pass_data.get("corporate_discount", "0")
         company = pass_data.get("company_name", metadata.get("company_name", card.name))
         return {
-            "headerFields": [{"key": "discount", "label": "DESCUENTO", "value": f"{discount_pct}%"}],
+            "headerFields": [
+                {"key": "discount", "label": "DESCUENTO", "value": f"{discount_pct}%"}
+            ],
             "primaryFields": [{"key": "company", "label": "EMPRESA", "value": company}],
             "secondaryFields": [
                 {"key": "employee", "label": "EMPLEADO", "value": customer_name},
@@ -303,8 +343,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "multipass":
- # Multipass storeCard style showing remaining uses
- # Prefers typed column multipass_remaining, falls back to pass_data
+        # Multipass storeCard style showing remaining uses
+        # Prefers typed column multipass_remaining, falls back to pass_data
         bundle_size = metadata.get("bundle_size", 10)
         remaining = pass_data.get("multipass_remaining", bundle_size)
         return {
@@ -315,7 +355,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "value": f"{remaining}/{bundle_size}",
                 }
             ],
-            "primaryFields": [{"key": "bundle", "label": "MULTIPASE", "value": card.name}],
+            "primaryFields": [
+                {"key": "bundle", "label": "MULTIPASE", "value": card.name}
+            ],
             "secondaryFields": [
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
@@ -334,12 +376,18 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     else:
- # Fallback for any future/unknown card types
+        # Fallback for any future/unknown card types
         return {
-            "headerFields": [{"key": "program", "label": "PROGRAMA", "value": card.name}],
-            "primaryFields": [{"key": "customer", "label": "CLIENTE", "value": customer_name}],
+            "headerFields": [
+                {"key": "program", "label": "PROGRAMA", "value": card.name}
+            ],
+            "primaryFields": [
+                {"key": "customer", "label": "CLIENTE", "value": customer_name}
+            ],
             "secondaryFields": [],
-            "backFields": [{"key": "desc", "label": "Descripcion", "value": card.description or ""}],
+            "backFields": [
+                {"key": "desc", "label": "Descripcion", "value": card.description or ""}
+            ],
         }
 
 
@@ -347,7 +395,7 @@ def _build_locations(card) -> list:
     """Build location array from tenant locations for geo-push."""
     locations = []
 
- # Locations belong to the Tenant, not the Card
+    # Locations belong to the Tenant, not the Card
     tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
 
     if not tenant_locations:
@@ -377,7 +425,9 @@ def _hex_to_rgb(hex_color: str) -> str:
     return f"rgb({r}, {g}, {b})"
 
 
-def _generate_placeholder_icon(name: str, bg_color: str = "#5660ff", size: int = 87) -> bytes:
+def _generate_placeholder_icon(
+    name: str, bg_color: str = "#5660ff", size: int = 87
+) -> bytes:
     """Generate a simple icon PNG using a solid background with the first letter."""
     try:
         from PIL import Image, ImageDraw, ImageFont
@@ -386,7 +436,9 @@ def _generate_placeholder_icon(name: str, bg_color: str = "#5660ff", size: int =
         draw = ImageDraw.Draw(img)
         letter = name[0].upper() if name else "L"
         try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size // 2)
+            font = ImageFont.truetype(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size // 2
+            )
         except OSError:
             font = ImageFont.load_default()
         bbox = draw.textbbox((0, 0), letter, font=font)
@@ -402,7 +454,9 @@ def _generate_placeholder_icon(name: str, bg_color: str = "#5660ff", size: int =
         return _minimal_png()
 
 
-def _generate_placeholder_logo(name: str, bg_color: str = "#5660ff", width: int = 160, height: int = 50) -> bytes:
+def _generate_placeholder_logo(
+    name: str, bg_color: str = "#5660ff", width: int = 160, height: int = 50
+) -> bytes:
     """Generate a wide logo PNG using a solid background with the first letter.
 
     Apple PassKit specifies logo.png as 160 x 50 points (320 x 100 @2x).
@@ -416,7 +470,9 @@ def _generate_placeholder_logo(name: str, bg_color: str = "#5660ff", width: int 
         letter = name[0].upper() if name else "L"
         font_size = min(width, height) // 2
         try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
+            font = ImageFont.truetype(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size
+            )
         except OSError:
             font = ImageFont.load_default()
         bbox = draw.textbbox((0, 0), letter, font=font)
@@ -439,7 +495,11 @@ def _minimal_png() -> bytes:
 
     def _chunk(chunk_type: bytes, data: bytes) -> bytes:
         raw = chunk_type + data
-        return struct.pack(">I", len(data)) + raw + struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
+        return (
+            struct.pack(">I", len(data))
+            + raw
+            + struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
+        )
 
     signature = b"\x89PNG\r\n\x1a\n"
     ihdr = _chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0))

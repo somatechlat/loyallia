@@ -27,9 +27,7 @@ if "direct" in DATABASES:  # noqa: F405
 # Tests must not be blocked by Redis-backed rate limiting.
 
 MIDDLEWARE = [  # noqa: F405
-    m
-    for m in MIDDLEWARE  # noqa: F405
-    if m != "common.rate_limit.RateLimitMiddleware"
+    m for m in MIDDLEWARE if m != "common.rate_limit.RateLimitMiddleware"  # noqa: F405
 ]
 
 # PRODUCTION-FIDELITY TEST SETTINGS

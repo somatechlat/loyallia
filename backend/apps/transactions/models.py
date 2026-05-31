@@ -12,6 +12,7 @@ from apps.authentication.models import User
 from apps.customers.models import Customer, CustomerPass
 from apps.tenants.models import Location, Tenant
 
+
 class TransactionType(models.TextChoices):
     """Types of transactions that can occur."""
 
@@ -27,6 +28,7 @@ class TransactionType(models.TextChoices):
     MULTIPASS_USED = "multipass_used", "Multipase usado"
     REMOTE_REWARD = "remote_reward", "Recompensa remota"
     DENIED = "denied", "Denegado"
+
 
 class Transaction(models.Model):
     """
@@ -83,18 +85,26 @@ class Transaction(models.Model):
         validators=[MinValueValidator(0)],
         verbose_name="Monto",
     )
-    quantity = models.PositiveIntegerField(null=True, blank=True, verbose_name="Cantidad")
+    quantity = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name="Cantidad"
+    )
 
     # Transaction metadata
     notes = models.TextField(blank=True, default="", verbose_name="Notas")
-    transaction_data = models.JSONField(default=dict, verbose_name="Datos de transacción")
+    transaction_data = models.JSONField(
+        default=dict, verbose_name="Datos de transacción"
+    )
 
     # Remote transaction flag
     is_remote = models.BooleanField(default=False, verbose_name="Transacción remota")
 
     # NEW: Idempotency key for exactly-once semantics
     idempotency_key = models.CharField(
-        max_length=64, db_index=True, blank=True, default="", verbose_name="Clave de idempotencia"
+        max_length=64,
+        db_index=True,
+        blank=True,
+        default="",
+        verbose_name="Clave de idempotencia",
     )
 
     # NEW: Denial audit trail (when redemption is blocked)
@@ -161,6 +171,7 @@ class Transaction(models.Model):
         """Convenience property to access card."""
         return self.customer_pass.card
 
+
 class Enrollment(models.Model):
     """
     Customer enrollment events.
@@ -219,7 +230,9 @@ class Enrollment(models.Model):
 
     # Device info
     user_agent = models.TextField(blank=True, default="", verbose_name="User Agent")
-    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="Dirección IP")
+    ip_address = models.GenericIPAddressField(
+        null=True, blank=True, verbose_name="Dirección IP"
+    )
 
     # Timestamps
     enrolled_at = models.DateTimeField(auto_now_add=True)

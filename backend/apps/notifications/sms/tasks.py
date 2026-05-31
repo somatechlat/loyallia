@@ -24,6 +24,7 @@ from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
+
 @shared_task(
     bind=True,
     max_retries=1,
@@ -71,20 +72,24 @@ def send_sms_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
- # Check Twilio availability
+    # Check Twilio availability
     if not is_sms_available():
         logger.error("SMS campaign: Twilio not configured for tenant %s", tenant_id)
         return {"success": False, "error": "Twilio SMS not configured"}
 
     from apps.customers.segment_api import _apply_segment_filter
 
-    base_qs = Customer.objects.filter(tenant=tenant, is_active=True, phone__isnull=False, phone__gt="")
+    base_qs = Customer.objects.filter(
+        tenant=tenant, is_active=True, phone__isnull=False, phone__gt=""
+    )
     audience = _apply_segment_filter(base_qs, segment_id)
     total = audience.count()
 
-    logger.info("SMS campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total)
+    logger.info(
+        "SMS campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total
+    )
 
- # Create CampaignRun record
+    # Create CampaignRun record
     campaign_run = CampaignRun.objects.create(
         tenant=tenant,
         channel=NotificationChannel.SMS,
@@ -96,7 +101,7 @@ def send_sms_campaign(
         started_at=timezone.now(),
     )
 
- # Build SMS body: title + message
+    # Build SMS body: title + message
     sms_body = f"{title}: {message}" if title else message
 
     succeeded = 0
@@ -104,12 +109,12 @@ def send_sms_campaign(
 
     try:
         for customer in audience.iterator(chunk_size=50):
- # Defensive: skip customers without a valid phone number
+            # Defensive: skip customers without a valid phone number
             if not customer.phone:
                 failed += 1
                 continue
 
- # Create delivery log row (status=QUEUED)
+            # Create delivery log row (status=QUEUED)
             delivery_log = CampaignDeliveryLog.objects.create(
                 campaign_run=campaign_run,
                 customer=customer,
@@ -119,7 +124,7 @@ def send_sms_campaign(
                 status=DeliveryStatus.QUEUED,
             )
 
-        # Create notification record upfront for campaign list visibility
+            # Create notification record upfront for campaign list visibility
             notification = Notification.objects.create(
                 tenant=tenant,
                 customer=customer,
@@ -136,14 +141,18 @@ def send_sms_campaign(
                     delivery_log.status = DeliveryStatus.SENT
                     delivery_log.sent_at = timezone.now()
                     delivery_log.external_message_id = result.get("sid", "")
-                    delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
+                    delivery_log.save(
+                        update_fields=["status", "sent_at", "external_message_id"]
+                    )
                     notification.mark_as_sent()
                     succeeded += 1
                 else:
                     delivery_log.status = DeliveryStatus.FAILED
                     delivery_log.failed_at = timezone.now()
                     delivery_log.error_code = "TWILIO_ERROR"
-                    delivery_log.error_message = result.get("error", "Unknown error")[:500]
+                    delivery_log.error_message = result.get("error", "Unknown error")[
+                        :500
+                    ]
                     delivery_log.save(
                         update_fields=[
                             "status",
@@ -155,7 +164,9 @@ def send_sms_campaign(
                     failed += 1
             except Exception as exc:
                 error_msg = str(exc)[:500]
-                logger.error("SMS send failed for customer %s: %s", customer.id, error_msg)
+                logger.error(
+                    "SMS send failed for customer %s: %s", customer.id, error_msg
+                )
                 delivery_log.status = DeliveryStatus.FAILED
                 delivery_log.failed_at = timezone.now()
                 delivery_log.error_code = "SEND_ERROR"
@@ -170,9 +181,11 @@ def send_sms_campaign(
                 )
                 failed += 1
     finally:
- # Always finalize campaign run so it never stays stuck IN_PROGRESS
+        # Always finalize campaign run so it never stays stuck IN_PROGRESS
         campaign_run.sent_count = succeeded
-        campaign_run.delivered_count = succeeded  # For SMS, sent is effectively delivered to carrier
+        campaign_run.delivered_count = (
+            succeeded  # For SMS, sent is effectively delivered to carrier
+        )
         campaign_run.failed_count = failed
         campaign_run.status = CampaignStatus.COMPLETED
         campaign_run.completed_at = timezone.now()

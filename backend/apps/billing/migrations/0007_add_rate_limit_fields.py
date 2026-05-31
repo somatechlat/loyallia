@@ -6,38 +6,62 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0006_subscriptionplan_max_sms_day'),
+        ("billing", "0006_subscriptionplan_max_sms_day"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_ai_queries_month',
-            field=models.PositiveIntegerField(default=0, help_text='Monthly AI assistant query quota. 0=disabled. Highest cost feature (LLM tokens).', verbose_name='Máx. consultas IA/mes'),
+            model_name="subscriptionplan",
+            name="max_ai_queries_month",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Monthly AI assistant query quota. 0=disabled. Highest cost feature (LLM tokens).",
+                verbose_name="Máx. consultas IA/mes",
+            ),
         ),
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_api_calls_day',
-            field=models.PositiveIntegerField(default=0, help_text='Daily Agent API call quota. 0=disabled. Enterprise feature.', verbose_name='Máx. llamadas API/día'),
+            model_name="subscriptionplan",
+            name="max_api_calls_day",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Daily Agent API call quota. 0=disabled. Enterprise feature.",
+                verbose_name="Máx. llamadas API/día",
+            ),
         ),
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_automation_executions_day',
-            field=models.PositiveIntegerField(default=100, help_text='Global daily cap for all automation rule executions per tenant.', verbose_name='Máx. ejecuciones automatización/día'),
+            model_name="subscriptionplan",
+            name="max_automation_executions_day",
+            field=models.PositiveIntegerField(
+                default=100,
+                help_text="Global daily cap for all automation rule executions per tenant.",
+                verbose_name="Máx. ejecuciones automatización/día",
+            ),
         ),
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_automations',
-            field=models.PositiveIntegerField(default=3, help_text='Max automation rules a tenant can create.', verbose_name='Máx. automatizaciones'),
+            model_name="subscriptionplan",
+            name="max_automations",
+            field=models.PositiveIntegerField(
+                default=3,
+                help_text="Max automation rules a tenant can create.",
+                verbose_name="Máx. automatizaciones",
+            ),
         ),
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_exports_month',
-            field=models.PositiveIntegerField(default=5, help_text='Monthly data export quota. CPU-intensive Celery task.', verbose_name='Máx. exportaciones/mes'),
+            model_name="subscriptionplan",
+            name="max_exports_month",
+            field=models.PositiveIntegerField(
+                default=5,
+                help_text="Monthly data export quota. CPU-intensive Celery task.",
+                verbose_name="Máx. exportaciones/mes",
+            ),
         ),
         migrations.AddField(
-            model_name='subscriptionplan',
-            name='max_wallet_pushes_month',
-            field=models.PositiveIntegerField(default=0, help_text='Monthly Google/Apple Wallet push notifications. 0=disabled. Protects shared issuer quota.', verbose_name='Máx. wallet pushes/mes'),
+            model_name="subscriptionplan",
+            name="max_wallet_pushes_month",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Monthly Google/Apple Wallet push notifications. 0=disabled. Protects shared issuer quota.",
+                verbose_name="Máx. wallet pushes/mes",
+            ),
         ),
     ]

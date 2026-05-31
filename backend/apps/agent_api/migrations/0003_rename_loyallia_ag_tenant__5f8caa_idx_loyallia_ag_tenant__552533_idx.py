@@ -6,13 +6,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agent_api', '0002_add_agent_api_call_log'),
+        ("agent_api", "0002_add_agent_api_call_log"),
     ]
 
     operations = [
         migrations.RenameIndex(
-            model_name='agentapicalllog',
-            new_name='loyallia_ag_tenant__552533_idx',
-            old_name='loyallia_ag_tenant__5f8caa_idx',
+            model_name="agentapicalllog",
+            new_name="loyallia_ag_tenant__552533_idx",
+            old_name="loyallia_ag_tenant__5f8caa_idx",
         ),
     ]

@@ -1,18 +1,19 @@
 """
 Loyalty pass builders for Google Wallet.
 """
+
 from django.conf import settings
 
 from apps.tenants.models import PlatformSetting
 
 from .base import (
+    _apply_card_template_override,
+    _apply_google_advanced_to_class,
+    _apply_google_advanced_to_object,
     _get_barcode_type,
     _get_google_images,
     _get_google_locations,
     _get_issuer_id,
-    _apply_card_template_override,
-    _apply_google_advanced_to_class,
-    _apply_google_advanced_to_object,
     _resolve_url,
 )
 from .images import _build_class_images
@@ -60,7 +61,10 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     payload["linksModuleData"] = {
         "uris": [
             {
-                "uri": PlatformSetting.get("BRAND_HOME_URL", default=getattr(settings, "PUBLIC_BASE_URL", "") or ""),
+                "uri": PlatformSetting.get(
+                    "BRAND_HOME_URL",
+                    default=getattr(settings, "PUBLIC_BASE_URL", "") or "",
+                ),
                 "description": "Powered by Loyallia",
                 "id": "loyallia_link",
             },
@@ -74,7 +78,9 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     return payload
 
 
-def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
+def _build_loyalty_object(
+    customer_pass, card, customer, tenant, base_url: str = ""
+) -> dict:
     """Build the Google Wallet LoyaltyObject (the instance per customer)."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.loyallia-{card.id}"
@@ -82,11 +88,15 @@ def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str =
     loyalty_points = _build_points_for_type(card, customer_pass)
     google_images = _get_google_images(card)
 
-    hero_uri = _resolve_url(google_images.get("hero_image") or card.strip_image_url, base_url)
+    hero_uri = _resolve_url(
+        google_images.get("hero_image") or card.strip_image_url, base_url
+    )
     if not hero_uri and card.card_type == "stamp":
         hero_uri = PlatformSetting.get("WALLET_PLACEHOLDER_IMAGE", default="")
     elif not hero_uri:
-        hero_uri = _resolve_url(google_images.get("program_logo") or card.logo_url, base_url)
+        hero_uri = _resolve_url(
+            google_images.get("program_logo") or card.logo_url, base_url
+        )
 
     obj = {
         "id": object_id,
@@ -113,7 +123,10 @@ def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str =
         "linksModuleData": {
             "uris": [
                 {
-                    "uri": PlatformSetting.get("BRAND_HOME_URL", default=getattr(settings, "PUBLIC_BASE_URL", "") or ""),
+                    "uri": PlatformSetting.get(
+                        "BRAND_HOME_URL",
+                        default=getattr(settings, "PUBLIC_BASE_URL", "") or "",
+                    ),
                     "description": "Powered by Loyallia",
                     "id": "loyallia_link",
                 },
@@ -129,11 +142,16 @@ def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str =
     if hero_uri:
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
-            "contentDescription": {"defaultValue": {"language": "es", "value": "Banner de " + card.name}},
+            "contentDescription": {
+                "defaultValue": {"language": "es", "value": "Banner de " + card.name}
+            },
         }
 
     image_module_url = _resolve_url(
-        google_images.get("image_module") or google_images.get("program_logo") or card.icon_url or card.logo_url,
+        google_images.get("image_module")
+        or google_images.get("program_logo")
+        or card.icon_url
+        or card.logo_url,
         base_url,
     )
     if image_module_url:

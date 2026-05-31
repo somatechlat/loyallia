@@ -40,12 +40,16 @@ def generate_qr_token(serial: str, secret: str, timestamp: int | None = None) ->
         secret.encode("utf-8"),
         payload.encode("utf-8"),
         hashlib.sha256,
-    ).hexdigest()[:16]  # 8 bytes → 16 hex chars compact but secure enough for pass validation
+    ).hexdigest()[
+        :16
+    ]  # 8 bytes → 16 hex chars compact but secure enough for pass validation
 
     return f"{payload}:{sig}"
 
 
-def verify_qr_token(token: str, secret: str, max_age_seconds: int = 86400) -> tuple[bool, str | None]:
+def verify_qr_token(
+    token: str, secret: str, max_age_seconds: int = 86400
+) -> tuple[bool, str | None]:
     """
     Verify a QR token.
 
@@ -65,12 +69,12 @@ def verify_qr_token(token: str, secret: str, max_age_seconds: int = 86400) -> tu
         serial, timestamp_str, provided_sig = parts
         timestamp = int(timestamp_str)
 
- # Age check
+        # Age check
         age = int(time.time()) - timestamp
         if age > max_age_seconds or age < -300:  # Allow 5-min clock skew
             return False, None
 
- # HMAC check (constant-time comparison)
+        # HMAC check (constant-time comparison)
         payload = f"{serial}:{timestamp}"
         expected_sig = hmac.new(
             secret.encode("utf-8"),
@@ -131,14 +135,14 @@ def generate_and_store_qr(pass_obj) -> str:
     secret = settings.PASS_HMAC_SECRET
     token = generate_qr_token(serial=pass_obj.qr_code, secret=secret)
 
- # Render PNG
+    # Render PNG
     try:
         png_bytes = generate_qr_image(token)
     except Exception as exc:
         logger.error("QR image generation failed for pass %s: %s", pass_obj.id, exc)
         raise
 
- # Upload to MinIO / S3-compatible storage
+    # Upload to MinIO / S3-compatible storage
     object_key = f"qr/{pass_obj.id}.png"
     url = _upload_to_storage(object_key, png_bytes, content_type="image/png")
 

@@ -40,13 +40,19 @@ def confirm_manual_payment(request, invoice_id: str):
 
     with transaction.atomic():
         try:
-            invoice = Invoice.objects.select_for_update().select_related("subscription", "tenant").get(id=invoice_uuid)
+            invoice = (
+                Invoice.objects.select_for_update()
+                .select_related("subscription", "tenant")
+                .get(id=invoice_uuid)
+            )
         except Invoice.DoesNotExist:
             raise HttpError(404, get_message("NOT_FOUND"))
 
         if invoice.status != Invoice.InvoiceStatus.PAID:
             invoice.mark_paid(gateway_charge_id=f"manual:{invoice.invoice_number}")
-            invoice.subscription.activate_paid(gateway_subscription_id=f"manual:{invoice.invoice_number}")
+            invoice.subscription.activate_paid(
+                gateway_subscription_id=f"manual:{invoice.invoice_number}"
+            )
 
     try:
         from apps.audit.models import AuditAction, AuditStatus

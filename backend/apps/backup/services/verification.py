@@ -7,7 +7,11 @@ from datetime import datetime
 
 from django.conf import settings
 
-from apps.backup.services.config import get_backup_settings, get_minio_config, scrub_error, temp_backup_dir
+from apps.backup.services.config import (
+    get_backup_settings,
+    get_minio_config,
+    temp_backup_dir,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +52,11 @@ def verify_backup(component_results: list, job_id: str) -> dict:
                 details_parts.append(f"OK: {component}  {actual_size} bytes")
                 if file_path.endswith(".gz"):
                     try:
-                        subprocess.run(["gzip", "--test", file_path], check=True, capture_output=True)
+                        subprocess.run(
+                            ["gzip", "--test", file_path],
+                            check=True,
+                            capture_output=True,
+                        )
                         details_parts.append(f"  Valid gzip: {component}")
                     except subprocess.CalledProcessError:
                         details_parts.append(f"  FAIL: {component} gzip corrupted")
@@ -68,17 +76,23 @@ def verify_backup(component_results: list, job_id: str) -> dict:
         all_ok = False
 
     verification_status = "verified" if all_ok else "corrupted"
-    job_status = BackupJobStatus.VERIFIED.value if all_ok else BackupJobStatus.CORRUPTED.value
+    job_status = (
+        BackupJobStatus.VERIFIED.value if all_ok else BackupJobStatus.CORRUPTED.value
+    )
     details_text = "\n".join(details_parts)
 
     try:
         job = BackupJob.objects.get(id=job_id)
-        job.status = BackupJobStatus.COMPLETED.value if all_ok else BackupJobStatus.FAILED.value
+        job.status = (
+            BackupJobStatus.COMPLETED.value if all_ok else BackupJobStatus.FAILED.value
+        )
         job.verification_status = verification_status
         job.verification_details = details_text
         job.s3_key = s3_key
         if results:
-            total_size = sum(r.get("file_size", 0) for r in results if isinstance(r, dict))
+            total_size = sum(
+                r.get("file_size", 0) for r in results if isinstance(r, dict)
+            )
             job.file_size_bytes = total_size
         job.completed_at = __import__("django.utils.timezone", fromlist=["now"]).now()
         job.save()
@@ -86,7 +100,13 @@ def verify_backup(component_results: list, job_id: str) -> dict:
         logger.error("verify_backup: job %s not found", job_id)
 
     logger.info("verify_backup: job %s  status=%s", job_id, verification_status)
-    return {"success": all_ok, "job_id": job_id, "verification_status": verification_status, "details": details_text, "s3_key": s3_key}
+    return {
+        "success": all_ok,
+        "job_id": job_id,
+        "verification_status": verification_status,
+        "details": details_text,
+        "s3_key": s3_key,
+    }
 
 
 def pack_and_upload_archive(component_results: list, job_id: str) -> str:
@@ -103,23 +123,41 @@ def pack_and_upload_archive(component_results: list, job_id: str) -> str:
     files_to_archive = [
         result["file_path"]
         for result in component_results
-        if isinstance(result, dict) and result.get("file_path") and os.path.exists(result["file_path"])
+        if isinstance(result, dict)
+        and result.get("file_path")
+        and os.path.exists(result["file_path"])
     ]
 
     if not files_to_archive:
-        logger.warning("pack_and_upload_archive: no files to archive for job %s", job_id)
+        logger.warning(
+            "pack_and_upload_archive: no files to archive for job %s", job_id
+        )
         return ""
 
-    subprocess.run(["tar", "-czf", archive_path] + files_to_archive, check=True, capture_output=True)
+    subprocess.run(
+        ["tar", "-czf", archive_path] + files_to_archive,
+        check=True,
+        capture_output=True,
+    )
 
     gpg_key_id = config.get("gpg_key_id", "")
     final_path = archive_path
     if gpg_key_id:
         encrypted_path = archive_path + ".gpg"
         subprocess.run(
-            ["gpg", "--batch", "--yes", "--recipient", gpg_key_id,
-             "--output", encrypted_path, "--encrypt", archive_path],
-            check=True, capture_output=True,
+            [
+                "gpg",
+                "--batch",
+                "--yes",
+                "--recipient",
+                gpg_key_id,
+                "--output",
+                encrypted_path,
+                "--encrypt",
+                archive_path,
+            ],
+            check=True,
+            capture_output=True,
         )
         final_path = encrypted_path
         s3_key += ".gpg"
@@ -142,10 +180,16 @@ def pack_and_upload_archive(component_results: list, job_id: str) -> str:
         except Exception:
             s3.create_bucket(Bucket=s3_bucket)
         s3.upload_file(final_path, s3_bucket, s3_key)
-        logger.info("pack_and_upload_archive: uploaded %s to s3://%s/%s", final_path, s3_bucket, s3_key)
+        logger.info(
+            "pack_and_upload_archive: uploaded %s to s3://%s/%s",
+            final_path,
+            s3_bucket,
+            s3_key,
+        )
 
     try:
         import shutil
+
         shutil.rmtree(tmp_dir)
     except Exception:
         pass

@@ -6,28 +6,70 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0005_alter_enrollment_card_alter_enrollment_customer'),
+        ("transactions", "0005_alter_enrollment_card_alter_enrollment_customer"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='transaction',
-            name='denial_reason',
-            field=models.CharField(blank=True, choices=[('', 'N/A'), ('usage_limit_exceeded', 'Límite de usos excedido'), ('time_window_invalid', 'Fuera de período válido'), ('location_invalid', 'Ubicación no autorizada'), ('min_purchase_not_met', 'Compra mínima no alcanzada'), ('cooldown_active', 'En período de enfriamiento'), ('insufficient_balance', 'Saldo insuficiente'), ('reward_not_ready', 'Recompensa no disponible'), ('staff_role_denied', 'Rol de personal no autorizado'), ('card_not_published', 'Programa no publicado'), ('pass_expired', 'Pase expirado'), ('pass_inactive', 'Pase inactivo')], default='', max_length=50, verbose_name='Motivo de denegación'),
+            model_name="transaction",
+            name="denial_reason",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("", "N/A"),
+                    ("usage_limit_exceeded", "Límite de usos excedido"),
+                    ("time_window_invalid", "Fuera de período válido"),
+                    ("location_invalid", "Ubicación no autorizada"),
+                    ("min_purchase_not_met", "Compra mínima no alcanzada"),
+                    ("cooldown_active", "En período de enfriamiento"),
+                    ("insufficient_balance", "Saldo insuficiente"),
+                    ("reward_not_ready", "Recompensa no disponible"),
+                    ("staff_role_denied", "Rol de personal no autorizado"),
+                    ("card_not_published", "Programa no publicado"),
+                    ("pass_expired", "Pase expirado"),
+                    ("pass_inactive", "Pase inactivo"),
+                ],
+                default="",
+                max_length=50,
+                verbose_name="Motivo de denegación",
+            ),
         ),
         migrations.AddField(
-            model_name='transaction',
-            name='idempotency_key',
-            field=models.CharField(blank=True, db_index=True, default='', max_length=64, verbose_name='Clave de idempotencia'),
+            model_name="transaction",
+            name="idempotency_key",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                default="",
+                max_length=64,
+                verbose_name="Clave de idempotencia",
+            ),
         ),
         migrations.AddField(
-            model_name='transaction',
-            name='rules_evaluated',
-            field=models.JSONField(default=list, verbose_name='Reglas evaluadas'),
+            model_name="transaction",
+            name="rules_evaluated",
+            field=models.JSONField(default=list, verbose_name="Reglas evaluadas"),
         ),
         migrations.AlterField(
-            model_name='transaction',
-            name='transaction_type',
-            field=models.CharField(choices=[('stamp_earned', 'Sello ganado'), ('stamp_redeemed', 'Sello canjeado'), ('cashback_earned', 'Cashback ganado'), ('cashback_redeemed', 'Cashback canjeado'), ('coupon_redeemed', 'Cupón canjeado'), ('gift_redeemed', 'Regalo canjeado'), ('membership_validated', 'Membresía validada'), ('corporate_validated', 'Corporativo validado'), ('referral_reward', 'Recompensa por referido'), ('multipass_used', 'Multipase usado'), ('remote_reward', 'Recompensa remota'), ('denied', 'Denegado')], max_length=30, verbose_name='Tipo de transacción'),
+            model_name="transaction",
+            name="transaction_type",
+            field=models.CharField(
+                choices=[
+                    ("stamp_earned", "Sello ganado"),
+                    ("stamp_redeemed", "Sello canjeado"),
+                    ("cashback_earned", "Cashback ganado"),
+                    ("cashback_redeemed", "Cashback canjeado"),
+                    ("coupon_redeemed", "Cupón canjeado"),
+                    ("gift_redeemed", "Regalo canjeado"),
+                    ("membership_validated", "Membresía validada"),
+                    ("corporate_validated", "Corporativo validado"),
+                    ("referral_reward", "Recompensa por referido"),
+                    ("multipass_used", "Multipase usado"),
+                    ("remote_reward", "Recompensa remota"),
+                    ("denied", "Denegado"),
+                ],
+                max_length=30,
+                verbose_name="Tipo de transacción",
+            ),
         ),
     ]

@@ -28,7 +28,15 @@ def backup_vault(job_id: str) -> dict:
 
         if not vault_addr or not vault_token:
             logger.warning("backup_vault: Vault not configured, skipping")
-            return {"success": True, "component": "vault", "job_id": job_id, "file_path": "", "file_size": 0, "skipped": True, "reason": "Vault not configured"}
+            return {
+                "success": True,
+                "component": "vault",
+                "job_id": job_id,
+                "file_path": "",
+                "file_size": 0,
+                "skipped": True,
+                "reason": "Vault not configured",
+            }
 
         url = f"{vault_addr}/v1/{secret_path}"
         headers = {"X-Vault-Token": vault_token}
@@ -45,7 +53,13 @@ def backup_vault(job_id: str) -> dict:
         file_size = os.path.getsize(vault_file)
         os.chmod(vault_file, 0o600)
         logger.info("backup_vault: job %s completed, size=%d bytes", job_id, file_size)
-        return {"success": True, "component": "vault", "job_id": job_id, "file_path": vault_file, "file_size": file_size}
+        return {
+            "success": True,
+            "component": "vault",
+            "job_id": job_id,
+            "file_path": vault_file,
+            "file_size": file_size,
+        }
     except Exception:
         logger.exception("backup_vault failed for job %s", job_id)
         raise

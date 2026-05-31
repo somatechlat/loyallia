@@ -4,6 +4,7 @@ Google Wallet Pass Builders
 Internal builder functions for Google Wallet class/object payloads.
 Re-exported for backward compatibility.
 """
+
 from .base import (
     GOOGLE_BARCODE_FORMATS,
     _apply_card_template_override,
