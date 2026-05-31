@@ -305,11 +305,8 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     if hasattr(request, "build_absolute_uri"):
         base_url = request.build_absolute_uri("/").rstrip("/")
     else:
-        from django.contrib.sites.models import Site
-        try:
-            base_url = f"https://{Site.objects.get_current().domain}"
-        except Exception:
-            base_url = ""
+        from django.conf import settings
+        base_url = getattr(settings, "PUBLIC_BASE_URL", "")
 
     pass_url = f"{base_url}/pass/{pass_id}/"
     apple_url = f"{base_url}/api/v1/wallet/apple/{pass_id}/"

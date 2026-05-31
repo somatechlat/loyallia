@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import WhatsAppWizard from '@/components/settings/WhatsAppWizard';
 import DataPrivacySection from '@/components/settings/DataPrivacySection';
 import AuditLogSection from '@/components/settings/AuditLogSection';
+import { stripLocalMinioUrl } from '@/lib/url-utils';
 
 interface TenantProfile {
   id: string; name: string; slug: string; plan: string;
@@ -36,8 +37,11 @@ export default function SettingsPage() {
   const [form, setForm] = useState({
     name: '', phone: '', website: '', address: '',
     timezone: 'America/Guayaquil', primary_color: '#6366f1', secondary_color: '#f59e0b',
-    logo_url: '',
+    logo_url: '', email: '',
   });
+  const [formErrors, setFormErrors] = useState({ name: false, email: false, website: false, phone: false });
+  const [pwMatchError, setPwMatchError] = useState(false);
+  const [pwLengthError, setPwLengthError] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -53,9 +57,7 @@ export default function SettingsPage() {
     try {
       const { data } = await api.get('/api/v1/tenants/me/');
       setTenant(data);
-      const cleanLogo = data.logo_url && (data.logo_url.includes('://localhost:33903/') || data.logo_url.includes('://127.0.0.1:33903/'))
-        ? data.logo_url.replace(/^https?:\/\/[^/]+:33903/, '')
-        : (data.logo_url || '');
+      const cleanLogo = stripLocalMinioUrl(data.logo_url);
       setForm({
         name: data.name || '',
         phone: data.phone || '',
@@ -65,6 +67,7 @@ export default function SettingsPage() {
         primary_color: data.primary_color || '#6366f1',
         secondary_color: data.secondary_color || '#f59e0b',
         logo_url: cleanLogo,
+        email: (data as unknown as Record<string, string>).email || '',
       });
       if (cleanLogo) setLogoPreview(cleanLogo);
     } catch {
@@ -90,6 +93,14 @@ export default function SettingsPage() {
   }, []);
 
   const handleSave = async () => {
+    const errors = {
+      name: !form.name.trim(),
+      email: !!form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email),
+      website: !!form.website && !/^https?:\/\/.+/.test(form.website),
+      phone: !!form.phone && !/^[\d\s+\-().]+$/.test(form.phone),
+    };
+    setFormErrors(errors);
+    if (Object.values(errors).some(Boolean)) return;
     setSaving(true);
     const toastId = toast.loading('Guardando cambios...');
     try {
@@ -104,14 +115,11 @@ export default function SettingsPage() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordForm.new_password !== passwordForm.confirm) {
-      toast.error('Las contraseñas no coinciden');
-      return;
-    }
-    if (passwordForm.new_password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
+    const match = passwordForm.new_password === passwordForm.confirm;
+    const len = passwordForm.new_password.length >= 8;
+    setPwMatchError(!match);
+    setPwLengthError(!len);
+    if (!match || !len) return;
     setChangingPw(true);
     const toastId = toast.loading('Actualizando contraseña...');
     try {
@@ -148,22 +156,31 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="biz-name">Nombre del negocio</label>
-                <input id="biz-name" className="input" value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                <input id="biz-name" className={`input ${formErrors.name ? 'border-red-500' : ''}`} value={form.name} maxLength={100} required
+                  onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFormErrors(err => ({ ...err, name: false })); }} />
+                {formErrors.name && <p className="text-xs text-red-500 mt-1">El nombre es requerido</p>}
+              </div>
+              <div>
+                <label className="label" htmlFor="biz-email">Correo electrónico</label>
+                <input id="biz-email" type="email" className={`input ${formErrors.email ? 'border-red-500' : ''}`} value={form.email} maxLength={254}
+                  onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setFormErrors(err => ({ ...err, email: false })); }} />
+                {formErrors.email && <p className="text-xs text-red-500 mt-1">Email inválido</p>}
               </div>
               <div>
                 <label className="label" htmlFor="biz-phone">Telefono</label>
-                <input id="biz-phone" className="input" value={form.phone} placeholder="+593 999 999 999"
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                <input id="biz-phone" type="tel" className={`input ${formErrors.phone ? 'border-red-500' : ''}`} value={form.phone} placeholder="+593 999 999 999" maxLength={50}
+                  onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setFormErrors(err => ({ ...err, phone: false })); }} />
+                {formErrors.phone && <p className="text-xs text-red-500 mt-1">Formato de teléfono inválido</p>}
               </div>
               <div>
                 <label className="label" htmlFor="biz-website">Sitio web</label>
-                <input id="biz-website" className="input" value={form.website} placeholder="https://minegocio.com"
-                  onChange={e => setForm(f => ({ ...f, website: e.target.value }))} />
+                <input id="biz-website" type="url" className={`input ${formErrors.website ? 'border-red-500' : ''}`} value={form.website} placeholder="https://minegocio.com" maxLength={200}
+                  onChange={e => { setForm(f => ({ ...f, website: e.target.value })); setFormErrors(err => ({ ...err, website: false })); }} />
+                {formErrors.website && <p className="text-xs text-red-500 mt-1">URL inválida</p>}
               </div>
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="biz-address">Direccion</label>
-                <input id="biz-address" className="input" value={form.address} placeholder="Av. Principal y Calle 1"
+                <input id="biz-address" className="input" value={form.address} placeholder="Av. Principal y Calle 1" maxLength={200}
                   onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
               </div>
               <div>
@@ -325,18 +342,20 @@ export default function SettingsPage() {
               <form onSubmit={handlePasswordChange} className="space-y-3">
                 <div>
                   <label className="label text-xs" htmlFor="current-pw">Contraseña actual</label>
-                  <input id="current-pw" type="password" className="input text-sm" required
+                  <input id="current-pw" type="password" className="input text-sm" required maxLength={128}
                     value={passwordForm.current} onChange={e => setPasswordForm(f => ({ ...f, current: e.target.value }))} />
                 </div>
                 <div>
                   <label className="label text-xs" htmlFor="new-pw">Nueva contraseña</label>
-                  <input id="new-pw" type="password" className="input text-sm" required minLength={6}
-                    value={passwordForm.new_password} onChange={e => setPasswordForm(f => ({ ...f, new_password: e.target.value }))} />
+                  <input id="new-pw" type="password" className={`input text-sm ${pwLengthError ? 'border-red-500' : ''}`} required minLength={8} maxLength={128}
+                    value={passwordForm.new_password} onChange={e => { setPasswordForm(f => ({ ...f, new_password: e.target.value })); setPwLengthError(false); }} />
+                  {pwLengthError && <p className="text-xs text-red-500 mt-1">Mínimo 8 caracteres</p>}
                 </div>
                 <div>
                   <label className="label text-xs" htmlFor="confirm-pw">Confirmar nueva contraseña</label>
-                  <input id="confirm-pw" type="password" className="input text-sm" required
-                    value={passwordForm.confirm} onChange={e => setPasswordForm(f => ({ ...f, confirm: e.target.value }))} />
+                  <input id="confirm-pw" type="password" className={`input text-sm ${pwMatchError ? 'border-red-500' : ''}`} required maxLength={128}
+                    value={passwordForm.confirm} onChange={e => { setPasswordForm(f => ({ ...f, confirm: e.target.value })); setPwMatchError(false); }} />
+                  {pwMatchError && <p className="text-xs text-red-500 mt-1">Las contraseñas no coinciden</p>}
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setShowPwSection(false)} className="btn-ghost text-sm flex-1">Cancelar</button>

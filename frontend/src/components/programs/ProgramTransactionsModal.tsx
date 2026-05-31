@@ -76,7 +76,7 @@ export default function ProgramTransactionsModal({ programId, onClose }: Props) 
 
   const extraInfo = (tx: Transaction) => {
     const parts: string[] = [];
-    if (tx.amount) parts.push(`$${parseFloat(tx.amount).toFixed(2)}`);
+    if (tx.amount) { const amt = parseFloat(tx.amount); parts.push(`$${!isNaN(amt) ? amt.toFixed(2) : '0.00'}`); }
     if (tx.quantity) parts.push(`Cant: ${tx.quantity}`);
     const td = tx.transaction_data;
     if (td.new_balance) parts.push(`Nuevo saldo: ${td.new_balance}`);

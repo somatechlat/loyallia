@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
 
 import {
   CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta,
@@ -42,6 +43,7 @@ export default function NewProgramPage() {
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
   const [selectedTemplate, setSelectedTemplate] = useState('midnight');
+  const [coordError] = useState(false);
 
   // Keep generic uploads for backward compat (populated from wallet designer)
   const walletProvider = walletDesign.provider;
@@ -165,7 +167,7 @@ export default function NewProgramPage() {
             <h3 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">Código QR de inscripción</h3>
             <div className="flex justify-center mb-3">
               <img
-                src={`https://quickchart.io/qr?text=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`)}&size=256&margin=2&dark=1a1a2e&light=ffffff&ecLevel=M&format=png`}
+                src={getQrUrl(`${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`, 256)}
                 alt="QR de inscripción"
                 className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
               />
@@ -185,7 +187,7 @@ export default function NewProgramPage() {
                 Copiar enlace
               </button>
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(`¡Únete a nuestro programa de fidelización! ${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`)}`}
+                href={getWhatsAppShareUrl(`¡Únete a nuestro programa de fidelización! ${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn text-sm bg-emerald-500 hover:bg-emerald-600 text-white"
@@ -296,12 +298,12 @@ export default function NewProgramPage() {
               <h2 className="text-lg font-bold text-surface-900 dark:text-white">Nombre y descripción</h2>
               <div>
                 <label className="label" htmlFor="program-name">Nombre del programa</label>
-                <input id="program-name" type="text" required className="input" placeholder="Ej: Café Frecuente"
+                <input id="program-name" type="text" required maxLength={200} className="input" placeholder="Ej: Café Frecuente"
                   value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div>
                 <label className="label" htmlFor="program-desc">Descripción</label>
-                <textarea id="program-desc" className="input min-h-[80px] resize-none"
+                <textarea id="program-desc" className="input min-h-[80px] resize-none" maxLength={1000}
                   placeholder="Describe las reglas y beneficios..."
                   value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               </div>
@@ -327,14 +329,16 @@ export default function NewProgramPage() {
                       newLocs[i]!.name = e.target.value;
                       setForm({...form, locations: newLocs});
                     }} />
-                    <input type="number" step="any" className="input w-24 text-sm py-1" placeholder="Lat (-0.18)" value={loc.lat || ''} onChange={e => {
+                    <input type="number" step="any" min={-90} max={90} className="input w-24 text-sm py-1" placeholder="Lat (-0.18)" value={loc.lat || ''} onChange={e => {
                       const newLocs = [...form.locations];
-                      newLocs[i]!.lat = parseFloat(e.target.value) || 0;
+                      const v = parseFloat(e.target.value);
+                      newLocs[i]!.lat = isNaN(v) ? 0 : Math.max(-90, Math.min(90, v));
                       setForm({...form, locations: newLocs});
                     }} />
-                    <input type="number" step="any" className="input w-24 text-sm py-1" placeholder="Lng (-78.48)" value={loc.lng || ''} onChange={e => {
+                    <input type="number" step="any" min={-180} max={180} className="input w-24 text-sm py-1" placeholder="Lng (-78.48)" value={loc.lng || ''} onChange={e => {
                       const newLocs = [...form.locations];
-                      newLocs[i]!.lng = parseFloat(e.target.value) || 0;
+                      const v = parseFloat(e.target.value);
+                      newLocs[i]!.lng = isNaN(v) ? 0 : Math.max(-180, Math.min(180, v));
                       setForm({...form, locations: newLocs});
                     }} />
                     <button type="button" className="text-red-400 hover:text-red-600 px-1" title="Eliminar" onClick={() => {
@@ -344,6 +348,7 @@ export default function NewProgramPage() {
                     }}>✕</button>
                   </div>
                 ))}
+                {coordError && <p className="text-xs text-red-500 mt-2">Las coordenadas deben estar entre -90/90 (lat) y -180/180 (lng)</p>}
                 {form.locations.length === 0 && (
                   <p className="text-xs text-brand-600 italic mt-2 bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2">
                     <span>i</span> Agrega la ubicacion de tu negocio para activar las alertas de Wallet de Apple/Google.

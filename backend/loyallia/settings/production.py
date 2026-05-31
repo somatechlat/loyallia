@@ -102,7 +102,7 @@ if PAYMENT_GATEWAY_ENABLED:
     )
 
 # Email
-EMAIL_HOST = "in-v3.mailjet.com"
+EMAIL_HOST = config("EMAIL_HOST", default="in-v3.mailjet.com")
 EMAIL_HOST_USER = get_secret("mailjet_api_key", strict=True)
 EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", strict=True)
 # SEC: sender email is NOT a secret. It is a PlatformSetting editable via

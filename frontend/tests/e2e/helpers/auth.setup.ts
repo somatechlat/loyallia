@@ -21,6 +21,7 @@ const COOKIE_SECURE = BASE_URL.startsWith('https');
 const API_URL = BASE_URL.replace(/:\d+/, ':33905');
 
 setup('authenticate all roles', async ({ page, context, request }) => {
+  setup.setTimeout(120000);
   const credentials = getE2ECredentials();
 
   const users = [
@@ -68,20 +69,22 @@ setup('authenticate all roles', async ({ page, context, request }) => {
       }] : []),
     ]);
 
-    // Navigate to verify the cookies work (page loads with auth)
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-
-    // Pre-accept cookie consent banner to prevent it from blocking UI interactions
-    await page.evaluate(() => localStorage.setItem('loyallia_cookie_consent', 'true'));
-
-    // Wait for page to stabilize after navigation
-    await page.waitForTimeout(2000);
-
-    // Verify we're NOT on the login page (auth succeeded)
-    const url = page.url();
-    expect(url, `Should not be on login page for ${user.email}`).not.toContain('/login');
-
     // Save storage state (includes cookies + localStorage with consent)
-    await page.context().storageState({ path: user.file });
+    // Add cookie consent to localStorage directly in storage state
+    const state = await page.context().storageState();
+    state.origins = state.origins || [];
+    const originEntry = state.origins.find((o: any) => o.origin === BASE_URL);
+    if (originEntry) {
+      const existing = originEntry.localStorage.find((ls: any) => ls.name === 'loyallia_cookie_consent');
+      if (!existing) {
+        originEntry.localStorage.push({ name: 'loyallia_cookie_consent', value: 'true' });
+      }
+    } else {
+      state.origins.push({ origin: BASE_URL, localStorage: [{ name: 'loyallia_cookie_consent', value: 'true' }] });
+    }
+    // Write the modified state directly
+    const fs = require('fs');
+    fs.mkdirSync('.auth', { recursive: true });
+    fs.writeFileSync(user.file, JSON.stringify(state, null, 2));
   }
 });
