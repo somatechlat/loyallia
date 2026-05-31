@@ -27,6 +27,7 @@ def send_wallet_notification_campaign(
     message: str,
     segment_id: str = "all",
     wallet_platform: str = "both",
+    action_url: str = "",
 ) -> dict:
     """Send wallet push notifications to customers with active passes.
 
@@ -91,6 +92,8 @@ def send_wallet_notification_campaign(
  # For "all" segment, we can use optimized broadcast for Google Wallet
  # and Apple Wallet (push to all registered devices per card).
         apple_push_sent = 0
+        broadcast_message_ids = {}
+
         if segment_id == "all":
             from apps.cards.models import Card
             from apps.customers.pass_engine.google_pass import (
@@ -99,14 +102,24 @@ def send_wallet_notification_campaign(
 
             active_cards = Card.objects.filter(tenant=tenant, is_active=True)
             for card in active_cards:
-                from apps.tenants.models import PlatformSetting
-                dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
-                broadcast_url = f"{dashboard_url}/enroll/{str(card.id)}"
+                if action_url:
+                    broadcast_url = action_url
+                else:
+                    from apps.tenants.models import PlatformSetting
+                    dashboard_url = PlatformSetting.get("dashboard_url", settings.PUBLIC_BASE_URL)
+                    broadcast_url = f"{dashboard_url}/enroll/{str(card.id)}"
 
                 if wallet_platform in ("google", "both"):
  # Google Wallet broadcast
-                    send_push_notification_to_class(card, header=title, body=message, action_url=broadcast_url)
-                    logger.info("Google broadcast push sent for card %s", card.name)
+                    result = send_push_notification_to_class(card, header=title, body=message, action_url=broadcast_url)
+                    if result.get("success"):
+                        logger.info("Google broadcast push sent for card %s", card.name)
+                        if result.get("message_id"):
+                            broadcast_message_ids[str(card.id)] = result["message_id"]
+                    else:
+                        error_msg = result.get("error") or result.get("response", "Unknown error")
+                        logger.error("Google broadcast push FAILED for card %s: %s", card.name, error_msg)
+                        error_summary += f"Google push failed for {card.name}: {error_msg}; "
 
                 if wallet_platform in ("apple", "both"):
  # Apple Wallet broadcast send empty APNs push to all registered devices
@@ -157,14 +170,19 @@ def send_wallet_notification_campaign(
  # Send individual push only if NOT a broadcast segment (to avoid double notification)
                 if segment_id != "all":
                     for pass_obj in passes:
-                        action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
+                        if action_url:
+                            pass_action_url = action_url
+                        else:
+                            from apps.tenants.models import PlatformSetting
+                            dashboard_url = PlatformSetting.get("dashboard_url", settings.PUBLIC_BASE_URL)
+                            pass_action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
                         if wallet_platform in ("google", "both"):
  # Google Wallet individual push
                             result = send_push_notification(
                                 pass_obj,
                                 header=title,
                                 body=message,
-                                action_url=action_url,
+                                action_url=pass_action_url,
                             )
                             if result.get("success"):
                                 push_sent += 1
@@ -190,7 +208,11 @@ def send_wallet_notification_campaign(
 
                 delivery_log.status = DeliveryStatus.SENT
                 delivery_log.sent_at = timezone.now()
-                delivery_log.save(update_fields=["status", "sent_at"])
+                if segment_id == "all" and broadcast_message_ids:
+                    card_id = str(passes.first().card.id)
+                    if card_id in broadcast_message_ids:
+                        delivery_log.external_message_id = broadcast_message_ids[card_id]
+                delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
                 succeeded += 1
 
             except Exception as exc:
