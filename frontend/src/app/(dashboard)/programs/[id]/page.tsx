@@ -20,7 +20,12 @@ import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import ProgramMembersModal from '@/components/programs/ProgramMembersModal';
 import ProgramTransactionsModal from '@/components/programs/ProgramTransactionsModal';
 
-
+const CARD_TYPE_LABELS: Record<string, string> = {
+  stamp: 'Sellos', points: 'Puntos', visits: 'Visitas', cashback: 'Cashback',
+  coupon: 'Cupón', affiliate: 'Afiliación', discount: 'Descuento',
+  gift_certificate: 'Certificado', vip_membership: 'VIP', corporate_discount: 'Corporativo',
+  referral_pass: 'Referidos', multipass: 'Multipase',
+};
 
 interface ProgramData {
   id: string;
