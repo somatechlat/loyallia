@@ -7,7 +7,8 @@ import toast from 'react-hot-toast';
 import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
 import { stripLocalMinioUrl } from '@/lib/url-utils';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import WalletDesigner, {
+import WalletDesigner from '@/components/programs/WalletDesigner';
+import {
   type WalletDesignState,
   type AppleWalletFeatureConfig,
   type AppleAdvancedConfig,
@@ -15,7 +16,7 @@ import WalletDesigner, {
   type GoogleFieldRow,
   type AppleFieldDef,
   defaultWalletDesignState,
-} from '@/components/programs/WalletDesigner';
+} from '@/components/wallet/types';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import ProgramMembersModal from '@/components/programs/ProgramMembersModal';
 import ProgramTransactionsModal from '@/components/programs/ProgramTransactionsModal';

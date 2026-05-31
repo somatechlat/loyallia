@@ -1,4 +1,4 @@
-import type { WalletDesignState } from '@/components/programs/WalletDesigner';
+import type { WalletDesignState } from './types';
 import { IPhone15ProFrame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, APPLE_PASS_STYLES } from '@/components/programs/constants';
