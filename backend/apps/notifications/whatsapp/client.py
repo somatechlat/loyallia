@@ -138,3 +138,36 @@ def is_bridge_available() -> bool:
     except Exception as exc:
         logger.warning("WhatsApp bridge not available: %s", exc)
         return False
+
+
+def check_whatsapp_cooldown(phone: str, cooldown_seconds: int = 3600) -> bool:
+    """Check if a phone number is within the cooldown period.
+
+    Uses Redis to track the last sent time per phone number.
+    Returns True if the phone is on cooldown (should skip), False if allowed.
+
+    LYL-SRS-008: Prevents spamming the same recipient within a short window.
+    """
+    import time
+
+    from django.core.cache import caches
+
+    cache = caches["default"]
+    key = f"whatsapp:cooldown:{phone}"
+    now = int(time.time())
+
+    last_sent = cache.get(key)
+    if last_sent and (now - last_sent) < cooldown_seconds:
+        return True  # On cooldown
+
+    # Set/update the cooldown timestamp
+    cache.set(key, now, timeout=cooldown_seconds)
+    return False  # Not on cooldown, proceed
+
+
+def clear_whatsapp_cooldown(phone: str) -> None:
+    """Manually clear cooldown for a phone number (e.g., for testing)."""
+    from django.core.cache import caches
+
+    cache = caches["default"]
+    cache.delete(f"whatsapp:cooldown:{phone}")

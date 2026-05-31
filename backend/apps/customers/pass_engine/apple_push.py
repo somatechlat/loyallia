@@ -139,6 +139,14 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
                 push_token[-8:],
                 reason,
             )
+            # LYL-H-SEC-009: Clean up stale registration to prevent retry loops
+            try:
+                from apps.customers.models import ApplePassRegistration
+                deleted, _ = ApplePassRegistration.objects.filter(push_token=push_token).delete()
+                if deleted:
+                    logger.info("Apple pass push: Deleted stale registration for token %s", push_token[-8:])
+            except Exception as cleanup_exc:
+                logger.warning("Apple pass push: Failed to delete stale registration: %s", cleanup_exc)
         else:
             logger.error(
                 "Apple pass push HTTP %s for %s: %s",

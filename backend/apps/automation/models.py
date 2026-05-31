@@ -363,6 +363,15 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
             logging.getLogger(__name__).warning("WhatsApp automation blocked: plan limit exceeded for tenant %s", self.tenant.id)
             return False
 
+        # LYL-SRS-008: Per-recipient cooldown (1 hour)
+        from apps.notifications.whatsapp.client import check_whatsapp_cooldown
+
+        if check_whatsapp_cooldown(customer.phone):
+            import logging
+
+            logging.getLogger(__name__).info("WhatsApp automation cooldown: skipping %s", customer.phone)
+            return False
+
         title = self.action_config.get("title", "")
         message = self.action_config.get("message", "")
         full_msg = f"*{title}*\n{message}" if title else message
