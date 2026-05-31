@@ -1,6 +1,6 @@
 """
-Tests for audit logging business logic fixes  audit findings LYL-C-API-001, LYL-C-API-004,
-LYL-H-API-014, LYL-H-API-005, LYL-H-API-006.
+Tests for audit logging business logic fixes.
+.
 Uses Django's TestCase with PostgreSQL.
 """
 
@@ -12,14 +12,12 @@ from django.test import TestCase
 
 # Helpers
 
-
 def _make_tenant(**kwargs):
     from apps.tenants.models import Tenant
 
     defaults = {"name": "Test Tenant", "slug": f"test-{uuid.uuid4().hex[:8]}"}
     defaults.update(kwargs)
     return Tenant.objects.create(**defaults)
-
 
 def _make_user(tenant, **kwargs):
     from apps.authentication.models import User, UserManager
@@ -39,7 +37,6 @@ def _make_user(tenant, **kwargs):
         user.tenant = tenant
         user.save(update_fields=["tenant"])
     return user
-
 
 def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     from apps.cards.models import Card
@@ -80,7 +77,6 @@ def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     defaults.update(kwargs)
     return Card.objects.create(tenant=tenant, **defaults)
 
-
 def _make_customer(tenant, **kwargs):
     from apps.customers.models import Customer
 
@@ -92,15 +88,12 @@ def _make_customer(tenant, **kwargs):
     defaults.update(kwargs)
     return Customer.objects.create(tenant=tenant, **defaults)
 
-
 def _make_pass(customer, card):
     from apps.customers.models import CustomerPass
 
     return CustomerPass.objects.create(customer=customer, card=card)
 
-
-# FIX 1 LYL-C-API-001: Coupon double-redemption race condition
-
+# Coupon double-redemption race condition
 
 class CouponRedemptionRaceConditionTest(TestCase):
     """Verify that _process_coupon_transaction cannot be double-redeemed."""
@@ -131,9 +124,7 @@ class CouponRedemptionRaceConditionTest(TestCase):
         self.assertFalse(result["pass_updated"])
         self.assertNotIn("reward_earned", result)
 
-
-# FIX 4 LYL-C-API-004: Max referrals per customer
-
+# Max referrals per customer
 
 class MaxReferralsPerCustomerTest(TestCase):
     """Verify referral count is capped at max_referrals_per_customer."""
@@ -188,9 +179,7 @@ class MaxReferralsPerCustomerTest(TestCase):
         self.assertTrue(result["pass_updated"])
         self.assertEqual(result["new_referral_count"], 101)
 
-
-# FIX 5 LYL-H-API-014: Quantity validation
-
+#
 
 class QuantityValidationTest(TestCase):
     """Verify process_transaction rejects invalid quantities."""
@@ -220,9 +209,7 @@ class QuantityValidationTest(TestCase):
         result = self.pass_obj.process_transaction("stamp_earned", amount=Decimal("10"), quantity=1)
         self.assertTrue(result["pass_updated"])
 
-
-# FIX 8 LYL-H-API-005: Stamp multi-cycle loss
-
+#
 
 class StampMultiCycleTest(TestCase):
     """Verify stamp transactions handle multiple reward cycles correctly."""
@@ -278,9 +265,7 @@ class StampMultiCycleTest(TestCase):
         self.assertFalse(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 7)
 
-
-# FIX 9 LYL-H-API-006: Discount float precision
-
+#
 
 class DiscountFloatPrecisionTest(TestCase):
     """Verify discount calculations use Decimal, not float."""

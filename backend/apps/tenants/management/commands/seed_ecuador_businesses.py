@@ -1,5 +1,5 @@
 """
-Loyallia  Seed Ecuador Businesses
+Loyallia Seed Ecuador Businesses
 Loads verified Ecuadorian business data from JSON and initializes the database.
 """
 

@@ -1,5 +1,5 @@
 """
-Loyallia  Apple Wallet Pass Web Service
+Loyallia Apple Wallet Pass Web Service
 
 Implements the 4 mandatory Apple PassKit web service endpoints required for
 pass registration, unregistration, update checking, and pass re-download.

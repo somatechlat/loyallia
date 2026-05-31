@@ -1,5 +1,5 @@
 """
-Loyallia  Google Wallet Pass Generator
+Loyallia Google Wallet Pass Generator
 Generates JWT-based loyalty passes for Google Wallet.
 
 According to Google Wallet API docs:

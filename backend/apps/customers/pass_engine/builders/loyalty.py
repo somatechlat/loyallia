@@ -53,7 +53,7 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     payload["textModulesData"] = [
         {
             "header": "",
-            "body": "Powered by Loyallia  Intelligent Rewards",
+            "body": "Powered by Loyallia Intelligent Rewards",
             "id": "loyallia_branding",
         }
     ]
@@ -106,7 +106,7 @@ def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str =
             {"header": "Programa", "body": card.name, "id": "program_name"},
             {
                 "header": "",
-                "body": "Powered by Loyallia  Intelligent Rewards",
+                "body": "Powered by Loyallia Intelligent Rewards",
                 "id": "loyallia_branding",
             },
         ],

@@ -1,5 +1,5 @@
 """
-Loyallia  Transaction Models
+Loyallia Transaction Models
 All loyalty program transactions, validations, and reward issuances.
 """
 
@@ -11,7 +11,6 @@ from django.db import models
 from apps.authentication.models import User
 from apps.customers.models import Customer, CustomerPass
 from apps.tenants.models import Location, Tenant
-
 
 class TransactionType(models.TextChoices):
     """Types of transactions that can occur."""
@@ -29,7 +28,6 @@ class TransactionType(models.TextChoices):
     REMOTE_REWARD = "remote_reward", "Recompensa remota"
     DENIED = "denied", "Denegado"
 
-
 class Transaction(models.Model):
     """
     Base transaction record for all loyalty program activities.
@@ -43,7 +41,7 @@ class Transaction(models.Model):
         related_name="transactions",
         verbose_name="Negocio",
     )
-    # LYL-H-ARCH-012: SET_NULL instead of CASCADE to preserve transaction history
+    #
     customer_pass = models.ForeignKey(
         CustomerPass,
         on_delete=models.SET_NULL,
@@ -162,7 +160,6 @@ class Transaction(models.Model):
     def card(self):
         """Convenience property to access card."""
         return self.customer_pass.card
-
 
 class Enrollment(models.Model):
     """

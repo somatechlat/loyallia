@@ -1,5 +1,5 @@
 """
-Loyallia  Authentication API Router (apps/authentication/api.py)
+Loyallia Authentication API Router (apps/authentication/api.py)
 
 Handles the complete auth lifecycle: registration, login, token refresh,
 logout, password reset, email verification, and Google OAuth 2.0.
@@ -72,22 +72,19 @@ from common.schemas import MessageOut
 logger = logging.getLogger(__name__)
 router = Router()
 
-
 # AUTH ENDPOINTS
-
 
 @router.post("/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio")
 def register(request, payload: RegisterIn):
     """Create a new tenant (business) with its OWNER user atomically.
 
     SEC: Returns success even for existing emails to prevent user enumeration
-    (LYL-M-SEC-016). An attacker cannot determine if an email is registered.
+
     PERF: Single atomic transaction wraps Tenant + User creation to avoid
     orphaned records on partial failure.
     """
     from django.db import transaction
 
- # SEC: LYL-M-SEC-016 -- fake success for existing emails (prevents enumeration)
     if User.objects.filter(email=payload.email).exists():
         return RegisterOut(
             success=True,
@@ -98,7 +95,6 @@ def register(request, payload: RegisterIn):
             tenant_id="",
             user_id="",
         )
-
  # Server-side phone verification (NO BYPASS)
     is_phone_verified = False
     if payload.phone_number.strip() and payload.phone_verification_sid:
@@ -149,7 +145,6 @@ def register(request, payload: RegisterIn):
         tenant_id=str(tenant.id),
         user_id=str(user.id),
     )
-
 
 @router.post("/login/", auth=None, response=TokenOut, summary="Iniciar sesion")
 def login(request, payload: LoginIn):
@@ -209,7 +204,6 @@ def login(request, payload: LoginIn):
         pass
     return tokens
 
-
 @router.post("/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso")
 def refresh_token(request, payload: RefreshIn):
     """Validate refresh token and issue a new access+refresh pair.
@@ -242,7 +236,6 @@ def refresh_token(request, payload: RefreshIn):
 
     return issue_tokens(user)
 
-
 @router.post("/logout/", auth=jwt_auth, response=MessageOut, summary="Cerrar sesion")
 def logout(request, payload: LogoutIn):
     """Revoke the given refresh token.
@@ -270,7 +263,6 @@ def logout(request, payload: LogoutIn):
     except Exception:
         pass
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
-
 
 @router.post(
     "/verify-email/",
@@ -303,9 +295,7 @@ def verify_email(request, payload: VerifyEmailIn):
     user.save(update_fields=["is_email_verified", "updated_at"])
     return MessageOut(success=True, message=get_message("AUTH_EMAIL_VERIFIED"))
 
-
 # FORGOT PASSWORD (unauthenticated) Request + Confirm
-
 
 @router.post(
     "/forgot-password/",
@@ -360,7 +350,6 @@ def forgot_password(request, payload: ForgotPasswordIn):
     logger.info("Password reset requested for %s", payload.email)
     return MessageOut(success=True, message=get_message("AUTH_RESET_EMAIL_SENT"))
 
-
 @router.post(
     "/reset-password/",
     response=MessageOut,
@@ -386,12 +375,9 @@ def reset_password(request, payload: ResetPasswordIn):
     logger.info("Password reset completed for %s", user.email)
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
-
 # GOOGLE OAUTH 2.0 Social Login
 
-
 from apps.authentication.schemas import GoogleTokenIn  # noqa: E402
-
 
 @router.get(
     "/google/config/",
@@ -417,7 +403,6 @@ def google_oauth_config(request):
         "client_id": client_id,
     }
 
-
 @router.post(
     "/google/login/",
     auth=None,
@@ -434,12 +419,11 @@ def google_login(request, payload: GoogleTokenIn):
     4. If user exists → login
     5. If user doesn't exist → create tenant + OWNER user (auto-verified email)
 
-    LYL-L-SEC-023: Rate limited to 20 attempts per hour per IP to prevent abuse.
     """
     import httpx
     from django.core.cache import cache
 
- # LYL-L-SEC-023: Rate limit Google OAuth login (20/hour per IP)
+        # Rate limit Google OAuth login (20/hour per IP)
     client_ip = get_client_ip(request)
     cache_key = f"gauth_rate:{client_ip}"
     attempt_count = cache.get(cache_key, 0)

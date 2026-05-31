@@ -1,5 +1,5 @@
 """
-Loyallia  Twilio SMS Client (LYL-SRS-009)
+Loyallia Twilio SMS Client
 
 Production SMS delivery via the Twilio REST API.
 Credentials are fetched from HashiCorp Vault (twilio_account_sid, twilio_auth_token,
@@ -34,23 +34,19 @@ logger = logging.getLogger(__name__)
 # Twilio SMS body limit (long SMS / concatenated SMS support)
 _MAX_SMS_LENGTH = 1600
 
-
 def _twilio_setting(key: str, env_name: str, setting_name: str) -> str:
     """Read the current Vault-backed Twilio setting."""
     return get_secret(key, default=getattr(settings, setting_name, ""))
 
-
 def _is_test_mode() -> bool:
     """Check if test credentials should be used (safe sandbox mode)."""
     return _truthy(_twilio_setting("twilio_use_test_mode", "TWILIO_USE_TEST_MODE", "TWILIO_USE_TEST_MODE"))
-
 
 def _truthy(value: str | None) -> bool:
     """Return True for common on/true values."""
     if value is None:
         return False
     return value.strip().lower() in {"1", "true", "yes", "on"}
-
 
 def _get_twilio_client():
     """Build a Twilio REST client using Vault-managed credentials.
@@ -81,7 +77,6 @@ def _get_twilio_client():
         )
 
     return Client(account_sid, auth_token)
-
 
 def send_sms(phone: str, message: str) -> dict:
     """Send a single SMS message via Twilio.
@@ -128,7 +123,6 @@ def send_sms(phone: str, message: str) -> dict:
         logger.error("SMS send failed to %s: %s", phone[-4:], error_msg)
         return {"success": False, "error": error_msg}
 
-
 def send_sms_bulk(recipients: list[dict]) -> dict:
     """Send SMS messages to multiple recipients using a single Twilio client.
 
@@ -170,7 +164,6 @@ def send_sms_bulk(recipients: list[dict]) -> dict:
 
     logger.info("SMS bulk send: %d/%d succeeded", succeeded, len(recipients))
     return {"succeeded": succeeded, "failed": failed, "results": results}
-
 
 def is_sms_available() -> bool:
     """Check if Twilio SMS is properly configured and available.

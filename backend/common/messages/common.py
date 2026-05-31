@@ -129,7 +129,7 @@ _MESSAGES_ES: dict[str, str] = {
     # SuperAdmin
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No hay propietarios activos para enviar el anuncio.",
     "ADMIN_TENANT_CREATION_FAILED": "Error al crear el negocio: {detail}",
-    # SysAdmin Operations (LYL-BOOT-001)
+    # SysAdmin Operations
     "ADMIN_DEMO_SEEDED": "Datos de demostración cargados exitosamente.",
     "ADMIN_FACTORY_OTP_SENT": "Código de verificación enviado a su email y teléfono.",
     "ADMIN_FACTORY_OTP_INVALID": "Código inválido o expirado. Intente de nuevo.",
@@ -140,7 +140,7 @@ _MESSAGES_ES: dict[str, str] = {
     "AGENT_KEY_INVALID": "La clave de API del agente es inválida o ha expirado.",
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
     "AGENT_KEY_REVOKED": "Clave de API del agente revocada.",
-    # Data Export (LYL-SRS-009 / LOPDP Art.17)
+    # Data Export (LOPDP Art.17)
     "DATA_EXPORT_STARTED": "Exportación de datos iniciada. Se descargará un archivo ZIP con toda la información del negocio.",
     "DATA_EXPORT_FAILED": "Error al exportar datos: {detail}",
     "DATA_EXPORT_EMPTY": "No hay datos para exportar.",
@@ -148,11 +148,11 @@ _MESSAGES_ES: dict[str, str] = {
     "DATA_EXPORT_EMAIL_BODY": "<p>Hola,</p><p>Tu solicitud de exportación de datos (Art. 17 LOPDP) ha sido completada.</p><p>Puedes descargar el archivo aquí: <a href='{download_url}'>Descargar Datos</a></p><p>Este enlace expirará por razones de seguridad.</p>",
     "DATA_EXPORT_ERROR_SUBJECT": "Error en exportación de datos / Data export error",
     "DATA_EXPORT_ERROR_BODY": "<p>Ocurrió un error al procesar tu solicitud de exportación de datos. Por favor, intenta nuevamente más tarde o contacta a soporte.</p>",
-    # AI Assistant (LYL-SRS-009)
+    # AI Assistant
     "AI_ASSISTANT_UNAVAILABLE": "El asistente de IA no está disponible en este momento. Intente más tarde.",
     "AI_ASSISTANT_NOT_CONFIGURED": "El asistente de IA no está configurado. Configure la clave API en Vault.",
     "AI_CHAT_ERROR": "Error al procesar mensaje de IA: {detail}",
-    # Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18)
+    # Account Deletion (LOPDP Art. 18)
     "ACCOUNT_DELETION_SCHEDULED": "Tu cuenta será eliminada permanentemente en 24 horas. Se ha generado un respaldo de todos tus datos.",
     "ACCOUNT_DELETION_WRONG_PHRASE": "Frase incorrecta. Escriba exactamente: ACEPTO ELIMINACIÓN COMPLETA",
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Contraseña incorrecta. La eliminación no fue procesada.",
@@ -295,7 +295,7 @@ _MESSAGES_EN: dict[str, str] = {
     # SuperAdmin
     "ADMIN_BROADCAST_NO_RECIPIENTS": "No active owners to broadcast to.",
     "ADMIN_TENANT_CREATION_FAILED": "Error creating tenant: {detail}",
-    # SysAdmin Operations (LYL-BOOT-001)
+    # SysAdmin Operations
     "ADMIN_DEMO_SEEDED": "Demo data loaded successfully.",
     "ADMIN_FACTORY_OTP_SENT": "Verification code sent to your email and phone.",
     "ADMIN_FACTORY_OTP_INVALID": "Invalid or expired code. Try again.",
@@ -306,7 +306,7 @@ _MESSAGES_EN: dict[str, str] = {
     "AGENT_KEY_INVALID": "Agent API key is invalid or has expired.",
     "AGENT_KEY_CREATED": "Agent API key created successfully.",
     "AGENT_KEY_REVOKED": "Agent API key revoked.",
-    # Data Export (LYL-SRS-009 / LOPDP Art.17)
+    # Data Export (LOPDP Art.17)
     "DATA_EXPORT_STARTED": "Data export started. A ZIP file with all business data will be downloaded.",
     "DATA_EXPORT_FAILED": "Error exporting data: {detail}",
     "DATA_EXPORT_EMPTY": "No data to export.",
@@ -314,11 +314,11 @@ _MESSAGES_EN: dict[str, str] = {
     "DATA_EXPORT_EMAIL_BODY": "<p>Hello,</p><p>Your data export request (Art. 17 LOPDP) has been completed.</p><p>You can download the file here: <a href='{download_url}'>Download Data</a></p><p>This link will expire for security reasons.</p>",
     "DATA_EXPORT_ERROR_SUBJECT": "Data export error / Error en exportación de datos",
     "DATA_EXPORT_ERROR_BODY": "<p>An error occurred while processing your data export request. Please try again later or contact support.</p>",
-    # AI Assistant (LYL-SRS-009)
+    # AI Assistant
     "AI_ASSISTANT_UNAVAILABLE": "AI assistant is not available at this time. Please try later.",
     "AI_ASSISTANT_NOT_CONFIGURED": "AI assistant is not configured. Set the API key in Vault.",
     "AI_CHAT_ERROR": "Error processing AI message: {detail}",
-    # Account Deletion (LYL-FR-DPR-025 / LOPDP Art. 18)
+    # Account Deletion (LOPDP Art. 18)
     "ACCOUNT_DELETION_SCHEDULED": "Your account will be permanently deleted in 24 hours. A backup of all your data has been generated.",
     "ACCOUNT_DELETION_WRONG_PHRASE": "Incorrect phrase. Type exactly: ACEPTO ELIMINACIÓN COMPLETA",
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Incorrect password. Deletion was not processed.",

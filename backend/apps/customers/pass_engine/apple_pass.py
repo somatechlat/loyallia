@@ -1,5 +1,5 @@
 """
-Loyallia  Apple Wallet PKPass Generator
+Loyallia Apple Wallet PKPass Generator
 Generates real .pkpass files for Apple Wallet (iOS).
 
 A .pkpass file is a signed ZIP archive containing:
@@ -34,14 +34,12 @@ from apps.customers.pass_engine.apple_pass_builders import (
 
 logger = logging.getLogger(__name__)
 
-
 def _get_apple_config() -> dict:
     """Return Apple configuration from Django settings."""
     return {
         "pass_type_id": getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", ""),
         "team_id": getattr(settings, "APPLE_TEAM_IDENTIFIER", ""),
     }
-
 
 def _check_config_ready() -> bool:
     """Check that all required Apple PKPass configuration is set and parseable."""
@@ -67,7 +65,6 @@ def _check_config_ready() -> bool:
         return False
 
     return True
-
 
 def get_apple_wallet_diagnostics() -> dict:
     """Return diagnostic info about Apple Wallet configuration (no secrets exposed)."""
@@ -134,7 +131,6 @@ def get_apple_wallet_diagnostics() -> dict:
 
     return diagnostics
 
-
 # Mapping from Card.barcode_type to Apple PKBarcodeFormat constants.
 # Per Apple docs: QR, Aztec, Code128, PDF417 are valid on iOS 9+.
 # Code128 is NOT supported on watchOS Apple auto-falls back.
@@ -146,7 +142,6 @@ APPLE_BARCODE_FORMATS = {
     "pdf417": "PKBarcodeFormatPDF417",
     "data_matrix": "PKBarcodeFormatQR",  # No Apple DataMatrix fallback
 }
-
 
 def _build_nfc_payload(card, customer_pass, barcode_value: str, override_message: str = "") -> dict | None:
     """Build the optional Apple NFC payload from card metadata and Vault config."""
@@ -172,7 +167,6 @@ def _build_nfc_payload(card, customer_pass, barcode_value: str, override_message
     if apple_config.get("nfc_requires_authentication"):
         nfc_payload["requiresAuthentication"] = True
     return nfc_payload
-
 
 def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     """Build the pass.json structure per Apple PassKit specification."""
@@ -242,7 +236,6 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
 
     return pass_json
 
-
 def _sign_manifest(manifest_json: bytes) -> bytes | None:
     """Sign the manifest.json using PKCS#7 detached signature.
 
@@ -300,7 +293,6 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
         logger.error("Failed to sign Apple pass manifest: %s", exc)
         return None
 
-
 def generate_pkpass(customer_pass) -> bytes | None:
     """Generate a real .pkpass file (signed ZIP) for Apple Wallet."""
     if not _check_config_ready():
@@ -322,7 +314,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
     bg_color = card.background_color or "#5660ff"
 
     def fetch_image_bytes(url):
-        """Fetch image bytes from a URL with SSRF protection (LYL-H-SEC-009)."""
+        """Fetch image bytes from a URL with SSRF protection."""
         if not url:
             return None
         # Convert relative URLs to absolute using public base URL
@@ -483,7 +475,6 @@ def generate_pkpass(customer_pass) -> bytes | None:
         customer.email,
     )
     return pkpass_bytes
-
 
 def is_apple_wallet_configured() -> bool:
     """Check if Apple Wallet is properly configured."""

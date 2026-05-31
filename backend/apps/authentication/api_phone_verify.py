@@ -1,5 +1,5 @@
 """
-Loyallia  Phone Verification API Endpoints (LYL-SRS-VERIFY-001)
+Loyallia Phone Verification API Endpoints
 
 PUBLIC endpoints for phone verification via Twilio Verify or local OTP fallback.
 No authentication required. Rate limited.
@@ -20,7 +20,6 @@ from common.messages import get_message
 
 logger = logging.getLogger(__name__)
 router = Router()
-
 
 @router.post(
     "/verify-phone/start/",
@@ -67,7 +66,6 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
         strategy=result.get("strategy", ""),
         channel=result.get("channel", ""),
     )
-
 
 @router.post(
     "/verify-phone/check/",

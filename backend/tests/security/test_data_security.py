@@ -1,11 +1,11 @@
 """
-Loyallia  Data Security Tests
+Loyallia Data Security Tests
 
 Tests for data isolation and storage security findings.
 
 Covers:
-- LYL-H-SEC-007: Invitation token hashing
-- LYL-M-SEC-012: Salted OTP hashing
+-
+-
 """
 
 import hashlib
@@ -13,8 +13,7 @@ import secrets
 
 from django.test import TestCase
 
-# LYL-H-SEC-007: Invitation Token Hashing Tests
-
+#
 
 class TestInvitationTokenHashing(TestCase):
     """Verify invitation tokens are stored as SHA-256 hashes."""
@@ -45,9 +44,7 @@ class TestInvitationTokenHashing(TestCase):
         hash2 = hashlib.sha256(b"token-b").hexdigest()
         self.assertNotEqual(hash1, hash2)
 
-
-# LYL-M-SEC-012: Salted OTP Hashing Tests
-
+#
 
 class TestSaltedOTPHashing(TestCase):
     """Verify OTP hashing uses per-OTP salts."""
@@ -80,9 +77,7 @@ class TestSaltedOTPHashing(TestCase):
         hash2 = _hash_otp("123456", "fixed_salt")
         self.assertEqual(hash1, hash2)
 
-
 # Integration: Verify Helpers code changes
-
 
 class TestHelpersRuntimeBehavior(TestCase):
     """Verify OTP helpers use salted hashing via runtime behavior."""

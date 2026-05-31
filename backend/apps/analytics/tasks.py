@@ -1,5 +1,5 @@
 """
-Loyallia  Analytics Celery Tasks (apps/analytics/tasks.py)
+Loyallia Analytics Celery Tasks (apps/analytics/tasks.py)
 
 Asynchronous calculation of business intelligence metrics.
 Triggered after every transaction to keep materialized analytics tables fresh.
@@ -24,7 +24,6 @@ from datetime import timedelta
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
-
 
 @shared_task(
     bind=True,

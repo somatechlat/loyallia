@@ -1,5 +1,5 @@
 """
-Loyallia  Billing Service Layer
+Loyallia Billing Service Layer
 Extracted business logic from billing API views.
 """
 
@@ -18,6 +18,7 @@ from apps.cards.models import Card
 from apps.customers.models import Customer
 from apps.notifications.models import Notification
 from apps.transactions.models import Transaction
+from common.plan_enforcement import resolve_limit, usage_pct
 
 logger = logging.getLogger("loyallia.billing")
 
@@ -164,51 +165,41 @@ class BillingService:
 
         subscription = Subscription.objects.filter(tenant=tenant).first()
 
-        def _limit(resource):
-            if subscription:
-                return subscription.get_limit(resource)
-            return 0
-
-        def _pct(used, limit):
-            if limit <= 0 or limit >= 999999:
-                return 0.0
-            return min(round(used / limit * 100, 1), 100.0)
-
         return {
             "customers": {
                 "used": total_customers,
-                "limit": _limit("customers"),
-                "percentage": _pct(total_customers, _limit("customers")),
-                "is_over_limit": total_customers >= _limit("customers"),
+                "limit": resolve_limit(subscription, "customers"),
+                "percentage": usage_pct(total_customers, resolve_limit(subscription, "customers")),
+                "is_over_limit": total_customers >= resolve_limit(subscription, "customers"),
             },
             "programs": {
                 "used": total_programs,
-                "limit": _limit("programs"),
-                "percentage": _pct(total_programs, _limit("programs")),
-                "is_over_limit": total_programs >= _limit("programs"),
+                "limit": resolve_limit(subscription, "programs"),
+                "percentage": usage_pct(total_programs, resolve_limit(subscription, "programs")),
+                "is_over_limit": total_programs >= resolve_limit(subscription, "programs"),
             },
             "users": {
                 "used": total_users,
-                "limit": _limit("users"),
-                "percentage": _pct(total_users, _limit("users")),
-                "is_over_limit": total_users >= _limit("users"),
+                "limit": resolve_limit(subscription, "users"),
+                "percentage": usage_pct(total_users, resolve_limit(subscription, "users")),
+                "is_over_limit": total_users >= resolve_limit(subscription, "users"),
             },
             "locations": {
                 "used": total_locations,
-                "limit": _limit("locations"),
-                "percentage": _pct(total_locations, _limit("locations")),
-                "is_over_limit": total_locations >= _limit("locations"),
+                "limit": resolve_limit(subscription, "locations"),
+                "percentage": usage_pct(total_locations, resolve_limit(subscription, "locations")),
+                "is_over_limit": total_locations >= resolve_limit(subscription, "locations"),
             },
             "transactions_month": {
                 "used": monthly_txns,
-                "limit": _limit("transactions_month"),
-                "percentage": _pct(monthly_txns, _limit("transactions_month")),
-                "is_over_limit": monthly_txns >= _limit("transactions_month"),
+                "limit": resolve_limit(subscription, "transactions_month"),
+                "percentage": usage_pct(monthly_txns, resolve_limit(subscription, "transactions_month")),
+                "is_over_limit": monthly_txns >= resolve_limit(subscription, "transactions_month"),
             },
             "notifications_month": {
                 "used": monthly_notifs,
-                "limit": _limit("notifications_month"),
-                "percentage": _pct(monthly_notifs, _limit("notifications_month")),
-                "is_over_limit": monthly_notifs >= _limit("notifications_month"),
+                "limit": resolve_limit(subscription, "notifications_month"),
+                "percentage": usage_pct(monthly_notifs, resolve_limit(subscription, "notifications_month")),
+                "is_over_limit": monthly_notifs >= resolve_limit(subscription, "notifications_month"),
             },
         }

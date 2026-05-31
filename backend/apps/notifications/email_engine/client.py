@@ -1,5 +1,5 @@
 """
-Loyallia  Mailjet email client (LYL-SRS-006)
+Loyallia Mailjet email client
 
 Mass email is sent through Django SMTP using Mailjet credentials from Vault.
 No credential values are logged or returned.
@@ -13,7 +13,6 @@ from django.core.mail import EmailMultiAlternatives, get_connection
 from common.email_config import get_default_from_email
 
 logger = logging.getLogger(__name__)
-
 
 def send_transactional(
     to_email: str,
@@ -44,7 +43,6 @@ def send_transactional(
         from_email=from_email,
     )
 
-
 def send_raw_email(
     to_email: str,
     subject: str,
@@ -72,7 +70,6 @@ def send_raw_email(
     sent_count = msg.send(fail_silently=False)
     return {"status": "sent" if sent_count else "not_sent", "sent_count": sent_count}
 
-
 def create_subscriber(
     email: str,
     name: str,
@@ -91,7 +88,6 @@ def create_subscriber(
     logger.debug("Mailjet SMTP does not require local subscriber sync for %s", email)
     return {"status": "not_required"}
 
-
 def get_health() -> dict:
     """Check Mailjet SMTP configuration without printing credentials."""
     configured = bool(
@@ -102,7 +98,6 @@ def get_health() -> dict:
     if not configured:
         return {"status": "missing_credentials", "provider": "mailjet"}
     return {"status": "ok", "provider": "mailjet"}
-
 
 def is_mailjet_available() -> bool:
     """Check if Mailjet SMTP is configured and reachable."""
@@ -116,7 +111,6 @@ def is_mailjet_available() -> bool:
     except Exception as exc:
         logger.warning("Mailjet SMTP not available: %s", exc)
         return False
-
 
 def is_listmonk_available() -> bool:
     """Backward-compatible alias for callers not yet renamed."""

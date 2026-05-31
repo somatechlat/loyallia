@@ -17,7 +17,6 @@ from apps.tenants.super_admin_api.schemas import CreateTenantWizardIn, Impersona
 from apps.tenants.super_admin_api.tenants import create_tenant
 from tests.factories import make_plan, make_user
 
-
 class SuperAdminTenantCreationTest(TestCase):
     def test_create_tenant_links_selected_subscription_plan(self):
         request = RequestFactory().post(
@@ -57,7 +56,6 @@ class SuperAdminTenantCreationTest(TestCase):
         self.assertEqual(response.owner_email, "owner-plan-linked@example.com")
         self.assertTrue(response.temp_password)
 
-
 class PlanValidationTest(TestCase):
     def test_partial_patch_limit_without_features_uses_existing_features(self):
         validate_plan_config(
@@ -93,7 +91,6 @@ class PlanValidationTest(TestCase):
                 }
             )
 
-
 class BackupConfigValidationTest(TestCase):
     def test_backup_config_values_are_normalized(self):
         self.assertEqual(normalize_and_validate_vault_secret("system_mode", "Production"), "production")
@@ -116,7 +113,6 @@ class BackupConfigValidationTest(TestCase):
         for key, value in invalid_inputs:
             with self.subTest(key=key), self.assertRaises(HttpError):
                 normalize_and_validate_vault_secret(key, value)
-
 
 class SuperAdminImpersonationTest(TestCase):
     def setUp(self):
@@ -180,7 +176,6 @@ class SuperAdminImpersonationTest(TestCase):
         self.assertEqual(decoded["tenant_id"], str(self.tenant.id))
         self.assertTrue(decoded["impersonated"])
         self.assertEqual(decoded["impersonated_by"], str(self.request.user.id))
-
 
 class FactoryResetGuardrailsTest(TestCase):
     """Factory reset and seed demo must be blocked in production and require SUPER_ADMIN."""

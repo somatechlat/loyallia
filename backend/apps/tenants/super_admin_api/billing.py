@@ -1,5 +1,5 @@
 """
-Loyallia  Super Admin Billing API
+Loyallia Super Admin Billing API
 Manual payment confirmation for subscription invoices.
 """
 

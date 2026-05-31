@@ -1,5 +1,5 @@
 """
-Loyallia  Agent API Authentication (REQ-AGENT-001)
+Loyallia Agent API Authentication (REQ-AGENT-001)
 Bearer token authentication for external AI agents.
 Verifies API key, checks enterprise plan, and attaches tenant to request.
 """

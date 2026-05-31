@@ -1,5 +1,5 @@
 """
-Migration: Add WebhookEvent model for webhook replay protection (LYL-H-SEC-003).
+Migration: Add WebhookEvent model for webhook replay protection.
 """
 
 import django.core.validators

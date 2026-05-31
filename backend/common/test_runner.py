@@ -1,5 +1,5 @@
 """
-Loyallia  PgBouncer-Aware Test Runner
+Loyallia PgBouncer-Aware Test Runner
 
 PgBouncer in transaction pooling mode cannot execute DDL (CREATE DATABASE,
 DROP DATABASE) or advisory locks (used by Django migrations). This runner

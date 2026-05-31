@@ -1,5 +1,5 @@
 """
-Loyallia  Users & Profile API (Django Ninja Router)
+Loyallia Users & Profile API (Django Ninja Router)
 Split from authentication/api.py per Rule 245 (600-line limit).
 Handles: profile updates, user invitations, team management, phone verification.
 """
@@ -36,9 +36,7 @@ from common.schemas import MessageOut
 logger = logging.getLogger(__name__)
 router = Router()
 
-
 # USER & PROFILE ENDPOINTS
-
 
 @router.get("/me/", auth=jwt_auth, summary="Perfil del usuario actual")
 def me(request):
@@ -60,7 +58,6 @@ def me(request):
         "date_joined": u.date_joined.isoformat(),
     }
 
-
 @router.put("/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil")
 def update_profile(request, payload: ProfileUpdateIn):
     """Update the authenticated user's profile (name fields only)."""
@@ -75,7 +72,6 @@ def update_profile(request, payload: ProfileUpdateIn):
     if update_fields:
         u.save(update_fields=update_fields + ["updated_at"])
     return MessageOut(success=True, message=get_message("AUTH_PROFILE_UPDATED"))
-
 
 @router.post(
     "/change-password/",
@@ -107,9 +103,7 @@ def change_password(request, payload: ChangePasswordIn):
         pass
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
-
 # TEAM MANAGEMENT (OWNER ONLY)
-
 
 @router.post("/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo")
 def invite_user(request, payload: InviteIn):
@@ -120,7 +114,7 @@ def invite_user(request, payload: InviteIn):
     if User.objects.filter(email=payload.email, tenant=tenant).exists():
         raise HttpError(409, get_message("AUTH_INVALID_CREDENTIALS"))
 
- # SECURITY (LYL-H-SEC-007): Generate token, store SHA-256 hash in DB.
+        # Generate token, store SHA-256 hash in DB.
     invitation_token = secrets.token_urlsafe(32)
     invitation_token_hash = hashlib.sha256(invitation_token.encode()).hexdigest()
     from django.db import transaction
@@ -152,7 +146,6 @@ def invite_user(request, payload: InviteIn):
     )
     return MessageOut(success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email))
 
-
 @router.get(
     "/users/",
     auth=jwt_auth,
@@ -166,7 +159,6 @@ def list_users(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     users = User.objects.filter(tenant=tenant).order_by("role", "email")
     return [UserOut.from_user(u) for u in users]
-
 
 @router.delete(
     "/users/{user_id}/",
@@ -193,9 +185,7 @@ def deactivate_user(request, user_id: str):
     RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
     return MessageOut(success=True, message=get_message("AUTH_USER_DEACTIVATED"))
 
-
 # PHONE NUMBER VERIFICATION
-
 
 @router.post(
     "/phone/verify/request/",
@@ -245,7 +235,6 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
         strategy=result.get("strategy", ""),
         channel=result.get("channel", ""),
     )
-
 
 @router.post(
     "/phone/verify/confirm/",

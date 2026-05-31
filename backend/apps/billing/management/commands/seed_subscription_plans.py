@@ -1,5 +1,5 @@
 """
-Loyallia  Seed Subscription Plans (REQ-PLAN-001)
+Loyallia Seed Subscription Plans (REQ-PLAN-001)
 Creates the default 4-tier plan structure from canonical JSON fixture.
 Idempotent  safe to run multiple times.
 

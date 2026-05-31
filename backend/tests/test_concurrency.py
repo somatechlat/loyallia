@@ -1,5 +1,5 @@
 """
-Loyallia  Concurrency & Race Condition Tests
+Loyallia Concurrency & Race Condition Tests
 Tests for concurrent access patterns that could cause data corruption.
 
 These tests use Django's TestCase with transaction=True for real concurrency.
@@ -22,7 +22,6 @@ from tests.factories import (
 )
 
 # Coupon Double-Redemption Tests
-
 
 class CouponDoubleRedemptionTest(TransactionTestCase):
     """Test that coupon redemption is atomic  no double-redemption under concurrent access."""
@@ -80,9 +79,7 @@ class CouponDoubleRedemptionTest(TransactionTestCase):
         self.assertLessEqual(successful, 1)
         self.assertEqual(len(errors), 0)
 
-
 # Concurrent Enrollment Tests
-
 
 class ConcurrentEnrollmentTest(TestCase):
     """Test that enrollment prevents duplicates under concurrent access."""
@@ -107,9 +104,7 @@ class ConcurrentEnrollmentTest(TestCase):
         make_customer_pass(c2, card)
         self.assertEqual(CustomerPass.objects.filter(card=card).count(), 2)
 
-
 # Stamp Counter Race Condition Tests
-
 
 class StampRaceConditionTest(TransactionTestCase):
     """Test that stamp counter uses select_for_update to prevent lost updates."""
@@ -148,9 +143,7 @@ class StampRaceConditionTest(TransactionTestCase):
  # and stamp_count should be 0 (100 % 100 = 0)
         self.assertEqual(cp.pass_data.get("stamp_count", -1), 0)
 
-
 # Cashback Race Condition Tests
-
 
 class CashbackRaceConditionTest(TransactionTestCase):
     """Test that cashback balance updates are atomic."""
@@ -183,9 +176,7 @@ class CashbackRaceConditionTest(TransactionTestCase):
         balance = Decimal(cp.pass_data.get("cashback_balance", "0"))
         self.assertEqual(balance, Decimal("2.50"))
 
-
 # Gift Certificate Balance Tests
-
 
 class GiftBalanceRaceConditionTest(TransactionTestCase):
     """Test that gift certificate balance prevents overdraft under concurrent access."""
@@ -224,9 +215,7 @@ class GiftBalanceRaceConditionTest(TransactionTestCase):
  # At least one should have succeeded
         self.assertTrue(any(results))
 
-
 # Multipass Race Condition Tests
-
 
 class MultipassRaceConditionTest(TransactionTestCase):
     """Test that multipass usage is atomic."""
@@ -262,9 +251,7 @@ class MultipassRaceConditionTest(TransactionTestCase):
         successful = sum(1 for r in results if r)
         self.assertEqual(successful, 2)
 
-
 # Referral Limit Tests
-
 
 class ReferralLimitRaceConditionTest(TestCase):
     """Test that referral count respects max_referrals_per_customer."""
@@ -291,9 +278,7 @@ class ReferralLimitRaceConditionTest(TestCase):
         cp.refresh_from_db()
         self.assertEqual(cp.pass_data.get("referral_count", 0), 3)
 
-
 # Discount Tier Race Condition Tests
-
 
 class DiscountTierRaceConditionTest(TransactionTestCase):
     """Test that discount tier calculation is atomic under concurrent scans."""

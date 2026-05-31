@@ -1,5 +1,5 @@
 """
-Loyallia  Tenants API Schemas (Pydantic models)
+Loyallia Tenants API Schemas (Pydantic models)
 """
 
 from pydantic import BaseModel, EmailStr

@@ -1,1 +1,1 @@
-# Loyallia WhatsApp Bridge Integration (LYL-SRS-006)
+# Loyallia WhatsApp Bridge Integration

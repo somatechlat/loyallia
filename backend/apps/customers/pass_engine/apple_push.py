@@ -1,5 +1,5 @@
 """
-Loyallia  Apple Wallet Pass Update Push (APNs)
+Loyallia Apple Wallet Pass Update Push (APNs)
 
 Sends empty APNs pushes to devices registered for pass updates.
 This is DIFFERENT from apps.notifications.push.apns_client which sends
@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 APNS_PRODUCTION_HOST = "https://api.push.apple.com"
 APNS_SANDBOX_HOST = "https://api.sandbox.push.apple.com"
-
 
 def _get_pass_apns_auth() -> tuple[str | None, str | None]:
     """
@@ -53,7 +52,6 @@ def _get_pass_apns_auth() -> tuple[str | None, str | None]:
     except Exception as exc:
         logger.error("Apple pass push: Failed to load certificates from Vault: %s", exc)
         return None, None
-
 
 def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
@@ -139,7 +137,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
                 push_token[-8:],
                 reason,
             )
-            # LYL-H-SEC-009: Clean up stale registration to prevent retry loops
+            #
             try:
                 from apps.customers.models import ApplePassRegistration
                 deleted, _ = ApplePassRegistration.objects.filter(push_token=push_token).delete()
@@ -169,7 +167,6 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         for path in (cert_path, key_path):
             with contextlib.suppress(OSError):
                 os.unlink(path)
-
 
 def notify_pass_updated(customer_pass) -> int:
     """
@@ -209,7 +206,6 @@ def notify_pass_updated(customer_pass) -> int:
         customer_pass.id,
     )
     return notified
-
 
 def notify_card_updated(card) -> int:
     """

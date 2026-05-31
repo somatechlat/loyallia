@@ -1,5 +1,5 @@
 """
-Loyallia  Rate Limiting Middleware (common/rate_limit.py)
+Loyallia Rate Limiting Middleware (common/rate_limit.py)
 
 Redis-backed per-IP and per-user rate limiting for all API endpoints.
 Uses INCR + EXPIRE (sliding window) for atomic, distributed rate counting.
@@ -22,9 +22,9 @@ Performance (Rule 12):
     - PERF: Non-API paths bypassed via single startswith() check.
 
 Security (SEC):
-    - SEC: LYL-C-SEC-002  Auth endpoints fail CLOSED when Redis is unavailable
+    - Auth endpoints fail CLOSED when Redis is unavailable
       (503 instead of pass-through) to prevent brute force during Redis outages.
-    - SEC: LYL-H-SEC-004  IP extracted from REMOTE_ADDR only (not X-Forwarded-For)
+    - IP extracted from REMOTE_ADDR only (not X-Forwarded-For)
       to prevent IP spoofing via client-set headers.
 
 Called by: Django middleware chain. Position: after CorsMiddleware, before TenantMiddleware.
@@ -39,7 +39,6 @@ from common.messages import get_message
 
 logger = logging.getLogger(__name__)
 
-
 def _get_redis_client():
     """Get Redis client for atomic rate limiting.
 
@@ -51,7 +50,6 @@ def _get_redis_client():
         return get_redis_connection("default")
     except Exception:
         return None
-
 
 def _check_rate_limit_cache(key: str, max_requests: int, window_seconds: int) -> bool:
     """Non-atomic rate limit check using Django cache.
@@ -77,7 +75,6 @@ def _check_rate_limit_cache(key: str, max_requests: int, window_seconds: int) ->
         logger.warning("Rate limiter: Cache operation error. Failing open.")
         return True
 
-
 def _get_cache_ttl(key: str, window_seconds: int) -> int:
     """Best-effort TTL lookup from Django cache."""
     try:
@@ -86,7 +83,6 @@ def _get_cache_ttl(key: str, window_seconds: int) -> int:
     except Exception:
         ttl = window_seconds
     return ttl
-
 
 def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) -> bool:
     """Atomic rate limit check using Redis INCR + EXPIRE.
@@ -183,7 +179,7 @@ RATE_LIMIT_RULES = [
     ("/api/v1/", "ip", 200, 60),  # 200 general API requests per minute per IP
 ]
 
-# SECURITY (LYL-C-SEC-002): Auth endpoints MUST fail CLOSED when Redis is unavailable.
+# Auth endpoints MUST fail CLOSED when Redis is unavailable.
 # These paths will return 503 instead of passing through unchecked.
 AUTH_PATHS = [
     "/api/v1/auth/login",
@@ -193,22 +189,19 @@ AUTH_PATHS = [
     "/api/v1/auth/verify-email/",
 ]
 
-
 def _get_client_ip(request: HttpRequest) -> str:
     """Extract real client IP from REMOTE_ADDR only.
 
-    SECURITY (LYL-H-SEC-004): Do NOT trust X-Forwarded-For from arbitrary clients.
+    Do NOT trust X-Forwarded-For from arbitrary clients.
     REMOTE_ADDR is set by the web server (Nginx) and cannot be spoofed by the client.
     If behind a load balancer that sets X-Forwarded-For, configure TRUSTED_PROXIES
     in Django settings and add middleware to handle it properly.
     """
     return request.META.get("REMOTE_ADDR", "unknown")
 
-
 def get_client_ip(request: HttpRequest) -> str:
     """Public helper for endpoint-level rate limits."""
     return _get_client_ip(request)
-
 
 class RateLimitMiddleware:
     """
@@ -254,7 +247,7 @@ class RateLimitMiddleware:
 
         cache = self._get_cache()
         if cache is None:
- # SECURITY (LYL-C-SEC-002): Fail CLOSED for auth endpoints.
+        # Fail CLOSED for auth endpoints.
  # Auth endpoints must not pass through unchecked when cache is down.
             if any(request.path.startswith(p) for p in AUTH_PATHS):
                 return JsonResponse(
@@ -337,16 +330,13 @@ class RateLimitMiddleware:
 
         return self.get_response(request)
 
-
 # Endpoint-level rate limit decorator
-
 
 import functools
 from collections.abc import Callable
 from typing import TypeVar
 
 F = TypeVar("F", bound=Callable)
-
 
 def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Callable[[F], F]:
     """Decorator for endpoint-level rate limiting using Redis (preferred) or Django cache.

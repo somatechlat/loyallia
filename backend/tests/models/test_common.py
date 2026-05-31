@@ -1,5 +1,5 @@
 """
-Loyallia  Common / Miscellaneous Model Unit Tests
+Loyallia Common / Miscellaneous Model Unit Tests
 Tests for Transaction, Automation, Audit, and other remaining models.
 """
 

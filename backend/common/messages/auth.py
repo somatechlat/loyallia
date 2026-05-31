@@ -34,7 +34,7 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTH_PHONE_VERIFIED": "Número telefónico verificado exitosamente.",
     "AUTH_PHONE_OTP_INVALID": "El código de verificación es inválido o ha expirado.",
     "AUTH_USER_NOT_FOUND_REGISTER": "Cuenta no encontrada. Por favor, regístrate primero para acceder o disfrutar del periodo de prueba.",
-    # Twilio Verify (LYL-SRS-VERIFY-001)
+    # Twilio Verify ()
     "VERIFY_OTP_SENT": "Código de verificación enviado via {channel}.",
     "VERIFY_OTP_FAILED": "Error al enviar código de verificación: {detail}",
     "VERIFY_OTP_INVALID": "Código de verificación inválido o expirado.",
@@ -42,7 +42,7 @@ _MESSAGES_ES: dict[str, str] = {
     "VERIFY_NOT_CONFIGURED": "Twilio Verify no está configurado. Configure el Service SID en la integración.",
     "VERIFY_RATE_LIMITED": "Demasiados intentos de verificación. Espere {minutes} minutos.",
     "FACTORY_RESET_VERIFY_SENT": "Código de verificación para restauración de fábrica enviado via {channel}.",
-    # Security PIN (LYL-FR-SEC-030/031)
+    # Security PIN
     "IMPERSONATION_PIN_REQUIRED": "Se requiere el PIN de seguridad del propietario para impersonar.",
     "IMPERSONATION_PIN_INVALID": "PIN de seguridad incorrecto.",
     "IMPERSONATION_PIN_LOCKED": "Impersonación bloqueada por {minutes} minutos tras múltiples intentos fallidos.",
@@ -75,7 +75,7 @@ _MESSAGES_EN: dict[str, str] = {
     "AUTH_INVALID_PASSWORD": "Incorrect password.",
     "AUTH_RESET_EMAIL_SENT": "If the email is registered, you will receive a reset link.",
     "AUTH_RESET_INVALID": "The reset link is invalid or has expired.",
-    # Twilio Verify (LYL-SRS-VERIFY-001)
+    # Twilio Verify ()
     "VERIFY_OTP_SENT": "Verification code sent via {channel}.",
     "VERIFY_OTP_FAILED": "Error sending verification code: {detail}",
     "VERIFY_OTP_INVALID": "Invalid or expired verification code.",
@@ -83,7 +83,7 @@ _MESSAGES_EN: dict[str, str] = {
     "VERIFY_NOT_CONFIGURED": "Twilio Verify is not configured. Set the Service SID in the integration.",
     "VERIFY_RATE_LIMITED": "Too many verification attempts. Wait {minutes} minutes.",
     "FACTORY_RESET_VERIFY_SENT": "Factory reset verification code sent via {channel}.",
-    # Security PIN (LYL-FR-SEC-030/031)
+    # Security PIN
     "IMPERSONATION_PIN_REQUIRED": "Owner security PIN is required for impersonation.",
     "IMPERSONATION_PIN_INVALID": "Invalid security PIN.",
     "IMPERSONATION_PIN_LOCKED": "Impersonation locked for {minutes} minutes after multiple failed attempts.",

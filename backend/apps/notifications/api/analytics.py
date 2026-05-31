@@ -1,4 +1,4 @@
-"""Campaign analytics endpoints (LYL-SRS-006)."""
+"""Campaign analytics endpoints."""
 
 import csv
 import io
@@ -18,7 +18,6 @@ from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
 
 from .base import router
-
 
 class CampaignResultsOut(BaseModel):
     campaign_run_id: str
@@ -40,7 +39,6 @@ class CampaignResultsOut(BaseModel):
     errors_by_type: dict
     sender_domain: str
 
-
 class RecipientStatusOut(BaseModel):
     customer_id: str | None
     name: str
@@ -54,13 +52,11 @@ class RecipientStatusOut(BaseModel):
     read_at: str | None
     failed_at: str | None
 
-
 class RecipientListOut(BaseModel):
     total: int
     page: int
     per_page: int
     recipients: list[RecipientStatusOut]
-
 
 class CampaignRunListOut(BaseModel):
     id: str
@@ -74,7 +70,6 @@ class CampaignRunListOut(BaseModel):
     read_count: int
     delivery_rate: float
     created_at: str
-
 
 @router.get(
     "/campaigns/runs/",
@@ -104,7 +99,6 @@ def list_campaign_runs(request):
         )
         for run in runs
     ]
-
 
 @router.get(
     "/campaigns/{campaign_run_id}/results/",
@@ -152,7 +146,6 @@ def get_campaign_results(request, campaign_run_id: str):
         sender_domain=run.sender_domain,
     )
 
-
 @router.get(
     "/campaigns/{campaign_run_id}/recipients/",
     auth=jwt_auth,
@@ -193,7 +186,6 @@ def get_campaign_recipients(request, campaign_run_id: str, status: str | None = 
     ]
 
     return RecipientListOut(total=total, page=page, per_page=per_page, recipients=recipients)
-
 
 @router.get(
     "/campaigns/{campaign_run_id}/export/",

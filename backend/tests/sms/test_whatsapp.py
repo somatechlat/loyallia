@@ -1,5 +1,5 @@
 """
-Loyallia  WhatsApp Integration Tests (LYL-SRS-009)
+Loyallia WhatsApp Integration Tests
 
 Tests for:
   1. Automation action hardening for WhatsApp (send_whatsapp)
@@ -17,7 +17,6 @@ from tests.factories import (
     make_customer_pass,
     make_tenant,
 )
-
 
 class AutomationSendWhatsAppTest(TestCase):
     """Tests for _execute_send_whatsapp with real bridge."""

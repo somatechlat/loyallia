@@ -1,5 +1,5 @@
 """
-Loyallia  Backup App Configuration
+Loyallia Backup App Configuration
 
 Provides database backup/restore orchestration with Vault-secured credentials,
 encrypted compressed archives, S3-compatible object storage, and full audit trail.

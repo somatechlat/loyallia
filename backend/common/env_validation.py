@@ -1,5 +1,5 @@
 """
-Environment Variable Validation  LYL-L-INFRA-034
+Environment Variable Validation
 Validates required environment variables on startup.
 Fails fast with clear error messages instead of cryptic runtime errors.
 """

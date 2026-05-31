@@ -1,5 +1,5 @@
 """
-Loyallia  Tenants API (Django Ninja Router)
+Loyallia Tenants API (Django Ninja Router)
 Handles: current tenant profile, branding update, location management.
 
 All strings via get_message() — Rule #11.
@@ -26,11 +26,9 @@ from apps.tenants.schemas import (
     TenantUpdateIn,
 )
 
-
 class AIChatIn(Schema):
     message: str
     context_id: str | None = None
-
 
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
@@ -44,9 +42,7 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-
-# PLAN FEATURES ENDPOINT (LYL-SRS-008)
-
+# PLAN FEATURES ENDPOINT
 
 @router.get(
     "/me/plan-features/",
@@ -56,7 +52,6 @@ router = Router()
 def get_plan_features(request):
     """Returns the tenant's plan features, limits, and current usage.
 
-    LYL-SRS-008: Used by the frontend to gate UI components
     (WhatsApp wizard, Campaign channel selector, etc.)
     MANAGER+ only.
     """
@@ -98,14 +93,11 @@ def get_plan_features(request):
         "usage": usage,
     }
 
-
 # TENANT ENDPOINTS
-
 
 @router.get("/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual")
 def get_tenant(request):
     return TenantOut.from_tenant(request.tenant)
-
 
 @router.patch("/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio")
 def update_tenant(request, payload: TenantUpdateIn):
@@ -143,11 +135,9 @@ def update_tenant(request, payload: TenantUpdateIn):
     tenant.save(update_fields=update_fields)
     return TenantOut.from_tenant(tenant)
 
-
 @router.get("/settings/", auth=jwt_auth, response=TenantOut, summary="Configuración del negocio")
 def get_tenant_settings(request):
     return get_tenant(request)
-
 
 @router.put(
     "/settings/",
@@ -158,9 +148,7 @@ def get_tenant_settings(request):
 def update_tenant_settings(request, payload: TenantUpdateIn):
     return update_tenant(request, payload)
 
-
 # LOCATION ENDPOINTS
-
 
 @router.get(
     "/locations/",
@@ -174,7 +162,6 @@ def list_locations(request):
 
     locations = Location.objects.filter(tenant=request.tenant)
     return [LocationOut.from_location(loc) for loc in locations]
-
 
 @router.post(
     "/locations/",
@@ -203,7 +190,6 @@ def create_location(request, payload: LocationCreateIn):
         Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(is_primary=False)
 
     return LocationOut.from_location(loc)
-
 
 @router.patch(
     "/locations/{location_id}/",
@@ -260,7 +246,6 @@ def update_location(request, location_id: str):
     loc.save(update_fields=update_fields)
     return LocationOut.from_location(loc)
 
-
 @router.delete(
     "/locations/{location_id}/",
     auth=jwt_auth,
@@ -282,9 +267,7 @@ def delete_location(request, location_id: str):
 
     return HttpResponse(status=204)
 
-
 # TEAM ENDPOINTS
-
 
 @router.get(
     "/team/",
@@ -300,7 +283,6 @@ def list_team(request):
 
     users = User.objects.filter(tenant=request.tenant).exclude(role="SUPER_ADMIN").order_by("-date_joined")
     return [TeamMemberOut.from_user(u) for u in users]
-
 
 @router.post(
     "/team/",
@@ -383,7 +365,6 @@ def add_team_member(request, payload: TeamMemberCreateIn):
         "temp_password": temp_password,
     }
 
-
 @router.post("/me/ai-chat/", auth=jwt_auth, summary="Proxy to AI Agent via Vault")
 def ai_chat_proxy(request, payload: AIChatIn):
     """
@@ -432,7 +413,6 @@ def ai_chat_proxy(request, payload: AIChatIn):
     except Exception as e:
         logger.error(f"Error calling AI agent: {str(e)}")
         raise HttpError(500, "Internal server error while contacting AI agent")
-
 
 @router.patch(
     "/team/{user_id}/",
@@ -483,7 +463,6 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
     )
 
     return {"success": True, "message": get_message("TEAM_MEMBER_UPDATED")}
-
 
 @router.delete(
     "/team/{user_id}/",

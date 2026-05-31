@@ -1,11 +1,11 @@
 """
-Loyallia  Authentication Security Tests
+Loyallia Authentication Security Tests
 
 Tests for authentication-related security findings.
 
 Covers:
-- LYL-C-SEC-001: OTP entropy (token_urlsafe instead of token_hex)
-- LYL-M-SEC-014: Password complexity validation
+- OTP entropy (token_urlsafe instead of token_hex)
+-
 """
 
 import secrets
@@ -14,8 +14,7 @@ from django.test import TestCase
 
 from common.validators import ComplexityValidator
 
-# LYL-C-SEC-001: OTP Entropy Tests
-
+# OTP Entropy Tests
 
 class TestOTPEntropy(TestCase):
     """Verify that OTP generation uses token_urlsafe(8) for sufficient entropy."""
@@ -52,9 +51,7 @@ class TestOTPEntropy(TestCase):
         otps = {secrets.token_urlsafe(8) for _ in range(1000)}
         self.assertEqual(len(otps), 1000)
 
-
-# LYL-H-SEC-008: Google OAuth Client ID Not Exposed Tests
-
+#
 
 class TestGoogleOAuthConfig(TestCase):
     """Verify google_oauth_config does not expose client_id."""
@@ -79,9 +76,7 @@ class TestGoogleOAuthConfig(TestCase):
         result = {"enabled": bool(client_id)}
         self.assertFalse(result["enabled"])
 
-
-# LYL-M-SEC-014: Password Complexity Tests
-
+#
 
 class TestPasswordComplexity(TestCase):
     """Verify password complexity requirements."""
@@ -140,9 +135,7 @@ class TestPasswordComplexity(TestCase):
         self.assertIn("dígito", help_text)
         self.assertIn("especial", help_text)
 
-
 # Integration: Password Policy Code Changes
-
 
 class TestPasswordPolicyCodeChanges(TestCase):
     """Verify password policy settings."""

@@ -1,5 +1,5 @@
 """
-Loyallia  Plan Enforcement Module (common/plan_enforcement.py)
+Loyallia Plan Enforcement Module (common/plan_enforcement.py)
 
 Decorators and utilities for enforcing subscription plan limits and features.
 Prevents tenants from exceeding their plan quotas (customers, programs, etc.).
@@ -11,7 +11,7 @@ Architecture:
     - @require_feature("ai_assistant"): blocks if feature not in plan.
 
     check_plan_limit() uses select_for_update() to prevent TOCTOU race
-    conditions (LYL-M-API-024) where concurrent requests both pass the
+    conditions where concurrent requests both pass the
     limit check and create resources beyond the plan limit.
 
 Performance (Rule 12):
@@ -48,8 +48,24 @@ from common.request import require_tenant
 logger = logging.getLogger("loyallia.plan_enforcement")
 
 
-# TENANT LIMITS RESOLUTION
+# UTILITY FUNCTIONS (extracted from billing/api.py and billing/service.py)
 
+
+def resolve_limit(subscription, resource: str) -> int:
+    """Return the plan limit for a resource, or 0 if no subscription."""
+    if subscription:
+        return subscription.get_limit(resource)
+    return 0
+
+
+def usage_pct(used: int, limit: int) -> float:
+    """Return usage percentage capped at 100.0, or 0.0 for unlimited/invalid limits."""
+    if limit <= 0 or limit >= 999999:
+        return 0.0
+    return min(round(used / limit * 100, 1), 100.0)
+
+
+# TENANT LIMITS RESOLUTION
 
 def get_tenant_limits(tenant) -> dict:
     """Get the effective resource limits for a tenant based on their subscription plan.
@@ -65,25 +81,8 @@ def get_tenant_limits(tenant) -> dict:
 
     plan = subscription.subscription_plan
     if not plan and subscription.is_trial_active:
-        # SEC: Trial tenants get generous but finite limits — not infinity.
-        # Prevents trial tenants from exhausting database storage (C4/H4).
-        return {
-            "customers": 500,
-            "programs": 50,
-            "locations": 10,
-            "users": 10,
-            "notifications_month": 1000,
-            "transactions_month": 5000,
-            "whatsapp_day": 100,
-            "emails_month": 500,
-            "sms_day": 50,
-            "wallet_pushes_month": 200,
-            "automations": 10,
-            "automation_executions_day": 100,
-            "ai_queries_month": 500,
-            "api_calls_day": 1000,
-            "exports_month": 10,
-        }
+        from apps.billing.models import TRIAL_LIMITS
+        return dict(TRIAL_LIMITS)
 
     if not plan:
         return {}
@@ -105,7 +104,6 @@ def get_tenant_limits(tenant) -> dict:
         "api_calls_day": plan.max_api_calls_day,
         "exports_month": plan.max_exports_month,
     }
-
 
 def get_current_usage(tenant, resource: str) -> int:
     """Get current usage count for a specific resource.
@@ -143,7 +141,6 @@ def get_current_usage(tenant, resource: str) -> int:
         return 0
     return counter()
 
-
 def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> int:
     """Dynamic import and COUNT for monthly-capped resources (notifications, transactions).
 
@@ -155,7 +152,6 @@ def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> in
     module = importlib.import_module(module_path)
     model_class = getattr(module, model_name)
     return model_class.objects.filter(tenant=tenant, created_at__gte=month_start).count()
-
 
 def _get_whatsapp_today(tenant) -> int:
     """Get today's WhatsApp message count from WhatsAppSession.
@@ -170,7 +166,6 @@ def _get_whatsapp_today(tenant) -> int:
         return session.messages_sent_today
     return 0
 
-
 def _count_emails_month(tenant, month_start) -> int:
     """Count email campaign deliveries this month.
 
@@ -183,7 +178,6 @@ def _count_emails_month(tenant, month_start) -> int:
         campaign_run__channel="email",
         created_at__gte=month_start,
     ).count()
-
 
 def _count_sms_today(tenant) -> int:
     """Count today's SMS deliveries for a tenant.
@@ -199,7 +193,6 @@ def _count_sms_today(tenant) -> int:
         created_at__gte=today_start,
     ).count()
 
-
 def _count_wallet_pushes_month(tenant, month_start) -> int:
     """Count wallet push notifications this month.
 
@@ -213,7 +206,6 @@ def _count_wallet_pushes_month(tenant, month_start) -> int:
         created_at__gte=month_start,
     ).count()
 
-
 def _count_automations(tenant) -> int:
     """Count total automation rules for a tenant.
 
@@ -222,7 +214,6 @@ def _count_automations(tenant) -> int:
     from apps.automation.models import Automation
 
     return Automation.objects.filter(tenant=tenant).count()
-
 
 def _count_automation_executions_today(tenant) -> int:
     """Count today's automation executions across all rules for a tenant.
@@ -236,7 +227,6 @@ def _count_automation_executions_today(tenant) -> int:
         automation__tenant=tenant,
         executed_at__gte=today_start,
     ).count()
-
 
 def _count_api_calls_today(tenant) -> int:
     """Count today's Agent API calls for a tenant.
@@ -258,7 +248,6 @@ def _count_api_calls_today(tenant) -> int:
         logger.warning("Agent API call log table is unavailable; returning usage=0.")
         return 0
 
-
 def _count_exports_month(tenant, month_start) -> int:
     """Count data exports this month.
 
@@ -272,14 +261,11 @@ def _count_exports_month(tenant, month_start) -> int:
         created_at__gte=month_start,
     ).count()
 
-
 # CHECK FUNCTIONS
-
 
 def check_plan_limit(tenant, resource: str, write: bool = False) -> None:
     """Check if tenant has exceeded their plan limit for a resource.
 
-    SEC: LYL-M-API-024  Uses select_for_update on Subscription to prevent
     TOCTOU race conditions where two concurrent requests both pass the limit
     check and create resources beyond the plan maximum.
 
@@ -312,7 +298,6 @@ def check_plan_limit(tenant, resource: str, write: bool = False) -> None:
                 get_message("PLAN_LIMIT_EXCEEDED", resource=resource, limit=limit),
             )
 
-
 def check_feature_access(tenant, feature: str) -> None:
     """Check if the tenant's plan includes a specific feature.
 
@@ -335,9 +320,7 @@ def check_feature_access(tenant, feature: str) -> None:
             get_message("PLAN_FEATURE_UNAVAILABLE"),
         )
 
-
 # DECORATORS
-
 
 def require_active_subscription(func):
     """Decorator: block request if tenant has no active subscription.
@@ -358,7 +341,6 @@ def require_active_subscription(func):
 
     return wrapper
 
-
 def enforce_limit(resource: str):
     """Decorator factory: check plan limit for a specific resource before execution.
 
@@ -375,7 +357,6 @@ def enforce_limit(resource: str):
         return wrapper
 
     return decorator
-
 
 def require_feature(feature: str):
     """Decorator factory: check if plan includes a specific feature.

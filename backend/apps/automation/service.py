@@ -1,5 +1,5 @@
 """
-Loyallia  Automation Service Layer
+Loyallia Automation Service Layer
 Extracted business logic from automation API views and engine.
 """
 

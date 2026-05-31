@@ -1,5 +1,5 @@
 """
-Loyallia  Tenant Security & Privacy API
+Loyallia Tenant Security & Privacy API
 Handles owner security PIN, full tenant export, and account deletion.
 """
 

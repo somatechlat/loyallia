@@ -1,5 +1,5 @@
 """
-Loyallia  Campaign Delivery Celery Tasks (apps/notifications/tasks/campaigns.py)
+Loyallia Campaign Delivery Celery Tasks (apps/notifications/tasks/campaigns.py)
 
 Wallet push notification campaigns and WhatsApp campaign delivery.
 """
@@ -9,7 +9,6 @@ import logging
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
-
 
 @shared_task(
     bind=True,
@@ -275,7 +274,6 @@ def send_wallet_notification_campaign(
         "apple_push_sent": apple_push_sent,
     }
 
-
 @shared_task(
     bind=True,
     max_retries=1,
@@ -293,7 +291,7 @@ def send_whatsapp_campaign(
     segment_id: str = "all",
     image_url: str = "",
 ) -> dict:
-    """LYL-SRS-006: WhatsApp campaign via Baileys bridge with per-message tracking.
+    """WhatsApp campaign via Baileys bridge with per-message tracking.
 
     Creates a CampaignRun and CampaignDeliveryLog rows, then sends messages
     through the WhatsApp bridge. The bridge handles rate limiting and jitter
@@ -364,7 +362,6 @@ def send_whatsapp_campaign(
         )
 
         if bridge_available and customer.phone:
-            # LYL-SRS-008: Per-recipient cooldown (1 hour)
             if wa_client.check_whatsapp_cooldown(customer.phone):
                 logger.info("WhatsApp cooldown: skipping %s", customer.phone)
                 delivery_log.status = DeliveryStatus.FAILED
@@ -381,7 +378,6 @@ def send_whatsapp_campaign(
                 )
                 failed += 1
                 continue
-
             try:
                 result = wa_client.send_message(
                     tenant_id=tenant_id,

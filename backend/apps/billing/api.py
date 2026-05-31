@@ -1,5 +1,5 @@
 """
-Loyallia  Billing API Router (apps/billing/api.py)
+Loyallia Billing API Router (apps/billing/api.py)
 
 Subscription management with pluggable payment gateway (Stripe-ready).
 Plans are DB-driven via SubscriptionPlan model (not hardcoded).
@@ -53,7 +53,7 @@ from apps.billing.schemas import (
 from apps.tenants.models import PlatformSetting
 from common.messages import get_message
 from common.permissions import jwt_auth, require_role
-from common.plan_enforcement import get_current_usage
+from common.plan_enforcement import get_current_usage, resolve_limit, usage_pct
 from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.billing")
@@ -68,9 +68,7 @@ SUBSCRIPTION_STATUS_LABELS = {
     SubscriptionStatus.CANCELED: "Cancelado",
 }
 
-
 # Plans (DB-driven REQ-PLAN-001)
-
 
 @router.get("/plans/", summary="Planes disponibles")
 def list_plans(request: HttpRequest):
@@ -129,9 +127,7 @@ def list_plans(request: HttpRequest):
 
     return {"plans": result}
 
-
 # Subscription Management
-
 
 @router.get("/subscription/", auth=jwt_auth, summary="Obtener suscripción actual")
 @require_role("OWNER")
@@ -182,9 +178,7 @@ def get_subscription(request: HttpRequest):
         ),
     }
 
-
 # Usage (reads from SubscriptionPlan REQ-PLAN-002)
-
 
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
 @require_role("OWNER")
@@ -208,7 +202,6 @@ def get_usage(request: HttpRequest):
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
- # PERF: 6 independent COUNT queries against 6 different tables.
  # Each is O(index scan) in PostgreSQL. Cannot be consolidated without raw SQL
  # since they target different models. Total latency: ~6ms on indexed tables.
     total_customers = Customer.objects.filter(tenant=tenant).count()
@@ -217,56 +210,45 @@ def get_usage(request: HttpRequest):
     total_locations = Location.objects.filter(tenant=tenant).count()
     monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
     monthly_notifs = Notification.objects.filter(tenant=tenant, created_at__gte=month_start).count()
-
  # Read limits from subscription plan (not hardcoded)
     subscription = Subscription.objects.filter(tenant=tenant).first()
-
-    def _limit(resource: str) -> int:
-        if subscription:
-            return subscription.get_limit(resource)
-        return 0
-
-    def _pct(used: int, limit: int) -> float:
-        if limit <= 0 or limit >= 999999:
-            return 0.0
-        return min(round(used / limit * 100, 1), 100.0)
 
     limits = {
         "customers": {
             "used": total_customers,
-            "limit": _limit("customers"),
-            "percentage": _pct(total_customers, _limit("customers")),
-            "is_over_limit": total_customers >= _limit("customers"),
+            "limit": resolve_limit(subscription, "customers"),
+            "percentage": usage_pct(total_customers, resolve_limit(subscription, "customers")),
+            "is_over_limit": total_customers >= resolve_limit(subscription, "customers"),
         },
         "programs": {
             "used": total_programs,
-            "limit": _limit("programs"),
-            "percentage": _pct(total_programs, _limit("programs")),
-            "is_over_limit": total_programs >= _limit("programs"),
+            "limit": resolve_limit(subscription, "programs"),
+            "percentage": usage_pct(total_programs, resolve_limit(subscription, "programs")),
+            "is_over_limit": total_programs >= resolve_limit(subscription, "programs"),
         },
         "users": {
             "used": total_users,
-            "limit": _limit("users"),
-            "percentage": _pct(total_users, _limit("users")),
-            "is_over_limit": total_users >= _limit("users"),
+            "limit": resolve_limit(subscription, "users"),
+            "percentage": usage_pct(total_users, resolve_limit(subscription, "users")),
+            "is_over_limit": total_users >= resolve_limit(subscription, "users"),
         },
         "locations": {
             "used": total_locations,
-            "limit": _limit("locations"),
-            "percentage": _pct(total_locations, _limit("locations")),
-            "is_over_limit": total_locations >= _limit("locations"),
+            "limit": resolve_limit(subscription, "locations"),
+            "percentage": usage_pct(total_locations, resolve_limit(subscription, "locations")),
+            "is_over_limit": total_locations >= resolve_limit(subscription, "locations"),
         },
         "transactions_month": {
             "used": monthly_txns,
-            "limit": _limit("transactions_month"),
-            "percentage": _pct(monthly_txns, _limit("transactions_month")),
-            "is_over_limit": monthly_txns >= _limit("transactions_month"),
+            "limit": resolve_limit(subscription, "transactions_month"),
+            "percentage": usage_pct(monthly_txns, resolve_limit(subscription, "transactions_month")),
+            "is_over_limit": monthly_txns >= resolve_limit(subscription, "transactions_month"),
         },
         "notifications_month": {
             "used": monthly_notifs,
-            "limit": _limit("notifications_month"),
-            "percentage": _pct(monthly_notifs, _limit("notifications_month")),
-            "is_over_limit": monthly_notifs >= _limit("notifications_month"),
+            "limit": resolve_limit(subscription, "notifications_month"),
+            "percentage": usage_pct(monthly_notifs, resolve_limit(subscription, "notifications_month")),
+            "is_over_limit": monthly_notifs >= resolve_limit(subscription, "notifications_month"),
         },
     }
 
@@ -281,19 +263,19 @@ def get_usage(request: HttpRequest):
         "exports_month",
     ]:
         used = get_current_usage(tenant, resource)
-        limit = _limit(resource)
+        limit = resolve_limit(subscription, resource)
         limits[resource] = {
             "used": used,
             "limit": limit,
-            "percentage": _pct(used, limit),
+            "percentage": usage_pct(used, limit),
             "is_over_limit": used >= limit,
         }
 
-    ai_limit = _limit("ai_queries_month")
+    ai_limit = resolve_limit(subscription, "ai_queries_month")
     limits["ai_queries_month"] = {
         "used": 0,
         "limit": ai_limit,
-        "percentage": _pct(0, ai_limit),
+        "percentage": usage_pct(0, ai_limit),
         "is_over_limit": ai_limit <= 0,
     }
 
@@ -308,9 +290,7 @@ def get_usage(request: HttpRequest):
         "limits": limits,
     }
 
-
 # Subscribe (via payment gateway REQ-PAY-002)
-
 
 @router.post("/subscribe/", auth=jwt_auth, summary="Suscribirse a un plan")
 @require_role("OWNER")
@@ -396,9 +376,7 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
         "manual_verification_required": True,
     }
 
-
 # Update & Cancel
-
 
 @router.put("/subscription/", auth=jwt_auth, summary="Actualizar suscripción")
 @require_role("OWNER")
@@ -420,7 +398,6 @@ def update_subscription(request: HttpRequest, data: UpdateSubscriptionSchema):
         "success": True,
         "message": get_message("BILLING_SUBSCRIPTION_UPDATED"),
     }
-
 
 @router.post("/subscription/cancel/", auth=jwt_auth, summary="Cancelar suscripción")
 @require_role("OWNER")
@@ -446,7 +423,6 @@ def cancel_subscription(request: HttpRequest):
         "message": get_message("BILLING_CANCEL_SCHEDULED"),
         "effective_date": (subscription.current_period_end.isoformat() if subscription.current_period_end else None),
     }
-
 
 @router.post(
     "/subscription/reactivate/",

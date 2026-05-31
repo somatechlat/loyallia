@@ -1,5 +1,5 @@
 """
-Loyallia  Billing API Schemas (Pydantic models)
+Loyallia Billing API Schemas (Pydantic models)
 Generic payment gateway  no provider-specific fields.
 """
 

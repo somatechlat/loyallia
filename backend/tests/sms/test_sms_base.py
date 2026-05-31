@@ -1,5 +1,5 @@
 """
-Loyallia  SMS Base Integration Tests (LYL-SRS-009)
+Loyallia SMS Base Integration Tests
 
 Tests for:
   1. Twilio SMS client (apps.notifications.sms.client)
@@ -14,7 +14,6 @@ from django.test import TestCase
 from common.messages import get_message
 from common.vault import clear_test_overrides, get_secret, set_test_override
 
-
 def _get_twilio_test_credentials():
     """Fetch Twilio test credentials from Vault. Returns dict or None."""
     sid = get_secret("twilio_test_account_sid") or get_secret("twilio_account_sid")
@@ -23,7 +22,6 @@ def _get_twilio_test_credentials():
     if sid and token and from_number:
         return {"sid": sid, "token": token, "from": from_number}
     return None
-
 
 class SMSClientAvailabilityTest(TestCase):
     """Tests for is_sms_available() configuration checking."""
@@ -50,7 +48,6 @@ class SMSClientAvailabilityTest(TestCase):
         set_test_override("twilio_auth_token", "")
         set_test_override("twilio_from_number", "+15550000000")
         self.assertFalse(is_sms_available())
-
 
 class SMSClientSendTest(TestCase):
     """Tests for send_sms() function with real Twilio client."""
@@ -101,7 +98,6 @@ class SMSClientSendTest(TestCase):
 
         clear_test_overrides()
 
-
 class SMSClientBulkTest(TestCase):
     """Tests for send_sms_bulk() function."""
 
@@ -143,7 +139,6 @@ class SMSClientBulkTest(TestCase):
         ]
         with self.assertRaises(RuntimeError):
             send_sms_bulk(recipients)
-
 
 class I18nSMSMessagesTest(TestCase):
     """Tests for SMS/Twilio/Data Export/AI i18n message codes."""

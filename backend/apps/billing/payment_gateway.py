@@ -1,5 +1,5 @@
 """
-Loyallia  Payment Gateway Abstraction (LYL-FR-PAY-010)
+Loyallia Payment Gateway Abstraction
 Pluggable payment gateway interface. Supports multiple providers via factory.
 Default provider: Manual (admin-verified payments).
 

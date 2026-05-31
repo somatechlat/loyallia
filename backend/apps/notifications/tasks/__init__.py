@@ -1,5 +1,5 @@
 """
-Loyallia  Notifications Celery Tasks (apps/notifications/tasks/__init__.py)
+Loyallia Notifications Celery Tasks (apps/notifications/tasks/__init__.py)
 
 Backward-compatible re-exports of all notification tasks.
 This module preserves the original import paths after splitting tasks.py

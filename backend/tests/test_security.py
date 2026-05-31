@@ -1,5 +1,5 @@
 """
-Loyallia  Security Tests
+Loyallia Security Tests
 Tests for role-based access control, input validation (cedula/RUC),
 and additional security hardening not covered by test_security_fixes.py.
 
@@ -19,7 +19,6 @@ from common.validators import ComplexityValidator
 from tests.factories import make_user
 
 # Role-Based Access Control Tests
-
 
 class RequireRoleDecoratorTest(TestCase):
     """Tests for @require_role decorator."""
@@ -114,9 +113,7 @@ class RequireRoleDecoratorTest(TestCase):
             view(request)
         self.assertEqual(ctx.exception.status_code, 401)
 
-
 # Ecuadorian Document Validation Tests
-
 
 class CedulaValidationTest(TestCase):
     """Tests for cédula de identidad validation."""
@@ -149,7 +146,6 @@ class CedulaValidationTest(TestCase):
  # Module-10 check failure is acceptable for random digits
             self.assertIn("verificador", str(e).lower())
 
-
 class RucValidationTest(TestCase):
     """Tests for RUC validation."""
 
@@ -180,9 +176,7 @@ class RucValidationTest(TestCase):
         with self.assertRaises(ValidationError):
             validate_ruc("17900123450011")
 
-
 # Input Validation Edge Cases
-
 
 class PasswordComplexityEdgeCasesTest(TestCase):
     """Additional password complexity edge cases."""
@@ -229,9 +223,7 @@ class PasswordComplexityEdgeCasesTest(TestCase):
                 f"Special char '{char}' not matched by SPECIAL_CHARS regex",
             )
 
-
 # User Role Tests
-
 
 class UserRoleTest(TestCase):
     """Tests for User role assignment and validation."""
@@ -262,9 +254,7 @@ class UserRoleTest(TestCase):
         self.assertTrue(admin.is_staff)
         self.assertTrue(admin.is_superuser)
 
-
 # User Account Lock Tests
-
 
 class AccountLockTest(TestCase):
     """Tests for account lockout after failed login attempts."""

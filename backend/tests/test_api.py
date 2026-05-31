@@ -1,5 +1,5 @@
 """
-Loyallia  API Integration Tests
+Loyallia API Integration Tests
 Tests for API endpoints via Django test client.
 """
 
@@ -20,7 +20,6 @@ from tests.factories import (
     make_user,
 )
 
-
 def _get_auth_header(user, password=None):
     """Get JWT auth header by logging in."""
     password = password or user._test_password
@@ -35,9 +34,7 @@ def _get_auth_header(user, password=None):
         return f"Bearer {data.get('access_token', '')}"
     return ""
 
-
 # Authentication API Tests
-
 
 class AuthRegisterAPITest(TestCase):
     """Tests for POST /api/v1/auth/register/"""
@@ -83,7 +80,6 @@ class AuthRegisterAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.json()["success"])
-
 
 class AuthLoginAPITest(TestCase):
     """Tests for POST /api/v1/auth/login/"""
@@ -138,7 +134,6 @@ class AuthLoginAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 423)
 
-
 class AuthRefreshAPITest(TestCase):
     """Tests for POST /api/v1/auth/refresh/"""
 
@@ -169,7 +164,6 @@ class AuthRefreshAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 401)
 
-
 class AuthMeAPITest(TestCase):
     """Tests for GET /api/v1/auth/users/me/"""
 
@@ -187,7 +181,6 @@ class AuthMeAPITest(TestCase):
         resp = self.client.get("/api/v1/auth/users/me/")
         self.assertIn(resp.status_code, [401, 403])
 
-
 class AuthForgotPasswordAPITest(TestCase):
     """Tests for POST /api/v1/auth/forgot-password/"""
 
@@ -199,7 +192,6 @@ class AuthForgotPasswordAPITest(TestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 200)
-
 
 class AuthProfileAPITest(TestCase):
     """Tests for PUT /api/v1/auth/users/profile/"""
@@ -216,7 +208,6 @@ class AuthProfileAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
         user.refresh_from_db()
         self.assertEqual(user.first_name, "New")
-
 
 class AuthChangePasswordAPITest(TestCase):
     """Tests for POST /api/v1/auth/users/change-password/"""
@@ -255,7 +246,6 @@ class AuthChangePasswordAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 400)
 
-
 class AuthGoogleConfigAPITest(TestCase):
     """Tests for GET /api/v1/auth/google/config/"""
 
@@ -263,7 +253,6 @@ class AuthGoogleConfigAPITest(TestCase):
         resp = self.client.get("/api/v1/auth/google/config/")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("enabled", resp.json())
-
 
 class AuthUsersAPITest(TestCase):
     """Tests for user listing and deactivation."""
@@ -339,9 +328,7 @@ class AuthUsersAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 403)
 
-
 # Customers API Tests
-
 
 class CustomersAPITest(TestCase):
     """Tests for customer CRUD endpoints."""
@@ -403,9 +390,7 @@ class CustomersAPITest(TestCase):
         )
         self.assertIn(resp.status_code, [200, 204])
 
-
 # Cards API Tests
-
 
 class CardsAPITest(TestCase):
     """Tests for card (program) CRUD endpoints."""
@@ -449,9 +434,7 @@ class CardsAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
 
-
 # Transactions API Tests
-
 
 class TransactionsAPITest(TestCase):
     """Tests for transaction endpoints."""
@@ -466,9 +449,7 @@ class TransactionsAPITest(TestCase):
         resp = self.client.get("/api/v1/transactions/", HTTP_AUTHORIZATION=self.header)
         self.assertEqual(resp.status_code, 200)
 
-
 # Billing API Tests
-
 
 class BillingAPITest(TestCase):
     """Tests for billing endpoints."""
@@ -488,9 +469,7 @@ class BillingAPITest(TestCase):
         resp = self.client.get("/api/v1/billing/usage/", HTTP_AUTHORIZATION=self.header)
         self.assertEqual(resp.status_code, 200)
 
-
 # Tenants API Tests
-
 
 class TenantsAPITest(TestCase):
     """Tests for tenant endpoints."""
@@ -513,9 +492,7 @@ class TenantsAPITest(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
 
-
 # Automation API Tests
-
 
 class AutomationAPITest(TestCase):
     """Tests for automation endpoints."""
@@ -530,9 +507,7 @@ class AutomationAPITest(TestCase):
         resp = self.client.get("/api/v1/automations/", HTTP_AUTHORIZATION=self.header)
         self.assertEqual(resp.status_code, 200)
 
-
 # Notifications API Tests
-
 
 class NotificationsAPITest(TestCase):
     """Tests for notification endpoints."""
@@ -546,9 +521,7 @@ class NotificationsAPITest(TestCase):
         resp = self.client.get("/api/v1/notifications/", HTTP_AUTHORIZATION=self.header)
         self.assertEqual(resp.status_code, 200)
 
-
 # Health Check Test
-
 
 class HealthCheckTest(TestCase):
     """Tests for health endpoint."""

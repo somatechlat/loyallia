@@ -1,5 +1,5 @@
 """
-Loyallia  Abstract Base Model (LYL-L-ARCH-040)
+Loyallia Abstract Base Model
 Provides common fields (id, created_at, updated_at) for all models.
 """
 

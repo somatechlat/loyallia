@@ -1,5 +1,5 @@
 """
-Loyallia  Super Admin API: Tenant + Location + Invoice endpoints
+Loyallia Super Admin API: Tenant + Location + Invoice endpoints
 """
 
 import json
@@ -43,14 +43,11 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-
 # HELPERS
-
 
 def _require_super_admin(request) -> None:
     if not is_super_admin(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
 
 def _get_tenant_or_404(tenant_id: str) -> Tenant:
     try:
@@ -58,9 +55,7 @@ def _get_tenant_or_404(tenant_id: str) -> Tenant:
     except (Tenant.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
 
-
 # TENANT CRUD
-
 
 @router.get(
     "/tenants/",
@@ -76,7 +71,7 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         .prefetch_related("users", "locations")
         .order_by("-created_at")
     )
- # LYL-H-ARCH-011: Filter by Subscription status instead of denormalized Tenant.plan
+ #
     if plan:
         from apps.billing.models import Subscription, SubscriptionStatus
 
@@ -96,7 +91,6 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
  # Hide tenants scheduled for deletion (cascade delete in progress)
     qs = qs.filter(scheduled_deletion_at__isnull=True)
     return [TenantAdminOut.from_tenant(t) for t in qs]
-
 
 @router.post(
     "/tenants/",
@@ -161,7 +155,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 email=payload.email,
                 website=payload.website,
                 country="EC",
-                plan=plan_slug,  # LYL-H-ARCH-011: denormalized; Subscription is authoritative
+                plan=plan_slug,  #
                 is_active=True,
             )
             temp_password = secrets.token_urlsafe(8)
@@ -248,7 +242,6 @@ def create_tenant(request, payload: CreateTenantWizardIn):
         logger.error("Tenant creation failed: %s", e)
         raise HttpError(500, get_message("ADMIN_TENANT_CREATION_FAILED", detail=str(e)))
 
-
 @router.get(
     "/tenants/{tenant_id}/",
     auth=jwt_auth,
@@ -258,7 +251,6 @@ def create_tenant(request, payload: CreateTenantWizardIn):
 def get_tenant_detail(request, tenant_id: str):
     _require_super_admin(request)
     return TenantAdminOut.from_tenant(_get_tenant_or_404(tenant_id))
-
 
 @router.patch(
     "/tenants/{tenant_id}/",
@@ -277,7 +269,7 @@ def update_tenant_admin(request, tenant_id: str):
         raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
 
     update_fields = ["updated_at"]
- # LYL-H-ARCH-011: "plan" removed use Subscription endpoints to change plan.
+ #
  # Tenant.plan is a denormalized cache; Subscription is authoritative.
     for field in [
         "name",
@@ -305,9 +297,7 @@ def update_tenant_admin(request, tenant_id: str):
     )
     return TenantAdminOut.from_tenant(tenant)
 
-
 # LOCATIONS
-
 
 @router.get(
     "/tenants/{tenant_id}/locations/",
@@ -319,7 +309,6 @@ def list_tenant_locations(request, tenant_id: str):
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     return [LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)]
-
 
 @router.post(
     "/tenants/{tenant_id}/locations/",
@@ -342,9 +331,7 @@ def add_tenant_location(request, tenant_id: str, payload: LocationIn):
     )
     return LocationOut.from_location(loc)
 
-
 # INVOICES
-
 
 @router.get(
     "/tenants/{tenant_id}/invoices/",
@@ -372,13 +359,11 @@ def list_tenant_invoices(request, tenant_id: str):
         for inv in invoices
     ]
 
-
 # TENANT ACTIONS (Suspend, Reactivate, Extend Trial, Impersonate)
-
 
 @router.post("/tenants/{tenant_id}/suspend/", auth=jwt_auth, response=MessageOut)
 def suspend_tenant(request, tenant_id: str):
-    """LYL-H-ARCH-011: Suspend tenant  Subscription is authoritative source."""
+    """"""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     tenant.is_active = False
@@ -397,7 +382,6 @@ def suspend_tenant(request, tenant_id: str):
         tenant.name,
     )
     return MessageOut(success=True, message=get_message("TENANT_SUSPENDED"))
-
 
 @router.delete("/tenants/{tenant_id}/", auth=jwt_auth, response=MessageOut)
 def delete_tenant(request, tenant_id: str):
@@ -454,10 +438,9 @@ def delete_tenant(request, tenant_id: str):
     )
     return MessageOut(success=True, message=get_message("TENANT_DELETED"))
 
-
 @router.post("/tenants/{tenant_id}/reactivate/", auth=jwt_auth, response=MessageOut)
 def reactivate_tenant(request, tenant_id: str):
-    """LYL-H-ARCH-011: Reactivate tenant  Subscription is authoritative source."""
+    """"""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     tenant.is_active = True
@@ -477,11 +460,10 @@ def reactivate_tenant(request, tenant_id: str):
     )
     return MessageOut(success=True, message=get_message("TENANT_UPDATED"))
 
-
 @router.post("/tenants/{tenant_id}/extend-trial/", auth=jwt_auth, response=MessageOut)
 def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
-    """LYL-H-ARCH-011: Extend trial  Subscription is authoritative source.
-    LYL-H-API-013: Limit total trial extensions to prevent unlimited trials.
+    """
+ to prevent unlimited trials.
     """
     _require_super_admin(request)
     if payload.days < 1 or payload.days > 365:
@@ -491,7 +473,7 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
         )
     tenant = _get_tenant_or_404(tenant_id)
 
- # LYL-H-API-013: Prevent unlimited trial extensions
+        # Prevent unlimited trial extensions
  # Cap total trial period at 90 days from first trial start
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription and subscription.trial_start:
@@ -528,9 +510,7 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
         message=get_message("TENANT_TRIAL_EXPIRING", days=tenant.trial_days_remaining),
     )
 
-
-# WHATSAPP OVERRIDE (LYL-SRS-008)
-
+# WHATSAPP OVERRIDE
 
 @router.patch(
     "/tenants/{tenant_id}/whatsapp-override/",
@@ -541,7 +521,6 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
 def set_whatsapp_override(request, tenant_id: str):
     """Set per-tenant WhatsApp daily limit override.
 
-    LYL-SRS-008: Allows SuperAdmin to raise/lower the WA quota for a
     specific tenant independently of their subscription plan.
     Set to 0 to revert to the plan default.
 

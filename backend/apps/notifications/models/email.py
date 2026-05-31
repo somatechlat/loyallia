@@ -1,5 +1,5 @@
 """
-Loyallia  Email Configuration Models
+Loyallia Email Configuration Models
 
 Per-tenant SMTP configuration for campaign delivery.
 """

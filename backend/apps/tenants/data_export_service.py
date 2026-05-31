@@ -1,5 +1,5 @@
 """
-Loyallia  Full Tenant Data Export Service (LYL-FR-DPR-020)
+Loyallia Full Tenant Data Export Service
 LOPDP Art. 17 & 20: Right of Access / Data Portability.
 
 Generates a ZIP containing tenant data in JSON and CSV formats.

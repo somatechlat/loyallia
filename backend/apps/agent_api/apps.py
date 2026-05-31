@@ -1,4 +1,4 @@
-"""Loyallia  Agent API app configuration."""
+"""Loyallia Agent API app configuration."""
 
 from django.apps import AppConfig
 

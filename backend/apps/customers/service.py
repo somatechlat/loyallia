@@ -1,5 +1,5 @@
 """
-Loyallia  Customer Service Layer
+Loyallia Customer Service Layer
 Extracted business logic from customer API views.
 """
 

@@ -1,5 +1,5 @@
 """
-Loyallia  SSRF Protection (LYL-H-SEC-009)
+Loyallia SSRF Protection
 Validates URLs before fetching external resources to prevent Server-Side Request Forgery.
 Blocks requests to private, loopback, link-local, and reserved IP ranges.
 """
@@ -32,12 +32,10 @@ BLOCKED_NETWORKS = [
     ipaddress.ip_network("fe80::/10"),  # RFC 4291 Link-local
 ]
 
-
 class SSRFError(ValueError):
     """Raised when a URL fails SSRF validation."""
 
     pass
-
 
 def validate_external_url(url: str, allow_http: bool = True) -> str:
     """

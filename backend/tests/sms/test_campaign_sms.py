@@ -1,5 +1,5 @@
 """
-Loyallia  Campaign SMS Integration Tests (LYL-SRS-009)
+Loyallia Campaign SMS Integration Tests
 
 Tests for:
   1. SMS campaign task (apps.notifications.sms.tasks.send_sms_campaign)
@@ -19,7 +19,6 @@ from tests.factories import (
     make_tenant,
 )
 
-
 def _get_twilio_test_credentials():
     sid = get_secret("twilio_test_account_sid") or get_secret("twilio_account_sid")
     token = get_secret("twilio_test_auth_token") or get_secret("twilio_auth_token")
@@ -27,7 +26,6 @@ def _get_twilio_test_credentials():
     if sid and token and from_number:
         return {"sid": sid, "token": token, "from": from_number}
     return None
-
 
 class SMSCampaignTaskTest(TestCase):
     """Tests for send_sms_campaign Celery task."""
@@ -114,7 +112,6 @@ class SMSCampaignTaskTest(TestCase):
         self.assertIn("campaign_run_id", result)
         campaign_run = CampaignRun.objects.filter(id=uuid.UUID(result["campaign_run_id"])).first()
         self.assertIsNotNone(campaign_run)
-
 
 class PlanFeatureSMSTest(TestCase):
     """Tests for SMS_CAMPAIGNS plan feature."""

@@ -1,5 +1,5 @@
 """
-Loyallia  Transaction Service Layer
+Loyallia Transaction Service Layer
 Extracted business logic from API views for testability and reuse.
 """
 

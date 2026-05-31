@@ -1,5 +1,5 @@
 """
-Loyallia  Advanced Analytics API router
+Loyallia Advanced Analytics API router
 Extended business intelligence: revenue breakdown, visit metrics,
 top buyers, demographics, and program-type analysis.
 

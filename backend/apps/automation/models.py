@@ -1,5 +1,5 @@
 """
-Loyallia  Automation Models
+Loyallia Automation Models
 Campaign automation, triggers, and scheduled actions.
 """
 
@@ -12,7 +12,6 @@ from apps.cards.models import Card
 from apps.customers.models import Customer
 from apps.tenants.models import Tenant
 from common.models import TimestampedModel
-
 
 class AutomationTrigger(models.TextChoices):
     """Events that can trigger automations."""
@@ -27,11 +26,9 @@ class AutomationTrigger(models.TextChoices):
     POINTS_THRESHOLD = "points_threshold", "Points Threshold"
     SCHEDULED_TIME = "scheduled_time", "Scheduled Time"
 
-
 class AutomationAction(models.TextChoices):
     """Actions that can be automated.
 
-    LYL-SRS-009: All actions have REAL implementations  no stubs.
     """
 
     SEND_NOTIFICATION = "send_notification", "Send Push Notification"
@@ -42,7 +39,6 @@ class AutomationAction(models.TextChoices):
     UPDATE_SEGMENT = "update_segment", "Update Segment"
     SEND_WALLET = "send_wallet", "Send Wallet Push"
     TRIGGER_WEBHOOK = "trigger_webhook", "Trigger Webhook"
-
 
 class Automation(TimestampedModel):
     """
@@ -110,7 +106,6 @@ class Automation(TimestampedModel):
     def can_execute_for_customer(self, customer) -> bool:
         """Check if this automation can execute for a given customer.
 
-        LYL-H-API-011: Uses per-customer cooldown instead of global cooldown.
         The cooldown is checked against the last execution for THIS customer,
         not the global last_executed timestamp.
         """
@@ -134,7 +129,6 @@ class Automation(TimestampedModel):
             if not customer_programs.exists():
                 return False
 
-        # LYL-H-API-011: Per-customer cooldown (not global)
         if self.cooldown_hours > 0:
             from datetime import timedelta
 
@@ -156,13 +150,13 @@ class Automation(TimestampedModel):
         """Execute the automation for a customer.
 
         Returns True if successful.
-        LYL-H-API-016: Enforces max_executions_per_day limit.
-        LYL-M-API-020: Uses F() expression to prevent lost updates on counter.
+
+        Uses F() expression to prevent lost updates on counter.
         """
         if not self.can_execute_for_customer(customer):
             return False
 
-        # LYL-H-API-016: Enforce max_executions_per_day limit
+        # Enforce max_executions_per_day limit
         if self.max_executions_per_day is not None:
             from django.utils import timezone
 
@@ -193,7 +187,7 @@ class Automation(TimestampedModel):
                 success = self._execute_trigger_webhook(customer, context)
 
             if success:
-                # LYL-M-API-020: Use F() to prevent lost updates under concurrency
+                # Use F() to prevent lost updates under concurrency
                 from django.db.models import F
                 from django.utils import timezone
 
@@ -246,7 +240,6 @@ class Automation(TimestampedModel):
     def _execute_send_email(self, customer, context) -> bool:
         """Send branded HTML email to customer via Django SMTP.
 
-        LYL-SRS-009: Real implementation using EmailMultiAlternatives.
         Uses tenant branding (name, primary_color) for professional templates.
         """
         if not customer.email:
@@ -293,7 +286,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 <div class="container">
 <div class="header"><h1>{self.tenant.name}</h1></div>
 <div class="content"><p>{body_text}</p></div>
-<div class="footer"><p>Powered by Loyallia  Intelligent Rewards</p></div>
+<div class="footer"><p>Powered by Loyallia Intelligent Rewards</p></div>
 </div>
 </body></html>"""
 
@@ -316,7 +309,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
     def _execute_send_sms(self, customer, context) -> bool:
         """Send SMS via Twilio to customer.
 
-        LYL-SRS-009: Real implementation using apps.notifications.sms.client.
         """
         if not customer.phone:
             return False
@@ -339,8 +331,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
     def _execute_send_whatsapp(self, customer, context) -> bool:
         """Send WhatsApp message via Baileys bridge.
 
-        LYL-SRS-009: Real implementation using the WhatsApp bridge client.
-        LYL-SRS-008: Enforces plan limit to prevent automation bypass.
         """
         if not customer.phone:
             return False
@@ -363,9 +353,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
             logging.getLogger(__name__).warning("WhatsApp automation blocked: plan limit exceeded for tenant %s", self.tenant.id)
             return False
 
-        # LYL-SRS-008: Per-recipient cooldown (1 hour)
         from apps.notifications.whatsapp.client import check_whatsapp_cooldown
-
         if check_whatsapp_cooldown(customer.phone):
             import logging
 
@@ -392,7 +380,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
     def _execute_send_wallet(self, customer, context) -> bool:
         """Send wallet push notification to customer's active passes.
 
-        LYL-SRS-009: Sends push via Google Wallet API + Apple APNs.
         Respects wallet_platform config: "apple", "google", or "both" (default).
         """
         from apps.customers.models import CustomerPass
@@ -486,7 +473,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
     def _execute_trigger_webhook(self, customer, context) -> bool:
         """Trigger a webhook with automation context.
 
-        LYL-SRS-009: Real implementation using requests.post.
         Sends tenant_id, rule_id, customer_id, trigger type and timestamp.
         """
         import logging
@@ -552,7 +538,6 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 str(e),
             )
             return False
-
 
 class AutomationExecution(models.Model):
     """

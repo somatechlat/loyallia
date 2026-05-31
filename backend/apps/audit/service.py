@@ -1,5 +1,5 @@
 """
-Loyallia  Audit Service (REQ-DPR-002)
+Loyallia Audit Service (REQ-DPR-002)
 Functions for writing audit log entries.
 All entries are immutable and comply with LOPDP/GDPR.
 """
@@ -74,6 +74,37 @@ def log_action(
         status,
     )
     return entry
+
+
+def safe_log_action(
+    request: HttpRequest,
+    action: str,
+    resource_type: str,
+    resource_id: str = "",
+    tenant_id=None,
+    details: dict | None = None,
+    justification: str = "",
+    status: str = AuditStatus.SUCCESS,
+) -> AuditLog | None:
+    """Call log_action(), swallowing any exceptions.
+
+    Use this in API endpoints where an audit failure must not break
+    the HTTP response. Prefer plain log_action() in background tasks.
+    """
+    try:
+        return log_action(
+            request=request,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            tenant_id=tenant_id,
+            details=details,
+            justification=justification,
+            status=status,
+        )
+    except Exception:
+        logger.debug("safe_log_action swallowed exception", exc_info=True)
+        return None
 
 
 def log_data_export(

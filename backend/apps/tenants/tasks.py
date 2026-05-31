@@ -169,7 +169,7 @@ def hard_delete_tenant(tenant_id: str, *, require_scheduled_deletion: bool = Tru
     User.objects.filter(tenant=tenant).exclude(role="OWNER").delete()
     User.objects.filter(tenant=tenant, role="OWNER").delete()
 
- # 8. Anonymize audit log (LYL-FR-DPR-025.7)
+        # 8. Anonymize audit log
     with contextlib.suppress(Exception):
         from apps.audit.models import AuditLog
 
@@ -193,7 +193,7 @@ def hard_delete_tenant(tenant_id: str, *, require_scheduled_deletion: bool = Tru
 @shared_task(queue="default", bind=True, max_retries=2)
 def delete_tenant_cascade(self, tenant_id: str):
     """
-    LYL-FR-DPR-025.6/025.7: LOPDP Art. 18  Hard-delete ALL tenant data.
+    LOPDP Art. 18: Hard-delete ALL tenant data.
     Runs 24 hours after owner requests deletion via POST /tenants/delete-account/.
     """
     logger.info("Starting cascade deletion for tenant %s", tenant_id)

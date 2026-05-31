@@ -1,10 +1,10 @@
 """
-Loyallia  Common Middleware (common/middleware.py)
+Loyallia Common Middleware (common/middleware.py)
 
 Three middleware classes that run on EVERY request:
 1. RequestIDMiddleware (B-011): Distributed tracing via X-Request-ID.
-2. CSPNonceMiddleware (LYL-H-SEC-010): Per-request CSP nonce generation.
-3. CSRFExemptAPIMiddleware (LYL-M-SEC-018): Exempt JWT-authenticated API routes from CSRF.
+2. CSPNonceMiddleware: Per-request CSP nonce generation.
+3. CSRFExemptAPIMiddleware: Exempt JWT-authenticated API routes from CSRF.
 
 Performance (Rule 12):
     All three middlewares are O(1) with zero database queries.
@@ -20,7 +20,6 @@ import secrets
 import uuid
 
 logger = logging.getLogger(__name__)
-
 
 class RequestIDMiddleware:
     """Attach a unique X-Request-ID to every request and response.
@@ -51,9 +50,8 @@ class RequestIDMiddleware:
         response[self.HEADER] = request_id
         return response
 
-
 class CSPNonceMiddleware:
-    """LYL-H-SEC-010: Generate a per-request CSP nonce and set Content-Security-Policy header.
+    """
 
     Each request gets a cryptographically random nonce that is:
     - Stored on ``request.csp_nonce`` for template use
@@ -74,7 +72,7 @@ class CSPNonceMiddleware:
         response = self.get_response(request)
 
  # Build CSP header with nonce
- # LYL-H-SEC-010: Covers Google Identity Services domains to prevent
+ #
  # CSP violations when Google OAuth is enabled.
         response_content_type = response.get("Content-Type", "")
         if "application/json" not in response_content_type:
@@ -93,9 +91,8 @@ class CSPNonceMiddleware:
             response["Content-Security-Policy"] = "; ".join(csp_directives)
         return response
 
-
 class CSRFExemptAPIMiddleware:
-    """LYL-M-SEC-018: Exempt Django Ninja API routes from CSRF while protecting all others.
+    """
 
     Django Ninja routes are authenticated via JWT Bearer tokens and are inherently
     CSRF-immune (browsers don't send Authorization headers automatically).

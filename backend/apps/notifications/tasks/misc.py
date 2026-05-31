@@ -1,5 +1,5 @@
 """
-Loyallia  Miscellaneous Notification Celery Tasks (apps/notifications/tasks/misc.py)
+Loyallia Miscellaneous Notification Celery Tasks (apps/notifications/tasks/misc.py)
 
 Scheduled tasks for birthday notifications and inactive customer reminders.
 """

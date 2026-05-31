@@ -1,5 +1,5 @@
 """
-Loyallia  Campaign Models
+Loyallia Campaign Models
 
 Campaign execution tracking and per-recipient delivery logs.
 """

@@ -28,12 +28,12 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 X_FRAME_OPTIONS = "DENY"
 SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_HTTPONLY = True  # LYL-M-SEC-019: Prevent JS access to session cookie
+SESSION_COOKIE_HTTPONLY = True  #
 SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection complement
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True  # Prevent JS access to CSRF cookie
 
-# LYL-M-SEC-017: Verify TLS certificate for S3/MinIO connections in production
+#
 AWS_S3_VERIFY = True
 
 # Trust the Nginx proxy for host validation
@@ -105,9 +105,7 @@ if PAYMENT_GATEWAY_ENABLED:
 EMAIL_HOST = config("EMAIL_HOST", default="in-v3.mailjet.com")
 EMAIL_HOST_USER = get_secret("mailjet_api_key", strict=True)
 EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", strict=True)
-# SEC: sender email is NOT a secret. It is a PlatformSetting editable via
 # SysAdmin UI without restart. The base.py fallback is sufficient here.
 # Runtime code reads the live value via common.email_config.get_default_from_email().
-
 # Override apps logger to INFO in production to avoid excessive log volume
 LOGGING["loggers"]["apps"]["level"] = "INFO"  # noqa: F405

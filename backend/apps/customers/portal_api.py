@@ -1,5 +1,5 @@
 """
-Loyallia  Customer Self-Service Portal API
+Loyallia Customer Self-Service Portal API
 
 Public endpoints for customers to manage their own data:
 - Generate password (login by email)

@@ -1,4 +1,4 @@
-"""Loyallia Redemption Rules Engine (LYL-RE)."""
+"""Loyallia Redemption Rules Engine."""
 
 from .command import RedemptionCommand
 from .context import RedemptionContext

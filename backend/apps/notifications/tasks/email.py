@@ -1,5 +1,5 @@
 """
-Loyallia  Email Notification Celery Tasks (apps/notifications/tasks/email.py)
+Loyallia Email Notification Celery Tasks (apps/notifications/tasks/email.py)
 
 Email campaign delivery task with rich HTML templates and per-customer tracking.
 """

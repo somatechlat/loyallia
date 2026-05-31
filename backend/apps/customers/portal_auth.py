@@ -1,5 +1,5 @@
 """
-Loyallia  Customer Portal Authentication
+Loyallia Customer Portal Authentication
 
 JWT auth for customer self-service portal.
 Uses same JWT secret as staff auth but with type="customer_access" claim

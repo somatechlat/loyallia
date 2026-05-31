@@ -23,15 +23,12 @@ from .gateway import RedemptionGateway
 
 router = Router()
 
-
 # ------------------------------------------------------------------
 # Schemas
 # ------------------------------------------------------------------
 
-
 class ScanValidateIn(BaseModel):
     qr_code: str
-
 
 class ScanTransactIn(BaseModel):
     qr_code: str
@@ -40,7 +37,6 @@ class ScanTransactIn(BaseModel):
     notes: str = ""
     intent: Literal["earn", "redeem", "auto"] = "auto"
     idempotency_key: str = Field(default="", description="UUIDv4 for exactly-once semantics")
-
 
 class RedemptionOut(BaseModel):
     success: bool
@@ -56,11 +52,9 @@ class RedemptionOut(BaseModel):
     remaining_uses: int | None = None
     new_state: dict = {}
 
-
 # ------------------------------------------------------------------
 # Endpoints
 # ------------------------------------------------------------------
-
 
 @router.post("/validate/", auth=jwt_auth, summary="Validar código QR (v2)")
 def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
@@ -96,7 +90,6 @@ def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
         "lifecycle_state": pass_obj.lifecycle_state,
         "is_valid": True,
     }
-
 
 @router.post("/transact/", auth=jwt_auth, summary="Registrar transacción (v2)")
 def transact_v2(request: HttpRequest, data: ScanTransactIn):

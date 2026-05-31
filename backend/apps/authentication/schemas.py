@@ -1,5 +1,5 @@
 """
-Loyallia  Authentication API Schemas (Pydantic models)
+Loyallia Authentication API Schemas (Pydantic models)
 """
 
 from datetime import datetime

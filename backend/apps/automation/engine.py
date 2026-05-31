@@ -1,5 +1,5 @@
 """
-Loyallia  Automation Engine (apps/automation/engine.py)
+Loyallia Automation Engine (apps/automation/engine.py)
 
 Evaluates automation triggers and executes configured actions.
 This is the core dispatcher that connects business events to automated responses.
@@ -16,11 +16,8 @@ Performance (Rule 12):
     - PERF: _MAX_TRIGGER_DEPTH=3 caps recursion for self-triggering rules.
 
 Security (SEC):
-    - SEC: LYL-M-API-021  Self-trigger loop guard prevents infinite recursion
       (e.g. transaction_completed → issue_reward → transaction_completed → ...).
-    - SEC: LYL-M-API-025  Tenant is ALWAYS resolved from customer.tenant, never
       from a parameter override, to prevent cross-tenant data access.
-
 Called by: apps/transactions/api.py (transact), apps/customers/api.py (enroll).
 """
 
@@ -34,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 # Maximum depth for nested automation triggers to prevent infinite loops
 _MAX_TRIGGER_DEPTH = 3
-
 
 # ---------------------------------------------------------------------------
 # Trigger condition evaluators
@@ -65,7 +61,6 @@ def check_points_threshold(automation, customer) -> bool:
         customer_points,
     )
     return customer_points >= threshold
-
 
 def check_inactivity(automation, customer) -> bool:
     """Check if customer has been inactive for the configured number of days.
@@ -106,7 +101,6 @@ def check_inactivity(automation, customer) -> bool:
     )
     return is_inactive
 
-
 def check_milestone(automation, customer) -> bool:
     """Check if customer has reached the configured milestone.
 
@@ -146,7 +140,6 @@ def check_milestone(automation, customer) -> bool:
     )
     return meets_visits and meets_points
 
-
 def fire_trigger(
     trigger: str,
     customer,
@@ -156,14 +149,12 @@ def fire_trigger(
 ) -> int:
     """Fire all active automations matching a trigger event for a customer.
 
-    SEC: LYL-M-API-021  Depth guard prevents self-trigger loops.
-    SEC: LYL-M-API-025  Tenant always resolved from customer.tenant.
     PERF: prefetch_related("target_programs") prevents N+1 on matching automations.
 
     Args:
         trigger:  AutomationTrigger value (e.g. "customer_enrolled")
         customer: Customer model instance
-        tenant:   IGNORED  always uses customer.tenant (SEC: LYL-M-API-025)
+
         context:  Optional event context dict
         _depth:   Internal recursion depth counter (do not pass manually)
 
@@ -172,10 +163,7 @@ def fire_trigger(
     """
     from apps.automation.models import Automation
 
- # SEC: LYL-M-API-025 always use customer's tenant, ignore tenant parameter
     resolved_tenant = customer.tenant
-
- # SEC: LYL-M-API-021 cap recursion depth to prevent infinite loops
     if _depth >= _MAX_TRIGGER_DEPTH:
         logger.warning(
             "fire_trigger: max recursion depth (%d) reached for trigger=%s "
@@ -185,8 +173,6 @@ def fire_trigger(
             customer.id,
         )
         return 0
-
- # SEC: LYL-M-API-021 detect self-trigger via chain tracking
     trigger_chain = (context or {}).get("_trigger_chain", [])
     if trigger in trigger_chain:
         logger.warning(
@@ -196,7 +182,6 @@ def fire_trigger(
             customer.id,
         )
         return 0
-
     matching = Automation.objects.filter(
         tenant=resolved_tenant,
         trigger=trigger,
@@ -246,7 +231,6 @@ def fire_trigger(
         matching.count(),
     )
     return executed
-
 
 def fire_trigger_async(
     trigger: str,

@@ -1,5 +1,5 @@
 """
-Loyallia  Customer Import Service
+Loyallia Customer Import Service
 Handles parsing, normalization, and bulk ingestion of customer data from external files.
 Decoupled from api.py per Rule 245.
 """

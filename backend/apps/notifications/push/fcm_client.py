@@ -1,5 +1,5 @@
 """
-Loyallia  FCM Client (Firebase Cloud Messaging HTTP v1 API)
+Loyallia FCM Client (Firebase Cloud Messaging HTTP v1 API)
 
 Uses the FCM HTTP v1 API (not the legacy FCM API which was deprecated Jun 2024).
 Documentation: https://firebase.google.com/docs/cloud-messaging/http-server-ref

@@ -1,5 +1,5 @@
 """
-Loyallia  Twilio Verify Service Management (LYL-SRS-VERIFY-001)
+Loyallia Twilio Verify Service Management
 
 REAL PRODUCTION CODE. NO MOCKS. NO BYPASSES.
 
@@ -29,7 +29,6 @@ try:
 except ImportError:  # pragma: no cover
     TwilioClient = None  # type: ignore[misc,assignment]
 
-
 class VerifyServiceManager:
     """Manager for Twilio Verify Service resources.
 
@@ -50,7 +49,6 @@ class VerifyServiceManager:
         return self._client
 
  # Service CRUD
-
 
     def create_service(
         self,
@@ -259,7 +257,6 @@ class VerifyServiceManager:
         return service
 
  # Helpers
-
 
     @staticmethod
     def _service_to_dict(service) -> dict[str, Any]:

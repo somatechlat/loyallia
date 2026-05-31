@@ -1,5 +1,5 @@
 """
-Loyallia  File Upload API
+Loyallia File Upload API
 Handles direct image uploads (logos, etc.) to MinIO/S3 and returns public URLs.
 """
 

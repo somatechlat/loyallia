@@ -1,5 +1,5 @@
 """
-Loyallia  Twilio Verify v2 Production Client (LYL-SRS-VERIFY-001)
+Loyallia Twilio Verify v2 Production Client
 
 REAL PRODUCTION CODE. NO MOCKS. NO BYPASSES.
 
@@ -46,7 +46,6 @@ except ImportError as exc:  # pragma: no cover
     TwilioClient = None  # type: ignore[misc,assignment]
     logger.warning("twilio SDK not installed  Verify client unavailable: %s", exc)
 
-
 class VerifyServiceError(Exception):
     """Raised when Twilio Verify API returns a non-2xx response."""
 
@@ -54,7 +53,6 @@ class VerifyServiceError(Exception):
         super().__init__(message)
         self.code = code
         self.twilio_code = twilio_code
-
 
 class VerifyClient:
     """Twilio Verify v2 service client  REAL production implementation.
@@ -65,7 +63,6 @@ class VerifyClient:
     """
 
  # Credential resolution
-
 
     @staticmethod
     def _get_credentials() -> tuple[str, str]:
@@ -142,7 +139,6 @@ class VerifyClient:
 
  # Twilio client lifecycle
 
-
     def __init__(self) -> None:
         self._client: Any = None
 
@@ -166,7 +162,6 @@ class VerifyClient:
         return self._client
 
  # Core Verify operations
-
 
     def start_verification(
         self,
@@ -426,7 +421,6 @@ class VerifyClient:
         return self._verification_to_dict(verification)
 
  # Helpers
-
 
     @staticmethod
     def _verification_to_dict(verification) -> dict[str, Any]:

@@ -1,5 +1,5 @@
 """
-Loyallia  Billing Tests
+Loyallia Billing Tests
 Tests for Invoice, PaymentMethod, BillingService, Subscription lifecycle,
 plan limits, and trial period behavior.
 """
@@ -24,7 +24,6 @@ from tests.factories import (
 )
 
 # Invoice Model Tests
-
 
 class InvoiceModelTest(TestCase):
     """Tests for Invoice model."""
@@ -140,9 +139,7 @@ class InvoiceModelTest(TestCase):
         )
         self.assertEqual(invoice.currency, "USD")
 
-
 # PaymentMethod Model Tests
-
 
 class PaymentMethodModelTest(TestCase):
     """Tests for PaymentMethod model."""
@@ -190,9 +187,7 @@ class PaymentMethodModelTest(TestCase):
         )
         self.assertTrue(pm.is_default)
 
-
 # WebhookEvent Model Tests
-
 
 class WebhookEventModelTest(TestCase):
     """Tests for WebhookEvent idempotency model."""
@@ -226,9 +221,7 @@ class WebhookEventModelTest(TestCase):
         )
         self.assertIn("subscription.created", str(event))
 
-
 # BillingService Tests
-
 
 class BillingServiceGetPlansTest(TestCase):
     """Tests for BillingService.get_plans."""
@@ -271,7 +264,6 @@ class BillingServiceGetPlansTest(TestCase):
         plans = BillingService.get_plans()
         result = next(p for p in plans if p["slug"] == plan.slug)
         self.assertEqual(result["trial_days"], 14)
-
 
 class BillingServiceCheckUsageTest(TestCase):
     """Tests for BillingService.check_usage."""
@@ -333,9 +325,7 @@ class BillingServiceCheckUsageTest(TestCase):
         for key in expected:
             self.assertIn(key, usage)
 
-
 # Subscription Lifecycle Tests
-
 
 class SubscriptionLifecycleTest(TestCase):
     """Tests for subscription status transitions."""
@@ -394,9 +384,7 @@ class SubscriptionLifecycleTest(TestCase):
         days_diff = (sub.current_period_end - sub.current_period_start).days
         self.assertGreaterEqual(days_diff, 364)
 
-
 # Plan Limit Tests
-
 
 class PlanLimitTest(TestCase):
     """Tests for plan limit enforcement per resource."""
@@ -428,9 +416,7 @@ class PlanLimitTest(TestCase):
         usage = BillingService.check_usage(t)
         self.assertTrue(usage["users"]["is_over_limit"])
 
-
 # Trial Period Tests
-
 
 class TrialPeriodTest(TestCase):
     """Tests for trial period behavior."""

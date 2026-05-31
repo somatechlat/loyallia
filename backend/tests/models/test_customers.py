@@ -1,5 +1,5 @@
 """
-Loyallia  Customer, Card & Enrollment Model Unit Tests
+Loyallia Customer, Card & Enrollment Model Unit Tests
 Tests for Customer, Card, Enrollment, and related models.
 """
 

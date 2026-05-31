@@ -1,5 +1,5 @@
 """
-Loyallia  Custom Validators
+Loyallia Custom Validators
 Reusable Django validators for authentication and data integrity.
 """
 
@@ -8,13 +8,12 @@ import re
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
-
 class ComplexityValidator:
     """
     Validate password complexity: requires at least one uppercase letter,
     one lowercase letter, one digit, and one special character.
 
-    SECURITY (LYL-M-SEC-014): Enforced alongside MinimumLengthValidator (12+ chars).
+    Enforced alongside MinimumLengthValidator (12+ chars).
     """
 
     SPECIAL_CHARS = r"[!@#$%^&*()_+\-=\[\]{}|;':\",./<>?`~\\]"

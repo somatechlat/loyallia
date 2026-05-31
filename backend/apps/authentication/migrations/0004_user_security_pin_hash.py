@@ -1,4 +1,4 @@
-# Generated for LYL-SEC-031 security PIN support.
+# Security PIN support.
 
 from django.db import migrations, models
 
