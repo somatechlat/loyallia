@@ -154,7 +154,9 @@ AUTH_USER_MODEL = "authentication.User"
 # 12+ chars with complexity requirements.
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 12},
@@ -269,25 +271,35 @@ JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 #
 # For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
-JWT_SECRET_KEY = get_secret("jwt_secret_key", default=SECRET_KEY)  # B-001: Separate from Django SECRET_KEY
+JWT_SECRET_KEY = get_secret(
+    "jwt_secret_key", default=SECRET_KEY
+)  # B-001: Separate from Django SECRET_KEY
 # Fallback: read from Vault runtime file for resilient container startup
 if JWT_SECRET_KEY == SECRET_KEY:
     _vault_jwt_file = "/run/loyallia-vault/jwt_secret_key"
     if os.path.isfile(_vault_jwt_file):
         with open(_vault_jwt_file, encoding="utf-8") as _f:
             JWT_SECRET_KEY = _f.read().strip()
-JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 private key file
+JWT_PRIVATE_KEY_PATH = config(
+    "JWT_PRIVATE_KEY_PATH", default=""
+)  # RS256 private key file
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
 # PASS SIGNING
+
 
 def vault_bool(key: str, env_name: str = "", default: bool = False) -> bool:
     """Read a feature flag from Vault using explicit boolean strings."""
     value = get_secret(key, default=str(default).lower())
     return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
 
-APPLE_WALLET_ENABLED = vault_bool("apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False)
-GOOGLE_WALLET_ENABLED = vault_bool("google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True)
+
+APPLE_WALLET_ENABLED = vault_bool(
+    "apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False
+)
+GOOGLE_WALLET_ENABLED = vault_bool(
+    "google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True
+)
 
 APPLE_PASS_TYPE_IDENTIFIER = get_secret(
     "apple_pass_type_identifier",
@@ -296,7 +308,9 @@ APPLE_PASS_TYPE_IDENTIFIER = get_secret(
 APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", default="")
 APPLE_CERT_PATH = config("APPLE_CERT_PATH", default="/app/certs/apple_pass.pem")
 APPLE_CERT_KEY_PATH = config("APPLE_CERT_KEY_PATH", default="/app/certs/apple_pass.key")
-APPLE_WWDR_CERT_PATH = config("APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem")
+APPLE_WWDR_CERT_PATH = config(
+    "APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem"
+)
 PASS_HMAC_SECRET = get_secret("pass_hmac_secret", default="")
 # Apple Wallet webServiceURL the base URL Apple Wallet calls for pass
 # registration, update checking, and pass re-download. Must be HTTPS in production.
@@ -309,7 +323,9 @@ PASS_WEB_SERVICE_URL = config(
 # APNs token-based auth (JWT) for push notifications to iOS
 # Separate from the PassKit signing certificates above
 APPLE_APNS_KEY_ID = config("APPLE_APNS_KEY_ID", default="")
-APPLE_APNS_AUTH_KEY_PATH = config("APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8")
+APPLE_APNS_AUTH_KEY_PATH = config(
+    "APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8"
+)
 
 GOOGLE_SERVICE_ACCOUNT_FILE = config(
     "GOOGLE_SERVICE_ACCOUNT_FILE",
@@ -319,11 +335,15 @@ GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", default="")
 
 # FIREBASE (Android Push)
 
-FIREBASE_CREDENTIAL_FILE = config("FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json")
+FIREBASE_CREDENTIAL_FILE = config(
+    "FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json"
+)
 
 # PAYMENT GATEWAY (Pluggable Manual / Disabled)
 
-PAYMENT_GATEWAY_ENABLED = vault_bool("payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False)
+PAYMENT_GATEWAY_ENABLED = vault_bool(
+    "payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False
+)
 PAYMENT_GATEWAY_PROVIDER = get_secret(
     "payment_gateway_provider",
     default="manual",
@@ -356,7 +376,9 @@ DEFAULT_FROM_EMAIL = "noreply@loyallia.com"
 
 # WHATSAPP BRIDGE
 
-WHATSAPP_BRIDGE_URL = config("WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001")
+WHATSAPP_BRIDGE_URL = config(
+    "WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001"
+)
 WHATSAPP_BRIDGE_API_KEY = get_secret(
     "whatsapp_bridge_api_key",
     default="",
@@ -374,7 +396,9 @@ TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 # TWILIO VERIFY v2 ()
 
 TWILIO_VERIFY_SERVICE_SID = get_secret("twilio_verify_service_sid", default="")
-TWILIO_VERIFY_ENABLED = get_secret("twilio_verify_enabled", default="false").lower() == "true"
+TWILIO_VERIFY_ENABLED = (
+    get_secret("twilio_verify_enabled", default="false").lower() == "true"
+)
 TWILIO_VERIFY_DEFAULT_CHANNEL = get_secret(
     "twilio_verify_default_channel",
     default="sms",
@@ -422,7 +446,9 @@ SESSION_COOKIE_SAMESITE = "Lax"
 TRIAL_DAYS = config("TRIAL_DAYS", default=5, cast=int)
 GEO_PUSH_COOLDOWN_HOURS = config("GEO_PUSH_COOLDOWN_HOURS", default=4, cast=int)
 GEO_FENCE_RADIUS_METERS = config("GEO_FENCE_RADIUS_METERS", default=100, cast=int)
-TAX_RATE_ECUADOR = config("TAX_RATE_ECUADOR", default=0.15, cast=float)  # Ecuador IVA 15%
+TAX_RATE_ECUADOR = config(
+    "TAX_RATE_ECUADOR", default=0.15, cast=float
+)  # Ecuador IVA 15%
 
 # GOOGLE OAUTH 2.0 (Social Login) Google Identity Services (GIS)
 

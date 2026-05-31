@@ -21,6 +21,7 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+
 class RequestIDMiddleware:
     """Attach a unique X-Request-ID to every request and response.
 
@@ -38,17 +39,20 @@ class RequestIDMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
- # PERF: reuse upstream ID if present, otherwise generate (single uuid4 call)
-        request_id = request.META.get(f"HTTP_{self.HEADER.upper().replace('-', '_')}", "")
+        # PERF: reuse upstream ID if present, otherwise generate (single uuid4 call)
+        request_id = request.META.get(
+            f"HTTP_{self.HEADER.upper().replace('-', '_')}", ""
+        )
         if not request_id:
             request_id = uuid.uuid4().hex
 
         request.request_id = request_id
 
         response = self.get_response(request)
- # Echo ID back so clients can correlate requests with server logs
+        # Echo ID back so clients can correlate requests with server logs
         response[self.HEADER] = request_id
         return response
+
 
 class CSPNonceMiddleware:
     """
@@ -65,15 +69,15 @@ class CSPNonceMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
- # SEC: 128-bit cryptographic nonce (22 chars base64url) per request
+        # SEC: 128-bit cryptographic nonce (22 chars base64url) per request
         nonce = secrets.token_urlsafe(16)
         request.csp_nonce = nonce
 
         response = self.get_response(request)
 
- # Build CSP header with nonce
- #
- # CSP violations when Google OAuth is enabled.
+        # Build CSP header with nonce
+        #
+        # CSP violations when Google OAuth is enabled.
         response_content_type = response.get("Content-Type", "")
         if "application/json" not in response_content_type:
             csp_directives = [
@@ -91,6 +95,7 @@ class CSPNonceMiddleware:
             response["Content-Security-Policy"] = "; ".join(csp_directives)
         return response
 
+
 class CSRFExemptAPIMiddleware:
     """
 
@@ -104,8 +109,8 @@ class CSRFExemptAPIMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
- # SEC: /api/ paths use JWT Bearer tokens which are CSRF-immune by design.
- # Browsers never auto-attach Authorization headers, so CSRF is impossible.
+        # SEC: /api/ paths use JWT Bearer tokens which are CSRF-immune by design.
+        # Browsers never auto-attach Authorization headers, so CSRF is impossible.
         if request.path.startswith("/api/"):
             request._dont_enforce_csrf_checks = True
 

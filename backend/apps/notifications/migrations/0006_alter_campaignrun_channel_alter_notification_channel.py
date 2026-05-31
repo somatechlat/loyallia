@@ -6,18 +6,41 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notifications', '0005_plan_messaging_gating'),
+        ("notifications", "0005_plan_messaging_gating"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='campaignrun',
-            name='channel',
-            field=models.CharField(choices=[('push', 'Push Notification'), ('sms', 'SMS'), ('email', 'Email'), ('wallet', 'Wallet'), ('in_app', 'In-App Notification'), ('whatsapp', 'WhatsApp')], max_length=20, verbose_name='Canal'),
+            model_name="campaignrun",
+            name="channel",
+            field=models.CharField(
+                choices=[
+                    ("push", "Push Notification"),
+                    ("sms", "SMS"),
+                    ("email", "Email"),
+                    ("wallet", "Wallet"),
+                    ("in_app", "In-App Notification"),
+                    ("whatsapp", "WhatsApp"),
+                ],
+                max_length=20,
+                verbose_name="Canal",
+            ),
         ),
         migrations.AlterField(
-            model_name='notification',
-            name='channel',
-            field=models.CharField(choices=[('push', 'Push Notification'), ('sms', 'SMS'), ('email', 'Email'), ('wallet', 'Wallet'), ('in_app', 'In-App Notification'), ('whatsapp', 'WhatsApp')], default='push', max_length=20, verbose_name='Canal'),
+            model_name="notification",
+            name="channel",
+            field=models.CharField(
+                choices=[
+                    ("push", "Push Notification"),
+                    ("sms", "SMS"),
+                    ("email", "Email"),
+                    ("wallet", "Wallet"),
+                    ("in_app", "In-App Notification"),
+                    ("whatsapp", "WhatsApp"),
+                ],
+                default="push",
+                max_length=20,
+                verbose_name="Canal",
+            ),
         ),
     ]

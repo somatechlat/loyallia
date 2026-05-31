@@ -6,17 +6,39 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('audit', '0002_alter_auditlog_action'),
+        ("audit", "0002_alter_auditlog_action"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='auditlog',
-            name='action',
-            field=models.CharField(choices=[('CREATE', 'Crear'), ('READ', 'Leer'), ('UPDATE', 'Actualizar'), ('DELETE', 'Eliminar'), ('EXPORT', 'Exportar'), ('IMPORT', 'Importar'), ('IMPERSONATE', 'Suplantación'), ('LOGIN', 'Inicio de sesión'), ('LOGOUT', 'Cierre de sesión'), ('API_ACCESS', 'Acceso API'), ('FACTORY_RESET', 'Restauración de fábrica'), ('SEED_DEMO', 'Carga de datos demo'), ('BACKUP', 'Respaldo'), ('RESTORE', 'Restauración')], max_length=20, verbose_name='Acción'),
+            model_name="auditlog",
+            name="action",
+            field=models.CharField(
+                choices=[
+                    ("CREATE", "Crear"),
+                    ("READ", "Leer"),
+                    ("UPDATE", "Actualizar"),
+                    ("DELETE", "Eliminar"),
+                    ("EXPORT", "Exportar"),
+                    ("IMPORT", "Importar"),
+                    ("IMPERSONATE", "Suplantación"),
+                    ("LOGIN", "Inicio de sesión"),
+                    ("LOGOUT", "Cierre de sesión"),
+                    ("API_ACCESS", "Acceso API"),
+                    ("FACTORY_RESET", "Restauración de fábrica"),
+                    ("SEED_DEMO", "Carga de datos demo"),
+                    ("BACKUP", "Respaldo"),
+                    ("RESTORE", "Restauración"),
+                ],
+                max_length=20,
+                verbose_name="Acción",
+            ),
         ),
         migrations.AddIndex(
-            model_name='auditlog',
-            index=models.Index(fields=['ip_address', 'created_at'], name='loyallia_au_ip_addr_bb3cff_idx'),
+            model_name="auditlog",
+            index=models.Index(
+                fields=["ip_address", "created_at"],
+                name="loyallia_au_ip_addr_bb3cff_idx",
+            ),
         ),
     ]

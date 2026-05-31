@@ -6,28 +6,43 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0008_add_customer_portal_account'),
+        ("customers", "0008_add_customer_portal_account"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='customerpass',
-            name='coupon_redemption_count',
-            field=models.PositiveIntegerField(default=0, verbose_name='Contador de canjes de cupón'),
+            model_name="customerpass",
+            name="coupon_redemption_count",
+            field=models.PositiveIntegerField(
+                default=0, verbose_name="Contador de canjes de cupón"
+            ),
         ),
         migrations.AddField(
-            model_name='customerpass',
-            name='last_redemption_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Último canje'),
+            model_name="customerpass",
+            name="last_redemption_at",
+            field=models.DateTimeField(
+                blank=True, null=True, verbose_name="Último canje"
+            ),
         ),
         migrations.AddField(
-            model_name='customerpass',
-            name='lifecycle_state',
-            field=models.CharField(choices=[('active', 'Activo'), ('reward_ready', 'Recompensa lista'), ('expired', 'Expirado'), ('depleted', 'Agotado'), ('suspended', 'Suspendido')], default='active', max_length=20, verbose_name='Estado del ciclo de vida'),
+            model_name="customerpass",
+            name="lifecycle_state",
+            field=models.CharField(
+                choices=[
+                    ("active", "Activo"),
+                    ("reward_ready", "Recompensa lista"),
+                    ("expired", "Expirado"),
+                    ("depleted", "Agotado"),
+                    ("suspended", "Suspendido"),
+                ],
+                default="active",
+                max_length=20,
+                verbose_name="Estado del ciclo de vida",
+            ),
         ),
         migrations.AddField(
-            model_name='customerpass',
-            name='pending_rewards',
-            field=models.JSONField(default=list, verbose_name='Recompensas pendientes'),
+            model_name="customerpass",
+            name="pending_rewards",
+            field=models.JSONField(default=list, verbose_name="Recompensas pendientes"),
         ),
     ]

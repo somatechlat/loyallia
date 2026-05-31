@@ -34,6 +34,7 @@ from apps.authentication.tokens import decode_access_token
 from common.messages import get_message
 from common.request import as_tenant_request
 
+
 class JWTAuth(HttpBearer):
     """Django Ninja bearer token auth  decodes JWT + loads User+Tenant in one query.
 
@@ -43,7 +44,7 @@ class JWTAuth(HttpBearer):
 
     def authenticate(self, request: HttpRequest, token: str) -> Any:
         tenant_request = as_tenant_request(request)
- # SEC: cryptographic verification before any DB work
+        # SEC: cryptographic verification before any DB work
         payload = decode_access_token(token)
         if payload is None:
             return None
@@ -51,8 +52,8 @@ class JWTAuth(HttpBearer):
         from apps.authentication.models import User
 
         try:
- # PERF: select_related("tenant") = single JOIN instead of 2 queries
- # SEC: is_active=True prevents deactivated users from authenticating
+            # PERF: select_related("tenant") = single JOIN instead of 2 queries
+            # SEC: is_active=True prevents deactivated users from authenticating
             user = User.objects.select_related("tenant").get(
                 id=payload["user_id"],
                 is_active=True,
@@ -60,10 +61,11 @@ class JWTAuth(HttpBearer):
         except User.DoesNotExist:
             return None
 
- # SEC: tenant derived from User FK, not request headers (prevents spoofing)
+        # SEC: tenant derived from User FK, not request headers (prevents spoofing)
         tenant_request.user = user
         tenant_request.tenant = user.tenant
         return user
+
 
 class OptionalJWTAuth(HttpBearer):
     """Bearer auth that allows unauthenticated access for public endpoints.
@@ -82,9 +84,11 @@ class OptionalJWTAuth(HttpBearer):
         except Exception:
             return None
 
+
 # Singleton instances avoids re-instantiation on every endpoint registration
 jwt_auth = JWTAuth()
 optional_jwt_auth = OptionalJWTAuth()
+
 
 def _role_user(request: HttpRequest):
     """Extract the authenticated User from request, or None if not valid.
@@ -102,6 +106,7 @@ def _role_user(request: HttpRequest):
     if not hasattr(user, "role"):
         return None
     return user
+
 
 def require_role(*roles: str):
     """Decorator for role-based access control on Django Ninja endpoints.
@@ -121,7 +126,7 @@ def require_role(*roles: str):
                 from ninja.errors import HttpError
 
                 raise HttpError(401, get_message("AUTH_TOKEN_INVALID"))
- # SEC: role checked against the DB-loaded user, not request data
+            # SEC: role checked against the DB-loaded user, not request data
             if user.role not in roles:
                 from ninja.errors import HttpError
 
@@ -132,20 +137,24 @@ def require_role(*roles: str):
 
     return decorator
 
+
 def is_owner(request: HttpRequest) -> bool:
     """Check if authenticated user has OWNER role."""
     user = _role_user(as_tenant_request(request))
     return bool(user and user.role == "OWNER")
+
 
 def is_manager_or_owner(request: HttpRequest) -> bool:
     """Check if authenticated user has MANAGER or OWNER role."""
     user = _role_user(as_tenant_request(request))
     return bool(user and user.role in ("OWNER", "MANAGER"))
 
+
 def is_staff_or_above(request: HttpRequest) -> bool:
     """Check if authenticated user has STAFF, MANAGER, or OWNER role."""
     user = _role_user(as_tenant_request(request))
     return bool(user and user.role in ("OWNER", "MANAGER", "STAFF"))
+
 
 def is_super_admin(request: HttpRequest) -> bool:
     """Check if authenticated user has SUPER_ADMIN role (platform-level access)."""

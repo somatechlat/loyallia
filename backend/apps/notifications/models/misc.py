@@ -13,6 +13,7 @@ from apps.tenants.models import Tenant
 
 from .base import NotificationChannel, NotificationType
 
+
 class Notification(models.Model):
     """
     Notification record for audit trail and analytics.
@@ -43,7 +44,7 @@ class Notification(models.Model):
         verbose_name="Pase del cliente",
     )
 
- # Notification details
+    # Notification details
     notification_type = models.CharField(
         max_length=30,
         choices=NotificationType.choices,
@@ -56,25 +57,31 @@ class Notification(models.Model):
         verbose_name="Canal",
     )
 
- # Content
+    # Content
     title = models.CharField(max_length=200, verbose_name="Título")
     message = models.TextField(verbose_name="Mensaje")
     image_url = models.URLField(blank=True, default="", verbose_name="URL de imagen")
     action_url = models.URLField(blank=True, default="", verbose_name="URL de acción")
 
- # Metadata
+    # Metadata
     notification_data = models.JSONField(default=dict, verbose_name="Datos adicionales")
 
- # Delivery status
+    # Delivery status
     is_sent = models.BooleanField(default=False, verbose_name="Enviado")
     is_read = models.BooleanField(default=False, verbose_name="Leído")
     is_clicked = models.BooleanField(default=False, verbose_name="Clickeado")
 
- # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+    # Timestamps
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Fecha de creación"
+    )
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de envío")
-    read_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de lectura")
-    clicked_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de click")
+    read_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Fecha de lectura"
+    )
+    clicked_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Fecha de click"
+    )
 
     class Meta:
         db_table = "loyallia_notifications"
@@ -117,6 +124,7 @@ class Notification(models.Model):
         self.clicked_at = timezone.now()
         self.save(update_fields=["is_clicked", "clicked_at"])
 
+
 class WhatsAppSession(models.Model):
     """Per-tenant WhatsApp bridge session state.
 
@@ -141,19 +149,25 @@ class WhatsAppSession(models.Model):
         verbose_name="Número de WhatsApp",
     )
     is_connected = models.BooleanField(default=False, verbose_name="Conectado")
-    last_qr_at = models.DateTimeField(null=True, blank=True, verbose_name="Último QR generado")
+    last_qr_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Último QR generado"
+    )
 
- # Rate limiting state
-    messages_sent_today = models.IntegerField(default=0, verbose_name="Mensajes enviados hoy")
-    daily_limit = models.IntegerField(default=200, verbose_name="Límite diario (legacy)")
+    # Rate limiting state
+    messages_sent_today = models.IntegerField(
+        default=0, verbose_name="Mensajes enviados hoy"
+    )
+    daily_limit = models.IntegerField(
+        default=200, verbose_name="Límite diario (legacy)"
+    )
     warmup_day = models.IntegerField(
         default=0,
         verbose_name="Día de calentamiento",
         help_text="0=new number, 7=fully warmed up. Limit scales linearly.",
     )
 
- #
- # When set (> 0), overrides the plan's max_whatsapp_day for this tenant.
+    #
+    # When set (> 0), overrides the plan's max_whatsapp_day for this tenant.
     daily_limit_override = models.PositiveIntegerField(
         default=0,
         verbose_name="Override límite diario",
@@ -190,7 +204,7 @@ class WhatsAppSession(models.Model):
             plan = subscription.subscription_plan
             if plan and plan.max_whatsapp_day > 0:
                 return plan.max_whatsapp_day
- # Trial users: use legacy daily_limit (200)
+            # Trial users: use legacy daily_limit (200)
             if subscription.is_trial_active:
                 return self.daily_limit
 

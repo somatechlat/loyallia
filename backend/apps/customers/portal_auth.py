@@ -32,7 +32,9 @@ def _get_signing_key() -> str:
 
 def _get_verification_key() -> str:
     """Get the key used for verifying JWTs (same as staff auth)."""
-    from apps.authentication.tokens import _get_verification_key as staff_verification_key
+    from apps.authentication.tokens import (
+        _get_verification_key as staff_verification_key,
+    )
 
     return staff_verification_key()
 

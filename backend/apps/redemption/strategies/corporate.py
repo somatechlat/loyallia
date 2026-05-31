@@ -54,7 +54,9 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
     # Mutation
     # ------------------------------------------------------------------
 
-    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> CorporateStateMutation:
+    def _compute_mutation(
+        self, locked_pass: "CustomerPass", context: RedemptionContext
+    ) -> CorporateStateMutation:
         membership_valid = True
         reason = ""
 
@@ -72,7 +74,9 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
             reason=reason,
         )
 
-    def _apply_mutation(self, locked_pass: "CustomerPass", mutation: PassStateMutation) -> None:
+    def _apply_mutation(
+        self, locked_pass: "CustomerPass", mutation: PassStateMutation
+    ) -> None:
         """Corporate validation is read-only; no pass state is modified."""
         pass
 

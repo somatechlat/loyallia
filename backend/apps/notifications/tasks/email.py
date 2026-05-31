@@ -62,11 +62,15 @@ def send_email_campaign(
 
     from apps.customers.segment_api import _apply_segment_filter
 
-    base_qs = Customer.objects.filter(tenant=tenant, is_active=True, email__isnull=False, email__gt="")
+    base_qs = Customer.objects.filter(
+        tenant=tenant, is_active=True, email__isnull=False, email__gt=""
+    )
     audience = _apply_segment_filter(base_qs, segment_id)
     total = audience.count()
 
-    logger.info("Email campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total)
+    logger.info(
+        "Email campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total
+    )
 
     campaign_run = CampaignRun.objects.create(
         tenant=tenant,
@@ -82,6 +86,7 @@ def send_email_campaign(
     succeeded = 0
     failed = 0
     from common.email_config import get_default_from_email
+
     from_email = get_default_from_email()
     primary_color = getattr(tenant, "primary_color", "#6366f1")
     error_summary = ""
@@ -156,11 +161,13 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
 </div>
 </body></html>"""
 
- # Generate a stable Message-ID for webhook correlation
+                # Generate a stable Message-ID for webhook correlation
                 import uuid as _uuid
 
                 message_id = f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"
-                msg = EmailMultiAlternatives(subject=subject, from_email=from_email, to=[customer.email])
+                msg = EmailMultiAlternatives(
+                    subject=subject, from_email=from_email, to=[customer.email]
+                )
                 msg.attach_alternative(html_content, "text/html")
                 msg.extra_headers["Message-ID"] = f"<{message_id}>"
                 msg.send(fail_silently=False)
@@ -168,7 +175,9 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 delivery_log.status = DeliveryStatus.SENT
                 delivery_log.external_message_id = message_id
                 delivery_log.sent_at = timezone.now()
-                delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
+                delivery_log.save(
+                    update_fields=["status", "sent_at", "external_message_id"]
+                )
                 notification.mark_as_sent()
                 succeeded += 1
 

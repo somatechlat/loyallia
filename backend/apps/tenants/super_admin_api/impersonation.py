@@ -58,7 +58,9 @@ def _audit_impersonation(request, tenant, justification: str, status: str, reaso
         logger.warning("Failed to audit impersonation attempt", exc_info=True)
 
 
-@router.post("/tenants/{tenant_id}/impersonate/", auth=jwt_auth, response=ImpersonateOut)
+@router.post(
+    "/tenants/{tenant_id}/impersonate/", auth=jwt_auth, response=ImpersonateOut
+)
 def impersonate_tenant(request, tenant_id: str, payload: ImpersonateIn):
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
@@ -121,7 +123,9 @@ def impersonate_tenant(request, tenant_id: str, payload: ImpersonateIn):
         "impersonated_by": str(request.user.id),
         "impersonated": True,
     }
-    access = pyjwt.encode(token_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    access = pyjwt.encode(
+        token_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
 
     _audit_impersonation(
         request,
@@ -166,5 +170,9 @@ def revoke_impersonation(request):
     except Exception:
         logger.warning("Failed to audit impersonation revocation", exc_info=True)
 
-    logger.info("SUPER_ADMIN %s revoked impersonation for user %s", request.user.email, request.auth.user_id)
+    logger.info(
+        "SUPER_ADMIN %s revoked impersonation for user %s",
+        request.user.email,
+        request.auth.user_id,
+    )
     return {"message": get_message("SUCCESS", detail="Impersonation revoked")}

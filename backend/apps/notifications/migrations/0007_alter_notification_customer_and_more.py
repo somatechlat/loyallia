@@ -7,23 +7,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0007_alter_customerpass_card'),
-        ('notifications', '0006_alter_campaignrun_channel_alter_notification_channel'),
-        ('tenants', '0009_alter_tenant_scheduled_deletion_at'),
+        ("customers", "0007_alter_customerpass_card"),
+        ("notifications", "0006_alter_campaignrun_channel_alter_notification_channel"),
+        ("tenants", "0009_alter_tenant_scheduled_deletion_at"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='notification',
-            name='customer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='notifications', to='customers.customer', verbose_name='Cliente'),
+            model_name="notification",
+            name="customer",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="notifications",
+                to="customers.customer",
+                verbose_name="Cliente",
+            ),
         ),
         migrations.AddIndex(
-            model_name='campaigndeliverylog',
-            index=models.Index(fields=['status', '-created_at'], name='loyallia_ca_status_c8a71a_idx'),
+            model_name="campaigndeliverylog",
+            index=models.Index(
+                fields=["status", "-created_at"], name="loyallia_ca_status_c8a71a_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='notification',
-            index=models.Index(fields=['tenant', '-created_at'], name='loyallia_no_tenant__4c3aff_idx'),
+            model_name="notification",
+            index=models.Index(
+                fields=["tenant", "-created_at"], name="loyallia_no_tenant__4c3aff_idx"
+            ),
         ),
     ]

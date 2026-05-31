@@ -75,7 +75,9 @@ def upload_file(request, file: UploadedFile):
     if getattr(file, "content_type", "") not in ALLOWED_CONTENT_TYPES:
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="Tipo de contenido de imagen no permitido."),
+            get_message(
+                "VALIDATION_ERROR", detail="Tipo de contenido de imagen no permitido."
+            ),
         )
 
     try:
@@ -85,18 +87,20 @@ def upload_file(request, file: UploadedFile):
     except (UnidentifiedImageError, OSError, ValueError):
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="El archivo no es una imagen válida."),
+            get_message(
+                "VALIDATION_ERROR", detail="El archivo no es una imagen válida."
+            ),
         )
 
     try:
- # Generate random unique filename to prevent collisions and path traversal
+        # Generate random unique filename to prevent collisions and path traversal
         tenant_dirname = str(request.tenant.id) if request.tenant else "platform"
         filename = f"uploads/{tenant_dirname}/{uuid.uuid4().hex}{ext}"
 
- # Save to S3/MinIO
+        # Save to S3/MinIO
         path = default_storage.save(filename, file)
 
- # Return relative URL so it works via nginx proxy on any origin (localhost, IP, domain)
+        # Return relative URL so it works via nginx proxy on any origin (localhost, IP, domain)
         public_url = f"/assets/{path}"
 
         return {"success": True, "url": public_url}
@@ -106,7 +110,9 @@ def upload_file(request, file: UploadedFile):
         raise HttpError(500, get_message("SERVER_ERROR"))
 
 
-@router.get("/assets/", auth=jwt_auth, response=AssetListOut, summary="Listar imágenes subidas")
+@router.get(
+    "/assets/", auth=jwt_auth, response=AssetListOut, summary="Listar imágenes subidas"
+)
 def list_assets(request):
     """
     Lists previously uploaded images for the current tenant from MinIO/S3.
@@ -139,12 +145,14 @@ def list_assets(request):
         for obj in response.get("Contents", []):
             key = obj["Key"]
             name = key.split("/")[-1]
-            assets.append({
-                "url": f"/assets/{key}",
-                "name": name,
-                "size": obj["Size"],
-                "last_modified": obj["LastModified"].isoformat(),
-            })
+            assets.append(
+                {
+                    "url": f"/assets/{key}",
+                    "name": name,
+                    "size": obj["Size"],
+                    "last_modified": obj["LastModified"].isoformat(),
+                }
+            )
 
         # Sort by most recent first
         assets.sort(key=lambda x: x["last_modified"], reverse=True)

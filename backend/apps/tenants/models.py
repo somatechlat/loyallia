@@ -16,6 +16,7 @@ from common.models import TimestampedModel
 
 # VALIDATORS Ecuadorian Identity Documents
 
+
 def validate_ruc(value: str) -> None:
     """Validate Ecuadorian RUC (Registro Único de Contribuyentes).
     Rules: 13 digits. First 2 = province (01-24, or 30 for foreign).
@@ -25,7 +26,10 @@ def validate_ruc(value: str) -> None:
         raise ValidationError("El RUC debe tener exactamente 13 dígitos numéricos.")
     province = int(value[:2])
     if province < 1 or (province > 24 and province not in (30,)):
-        raise ValidationError(f"Los primeros 2 dígitos del RUC ({value[:2]}) no corresponden a una provincia válida.")
+        raise ValidationError(
+            f"Los primeros 2 dígitos del RUC ({value[:2]}) no corresponden a una provincia válida."
+        )
+
 
 def validate_cedula(value: str) -> None:
     """Validate Ecuadorian Cédula de Identidad.
@@ -35,8 +39,10 @@ def validate_cedula(value: str) -> None:
         raise ValidationError("La cédula debe tener exactamente 10 dígitos numéricos.")
     province = int(value[:2])
     if province < 1 or province > 24:
-        raise ValidationError(f"Los primeros 2 dígitos ({value[:2]}) no corresponden a una provincia válida.")
- # Module-10 verification
+        raise ValidationError(
+            f"Los primeros 2 dígitos ({value[:2]}) no corresponden a una provincia válida."
+        )
+    # Module-10 verification
     coefficients = [2, 1, 2, 1, 2, 1, 2, 1, 2]
     total = 0
     for i in range(9):
@@ -46,12 +52,15 @@ def validate_cedula(value: str) -> None:
     if check != int(value[9]):
         raise ValidationError("El dígito verificador de la cédula no es válido.")
 
+
 # ENUMS
+
 
 class Plan(models.TextChoices):
     TRIAL = "trial", "Trial Gratuito"
     FULL = "full", "FULL"
     SUSPENDED = "suspended", "Suspendido"
+
 
 class IndustryType(models.TextChoices):
     FOOD_BEVERAGE = "food_beverage", "Alimentos y Bebidas"
@@ -65,6 +74,7 @@ class IndustryType(models.TextChoices):
     HOSPITALITY = "hospitality", "Hotelería y Turismo"
     TECHNOLOGY = "technology", "Tecnología"
     OTHER = "other", "Otro"
+
 
 class EcuadorProvince(models.TextChoices):
     AZUAY = "azuay", "Azuay"
@@ -92,11 +102,14 @@ class EcuadorProvince(models.TextChoices):
     TUNGURAHUA = "tungurahua", "Tungurahua"
     ZAMORA_CHINCHIPE = "zamora_chinchipe", "Zamora Chinchipe"
 
+
 class EntityType(models.TextChoices):
     NATURAL = "natural", "Persona Natural"
     JURIDICA = "juridica", "Persona Jurídica (Empresa)"
 
+
 # TENANT MODEL
+
 
 class Tenant(TimestampedModel):
     """
@@ -107,13 +120,13 @@ class Tenant(TimestampedModel):
 
     name = models.CharField(max_length=200, verbose_name="Nombre comercial")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
- #
- # Use effective_plan property or Subscription directly as the source of truth.
- # This field will be removed in a future migration once all reads are migrated.
+    #
+    # Use effective_plan property or Subscription directly as the source of truth.
+    # This field will be removed in a future migration once all reads are migrated.
     plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
     is_active = models.BooleanField(default=True)
 
- # Entity classification (Ecuador: natural vs jurídica)
+    # Entity classification (Ecuador: natural vs jurídica)
     entity_type = models.CharField(
         max_length=10,
         choices=EntityType.choices,
@@ -130,7 +143,7 @@ class Tenant(TimestampedModel):
         help_text="Cédula del propietario (solo persona natural, 10 dígitos)",
     )
 
- # Ecuadorian Legal Entity
+    # Ecuadorian Legal Entity
     legal_name = models.CharField(
         max_length=300,
         blank=True,
@@ -153,8 +166,10 @@ class Tenant(TimestampedModel):
         verbose_name="Industria",
     )
 
- # Legal Representative
-    legal_rep_name = models.CharField(max_length=200, blank=True, default="", verbose_name="Representante legal")
+    # Legal Representative
+    legal_rep_name = models.CharField(
+        max_length=200, blank=True, default="", verbose_name="Representante legal"
+    )
     legal_rep_cedula = models.CharField(
         max_length=10,
         blank=True,
@@ -163,15 +178,15 @@ class Tenant(TimestampedModel):
         validators=[validate_cedula],
     )
 
- # Trial
+    # Trial
     trial_end = models.DateTimeField(null=True, blank=True)
 
- # Branding
+    # Branding
     logo_url = models.URLField(blank=True, default="", max_length=2000)
     primary_color = models.CharField(max_length=7, default="#1a1a2e")  # HEX
     secondary_color = models.CharField(max_length=7, default="#16213e")
 
- # Business info
+    # Business info
     country = models.CharField(max_length=2, default="EC")  # ISO 3166-1 alpha-2
     province = models.CharField(
         max_length=30,
@@ -180,14 +195,16 @@ class Tenant(TimestampedModel):
         default="",
         verbose_name="Provincia",
     )
-    city = models.CharField(max_length=100, blank=True, default="", verbose_name="Ciudad")
+    city = models.CharField(
+        max_length=100, blank=True, default="", verbose_name="Ciudad"
+    )
     timezone = models.CharField(max_length=50, default="America/Guayaquil")
     phone = models.CharField(max_length=20, blank=True, default="")
     email = models.EmailField(blank=True, default="", verbose_name="Email corporativo")
     website = models.URLField(blank=True, default="")
     address = models.TextField(blank=True, default="")
 
- # i18n tenant default language (REQ-I18N-001)
+    # i18n tenant default language (REQ-I18N-001)
     default_language = models.CharField(
         max_length=5,
         default="es",
@@ -220,9 +237,13 @@ class Tenant(TimestampedModel):
         """Validate tenant data."""
         super().clean()
         if self.entity_type == EntityType.NATURAL and not self.cedula:
-            raise ValidationError({"cedula": "La cédula es obligatoria para persona natural."})
+            raise ValidationError(
+                {"cedula": "La cédula es obligatoria para persona natural."}
+            )
         if self.entity_type == EntityType.JURIDICA and not self.ruc:
-            raise ValidationError({"ruc": "El RUC es obligatorio para persona jurídica."})
+            raise ValidationError(
+                {"ruc": "El RUC es obligatorio para persona jurídica."}
+            )
 
     @property
     def effective_plan(self) -> str:
@@ -252,9 +273,7 @@ class Tenant(TimestampedModel):
 
     @property
     def is_trial_active(self) -> bool:
-        """True if tenant is in active trial period.
-
-        """
+        """True if tenant is in active trial period."""
         from apps.billing.models import Subscription
 
         subscription = getattr(self, "subscription", None)
@@ -265,7 +284,7 @@ class Tenant(TimestampedModel):
         if subscription is not None:
             return subscription.is_trial_active
 
- # Fallback to denormalized field
+        # Fallback to denormalized field
         if self.plan != Plan.TRIAL:
             return False
         if self.trial_end is None:
@@ -296,9 +315,7 @@ class Tenant(TimestampedModel):
 
     @property
     def has_active_subscription(self) -> bool:
-        """True if tenant has paid subscription OR active trial.
-
-        """
+        """True if tenant has paid subscription OR active trial."""
         from apps.billing.models import Subscription
 
         subscription = getattr(self, "subscription", None)
@@ -309,7 +326,7 @@ class Tenant(TimestampedModel):
         if subscription is not None:
             return subscription.is_access_allowed
 
- # Fallback
+        # Fallback
         return self.plan == Plan.FULL or self.is_trial_active
 
     def activate_trial(self) -> None:
@@ -322,21 +339,26 @@ class Tenant(TimestampedModel):
         from apps.billing.models import Subscription, SubscriptionStatus
 
         trial_end = timezone.now() + timedelta(
-            days=PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
+            days=PlatformSetting.get_int(
+                "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
+            )
         )
 
- # Sync denormalized field (backward compat)
+        # Sync denormalized field (backward compat)
         self.trial_end = trial_end
         self.plan = Plan.TRIAL
         self.save(update_fields=["trial_end", "plan", "updated_at"])
 
- # Update authoritative Subscription
+        # Update authoritative Subscription
         subscription = Subscription.objects.filter(tenant=self).first()
         if subscription:
             subscription.trial_end = trial_end
             subscription.status = SubscriptionStatus.TRIALING
             subscription.plan = "trial"
-            subscription.save(update_fields=["trial_end", "status", "plan", "updated_at"])
+            subscription.save(
+                update_fields=["trial_end", "status", "plan", "updated_at"]
+            )
+
 
 class Location(TimestampedModel):
     """Physical business location. Each tenant can have multiple."""
@@ -351,9 +373,13 @@ class Location(TimestampedModel):
     city = models.CharField(max_length=100, blank=True, default="")
     country = models.CharField(max_length=2, default="EC")
 
- # Geo-coordinates for geo-fencing push notifications
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    # Geo-coordinates for geo-fencing push notifications
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
 
     phone = models.CharField(max_length=20, blank=True, default="")
     is_active = models.BooleanField(default=True)
@@ -375,13 +401,18 @@ class Location(TimestampedModel):
         """Validate location data."""
         super().clean()
         if self.latitude is not None and self.longitude is None:
-            raise ValidationError({"longitude": "La longitud es requerida si se proporciona latitud."})
+            raise ValidationError(
+                {"longitude": "La longitud es requerida si se proporciona latitud."}
+            )
         if self.longitude is not None and self.latitude is None:
-            raise ValidationError({"latitude": "La latitud es requerida si se proporciona longitud."})
+            raise ValidationError(
+                {"latitude": "La latitud es requerida si se proporciona longitud."}
+            )
 
     @property
     def has_coordinates(self) -> bool:
         return self.latitude is not None and self.longitude is not None
+
 
 # PLATFORM SETTINGS Runtime-configurable without restart
 
@@ -389,6 +420,7 @@ from django.core.cache import cache
 
 _PLATFORM_SETTING_CACHE_PREFIX = "platform_setting"
 _PLATFORM_SETTING_CACHE_TTL = 300  # 5 minutes
+
 
 class PlatformSetting(models.Model):
     """A single runtime-configurable platform setting.
@@ -430,7 +462,9 @@ class PlatformSetting(models.Model):
         )
 
     @classmethod
-    def set(cls, key: str, value: str, description: str = "", category: str = "general") -> "PlatformSetting":
+    def set(
+        cls, key: str, value: str, description: str = "", category: str = "general"
+    ) -> "PlatformSetting":
         """Set a setting value, updating both DB and cache.
 
         Returns the created or updated PlatformSetting instance.

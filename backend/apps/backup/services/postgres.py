@@ -27,10 +27,14 @@ def backup_postgresql(job_id: str, compression_enabled: bool = True) -> dict:
     compress_flag = "--gzip" if compression_enabled else ""
     cmd_parts = [
         "pg_dump",
-        "--host", db["host"],
-        "--port", str(db["port"]),
-        "--username", db["user"],
-        "--dbname", db["name"],
+        "--host",
+        db["host"],
+        "--port",
+        str(db["port"]),
+        "--username",
+        db["user"],
+        "--dbname",
+        db["name"],
         "--verbose",
         "--no-owner",
         "--no-privileges",
@@ -43,11 +47,21 @@ def backup_postgresql(job_id: str, compression_enabled: bool = True) -> dict:
     try:
         logger.info("backup_postgresql: starting pg_dump for job %s", job_id)
         with open(dump_file, "wb") as out_fh:
-            subprocess.run(cmd_parts, stdout=out_fh, stderr=subprocess.PIPE, env=env, check=True)
+            subprocess.run(
+                cmd_parts, stdout=out_fh, stderr=subprocess.PIPE, env=env, check=True
+            )
 
         file_size = os.path.getsize(dump_file)
-        logger.info("backup_postgresql: job %s completed, size=%d bytes", job_id, file_size)
-        return {"success": True, "component": "postgresql", "job_id": job_id, "file_path": dump_file, "file_size": file_size}
+        logger.info(
+            "backup_postgresql: job %s completed, size=%d bytes", job_id, file_size
+        )
+        return {
+            "success": True,
+            "component": "postgresql",
+            "job_id": job_id,
+            "file_path": dump_file,
+            "file_size": file_size,
+        }
     except subprocess.CalledProcessError as exc:
         stderr = (exc.stderr or b"").decode("utf-8", errors="replace")
         logger.error("backup_postgresql failed: %s", scrub_error(stderr))
@@ -65,19 +79,48 @@ def restore_postgresql(dump_file: str) -> bool:
     try:
         logger.info("restore: restoring PostgreSQL from %s", dump_file)
         if dump_file.endswith(".gz") or dump_file.endswith(".gzip"):
-            with subprocess.Popen(["zcat", dump_file], stdout=subprocess.PIPE) as zcat_proc:
+            with subprocess.Popen(
+                ["zcat", dump_file], stdout=subprocess.PIPE
+            ) as zcat_proc:
                 subprocess.run(
-                    ["psql", "--host", db["host"], "--port", str(db["port"]),
-                     "--username", db["user"], "--dbname", db["name"],
-                     "--set", "ON_ERROR_STOP=1"],
-                    stdin=zcat_proc.stdout, env=env, check=True, capture_output=True,
+                    [
+                        "psql",
+                        "--host",
+                        db["host"],
+                        "--port",
+                        str(db["port"]),
+                        "--username",
+                        db["user"],
+                        "--dbname",
+                        db["name"],
+                        "--set",
+                        "ON_ERROR_STOP=1",
+                    ],
+                    stdin=zcat_proc.stdout,
+                    env=env,
+                    check=True,
+                    capture_output=True,
                 )
         else:
             subprocess.run(
-                ["psql", "--host", db["host"], "--port", str(db["port"]),
-                 "--username", db["user"], "--dbname", db["name"],
-                 "--set", "ON_ERROR_STOP=1", "--file", dump_file],
-                env=env, check=True, capture_output=True,
+                [
+                    "psql",
+                    "--host",
+                    db["host"],
+                    "--port",
+                    str(db["port"]),
+                    "--username",
+                    db["user"],
+                    "--dbname",
+                    db["name"],
+                    "--set",
+                    "ON_ERROR_STOP=1",
+                    "--file",
+                    dump_file,
+                ],
+                env=env,
+                check=True,
+                capture_output=True,
             )
         logger.info("restore: PostgreSQL restore completed")
         return True

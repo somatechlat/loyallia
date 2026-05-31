@@ -34,11 +34,14 @@ OTP_TTL_SECONDS = 300  # 5 minutes
 OTP_MAX_ATTEMPTS = 3
 OTP_ATTEMPT_WINDOW = 3600  # 1 hour
 
+
 class OTPStrategy(ABC):
     """Abstract base for OTP strategies."""
 
     @abstractmethod
-    def send(self, recipient: str, channel: str | None = None, **kwargs: Any) -> dict[str, Any]:
+    def send(
+        self, recipient: str, channel: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
         """Send OTP to recipient.
 
         Returns:
@@ -46,7 +49,9 @@ class OTPStrategy(ABC):
         """
 
     @abstractmethod
-    def verify(self, recipient: str, code: str, sid: str | None = None, **kwargs: Any) -> bool:
+    def verify(
+        self, recipient: str, code: str, sid: str | None = None, **kwargs: Any
+    ) -> bool:
         """Verify OTP code.
 
         Returns:
@@ -80,6 +85,7 @@ class OTPStrategy(ABC):
         key = f"{OTP_REDIS_PREFIX}attempts:{recipient}"
         cache.delete(key)
 
+
 class VerifyOTPStrategy(OTPStrategy):
     """Twilio Verify v2 OTP strategy.
 
@@ -96,7 +102,9 @@ class VerifyOTPStrategy(OTPStrategy):
             self._client = VerifyClient()
         return self._client
 
-    def send(self, recipient: str, channel: str | None = None, **kwargs: Any) -> dict[str, Any]:
+    def send(
+        self, recipient: str, channel: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
         """Start a Twilio Verify verification.
 
         Args:
@@ -118,7 +126,9 @@ class VerifyOTPStrategy(OTPStrategy):
         self._increment_attempts(recipient)
         return result
 
-    def verify(self, recipient: str, code: str, sid: str | None = None, **kwargs: Any) -> bool:
+    def verify(
+        self, recipient: str, code: str, sid: str | None = None, **kwargs: Any
+    ) -> bool:
         """Check a Twilio Verify code.
 
         Args:
@@ -142,6 +152,7 @@ class VerifyOTPStrategy(OTPStrategy):
         else:
             self._increment_attempts(recipient)
         return is_valid
+
 
 class LocalOTPStrategy(OTPStrategy):
     """Local OTP generation with multi-channel delivery.
@@ -203,7 +214,9 @@ class LocalOTPStrategy(OTPStrategy):
             logger.error("OTP email send failed for %s: %s", email, exc)
             return {"success": False, "error": str(exc)}
 
-    def send(self, recipient: str, channel: str | None = None, **kwargs: Any) -> dict[str, Any]:
+    def send(
+        self, recipient: str, channel: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
         """Generate and send local OTP.
 
         Args:
@@ -221,12 +234,12 @@ class LocalOTPStrategy(OTPStrategy):
         delivery_success = False
         delivery_error: str | None = None
 
- # Determine if recipient is a phone or email
+        # Determine if recipient is a phone or email
         is_phone = recipient.startswith("+")
         fallback_email = kwargs.get("email", "")
 
         if is_phone:
- # Try Twilio direct SMS first
+            # Try Twilio direct SMS first
             try:
                 sms_result = send_sms(
                     phone=recipient,
@@ -239,15 +252,17 @@ class LocalOTPStrategy(OTPStrategy):
                 logger.error("Local OTP SMS send failed: %s", exc)
                 delivery_error = str(exc)
 
- # If SMS failed and we have a fallback email, send via email
+            # If SMS failed and we have a fallback email, send via email
             if not delivery_success and fallback_email:
-                logger.info("SMS failed, falling back to email OTP for %s", fallback_email)
+                logger.info(
+                    "SMS failed, falling back to email OTP for %s", fallback_email
+                )
                 email_result = self._send_otp_email(fallback_email, code)
                 delivery_success = email_result["success"]
                 delivery_error = email_result.get("error")
                 delivery_channel = "email"
         else:
- # Recipient is an email address send directly
+            # Recipient is an email address send directly
             email_result = self._send_otp_email(recipient, code)
             delivery_success = email_result["success"]
             delivery_error = email_result.get("error")
@@ -264,23 +279,26 @@ class LocalOTPStrategy(OTPStrategy):
             "delivery_error": delivery_error,
         }
 
-    def verify(self, recipient: str, code: str, sid: str | None = None, **kwargs: Any) -> bool:
+    def verify(
+        self, recipient: str, code: str, sid: str | None = None, **kwargs: Any
+    ) -> bool:
         """Check local OTP against stored value."""
         stored = self._get_stored_code(recipient)
         if stored is None:
             return False
 
- # Use constant-time comparison to prevent timing attacks
+        # Use constant-time comparison to prevent timing attacks
         import hmac
 
         is_valid = hmac.compare_digest(stored, code)
         if is_valid:
             self._reset_attempts(recipient)
- # Delete used code
+            # Delete used code
             cache.delete(f"{OTP_REDIS_PREFIX}code:{recipient}")
         else:
             self._increment_attempts(recipient)
         return is_valid
+
 
 def get_otp_strategy() -> OTPStrategy:
     """Return the active OTP strategy based on current Vault config.
@@ -301,6 +319,7 @@ def get_otp_strategy() -> OTPStrategy:
 
     logger.debug("Using LocalOTPStrategy")
     return LocalOTPStrategy()
+
 
 def send_otp(
     recipient: str,
@@ -329,6 +348,7 @@ def send_otp(
         result.get("status"),
     )
     return result
+
 
 def check_otp(
     recipient: str,

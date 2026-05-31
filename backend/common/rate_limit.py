@@ -39,6 +39,7 @@ from common.messages import get_message
 
 logger = logging.getLogger(__name__)
 
+
 def _get_redis_client():
     """Get Redis client for atomic rate limiting.
 
@@ -47,9 +48,11 @@ def _get_redis_client():
     """
     try:
         from django_redis import get_redis_connection
+
         return get_redis_connection("default")
     except Exception:
         return None
+
 
 def _check_rate_limit_cache(key: str, max_requests: int, window_seconds: int) -> bool:
     """Non-atomic rate limit check using Django cache.
@@ -75,14 +78,17 @@ def _check_rate_limit_cache(key: str, max_requests: int, window_seconds: int) ->
         logger.warning("Rate limiter: Cache operation error. Failing open.")
         return True
 
+
 def _get_cache_ttl(key: str, window_seconds: int) -> int:
     """Best-effort TTL lookup from Django cache."""
     try:
         from django.core.cache import cache
+
         ttl = cache.ttl(key) if hasattr(cache, "ttl") else window_seconds
     except Exception:
         ttl = window_seconds
     return ttl
+
 
 def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) -> bool:
     """Atomic rate limit check using Redis INCR + EXPIRE.
@@ -105,6 +111,7 @@ def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) ->
     except Exception:
         logger.warning("Rate limiter: Redis INCR failed. Falling back to cache.")
         return _check_rate_limit_cache(key, max_requests, window_seconds)
+
 
 # Rate limit rules: (path_prefix, key_type, max_requests, window_seconds)
 RATE_LIMIT_RULES = [
@@ -143,8 +150,8 @@ RATE_LIMIT_RULES = [
     ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP (legacy)
     ("/api/v1/auth/", "ip", 60, 60),  # 60 general auth requests per minute per IP
     ("/api/v1/scanner/", "user", 120, 60),  # 120 scans per minute per user
- # Dashboard loads fan out to several analytics endpoints; 60/min lets normal
- # date-filter usage work while preserving user-scoped abuse protection.
+    # Dashboard loads fan out to several analytics endpoints; 60/min lets normal
+    # date-filter usage work while preserving user-scoped abuse protection.
     ("/api/v1/analytics/", "user", 60, 60),
     (
         "/api/v1/notifications/",
@@ -189,6 +196,7 @@ AUTH_PATHS = [
     "/api/v1/auth/verify-email/",
 ]
 
+
 def _get_client_ip(request: HttpRequest) -> str:
     """Extract real client IP from REMOTE_ADDR only.
 
@@ -199,9 +207,11 @@ def _get_client_ip(request: HttpRequest) -> str:
     """
     return request.META.get("REMOTE_ADDR", "unknown")
 
+
 def get_client_ip(request: HttpRequest) -> str:
     """Public helper for endpoint-level rate limits."""
     return _get_client_ip(request)
+
 
 class RateLimitMiddleware:
     """
@@ -225,7 +235,7 @@ class RateLimitMiddleware:
         try:
             from django.core.cache import cache
 
- # Quick connectivity test (only on first call)
+            # Quick connectivity test (only on first call)
             if self._cache_available is None:
                 cache.set("rl:__ping__", 1, 5)
                 self._cache_available = True
@@ -236,43 +246,43 @@ class RateLimitMiddleware:
             return None
 
     def __call__(self, request: HttpRequest):
- # Only rate-limit API endpoints
+        # Only rate-limit API endpoints
         path = request.path
         if not path.startswith("/api/"):
             return self.get_response(request)
 
- # Skip health checks
+        # Skip health checks
         if path == "/api/v1/health/":
             return self.get_response(request)
 
         cache = self._get_cache()
         if cache is None:
-        # Fail CLOSED for auth endpoints.
- # Auth endpoints must not pass through unchecked when cache is down.
+            # Fail CLOSED for auth endpoints.
+            # Auth endpoints must not pass through unchecked when cache is down.
             if any(request.path.startswith(p) for p in AUTH_PATHS):
                 return JsonResponse(
                     {"error": "Service temporarily unavailable"},
                     status=503,
                 )
- # Non-auth endpoints: fail open (allow through)
+            # Non-auth endpoints: fail open (allow through)
             return self.get_response(request)
 
         client_ip = _get_client_ip(request)
 
- # Find the first matching rule (most specific first due to ordering)
+        # Find the first matching rule (most specific first due to ordering)
         for rule_path, key_type, max_requests, window in RATE_LIMIT_RULES:
             if not path.startswith(rule_path):
                 continue
 
- # Build the rate limit key
+            # Build the rate limit key
             if key_type == "user":
- # User-based limiting requires auth header
+                # User-based limiting requires auth header
                 auth_header = request.META.get("HTTP_AUTHORIZATION", "")
                 if not auth_header:
- # No auth = use IP-based limiting for this rule
+                    # No auth = use IP-based limiting for this rule
                     rate_key = f"rl:{rule_path}:ip:{client_ip}"
                 else:
- # Use a hash of the token as the user key (avoids storing tokens)
+                    # Use a hash of the token as the user key (avoids storing tokens)
                     import hashlib
 
                     token_hash = hashlib.sha256(auth_header.encode()).hexdigest()[:16]
@@ -283,24 +293,24 @@ class RateLimitMiddleware:
             try:
                 current_count = cache.get(rate_key)
                 if current_count is None:
- # First request in this window set to 1 with TTL
+                    # First request in this window set to 1 with TTL
                     cache.set(rate_key, 1, window)
                     current_count = 1
                 else:
- # Increment atomically via cache.incr
+                    # Increment atomically via cache.incr
                     try:
                         current_count = cache.incr(rate_key)
                     except ValueError:
- # Key expired between get and incr reset
+                        # Key expired between get and incr reset
                         cache.set(rate_key, 1, window)
                         current_count = 1
             except Exception:
- # Cache error fail open
+                # Cache error fail open
                 logger.warning("Rate limiter: Cache operation error. Failing open.")
                 break
 
             if current_count > max_requests:
- # Estimate TTL for Retry-After header
+                # Estimate TTL for Retry-After header
                 try:
                     ttl = cache.ttl(rate_key) if hasattr(cache, "ttl") else window
                 except Exception:
@@ -325,10 +335,11 @@ class RateLimitMiddleware:
                     headers={"Retry-After": str(ttl)},
                 )
 
- # Only apply the first matching rule
+            # Only apply the first matching rule
             break
 
         return self.get_response(request)
+
 
 # Endpoint-level rate limit decorator
 
@@ -338,7 +349,10 @@ from typing import TypeVar
 
 F = TypeVar("F", bound=Callable)
 
-def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Callable[[F], F]:
+
+def rate_limit(
+    key_prefix: str, max_requests: int, window_seconds: int
+) -> Callable[[F], F]:
     """Decorator for endpoint-level rate limiting using Redis (preferred) or Django cache.
 
     Uses Redis INCR + EXPIRE for atomic, distributed rate counting.
@@ -359,10 +373,10 @@ def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Calla
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
- # Django Ninja passes request as the first positional arg
+            # Django Ninja passes request as the first positional arg
             request = args[0] if args else None
             if request is None:
- # Cannot rate limit without a request pass through
+                # Cannot rate limit without a request pass through
                 return func(*args, **kwargs)
 
             client_ip = _get_client_ip(request)
@@ -372,7 +386,7 @@ def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Calla
             if allowed:
                 return func(*args, **kwargs)
 
- # Rate limit exceeded — get TTL for Retry-After header
+            # Rate limit exceeded — get TTL for Retry-After header
             ttl = window_seconds
             redis_client = _get_redis_client()
             if redis_client:

@@ -9,6 +9,7 @@ SEC: mailjet_api_key / mailjet_secret_key remain in Vault.
 NON-SECRET: mailjet_sender_email and mailjet_sender_name are PlatformSettings.
 """
 
+
 def get_default_from_email(fallback: str = "noreply@loyallia.com") -> str:
     """Return the platform default sender email address.
 
@@ -25,6 +26,7 @@ def get_default_from_email(fallback: str = "noreply@loyallia.com") -> str:
         pass
     return fallback
 
+
 def get_default_sender_name(fallback: str = "Loyallia") -> str:
     """Return the platform default sender display name.
 
@@ -40,7 +42,10 @@ def get_default_sender_name(fallback: str = "Loyallia") -> str:
         pass
     return fallback
 
-def get_default_from(fallback_email: str = "noreply@loyallia.com", fallback_name: str = "Loyallia") -> str:
+
+def get_default_from(
+    fallback_email: str = "noreply@loyallia.com", fallback_name: str = "Loyallia"
+) -> str:
     """Return a fully formatted From header value.
 
     Example: 'Loyallia <noreply@loyallia.com>'

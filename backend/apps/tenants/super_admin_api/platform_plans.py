@@ -11,7 +11,10 @@ from ninja import Router
 from ninja.errors import HttpError
 
 from apps.billing.models import Subscription, SubscriptionPlan, SubscriptionStatus
-from apps.tenants.super_admin_api.plan_validation import plan_to_config, validate_plan_config
+from apps.tenants.super_admin_api.plan_validation import (
+    plan_to_config,
+    validate_plan_config,
+)
 from apps.tenants.super_admin_api.schemas import (
     MessageOut,
     PlanCreateIn,

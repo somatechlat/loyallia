@@ -53,17 +53,19 @@ def _get_apns_jwt_token() -> str | None:
         return None
 
     if not os.path.exists(apns_auth_key_path):
-        logger.warning("APNs auth key not found at '%s'. iOS push disabled.", apns_auth_key_path)
+        logger.warning(
+            "APNs auth key not found at '%s'. iOS push disabled.", apns_auth_key_path
+        )
         return None
 
- # Check cache
+    # Check cache
     cache_key = (apns_key_id, apple_team_id)
     if cache_key in _token_cache:
         token_str, expires_at = _token_cache[cache_key]
         if time.time() < expires_at - 60:  # Refresh 60s before expiry
             return token_str
 
- # Generate new token
+    # Generate new token
     try:
         import jwt as pyjwt  # PyJWT
 
@@ -80,7 +82,9 @@ def _get_apns_jwt_token() -> str | None:
             "kid": apns_key_id,
         }
 
-        token_str = pyjwt.encode(payload, private_key, algorithm="ES256", headers=headers)
+        token_str = pyjwt.encode(
+            payload, private_key, algorithm="ES256", headers=headers
+        )
         expires_at = float(now + 3600)  # APNs tokens valid for 1 hour
 
         _token_cache[cache_key] = (token_str, expires_at)
@@ -121,10 +125,12 @@ def send_apns_message(
 
     topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
     if not topic:
-        logger.warning("APNs send skipped: Apple pass type identifier is not configured")
+        logger.warning(
+            "APNs send skipped: Apple pass type identifier is not configured"
+        )
         return False
 
- # Auto-detect sandbox from Django DEBUG setting
+    # Auto-detect sandbox from Django DEBUG setting
     use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)
     host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
 
@@ -152,7 +158,7 @@ def send_apns_message(
     }
 
     try:
- # httpx HTTP/2 requires h2 package: pip install httpx[http2]
+        # httpx HTTP/2 requires h2 package: pip install httpx[http2]
         with httpx.Client(http2=True, timeout=10.0) as client:
             response = client.post(url, json=payload, headers=headers)
 
@@ -160,14 +166,16 @@ def send_apns_message(
             logger.debug("APNs message sent to %s", device_token[-8:])
             return True
 
- # Parse APNs error reason
+        # Parse APNs error reason
         try:
             reason = response.json().get("reason", "Unknown")
         except Exception:
             reason = response.text[:100]
 
         if reason == "BadDeviceToken" or reason == "Unregistered":
-            logger.warning("APNs token invalid/unregistered (%s): %s", device_token[-8:], reason)
+            logger.warning(
+                "APNs token invalid/unregistered (%s): %s", device_token[-8:], reason
+            )
         else:
             logger.error(
                 "APNs HTTP %s for %s: %s",

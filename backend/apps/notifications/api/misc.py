@@ -18,7 +18,7 @@ def send_notification(request, customer_id: str, data: SendNotificationSchema):
     """Send a notification to a specific customer. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
- # Verify ownership - user must own the tenant
+    # Verify ownership - user must own the tenant
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
 
     notification = Notification.objects.create(
@@ -50,7 +50,7 @@ def get_notification_stats(request):
     """
     notifications = Notification.objects.filter(tenant=request.tenant)
 
- # Single aggregate query: total, sent, read, clicked in one DB round-trip
+    # Single aggregate query: total, sent, read, clicked in one DB round-trip
     agg = notifications.aggregate(
         total=Count("id"),
         sent=Count("id", filter=Q(is_sent=True)),
@@ -62,10 +62,19 @@ def get_notification_stats(request):
     read = agg["read"]
     clicked = agg["clicked"]
 
- # Single GROUP BY query instead of N separate COUNT queries
+    # Single GROUP BY query instead of N separate COUNT queries
     type_labels = dict(NotificationType.choices)
-    by_type_qs = notifications.values("notification_type").annotate(count=Count("id")).filter(count__gt=0)
-    by_type = {type_labels.get(row["notification_type"], row["notification_type"]): row["count"] for row in by_type_qs}
+    by_type_qs = (
+        notifications.values("notification_type")
+        .annotate(count=Count("id"))
+        .filter(count__gt=0)
+    )
+    by_type = {
+        type_labels.get(row["notification_type"], row["notification_type"]): row[
+            "count"
+        ]
+        for row in by_type_qs
+    }
 
     return {
         "total_notifications": total,

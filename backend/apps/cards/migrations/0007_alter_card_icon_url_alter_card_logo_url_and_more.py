@@ -6,23 +6,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0006_remove_card_idx_card_tenant_active'),
+        ("cards", "0006_remove_card_idx_card_tenant_active"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='card',
-            name='icon_url',
-            field=models.URLField(blank=True, default='', max_length=2000, verbose_name='URL del ícono'),
+            model_name="card",
+            name="icon_url",
+            field=models.URLField(
+                blank=True, default="", max_length=2000, verbose_name="URL del ícono"
+            ),
         ),
         migrations.AlterField(
-            model_name='card',
-            name='logo_url',
-            field=models.URLField(blank=True, default='', max_length=2000, verbose_name='URL del logo'),
+            model_name="card",
+            name="logo_url",
+            field=models.URLField(
+                blank=True, default="", max_length=2000, verbose_name="URL del logo"
+            ),
         ),
         migrations.AlterField(
-            model_name='card',
-            name='strip_image_url',
-            field=models.URLField(blank=True, default='', max_length=2000, verbose_name='Imagen de tira'),
+            model_name="card",
+            name="strip_image_url",
+            field=models.URLField(
+                blank=True, default="", max_length=2000, verbose_name="Imagen de tira"
+            ),
         ),
     ]

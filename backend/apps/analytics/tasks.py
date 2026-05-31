@@ -25,6 +25,7 @@ from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
+
 @shared_task(
     bind=True,
     max_retries=2,
@@ -67,10 +68,12 @@ def update_tenant_analytics(self, tenant_id: str) -> dict:
     # 1. Update Program Analytics
     programs = Card.objects.filter(tenant=tenant)
     for program in programs:
-        analytics, _ = ProgramAnalytics.objects.get_or_create(card=program, defaults={"tenant": tenant})
+        analytics, _ = ProgramAnalytics.objects.get_or_create(
+            card=program, defaults={"tenant": tenant}
+        )
         analytics.update_metrics()
 
- # 2. Update Daily Analytics for the last 7 days to catch late syncs
+    # 2. Update Daily Analytics for the last 7 days to catch late syncs
     today = timezone.localdate()
     for days_ago in range(7):
         target_date = today - timedelta(days=days_ago)

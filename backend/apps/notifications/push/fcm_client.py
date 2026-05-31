@@ -48,12 +48,12 @@ def _get_access_token() -> tuple[str | None, str | None]:
             scopes=FCM_SCOPES,
         )
 
- # Read the project_id from the SA file
+        # Read the project_id from the SA file
         with open(credential_file) as f:
             sa_data = json.load(f)
         project_id = sa_data.get("project_id")
 
- # Refresh the token
+        # Refresh the token
         credentials.refresh(GoogleRequest())
         return credentials.token, project_id
 
@@ -98,7 +98,7 @@ def send_fcm_message(
     if image_url:
         notification_payload["image"] = image_url
 
- # All data payload values must be strings per FCM spec
+    # All data payload values must be strings per FCM spec
     str_data = {k: str(v) for k, v in (data or {}).items()}
 
     message = {
@@ -133,7 +133,7 @@ def send_fcm_message(
             logger.debug("FCM message sent successfully to %s", fcm_token[-4:])
             return True
 
- # FCM returns 404 if the token is stale/unregistered
+        # FCM returns 404 if the token is stale/unregistered
         if response.status_code == 404:
             logger.warning("FCM token unregistered (404): %s", fcm_token[-4:])
             return False

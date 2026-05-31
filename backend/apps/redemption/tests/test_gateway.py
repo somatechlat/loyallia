@@ -20,7 +20,9 @@ from apps.transactions.models import Transaction, TransactionType
 
 class GatewayTestCase(TestCase):
     def setUp(self):
-        self.tenant = Tenant.objects.create(name="Test Cafe", email="test@cafe.com", phone="1234567890")
+        self.tenant = Tenant.objects.create(
+            name="Test Cafe", email="test@cafe.com", phone="1234567890"
+        )
         self.customer = Customer.objects.create(
             tenant=self.tenant,
             first_name="Test",
@@ -32,13 +34,33 @@ class GatewayTestCase(TestCase):
     def make_card(self, card_type: str, **kwargs):
         metadata_defaults = {
             "stamp": {"stamps_required": 5, "reward_description": "Free coffee"},
-            "cashback": {"cashback_percentage": 10, "minimum_purchase": 0, "credit_expiry_days": 365},
-            "coupon": {"discount_type": "percentage", "discount_value": 10, "usage_limit_per_customer": 1},
+            "cashback": {
+                "cashback_percentage": 10,
+                "minimum_purchase": 0,
+                "credit_expiry_days": 365,
+            },
+            "coupon": {
+                "discount_type": "percentage",
+                "discount_value": 10,
+                "usage_limit_per_customer": 1,
+            },
             "gift_certificate": {"denominations": [25, 50, 100], "expiry_days": 365},
-            "vip_membership": {"membership_name": "Gold", "monthly_fee": 10, "validity_period": "monthly"},
+            "vip_membership": {
+                "membership_name": "Gold",
+                "monthly_fee": 10,
+                "validity_period": "monthly",
+            },
             "multipass": {"bundle_size": 10, "bundle_price": 50},
-            "discount": {"tiers": [{"tier_name": "Bronze", "threshold": 0, "discount_percentage": 5}]},
-            "referral_pass": {"referrer_reward": "10", "referee_reward": "10", "max_referrals_per_customer": 5},
+            "discount": {
+                "tiers": [
+                    {"tier_name": "Bronze", "threshold": 0, "discount_percentage": 5}
+                ]
+            },
+            "referral_pass": {
+                "referrer_reward": "10",
+                "referee_reward": "10",
+                "max_referrals_per_customer": 5,
+            },
             "corporate_discount": {},
             "affiliate": {},
         }
@@ -55,9 +77,13 @@ class GatewayTestCase(TestCase):
         )
 
     def make_pass(self, card):
-        return CustomerPass.objects.create(customer=self.customer, card=card, is_active=True)
+        return CustomerPass.objects.create(
+            customer=self.customer, card=card, is_active=True
+        )
 
-    def make_command(self, qr_code, intent="auto", amount=Decimal("0"), idempotency_key=""):
+    def make_command(
+        self, qr_code, intent="auto", amount=Decimal("0"), idempotency_key=""
+    ):
         return RedemptionCommand(
             tenant_id=str(self.tenant.id),
             qr_code=qr_code,
@@ -88,7 +114,9 @@ class GatewayTestCase(TestCase):
         self.assertEqual(result.intent_resolved, "redeem")
 
     def test_gateway_denied_records_audit(self):
-        card = self.make_card("coupon", redemption_rules={"usage_limit_per_customer": 0})
+        card = self.make_card(
+            "coupon", redemption_rules={"usage_limit_per_customer": 0}
+        )
         cp = self.make_pass(card)
         cmd = self.make_command(cp.qr_code, intent="redeem")
         result = self.gateway.process(cmd, self.tenant)

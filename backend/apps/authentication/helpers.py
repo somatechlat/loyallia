@@ -25,6 +25,7 @@ from common.email_config import get_default_from_email
 
 logger = logging.getLogger(__name__)
 
+
 def slugify_business(name: str) -> str:
     """Generate a unique slug from business name."""
     slug_base = re.sub(r"[^a-z0-9]+", "-", name.lower().strip()).strip("-")
@@ -35,6 +36,7 @@ def slugify_business(name: str) -> str:
         candidate = f"{slug}-{counter}"
         counter += 1
     return candidate
+
 
 def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
     """Send OTP email. Logs failure but does not raise  prevents timing attacks."""
@@ -49,12 +51,14 @@ def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
     except Exception as exc:
         logger.error("Failed to send OTP email to %s: %s", email, exc)
 
+
 def _hash_otp(otp: str, salt: str) -> str:
     """Hash an OTP using salted SHA-256 for secure storage.
 
     Per-OTP salt prevents rainbow table attacks.
     """
     return hashlib.sha256((salt + otp).encode("utf-8")).hexdigest()
+
 
 def store_otp(email: str, otp: str, purpose: str) -> None:
     """Store hashed OTP with its salt in Django cache with 15-minute TTL.
@@ -67,6 +71,7 @@ def store_otp(email: str, otp: str, purpose: str) -> None:
     salt = secrets.token_hex(16)
     cache.set(f"otp:{purpose}:{email}", _hash_otp(otp, salt), timeout=900)
     cache.set(f"otp_salt:{purpose}:{email}", salt, timeout=900)
+
 
 def verify_otp(email: str, otp: str, purpose: str) -> bool:
     """Verify OTP from cache using constant-time comparison.
@@ -102,6 +107,7 @@ def verify_otp(email: str, otp: str, purpose: str) -> bool:
     cache.set(attempts_key, attempts + 1, 900)
     return False
 
+
 def issue_tokens(user: User) -> dict:
     """Create access + refresh token pair, persist refresh token hash in DB."""
     tenant_id = str(user.tenant.id) if user.tenant else None
@@ -111,8 +117,12 @@ def issue_tokens(user: User) -> dict:
         role=user.role,
     )
     refresh_str = create_refresh_token_string()
-    expires_at = dj_timezone.now() + timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS)
-    RefreshToken.objects.create(user=user, token_hash=hash_token(refresh_str), expires_at=expires_at)
+    expires_at = dj_timezone.now() + timedelta(
+        days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS
+    )
+    RefreshToken.objects.create(
+        user=user, token_hash=hash_token(refresh_str), expires_at=expires_at
+    )
     user.last_login = dj_timezone.now()
     user.save(update_fields=["last_login"])
     return {

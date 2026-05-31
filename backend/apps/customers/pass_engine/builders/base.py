@@ -1,6 +1,7 @@
 """
 Base utilities for Google Wallet pass builders.
 """
+
 import logging
 import re
 from typing import Any
@@ -129,7 +130,9 @@ def _get_google_locations(card) -> list:
     for loc in tenant_locations:
         try:
             if loc.latitude and loc.longitude:
-                locations.append({"latitude": float(loc.latitude), "longitude": float(loc.longitude)})
+                locations.append(
+                    {"latitude": float(loc.latitude), "longitude": float(loc.longitude)}
+                )
         except (ValueError, TypeError):
             continue
     return locations
@@ -197,14 +200,10 @@ def _transform_google_rows(rows: list) -> list:
                         {
                             "twoItems": {
                                 "startItem": {
-                                    "firstValue": {
-                                        "fields": [{"fieldPath": start_fp}]
-                                    }
+                                    "firstValue": {"fields": [{"fieldPath": start_fp}]}
                                 },
                                 "endItem": {
-                                    "firstValue": {
-                                        "fields": [{"fieldPath": end_fp}]
-                                    }
+                                    "firstValue": {"fields": [{"fieldPath": end_fp}]}
                                 },
                             }
                         }
@@ -218,19 +217,13 @@ def _transform_google_rows(rows: list) -> list:
                         {
                             "threeItems": {
                                 "startItem": {
-                                    "firstValue": {
-                                        "fields": [{"fieldPath": start_fp}]
-                                    }
+                                    "firstValue": {"fields": [{"fieldPath": start_fp}]}
                                 },
                                 "middleItem": {
-                                    "firstValue": {
-                                        "fields": [{"fieldPath": middle_fp}]
-                                    }
+                                    "firstValue": {"fields": [{"fieldPath": middle_fp}]}
                                 },
                                 "endItem": {
-                                    "firstValue": {
-                                        "fields": [{"fieldPath": end_fp}]
-                                    }
+                                    "firstValue": {"fields": [{"fieldPath": end_fp}]}
                                 },
                             }
                         }
@@ -246,7 +239,9 @@ def _apply_card_template_override(card, payload: dict) -> None:
     wallet_design = _get_wallet_design(card)
     google_rows = wallet_design.get("google_rows")
     if google_rows and isinstance(google_rows, list):
-        payload["cardTemplateOverride"] = {"cardRowTemplateInfos": _transform_google_rows(google_rows)}
+        payload["cardTemplateOverride"] = {
+            "cardRowTemplateInfos": _transform_google_rows(google_rows)
+        }
 
 
 def _normalize_review_status(value: str | None) -> str | None:
@@ -338,7 +333,9 @@ def _apply_links_module_uris(advanced: dict, payload: dict) -> None:
                 {
                     "uri": link["uri"],
                     "description": link["description"],
-                    "id": link.get("id", f"custom_link_{len(existing) + len(new_uris)}"),
+                    "id": link.get(
+                        "id", f"custom_link_{len(existing) + len(new_uris)}"
+                    ),
                 }
             )
     if new_uris:

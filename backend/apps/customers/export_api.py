@@ -45,7 +45,7 @@ def export_customers(request):
 
     customers = Customer.objects.filter(tenant=tenant).order_by("created_at")
 
- # LOPDP Forensic Audit Log
+    # LOPDP Forensic Audit Log
     log_data_export(
         request=request,
         resource_type="customer_database",

@@ -129,7 +129,11 @@ def get_message_for_request(code: str, request=None, **kwargs: Any) -> str:
         # 2. Tenant default
         if not lang:
             tenant = getattr(request, "tenant", None)
-            if tenant and hasattr(tenant, "default_language") and tenant.default_language:
+            if (
+                tenant
+                and hasattr(tenant, "default_language")
+                and tenant.default_language
+            ):
                 lang = tenant.default_language
 
         # 3. Accept-Language header

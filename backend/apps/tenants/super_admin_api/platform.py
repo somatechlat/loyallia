@@ -55,9 +55,11 @@ SENSITIVE_PLATFORM_SETTING_TOKENS = (
     "CREDENTIAL",
 )
 
+
 def _require_super_admin(request) -> None:
     if not is_super_admin(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
 
 def _is_production_environment() -> bool:
     """Check if the platform is running in production mode.
@@ -66,11 +68,16 @@ def _is_production_environment() -> bool:
     then falls back to Django settings.ENVIRONMENT.
     """
     setting = PlatformSetting.objects.filter(key="PLATFORM_MODE").first()
-    return bool((setting and setting.value == "production") or getattr(settings, "ENVIRONMENT", "") == "production")
+    return bool(
+        (setting and setting.value == "production")
+        or getattr(settings, "ENVIRONMENT", "") == "production"
+    )
+
 
 def _is_sensitive_platform_setting_key(key: str) -> bool:
     normalized = key.upper()
     return any(token in normalized for token in SENSITIVE_PLATFORM_SETTING_TOKENS)
+
 
 @router.get("/platform/mode/", auth=jwt_auth, response=PlatformModeOut)
 def get_platform_mode(request):
@@ -85,6 +92,7 @@ def get_platform_mode(request):
         mode=mode,
         updated_at=setting.updated_at if setting else None,
     )
+
 
 @router.post("/platform/mode/toggle/", auth=jwt_auth, response=PlatformModeOut)
 def toggle_platform_mode(request, payload: PlatformModeToggleIn):
@@ -106,7 +114,7 @@ def toggle_platform_mode(request, payload: PlatformModeToggleIn):
         setting.value = payload.mode
         setting.save(update_fields=["value", "updated_at"])
 
- # Audit
+    # Audit
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -123,6 +131,7 @@ def toggle_platform_mode(request, payload: PlatformModeToggleIn):
         logger.warning("Failed to audit platform mode toggle", exc_info=True)
 
     return PlatformModeOut(mode=setting.value, updated_at=setting.updated_at)
+
 
 @router.get("/platform/metrics/", auth=jwt_auth, response=PlatformMetricsOut)
 def platform_metrics(request):
@@ -144,14 +153,18 @@ def platform_metrics(request):
         / 2
     )
 
-    recent = Tenant.objects.select_related("subscription__subscription_plan").order_by("-created_at")[:8]
+    recent = Tenant.objects.select_related("subscription__subscription_plan").order_by(
+        "-created_at"
+    )[:8]
     recent_list = [
         {
             "id": str(t.id),
             "name": t.name,
             "plan": (
                 t.subscription.subscription_plan.slug
-                if hasattr(t, "subscription") and t.subscription and t.subscription.subscription_plan
+                if hasattr(t, "subscription")
+                and t.subscription
+                and t.subscription.subscription_plan
                 else t.effective_plan
             ),
             "city": t.city,
@@ -166,8 +179,12 @@ def platform_metrics(request):
     except Exception:
         total_customers = 0
 
-    trial_tenants = Subscription.objects.filter(status=SubscriptionStatus.TRIALING).count()
-    suspended_tenants = Subscription.objects.filter(status=SubscriptionStatus.SUSPENDED).count()
+    trial_tenants = Subscription.objects.filter(
+        status=SubscriptionStatus.TRIALING
+    ).count()
+    suspended_tenants = Subscription.objects.filter(
+        status=SubscriptionStatus.SUSPENDED
+    ).count()
 
     return PlatformMetricsOut(
         total_tenants=total_tenants,
@@ -180,6 +197,7 @@ def platform_metrics(request):
         mrr=mrr,
         recent_tenants=recent_list,
     )
+
 
 @router.get("/platform/locations/", auth=jwt_auth, response=list[dict])
 def all_platform_locations(request):
@@ -202,6 +220,7 @@ def all_platform_locations(request):
         }
         for loc in locations
     ]
+
 
 @router.get(
     "/platform/integrations/",
@@ -229,15 +248,20 @@ def platform_integrations(request):
 
     apple_diagnostics = get_apple_wallet_diagnostics()
     apple_enabled = apple_diagnostics["enabled"]
-    apple_configured = apple_enabled and apple_diagnostics["certs_cryptographically_valid"]
+    apple_configured = (
+        apple_enabled and apple_diagnostics["certs_cryptographically_valid"]
+    )
 
     payment_enabled = bool(getattr(settings, "PAYMENT_GATEWAY_ENABLED", False))
     payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
     mailjet_api_key = get_secret("mailjet_api_key", default="")
     mailjet_secret_key = get_secret("mailjet_secret_key", default="")
     from apps.tenants.models import PlatformSetting
+
     mailjet_sender_email = PlatformSetting.get("mailjet_sender_email", "")
-    mailjet_configured = bool(mailjet_api_key and mailjet_secret_key and mailjet_sender_email)
+    mailjet_configured = bool(
+        mailjet_api_key and mailjet_secret_key and mailjet_sender_email
+    )
 
     return [
         PlatformIntegrationOut(
@@ -249,9 +273,15 @@ def platform_integrations(request):
             detail="Google Wallet API integration",
             diagnostics=google_diagnostics,
             preview_values={
-                "google_wallet_enabled": ("true" if google_diagnostics["enabled"] else "false"),
-                "google_wallet_issuer_id": get_secret("google_wallet_issuer_id", default=""),
-                "google_oauth_client_id": get_secret("google_oauth_client_id", default=""),
+                "google_wallet_enabled": (
+                    "true" if google_diagnostics["enabled"] else "false"
+                ),
+                "google_wallet_issuer_id": get_secret(
+                    "google_wallet_issuer_id", default=""
+                ),
+                "google_oauth_client_id": get_secret(
+                    "google_oauth_client_id", default=""
+                ),
             },
         ),
         PlatformIntegrationOut(
@@ -259,13 +289,21 @@ def platform_integrations(request):
             name="Apple Wallet",
             enabled=apple_enabled,
             configured=apple_configured,
-            status=("configured" if apple_configured else "disabled" if not apple_enabled else "missing_credentials"),
+            status=(
+                "configured"
+                if apple_configured
+                else "disabled" if not apple_enabled else "missing_credentials"
+            ),
             detail="Apple Wallet PKPass integration",
             diagnostics=apple_diagnostics,
             preview_values={
                 "apple_wallet_enabled": "true" if apple_enabled else "false",
-                "apple_pass_type_identifier": get_secret("apple_pass_type_identifier", default=""),
-                "apple_team_identifier": get_secret("apple_team_identifier", default=""),
+                "apple_pass_type_identifier": get_secret(
+                    "apple_pass_type_identifier", default=""
+                ),
+                "apple_team_identifier": get_secret(
+                    "apple_team_identifier", default=""
+                ),
             },
         ),
         PlatformIntegrationOut(
@@ -303,12 +341,15 @@ def platform_integrations(request):
         *additional_integrations(),
     ]
 
+
 @router.put(
     "/platform/integrations/{integration_key}/secret/",
     auth=jwt_auth,
     response=MessageOut,
 )
-def update_integration_secret(request, integration_key: str, payload: VaultSecretUpdateIn):
+def update_integration_secret(
+    request, integration_key: str, payload: VaultSecretUpdateIn
+):
     """Update a Vault secret for an integration (Google Wallet, Apple Wallet, etc.).
 
     Only SUPER_ADMIN can write secrets. The value is stored in HashiCorp Vault KV v2
@@ -335,6 +376,7 @@ def update_integration_secret(request, integration_key: str, payload: VaultSecre
 
     from apps.audit.models import AuditAction, AuditStatus
     from apps.audit.service import log_action
+
     log_action(
         request=request,
         action=AuditAction.UPDATE,
@@ -352,8 +394,11 @@ def update_integration_secret(request, integration_key: str, payload: VaultSecre
     )
     return MessageOut(
         success=True,
-        message=get_message("ADMIN_PLAN_UPDATED", name=f"{integration_key}.{payload.key}"),
+        message=get_message(
+            "ADMIN_PLAN_UPDATED", name=f"{integration_key}.{payload.key}"
+        ),
     )
+
 
 @router.get("/platform/settings/", auth=jwt_auth, response=list[PlatformSettingOut])
 def list_platform_settings(request):
@@ -368,7 +413,9 @@ def list_platform_settings(request):
     return [
         PlatformSettingOut(
             key=s.key,
-            value="<redacted>" if _is_sensitive_platform_setting_key(s.key) else s.value,
+            value=(
+                "<redacted>" if _is_sensitive_platform_setting_key(s.key) else s.value
+            ),
             description=s.description,
             category=s.category,
             requires_restart=s.requires_restart,
@@ -376,6 +423,7 @@ def list_platform_settings(request):
         )
         for s in settings
     ]
+
 
 @router.put("/platform/settings/{key}/", auth=jwt_auth, response=MessageOut)
 def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn):
@@ -416,6 +464,7 @@ def update_platform_setting(request, key: str, payload: PlatformSettingUpdateIn)
 
     return MessageOut(success=True, message=msg)
 
+
 @router.get("/platform/settings/{key}/", auth=jwt_auth, response=PlatformSettingOut)
 def get_platform_setting(request, key: str):
     """Get a single platform setting by key.
@@ -432,14 +481,23 @@ def get_platform_setting(request, key: str):
 
     return PlatformSettingOut(
         key=setting.key,
-        value="<redacted>" if _is_sensitive_platform_setting_key(setting.key) else setting.value,
+        value=(
+            "<redacted>"
+            if _is_sensitive_platform_setting_key(setting.key)
+            else setting.value
+        ),
         description=setting.description,
         category=setting.category,
         requires_restart=setting.requires_restart,
         updated_at=setting.updated_at,
     )
 
-@router.post("/platform/settings/bulk-update/", auth=jwt_auth, response=PlatformSettingsBulkUpdateOut)
+
+@router.post(
+    "/platform/settings/bulk-update/",
+    auth=jwt_auth,
+    response=PlatformSettingsBulkUpdateOut,
+)
 def bulk_update_platform_settings(request, payload: PlatformSettingsBulkUpdateIn):
     """Update multiple platform settings at once.
 
@@ -510,7 +568,12 @@ def bulk_update_platform_settings(request, payload: PlatformSettingsBulkUpdateIn
         errors=errors,
     )
 
-@router.post("/platform/settings/refresh-cache/", auth=jwt_auth, response=PlatformSettingsRefreshCacheOut)
+
+@router.post(
+    "/platform/settings/refresh-cache/",
+    auth=jwt_auth,
+    response=PlatformSettingsRefreshCacheOut,
+)
 def refresh_platform_settings_cache(request):
     """Invalidate and refresh the entire settings Redis cache from the database.
 
@@ -535,5 +598,6 @@ def refresh_platform_settings_cache(request):
         failed=result["failed"],
         total=result["total"],
     )
+
 
 # SYSADMIN OPERATIONS

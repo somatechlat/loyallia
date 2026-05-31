@@ -42,10 +42,12 @@ from common.permissions import is_manager_or_owner, jwt_auth
 
 router = Router()
 
+
 # Pydantic Schemas
 class AnalyticsDateRange(BaseModel):
     start_date: str  # ISO format
     end_date: str  # ISO format
+
 
 class CustomerAnalyticsSchema(BaseModel):
     customer_id: str
@@ -57,6 +59,7 @@ class CustomerAnalyticsSchema(BaseModel):
     total_rewards_redeemed: int
     segment: str
     last_visit: str | None = None
+
 
 class ProgramAnalyticsSchema(BaseModel):
     program_id: str
@@ -71,6 +74,7 @@ class ProgramAnalyticsSchema(BaseModel):
     redemption_rate: float
     engagement_rate: float
     repeat_purchase_rate: float
+
 
 # Dashboard Overview
 @router.get("/overview/", auth=jwt_auth, summary="Get business overview analytics")
@@ -88,35 +92,47 @@ def get_overview_analytics(request, days: int = 30):
     tenant = request.tenant
     start_date = timezone.now() - timedelta(days=days)
 
- # Customer metrics
+    # Customer metrics
     total_customers = Customer.objects.filter(tenant=tenant).count()
-    new_customers = Customer.objects.filter(tenant=tenant, created_at__gte=start_date).count()
+    new_customers = Customer.objects.filter(
+        tenant=tenant, created_at__gte=start_date
+    ).count()
 
- # Transaction metrics
+    # Transaction metrics
     transactions = Transaction.objects.filter(tenant=tenant, created_at__gte=start_date)
     total_transactions = transactions.count()
     total_revenue = transactions.aggregate(Sum("amount"))["amount__sum"] or 0
 
- # Program metrics
+    # Program metrics
     total_programs = Card.objects.filter(tenant=tenant).count()
-    active_programs = Card.objects.filter(tenant=tenant, passes__is_active=True).distinct().count()
+    active_programs = (
+        Card.objects.filter(tenant=tenant, passes__is_active=True).distinct().count()
+    )
 
- # Notification metrics
+    # Notification metrics
     from apps.notifications.models import Notification
 
-    notifications_sent = Notification.objects.filter(tenant=tenant, created_at__gte=start_date).count()
+    notifications_sent = Notification.objects.filter(
+        tenant=tenant, created_at__gte=start_date
+    ).count()
 
     return {
         "period_days": days,
         "customers": {
             "total": total_customers,
             "new": new_customers,
-            "growth_rate": ((new_customers / total_customers * 100) if total_customers > 0 else 0),
+            "growth_rate": (
+                (new_customers / total_customers * 100) if total_customers > 0 else 0
+            ),
         },
         "transactions": {
             "total": total_transactions,
             "revenue": float(total_revenue),
-            "average_value": (float(total_revenue / total_transactions) if total_transactions > 0 else 0),
+            "average_value": (
+                float(total_revenue / total_transactions)
+                if total_transactions > 0
+                else 0
+            ),
         },
         "programs": {
             "total": total_programs,
@@ -127,9 +143,12 @@ def get_overview_analytics(request, days: int = 30):
         },
     }
 
+
 # Customer Analytics
 @router.get("/customers/", auth=jwt_auth, summary="Get customer analytics")
-def get_customer_analytics(request, segment: str | None = None, limit: int = 50, offset: int = 0):
+def get_customer_analytics(
+    request, segment: str | None = None, limit: int = 50, offset: int = 0
+):
     """Paginated customer analytics with optional segment filter.
 
     PERF: Reads from pre-computed CustomerAnalytics table (not raw transactions).
@@ -142,10 +161,10 @@ def get_customer_analytics(request, segment: str | None = None, limit: int = 50,
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
- # Analytics metrics are updated asynchronously via Celery tasks (update_customer_analytics)
- # when transactions occur. The synchronous O(N) update loop has been removed for production scale.
+    # Analytics metrics are updated asynchronously via Celery tasks (update_customer_analytics)
+    # when transactions occur. The synchronous O(N) update loop has been removed for production scale.
 
- # Query with filters
+    # Query with filters
     query = CustomerAnalytics.objects.filter(tenant=tenant).select_related("customer")
 
     if segment:
@@ -167,11 +186,14 @@ def get_customer_analytics(request, segment: str | None = None, limit: int = 50,
                 "total_rewards_earned": a.total_rewards_earned,
                 "total_rewards_redeemed": a.total_rewards_redeemed,
                 "segment": a.segment,
-                "last_visit": (a.customer.last_visit.isoformat() if a.customer.last_visit else None),
+                "last_visit": (
+                    a.customer.last_visit.isoformat() if a.customer.last_visit else None
+                ),
             }
             for a in analytics
         ],
     }
+
 
 @router.get(
     "/customers/{customer_id}/",
@@ -192,15 +214,19 @@ def get_customer_detail_analytics(request, customer_id: str):
 
     customer = get_object_or_404(Customer, id=customer_id, tenant=request.tenant)
 
-    analytics, created = CustomerAnalytics.objects.get_or_create(customer=customer, defaults={"tenant": request.tenant})
- # Analytics are pre-calculated by background tasks on transaction boundaries.
+    analytics, created = CustomerAnalytics.objects.get_or_create(
+        customer=customer, defaults={"tenant": request.tenant}
+    )
+    # Analytics are pre-calculated by background tasks on transaction boundaries.
 
     recent_transactions = (
         Transaction.objects.filter(customer_pass__customer=customer)
         .select_related("customer_pass__card")
         .order_by("-created_at")[:10]
     )
-    enrollments = CustomerPass.objects.filter(customer=customer, is_active=True).select_related("card")
+    enrollments = CustomerPass.objects.filter(
+        customer=customer, is_active=True
+    ).select_related("card")
     return {
         "customer": {
             "id": str(customer.id),
@@ -216,7 +242,9 @@ def get_customer_detail_analytics(request, customer_id: str):
             "total_rewards_earned": analytics.total_rewards_earned,
             "total_rewards_redeemed": analytics.total_rewards_redeemed,
             "segment": analytics.segment,
-            "last_visit": (customer.last_visit.isoformat() if customer.last_visit else None),
+            "last_visit": (
+                customer.last_visit.isoformat() if customer.last_visit else None
+            ),
         },
         "recent_transactions": [
             {
@@ -239,6 +267,7 @@ def get_customer_detail_analytics(request, customer_id: str):
         ],
     }
 
+
 # Program Analytics
 @router.get("/programs/", auth=jwt_auth, summary="Get program analytics")
 def get_program_analytics(request, limit: int = 50, offset: int = 0):
@@ -254,8 +283,8 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
- # Analytics metrics are updated asynchronously. The synchronous O(N) update loop
- # has been removed to prevent database lockups under production loads.
+    # Analytics metrics are updated asynchronously. The synchronous O(N) update loop
+    # has been removed to prevent database lockups under production loads.
 
     query = ProgramAnalytics.objects.filter(tenant=tenant).select_related("card")
     total = query.count()
@@ -283,7 +312,10 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
         ],
     }
 
-@router.get("/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics")
+
+@router.get(
+    "/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics"
+)
 def get_program_detail_analytics(request, program_id: str):
     """Detailed analytics for a single program with top customers.
 
@@ -298,10 +330,12 @@ def get_program_detail_analytics(request, program_id: str):
 
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
-    analytics, created = ProgramAnalytics.objects.get_or_create(card=card, defaults={"tenant": request.tenant})
- # Analytics are pre-calculated by background tasks.
+    analytics, created = ProgramAnalytics.objects.get_or_create(
+        card=card, defaults={"tenant": request.tenant}
+    )
+    # Analytics are pre-calculated by background tasks.
 
- # Get top customers for this program
+    # Get top customers for this program
     top_customers = (
         Customer.objects.filter(passes__card=card)
         .annotate(total_spent=Sum("passes__transactions__amount"))
@@ -339,6 +373,7 @@ def get_program_detail_analytics(request, program_id: str):
         ],
     }
 
+
 # Time Series Analytics
 @router.get("/trends/", auth=jwt_auth, summary="Get time series analytics")
 def get_trends_analytics(request, days: int = 30):
@@ -355,12 +390,14 @@ def get_trends_analytics(request, days: int = 30):
     tenant = request.tenant
     start_date = timezone.now().date() - timedelta(days=days)
 
- # Get daily analytics
-    daily_data = DailyAnalytics.objects.filter(tenant=tenant, analytics_date__gte=start_date).order_by("analytics_date")
+    # Get daily analytics
+    daily_data = DailyAnalytics.objects.filter(
+        tenant=tenant, analytics_date__gte=start_date
+    ).order_by("analytics_date")
 
- # If no data, generate from transactions
+    # If no data, generate from transactions
     if not daily_data.exists():
- # This would be done by a background task in production
+        # This would be done by a background task in production
         pass
 
     return {
@@ -379,6 +416,7 @@ def get_trends_analytics(request, days: int = 30):
         ],
     }
 
+
 # Segmentation Analytics
 @router.get("/segments/", auth=jwt_auth, summary="Get customer segmentation analytics")
 def get_segmentation_analytics(request):
@@ -394,9 +432,9 @@ def get_segmentation_analytics(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = request.tenant
 
- # Segment metrics rely on background asynchronous updates to ensure database stability.
+    # Segment metrics rely on background asynchronous updates to ensure database stability.
 
- # Group by segment
+    # Group by segment
     total_customers = Customer.objects.filter(tenant=tenant).count()
 
     segments = (
@@ -418,7 +456,9 @@ def get_segmentation_analytics(request):
             {
                 "segment": s["segment"],
                 "count": s["count"],
-                "percentage": ((s["count"] / total_customers * 100) if total_customers > 0 else 0),
+                "percentage": (
+                    (s["count"] / total_customers * 100) if total_customers > 0 else 0
+                ),
                 "total_spent": float(s["sum_spent"] or 0),
                 "avg_spent": float(s["avg_spent"] or 0),
                 "total_visits": s["sum_visits"],
@@ -427,6 +467,7 @@ def get_segmentation_analytics(request):
             for s in segments
         ],
     }
+
 
 # Advanced Analytics (split for Rule 245)
 from apps.analytics.advanced_api import router as advanced_router  # noqa: E402

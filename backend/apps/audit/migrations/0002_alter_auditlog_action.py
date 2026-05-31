@@ -6,13 +6,30 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('audit', '0001_initial'),
+        ("audit", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='auditlog',
-            name='action',
-            field=models.CharField(choices=[('CREATE', 'Crear'), ('READ', 'Leer'), ('UPDATE', 'Actualizar'), ('DELETE', 'Eliminar'), ('EXPORT', 'Exportar'), ('IMPORT', 'Importar'), ('IMPERSONATE', 'Suplantación'), ('LOGIN', 'Inicio de sesión'), ('LOGOUT', 'Cierre de sesión'), ('API_ACCESS', 'Acceso API'), ('FACTORY_RESET', 'Restauración de fábrica'), ('SEED_DEMO', 'Carga de datos demo')], max_length=20, verbose_name='Acción'),
+            model_name="auditlog",
+            name="action",
+            field=models.CharField(
+                choices=[
+                    ("CREATE", "Crear"),
+                    ("READ", "Leer"),
+                    ("UPDATE", "Actualizar"),
+                    ("DELETE", "Eliminar"),
+                    ("EXPORT", "Exportar"),
+                    ("IMPORT", "Importar"),
+                    ("IMPERSONATE", "Suplantación"),
+                    ("LOGIN", "Inicio de sesión"),
+                    ("LOGOUT", "Cierre de sesión"),
+                    ("API_ACCESS", "Acceso API"),
+                    ("FACTORY_RESET", "Restauración de fábrica"),
+                    ("SEED_DEMO", "Carga de datos demo"),
+                ],
+                max_length=20,
+                verbose_name="Acción",
+            ),
         ),
     ]

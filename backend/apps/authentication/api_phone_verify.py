@@ -21,6 +21,7 @@ from common.messages import get_message
 logger = logging.getLogger(__name__)
 router = Router()
 
+
 @router.post(
     "/verify-phone/start/",
     response=PhoneVerifyStartOut,
@@ -33,7 +34,7 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
     """
     from django.core.cache import cache
 
- # Rate limit: max 5 starts per phone per 10 minutes
+    # Rate limit: max 5 starts per phone per 10 minutes
     rate_key = f"verify_phone_start:{payload.phone}"
     try:
         count = cache.incr(rate_key)
@@ -66,6 +67,7 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
         strategy=result.get("strategy", ""),
         channel=result.get("channel", ""),
     )
+
 
 @router.post(
     "/verify-phone/check/",

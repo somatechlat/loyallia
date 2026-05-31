@@ -9,12 +9,18 @@ class Command(BaseCommand):
     help = "Seed development-only RBAC E2E users and local demo prerequisites."
 
     def add_arguments(self, parser):
-        parser.add_argument("--generate", action="store_true", help="Generate local ignored E2E credentials.")
+        parser.add_argument(
+            "--generate",
+            action="store_true",
+            help="Generate local ignored E2E credentials.",
+        )
 
     def handle(self, *args, **options):
         enforce_settings_environment(mode="development", databases=settings.DATABASES)
         if not settings.DEBUG:
-            raise CommandError("seed_development_data can only run in DEBUG development mode.")
+            raise CommandError(
+                "seed_development_data can only run in DEBUG development mode."
+            )
 
         call_command(
             "provision_development_rbac_test_users",

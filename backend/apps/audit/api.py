@@ -59,10 +59,14 @@ def list_audit_logs(
     offset = max(0, offset)
     qs = AuditLog.objects.all()
 
- # OWNER scope: restrict to own tenant only
+    # OWNER scope: restrict to own tenant only
     is_sa = request.user.role == "SUPER_ADMIN"
     if not is_sa and is_owner(request):
-        own_tenant_id = str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None
+        own_tenant_id = (
+            str(request.tenant.id)
+            if hasattr(request, "tenant") and request.tenant
+            else None
+        )
         if own_tenant_id:
             qs = qs.filter(tenant_id=own_tenant_id)
         else:
@@ -76,7 +80,7 @@ def list_audit_logs(
         qs = qs.filter(resource_type=resource_type)
     if actor_email:
         qs = qs.filter(actor_email__icontains=actor_email)
- # Only SUPER_ADMIN can filter by arbitrary tenant_id; OWNER is already scoped
+    # Only SUPER_ADMIN can filter by arbitrary tenant_id; OWNER is already scoped
     if tenant_id and is_sa:
         qs = qs.filter(tenant_id=tenant_id)
     if status:
@@ -89,12 +93,15 @@ def list_audit_logs(
     total = qs.count()
     entries = list(qs[offset : offset + limit])
 
- # Self-audit
+    # Self-audit
     log_action(
         request=request,
         action=AuditAction.READ,
         resource_type="audit_log",
-        details={"filters_applied": bool(action or resource_type or actor_email), "role": request.user.role},
+        details={
+            "filters_applied": bool(action or resource_type or actor_email),
+            "role": request.user.role,
+        },
     )
 
     return AuditListResponseSchema(
@@ -135,9 +142,12 @@ def audit_stats(request: HttpRequest):
     total = AuditLog.objects.count()
     today = AuditLog.objects.filter(created_at__gte=today_start).count()
 
-    actions_breakdown_rows = list(AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count"))
+    actions_breakdown_rows = list(
+        AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count")
+    )
     actions_breakdown = [
-        ActionBreakdownSchema(action=row["action"], count=row["count"]) for row in actions_breakdown_rows
+        ActionBreakdownSchema(action=row["action"], count=row["count"])
+        for row in actions_breakdown_rows
     ]
 
     thirty_days_ago = now - timedelta(days=30)
@@ -147,7 +157,10 @@ def audit_stats(request: HttpRequest):
         .annotate(count=Count("id"))
         .order_by("-count")[:10]
     )
-    top_actors = [ActorBreakdownSchema(actor_email=row["actor_email"], count=row["count"]) for row in top_actors_rows]
+    top_actors = [
+        ActorBreakdownSchema(actor_email=row["actor_email"], count=row["count"])
+        for row in top_actors_rows
+    ]
 
     return AuditStatsSchema(
         total_entries=total,

@@ -7,22 +7,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0009_subscriptionplan_status'),
-        ('tenants', '0009_alter_tenant_scheduled_deletion_at'),
+        ("billing", "0009_subscriptionplan_status"),
+        ("tenants", "0009_alter_tenant_scheduled_deletion_at"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='invoice',
-            name='subscription',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='invoices', to='billing.subscription', verbose_name='Suscripción'),
+            model_name="invoice",
+            name="subscription",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="invoices",
+                to="billing.subscription",
+                verbose_name="Suscripción",
+            ),
         ),
         migrations.AddIndex(
-            model_name='invoice',
-            index=models.Index(fields=['tenant', 'status'], name='loyallia_in_tenant__316a5a_idx'),
+            model_name="invoice",
+            index=models.Index(
+                fields=["tenant", "status"], name="loyallia_in_tenant__316a5a_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='subscription',
-            index=models.Index(fields=['status'], name='loyallia_su_status_3663ba_idx'),
+            model_name="subscription",
+            index=models.Index(fields=["status"], name="loyallia_su_status_3663ba_idx"),
         ),
     ]

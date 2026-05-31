@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 # Vault connection parameters from environment
 VAULT_ADDR = os.environ.get("VAULT_ADDR", "")
 VAULT_TOKEN_FILE = os.environ.get("VAULT_TOKEN_FILE", "")
-VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia/development")
+VAULT_SECRET_PATH = os.environ.get(
+    "VAULT_SECRET_PATH", "secret/data/loyallia/development"
+)
 
 # Cache TTL in seconds (default 300 = 5 minutes)
 VAULT_CACHE_TTL = int(os.environ.get("VAULT_CACHE_TTL", "300"))
@@ -33,6 +35,7 @@ _test_overrides: dict[str, str] = {}
 
 _VAULT_CACHE_VERSION_KEY = "vault:secrets:version"
 
+
 def _read_shared_cache_version() -> str:
     """Read cross-process Vault cache version from Django cache when available."""
     try:
@@ -43,6 +46,7 @@ def _read_shared_cache_version() -> str:
         logger.debug("Vault: shared cache version unavailable: %s", exc)
         return ""
 
+
 def _publish_shared_cache_invalidation() -> None:
     """Publish a cache version bump so other workers drop stale Vault values."""
     try:
@@ -51,6 +55,7 @@ def _publish_shared_cache_invalidation() -> None:
         cache.set(_VAULT_CACHE_VERSION_KEY, str(time.time()), None)
     except Exception as exc:
         logger.debug("Vault: shared cache invalidation unavailable: %s", exc)
+
 
 def _clear_cache_if_shared_version_changed() -> None:
     """Clear process cache when another worker has written Vault secrets."""
@@ -61,6 +66,7 @@ def _clear_cache_if_shared_version_changed() -> None:
         return
     clear_cache()
     _cache_seen_version = current_version
+
 
 def _get_vault_token() -> str:
     """Return the Vault token from the mounted runtime secret file."""
@@ -74,6 +80,7 @@ def _get_vault_token() -> str:
             logger.warning("Vault token file is not readable: %s", exc)
     return ""
 
+
 def _fetch_vault_secrets() -> dict:
     """
     Fetch all secrets from Vault KV v2 endpoint.
@@ -85,7 +92,7 @@ def _fetch_vault_secrets() -> dict:
     _clear_cache_if_shared_version_changed()
     now = time.monotonic()
 
- # Return cached secrets if still within TTL
+    # Return cached secrets if still within TTL
     if _secrets_cache and (now - _cache_fetched_at) < VAULT_CACHE_TTL:
         return _secrets_cache
 
@@ -105,7 +112,11 @@ def _fetch_vault_secrets() -> dict:
     # TLS verification: use Vault CA certificate when available
     ssl_context = ssl.create_default_context()
     vault_ca_cert = os.environ.get("VAULT_CACERT", "/vault/certs/vault.crt")
-    vault_skip_verify = os.environ.get("VAULT_SKIP_VERIFY", "").lower() in ("true", "1", "yes")
+    vault_skip_verify = os.environ.get("VAULT_SKIP_VERIFY", "").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
 
     if vault_skip_verify:
         ssl_context.check_hostname = False
@@ -115,14 +126,19 @@ def _fetch_vault_secrets() -> dict:
     else:
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
-        logger.warning("Vault: CA certificate not found at %s — TLS verification disabled", vault_ca_cert)
+        logger.warning(
+            "Vault: CA certificate not found at %s — TLS verification disabled",
+            vault_ca_cert,
+        )
 
     try:
         req = urllib.request.Request(url, headers=headers, method="GET")
         with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
             body = json.loads(response.read().decode("utf-8"))
             secrets = body.get("data", {}).get("data", {})
-            logger.info("Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH)
+            logger.info(
+                "Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH
+            )
             _secrets_cache = secrets
             _cache_fetched_at = now
             return secrets
@@ -136,11 +152,15 @@ def _fetch_vault_secrets() -> dict:
         logger.warning("Vault: unexpected error (%s).", exc)
         return _secrets_cache
 
+
 def fetch_vault_secrets() -> dict:
     """Return the cached Vault secret mapping without exposing values."""
     return _fetch_vault_secrets().copy()
 
-def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False) -> str:
+
+def get_secret(
+    vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False
+) -> str:
     """
     Retrieve a secret value.
 
@@ -159,17 +179,17 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict
     Returns:
         The secret value as a string.
     """
- # 1. Test overrides (highest priority for tests)
+    # 1. Test overrides (highest priority for tests)
     if vault_key in _test_overrides:
         return _test_overrides[vault_key]
 
- # 2. Try Vault
+    # 2. Try Vault
     secrets = _fetch_vault_secrets()
     vault_value = secrets.get(vault_key, "")
     if vault_value:
         return str(vault_value)
 
- # 2. Try explicit environment fallback.
+    # 2. Try explicit environment fallback.
     if env_fallback:
         env_value = os.environ.get(env_fallback, "")
         if env_value:
@@ -181,8 +201,9 @@ def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict
             source = f"{source} or env var '{env_fallback}'"
         raise RuntimeError(f"Required secret missing: {source}")
 
- # 3. Default for non-strict callers.
+    # 3. Default for non-strict callers.
     return default
+
 
 def put_secret(vault_key: str, value: str) -> bool:
     """Write a secret value to Vault KV v2.
@@ -222,15 +243,22 @@ def put_secret(vault_key: str, value: str) -> bool:
     else:
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
-        logger.warning("Vault: CA certificate not found at %s — TLS verification disabled", vault_ca_cert)
+        logger.warning(
+            "Vault: CA certificate not found at %s — TLS verification disabled",
+            vault_ca_cert,
+        )
 
     payload = json.dumps({"data": {vault_key: value}}).encode("utf-8")
 
     try:
-        req = urllib.request.Request(url, data=payload, headers=patch_headers, method="PATCH")
+        req = urllib.request.Request(
+            url, data=payload, headers=patch_headers, method="PATCH"
+        )
         with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
             if response.status in (200, 204):
-                logger.info("Vault: patched secret '%s' in %s", vault_key, VAULT_SECRET_PATH)
+                logger.info(
+                    "Vault: patched secret '%s' in %s", vault_key, VAULT_SECRET_PATH
+                )
                 _publish_shared_cache_invalidation()
                 clear_cache()
                 return True
@@ -238,7 +266,9 @@ def put_secret(vault_key: str, value: str) -> bool:
         if exc.code not in (404, 405, 415):
             logger.error("Vault: patch failed (%s).", exc.reason)
             return False
-        logger.warning("Vault: patch unsupported or path missing; falling back to merge write.")
+        logger.warning(
+            "Vault: patch unsupported or path missing; falling back to merge write."
+        )
     except urllib.error.URLError as exc:
         logger.error("Vault: patch failed (%s).", exc.reason)
         return False
@@ -251,10 +281,14 @@ def put_secret(vault_key: str, value: str) -> bool:
     fallback_payload = json.dumps({"data": existing}).encode("utf-8")
 
     try:
-        req = urllib.request.Request(url, data=fallback_payload, headers=headers, method="POST")
+        req = urllib.request.Request(
+            url, data=fallback_payload, headers=headers, method="POST"
+        )
         with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
             if response.status in (200, 204):
-                logger.info("Vault: merge-wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH)
+                logger.info(
+                    "Vault: merge-wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH
+                )
                 _publish_shared_cache_invalidation()
                 clear_cache()
                 return True
@@ -265,12 +299,14 @@ def put_secret(vault_key: str, value: str) -> bool:
 
     return False
 
+
 def clear_cache() -> None:
     """Clear the cached Vault secrets. Call this to force a re-fetch."""
     global _secrets_cache, _cache_fetched_at
     _secrets_cache = {}
     _cache_fetched_at = 0.0
     logger.info("Vault: secret cache cleared")
+
 
 def set_test_override(key: str, value: str) -> None:
     """Set a test override for a Vault key.
@@ -281,10 +317,12 @@ def set_test_override(key: str, value: str) -> None:
     global _test_overrides
     _test_overrides[key] = value
 
+
 def clear_test_override(key: str) -> None:
     """Clear a single test override."""
     global _test_overrides
     _test_overrides.pop(key, None)
+
 
 def clear_test_overrides() -> None:
     """Clear all test overrides. Call this in test tearDown."""

@@ -22,7 +22,9 @@ class StrategyTestCase(TestCase):
     """Base with real tenant, customer, card, pass."""
 
     def setUp(self):
-        self.tenant = Tenant.objects.create(name="Test Cafe", email="test@cafe.com", phone="1234567890")
+        self.tenant = Tenant.objects.create(
+            name="Test Cafe", email="test@cafe.com", phone="1234567890"
+        )
         self.customer = Customer.objects.create(
             tenant=self.tenant,
             first_name="Test",
@@ -33,13 +35,33 @@ class StrategyTestCase(TestCase):
     def make_pass(self, card_type: str, **card_kwargs):
         metadata_defaults = {
             "stamp": {"stamps_required": 5, "reward_description": "Free coffee"},
-            "cashback": {"cashback_percentage": 10, "minimum_purchase": 0, "credit_expiry_days": 365},
-            "coupon": {"discount_type": "percentage", "discount_value": 10, "usage_limit_per_customer": 1},
+            "cashback": {
+                "cashback_percentage": 10,
+                "minimum_purchase": 0,
+                "credit_expiry_days": 365,
+            },
+            "coupon": {
+                "discount_type": "percentage",
+                "discount_value": 10,
+                "usage_limit_per_customer": 1,
+            },
             "gift_certificate": {"denominations": [25, 50, 100], "expiry_days": 365},
-            "vip_membership": {"membership_name": "Gold", "monthly_fee": 10, "validity_period": "monthly"},
+            "vip_membership": {
+                "membership_name": "Gold",
+                "monthly_fee": 10,
+                "validity_period": "monthly",
+            },
             "multipass": {"bundle_size": 10, "bundle_price": 50},
-            "discount": {"tiers": [{"tier_name": "Bronze", "threshold": 0, "discount_percentage": 5}]},
-            "referral_pass": {"referrer_reward": "10", "referee_reward": "10", "max_referrals_per_customer": 5},
+            "discount": {
+                "tiers": [
+                    {"tier_name": "Bronze", "threshold": 0, "discount_percentage": 5}
+                ]
+            },
+            "referral_pass": {
+                "referrer_reward": "10",
+                "referee_reward": "10",
+                "max_referrals_per_customer": 5,
+            },
             "corporate_discount": {},
             "affiliate": {},
         }
@@ -54,7 +76,9 @@ class StrategyTestCase(TestCase):
             metadata=meta,
             **card_kwargs,
         )
-        return CustomerPass.objects.create(customer=self.customer, card=card, is_active=True)
+        return CustomerPass.objects.create(
+            customer=self.customer, card=card, is_active=True
+        )
 
     def make_context(self, customer_pass, amount=Decimal("0"), intent="redeem"):
         return RedemptionContext(
@@ -110,17 +134,25 @@ class StampStrategyTest(StrategyTestCase):
 
 class CashbackStrategyTest(StrategyTestCase):
     def test_cashback_earn_adds_credit(self):
-        cp = self.make_pass("cashback", metadata={"cashback_percentage": 10, "minimum_purchase": 0})
+        cp = self.make_pass(
+            "cashback", metadata={"cashback_percentage": 10, "minimum_purchase": 0}
+        )
         strategy = get_strategy("cashback", "earn")
-        result = strategy.execute(self.make_context(cp, amount=Decimal("100.00"), intent="earn"))
+        result = strategy.execute(
+            self.make_context(cp, amount=Decimal("100.00"), intent="earn")
+        )
         self.assertTrue(result.success)
         cp.refresh_from_db()
         self.assertEqual(cp.cashback_balance, Decimal("10.00"))
 
     def test_cashback_earn_below_minimum_fails(self):
-        cp = self.make_pass("cashback", metadata={"cashback_percentage": 10, "minimum_purchase": 50})
+        cp = self.make_pass(
+            "cashback", metadata={"cashback_percentage": 10, "minimum_purchase": 50}
+        )
         strategy = get_strategy("cashback", "earn")
-        result = strategy.execute(self.make_context(cp, amount=Decimal("10.00"), intent="earn"))
+        result = strategy.execute(
+            self.make_context(cp, amount=Decimal("10.00"), intent="earn")
+        )
         self.assertFalse(result.success)
 
     def test_cashback_redeem_deducts_balance(self):
@@ -128,7 +160,9 @@ class CashbackStrategyTest(StrategyTestCase):
         cp.cashback_balance = Decimal("50.00")
         cp.save()
         strategy = get_strategy("cashback", "redeem")
-        result = strategy.execute(self.make_context(cp, amount=Decimal("20.00"), intent="redeem"))
+        result = strategy.execute(
+            self.make_context(cp, amount=Decimal("20.00"), intent="redeem")
+        )
         self.assertTrue(result.success)
         cp.refresh_from_db()
         self.assertEqual(cp.cashback_balance, Decimal("30.00"))
@@ -138,7 +172,9 @@ class CashbackStrategyTest(StrategyTestCase):
         cp.cashback_balance = Decimal("10.00")
         cp.save()
         strategy = get_strategy("cashback", "redeem")
-        result = strategy.execute(self.make_context(cp, amount=Decimal("20.00"), intent="redeem"))
+        result = strategy.execute(
+            self.make_context(cp, amount=Decimal("20.00"), intent="redeem")
+        )
         self.assertFalse(result.success)
 
 
@@ -188,7 +224,9 @@ class GiftStrategyTest(StrategyTestCase):
         cp.gift_balance = Decimal("100.00")
         cp.save()
         strategy = get_strategy("gift_certificate", "redeem")
-        result = strategy.execute(self.make_context(cp, amount=Decimal("30.00"), intent="redeem"))
+        result = strategy.execute(
+            self.make_context(cp, amount=Decimal("30.00"), intent="redeem")
+        )
         self.assertTrue(result.success)
         cp.refresh_from_db()
         self.assertEqual(cp.gift_balance, Decimal("70.00"))
@@ -198,7 +236,9 @@ class GiftStrategyTest(StrategyTestCase):
         cp.gift_balance = Decimal("10.00")
         cp.save()
         strategy = get_strategy("gift_certificate", "redeem")
-        result = strategy.execute(self.make_context(cp, amount=Decimal("30.00"), intent="redeem"))
+        result = strategy.execute(
+            self.make_context(cp, amount=Decimal("30.00"), intent="redeem")
+        )
         self.assertFalse(result.success)
         self.assertIn("insufficient_balance", result.denial_reasons)
 
@@ -287,12 +327,18 @@ class DiscountStrategyTest(StrategyTestCase):
             metadata={
                 "tiers": [
                     {"tier_name": "Bronze", "threshold": 0, "discount_percentage": 5},
-                    {"tier_name": "Silver", "threshold": 100, "discount_percentage": 10},
+                    {
+                        "tier_name": "Silver",
+                        "threshold": 100,
+                        "discount_percentage": 10,
+                    },
                 ]
             },
         )
         strategy = get_strategy("discount", "redeem")
-        result = strategy.execute(self.make_context(cp, amount=Decimal("150.00"), intent="redeem"))
+        result = strategy.execute(
+            self.make_context(cp, amount=Decimal("150.00"), intent="redeem")
+        )
         self.assertTrue(result.success)
         cp.refresh_from_db()
         self.assertEqual(cp.pass_data.get("current_tier_name"), "Silver")

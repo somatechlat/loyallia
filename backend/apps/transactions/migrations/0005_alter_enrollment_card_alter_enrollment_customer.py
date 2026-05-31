@@ -7,20 +7,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0006_remove_card_idx_card_tenant_active'),
-        ('customers', '0007_alter_customerpass_card'),
-        ('transactions', '0004_remove_transaction_idx_txn_tenant_type_date_and_more'),
+        ("cards", "0006_remove_card_idx_card_tenant_active"),
+        ("customers", "0007_alter_customerpass_card"),
+        ("transactions", "0004_remove_transaction_idx_txn_tenant_type_date_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='enrollment',
-            name='card',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='enrollments', to='cards.card', verbose_name='Programa'),
+            model_name="enrollment",
+            name="card",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="enrollments",
+                to="cards.card",
+                verbose_name="Programa",
+            ),
         ),
         migrations.AlterField(
-            model_name='enrollment',
-            name='customer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='enrollments', to='customers.customer', verbose_name='Cliente'),
+            model_name="enrollment",
+            name="customer",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="enrollments",
+                to="customers.customer",
+                verbose_name="Cliente",
+            ),
         ),
     ]

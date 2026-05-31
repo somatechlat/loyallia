@@ -34,7 +34,11 @@ def backup_redis(job_id: str) -> dict:
 
         config_get = redis_conn.execute_command("CONFIG", "GET", "dir")
         if isinstance(config_get, (list, tuple)) and len(config_get) >= 2:
-            redis_dir = config_get[1].decode() if isinstance(config_get[1], bytes) else config_get[1]
+            redis_dir = (
+                config_get[1].decode()
+                if isinstance(config_get[1], bytes)
+                else config_get[1]
+            )
         else:
             redis_dir = "/data"
 
@@ -42,8 +46,16 @@ def backup_redis(job_id: str) -> dict:
         if os.path.exists(dump_source):
             shutil.copy2(dump_source, redis_file)
             file_size = os.path.getsize(redis_file)
-            logger.info("backup_redis: job %s completed, size=%d bytes", job_id, file_size)
-            return {"success": True, "component": "redis", "job_id": job_id, "file_path": redis_file, "file_size": file_size}
+            logger.info(
+                "backup_redis: job %s completed, size=%d bytes", job_id, file_size
+            )
+            return {
+                "success": True,
+                "component": "redis",
+                "job_id": job_id,
+                "file_path": redis_file,
+                "file_size": file_size,
+            }
 
         for alt_dir in ("/data", "/var/lib/redis", "/var/redis", "/tmp"):
             alt_path = os.path.join(alt_dir, "dump.rdb")
@@ -51,7 +63,13 @@ def backup_redis(job_id: str) -> dict:
                 shutil.copy2(alt_path, redis_file)
                 file_size = os.path.getsize(redis_file)
                 logger.info("backup_redis: job %s completed from %s", job_id, alt_dir)
-                return {"success": True, "component": "redis", "job_id": job_id, "file_path": redis_file, "file_size": file_size}
+                return {
+                    "success": True,
+                    "component": "redis",
+                    "job_id": job_id,
+                    "file_path": redis_file,
+                    "file_size": file_size,
+                }
 
         raise FileNotFoundError(f"dump.rdb not found in {redis_dir} or known locations")
     except Exception:
@@ -68,7 +86,11 @@ def restore_redis(rdb_file: str) -> bool:
         redis_conn = get_redis_connection("default")
         config_get = redis_conn.execute_command("CONFIG", "GET", "dir")
         if isinstance(config_get, (list, tuple)) and len(config_get) >= 2:
-            redis_dir = config_get[1].decode() if isinstance(config_get[1], bytes) else config_get[1]
+            redis_dir = (
+                config_get[1].decode()
+                if isinstance(config_get[1], bytes)
+                else config_get[1]
+            )
         else:
             redis_dir = "/data"
 

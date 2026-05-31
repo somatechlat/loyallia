@@ -46,6 +46,7 @@ from common.permissions import is_manager_or_owner, is_staff_or_above, jwt_auth
 
 router = Router()
 
+
 def _serialize_json_value(value):
     """Recursively convert Decimal values to strings for JSON serialization.
 
@@ -60,13 +61,16 @@ def _serialize_json_value(value):
         return [_serialize_json_value(v) for v in value]
     return value
 
+
 # Scanner sub-router for /scanner/ endpoints (POS terminal operations)
 scanner_router = Router()
+
 
 class ScanValidateIn(BaseModel):
     """Input schema for QR code validation (scan-to-check)."""
 
     qr_code: str
+
 
 class ScanTransactIn(BaseModel):
     """Input schema for QR code transaction (scan-to-transact)."""
@@ -75,6 +79,7 @@ class ScanTransactIn(BaseModel):
     amount: float = 0
     notes: str = ""
     idempotency_key: str = ""
+
 
 @scanner_router.post("/validate/", auth=jwt_auth, summary="Validar código QR del pase")
 def validate_qr(request: HttpRequest, data: ScanValidateIn):
@@ -94,9 +99,9 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
     try:
         # PERF: single JOIN query for Pass + Customer + Card + Tenant
         # SEC: card__tenant=request.tenant ensures tenant isolation
-        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            qr_code=data.qr_code, is_active=True, card__tenant=request.tenant
-        )
+        pass_obj = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(qr_code=data.qr_code, is_active=True, card__tenant=request.tenant)
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
 
@@ -115,6 +120,7 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
         "pass_data": pass_obj.pass_data,
         "is_valid": True,
     }
+
 
 @scanner_router.post("/transact/", auth=jwt_auth, summary="Registrar transacción")
 def transact(request: HttpRequest, data: ScanTransactIn):
@@ -140,7 +146,9 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     from apps.redemption.gateway import RedemptionGateway
 
     tenant = request.tenant
-    staff_id = str(request.user.id) if hasattr(request, "user") and request.user else None
+    staff_id = (
+        str(request.user.id) if hasattr(request, "user") and request.user else None
+    )
     location_id = getattr(request, "location_id", None)
 
     command = RedemptionCommand(
@@ -180,9 +188,9 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     _card_type = ""
     if result.transaction_id:
         try:
-            txn = Transaction.objects.select_related("customer_pass__customer", "customer_pass__card").get(
-                id=result.transaction_id
-            )
+            txn = Transaction.objects.select_related(
+                "customer_pass__customer", "customer_pass__card"
+            ).get(id=result.transaction_id)
             _customer_id = str(txn.customer_pass.customer.id)
             _card_type = txn.customer_pass.card.card_type
         except Transaction.DoesNotExist:
@@ -206,7 +214,9 @@ def transact(request: HttpRequest, data: ScanTransactIn):
 
         try:
             if result.transaction_id:
-                txn = Transaction.objects.select_related("customer_pass").get(id=result.transaction_id)
+                txn = Transaction.objects.select_related("customer_pass").get(
+                    id=result.transaction_id
+                )
                 trigger_pass_update.delay(str(txn.customer_pass.id))
         except Exception:
             logging.getLogger(__name__).warning(
@@ -238,7 +248,10 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     }
     return _serialize_json_value(response_data)
 
-@scanner_router.get("/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono")
+
+@scanner_router.get(
+    "/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono"
+)
 def search_customer(request: HttpRequest, query: str):
     """Search customer by name/email/phone for remote stamp issuance.
 
@@ -288,6 +301,7 @@ def search_customer(request: HttpRequest, query: str):
 
     return {"results": results}
 
+
 # Transaction list endpoints (/transactions/)
 @router.get("/", auth=jwt_auth, summary="Listar transacciones")
 def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
@@ -320,7 +334,9 @@ def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
                 "card_name": transaction.customer_pass.card.name,
                 "amount": str(transaction.amount) if transaction.amount else None,
                 "quantity": transaction.quantity,
-                "staff_name": (transaction.staff.get_full_name() if transaction.staff else None),
+                "staff_name": (
+                    transaction.staff.get_full_name() if transaction.staff else None
+                ),
                 "created_at": transaction.created_at.isoformat(),
             }
         )
@@ -333,6 +349,7 @@ def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
     )
     return {"transactions": results}
 
+
 @router.get("/{transaction_id}/", auth=jwt_auth, summary="Detalle de transacción")
 def get_transaction(request: HttpRequest, transaction_id: str):
     """Transaction detail view with all related data.
@@ -342,7 +359,9 @@ def get_transaction(request: HttpRequest, transaction_id: str):
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     # SEC: tenant=request.tenant prevents cross-tenant access
-    transaction = get_object_or_404(Transaction, id=transaction_id, tenant=request.tenant)
+    transaction = get_object_or_404(
+        Transaction, id=transaction_id, tenant=request.tenant
+    )
 
     log_action(
         request=request,
@@ -387,6 +406,7 @@ def get_transaction(request: HttpRequest, transaction_id: str):
         "created_at": transaction.created_at.isoformat(),
     }
 
+
 class RemoteIssueIn(BaseModel):
     """Input schema for remote stamp/reward issuance without QR scan."""
 
@@ -395,7 +415,10 @@ class RemoteIssueIn(BaseModel):
     quantity: int = 1
     notes: str = ""
 
-@router.post("/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota")
+
+@router.post(
+    "/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota"
+)
 def remote_issue(request: HttpRequest, data: RemoteIssueIn):
     """Issue stamps/rewards remotely without a QR scan.
 
@@ -422,19 +445,23 @@ def remote_issue(request: HttpRequest, data: RemoteIssueIn):
 
     # SEC: tenant-scoped customer lookup
     try:
-        customer = Customer.objects.get(id=customer_uuid, tenant=request.tenant, is_active=True)
+        customer = Customer.objects.get(
+            id=customer_uuid, tenant=request.tenant, is_active=True
+        )
     except Customer.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
     # SEC: tenant-scoped pass lookup via customer ownership
     try:
-        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            customer=customer, card_id=card_uuid, is_active=True
-        )
+        pass_obj = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(customer=customer, card_id=card_uuid, is_active=True)
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
-    staff_id = str(request.user.id) if hasattr(request, "user") and request.user else None
+    staff_id = (
+        str(request.user.id) if hasattr(request, "user") and request.user else None
+    )
 
     command = RedemptionCommand(
         tenant_id=str(request.tenant.id),
@@ -473,7 +500,9 @@ def remote_issue(request: HttpRequest, data: RemoteIssueIn):
     return {
         "transaction_id": result.transaction_id,
         "success": True,
-        "message": get_message("TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name),
+        "message": get_message(
+            "TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name
+        ),
         "pass_updated": result.pass_updated,
         "reward_earned": result.reward_earned,
         "reward_description": result.reward_description,

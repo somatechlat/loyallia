@@ -44,7 +44,7 @@ def log_action(
     actor_email = getattr(user, "email", "anonymous") or "anonymous"
     actor_role = getattr(user, "role", "unknown") or "unknown"
 
- # Resolve tenant_id
+    # Resolve tenant_id
     if tenant_id is None:
         tenant = getattr(request, "tenant", None)
         if tenant:
@@ -133,7 +133,9 @@ def log_impersonation(
     Raises ValueError if justification is empty.
     """
     if not justification or len(justification.strip()) < 10:
-        raise ValueError("Impersonation requires a justification of at least 10 characters.")
+        raise ValueError(
+            "Impersonation requires a justification of at least 10 characters."
+        )
 
     return log_action(
         request=request,

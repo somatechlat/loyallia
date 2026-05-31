@@ -8,6 +8,7 @@ from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
+
 @shared_task(
     bind=True,
     max_retries=2,
@@ -32,7 +33,9 @@ def evaluate_trigger_for_customer(
     from apps.customers.models import Customer
 
     try:
-        customer = Customer.objects.select_related("tenant").get(id=uuid.UUID(customer_id))
+        customer = Customer.objects.select_related("tenant").get(
+            id=uuid.UUID(customer_id)
+        )
     except Customer.DoesNotExist:
         logger.error("evaluate_trigger: customer %s not found", customer_id)
         return {"success": False}
@@ -47,6 +50,7 @@ def evaluate_trigger_for_customer(
     except Exception as exc:
         logger.error("evaluate_trigger failed: %s", exc)
         raise self.retry(exc=exc)
+
 
 @shared_task(
     queue="default",
@@ -76,7 +80,7 @@ def evaluate_scheduled_automations() -> dict:
     total_executed = 0
 
     for automation in scheduled:
- # Get all customers for this tenant
+        # Get all customers for this tenant
         customers = Customer.objects.filter(
             tenant=automation.tenant,
             is_active=True,
@@ -101,6 +105,7 @@ def evaluate_scheduled_automations() -> dict:
 
     logger.info("evaluate_scheduled_automations: %d executions", total_executed)
     return {"executed": total_executed}
+
 
 @shared_task(
     queue="default",
@@ -137,6 +142,7 @@ def evaluate_inactive_triggers(days_threshold: int = 30) -> dict:
     logger.info("evaluate_inactive_triggers: %d automation triggers fired", triggered)
     return {"triggered": triggered, "days_threshold": days_threshold}
 
+
 @shared_task(
     queue="default",
     name="apps.automation.tasks.evaluate_birthday_triggers",
@@ -156,7 +162,7 @@ def evaluate_birthday_triggers() -> dict:
     today = date.today()
     triggered = 0
 
- # Check today + next 3 days for upcoming birthdays
+    # Check today + next 3 days for upcoming birthdays
     for offset in range(4):
         check_date = today + timedelta(days=offset)
         customers = Customer.objects.filter(
@@ -178,6 +184,7 @@ def evaluate_birthday_triggers() -> dict:
 
     logger.info("evaluate_birthday_triggers: %d automation triggers fired", triggered)
     return {"triggered": triggered}
+
 
 @shared_task(
     queue="default",

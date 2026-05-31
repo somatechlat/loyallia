@@ -6,24 +6,45 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenants', '0004_tenant_default_language'),
+        ("tenants", "0004_tenant_default_language"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PlatformSetting',
+            name="PlatformSetting",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(db_index=True, max_length=100, unique=True)),
-                ('value', models.TextField()),
-                ('description', models.CharField(blank=True, max_length=255)),
-                ('category', models.CharField(default='general', help_text='UI grouping category (e.g., billing, system, email)', max_length=50)),
-                ('requires_restart', models.BooleanField(default=False, help_text='If True, a container restart is needed for full effect')),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("key", models.CharField(db_index=True, max_length=100, unique=True)),
+                ("value", models.TextField()),
+                ("description", models.CharField(blank=True, max_length=255)),
+                (
+                    "category",
+                    models.CharField(
+                        default="general",
+                        help_text="UI grouping category (e.g., billing, system, email)",
+                        max_length=50,
+                    ),
+                ),
+                (
+                    "requires_restart",
+                    models.BooleanField(
+                        default=False,
+                        help_text="If True, a container restart is needed for full effect",
+                    ),
+                ),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'loyallia_platform_settings',
-                'ordering': ['category', 'key'],
+                "db_table": "loyallia_platform_settings",
+                "ordering": ["category", "key"],
             },
         ),
     ]

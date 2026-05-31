@@ -38,9 +38,12 @@ router = Router()
 
 # ENDPOINTS
 
+
 @router.get("/", auth=jwt_auth, response=CustomerListOut, summary="Listar clientes")
 @require_active_subscription
-def list_customers(request: HttpRequest, search: str | None = None, limit: int = 50, offset: int = 0) -> CustomerListOut:
+def list_customers(
+    request: HttpRequest, search: str | None = None, limit: int = 50, offset: int = 0
+) -> CustomerListOut:
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -71,6 +74,7 @@ def list_customers(request: HttpRequest, search: str | None = None, limit: int =
     )
 
     return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
+
 
 @router.post("/", auth=jwt_auth, response=CustomerOut, summary="Crear cliente")
 def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut:
@@ -114,7 +118,10 @@ def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut
     )
     return CustomerOut.from_model(customer)
 
-@router.post("/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)")
+
+@router.post(
+    "/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)"
+)
 def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     """
     Import customers from an Excel or CSV file. OWNER only.
@@ -132,7 +139,7 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
 
     from apps.customers.import_service import CustomerImportService
 
- # SECURITY HARDENING: Prevent OOM (Memory Exhaustion) Attacks
+    # SECURITY HARDENING: Prevent OOM (Memory Exhaustion) Attacks
     if file.size is None or file.size > CustomerImportService.MAX_FILE_SIZE:
         max_mb = CustomerImportService.MAX_FILE_SIZE // (1024 * 1024)
         raise HttpError(
@@ -162,8 +169,13 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
 
     return result
 
-@router.post("/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente")
-def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: CustomerCreateIn) -> CustomerPassOut:
+
+@router.post(
+    "/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente"
+)
+def enroll_customer_public(
+    request: HttpRequest, card_id: str, customer_data: CustomerCreateIn
+) -> CustomerPassOut:
     """Public endpoint for customer self-enrollment via QR code scan.
 
     Rate limited to 10 enrollments per hour per IP address.
@@ -171,7 +183,7 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
     """
     from django.core.cache import cache
 
- # Rate limiting: 10 per hour per IP
+    # Rate limiting: 10 per hour per IP
     client_ip = get_client_ip(request)
     cache_key = f"enroll_rate:{client_ip}"
     enroll_count = cache.get(cache_key, 0)
@@ -180,7 +192,9 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
     cache.set(cache_key, enroll_count + 1, 3600)  # 1 hour TTL
 
     try:
-        card = Card.objects.select_related("tenant").get(id=card_id, is_active=True, is_published=True)
+        card = Card.objects.select_related("tenant").get(
+            id=card_id, is_active=True, is_published=True
+        )
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
 
@@ -203,15 +217,15 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
         },
     )
 
- # SECURITY: Do NOT overwrite existing customer profile data on re-enrollment.
- # Only the pass (CustomerPass) is created/updated customer fields stay as-is.
+    # SECURITY: Do NOT overwrite existing customer profile data on re-enrollment.
+    # Only the pass (CustomerPass) is created/updated customer fields stay as-is.
 
     existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
     if existing_pass:
         # Return existing pass with flag instead of error — UX: show user their card
         return CustomerPassOut.from_model(existing_pass, already_enrolled=True)
 
- # Extract any dynamic extra fields from the Pydantic model
+    # Extract any dynamic extra fields from the Pydantic model
     standard_fields = {
         "first_name",
         "last_name",
@@ -221,17 +235,21 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
         "gender",
         "notes",
     }
-    dynamic_fields = {k: v for k, v in customer_data.model_dump().items() if k not in standard_fields}
+    dynamic_fields = {
+        k: v for k, v in customer_data.model_dump().items() if k not in standard_fields
+    }
 
     pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
- # Store custom enrollment metadata in pass_data
+    # Store custom enrollment metadata in pass_data
     if dynamic_fields:
         pass_obj.update_pass_data({"enrollment_data": dynamic_fields})
 
     from apps.transactions.models import Enrollment
 
-    Enrollment.objects.create(tenant=card.tenant, customer=customer, card=card, enrollment_method="qr_scan")
+    Enrollment.objects.create(
+        tenant=card.tenant, customer=customer, card=card, enrollment_method="qr_scan"
+    )
 
     from apps.automation.engine import fire_trigger_async
 
@@ -272,6 +290,7 @@ def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: Cu
     )
     return CustomerPassOut.from_model(pass_obj)
 
+
 @router.post("/resend-pass/", response=MessageOut, summary="Reenviar pase por email")
 def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     """Public endpoint to resend a customer's pass link via email.
@@ -282,7 +301,9 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     from django.core.mail import send_mail
 
     try:
-        card = Card.objects.select_related("tenant").get(id=data.card_id, is_active=True, is_published=True)
+        card = Card.objects.select_related("tenant").get(
+            id=data.card_id, is_active=True, is_published=True
+        )
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
 
@@ -300,6 +321,7 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
         base_url = request.build_absolute_uri("/").rstrip("/")
     else:
         from django.conf import settings
+
         base_url = getattr(settings, "PUBLIC_BASE_URL", "")
 
     pass_url = f"{base_url}/pass/{pass_id}/"
@@ -360,16 +382,24 @@ Equipo {card.tenant.name}
         logger.error("Failed to send pass resend email to %s: %s", customer.email, exc)
         raise HttpError(500, get_message("EMAIL_SEND_ERROR"))
 
-    return MessageOut(success=True, message=get_message("PASS_RESENT", email=customer.email))
+    return MessageOut(
+        success=True, message=get_message("PASS_RESENT", email=customer.email)
+    )
+
 
 # CUSTOMER CRUD
 
-@router.get("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente")
+
+@router.get(
+    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente"
+)
 def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
     """Customer profile with pass and transaction history. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
 
     log_action(
         request=request,
@@ -381,13 +411,20 @@ def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
 
     return CustomerOut.from_model(customer)
 
-@router.patch("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
+
+@router.patch(
+    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
+)
 @require_active_subscription
-def update_customer(request: HttpRequest, customer_id: str, data: CustomerUpdateIn) -> CustomerOut:
+def update_customer(
+    request: HttpRequest, customer_id: str, data: CustomerUpdateIn
+) -> CustomerOut:
     """Update customer information. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
 
     update_fields = []
     if data.first_name is not None:
@@ -426,21 +463,29 @@ def update_customer(request: HttpRequest, customer_id: str, data: CustomerUpdate
 
     return CustomerOut.from_model(customer)
 
-@router.put("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
+
+@router.put(
+    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
+)
 @require_active_subscription
-def replace_customer(request: HttpRequest, customer_id: str, data: CustomerUpdateIn) -> CustomerOut:
+def replace_customer(
+    request: HttpRequest, customer_id: str, data: CustomerUpdateIn
+) -> CustomerOut:
     """Compatibility alias for clients that send PUT for partial customer updates."""
     return update_customer(request, customer_id, data)
 
-@router.delete("/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente")
+
+@router.delete(
+    "/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente"
+)
 @require_active_subscription
 def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
-    """Permanent delete of a customer and all associated data. OWNER only.
-
-    """
+    """Permanent delete of a customer and all associated data. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
 
     log_action(
         request=request,
@@ -454,19 +499,25 @@ def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
 
     return HttpResponse(status=204)
 
+
 @router.get(
     "/{customer_id}/passes/",
     auth=jwt_auth,
     response=list[CustomerPassOut],
     summary="Pases del cliente",
 )
-def get_customer_passes(request: HttpRequest, customer_id: str) -> list[CustomerPassOut]:
+def get_customer_passes(
+    request: HttpRequest, customer_id: str
+) -> list[CustomerPassOut]:
     """Get all passes for a customer. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
+    customer = get_object_or_404(
+        Customer, id=customer_id, tenant=require_tenant(request)
+    )
     passes = CustomerPass.objects.filter(customer=customer).select_related("card")
     return [CustomerPassOut.from_model(pass_obj) for pass_obj in passes]
+
 
 @router.post(
     "/{customer_id}/enroll/",
@@ -474,7 +525,9 @@ def get_customer_passes(request: HttpRequest, customer_id: str) -> list[Customer
     response=CustomerPassOut,
     summary="Inscribir cliente en programa",
 )
-def enroll_customer(request: HttpRequest, customer_id: str, card_id: str) -> CustomerPassOut:
+def enroll_customer(
+    request: HttpRequest, customer_id: str, card_id: str
+) -> CustomerPassOut:
     """Enroll customer in a loyalty program. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -489,7 +542,9 @@ def enroll_customer(request: HttpRequest, customer_id: str, card_id: str) -> Cus
 
     from apps.transactions.models import Enrollment
 
-    Enrollment.objects.create(tenant=tenant, customer=customer, card=card, enrollment_method="manual")
+    Enrollment.objects.create(
+        tenant=tenant, customer=customer, card=card, enrollment_method="manual"
+    )
 
     from apps.automation.engine import fire_trigger_async
 

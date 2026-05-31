@@ -42,6 +42,7 @@ INVOICE_STATUS_LABELS = {
 
 # Payment Methods
 
+
 @router.get("/payment-methods/", auth=jwt_auth, summary="Listar metodos de pago")
 @require_role("OWNER")
 def list_payment_methods(request: HttpRequest):
@@ -68,6 +69,7 @@ def list_payment_methods(request: HttpRequest):
             for pm in methods
         ],
     }
+
 
 @router.post("/payment-methods/", auth=jwt_auth, summary="Agregar metodo de pago")
 @require_role("OWNER")
@@ -96,6 +98,7 @@ def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
         "id": str(pm.id),
         "message": get_message("BILLING_PAYMENT_METHOD_ADDED"),
     }
+
 
 @router.delete(
     "/payment-methods/{payment_method_id}/",
@@ -130,6 +133,7 @@ def remove_payment_method(request: HttpRequest, payment_method_id: str):
 
     return {"success": True, "message": get_message("BILLING_PAYMENT_METHOD_REMOVED")}
 
+
 @router.post(
     "/payment-methods/{payment_method_id}/default/",
     auth=jwt_auth,
@@ -156,7 +160,9 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
 
     return {"success": True, "message": get_message("BILLING_DEFAULT_PM_SET")}
 
+
 # Invoices
+
 
 @router.get("/invoices/", auth=jwt_auth, summary="Listar facturas")
 @require_role("OWNER")
@@ -191,6 +197,7 @@ def list_invoices(request: HttpRequest, limit: int = 20, offset: int = 0):
         ],
     }
 
+
 @router.get("/invoices/{invoice_id}/", auth=jwt_auth, summary="Detalle de factura")
 @require_role("OWNER")
 def get_invoice(request: HttpRequest, invoice_id: str):
@@ -218,7 +225,9 @@ def get_invoice(request: HttpRequest, invoice_id: str):
         "created_at": invoice.created_at.isoformat(),
     }
 
+
 # Payment Gateway Webhook
+
 
 @router.post("/webhook/", summary="Payment Gateway Webhook")
 @rate_limit(key_prefix="stripe_webhook", max_requests=100, window_seconds=60)
@@ -242,7 +251,7 @@ def payment_webhook(request: HttpRequest):
     except json.JSONDecodeError:
         raise HttpError(400, get_message("BILLING_INVALID_PAYLOAD"))
 
- # Timestamp validation reject stale webhooks (replay protection)
+    # Timestamp validation reject stale webhooks (replay protection)
     timestamp = payload.get("timestamp")
     if timestamp is None:
         raise HttpError(
@@ -268,13 +277,13 @@ def payment_webhook(request: HttpRequest):
             get_message("VALIDATION_ERROR", detail="Webhook timestamp expired."),
         )
 
- # Idempotency prevent duplicate event processing
+    # Idempotency prevent duplicate event processing
     event_id = payload.get("id") or payload.get("event_id") or ""
     event_type = payload.get("event", "")
     payload_hash = hashlib.sha256(request.body).hexdigest()
 
     if not event_id:
- # Fallback: use payload hash as event ID for deduplication
+        # Fallback: use payload hash as event ID for deduplication
         event_id = payload_hash
 
     logger.info("Payment webhook: event=%s event_id=%s", event_type, event_id)

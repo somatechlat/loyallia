@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 APNS_PRODUCTION_HOST = "https://api.push.apple.com"
 APNS_SANDBOX_HOST = "https://api.sandbox.push.apple.com"
 
+
 def _get_pass_apns_auth() -> tuple[str | None, str | None]:
     """
     Load the Pass Type Certificate and private key from Vault for APNs auth.
@@ -53,6 +54,7 @@ def _get_pass_apns_auth() -> tuple[str | None, str | None]:
         logger.error("Apple pass push: Failed to load certificates from Vault: %s", exc)
         return None, None
 
+
 def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
     Send an empty APNs push notification to trigger a pass update on the device.
@@ -70,7 +72,9 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
     cert_pem, key_pem = _get_pass_apns_auth()
     if not cert_pem or not key_pem:
-        logger.warning("Apple pass push: Not configured  skipping push to %s", push_token[-8:])
+        logger.warning(
+            "Apple pass push: Not configured  skipping push to %s", push_token[-8:]
+        )
         return False
 
     topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
@@ -78,7 +82,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         logger.warning("Apple pass push: Pass type identifier is not configured")
         return False
 
- # Auto-detect sandbox from Django DEBUG setting
+    # Auto-detect sandbox from Django DEBUG setting
     use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)
     host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
 
@@ -90,26 +94,30 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         "apns-priority": "5",  # Background pushes require priority 5
     }
 
- # Write cert and key to temp files for httpx SSL context
+    # Write cert and key to temp files for httpx SSL context
     import ssl
     import tempfile
 
     try:
- # Create temporary PEM files for the SSL context
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as cert_file:
+        # Create temporary PEM files for the SSL context
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".pem", delete=False
+        ) as cert_file:
             cert_file.write(cert_pem)
             cert_path = cert_file.name
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as key_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".pem", delete=False
+        ) as key_file:
             key_file.write(key_pem)
             key_path = key_file.name
 
- # Build SSL context with client certificate
+        # Build SSL context with client certificate
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
         ssl_context.load_default_certs()
 
- # httpx HTTP/2 required for APNs
+        # httpx HTTP/2 required for APNs
         with httpx.Client(
             http2=True,
             verify=ssl_context,
@@ -125,7 +133,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
             logger.debug("Apple pass push sent successfully to %s", push_token[-8:])
             return True
 
- # Parse error reason
+        # Parse error reason
         try:
             reason = response.json().get("reason", "Unknown")
         except Exception:
@@ -140,11 +148,20 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
             #
             try:
                 from apps.customers.models import ApplePassRegistration
-                deleted, _ = ApplePassRegistration.objects.filter(push_token=push_token).delete()
+
+                deleted, _ = ApplePassRegistration.objects.filter(
+                    push_token=push_token
+                ).delete()
                 if deleted:
-                    logger.info("Apple pass push: Deleted stale registration for token %s", push_token[-8:])
+                    logger.info(
+                        "Apple pass push: Deleted stale registration for token %s",
+                        push_token[-8:],
+                    )
             except Exception as cleanup_exc:
-                logger.warning("Apple pass push: Failed to delete stale registration: %s", cleanup_exc)
+                logger.warning(
+                    "Apple pass push: Failed to delete stale registration: %s",
+                    cleanup_exc,
+                )
         else:
             logger.error(
                 "Apple pass push HTTP %s for %s: %s",
@@ -161,12 +178,13 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         logger.error("Apple pass push error for %s: %s", push_token[-8:], exc)
         return False
     finally:
- # Clean up temp files
+        # Clean up temp files
         import os
 
         for path in (cert_path, key_path):
             with contextlib.suppress(OSError):
                 os.unlink(path)
+
 
 def notify_pass_updated(customer_pass) -> int:
     """
@@ -186,7 +204,9 @@ def notify_pass_updated(customer_pass) -> int:
     )
 
     if not registrations.exists():
-        logger.debug("Apple pass push: No registered devices for pass %s", customer_pass.id)
+        logger.debug(
+            "Apple pass push: No registered devices for pass %s", customer_pass.id
+        )
         return 0
 
     notified = 0
@@ -195,9 +215,11 @@ def notify_pass_updated(customer_pass) -> int:
         if success:
             notified += 1
         else:
- # Track failures deactivate after repeated failures
- # (Similar to apns_client.py stale token handling)
-            logger.debug("Apple pass push: Failed for device %s", reg.device_library_id[-8:])
+            # Track failures deactivate after repeated failures
+            # (Similar to apns_client.py stale token handling)
+            logger.debug(
+                "Apple pass push: Failed for device %s", reg.device_library_id[-8:]
+            )
 
     logger.info(
         "Apple pass push: Notified %d/%d devices for pass %s",
@@ -206,6 +228,7 @@ def notify_pass_updated(customer_pass) -> int:
         customer_pass.id,
     )
     return notified
+
 
 def notify_card_updated(card) -> int:
     """
@@ -220,7 +243,9 @@ def notify_card_updated(card) -> int:
     """
     from apps.customers.models import ApplePassRegistration, CustomerPass
 
-    pass_ids = CustomerPass.objects.filter(card=card, is_active=True).values_list("id", flat=True)
+    pass_ids = CustomerPass.objects.filter(card=card, is_active=True).values_list(
+        "id", flat=True
+    )
 
     registrations = ApplePassRegistration.objects.filter(
         customer_pass_id__in=pass_ids,

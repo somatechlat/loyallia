@@ -70,6 +70,7 @@ SUBSCRIPTION_STATUS_LABELS = {
 
 # Plans (DB-driven REQ-PLAN-001)
 
+
 @router.get("/plans/", summary="Planes disponibles")
 def list_plans(request: HttpRequest):
     """Return all active subscription plans from the database."""
@@ -79,15 +80,27 @@ def list_plans(request: HttpRequest):
 
     from apps.tenants.models import PlatformSetting
 
-    tax_rate = Decimal(str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15))))
-    trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
+    tax_rate = Decimal(
+        str(
+            PlatformSetting.get_float(
+                "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
+            )
+        )
+    )
+    trial_days = PlatformSetting.get_int(
+        "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
+    )
 
-    plans = SubscriptionPlan.objects.filter(is_active=True, status=SubscriptionPlan.Status.PUBLISHED)
+    plans = SubscriptionPlan.objects.filter(
+        is_active=True, status=SubscriptionPlan.Status.PUBLISHED
+    )
     result = []
 
     for plan in plans:
         annual_monthly = (
-            (plan.price_annual / 12).quantize(Decimal("0.01")) if plan.price_annual > 0 else Decimal("0.00")
+            (plan.price_annual / 12).quantize(Decimal("0.01"))
+            if plan.price_annual > 0
+            else Decimal("0.00")
         )
         result.append(
             {
@@ -127,7 +140,9 @@ def list_plans(request: HttpRequest):
 
     return {"plans": result}
 
+
 # Subscription Management
+
 
 @router.get("/subscription/", auth=jwt_auth, summary="Obtener suscripción actual")
 @require_role("OWNER")
@@ -153,16 +168,26 @@ def get_subscription(request: HttpRequest):
         "plan_slug": plan.slug if plan else subscription.plan,
         "billing_cycle": subscription.billing_cycle,
         "status": subscription.status,
-        "status_display": SUBSCRIPTION_STATUS_LABELS.get(subscription.status, subscription.status),
+        "status_display": SUBSCRIPTION_STATUS_LABELS.get(
+            subscription.status, subscription.status
+        ),
         "is_access_allowed": subscription.is_access_allowed,
-        "trial_start": (subscription.trial_start.isoformat() if subscription.trial_start else None),
-        "trial_end": (subscription.trial_end.isoformat() if subscription.trial_end else None),
+        "trial_start": (
+            subscription.trial_start.isoformat() if subscription.trial_start else None
+        ),
+        "trial_end": (
+            subscription.trial_end.isoformat() if subscription.trial_end else None
+        ),
         "days_until_trial_end": subscription.days_until_trial_end,
         "current_period_start": (
-            subscription.current_period_start.isoformat() if subscription.current_period_start else None
+            subscription.current_period_start.isoformat()
+            if subscription.current_period_start
+            else None
         ),
         "current_period_end": (
-            subscription.current_period_end.isoformat() if subscription.current_period_end else None
+            subscription.current_period_end.isoformat()
+            if subscription.current_period_end
+            else None
         ),
         "cancel_at_period_end": subscription.cancel_at_period_end,
         "features": plan.features if plan else [],
@@ -178,7 +203,9 @@ def get_subscription(request: HttpRequest):
         ),
     }
 
+
 # Usage (reads from SubscriptionPlan REQ-PLAN-002)
+
 
 @router.get("/usage/", auth=jwt_auth, summary="Uso actual del plan")
 @require_role("OWNER")
@@ -202,28 +229,37 @@ def get_usage(request: HttpRequest):
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
- # Each is O(index scan) in PostgreSQL. Cannot be consolidated without raw SQL
- # since they target different models. Total latency: ~6ms on indexed tables.
+    # Each is O(index scan) in PostgreSQL. Cannot be consolidated without raw SQL
+    # since they target different models. Total latency: ~6ms on indexed tables.
     total_customers = Customer.objects.filter(tenant=tenant).count()
     total_programs = Card.objects.filter(tenant=tenant).count()
     total_users = User.objects.filter(tenant=tenant, is_active=True).count()
     total_locations = Location.objects.filter(tenant=tenant).count()
-    monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
-    monthly_notifs = Notification.objects.filter(tenant=tenant, created_at__gte=month_start).count()
- # Read limits from subscription plan (not hardcoded)
+    monthly_txns = Transaction.objects.filter(
+        tenant=tenant, created_at__gte=month_start
+    ).count()
+    monthly_notifs = Notification.objects.filter(
+        tenant=tenant, created_at__gte=month_start
+    ).count()
+    # Read limits from subscription plan (not hardcoded)
     subscription = Subscription.objects.filter(tenant=tenant).first()
 
     limits = {
         "customers": {
             "used": total_customers,
             "limit": resolve_limit(subscription, "customers"),
-            "percentage": usage_pct(total_customers, resolve_limit(subscription, "customers")),
-            "is_over_limit": total_customers >= resolve_limit(subscription, "customers"),
+            "percentage": usage_pct(
+                total_customers, resolve_limit(subscription, "customers")
+            ),
+            "is_over_limit": total_customers
+            >= resolve_limit(subscription, "customers"),
         },
         "programs": {
             "used": total_programs,
             "limit": resolve_limit(subscription, "programs"),
-            "percentage": usage_pct(total_programs, resolve_limit(subscription, "programs")),
+            "percentage": usage_pct(
+                total_programs, resolve_limit(subscription, "programs")
+            ),
             "is_over_limit": total_programs >= resolve_limit(subscription, "programs"),
         },
         "users": {
@@ -235,20 +271,29 @@ def get_usage(request: HttpRequest):
         "locations": {
             "used": total_locations,
             "limit": resolve_limit(subscription, "locations"),
-            "percentage": usage_pct(total_locations, resolve_limit(subscription, "locations")),
-            "is_over_limit": total_locations >= resolve_limit(subscription, "locations"),
+            "percentage": usage_pct(
+                total_locations, resolve_limit(subscription, "locations")
+            ),
+            "is_over_limit": total_locations
+            >= resolve_limit(subscription, "locations"),
         },
         "transactions_month": {
             "used": monthly_txns,
             "limit": resolve_limit(subscription, "transactions_month"),
-            "percentage": usage_pct(monthly_txns, resolve_limit(subscription, "transactions_month")),
-            "is_over_limit": monthly_txns >= resolve_limit(subscription, "transactions_month"),
+            "percentage": usage_pct(
+                monthly_txns, resolve_limit(subscription, "transactions_month")
+            ),
+            "is_over_limit": monthly_txns
+            >= resolve_limit(subscription, "transactions_month"),
         },
         "notifications_month": {
             "used": monthly_notifs,
             "limit": resolve_limit(subscription, "notifications_month"),
-            "percentage": usage_pct(monthly_notifs, resolve_limit(subscription, "notifications_month")),
-            "is_over_limit": monthly_notifs >= resolve_limit(subscription, "notifications_month"),
+            "percentage": usage_pct(
+                monthly_notifs, resolve_limit(subscription, "notifications_month")
+            ),
+            "is_over_limit": monthly_notifs
+            >= resolve_limit(subscription, "notifications_month"),
         },
     }
 
@@ -290,7 +335,9 @@ def get_usage(request: HttpRequest):
         "limits": limits,
     }
 
+
 # Subscribe (via payment gateway REQ-PAY-002)
+
 
 @router.post("/subscribe/", auth=jwt_auth, summary="Suscribirse a un plan")
 @require_role("OWNER")
@@ -302,16 +349,22 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
     if data.billing_cycle not in ("monthly", "annual"):
         raise HttpError(400, get_message("BILLING_INVALID_CYCLE"))
 
- # Resolve the target plan
+    # Resolve the target plan
     plan = SubscriptionPlan.objects.filter(slug=data.plan_slug, is_active=True).first()
     if not plan:
         raise HttpError(404, get_message("NOT_FOUND"))
 
     now = timezone.now()
     period_end = now + timedelta(days=365 if data.billing_cycle == "annual" else 30)
-    subtotal = plan.price_annual if data.billing_cycle == "annual" else plan.price_monthly
+    subtotal = (
+        plan.price_annual if data.billing_cycle == "annual" else plan.price_monthly
+    )
     tax_rate = Decimal(
-        str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
+        str(
+            PlatformSetting.get_float(
+                "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
+            )
+        )
     ).quantize(Decimal("0.0001"))
 
     with transaction.atomic():
@@ -376,7 +429,9 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
         "manual_verification_required": True,
     }
 
+
 # Update & Cancel
+
 
 @router.put("/subscription/", auth=jwt_auth, summary="Actualizar suscripción")
 @require_role("OWNER")
@@ -399,6 +454,7 @@ def update_subscription(request: HttpRequest, data: UpdateSubscriptionSchema):
         "message": get_message("BILLING_SUBSCRIPTION_UPDATED"),
     }
 
+
 @router.post("/subscription/cancel/", auth=jwt_auth, summary="Cancelar suscripción")
 @require_role("OWNER")
 def cancel_subscription(request: HttpRequest):
@@ -408,7 +464,7 @@ def cancel_subscription(request: HttpRequest):
     if subscription.status == SubscriptionStatus.CANCELED:
         raise HttpError(400, get_message("BILLING_ALREADY_CANCELED"))
 
- # Cancel in payment gateway if active
+    # Cancel in payment gateway if active
     if subscription.gateway_subscription_id:
         try:
             gateway = get_payment_gateway()
@@ -421,8 +477,13 @@ def cancel_subscription(request: HttpRequest):
     return {
         "success": True,
         "message": get_message("BILLING_CANCEL_SCHEDULED"),
-        "effective_date": (subscription.current_period_end.isoformat() if subscription.current_period_end else None),
+        "effective_date": (
+            subscription.current_period_end.isoformat()
+            if subscription.current_period_end
+            else None
+        ),
     }
+
 
 @router.post(
     "/subscription/reactivate/",

@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0008_card_is_published'),
+        ("cards", "0008_card_is_published"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='card',
-            name='redemption_rules',
-            field=models.JSONField(default=dict, help_text='JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}', verbose_name='Reglas de canje'),
+            model_name="card",
+            name="redemption_rules",
+            field=models.JSONField(
+                default=dict,
+                help_text="JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}",
+                verbose_name="Reglas de canje",
+            ),
         ),
     ]

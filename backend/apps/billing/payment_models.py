@@ -17,6 +17,7 @@ from common.models import TimestampedModel
 
 # PAYMENT METHOD
 
+
 class PaymentMethod(TimestampedModel):
     """
     Stored payment method for a tenant.
@@ -30,18 +31,32 @@ class PaymentMethod(TimestampedModel):
         verbose_name="Negocio",
     )
 
- # Payment gateway token (PCI-compliant we never store raw card data)
-    gateway_token = models.CharField(max_length=200, verbose_name="Token de pago (gateway)")
+    # Payment gateway token (PCI-compliant we never store raw card data)
+    gateway_token = models.CharField(
+        max_length=200, verbose_name="Token de pago (gateway)"
+    )
 
- # Display info only
-    card_brand = models.CharField(max_length=20, blank=True, default="", verbose_name="Marca de tarjeta")
-    card_last_four = models.CharField(max_length=4, blank=True, default="", verbose_name="Últimos 4 dígitos")
-    card_exp_month = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Mes de expiración")
-    card_exp_year = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Año de expiración")
-    cardholder_name = models.CharField(max_length=200, blank=True, default="", verbose_name="Nombre del titular")
+    # Display info only
+    card_brand = models.CharField(
+        max_length=20, blank=True, default="", verbose_name="Marca de tarjeta"
+    )
+    card_last_four = models.CharField(
+        max_length=4, blank=True, default="", verbose_name="Últimos 4 dígitos"
+    )
+    card_exp_month = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name="Mes de expiración"
+    )
+    card_exp_year = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name="Año de expiración"
+    )
+    cardholder_name = models.CharField(
+        max_length=200, blank=True, default="", verbose_name="Nombre del titular"
+    )
 
- # Status
-    is_default = models.BooleanField(default=False, verbose_name="Método predeterminado")
+    # Status
+    is_default = models.BooleanField(
+        default=False, verbose_name="Método predeterminado"
+    )
     is_active = models.BooleanField(default=True, verbose_name="Activo")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -60,7 +75,9 @@ class PaymentMethod(TimestampedModel):
     def display_name(self) -> str:
         return f"{self.card_brand} terminada en {self.card_last_four}"
 
+
 # INVOICE
+
 
 class Invoice(TimestampedModel):
     """
@@ -88,10 +105,12 @@ class Invoice(TimestampedModel):
         verbose_name="Suscripción",
     )
 
- # Invoice number (sequential per tenant)
-    invoice_number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
+    # Invoice number (sequential per tenant)
+    invoice_number = models.CharField(
+        max_length=50, unique=True, verbose_name="Número de factura"
+    )
 
- # Amounts
+    # Amounts
     subtotal = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -118,11 +137,11 @@ class Invoice(TimestampedModel):
     )
     currency = models.CharField(max_length=3, default="USD", verbose_name="Moneda")
 
- # Billing period
+    # Billing period
     period_start = models.DateTimeField(verbose_name="Inicio del período")
     period_end = models.DateTimeField(verbose_name="Fin del período")
 
- # Payment
+    # Payment
     status = models.CharField(
         max_length=20,
         choices=InvoiceStatus.choices,
@@ -137,7 +156,7 @@ class Invoice(TimestampedModel):
     )
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name="Pagado en")
 
- # SRI Ecuador electronic invoice fields
+    # SRI Ecuador electronic invoice fields
     sri_authorization_number = models.CharField(
         max_length=49,
         blank=True,
@@ -151,8 +170,10 @@ class Invoice(TimestampedModel):
         verbose_name="Clave de acceso SRI",
     )
 
- # Additional data
-    invoice_data = models.JSONField(default=dict, verbose_name="Datos adicionales de factura")
+    # Additional data
+    invoice_data = models.JSONField(
+        default=dict, verbose_name="Datos adicionales de factura"
+    )
     pdf_url = models.URLField(blank=True, default="", verbose_name="URL del PDF")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -199,9 +220,13 @@ class Invoice(TimestampedModel):
         self.status = self.InvoiceStatus.PAID
         self.gateway_charge_id = gateway_charge_id
         self.paid_at = timezone.now()
-        self.save(update_fields=["status", "gateway_charge_id", "paid_at", "updated_at"])
+        self.save(
+            update_fields=["status", "gateway_charge_id", "paid_at", "updated_at"]
+        )
+
 
 # WEBHOOK EVENT ()
+
 
 class WebhookEvent(models.Model):
     """

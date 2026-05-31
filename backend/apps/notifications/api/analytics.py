@@ -19,6 +19,7 @@ from common.permissions import is_owner, jwt_auth
 
 from .base import router
 
+
 class CampaignResultsOut(BaseModel):
     campaign_run_id: str
     title: str
@@ -39,6 +40,7 @@ class CampaignResultsOut(BaseModel):
     errors_by_type: dict
     sender_domain: str
 
+
 class RecipientStatusOut(BaseModel):
     customer_id: str | None
     name: str
@@ -52,11 +54,13 @@ class RecipientStatusOut(BaseModel):
     read_at: str | None
     failed_at: str | None
 
+
 class RecipientListOut(BaseModel):
     total: int
     page: int
     per_page: int
     recipients: list[RecipientStatusOut]
+
 
 class CampaignRunListOut(BaseModel):
     id: str
@@ -71,6 +75,7 @@ class CampaignRunListOut(BaseModel):
     delivery_rate: float
     created_at: str
 
+
 @router.get(
     "/campaigns/runs/",
     auth=jwt_auth,
@@ -82,7 +87,9 @@ def list_campaign_runs(request):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[:50]
+    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[
+        :50
+    ]
     return [
         CampaignRunListOut(
             id=str(run.id),
@@ -100,6 +107,7 @@ def list_campaign_runs(request):
         for run in runs
     ]
 
+
 @router.get(
     "/campaigns/{campaign_run_id}/results/",
     auth=jwt_auth,
@@ -113,7 +121,7 @@ def get_campaign_results(request, campaign_run_id: str):
 
     run = get_object_or_404(CampaignRun, id=campaign_run_id, tenant=request.tenant)
 
- # Aggregate errors by type
+    # Aggregate errors by type
     error_counts = (
         CampaignDeliveryLog.objects.filter(
             campaign_run=run,
@@ -146,13 +154,16 @@ def get_campaign_results(request, campaign_run_id: str):
         sender_domain=run.sender_domain,
     )
 
+
 @router.get(
     "/campaigns/{campaign_run_id}/recipients/",
     auth=jwt_auth,
     response=RecipientListOut,
     summary="Detalle de destinatarios",
 )
-def get_campaign_recipients(request, campaign_run_id: str, status: str | None = None, page: int = 1):
+def get_campaign_recipients(
+    request, campaign_run_id: str, status: str | None = None, page: int = 1
+):
     """Get per-recipient delivery status for a campaign (paginated, filterable)."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -185,7 +196,10 @@ def get_campaign_recipients(request, campaign_run_id: str, status: str | None = 
         for log in logs
     ]
 
-    return RecipientListOut(total=total, page=page, per_page=per_page, recipients=recipients)
+    return RecipientListOut(
+        total=total, page=page, per_page=per_page, recipients=recipients
+    )
+
 
 @router.get(
     "/campaigns/{campaign_run_id}/export/",
@@ -234,5 +248,7 @@ def export_campaign_results(request, campaign_run_id: str):
 
     response = HttpResponse(output.getvalue(), content_type="text/csv")
     safe_title = run.title.replace(" ", "_")[:30]
-    response["Content-Disposition"] = f'attachment; filename="loyallia_campaign_{safe_title}.csv"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="loyallia_campaign_{safe_title}.csv"'
+    )
     return response

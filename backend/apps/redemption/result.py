@@ -35,7 +35,9 @@ class RedemptionResult:
 
     @classmethod
     def from_denial(cls, reasons: list[str], rules_evaluated: list[dict] | None = None):
-        return cls(success=False, denial_reasons=reasons, rules_evaluated=rules_evaluated or [])
+        return cls(
+            success=False, denial_reasons=reasons, rules_evaluated=rules_evaluated or []
+        )
 
     def to_api_response(self) -> dict:
         """Serialize to the API response shape expected by the scanner UI."""

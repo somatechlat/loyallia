@@ -49,7 +49,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
 
     provided_token = auth_header[len("ApplePass ") :]
 
- # authenticationToken is the pass serial (UUID) without dashes
+    # authenticationToken is the pass serial (UUID) without dashes
     expected_token = serial_number.replace("-", "")
     return provided_token == expected_token
 
@@ -90,12 +90,16 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
     try:
-        return CustomerPass.objects.select_related("card", "card__tenant", "customer").get(id=serial_number)
+        return CustomerPass.objects.select_related(
+            "card", "card__tenant", "customer"
+        ).get(id=serial_number)
     except CustomerPass.DoesNotExist:
         logger.warning("Apple Web Service: Pass not found: serial=%s", serial_number)
         return None
     except Exception as exc:
-        logger.error("Apple Web Service: Error looking up pass %s: %s", serial_number, exc)
+        logger.error(
+            "Apple Web Service: Error looking up pass %s: %s", serial_number, exc
+        )
         return None
 
 
@@ -244,7 +248,9 @@ def list_updated_passes(
     from apps.customers.models import ApplePassRegistration
 
     # Verify the device is registered for at least one pass
-    if not ApplePassRegistration.objects.filter(device_library_id=device_library_id).exists():
+    if not ApplePassRegistration.objects.filter(
+        device_library_id=device_library_id
+    ).exists():
         logger.warning(
             "Apple Web Service: Device not registered  device=%s",
             device_library_id[-8:],
@@ -264,7 +270,7 @@ def list_updated_passes(
     if not registrations.exists():
         return HttpResponse(status=204)
 
- # Parse the "passesUpdatedSince" query parameter
+    # Parse the "passesUpdatedSince" query parameter
     updated_since_tag = request.GET.get("passesUpdatedSince", "")
 
     serial_numbers = []
@@ -274,7 +280,7 @@ def list_updated_passes(
         cp = reg.customer_pass
         last_updated = cp.last_updated
 
- # Filter by update timestamp if tag provided
+        # Filter by update timestamp if tag provided
         if updated_since_tag:
             try:
                 from django.utils.dateparse import parse_datetime
@@ -293,7 +299,7 @@ def list_updated_passes(
     if not serial_numbers:
         return HttpResponse(status=204)
 
- # Format the lastUpdated tag as ISO timestamp
+    # Format the lastUpdated tag as ISO timestamp
     last_updated_tag = ""
     if latest_update:
         last_updated_tag = latest_update.astimezone(UTC).isoformat()
@@ -328,7 +334,9 @@ def get_updated_pass(
     # Verify at least one device is registered for this pass
     from apps.customers.models import ApplePassRegistration
 
-    if not ApplePassRegistration.objects.filter(customer_pass_id=serial_number).exists():
+    if not ApplePassRegistration.objects.filter(
+        customer_pass_id=serial_number
+    ).exists():
         logger.warning(
             "Apple Web Service: Pass has no registered devices  serial=%s",
             serial_number,
@@ -354,9 +362,11 @@ def get_updated_pass(
         content_type="application/vnd.apple.pkpass",
         status=200,
     )
-    response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="pass-{serial_number}.pkpass"'
+    )
 
- # Set Last-Modified header so Apple can use If-Modified-Since
+    # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:
         from django.utils.http import http_date
 
