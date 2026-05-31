@@ -187,6 +187,8 @@ def send_wallet_notification_campaign(
                             if result.get("success"):
                                 push_sent += 1
                                 logger.info("Google push sent to pass %s", pass_obj.id)
+                                if result.get("message_id"):
+                                    delivery_log.external_message_id = result["message_id"]
 
                         if wallet_platform in ("apple", "both"):
  # Apple Wallet individual push trigger pass re-download

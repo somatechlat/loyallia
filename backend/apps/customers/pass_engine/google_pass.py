@@ -508,6 +508,7 @@ def send_push_notification_to_class(card, header: str, body: str, action_url: st
 
     url = f"https://walletobjects.googleapis.com/walletobjects/v1/{api_endpoint}/{class_id}/addMessage"
 
+    message_id = message_payload["message"]["id"]
     try:
         response = httpx.post(
             url,
@@ -518,6 +519,7 @@ def send_push_notification_to_class(card, header: str, body: str, action_url: st
         return {
             "success": response.status_code in (200, 201),
             "response": response.text,
+            "message_id": message_id,
         }
     except Exception as exc:
-        return {"success": False, "error": str(exc)}
+        return {"success": False, "error": str(exc), "message_id": message_id}

@@ -42,34 +42,48 @@ const messageQueue = new Queue("whatsapp-messages", {
   connection: redisConnection,
 });
 
-// Per-tenant counters (in-memory, reset hourly)
-const tenantCounters = new Map();
+// Per-tenant breathing-pause counters (in-memory per worker instance)
+const tenantBreathCounters = new Map();
 
-function getCounter(tenantId) {
-  if (!tenantCounters.has(tenantId)) {
-    tenantCounters.set(tenantId, {
-      minuteCount: 0,
-      hourCount: 0,
-      totalProcessed: 0,
-      lastMinuteReset: Date.now(),
-      lastHourReset: Date.now(),
-    });
+function getBreathCounter(tenantId) {
+  if (!tenantBreathCounters.has(tenantId)) {
+    tenantBreathCounters.set(tenantId, { totalProcessed: 0 });
   }
-  const counter = tenantCounters.get(tenantId);
+  return tenantBreathCounters.get(tenantId);
+}
 
-  // Reset minute counter every 60s
-  if (Date.now() - counter.lastMinuteReset > 60000) {
-    counter.minuteCount = 0;
-    counter.lastMinuteReset = Date.now();
-  }
+/**
+ * Get rate-limit counters from Redis (distributed across all worker replicas).
+ * Returns { minuteCount, hourCount } and resets TTL-based counters automatically.
+ */
+async function getRateCounters(tenantId) {
+  const minuteKey = `whatsapp:rate:${tenantId}:minute`;
+  const hourKey = `whatsapp:rate:${tenantId}:hour`;
 
-  // Reset hour counter every 3600s
-  if (Date.now() - counter.lastHourReset > 3600000) {
-    counter.hourCount = 0;
-    counter.lastHourReset = Date.now();
-  }
+  const pipeline = redisConnection.pipeline();
+  pipeline.get(minuteKey);
+  pipeline.get(hourKey);
+  const [minuteVal, hourVal] = await pipeline.exec();
 
-  return counter;
+  return {
+    minuteCount: parseInt(minuteVal?.[1] || "0", 10),
+    hourCount: parseInt(hourVal?.[1] || "0", 10),
+  };
+}
+
+/**
+ * Atomically increment rate counters in Redis with TTL.
+ */
+async function incrementRateCounters(tenantId) {
+  const minuteKey = `whatsapp:rate:${tenantId}:minute`;
+  const hourKey = `whatsapp:rate:${tenantId}:hour`;
+
+  const pipeline = redisConnection.pipeline();
+  pipeline.incr(minuteKey);
+  pipeline.expire(minuteKey, 60);
+  pipeline.incr(hourKey);
+  pipeline.expire(hourKey, 3600);
+  await pipeline.exec();
 }
 
 /**
@@ -134,29 +148,24 @@ function startWorker() {
     "whatsapp-messages",
     async (job) => {
       const { tenantId, phone, message, mediaUrl, metadata } = job.data;
-      const counter = getCounter(tenantId);
+      const rateCounters = await getRateCounters(tenantId);
+      const breathCounter = getBreathCounter(tenantId);
 
-      // Check rate limits
-      if (counter.minuteCount >= MAX_MESSAGES_PER_MINUTE) {
-        const waitMs = 60000 - (Date.now() - counter.lastMinuteReset);
+      // Check rate limits (distributed via Redis)
+      if (rateCounters.minuteCount >= MAX_MESSAGES_PER_MINUTE) {
         logger.info(
-          { tenantId, waitMs },
+          { tenantId, minuteCount: rateCounters.minuteCount },
           "Rate limit (per-minute) — waiting"
         );
-        await sleep(Math.max(waitMs, 5000));
-        counter.minuteCount = 0;
-        counter.lastMinuteReset = Date.now();
+        await sleep(60000);
       }
 
-      if (counter.hourCount >= MAX_MESSAGES_PER_HOUR) {
+      if (rateCounters.hourCount >= MAX_MESSAGES_PER_HOUR) {
         logger.warn(
-          { tenantId, hourCount: counter.hourCount },
+          { tenantId, hourCount: rateCounters.hourCount },
           "Hourly limit reached — pausing until next hour"
         );
-        const waitMs = 3600000 - (Date.now() - counter.lastHourReset);
-        await sleep(Math.max(waitMs, 60000));
-        counter.hourCount = 0;
-        counter.lastHourReset = Date.now();
+        await sleep(3600000);
       }
 
       // Apply Gaussian jitter delay
@@ -164,16 +173,16 @@ function startWorker() {
       logger.debug({ tenantId, phone, delay }, "Applying jitter delay");
       await sleep(delay);
 
-      // Periodic breathing pause every N messages
+      // Periodic breathing pause every N messages (per-worker)
       if (
-        counter.totalProcessed > 0 &&
-        counter.totalProcessed % PAUSE_EVERY_N === 0
+        breathCounter.totalProcessed > 0 &&
+        breathCounter.totalProcessed % PAUSE_EVERY_N === 0
       ) {
         const pauseMs =
           PAUSE_MIN_MS +
           Math.random() * (PAUSE_MAX_MS - PAUSE_MIN_MS);
         logger.info(
-          { tenantId, totalProcessed: counter.totalProcessed, pauseMs },
+          { tenantId, totalProcessed: breathCounter.totalProcessed, pauseMs },
           "Breathing pause"
         );
         await sleep(pauseMs);
@@ -183,9 +192,9 @@ function startWorker() {
       try {
         const messageId = await sendMessage(tenantId, phone, message, mediaUrl);
 
-        counter.minuteCount++;
-        counter.hourCount++;
-        counter.totalProcessed++;
+        // Atomically increment distributed counters
+        await incrementRateCounters(tenantId);
+        breathCounter.totalProcessed++;
 
         logger.info(
           { tenantId, phone, messageId, jobId: job.id },

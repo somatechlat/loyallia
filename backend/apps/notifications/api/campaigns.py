@@ -267,6 +267,7 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             message=data.message,
             segment_id=data.segment_id,
             wallet_platform=data.wallet_platform,
+            action_url=data.action_url or "",
         )
         log_action(
             request=request,

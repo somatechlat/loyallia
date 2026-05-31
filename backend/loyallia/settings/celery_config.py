@@ -90,4 +90,9 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.automation.tasks.evaluate_birthday_triggers",
         "schedule": crontab(hour="6", minute="0"),  # Daily at 6 AM
     },
+    "reset-whatsapp-daily-counters": {
+        "task": "apps.notifications.whatsapp.tasks.reset_whatsapp_daily_counters",
+        "schedule": crontab(hour="0", minute="0"),  # Daily at midnight UTC
+        "options": {"queue": "default"},
+    },
 }

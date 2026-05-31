@@ -340,16 +340,27 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
         """Send WhatsApp message via Baileys bridge.
 
         LYL-SRS-009: Real implementation using the WhatsApp bridge client.
+        LYL-SRS-008: Enforces plan limit to prevent automation bypass.
         """
         if not customer.phone:
             return False
 
         from apps.notifications.whatsapp.client import is_bridge_available, send_message
+        from common.plan_enforcement import check_plan_limit
 
         if not is_bridge_available():
             import logging
 
             logging.getLogger(__name__).warning("WhatsApp bridge not available  cannot send automation message")
+            return False
+
+        # Enforce daily WhatsApp plan limit (prevents automation bypass)
+        try:
+            check_plan_limit(self.tenant, "whatsapp_day", write=True)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning("WhatsApp automation blocked: plan limit exceeded for tenant %s", self.tenant.id)
             return False
 
         title = self.action_config.get("title", "")
@@ -408,7 +419,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                     )
                     from apps.tenants.models import PlatformSetting
 
-                    dashboard_url = PlatformSetting.get("dashboard_url", settings.FRONTEND_URL)
+                    dashboard_url = PlatformSetting.get("dashboard_url", settings.PUBLIC_BASE_URL)
                     action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
                     result = send_push_notification(pass_obj, header=title, body=message, action_url=action_url)
                     if result.get("success"):
