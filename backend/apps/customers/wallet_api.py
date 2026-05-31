@@ -13,6 +13,7 @@ Endpoints:
 import logging
 import uuid
 
+from django.conf import settings
 from django.http import HttpResponse
 from ninja import Router, Schema
 from ninja.errors import HttpError
@@ -218,7 +219,7 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     if not is_google_wallet_configured():
         raise HttpError(503, get_message("PASS_GOOGLE_NOT_CONFIGURED"))
 
-    base_url = request.build_absolute_uri("/").rstrip("/")
+    base_url = getattr(settings, "PUBLIC_BASE_URL", "") or request.build_absolute_uri("/").rstrip("/")
     save_url = generate_google_wallet_url(customer_pass, base_url=base_url)
     if save_url is None:
         raise HttpError(500, get_message("PASS_GOOGLE_GEN_ERROR"))

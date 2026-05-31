@@ -325,6 +325,14 @@ def generate_pkpass(customer_pass) -> bytes | None:
         """Fetch image bytes from a URL with SSRF protection (LYL-H-SEC-009)."""
         if not url:
             return None
+        # Convert relative URLs to absolute using public base URL
+        if url.startswith("/"):
+            public_base = getattr(settings, "PUBLIC_BASE_URL", "").rstrip("/")
+            if public_base:
+                url = public_base + url
+            else:
+                logger.warning("Cannot resolve relative image URL %s: PUBLIC_BASE_URL not set", url)
+                return None
         SSRFError = Exception
         try:
             from common.url_validator import SSRFError, validate_external_url

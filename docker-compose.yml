@@ -11,7 +11,8 @@ x-common-env: &common-env
   # PgBouncer available at pgbouncer:6432 for connection pooling in production
   PGBOUNCER_URL: postgres://loyallia@pgbouncer:6432/loyallia_dev
   MINIO_ENDPOINT: http://minio:9000
-  MINIO_PUBLIC_ENDPOINT: http://localhost:33903
+  MINIO_PUBLIC_ENDPOINT: https://rewards.loyallia.com
+  PUBLIC_BASE_URL: https://rewards.loyallia.com
   MINIO_BUCKET_PASSES: passes
   MINIO_BUCKET_ASSETS: assets
   DJANGO_SETTINGS_MODULE: loyallia.settings.development
@@ -42,7 +43,7 @@ x-common-env: &common-env
   #   Authorized JS origins: http://localhost:3000
   #   Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
   # Then set in your local .env or Vault: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET
-  GOOGLE_OAUTH_REDIRECT_URI: http://localhost:33905/api/v1/auth/google/callback/
+  GOOGLE_OAUTH_REDIRECT_URI: https://rewards.loyallia.com/api/v1/auth/google/callback/
   # Sentry error tracking (B-013)
   SENTRY_DSN:  
   # WhatsApp Bridge (LYL-SRS-006)
