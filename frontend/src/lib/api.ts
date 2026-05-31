@@ -2,7 +2,7 @@ import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { tokenManager } from './token-manager';
 
-// LYL-M-FE-033: Retry with exponential backoff
+// Retry with exponential backoff for transient failures.
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
@@ -15,7 +15,7 @@ function getRetryDelay(attempt: number, retryAfter?: string | number): number {
   return BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
 }
 
-// LYL-M-FE-034: Offline detection
+// Offline detection for UX feedback.
 let _isOffline = false;
 export function isOffline(): boolean {
   return _isOffline;
@@ -34,7 +34,6 @@ if (typeof window !== 'undefined') {
 }
 
 const api = axios.create({
-  // LYL-H-FE-007: Use environment variable, no hardcoded fallback
   baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
@@ -47,8 +46,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// On 401, attempt refresh — if refresh fails, clear tokens and redirect to login
-// LYL-M-FE-033: On retryable errors, retry with exponential backoff
+// On 401, attempt refresh — if refresh fails, clear tokens and redirect to login.
+// On retryable errors, retry with exponential backoff.
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError & { config: AxiosRequestConfig & { _retryCount?: number; _retry?: boolean } }) => {
@@ -67,7 +66,7 @@ api.interceptors.response.use(
       }
     }
 
-    // LYL-M-FE-033: Retry on retryable errors
+    // Retry on retryable errors
     const retryCount = original._retryCount ?? 0;
     const status = error.response?.status;
     if (status && RETRYABLE_STATUS.has(status) && retryCount < MAX_RETRIES) {
@@ -163,7 +162,6 @@ export const notificationsApi = {
   campaigns: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/campaigns/', { params }),
   createCampaign: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
   stats: () => api.get('/api/v1/notifications/stats/'),
-  // Campaign Analytics (LYL-SRS-006)
   campaignRuns: () => api.get('/api/v1/notifications/campaigns/runs/'),
   campaignResults: (runId: string) => api.get(`/api/v1/notifications/campaigns/${runId}/results/`),
   campaignRecipients: (runId: string, params?: { status?: string; page?: number }) =>
@@ -206,7 +204,6 @@ export const superAdminApi = {
   broadcast: (data: { subject: string; message: string }) => api.post('/api/v1/admin/broadcast/', data),
   updateIntegrationSecret: (integrationKey: string, key: string, value: string) =>
     api.put(`/api/v1/admin/platform/integrations/${integrationKey}/secret/`, { key, value }),
-  // SysAdmin Operations (LYL-BOOT-001)
   seedDemoData: () =>
     api.post('/api/v1/admin/platform/seed-demo-data/'),
   factoryResetRequest: () =>

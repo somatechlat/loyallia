@@ -10,25 +10,17 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import WalletDesigner from '@/components/programs/WalletDesigner';
 import {
   type WalletDesignState,
-  type AppleWalletFeatureConfig,
-  type AppleAdvancedConfig,
-  type GoogleAdvancedConfig,
-  type GoogleFieldRow,
-  type AppleFieldDef,
   defaultWalletDesignState,
 } from '@/components/wallet/types';
+import {
+  parseWalletDesignFromMetadata,
+  buildWalletDesignMetadata,
+} from '@/components/wallet/serialization';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import ProgramMembersModal from '@/components/programs/ProgramMembersModal';
 import ProgramTransactionsModal from '@/components/programs/ProgramTransactionsModal';
 
 
-
-const CARD_TYPE_LABELS: Record<string, string> = {
-  stamp: 'Sellos', points: 'Puntos', visits: 'Visitas', cashback: 'Cashback',
-  coupon: 'Cupón', affiliate: 'Afiliación', discount: 'Descuento',
-  gift_certificate: 'Certificado', vip_membership: 'VIP', corporate_discount: 'Corporativo',
-  referral_pass: 'Referidos', multipass: 'Multipase',
-};
 
 interface ProgramData {
   id: string;
@@ -53,84 +45,6 @@ interface ProgramStats {
   total_rewards_redeemed?: number;
   engagement_rate?: number;
   enrollments?: number;
-}
-
-/* ─── Helpers: convert between stored metadata and WalletDesignState ─── */
-
-/** Detect base64 / blob URLs and strip them to prevent metadata bloat. */
-function stripTempUrl(url: string | undefined): string {
-  return stripLocalMinioUrl(url);
-}
-
-function parseWalletDesignFromMetadata(metadata: Record<string, unknown>): WalletDesignState {
-  const wd = metadata?.wallet_design as Record<string, unknown> | undefined;
-  if (!wd) return defaultWalletDesignState();
-
-  const appleImages = (wd.apple_images as Record<string, string>) || {};
-  const googleImages = (wd.google_images as Record<string, string>) || {};
-  const appleWallet = (metadata.apple_wallet as AppleWalletFeatureConfig | undefined);
-
-  return {
-    provider: (wd.provider as 'apple' | 'google') || 'apple',
-    appleLogoUrl: stripTempUrl(appleImages.logo),
-    appleLogo2xUrl: stripTempUrl(appleImages.logo_2x),
-    appleStripUrl: stripTempUrl(appleImages.strip),
-    appleStrip2xUrl: stripTempUrl(appleImages.strip_2x),
-    appleThumbnailUrl: stripTempUrl(appleImages.thumbnail),
-    appleThumbnail2xUrl: stripTempUrl(appleImages.thumbnail_2x),
-    appleIconUrl: stripTempUrl(appleImages.icon),
-    appleIcon2xUrl: stripTempUrl(appleImages.icon_2x),
-    googleProgramLogoUrl: stripTempUrl(googleImages.program_logo),
-    googleHeroImageUrl: stripTempUrl(googleImages.hero_image),
-    googleWideLogoUrl: stripTempUrl(googleImages.wide_logo),
-    googleImageModuleUrl: stripTempUrl(googleImages.image_module),
-    appleFields: (wd.apple_fields as Record<string, AppleFieldDef[]>) || {},
-    googleRows: (wd.google_rows as GoogleFieldRow[]) || [],
-    googleAdvanced: (wd.google_advanced as GoogleAdvancedConfig) || defaultWalletDesignState().googleAdvanced,
-    appleAdvanced: (wd.apple_advanced as AppleAdvancedConfig) || defaultWalletDesignState().appleAdvanced,
-    appleNfc: appleWallet || defaultWalletDesignState().appleNfc,
-    locations: (wd.locations as WalletDesignState['locations']) || [],
-    beacons: (wd.beacons as WalletDesignState['beacons']) || [],
-    links: (wd.links as WalletDesignState['links']) || [],
-    homepageUri: (wd.homepage_uri as string) || '',
-    helpUri: (wd.help_uri as string) || '',
-  };
-}
-
-function buildWalletDesignMetadata(state: WalletDesignState): Record<string, unknown> {
-  const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
-  return {
-    wallet_design: {
-      provider: state.provider,
-      apple_images: {
-        logo: clean(state.appleLogoUrl),
-        logo_2x: clean(state.appleLogo2xUrl),
-        strip: clean(state.appleStripUrl),
-        strip_2x: clean(state.appleStrip2xUrl),
-        thumbnail: clean(state.appleThumbnailUrl),
-        thumbnail_2x: clean(state.appleThumbnail2xUrl),
-        icon: clean(state.appleIconUrl),
-        icon_2x: clean(state.appleIcon2xUrl),
-      },
-      google_images: {
-        program_logo: clean(state.googleProgramLogoUrl),
-        hero_image: clean(state.googleHeroImageUrl),
-        wide_logo: clean(state.googleWideLogoUrl),
-        image_module: clean(state.googleImageModuleUrl),
-      },
-      apple_fields: state.appleFields,
-      google_rows: state.googleRows,
-      google_advanced: state.googleAdvanced,
-      apple_advanced: state.appleAdvanced,
-      locations: state.locations,
-      beacons: state.beacons,
-      links: state.links,
-      homepage_uri: state.homepageUri,
-      help_uri: state.helpUri,
-    },
-    apple_wallet: state.appleNfc,
-    wallet_provider: 'both',
-  };
 }
 
 /* ─── Main Page ────────────────────────────────────────────────────────── */
@@ -176,9 +90,9 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       description: program.description,
       background_color: program.background_color,
       text_color: program.text_color,
-      logo_url: stripTempUrl(program.logo_url),
-      strip_image_url: stripTempUrl(program.strip_image_url),
-      icon_url: stripTempUrl(program.icon_url),
+      logo_url: stripLocalMinioUrl(program.logo_url),
+      strip_image_url: stripLocalMinioUrl(program.strip_image_url),
+      icon_url: stripLocalMinioUrl(program.icon_url),
     });
     const parsed = parseWalletDesignFromMetadata(program.metadata);
     setWalletDesign(parsed);
