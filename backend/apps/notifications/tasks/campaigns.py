@@ -138,6 +138,8 @@ def send_wallet_notification_campaign(
                             )
                     except Exception as exc:
                         logger.warning("Apple broadcast push failed for card %s: %s", card.name, exc)
+                        failed += 1
+                        error_summary += f"Apple broadcast failed for {card.name}: {str(exc)[:100]}; "
 
         for customer in audience.iterator(chunk_size=50):
             passes = CustomerPass.objects.filter(customer=customer, is_active=True).select_related(
@@ -199,14 +201,17 @@ def send_wallet_notification_campaign(
 
                                 apple_count = notify_pass_updated(pass_obj)
                                 apple_push_sent += apple_count
+                                if apple_count == 0:
+                                    failed += 1
+                                    error_summary += f"Apple push failed for pass {pass_obj.id}; "
                             except Exception as exc:
                                 logger.warning("Apple push failed for pass %s: %s", pass_obj.id, exc)
+                                failed += 1
+                                error_summary += f"Apple push exception for pass {pass_obj.id}: {str(exc)[:100]}; "
                 else:
- # Mark as "push sent" in stats because we did a broadcast.
-                    if wallet_platform in ("google", "both"):
-                        push_sent += passes.count()
-                    if wallet_platform in ("apple", "both"):
-                        apple_push_sent += passes.count()
+ # Broadcast mode: stats were already tracked in the broadcast loop above.
+ # Do NOT double-count by adding passes.count() per customer.
+                    pass
 
                 delivery_log.status = DeliveryStatus.SENT
                 delivery_log.sent_at = timezone.now()
@@ -359,6 +364,24 @@ def send_whatsapp_campaign(
         )
 
         if bridge_available and customer.phone:
+            # LYL-SRS-008: Per-recipient cooldown (1 hour)
+            if wa_client.check_whatsapp_cooldown(customer.phone):
+                logger.info("WhatsApp cooldown: skipping %s", customer.phone)
+                delivery_log.status = DeliveryStatus.FAILED
+                delivery_log.failed_at = timezone.now()
+                delivery_log.error_code = "COOLDOWN"
+                delivery_log.error_message = "Número en período de enfriamiento (1 hora)"
+                delivery_log.save(
+                    update_fields=[
+                        "status",
+                        "failed_at",
+                        "error_code",
+                        "error_message",
+                    ]
+                )
+                failed += 1
+                continue
+
             try:
                 result = wa_client.send_message(
                     tenant_id=tenant_id,

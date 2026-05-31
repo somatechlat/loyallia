@@ -19,11 +19,11 @@ const { getApiKey, getRedisUrl } = require("./config");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
 const MAX_MESSAGES_PER_MINUTE = parseInt(
-  process.env.MAX_MESSAGES_PER_MINUTE || "8",
+  process.env.MAX_MESSAGES_PER_MINUTE || process.env.WHATSAPP_MAX_PER_MINUTE || "8",
   10
 );
 const MAX_MESSAGES_PER_HOUR = parseInt(
-  process.env.MAX_MESSAGES_PER_HOUR || "200",
+  process.env.MAX_MESSAGES_PER_HOUR || process.env.WHATSAPP_MAX_PER_HOUR || "200",
   10
 );
 const AVG_DELAY_MS = parseInt(process.env.AVG_DELAY_MS || "6000", 10);
