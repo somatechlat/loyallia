@@ -117,6 +117,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "secondaryFields": [
                 {"key": "progress", "label": "PROGRESO", "value": stamps_display}
             ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [
                 {"key": "name", "label": "Cliente", "value": customer_name},
                 {"key": "program", "label": "Programa", "value": card.name},
@@ -148,6 +151,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "rate", "label": "% CASHBACK", "value": f"{pct}%"},
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [
                 {"key": "desc", "label": "Descripcion", "value": card.description or "", "changeMessage": "Detalles actualizados"}
             ],
@@ -164,6 +170,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             ],
             "secondaryFields": [
                 {"key": "program", "label": "CLUB", "value": card.name}
+            ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
             ],
             "backFields": [
                 {
@@ -188,6 +197,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "secondaryFields": [
                 {"key": "customer", "label": "CLIENTE", "value": customer_name}
             ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [],
         }
 
@@ -201,6 +213,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "primaryFields": [{"key": "code", "label": "TU CODIGO", "value": ref_code}],
             "secondaryFields": [
                 {"key": "customer", "label": "EMBAJADOR", "value": customer_name}
+            ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
             ],
             "backFields": [
                 {
@@ -245,6 +260,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
                 {"key": "program", "label": "PROGRAMA", "value": card.name},
             ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [
                 {
                     "key": "tiers_info",
@@ -286,6 +304,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "value": member_since or "",
                 },
             ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [
                 {
                     "key": "benefits",
@@ -318,6 +339,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "secondaryFields": [
                 {"key": "recipient", "label": "BENEFICIARIO", "value": customer_name},
             ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [
                 {
                     "key": "expiry",
@@ -345,6 +369,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "primaryFields": [{"key": "company", "label": "EMPRESA", "value": company}],
             "secondaryFields": [
                 {"key": "employee", "label": "EMPLEADO", "value": customer_name},
+            ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
             ],
             "backFields": [
                 {
@@ -376,6 +403,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "secondaryFields": [
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [
                 {
                     "key": "price",
@@ -401,6 +431,9 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "customer", "label": "CLIENTE", "value": customer_name}
             ],
             "secondaryFields": [],
+            "auxiliaryFields": [
+                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+            ],
             "backFields": [
                 {"key": "desc", "label": "Descripcion", "value": card.description or "", "changeMessage": "Detalles actualizados"}
             ],
