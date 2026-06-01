@@ -55,6 +55,46 @@ def _get_pass_apns_auth() -> tuple[str | None, str | None]:
         return None, None
 
 
+_WWDR_G4_URL = "https://www.apple.com/certificateauthority/AppleWWDRCAG4.cer"
+_WWDR_G4_PEM = None  # Cached
+
+
+def _get_wwdr_g4_cert() -> str | None:
+    """Return the Apple WWDR G4 intermediate certificate in PEM format.
+
+    APNs requires the full client certificate chain. The Pass Type ID
+    certificate from Vault is only the leaf; we must append the issuer.
+    """
+    global _WWDR_G4_PEM
+    if _WWDR_G4_PEM is not None:
+        return _WWDR_G4_PEM
+
+    import subprocess
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(_WWDR_G4_URL, timeout=10) as resp:
+            der_data = resp.read()
+
+        # Convert DER to PEM via openssl
+        result = subprocess.run(
+            ["openssl", "x509", "-inform", "der", "-outform", "pem"],
+            input=der_data,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            _WWDR_G4_PEM = result.stdout.decode("utf-8")
+            logger.debug("Loaded Apple WWDR G4 intermediate certificate")
+            return _WWDR_G4_PEM
+        else:
+            logger.warning("Failed to convert WWDR G4 cert: %s", result.stderr.decode("utf-8")[:200])
+    except Exception as exc:
+        logger.warning("Could not fetch Apple WWDR G4 certificate: %s", exc)
+
+    _WWDR_G4_PEM = ""
+    return None
+
+
 def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
     Send an empty APNs push notification to trigger a pass update on the device.
@@ -83,7 +123,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         return False
 
     # Auto-detect sandbox from Django DEBUG setting
-    use_sandbox = sandbox if sandbox is not None else getattr(settings, "DEBUG", False)
+    use_sandbox = sandbox if sandbox is not None else getattr(settings, "APPLE_PASS_PUSH_SANDBOX", False)
     host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
 
     url = f"{host}/3/device/{push_token}"
@@ -102,11 +142,16 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     key_path = ""
 
     try:
+        # APNs requires the full certificate chain including the intermediate.
+        # The leaf cert from Vault is issued by Apple WWDR G4.
+        wwdr_g4_pem = _get_wwdr_g4_cert()
+        full_chain = cert_pem + "\n" + wwdr_g4_pem if wwdr_g4_pem else cert_pem
+
         # Create temporary PEM files for the SSL context
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".pem", delete=False
         ) as cert_file:
-            cert_file.write(cert_pem)
+            cert_file.write(full_chain)
             cert_path = cert_file.name
 
         with tempfile.NamedTemporaryFile(
