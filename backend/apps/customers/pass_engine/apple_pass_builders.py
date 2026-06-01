@@ -109,7 +109,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         stamps_display = "\u2b1b" * current + "\u2b1c" * (total - current)
         return {
             "headerFields": [
-                {"key": "stamps", "label": "SELLOS", "value": f"{current}/{total}"}
+                {"key": "stamps", "label": "SELLOS", "value": f"{current}/{total}", "changeMessage": "¡Nuevo sello! Ahora tienes %@"}
             ],
             "primaryFields": [
                 {"key": "reward", "label": "RECOMPENSA", "value": reward}
@@ -124,6 +124,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "desc",
                     "label": "Descripcion",
                     "value": card.description or "",
+                    "changeMessage": "Términos actualizados",
                 },
             ],
         }
@@ -148,7 +149,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
             "backFields": [
-                {"key": "desc", "label": "Descripcion", "value": card.description or ""}
+                {"key": "desc", "label": "Descripcion", "value": card.description or "", "changeMessage": "Detalles actualizados"}
             ],
         }
 
@@ -156,7 +157,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         tier = pass_data.get("membership_tier", "VIP")
         return {
             "headerFields": [
-                {"key": "tier", "label": "MEMBRESIA", "value": tier.upper()}
+                {"key": "tier", "label": "MEMBRESIA", "value": tier.upper(), "changeMessage": "Membresía actualizada: %@"}
             ],
             "primaryFields": [
                 {"key": "name", "label": "MIEMBRO", "value": customer_name}
@@ -169,13 +170,14 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "perks",
                     "label": "Beneficios",
                     "value": ", ".join(metadata.get("perks", [])),
+                    "changeMessage": "Beneficios actualizados: %@",
                 }
             ],
         }
 
     elif card.card_type == "coupon":
         return {
-            "headerFields": [{"key": "offer", "label": "OFERTA", "value": card.name}],
+            "headerFields": [{"key": "offer", "label": "OFERTA", "value": card.name, "changeMessage": "¡Nueva oferta! %@"}],
             "primaryFields": [
                 {
                     "key": "discount",
@@ -205,6 +207,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "desc",
                     "label": "Como funciona",
                     "value": card.description or "",
+                    "changeMessage": "Información actualizada",
                 }
             ],
         }
@@ -252,6 +255,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                         for t in tiers
                     )
                     or "Sin niveles configurados",
+                    "changeMessage": "Niveles actualizados",
                 },
                 {
                     "key": "desc",
@@ -289,6 +293,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "value": ", ".join(metadata.get("benefits", []))
                     or card.description
                     or "",
+                    "changeMessage": "Beneficios actualizados: %@",
                 },
             ],
         }
@@ -318,6 +323,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "expiry",
                     "label": "Expira en",
                     "value": f"{metadata.get('expiry_days', 365)} días desde la emisión",
+                    "changeMessage": "Vigencia actualizada: %@",
                 },
                 {
                     "key": "desc",
@@ -345,6 +351,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "desc",
                     "label": "Condiciones",
                     "value": card.description or "",
+                    "changeMessage": "Condiciones actualizadas",
                 },
             ],
         }
@@ -360,6 +367,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "remaining",
                     "label": "USOS RESTANTES",
                     "value": f"{remaining}/{bundle_size}",
+                    "changeMessage": "Usos restantes: %@",
                 }
             ],
             "primaryFields": [
@@ -373,6 +381,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "price",
                     "label": "Precio del paquete",
                     "value": f"${metadata.get('bundle_price', '')}",
+                    "changeMessage": "Precio actualizado: %@",
                 },
                 {
                     "key": "desc",
@@ -393,7 +402,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             ],
             "secondaryFields": [],
             "backFields": [
-                {"key": "desc", "label": "Descripcion", "value": card.description or ""}
+                {"key": "desc", "label": "Descripcion", "value": card.description or "", "changeMessage": "Detalles actualizados"}
             ],
         }
 
