@@ -6,7 +6,8 @@ Phase 3 implementation of all program CRUD endpoints.
 import logging
 
 from django.db.models import Count
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
+from common.request import TenantRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -174,7 +175,7 @@ class CardListOut(BaseModel):
 @router.get(
     "/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización"
 )
-def list_programs(request: HttpRequest) -> CardListOut:
+def list_programs(request: TenantRequest) -> CardListOut:
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     tenant = require_tenant(request)
     if not is_manager_or_owner(request):
@@ -184,8 +185,8 @@ def list_programs(request: HttpRequest) -> CardListOut:
         .annotate(_enrollments_count=Count("passes", distinct=True))
         .order_by("-created_at")
     )
-    return {
-        "programs": [
+    return CardListOut(
+        programs=[
             CardOut.from_model(
                 c,
                 getattr(
@@ -194,15 +195,15 @@ def list_programs(request: HttpRequest) -> CardListOut:
             )
             for c in cards
         ],
-        "total": len(cards),
-    }
+        total=len(cards),
+    )
 
 
 @router.post(
     "/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización"
 )
 @require_active_subscription
-def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
+def create_program(request: TenantRequest, data: CardCreateIn) -> CardOut:
     """Create a new loyalty program. OWNER only."""
     from common.permissions import is_owner
 
@@ -247,7 +248,7 @@ def create_program(request: HttpRequest, data: CardCreateIn) -> CardOut:
 @router.get(
     "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa"
 )
-def get_program(request: HttpRequest, program_id: str) -> CardOut:
+def get_program(request: TenantRequest, program_id: str) -> CardOut:
     """Returns a single loyalty program. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -259,7 +260,7 @@ def get_program(request: HttpRequest, program_id: str) -> CardOut:
     "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa"
 )
 def update_program(
-    request: HttpRequest, program_id: str, data: CardUpdateIn
+    request: TenantRequest, program_id: str, data: CardUpdateIn
 ) -> CardOut:
     """Update a loyalty program. OWNER only."""
     if not is_owner(request):
@@ -358,7 +359,7 @@ def update_program(
     response=CardOut,
     summary="Publicar programa",
 )
-def publish_program(request: HttpRequest, program_id: str) -> CardOut:
+def publish_program(request: TenantRequest, program_id: str) -> CardOut:
     """Publish a loyalty program so it becomes visible for enrollments. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -385,7 +386,7 @@ def publish_program(request: HttpRequest, program_id: str) -> CardOut:
     response=MessageOut,
     summary="Suspender programa",
 )
-def suspend_program(request: HttpRequest, program_id: str) -> MessageOut:
+def suspend_program(request: TenantRequest, program_id: str) -> MessageOut:
     """Suspend a loyalty program (soft delete). OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -415,7 +416,7 @@ def suspend_program(request: HttpRequest, program_id: str) -> MessageOut:
     response=MessageOut,
     summary="Eliminar programa permanentemente",
 )
-def delete_program(request: HttpRequest, program_id: str) -> HttpResponse:
+def delete_program(request: TenantRequest, program_id: str) -> HttpResponse:
     """Delete a loyalty program PERMANENTLY. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -436,7 +437,7 @@ def delete_program(request: HttpRequest, program_id: str) -> HttpResponse:
 
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
-def program_stats(request: HttpRequest, program_id: str) -> dict:
+def program_stats(request: TenantRequest, program_id: str) -> dict:
     """Returns program statistics. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -467,7 +468,7 @@ def program_stats(request: HttpRequest, program_id: str) -> dict:
 @router.get(
     "/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)"
 )
-def public_program(request: HttpRequest, slug: str) -> dict:
+def public_program(request: TenantRequest, slug: str) -> dict:
     """
     Public program info for the enrollment page. No authentication required.
     Resolves by tenant slug + program slug (name-based).

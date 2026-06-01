@@ -116,7 +116,7 @@ def register(request, payload: RegisterIn):
                 logger.info(
                     "Registration phone verified via Twilio: %s", payload.phone_number
                 )
-        except VerifyServiceError as exc:
+        except Exception as exc:
             logger.warning(
                 "Registration phone verification failed for %s: %s",
                 payload.phone_number,
@@ -190,7 +190,7 @@ def login(request, payload: LoginIn):
                 action=AuditAction.LOGIN,
                 resource_type="user",
                 resource_id=str(user.id),
-                tenant_id=str(user.tenant_id) if user.tenant_id else None,
+                tenant_id=str(getattr(user, "tenant_id", None)) if getattr(user, "tenant_id", None) else None,
                 details={"method": "email", "reason": "invalid_password"},
                 status="denied",
             )
@@ -209,7 +209,7 @@ def login(request, payload: LoginIn):
             action=AuditAction.LOGIN,
             resource_type="user",
             resource_id=str(user.id),
-            tenant_id=str(user.tenant_id) if user.tenant_id else None,
+            tenant_id=str(getattr(user, "tenant_id", None)) if getattr(user, "tenant_id", None) else None,
             details={"method": "email"},
             status="success",
         )

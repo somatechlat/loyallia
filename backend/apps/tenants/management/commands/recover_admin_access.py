@@ -12,11 +12,11 @@ Usage (from host via docker compose):
 """
 
 import secrets
+from typing import cast
 
-from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
-User = get_user_model()
+from apps.authentication.models import User, UserManager
 
 DEFAULT_ADMIN_EMAIL = "admin@loyallia.com"
 
@@ -69,7 +69,7 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.WARNING(f"Auto-generated password: {password}")
                     )
-                user = User.objects.create_superuser(
+                user = cast(UserManager, User.objects).create_superuser(
                     email=email,
                     password=password,
                     first_name="Admin",
