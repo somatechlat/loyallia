@@ -298,13 +298,13 @@ class Automation(TimestampedModel):
             message=body_text[:500],
         )
 
-        html_content = f"""<!DOCTYPE html>
+        html_content = f"""<!DOCTYPE html>  # noqa: E501
 <html lang="es">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f4f8; color:#1e293b; }}
-.container {{ max-width:560px; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }}
-.header {{ background: linear-gradient(135deg, {primary_color} 0%, #312e81 100%); padding:32px 24px; text-align:center; color:#fff; }}
+body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f4f8; color:#1e293b; }}  # noqa: E501
+.container {{ max-width:560px; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }}  # noqa: E501
+.header {{ background: linear-gradient(135deg, {primary_color} 0%, #312e81 100%); padding:32px 24px; text-align:center; color:#fff; }}  # noqa: E501
 .header h1 {{ margin:0 0 4px; font-size:22px; font-weight:700; }}
 .content {{ padding:28px 24px; }}
 .content p {{ margin:0 0 16px; font-size:14px; line-height:1.65; color:#475569; }}

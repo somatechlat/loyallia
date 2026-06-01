@@ -416,7 +416,7 @@ class Location(TimestampedModel):
 
 # PLATFORM SETTINGS Runtime-configurable without restart
 
-from django.core.cache import cache
+from django.core.cache import cache  # noqa: E402
 
 _PLATFORM_SETTING_CACHE_PREFIX = "platform_setting"
 _PLATFORM_SETTING_CACHE_TTL = 300  # 5 minutes

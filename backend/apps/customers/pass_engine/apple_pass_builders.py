@@ -57,7 +57,6 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
 
 def _substitute_fields(fields: dict, card, customer_pass) -> dict:
     """Recursively substitute template placeholders in all field values."""
-    customer = customer_pass.customer
     result = {}
     for key, value in fields.items():
         if isinstance(value, list):

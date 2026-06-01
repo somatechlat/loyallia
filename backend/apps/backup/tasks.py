@@ -17,7 +17,6 @@ import logging
 from celery import chain, group, shared_task
 from django.utils import timezone
 
-from apps.backup.services.cleanup import cleanup_old_backups
 from apps.backup.services.cleanup import cleanup_old_backups as cleanup_old_backups_svc
 from apps.backup.services.config import (
     create_job_record,
@@ -71,16 +70,16 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
 
     try:
         task_signatures = [
-            backup_postgresql_task.s(job_id),
-            backup_redis_task.s(job_id),
+            backup_postgresql.s(job_id),
+            backup_redis.s(job_id),
         ]
         if config["include_vault"]:
-            task_signatures.append(backup_vault_task.s(job_id))
+            task_signatures.append(backup_vault.s(job_id))
         if config["include_media"]:
-            task_signatures.append(backup_media_task.s(job_id))
+            task_signatures.append(backup_media.s(job_id))
 
         job_group = group(task_signatures)
-        verify_chain = chain(job_group, verify_backup_task.s(job_id))
+        verify_chain = chain(job_group, verify_backup.s(job_id))
         result = verify_chain.apply_async()
 
         logger.info(

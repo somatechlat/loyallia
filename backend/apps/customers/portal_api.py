@@ -129,20 +129,19 @@ def _send_portal_password_email(email: str, password: str) -> None:
         f"Equipo Loyallia"
     )
 
-    html_body = f"""\
-<!DOCTYPE html>
+    html_body = f"""<!DOCTYPE html>  # noqa: E501
 <html lang="es">
 <head><meta charset="utf-8"></head>
 <body style="font-family:system-ui,sans-serif;background:#f4f4f8;padding:24px;">
-<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,0.08);">  # noqa: E501
 <h2 style="margin:0 0 8px;color:#1e293b;">Portal de Cliente</h2>
 <p style="color:#475569;line-height:1.6;">Hola,</p>
 <p style="color:#475569;line-height:1.6;">Tu contraseña temporal es:</p>
-<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;margin:16px 0;">
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;margin:16px 0;">  # noqa: E501
 <code style="font-size:20px;font-weight:700;color:#1e293b;letter-spacing:0.05em;">{password}</code>
 </div>
-<a href="{login_url}" style="display:inline-block;margin:12px 0;padding:14px 28px;background:#5660ff;color:#fff;text-decoration:none;border-radius:12px;font-weight:600;">Ir al Portal</a>
-<p style="color:#94a3b8;font-size:12px;margin-top:16px;">Por seguridad, te recomendamos cambiarla después de iniciar sesión.</p>
+<a href="{login_url}" style="display:inline-block;margin:12px 0;padding:14px 28px;background:#5660ff;color:#fff;text-decoration:none;border-radius:12px;font-weight:600;">Ir al Portal</a>  # noqa: E501
+<p style="color:#94a3b8;font-size:12px;margin-top:16px;">Por seguridad, te recomendamos cambiarla después de iniciar sesión</p>  # noqa: E501
 </div>
 </body>
 </html>

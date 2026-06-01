@@ -8,9 +8,9 @@ _MESSAGES_ES: dict[str, str] = {
     "CAMPAIGN_SENT": "Campaña enviada a {count} clientes.",
     "CAMPAIGN_SCHEDULED": "Campaña programada para {datetime}.",
     "CAMPAIGN_NOT_FOUND": "Campaña no encontrada.",
-    "CAMPAIGN_EMAIL_STARTED": "Campaña de EMAIL iniciada para segmento '{segment}'. Los clientes recibirán un correo electrónico.",
-    "CAMPAIGN_WALLET_STARTED": "Campaña de WALLET iniciada para segmento '{segment}'. Los clientes recibirán una notificación en sus tarjetas.",
-    "CAMPAIGN_WHATSAPP_STARTED": "Campaña de WhatsApp iniciada para segmento '{segment}'. Los mensajes se enviarán de forma progresiva (~8 por minuto).",
+    "CAMPAIGN_EMAIL_STARTED": "Campaña de EMAIL iniciada para segmento '{segment}'. Los clientes recibirán un correo electrónico.",# noqa: E501
+    "CAMPAIGN_WALLET_STARTED": "Campaña de WALLET iniciada para segmento '{segment}'. Los clientes recibirán una notificación en sus tarjetas.",# noqa: E501
+    "CAMPAIGN_WHATSAPP_STARTED": "Campaña de WhatsApp iniciada para segmento '{segment}'. Los mensajes se enviarán de forma progresiva (~8 por minuto).",# noqa: E501
     # Devices / Notifications
     "DEVICE_REGISTERED": "Dispositivo registrado exitosamente.",
     "DEVICE_NOT_FOUND": "Dispositivo no encontrado.",
@@ -42,8 +42,8 @@ _MESSAGES_EN: dict[str, str] = {
     "CAMPAIGN_SCHEDULED": "Campaign scheduled for {datetime}.",
     "CAMPAIGN_NOT_FOUND": "Campaign not found.",
     "CAMPAIGN_EMAIL_STARTED": "Email campaign started for segment '{segment}'. Customers will receive an email.",
-    "CAMPAIGN_WALLET_STARTED": "Wallet campaign started for segment '{segment}'. Customers will receive a card notification.",
-    "CAMPAIGN_WHATSAPP_STARTED": "WhatsApp campaign started for segment '{segment}'. Messages will be sent progressively (~8 per minute).",
+    "CAMPAIGN_WALLET_STARTED": "Wallet campaign started for segment '{segment}'. Customers will receive a card notification.",# noqa: E501
+    "CAMPAIGN_WHATSAPP_STARTED": "WhatsApp campaign started for segment '{segment}'. Messages will be sent progressively (~8 per minute).",# noqa: E501
     # Devices / Notifications
     "DEVICE_REGISTERED": "Device registered successfully.",
     "DEVICE_NOT_FOUND": "Device not found.",

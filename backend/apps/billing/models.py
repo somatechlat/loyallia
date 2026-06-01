@@ -185,7 +185,7 @@ class SubscriptionPlan(TimestampedModel):
         choices=Status.choices,
         default=Status.PUBLISHED,
         verbose_name="Estado",
-        help_text="draft=Borrador (solo visible en SuperAdmin), published=Publicado (visible para todos), archived=Archivado (oculto)",
+        help_text="draft=Borrador (solo visible en SuperAdmin), published=Publicado (visible para todos), archived=Archivado (oculto)",# noqa: E501
     )
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     is_featured = models.BooleanField(default=False, verbose_name="Plan recomendado")

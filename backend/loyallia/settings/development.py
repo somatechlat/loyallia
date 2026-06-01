@@ -18,7 +18,7 @@ from .base import *  # noqa: F401, F403
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
-from common.environment_guard import enforce_settings_environment
+from common.environment_guard import enforce_settings_environment  # noqa: E402
 
 enforce_settings_environment(mode="development", databases=DATABASES)  # noqa: F405
 
@@ -29,7 +29,7 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Show SQL queries in development (set to WARNING in production)
-import logging
+import logging  # noqa: E402
 
 logging.getLogger("django.db.backends").setLevel(logging.DEBUG)
 

@@ -69,7 +69,7 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
                 "id": "loyallia_link",
             },
             {
-                "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",
+                "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",# noqa: E501
                 "description": "Inscribete aqui",
                 "id": "enroll_link",
             },
@@ -131,7 +131,7 @@ def _build_loyalty_object(
                     "id": "loyallia_link",
                 },
                 {
-                    "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",
+                    "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",# noqa: E501
                     "description": "Tu Tarjeta Digital",
                     "id": "enroll_link",
                 },

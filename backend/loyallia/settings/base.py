@@ -113,7 +113,7 @@ ASGI_APPLICATION = "loyallia.asgi.application"
 # conn_max_age=0 is MANDATORY for PgBouncer transaction-mode pooling.
 # Non-zero values cause "server connection was reset" under concurrent load.
 
-import dj_database_url
+import dj_database_url  # noqa: E402
 
 DATABASES = {
     # Default: routed through PgBouncer (transaction pooling)

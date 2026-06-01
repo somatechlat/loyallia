@@ -127,13 +127,13 @@ def send_email_campaign(
                     failed += 1
                     continue
 
-                html_content = f"""<!DOCTYPE html>
+                html_content = f"""<!DOCTYPE html>  # noqa: E501
 <html lang="es">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f4f8; color:#1e293b; }}
-.container {{ max-width:560px; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }}
-.header {{ background: linear-gradient(135deg, {primary_color} 0%, #312e81 100%); padding:32px 24px; text-align:center; color:#fff; }}
+body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f4f8; color:#1e293b; }}  # noqa: E501
+.container {{ max-width:560px; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }}  # noqa: E501
+.header {{ background: linear-gradient(135deg, {primary_color} 0%, #312e81 100%); padding:32px 24px; text-align:center; color:#fff; }}  # noqa: E501
 .header h1 {{ margin:0 0 4px; font-size:22px; font-weight:700; }}
 .header p {{ margin:0; font-size:13px; opacity:0.8; }}
 .hero-img {{ width:100%; max-height:200px; object-fit:cover; }}
@@ -154,9 +154,9 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
   {html_body}
 </div>
 <div class="footer">
-  <p>Powered by <a href="{PlatformSetting.get('BRAND_HOME_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}">Loyallia</a>  Intelligent Rewards</p>
+  <p>Powered by <a href="{PlatformSetting.get('BRAND_HOME_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}">Loyallia</a>  Intelligent Rewards</p>  # noqa: E501
   <p style="margin-top:4px;">© 2024 {tenant.name}. Todos los derechos reservados.</p>
-  <p style="margin-top:8px; font-size:10px;">¿No quieres recibir más correos? Visita tu perfil para gestionar tus preferencias.</p>
+  <p style="margin-top:8px; font-size:10px;">¿No quieres recibir más correos? Visita tu perfil para gestionar tus preferencias</p>  # noqa: E501
 </div>
 </div>
 </body></html>"""
@@ -164,7 +164,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 # Generate a stable Message-ID for webhook correlation
                 import uuid as _uuid
 
-                message_id = f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"
+                message_id = f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"# noqa: E501
                 msg = EmailMultiAlternatives(
                     subject=subject, from_email=from_email, to=[customer.email]
                 )

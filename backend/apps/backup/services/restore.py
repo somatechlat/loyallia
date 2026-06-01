@@ -1,5 +1,6 @@
 """Restore orchestration and file discovery."""
 
+import contextlib
 import logging
 import os
 import shutil
@@ -128,10 +129,8 @@ def restore_from_backup(
         logger.exception("restore_from_backup failed for backup %s", backup_id)
         raise
     finally:
-        try:
+        with contextlib.suppress(Exception):
             shutil.rmtree(tmp_dir)
-        except Exception:
-            pass
 
 
 def find_file(directory: str, prefix: str) -> str:
