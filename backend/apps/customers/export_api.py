@@ -33,7 +33,7 @@ def _sanitize_csv_cell(value: str) -> str:
     return value_str
 
 
-@router.get("/export/", auth=jwt_auth, summary="Exportar clientes a CSV")
+@router.get("/", auth=jwt_auth, summary="Exportar clientes a CSV")
 def export_customers(request):
     """Export all customer data to CSV. OWNER only. Forensic tracking enabled."""
     if not is_owner(request):

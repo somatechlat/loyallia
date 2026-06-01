@@ -60,7 +60,10 @@ def _build_gift_card_object(
     object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
     pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
-    balance = str(customer_pass.cashback_balance_val)
+    if card.card_type == "gift_certificate":
+        balance = str(customer_pass.gift_balance_val)
+    else:
+        balance = str(customer_pass.cashback_balance_val)
     google_images = _get_google_images(card)
     obj = {
         "id": object_id,
