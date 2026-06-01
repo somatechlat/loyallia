@@ -179,7 +179,7 @@ class NotificationService:
 
     @staticmethod
     def _send_push_notification(notification: Notification) -> bool:
-        """Send push notification via APNs (iOS) and FCM (Android) dispatcher."""
+        """Send push notification via APNs (Apple Wallet pass updates)."""
         from apps.notifications.push.dispatcher import dispatch_push
 
         delivered = dispatch_push(notification)

@@ -1,4 +1,4 @@
 """
 Loyallia Push Notification Package
-Provides APNs (Apple Push Notification service) and FCM (Firebase Cloud Messaging) clients.
+Provides APNs (Apple Push Notification service) client for Apple Wallet pass updates.
 """

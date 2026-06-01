@@ -42,10 +42,8 @@ passlib==1.7.4
 # Using standard library + cryptography for signing
 pyopenssl==24.2.1
 
-# Push Notifications
-firebase-admin==6.5.0
-google-auth==2.29.0          # FCM HTTP v1 API token exchange (also used by firebase-admin)
-google-auth-httplib2==0.2.0  # Required transport for google-auth
+# Push Notifications (Apple Wallet pass updates only — no FCM/app pushes)
+google-auth==2.29.0          # Google OAuth2 (used by Google Wallet)
 httpx[http2]==0.27.2         # APNs HTTP/2 + general HTTP client
 
 # Payment Gateway — manual admin verification (uses httpx for future providers)
