@@ -20,6 +20,11 @@ from common.messages import get_message
 from common.permissions import is_manager_or_owner, jwt_auth
 from common.request import as_tenant_request
 
+try:
+    from botocore.exceptions import ClientError
+except Exception:
+    ClientError = Exception  # type: ignore[misc,assignment]
+
 logger = logging.getLogger(__name__)
 
 router = Router(tags=["Uploads"])
@@ -126,7 +131,6 @@ def list_assets(request):
 
     try:
         import boto3
-        from botocore.exceptions import ClientError
 
         client = boto3.client(
             "s3",

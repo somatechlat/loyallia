@@ -251,8 +251,9 @@ def send_wallet_notification_campaign(
                 delivery_log.status = DeliveryStatus.SENT
                 delivery_log.sent_at = timezone.now()
                 if segment_id == "all" and broadcast_message_ids:
-                    card_id = str(passes.first().card.id)
-                    if card_id in broadcast_message_ids:
+                    first_pass = passes.first()
+                    card_id = str(first_pass.card.id) if first_pass else ""
+                    if card_id and card_id in broadcast_message_ids:
                         delivery_log.external_message_id = broadcast_message_ids[
                             card_id
                         ]

@@ -177,18 +177,19 @@ def _build_loyalty_object(
 def _build_points_for_type(card, customer_pass) -> dict:
     """Build the loyaltyPoints section based on card type and pass data."""
     pass_data = customer_pass.pass_data or {}
+    metadata = card.metadata or {}
 
     if card.card_type == "stamp":
-        current = pass_data.get("stamp_count", 0)
+        current = customer_pass.stamp_count_val
         return {"label": "Sellos", "balance": {"int": current}}
     elif card.card_type == "cashback":
-        balance = pass_data.get("cashback_balance", "0")
+        balance = str(customer_pass.cashback_balance_val)
         return {
             "label": "Credito",
             "balance": {
                 "money": {
                     "micros": int(float(balance) * 1_000_000),
-                    "currencyCode": "USD",
+                    "currencyCode": metadata.get("currency", "USD"),
                 }
             },
         }
@@ -200,7 +201,7 @@ def _build_points_for_type(card, customer_pass) -> dict:
     elif card.card_type == "referral_pass":
         return {
             "label": "Referidos",
-            "balance": {"int": pass_data.get("referrals_made", 0)},
+            "balance": {"int": customer_pass.referral_count_val},
         }
     else:
         return {"label": "Puntos", "balance": {"int": 0}}

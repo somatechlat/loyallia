@@ -608,4 +608,4 @@ class ApplePassRegistration(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Apple Registration: device {self.device_library_id[-8:]} → pass {self.customer_pass_id}"
+        return f"Apple Registration: device {self.device_library_id[-8:]} → pass {getattr(self, 'customer_pass_id', '')}"

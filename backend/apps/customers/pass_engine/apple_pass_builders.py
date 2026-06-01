@@ -35,11 +35,12 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
     pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
     total_stamps = metadata.get("stamps_required", metadata.get("total_stamps", 6))
-    current_stamps = (
-        pass_data.get("stamp_count", 0) if isinstance(pass_data, dict) else 0
-    )
+    current_stamps = customer_pass.stamp_count_val
     reward = metadata.get("reward_description", "Recompensa")
     stamps_display = "⬛" * current_stamps + "⬜" * (total_stamps - current_stamps)
+    enrolled_date = ""
+    if customer_pass.enrolled_at:
+        enrolled_date = customer_pass.enrolled_at.strftime("%d/%m/%Y")
     replacements = {
         "{description}": card.description or "",
         "{customer_name}": customer_name,
@@ -49,10 +50,10 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
         "{stamps_required}": str(total_stamps),
         "{reward_description}": reward,
         "{stamp_display}": stamps_display,
-        "{affiliate_code}": str(pass_data.get("affiliate_code", "N/A")),
-        "{enrolled_date}": str(pass_data.get("enrolled_date", "")),
+        "{affiliate_code}": customer_pass.qr_code or str(pass_data.get("affiliate_code", "N/A")),
+        "{enrolled_date}": enrolled_date or str(pass_data.get("enrolled_date", "")),
         "{benefits}": ", ".join(metadata.get("benefits", [])) if isinstance(metadata.get("benefits"), list) else str(metadata.get("benefits", "")),
-        "{cashback_balance}": str(pass_data.get("cashback_balance", "0")),
+        "{cashback_balance}": str(customer_pass.cashback_balance_val),
         "{cashback_percentage}": str(metadata.get("cashback_percentage", 10)),
     }
     for placeholder, replacement in replacements.items():
@@ -103,7 +104,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
 
     if card.card_type == "stamp":
         total = metadata.get("total_stamps", 6)
-        current = pass_data.get("stamp_count", 0)
+        current = customer_pass.stamp_count_val
         reward = metadata.get("reward_description", "Recompensa")
         stamps_display = "\u2b1b" * current + "\u2b1c" * (total - current)
         return {
@@ -128,7 +129,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "cashback":
-        balance = pass_data.get("cashback_balance", "0")
+        balance = str(customer_pass.cashback_balance_val)
         pct = metadata.get("cashback_percentage", 10)
         return {
             "headerFields": [
@@ -189,8 +190,8 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         }
 
     elif card.card_type == "referral_pass":
-        referrals = pass_data.get("referrals_made", 0)
-        ref_code = pass_data.get("referral_code", "N/A")
+        referrals = customer_pass.referral_count_val
+        ref_code = customer.referral_code or customer_pass.qr_code or "N/A"
         return {
             "headerFields": [
                 {"key": "refs", "label": "REFERIDOS", "value": str(referrals)}
@@ -212,7 +213,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         # Discount cards use tiered progression from card.metadata["tiers"]
         # pass_data stores "discount_tier" (current tier name) and "total_spent"
         tiers = metadata.get("tiers", [])
-        current_tier = pass_data.get("discount_tier", "")
+        current_tier = customer_pass.discount_tier or pass_data.get("discount_tier", "")
         current_discount = 0
         for tier in tiers:
             if tier.get("tier_name") == current_tier:
@@ -262,8 +263,10 @@ def _build_fields_for_type(card, customer_pass) -> dict:
 
     elif card.card_type == "affiliate":
         # Affiliate/membership card generic Apple style with member info
-        member_since = pass_data.get("enrolled_date", "")
-        affiliate_code = pass_data.get("affiliate_code", "N/A")
+        member_since = ""
+        if customer_pass.enrolled_at:
+            member_since = customer_pass.enrolled_at.strftime("%d/%m/%Y")
+        affiliate_code = customer_pass.qr_code or pass_data.get("affiliate_code", "N/A")
         return {
             "headerFields": [
                 {"key": "program", "label": "PROGRAMA", "value": card.name}
@@ -293,7 +296,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     elif card.card_type == "gift_certificate":
         # Gift certificate storeCard style showing balance
         # Prefers typed column gift_balance, falls back to pass_data
-        balance = pass_data.get("gift_balance", "0")
+        balance = str(customer_pass.gift_balance_val)
         currency = metadata.get("currency", "USD")
         return {
             "headerFields": [
@@ -327,7 +330,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     elif card.card_type == "corporate_discount":
         # Corporate discount generic Apple style
         # pass_data stores "corporate_discount" percentage and "company_name"
-        discount_pct = pass_data.get("corporate_discount", "0")
+        discount_pct = str(customer_pass.corporate_discount)
         company = pass_data.get("company_name", metadata.get("company_name", card.name))
         return {
             "headerFields": [
@@ -350,7 +353,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         # Multipass storeCard style showing remaining uses
         # Prefers typed column multipass_remaining, falls back to pass_data
         bundle_size = metadata.get("bundle_size", 10)
-        remaining = pass_data.get("multipass_remaining", bundle_size)
+        remaining = customer_pass.multipass_remaining_val or bundle_size
         return {
             "headerFields": [
                 {

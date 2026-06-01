@@ -539,7 +539,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
             return False
 
         payload = {
-            "tenant_id": str(self.tenant_id),
+            "tenant_id": str(getattr(self, "tenant_id", None)),
             "automation_id": str(self.id),
             "automation_name": self.name,
             "customer_id": str(customer.id),

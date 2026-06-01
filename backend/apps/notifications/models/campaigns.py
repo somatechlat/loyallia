@@ -203,5 +203,5 @@ class CampaignDeliveryLog(models.Model):
         unique_together = ["campaign_run", "customer"]
 
     def __str__(self) -> str:
-        name = self.recipient_name or str(self.customer_id)
+        name = self.recipient_name or str(getattr(self, "customer_id", ""))
         return f"{name}  {self.status}"

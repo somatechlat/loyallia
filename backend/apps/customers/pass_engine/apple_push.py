@@ -98,6 +98,9 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     import ssl
     import tempfile
 
+    cert_path = ""
+    key_path = ""
+
     try:
         # Create temporary PEM files for the SSL context
         with tempfile.NamedTemporaryFile(

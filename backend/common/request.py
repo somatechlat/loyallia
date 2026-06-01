@@ -16,7 +16,7 @@ Performance (Rule 12):
 Called by: Every API endpoint and middleware that needs tenant-scoped data access.
 """
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from django.http import HttpRequest
 from ninja.errors import HttpError
@@ -37,6 +37,7 @@ class TenantRequest(HttpRequest):
 
     tenant: "Tenant | None"
     agent_api_key: "AgentAPIKey"
+    portal_customer: "Any | None"
 
 
 def as_tenant_request(request: HttpRequest) -> TenantRequest:
