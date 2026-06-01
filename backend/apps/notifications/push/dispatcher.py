@@ -1,8 +1,10 @@
 """
 Loyallia Push Notification Dispatcher
 
-Central entry point for all push delivery.
-Dispatches to APNs (iOS) or FCM (Android) based on device type.
+Central entry point for push delivery.
+Dispatches to APNs (Apple Wallet pass updates) for iOS devices.
+Android app push via FCM is not used in this project.
+
 Handles per-device delivery status, stale token cleanup, and logging.
 """
 
@@ -26,14 +28,13 @@ def dispatch_push(notification: "Notification") -> int:
         Number of devices successfully reached (0 = no devices or all failed)
     """
     from apps.notifications.push.apns_client import send_apns_message
-    from apps.notifications.push.fcm_client import send_fcm_message
 
     customer = notification.customer
     devices = customer.devices.filter(is_active=True)
 
     if not devices.exists():
         logger.info(
-            "No active devices for customer %s  skipping push for notification %s",
+            "No active devices for customer %s — skipping push for notification %s",
             customer.id,
             notification.id,
         )
@@ -45,9 +46,7 @@ def dispatch_push(notification: "Notification") -> int:
         "action_url": notification.action_url or "",
     }
     if hasattr(notification, "notification_data") and notification.notification_data:
-        payload_data.update(
-            {k: str(v) for k, v in notification.notification_data.items()}
-        )
+        payload_data.update({k: str(v) for k, v in notification.notification_data.items()})
 
     delivered = 0
 
@@ -62,17 +61,10 @@ def dispatch_push(notification: "Notification") -> int:
                 data=payload_data,
             )
 
-        elif device.device_type == "android" and device.fcm_token:
-            success = send_fcm_message(
-                fcm_token=device.fcm_token,
-                title=notification.title,
-                body=notification.message,
-                data=payload_data,
-                image_url=(
-                    notification.image_url
-                    if hasattr(notification, "image_url")
-                    else None
-                ),
+        elif device.device_type == "android":
+            logger.debug(
+                "Android push skipped for device %s: FCM is not enabled.",
+                device.id,
             )
 
         else:
@@ -84,7 +76,7 @@ def dispatch_push(notification: "Notification") -> int:
 
         if success:
             delivered += 1
-        elif device.device_type in ("ios", "android"):
+        elif device.device_type == "ios":
             # Increment failure counter; deactivate device after 5 consecutive failures
             device.push_failures = getattr(device, "push_failures", 0) + 1
             if device.push_failures >= 5:

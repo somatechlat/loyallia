@@ -46,3 +46,11 @@ if "django_extensions" not in INSTALLED_APPS:  # noqa: F405
 
 # Feature flags (NOT secrets — these are system-wide settings)
 TWILIO_USE_TEST_MODE = True
+
+# Apple Wallet webServiceURL: derive from PUBLIC_BASE_URL if not explicitly set.
+# Enables devices to register for push updates when adding passes to Wallet.
+if not PASS_WEB_SERVICE_URL:  # noqa: F405
+    _public_base = globals().get("PUBLIC_BASE_URL", "")
+    if _public_base:
+        PASS_WEB_SERVICE_URL = f"{_public_base.rstrip('/')}/wallet/apple"
+

@@ -333,12 +333,6 @@ GOOGLE_SERVICE_ACCOUNT_FILE = config(
 )
 GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", default="")
 
-# FIREBASE (Android Push)
-
-FIREBASE_CREDENTIAL_FILE = config(
-    "FIREBASE_CREDENTIAL_FILE", default="/app/certs/firebase_service_account.json"
-)
-
 # PAYMENT GATEWAY (Pluggable Manual / Disabled)
 
 PAYMENT_GATEWAY_ENABLED = vault_bool(
