@@ -113,7 +113,7 @@ class Card(TimestampedModel):
     redemption_rules = models.JSONField(
         default=dict,
         verbose_name="Reglas de canje",
-        help_text="JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}",
+        help_text="JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}",# noqa: E501
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]

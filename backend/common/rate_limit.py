@@ -343,9 +343,9 @@ class RateLimitMiddleware:
 
 # Endpoint-level rate limit decorator
 
-import functools
-from collections.abc import Callable
-from typing import TypeVar
+import functools  # noqa: E402
+from collections.abc import Callable  # noqa: E402
+from typing import TypeVar  # noqa: E402
 
 F = TypeVar("F", bound=Callable)
 

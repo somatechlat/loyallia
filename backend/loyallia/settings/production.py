@@ -14,7 +14,7 @@ from .base import vault_bool
 
 DEBUG = False
 
-from common.environment_guard import enforce_settings_environment
+from common.environment_guard import enforce_settings_environment  # noqa: E402
 
 enforce_settings_environment(mode="production", databases=DATABASES)  # noqa: F405
 

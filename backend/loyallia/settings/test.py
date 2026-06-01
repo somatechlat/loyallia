@@ -63,6 +63,6 @@ AWS_STORAGE_BUCKET_NAME = "loyallia-test"
 
 # LOGGING quieter in tests
 
-import logging
+import logging  # noqa: E402
 
 logging.getLogger("django.db.backends").setLevel(logging.WARNING)

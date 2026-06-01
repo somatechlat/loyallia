@@ -147,7 +147,7 @@ def register(request, payload: RegisterIn):
         email=payload.email,
         otp=otp,
         subject="Verifica tu correo -- Loyallia",
-        body=f"Hola {user.first_name or payload.email},\n\nTu codigo de verificacion es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",
+        body=f"Hola {user.first_name or payload.email},\n\nTu codigo de verificacion es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",# noqa: E501
     )
     return RegisterOut(
         success=True,

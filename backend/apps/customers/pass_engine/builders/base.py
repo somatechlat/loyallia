@@ -85,10 +85,7 @@ def _is_local_or_private_url(url: str) -> bool:
         r"http://172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+[:/]",
         r"https?://\[?::1\]?[:/]",
     ]
-    for pattern in local_patterns:
-        if re.search(pattern, url, re.IGNORECASE):
-            return True
-    return False
+    return any(re.search(pattern, url, re.IGNORECASE) for pattern in local_patterns)
 
 
 def _resolve_url(url: str, base_url: str) -> str:

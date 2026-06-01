@@ -1,5 +1,6 @@
 """Backup configuration and shared utilities."""
 
+import contextlib
 import logging
 import os
 import re
@@ -121,10 +122,8 @@ def create_job_record(
         "compression_enabled": compression_enabled,
     }
     if tenant_id:
-        try:
+        with contextlib.suppress(Tenant.DoesNotExist, ValueError):
             kwargs["tenant"] = Tenant.objects.get(id=uuid.UUID(tenant_id))
-        except (Tenant.DoesNotExist, ValueError):
-            pass
 
     job = BackupJob.objects.create(**kwargs)
     return str(job.id)

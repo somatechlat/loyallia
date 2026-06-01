@@ -329,7 +329,7 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     google_url = f"{base_url}/api/v1/wallet/google/{pass_id}/?redirect=true"
 
     # Build platform-appropriate wallet links
-    wallet_instructions = f"""Apple Wallet (iPhone/iPad):
+    wallet_instructions = f"""Apple Wallet (iPhone/iPad):  # noqa: E501
 {apple_url}
 
 Google Wallet (Android):
@@ -337,7 +337,7 @@ Google Wallet (Android):
 """
 
     subject = f"Tu tarjeta de {card.name} — {card.tenant.name}"
-    message = f"""Hola {customer.first_name},
+    message = f"""Hola {customer.first_name},  # noqa: E501
 
 Ya estás inscrito en el programa {card.name} de {card.tenant.name}.
 Aquí tienes los enlaces para acceder a tu tarjeta digital:
@@ -355,15 +355,15 @@ Saludos,
 Equipo {card.tenant.name}
 """
 
-    html_message = f"""<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    html_message = f"""<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">  # noqa: E501
 <div style="max-width: 480px; margin: 0 auto; padding: 24px;">
   <h2 style="color: #1a1a2e;">¡Hola {customer.first_name}!</h2>
   <p>Ya estás inscrito en <strong>{card.name}</strong> de <strong>{card.tenant.name}</strong>.</p>
   <div style="background: #f8f9fa; border-radius: 12px; padding: 16px; margin: 16px 0;">
     <p style="margin: 0 0 8px;"><strong>Tu tarjeta digital:</strong></p>
-    <a href="{pass_url}" style="display: inline-block; background: #5660ff; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Ver mi tarjeta</a>
+    <a href="{pass_url}" style="display: inline-block; background: #5660ff; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Ver mi tarjeta</a>  # noqa: E501
   </div>
-  <p style="color: #666; font-size: 14px;">Muy pronto podrás crear una contraseña y acceder a tu portal de cliente para gestionar todas tus tarjetas e información.</p>
+  <p style="color: #666; font-size: 14px;">Muy pronto podrás crear una contraseña y acceder a tu portal de cliente para gestionar todas tus tarjetas e información</p>  # noqa: E501
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
   <p style="font-size: 12px; color: #999;">Equipo {card.tenant.name}</p>
 </div>

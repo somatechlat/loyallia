@@ -32,7 +32,6 @@ def verify_backup(component_results: list, job_id: str) -> dict:
         component = result.get("component", "unknown")
         success = result.get("success", False)
         file_path = result.get("file_path", "")
-        file_size = result.get("file_size", 0)
 
         if not success:
             details_parts.append(f"FAIL: {component} reported failure")
@@ -76,9 +75,6 @@ def verify_backup(component_results: list, job_id: str) -> dict:
         all_ok = False
 
     verification_status = "verified" if all_ok else "corrupted"
-    job_status = (
-        BackupJobStatus.VERIFIED.value if all_ok else BackupJobStatus.CORRUPTED.value
-    )
     details_text = "\n".join(details_parts)
 
     try:
