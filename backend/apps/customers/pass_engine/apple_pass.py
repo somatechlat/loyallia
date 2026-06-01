@@ -199,15 +199,10 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         "serialNumber": str(customer_pass.id),
         "organizationName": tenant.name,
         "description": card.name,
-        "foregroundColor": card.text_color or "rgb(255, 255, 255)",
+        "logoText": tenant.name or card.name,
+        "foregroundColor": _hex_to_rgb(card.text_color or "#FFFFFF"),
         "backgroundColor": _hex_to_rgb(card.background_color or "#1A1A2E"),
         "labelColor": _hex_to_rgb(card.text_color or "#FFFFFF"),
-        "barcode": {
-            "format": barcode_format,
-            "message": barcode_value,
-            "messageEncoding": "iso-8859-1",
-            "altText": barcode_value,
-        },
         "barcodes": [
             {
                 "format": barcode_format,
@@ -342,7 +337,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
         return None
     pass_json_bytes = json.dumps(pass_json, ensure_ascii=False).encode("utf-8")
 
-    bg_color = card.background_color or "#5660ff"
+    bg_color = card.background_color or "#1A1A2E"
 
     def fetch_image_bytes(url):
         """Fetch image bytes from a URL with SSRF protection."""
@@ -358,7 +353,6 @@ def generate_pkpass(customer_pass) -> bytes | None:
                     "Cannot resolve relative image URL %s: PUBLIC_BASE_URL not set", url
                 )
                 return None
-        SSRFError = Exception
         try:
             from common.url_validator import SSRFError, validate_external_url
 
