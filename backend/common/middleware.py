@@ -111,7 +111,7 @@ class CSRFExemptAPIMiddleware:
     def __call__(self, request):
         # SEC: /api/ paths use JWT Bearer tokens which are CSRF-immune by design.
         # Browsers never auto-attach Authorization headers, so CSRF is impossible.
-        if request.path.startswith("/api/"):
+        if request.path.startswith("/api/") or request.path.startswith("/wallet/apple/"):
             request._dont_enforce_csrf_checks = True
 
         response = self.get_response(request)
