@@ -6,14 +6,15 @@ Self-auditing: viewing the audit log creates an audit entry.
 
 import logging
 from datetime import timedelta
+from typing import cast
 
 from django.db.models import Count
-from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 
+from apps.authentication.models import User
 from apps.audit.models import AuditAction, AuditLog
 from apps.audit.schemas import (
     ActionBreakdownSchema,
@@ -25,6 +26,7 @@ from apps.audit.schemas import (
 )
 from apps.audit.service import log_action
 from common.permissions import is_owner, jwt_auth, require_role
+from common.request import TenantRequest, require_tenant
 
 logger = logging.getLogger("loyallia.audit")
 
@@ -39,7 +41,7 @@ router = Router()
 )
 @require_role("SUPER_ADMIN", "OWNER")
 def list_audit_logs(
-    request: HttpRequest,
+    request: TenantRequest,
     limit: int = 50,
     offset: int = 0,
     action: str = "",
@@ -60,13 +62,9 @@ def list_audit_logs(
     qs = AuditLog.objects.all()
 
     # OWNER scope: restrict to own tenant only
-    is_sa = request.user.role == "SUPER_ADMIN"
+    is_sa = cast(User, request.user).role == "SUPER_ADMIN"
     if not is_sa and is_owner(request):
-        own_tenant_id = (
-            str(request.tenant.id)
-            if hasattr(request, "tenant") and request.tenant
-            else None
-        )
+        own_tenant_id = str(require_tenant(request).id)
         if own_tenant_id:
             qs = qs.filter(tenant_id=own_tenant_id)
         else:
@@ -100,7 +98,7 @@ def list_audit_logs(
         resource_type="audit_log",
         details={
             "filters_applied": bool(action or resource_type or actor_email),
-            "role": request.user.role,
+            "role": cast(User, request.user).role,
         },
     )
 
@@ -134,7 +132,7 @@ def list_audit_logs(
     summary="Estadísticas de auditoría",
 )
 @require_role("SUPER_ADMIN")
-def audit_stats(request: HttpRequest):
+def audit_stats(request: TenantRequest):
     """Aggregated audit statistics for the dashboard."""
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -177,7 +175,7 @@ def audit_stats(request: HttpRequest):
     summary="Detalle de entrada de auditoría",
 )
 @require_role("SUPER_ADMIN")
-def get_audit_entry(request: HttpRequest, entry_id: str):
+def get_audit_entry(request: TenantRequest, entry_id: str):
     """Get a single audit entry with full details."""
     entry = get_object_or_404(AuditLog, id=entry_id)
 

@@ -18,7 +18,10 @@ Security (SEC):
 Called by: SuperAdmin dashboard (Backup & Restore page).
 """
 
+from typing import Any, cast
+
 import logging
+from typing import Any, cast
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -226,7 +229,7 @@ def trigger_manual_backup(request: HttpRequest, payload: TriggerBackupIn):
     Returns immediately with the job ID; use GET /{id}/ to track progress.
     """
     try:
-        result = run_full_backup.delay(
+        result = cast(Any, run_full_backup).delay(
             tenant_id="",
             manual=True,
         )
@@ -315,7 +318,7 @@ def verify_backup_endpoint(request: HttpRequest, backup_id: str):
         )
 
     try:
-        result = verify_backup.delay([], str(job.id))
+        result = cast(Any, verify_backup).delay([], str(job.id))
 
         _audit(
             request,
@@ -383,7 +386,7 @@ def restore_from_backup(
     try:
         from apps.backup.tasks import restore_from_backup_task
 
-        result = restore_from_backup_task.delay(
+        result = cast(Any, restore_from_backup_task).delay(
             backup_id=str(job.id),
             s3_key=job.s3_key,
             target_tenant_id=payload.target_tenant_id or "",
@@ -527,7 +530,7 @@ def update_backup_settings(request: HttpRequest, payload: BackupSettingsOut):
 def run_cleanup(request: HttpRequest):
     """Manually trigger the cleanup of expired backups."""
     try:
-        result = cleanup_old_backups.delay()
+        result = cast(Any, cleanup_old_backups).delay()
 
         _audit(
             request,

@@ -13,6 +13,7 @@ Called by: Celery Beat scheduler, SuperAdmin API (manual backup).
 """
 
 import logging
+from typing import Any, cast
 
 from celery import chain, group, shared_task
 from django.utils import timezone
@@ -70,22 +71,23 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
 
     try:
         task_signatures = [
-            backup_postgresql.s(job_id),
-            backup_redis.s(job_id),
+            cast(Any, backup_postgresql).s(job_id),
+            cast(Any, backup_redis).s(job_id),
         ]
         if config["include_vault"]:
-            task_signatures.append(backup_vault.s(job_id))
+            task_signatures.append(cast(Any, backup_vault).s(job_id))
         if config["include_media"]:
-            task_signatures.append(backup_media.s(job_id))
+            task_signatures.append(cast(Any, backup_media).s(job_id))
 
         job_group = group(task_signatures)
-        verify_chain = chain(job_group, verify_backup.s(job_id))
+        verify_chain = chain(job_group, cast(Any, verify_backup).s(job_id))
         result = verify_chain.apply_async()
 
+        chain_id = result.id if result else ""
         logger.info(
-            "run_full_backup: job %s chained, verify task id=%s", job_id, result.id
+            "run_full_backup: job %s chained, verify task id=%s", job_id, chain_id
         )
-        return {"success": True, "job_id": job_id, "celery_chain_id": result.id}
+        return {"success": True, "job_id": job_id, "celery_chain_id": chain_id}
 
     except Exception as exc:
         scrubbed = scrub_error(str(exc))

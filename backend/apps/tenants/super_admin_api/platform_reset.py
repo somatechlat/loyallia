@@ -3,6 +3,7 @@ Loyallia Super Admin API: Seed Demo Data and Factory Reset
 """
 
 import logging
+from typing import cast
 
 from django.db import transaction
 from django.http import HttpRequest
@@ -29,6 +30,10 @@ def _require_super_admin(request) -> None:
 
     if not is_super_admin(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+
+def _request_user(request: HttpRequest) -> User:
+    return cast(User, request.user)
 
 
 def _is_production_environment() -> bool:
@@ -69,7 +74,7 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
             action=AuditAction.SEED_DEMO,
             resource_type="platform",
             resource_id="system",
-            details={"triggered_by": request.user.email},
+            details={"triggered_by": _request_user(request).email},
             status="success",
         )
     except Exception:
@@ -89,7 +94,7 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
         stderr=output,
     )
 
-    logger.info("SUPER_ADMIN %s triggered demo data seed", request.user.email)
+    logger.info("SUPER_ADMIN %s triggered demo data seed", _request_user(request).email)
     return SeedDemoDataOut(
         success=True,
         message=get_message("ADMIN_DEMO_SEEDED"),
@@ -115,7 +120,8 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     from apps.authentication.otp_service import send_otp
 
     phone = getattr(request.user, "phone_number", "")
-    recipient = phone if phone else request.user.email
+    user = _request_user(request)
+    recipient = phone if phone else user.email
 
     if not recipient:
         raise HttpError(400, get_message("ADMIN_FACTORY_NO_CONTACT"))
@@ -130,7 +136,7 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     from django.core.cache import cache
 
     cache.set(
-        f"factory_reset:sid:{request.user.email}", result.get("sid", ""), timeout=300
+        f"factory_reset:sid:{user.email}", result.get("sid", ""), timeout=300
     )
 
     # Secondary: Email notification (always sent, regardless of Verify)
@@ -156,19 +162,19 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
             subject="Loyallia Código de Verificación para Restaurar de Fábrica",
             message=msg_body,
             from_email=get_default_from_email(),
-            recipient_list=[request.user.email],
+            recipient_list=[user.email],
             fail_silently=True,
         )
     except Exception:
         logger.error(
             "Failed to send factory reset OTP email to %s",
-            request.user.email,
+            user.email,
             exc_info=True,
         )
 
     logger.warning(
         "FACTORY RESET requested by %s (strategy=%s channel=%s)",
-        request.user.email,
+        user.email,
         result.get("strategy"),
         result.get("channel", "email"),
     )
@@ -206,8 +212,9 @@ def factory_reset_confirm(
 
     from apps.authentication.otp_service import check_otp
 
-    sid = cache.get(f"factory_reset:sid:{request.user.email}", "")
-    recipient = getattr(request.user, "phone_number", "") or request.user.email
+    user = _request_user(request)
+    sid = cache.get(f"factory_reset:sid:{user.email}", "")
+    recipient = getattr(user, "phone_number", "") or user.email
 
     if not check_otp(
         recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"
@@ -224,7 +231,7 @@ def factory_reset_confirm(
             action=AuditAction.FACTORY_RESET,
             resource_type="platform",
             resource_id="system",
-            details={"triggered_by": request.user.email},
+            details={"triggered_by": user.email},
             status="success",
         )
     except Exception:
@@ -274,7 +281,7 @@ def factory_reset_confirm(
     except Exception:
         logger.warning("Failed to clear Redis cache during factory reset")
 
-    logger.critical("FACTORY RESET executed by %s", request.user.email)
+    logger.critical("FACTORY RESET executed by %s", user.email)
     return MessageOut(
         success=True,
         message=get_message("ADMIN_FACTORY_RESET_DONE"),

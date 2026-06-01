@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
-from django.http import HttpRequest
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
@@ -17,6 +16,7 @@ from common.plan_enforcement import (
     check_feature_access,
     check_plan_limit,
 )
+from common.request import TenantRequest, require_tenant
 
 from .base import router
 
@@ -105,7 +105,7 @@ SEGMENT_NAMES = {
 
 
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
-def list_campaigns(request: HttpRequest) -> dict:
+def list_campaigns(request: TenantRequest) -> dict:
     """List all push campaigns."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -175,7 +175,7 @@ def list_campaigns(request: HttpRequest) -> dict:
 
 
 @router.post("/campaigns/", auth=jwt_auth, response=dict, summary="Crear campaña")
-def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
+def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
     """Send an email, wallet, or WhatsApp notification campaign to customers in a segment.
 
     OWNER only. Supports four channels:
@@ -189,7 +189,8 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
     """
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    check_plan_limit(request.tenant, "notifications_month", write=True)
+    tenant = require_tenant(request)
+    check_plan_limit(tenant, "notifications_month", write=True)
 
     # -- Scheduled campaign support -------------------------------------------
     if data.schedule_type == "scheduled" and data.scheduled_at:
@@ -228,11 +229,11 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             )
 
         # Fill tenant_id
-        task_kwargs["tenant_id"] = str(request.tenant.id)
+        task_kwargs["tenant_id"] = str(tenant.id)
 
         # Schedule via Celery
-        celery_app.send_task(
-            task_fn.name,
+        cast(Any, celery_app).send_task(
+            cast(Any, task_fn).name,
             kwargs=task_kwargs,
             eta=scheduled_time,
         )
@@ -257,13 +258,13 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
 
     # -- Immediate dispatch (existing flow) -----------------------------------
     if data.channel == "email":
-        check_feature_access(request.tenant, "email_campaigns")
-        check_plan_limit(request.tenant, "emails_month", write=True)
+        check_feature_access(tenant, "email_campaigns")
+        check_plan_limit(tenant, "emails_month", write=True)
         from apps.notifications.tasks import send_email_campaign
 
-        task_fn: Any = send_email_campaign
-        task_fn.delay(
-            tenant_id=str(request.tenant.id),
+        _task_fn: Any = send_email_campaign
+        _task_fn.delay(
+            tenant_id=str(tenant.id),
             subject=data.title,
             html_body=data.message,
             segment_id=data.segment_id,
@@ -284,13 +285,13 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=data.segment_id),
         }
     elif data.channel == "wallet":
-        check_feature_access(request.tenant, "wallet_campaigns")
-        check_plan_limit(request.tenant, "wallet_pushes_month", write=True)
+        check_feature_access(tenant, "wallet_campaigns")
+        check_plan_limit(tenant, "wallet_pushes_month", write=True)
         from apps.notifications.tasks import send_wallet_notification_campaign
 
-        task_fn: Any = send_wallet_notification_campaign
-        task_fn.delay(
-            tenant_id=str(request.tenant.id),
+        _task_fn: Any = send_wallet_notification_campaign
+        _task_fn.delay(
+            tenant_id=str(tenant.id),
             title=data.title,
             message=data.message,
             segment_id=data.segment_id,
@@ -312,13 +313,13 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             "message": get_message("CAMPAIGN_WALLET_STARTED", segment=data.segment_id),
         }
     elif data.channel == "whatsapp":
-        check_feature_access(request.tenant, "whatsapp_campaigns")
-        check_plan_limit(request.tenant, "whatsapp_day", write=True)
+        check_feature_access(tenant, "whatsapp_campaigns")
+        check_plan_limit(tenant, "whatsapp_day", write=True)
         from apps.notifications.tasks import send_whatsapp_campaign
 
-        task_fn: Any = send_whatsapp_campaign
-        task_fn.delay(
-            tenant_id=str(request.tenant.id),
+        _task_fn: Any = send_whatsapp_campaign
+        _task_fn.delay(
+            tenant_id=str(tenant.id),
             title=data.title,
             message=data.message,
             segment_id=data.segment_id,
@@ -341,13 +342,13 @@ def create_campaign(request: HttpRequest, data: CampaignCreateIn) -> dict:
             ),
         }
     elif data.channel == "sms":
-        check_feature_access(request.tenant, "sms_campaigns")
-        check_plan_limit(request.tenant, "sms_day", write=True)
+        check_feature_access(tenant, "sms_campaigns")
+        check_plan_limit(tenant, "sms_day", write=True)
         from apps.notifications.sms.tasks import send_sms_campaign
 
-        task_fn: Any = send_sms_campaign
-        task_fn.delay(
-            tenant_id=str(request.tenant.id),
+        _task_fn: Any = send_sms_campaign
+        _task_fn.delay(
+            tenant_id=str(tenant.id),
             title=data.title,
             message=data.message,
             segment_id=data.segment_id,

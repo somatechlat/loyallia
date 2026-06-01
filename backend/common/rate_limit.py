@@ -84,7 +84,7 @@ def _get_cache_ttl(key: str, window_seconds: int) -> int:
     try:
         from django.core.cache import cache
 
-        ttl = cache.ttl(key) if hasattr(cache, "ttl") else window_seconds
+        ttl = getattr(cache, "ttl", lambda _k: window_seconds)(key)
     except Exception:
         ttl = window_seconds
     return ttl
@@ -312,7 +312,7 @@ class RateLimitMiddleware:
             if current_count > max_requests:
                 # Estimate TTL for Retry-After header
                 try:
-                    ttl = cache.ttl(rate_key) if hasattr(cache, "ttl") else window
+                    ttl = getattr(cache, "ttl", lambda _k: window)(rate_key)
                 except Exception:
                     ttl = window
 

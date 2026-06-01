@@ -30,19 +30,21 @@ Called by: Scanner UI (React), Dashboard transaction page, Automation engine.
 """
 
 from decimal import Decimal
+from typing import Any, cast
 
 from django.db.models import Q
-from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
+from apps.authentication.models import User
 from apps.audit.service import log_action
 from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_staff_or_above, jwt_auth
+from common.request import TenantRequest, require_tenant
 
 router = Router()
 
@@ -82,7 +84,7 @@ class ScanTransactIn(BaseModel):
 
 
 @scanner_router.post("/validate/", auth=jwt_auth, summary="Validar código QR del pase")
-def validate_qr(request: HttpRequest, data: ScanValidateIn):
+def validate_qr(request: TenantRequest, data: ScanValidateIn):
     """Validate QR HMAC token and return pass state + customer info.
 
     This is a read-only operation  the pass state is not modified.
@@ -123,7 +125,7 @@ def validate_qr(request: HttpRequest, data: ScanValidateIn):
 
 
 @scanner_router.post("/transact/", auth=jwt_auth, summary="Registrar transacción")
-def transact(request: HttpRequest, data: ScanTransactIn):
+def transact(request: TenantRequest, data: ScanTransactIn):
     """Record a transaction from a QR scan via the Redemption Engine.
 
     This is the HOTTEST endpoint in the system  called on every customer scan
@@ -145,9 +147,9 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     from apps.redemption.command import RedemptionCommand
     from apps.redemption.gateway import RedemptionGateway
 
-    tenant = request.tenant
+    tenant = require_tenant(request)
     staff_id = (
-        str(request.user.id) if hasattr(request, "user") and request.user else None
+        str(cast(User, request.user).id) if hasattr(request, "user") and request.user else None
     )
     location_id = getattr(request, "location_id", None)
 
@@ -169,18 +171,18 @@ def transact(request: HttpRequest, data: ScanTransactIn):
     if not result.success:
         raise HttpError(
             422,
-            {
+            cast(Any, {
                 "success": False,
                 "denial_reasons": result.denial_reasons,
                 "rules_evaluated": result.rules_evaluated,
-            },
+            }),
         )
 
     # Async side effects
     from apps.analytics.tasks import update_tenant_analytics
 
     analytics_task = update_tenant_analytics
-    analytics_task.apply_async(args=[str(tenant.id)], countdown=2)
+    cast(Any, analytics_task).apply_async(args=[str(tenant.id)], countdown=2)
 
     from apps.automation.engine import fire_trigger_async
 
@@ -217,7 +219,7 @@ def transact(request: HttpRequest, data: ScanTransactIn):
                 txn = Transaction.objects.select_related("customer_pass").get(
                     id=result.transaction_id
                 )
-                trigger_pass_update.delay(str(txn.customer_pass.id))
+                cast(Any, trigger_pass_update).delay(str(txn.customer_pass.id))
         except Exception:
             logging.getLogger(__name__).warning(
                 "Could not queue pass update task; transaction completes.",
@@ -252,7 +254,7 @@ def transact(request: HttpRequest, data: ScanTransactIn):
 @scanner_router.get(
     "/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono"
 )
-def search_customer(request: HttpRequest, query: str):
+def search_customer(request: TenantRequest, query: str):
     """Search customer by name/email/phone for remote stamp issuance.
 
     SEC: Scoped to request.tenant  staff cannot see other tenants' customers.
@@ -293,7 +295,7 @@ def search_customer(request: HttpRequest, query: str):
                         "card_type": p.card.card_type,
                         "qr_code": p.qr_code,
                     }
-                    for p in customer.passes.all()
+                    for p in getattr(customer, "passes").all()
                     if p.is_active
                 ],
             }
@@ -304,7 +306,7 @@ def search_customer(request: HttpRequest, query: str):
 
 # Transaction list endpoints (/transactions/)
 @router.get("/", auth=jwt_auth, summary="Listar transacciones")
-def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
+def list_transactions(request: TenantRequest, limit: int = 50, offset: int = 0):
     """List transactions with pagination for the dashboard.
 
     SEC: Filtered by request.tenant  managers can only see their tenant's transactions.
@@ -351,7 +353,7 @@ def list_transactions(request: HttpRequest, limit: int = 50, offset: int = 0):
 
 
 @router.get("/{transaction_id}/", auth=jwt_auth, summary="Detalle de transacción")
-def get_transaction(request: HttpRequest, transaction_id: str):
+def get_transaction(request: TenantRequest, transaction_id: str):
     """Transaction detail view with all related data.
 
     SEC: Tenant-scoped lookup prevents cross-tenant access.
@@ -419,7 +421,7 @@ class RemoteIssueIn(BaseModel):
 @router.post(
     "/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota"
 )
-def remote_issue(request: HttpRequest, data: RemoteIssueIn):
+def remote_issue(request: TenantRequest, data: RemoteIssueIn):
     """Issue stamps/rewards remotely without a QR scan.
 
     Used when staff finds a customer by search and manually applies rewards.
@@ -460,11 +462,11 @@ def remote_issue(request: HttpRequest, data: RemoteIssueIn):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
     staff_id = (
-        str(request.user.id) if hasattr(request, "user") and request.user else None
+        str(cast(User, request.user).id) if hasattr(request, "user") and request.user else None
     )
 
     command = RedemptionCommand(
-        tenant_id=str(request.tenant.id),
+        tenant_id=str(require_tenant(request).id),
         qr_code=pass_obj.qr_code,
         intent="auto",
         amount=Decimal("0"),
@@ -474,16 +476,16 @@ def remote_issue(request: HttpRequest, data: RemoteIssueIn):
     )
 
     gateway = RedemptionGateway()
-    result = gateway.process(command, request.tenant)
+    result = gateway.process(command, require_tenant(request))
 
     if not result.success:
         raise HttpError(
             422,
-            {
+            cast(Any, {
                 "success": False,
                 "denial_reasons": result.denial_reasons,
                 "rules_evaluated": result.rules_evaluated,
-            },
+            }),
         )
 
     log_action(
