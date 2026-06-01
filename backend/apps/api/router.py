@@ -148,8 +148,8 @@ api.add_router(
     "/tenants/privacy/", tenant_security_privacy_router, tags=["Tenant Privacy"]
 )
 api.add_router("/programs/", cards_router, tags=["Loyalty Programs"])
-api.add_router("/customers/", customers_router, tags=["Customers"])
 api.add_router("/customers/export/", customer_export_router, tags=["Customer Export"])
+api.add_router("/customers/", customers_router, tags=["Customers"])
 api.add_router("/customers/segments/", segment_router, tags=["Customer Segments"])
 api.add_router("/scanner/", scanner_router, tags=["Scanner"])
 api.add_router("/scanner/v2/", redemption_router, tags=["Scanner V2"])
