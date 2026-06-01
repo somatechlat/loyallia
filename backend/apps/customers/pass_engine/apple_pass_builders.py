@@ -49,6 +49,11 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
         "{stamps_required}": str(total_stamps),
         "{reward_description}": reward,
         "{stamp_display}": stamps_display,
+        "{affiliate_code}": str(pass_data.get("affiliate_code", "N/A")),
+        "{enrolled_date}": str(pass_data.get("enrolled_date", "")),
+        "{benefits}": ", ".join(metadata.get("benefits", [])) if isinstance(metadata.get("benefits"), list) else str(metadata.get("benefits", "")),
+        "{cashback_balance}": str(pass_data.get("cashback_balance", "0")),
+        "{cashback_percentage}": str(metadata.get("cashback_percentage", 10)),
     }
     for placeholder, replacement in replacements.items():
         value = value.replace(placeholder, replacement)
@@ -131,7 +136,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                     "key": "balance",
                     "label": "CREDITO",
                     "value": f"${balance}",
-                    "currencyCode": "USD",
+                    "currencyCode": metadata.get("currency", "USD"),
                 }
             ],
             "primaryFields": [
@@ -394,8 +399,13 @@ def _build_locations(card) -> list:
     """Build location array from tenant locations for geo-push."""
     locations = []
 
-    # Locations belong to the Tenant, not the Card
-    tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
+    if not hasattr(card.tenant, 'locations'):
+        return locations
+
+    try:
+        tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
+    except Exception:
+        return locations
 
     if not tenant_locations:
         return locations
@@ -416,11 +426,21 @@ def _build_locations(card) -> list:
 
 
 def _hex_to_rgb(hex_color: str) -> str:
-    """Convert hex color (#RRGGBB) to Apple's rgb(R, G, B) format."""
+    """Convert hex color (#RRGGBB or #RGB) to Apple's rgb(R, G, B) format."""
+    if not hex_color:
+        return "rgb(26, 26, 46)"
+    hex_color = hex_color.strip()
+    if hex_color.lower().startswith("rgb("):
+        return hex_color
     hex_color = hex_color.lstrip("#")
+    if len(hex_color) == 3:
+        hex_color = "".join(c * 2 for c in hex_color)
     if len(hex_color) != 6:
         return "rgb(26, 26, 46)"
-    r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+    try:
+        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+    except ValueError:
+        return "rgb(26, 26, 46)"
     return f"rgb({r}, {g}, {b})"
 
 
