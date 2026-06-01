@@ -245,14 +245,6 @@ def list_updated_passes(
 
     Returns: {"serialNumbers": ["uuid1", "uuid2"], "lastUpdated": "<tag>"}
     """
-    # Validate Authorization header is present and well-formed
-    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-    if not auth_header.startswith("ApplePass "):
-        logger.warning(
-            "Apple Web Service: Missing or invalid Authorization header for list_updated_passes"
-        )
-        return HttpResponse(status=401)
-
     from apps.customers.models import ApplePassRegistration
 
     # Verify the device is registered for at least one pass
@@ -261,7 +253,7 @@ def list_updated_passes(
             "Apple Web Service: Device not registered  device=%s",
             device_library_id[-8:],
         )
-        return HttpResponse(status=401)
+        return HttpResponse(status=404)
 
     configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
     if not configured_pass_type:
