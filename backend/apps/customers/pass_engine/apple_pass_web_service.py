@@ -21,10 +21,10 @@ where authenticationToken is the value we set in pass.json.
 """
 
 import logging
-from datetime import UTC
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
+from datetime import UTC
 from ninja import Router
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,9 @@ logger = logging.getLogger(__name__)
 router = Router(tags=["Apple Wallet Web Service"])
 
 
-# AUTH HELPER
+# ---------------------------------------------------------------------------
+# AUTH HELPERS
+# ---------------------------------------------------------------------------
 
 
 def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
@@ -47,9 +49,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
         logger.warning("Apple Web Service: Missing or invalid Authorization header")
         return False
 
-    provided_token = auth_header[len("ApplePass ") :]
-
-    # authenticationToken is the pass serial (UUID) without dashes
+    provided_token = auth_header[len("ApplePass "):].strip()
     expected_token = serial_number.replace("-", "")
     return provided_token == expected_token
 
@@ -57,10 +57,6 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
 def _require_device_registered(device_library_id: str, serial_number: str) -> bool:
     """
     Verify the device is registered for the specific pass.
-
-    Apple sends the device_library_id in the URL and the Authorization header
-    with the pass token. This confirms the device was previously registered
-    via register_device for this pass.
     """
     from apps.customers.models import ApplePassRegistration
 
@@ -90,25 +86,25 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
     try:
-        return CustomerPass.objects.select_related(
-            "card", "card__tenant", "customer"
-        ).get(id=serial_number)
+        return CustomerPass.objects.select_related("card", "card__tenant", "customer").get(
+            id=serial_number
+        )
     except CustomerPass.DoesNotExist:
         logger.warning("Apple Web Service: Pass not found: serial=%s", serial_number)
         return None
     except Exception as exc:
-        logger.error(
-            "Apple Web Service: Error looking up pass %s: %s", serial_number, exc
-        )
+        logger.error("Apple Web Service: Error looking up pass %s: %s", serial_number, exc)
         return None
 
 
+# ---------------------------------------------------------------------------
 # ENDPOINT 1: Register Device
+# ---------------------------------------------------------------------------
 
 
 @router.post(
     "/v1/devices/{device_library_id}/registrations/{pass_type_id}/{serial_number}",
-    response={200: None, 201: None, 401: None},
+    response={200: None, 201: None, 400: None, 401: None, 404: None, 410: None},
     summary="Register a device to receive push notifications for a pass",
 )
 def register_device(
@@ -129,7 +125,14 @@ def register_device(
 
     customer_pass = _get_customer_pass(pass_type_id, serial_number)
     if customer_pass is None:
-        return HttpResponse(status=401)
+        return HttpResponse(status=404)
+
+    if not customer_pass.is_active:
+        logger.warning(
+            "Apple Web Service: Cannot register inactive pass  serial=%s",
+            serial_number,
+        )
+        return HttpResponse(status=410)
 
     import json
 
@@ -167,7 +170,9 @@ def register_device(
         return HttpResponse(status=200)
 
 
+# ---------------------------------------------------------------------------
 # ENDPOINT 2: Unregister Device
+# ---------------------------------------------------------------------------
 
 
 @router.delete(
@@ -219,11 +224,14 @@ def unregister_device(
     return HttpResponse(status=200)
 
 
+# ---------------------------------------------------------------------------
 # ENDPOINT 3: List Updated Passes for Device
+# ---------------------------------------------------------------------------
 
 
 @router.get(
     "/v1/devices/{device_library_id}/registrations/{pass_type_id}",
+    response={200: dict, 204: None, 401: None, 404: None},
     summary="List serial numbers of passes updated since a given tag",
 )
 def list_updated_passes(
@@ -248,9 +256,7 @@ def list_updated_passes(
     from apps.customers.models import ApplePassRegistration
 
     # Verify the device is registered for at least one pass
-    if not ApplePassRegistration.objects.filter(
-        device_library_id=device_library_id
-    ).exists():
+    if not ApplePassRegistration.objects.filter(device_library_id=device_library_id).exists():
         logger.warning(
             "Apple Web Service: Device not registered  device=%s",
             device_library_id[-8:],
@@ -278,6 +284,9 @@ def list_updated_passes(
 
     for reg in registrations:
         cp = reg.customer_pass
+        if not cp.is_active:
+            continue
+
         last_updated = cp.last_updated
 
         # Filter by update timestamp if tag provided
@@ -312,11 +321,14 @@ def list_updated_passes(
     )
 
 
+# ---------------------------------------------------------------------------
 # ENDPOINT 4: Download Updated Pass
+# ---------------------------------------------------------------------------
 
 
 @router.get(
     "/v1/passes/{pass_type_id}/{serial_number}",
+    response={200: bytes, 401: None, 404: None, 410: None, 500: None},
     summary="Download the latest version of a pass",
 )
 def get_updated_pass(
@@ -331,21 +343,16 @@ def get_updated_pass(
     if not _validate_apple_auth(request, serial_number):
         return HttpResponse(status=401)
 
-    # Verify at least one device is registered for this pass
-    from apps.customers.models import ApplePassRegistration
-
-    if not ApplePassRegistration.objects.filter(
-        customer_pass_id=serial_number
-    ).exists():
-        logger.warning(
-            "Apple Web Service: Pass has no registered devices  serial=%s",
-            serial_number,
-        )
-        return HttpResponse(status=401)
-
     customer_pass = _get_customer_pass(pass_type_id, serial_number)
     if customer_pass is None:
         return HttpResponse(status=404)
+
+    if not customer_pass.is_active:
+        logger.info(
+            "Apple Web Service: Pass is inactive (410 Gone)  serial=%s",
+            serial_number,
+        )
+        return HttpResponse(status=410)
 
     from apps.customers.pass_engine.apple_pass import generate_pkpass
 
@@ -362,9 +369,7 @@ def get_updated_pass(
         content_type="application/vnd.apple.pkpass",
         status=200,
     )
-    response["Content-Disposition"] = (
-        f'attachment; filename="pass-{serial_number}.pkpass"'
-    )
+    response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
 
     # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:
