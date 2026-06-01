@@ -181,7 +181,7 @@ def get_campaign_recipients(
 
     recipients = [
         RecipientStatusOut(
-            customer_id=str(log.customer_id) if log.customer_id else None,
+            customer_id=str(getattr(log, "customer_id", None)) if getattr(log, "customer_id", None) else None,
             name=log.recipient_name,
             phone=log.recipient_phone,
             email=log.recipient_email,
@@ -237,7 +237,7 @@ def export_campaign_results(request, campaign_run_id: str):
                 log.recipient_name,
                 log.recipient_phone,
                 log.recipient_email,
-                log.get_status_display(),
+                getattr(log, "get_status_display", lambda: log.status)(),
                 log.error_code,
                 log.sent_at.isoformat() if log.sent_at else "",
                 log.delivered_at.isoformat() if log.delivered_at else "",
