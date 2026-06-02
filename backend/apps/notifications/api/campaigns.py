@@ -15,6 +15,7 @@ from common.permissions import is_owner, jwt_auth
 from common.plan_enforcement import (
     check_feature_access,
     check_plan_limit,
+    require_active_subscription,
 )
 from common.request import TenantRequest, require_tenant
 
@@ -175,6 +176,7 @@ def list_campaigns(request: TenantRequest) -> dict:
 
 
 @router.post("/campaigns/", auth=jwt_auth, response=dict, summary="Crear campaña")
+@require_active_subscription
 def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
     """Send an email, wallet, or WhatsApp notification campaign to customers in a segment.
 

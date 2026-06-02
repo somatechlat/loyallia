@@ -5,7 +5,7 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['recharts'],
     serverActions: {
-    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'localhost:33906,127.0.0.1:33906,0.0.0.0:33906,rewards.loyallia.com').split(','),
+    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'localhost,localhost:33906,127.0.0.1:33906,0.0.0.0:33906').split(','),
     },
   },
   images: {

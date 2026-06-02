@@ -36,6 +36,7 @@ Called by: Customer CRUD, Program CRUD, Notification endpoints, Location endpoin
 
 import functools
 import logging
+import types
 from collections.abc import Callable
 
 from django.http import HttpRequest
@@ -347,6 +348,34 @@ def check_feature_access(tenant, feature: str) -> None:
 # DECORATORS
 
 
+def _ninja_safe_wrap(func, wrapper):
+    """Wrap a function preserving Ninja-compatible signature inspection.
+
+    Django Ninja's get_typed_signature() uses inspect.signature() which follows
+    __wrapped__, BUT it evaluates forward-ref annotations using the wrapper's
+    __globals__. With `from __future__ import annotations`, all annotations are
+    strings, so they fail to resolve in the wrapper's module namespace.
+
+    Fix: keep the wrapper's own globals (so its code can access require_tenant,
+    HttpError, etc.) but inject names from the original function's globals that
+    may be needed for forward-reference resolution.
+    """
+    new_wrapper = types.FunctionType(
+        wrapper.__code__,
+        wrapper.__globals__,  # Keep wrapper's globals for code execution
+        wrapper.__name__,
+        wrapper.__defaults__,
+        wrapper.__closure__,
+    )
+    functools.update_wrapper(new_wrapper, func)
+    # Inject original function's globals into wrapper's globals so Ninja can
+    # resolve forward references (TenantRequest, custom types, etc.)
+    for name, value in func.__globals__.items():
+        if name not in new_wrapper.__globals__:
+            new_wrapper.__globals__[name] = value
+    return new_wrapper
+
+
 def require_active_subscription(func):
     """Decorator: block request if tenant has no active subscription.
 
@@ -354,7 +383,6 @@ def require_active_subscription(func):
     or non-existent. PERF: Single query to check subscription status.
     """
 
-    @functools.wraps(func)
     def wrapper(request: HttpRequest, *args, **kwargs):
         from apps.billing.models import Subscription
 
@@ -364,7 +392,7 @@ def require_active_subscription(func):
             raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
         return func(request, *args, **kwargs)
 
-    return wrapper
+    return _ninja_safe_wrap(func, wrapper)
 
 
 def enforce_limit(resource: str):
@@ -375,12 +403,11 @@ def enforce_limit(resource: str):
     """
 
     def decorator(func):
-        @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs):
             check_plan_limit(require_tenant(request), resource, write=True)
             return func(request, *args, **kwargs)
 
-        return wrapper
+        return _ninja_safe_wrap(func, wrapper)
 
     return decorator
 
@@ -393,11 +420,10 @@ def require_feature(feature: str):
     """
 
     def decorator(func):
-        @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs):
             check_feature_access(require_tenant(request), feature)
             return func(request, *args, **kwargs)
 
-        return wrapper
+        return _ninja_safe_wrap(func, wrapper)
 
     return decorator

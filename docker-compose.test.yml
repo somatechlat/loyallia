@@ -1,0 +1,49 @@
+# =============================================================================
+# LOYALLIA — Test Runner Service
+# =============================================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm test
+#
+# Creates a one-off container that runs pytest against the test database,
+# then exits. The running API container is never disrupted.
+#
+# Why this is enterprise-grade:
+#   - Fresh container per run (no stale state)
+#   - No persistent DB connections (test DB can be created/dropped freely)
+#   - Same image, same network, same env vars as production API
+#   - CI/CD ready (GitHub Actions, GitLab CI, Jenkins)
+# =============================================================================
+
+services:
+  test:
+    extends:
+      file: docker-compose.yml
+      service: api
+    container_name: loyallia-test-runner
+    # Override: do NOT start the dev server. Run pytest instead.
+    # -p no:cacheprovider disables disk cache (avoids read-only FS warnings)
+    entrypoint: ["pytest"]
+    command: ["--reuse-db", "-p", "no:cacheprovider", "-q"]
+    environment:
+      DJANGO_SETTINGS_MODULE: loyallia.settings.test
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    # Test code is mounted read-only to prevent accidental mutation
+    volumes:
+      - ./backend:/app:ro
+      - vault_runtime:/run/loyallia-vault:ro
+      - ./certs:/app/certs:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2.00"
+        reservations:
+          memory: 256M
+    # Ensure infrastructure is ready before tests start
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully

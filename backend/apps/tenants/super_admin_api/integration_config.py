@@ -291,9 +291,11 @@ def _get_backup_diagnostics() -> dict:
 
 def additional_integrations() -> list[PlatformIntegrationOut]:
     """Return non-secret status for integrations beyond wallet/payment/email."""
-    whatsapp_url = get_secret(
+    from common.platform_config import get_platform_config
+
+    whatsapp_url = get_platform_config(
         "whatsapp_bridge_url",
-        default=getattr(settings, "WHATSAPP_BRIDGE_URL", ""),
+        getattr(settings, "WHATSAPP_BRIDGE_URL", ""),
     )
     ai_agent_base_url = get_secret(
         "ai_agent_base_url",

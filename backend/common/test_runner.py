@@ -9,7 +9,7 @@ connection while keeping normal test queries routed through PgBouncer.
 
 import logging
 
-import psycopg2
+import psycopg
 from django.test.runner import DiscoverRunner
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class PgBouncerTestRunner(DiscoverRunner):
         direct = settings.DATABASES.get("direct", settings.DATABASES["default"])
         conn = None
         try:
-            conn = psycopg2.connect(
+            conn = psycopg.connect(
                 host=direct["HOST"],
                 port=direct["PORT"],
                 user=direct["USER"],

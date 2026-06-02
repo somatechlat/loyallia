@@ -323,9 +323,13 @@ def update_loyalty_class(card, base_url: str = "") -> dict:
     if not access_token:
         return {"success": False, "error": "Auth failed"}
 
-    # Fallback to settings.PUBLIC_BASE_URL if no base_url provided
+    from common.platform_config import get_platform_config
+
+    # Fallback to PlatformSetting > settings.PUBLIC_BASE_URL if no base_url provided
     if not base_url:
-        base_url = getattr(settings, "PUBLIC_BASE_URL", "")
+        base_url = get_platform_config(
+            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+        )
 
     gw_type = _resolve_gw_type(card.card_type)
     tenant = card.tenant
@@ -398,9 +402,13 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
     if not access_token:
         return {"success": False, "error": "Auth failed"}
 
-    # Fallback to settings.PUBLIC_BASE_URL if no base_url provided
+    from common.platform_config import get_platform_config
+
+    # Fallback to PlatformSetting > settings.PUBLIC_BASE_URL if no base_url provided
     if not base_url:
-        base_url = getattr(settings, "PUBLIC_BASE_URL", "")
+        base_url = get_platform_config(
+            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+        )
 
     card = customer_pass.card
     customer = customer_pass.customer

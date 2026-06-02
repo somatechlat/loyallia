@@ -39,6 +39,7 @@ from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, jwt_auth
+from common.plan_enforcement import require_feature
 
 router = Router()
 
@@ -78,6 +79,7 @@ class ProgramAnalyticsSchema(BaseModel):
 
 # Dashboard Overview
 @router.get("/overview/", auth=jwt_auth, summary="Get business overview analytics")
+@require_feature("advanced_analytics")
 def get_overview_analytics(request, days: int = 30):
     """Dashboard overview with key business metrics for the selected period.
 
@@ -146,6 +148,7 @@ def get_overview_analytics(request, days: int = 30):
 
 # Customer Analytics
 @router.get("/customers/", auth=jwt_auth, summary="Get customer analytics")
+@require_feature("advanced_analytics")
 def get_customer_analytics(
     request, segment: str | None = None, limit: int = 50, offset: int = 0
 ):
@@ -200,6 +203,7 @@ def get_customer_analytics(
     auth=jwt_auth,
     summary="Get individual customer analytics",
 )
+@require_feature("advanced_analytics")
 def get_customer_detail_analytics(request, customer_id: str):
     """Detailed analytics for a single customer with recent transactions and enrollments.
 
@@ -270,6 +274,7 @@ def get_customer_detail_analytics(request, customer_id: str):
 
 # Program Analytics
 @router.get("/programs/", auth=jwt_auth, summary="Get program analytics")
+@require_feature("advanced_analytics")
 def get_program_analytics(request, limit: int = 50, offset: int = 0):
     """Paginated program analytics from pre-computed ProgramAnalytics table.
 
@@ -316,6 +321,7 @@ def get_program_analytics(request, limit: int = 50, offset: int = 0):
 @router.get(
     "/programs/{program_id}/", auth=jwt_auth, summary="Get program detail analytics"
 )
+@require_feature("advanced_analytics")
 def get_program_detail_analytics(request, program_id: str):
     """Detailed analytics for a single program with top customers.
 
@@ -376,6 +382,7 @@ def get_program_detail_analytics(request, program_id: str):
 
 # Time Series Analytics
 @router.get("/trends/", auth=jwt_auth, summary="Get time series analytics")
+@require_feature("advanced_analytics")
 def get_trends_analytics(request, days: int = 30):
     """Daily time-series analytics for chart visualization.
 
@@ -419,6 +426,7 @@ def get_trends_analytics(request, days: int = 30):
 
 # Segmentation Analytics
 @router.get("/segments/", auth=jwt_auth, summary="Get customer segmentation analytics")
+@require_feature("advanced_analytics")
 def get_segmentation_analytics(request):
     """Customer segmentation breakdown by RFM segment.
 

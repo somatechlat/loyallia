@@ -179,7 +179,6 @@ PASSWORD_HASHERS = [
 LANGUAGE_CODE = "es"
 TIME_ZONE = "UTC"  # All timestamps stored in UTC; converted per-tenant in display
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 # Supported languages (ES=default for Ecuador, EN, FR, DE)
@@ -356,7 +355,8 @@ PAYMENT_GATEWAY_WEBHOOK_SECRET = get_secret(
 
 # EMAIL
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# PlatformSetting-aware backend: reads host/port/tls from DB at send time
+EMAIL_BACKEND = "common.email_backend.PlatformSettingEmailBackend"
 EMAIL_HOST = config("EMAIL_HOST", default="in-v3.mailjet.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
@@ -366,7 +366,7 @@ EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", default="")
 # Runtime code MUST use common.email_config.get_default_from_email() to read
 # the live PlatformSetting value. This module-level constant is only a safe
 # fallback for code paths that do not (yet) use the helper.
-DEFAULT_FROM_EMAIL = "noreply@loyallia.com"
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@loyallia.com")
 
 # WHATSAPP BRIDGE
 

@@ -319,11 +319,11 @@ create_policy_and_token() {
     # Write the policy inline (pure POSIX sh, no file-copy dependencies)
     cat > /vault/runtime/loyallia-app.hcl << 'POLICYEOF'
 path "secret/data/loyallia/*" {
-  capabilities = ["read"]
+  capabilities = ["read", "create", "update"]
 }
 
 path "secret/data/loyallia" {
-  capabilities = ["read"]
+  capabilities = ["read", "create", "update"]
 }
 
 path "secret/metadata/loyallia/*" {
@@ -641,7 +641,7 @@ log_info "============================================================"
 log_info "VAULT INITIALIZATION COMPLETE"
 log_info "============================================================"
 log_info "Secrets stored: $SECRETS_WRITTEN at secret/$VAULT_APP_SECRET_PATH"
-log_info "App policy: loyallia-app (read-only)"
+log_info "App policy: loyallia-app (read + create + update)"
 log_info "App token: /vault/runtime/app-token"
 log_info "Runtime files: /vault/runtime/"
 log_info "============================================================"

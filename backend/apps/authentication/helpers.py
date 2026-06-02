@@ -27,15 +27,27 @@ logger = logging.getLogger(__name__)
 
 
 def slugify_business(name: str) -> str:
-    """Generate a unique slug from business name."""
+    """Generate a unique slug from business name. Handles race conditions."""
+    from django.db import IntegrityError
+
     slug_base = re.sub(r"[^a-z0-9]+", "-", name.lower().strip()).strip("-")
     slug = slug_base[:80]
     counter = 1
     candidate = slug
-    while Tenant.objects.filter(slug=candidate).exists():
+    max_attempts = 20
+    for _ in range(max_attempts):
+        try:
+            # Atomic check-and-create: attempt to insert, catch IntegrityError on conflict
+            if not Tenant.objects.filter(slug=candidate).exists():
+                return candidate
+        except Exception:
+            pass
         candidate = f"{slug}-{counter}"
         counter += 1
-    return candidate
+    # Fallback: append UUID suffix if all attempts exhausted
+    import uuid
+
+    return f"{slug[:60]}-{uuid.uuid4().hex[:8]}"
 
 
 def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:

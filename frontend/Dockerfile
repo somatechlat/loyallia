@@ -11,7 +11,7 @@
 # =============================================================================
 
 # --- Stage 1: Dependencies ---
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 
 # LYL-L-INFRA-035: Copy only dependency files first for better layer caching
@@ -31,7 +31,7 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
 # --- Stage 2: Builder ---
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # LYL-L-INFRA-035: Copy node_modules from deps stage (cached)
@@ -44,15 +44,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Build-time environment (baked into the JS bundle)
-ARG NEXT_PUBLIC_API_URL=https://rewards.loyallia.com
-ARG NEXT_PUBLIC_APP_URL=https://rewards.loyallia.com
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
 RUN npm run build
 
 # --- Stage 3: Production Runner ---
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

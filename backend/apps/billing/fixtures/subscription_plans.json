@@ -103,7 +103,11 @@
         "advanced_analytics",
         "priority_support",
         "custom_branding",
-        "data_export"
+        "data_export",
+        "whatsapp_campaigns",
+        "email_campaigns",
+        "wallet_campaigns",
+        "sms_campaigns"
       ],
       "status": "published",
       "is_active": true,
