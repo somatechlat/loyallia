@@ -171,7 +171,7 @@ backup_minio() {
         return 1
     fi
 
-    docker run --rm --network "${PROJECT_NAME}_backend-net" \
+    docker run --rm --network "loyallia_backend-net" \
         -e MINIO_ROOT_USER="$minio_user" \
         -e MINIO_ROOT_PASSWORD="$minio_pass" \
         -v "$backup_dir:/backup" \
