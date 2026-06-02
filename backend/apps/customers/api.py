@@ -118,11 +118,13 @@ def search_customers(
 
     if wallet_platform and wallet_platform != "both":
         if wallet_platform == "none":
-            queryset = queryset.filter(
-                passes__is_active=True,
-                passes__apple_pass_id="",
-                passes__google_pass_id="",
-            ).distinct()
+            wallet_customer_ids = CustomerPass.objects.filter(
+                is_active=True,
+            ).exclude(
+                apple_pass_id="",
+                google_pass_id="",
+            ).values_list("customer_id", flat=True).distinct()
+            queryset = queryset.exclude(id__in=wallet_customer_ids)
         elif wallet_platform == "apple":
             queryset = queryset.filter(
                 passes__is_active=True,

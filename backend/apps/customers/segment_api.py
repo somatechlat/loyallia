@@ -156,11 +156,13 @@ def apply_campaign_filters(
 
     if target_wallet_platform != "both":
         if target_wallet_platform == "none":
-            audience = audience.filter(
-                passes__is_active=True,
-                passes__apple_pass_id="",
-                passes__google_pass_id="",
-            ).distinct()
+            wallet_customer_ids = CustomerPass.objects.filter(
+                is_active=True,
+            ).exclude(
+                apple_pass_id="",
+                google_pass_id="",
+            ).values_list("customer_id", flat=True).distinct()
+            audience = audience.exclude(id__in=wallet_customer_ids)
         elif target_wallet_platform == "apple":
             audience = audience.filter(
                 passes__is_active=True,
