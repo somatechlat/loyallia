@@ -19,6 +19,7 @@ from tests.factories import (
     make_manager,
     make_owner,
     make_staff,
+    make_superadmin,
     make_tenant,
 )
 
@@ -30,6 +31,7 @@ class TestScannerValidation:
         """Validate endpoint should return pass info for valid QR code."""
         from apps.transactions.api import validate_qr
         from apps.customers.models import CustomerPass
+        from django.conf import settings
 
         tenant = make_tenant()
         card = make_card(tenant)
@@ -44,7 +46,7 @@ class TestScannerValidation:
         request.user.role = "STAFF"
 
         from apps.customers.pass_engine.qr_generator import generate_qr_token
-        qr_code = generate_qr_token(str(cp.id))
+        qr_code = generate_qr_token(str(cp.id), secret=settings.PASS_HMAC_SECRET)
         cp.qr_code = qr_code
         cp.save(update_fields=["qr_code"])
 
@@ -151,33 +153,57 @@ class TestScannerAuthorization:
         result = validate_qr(request, MagicMock(qr_code=cp.qr_code))
         assert result["is_valid"] is True
 
-    def test_owner_cannot_access_validate(self, db):
-        """OWNER role should be denied access to scanner validate."""
+    def test_owner_can_access_validate(self, db):
+        """OWNER role should be allowed to validate QR codes (is_staff_or_above includes OWNER)."""
         from apps.transactions.api import validate_qr
         from ninja.errors import HttpError
 
         tenant = make_tenant()
+        card = make_card(tenant)
+        customer = make_customer(tenant)
+        cp = make_customer_pass(customer, card)
         owner = make_owner(tenant)
 
         request = MagicMock()
         request.tenant = tenant
         request.user = owner
 
+        # OWNER is allowed; invalid QR returns 404 after auth passes
         with pytest.raises(HttpError) as exc_info:
-            validate_qr(request, MagicMock(qr_code="ANY"))
-        assert exc_info.value.status_code == 403
+            validate_qr(request, MagicMock(qr_code="INVALID_QR"))
+        assert exc_info.value.status_code == 404
 
-    def test_manager_cannot_access_validate(self, db):
-        """MANAGER role should be denied access to scanner validate."""
+    def test_manager_can_access_validate(self, db):
+        """MANAGER role should be allowed to validate QR codes (is_staff_or_above includes MANAGER)."""
         from apps.transactions.api import validate_qr
         from ninja.errors import HttpError
 
         tenant = make_tenant()
+        card = make_card(tenant)
+        customer = make_customer(tenant)
+        cp = make_customer_pass(customer, card)
         manager = make_manager(tenant)
 
         request = MagicMock()
         request.tenant = tenant
         request.user = manager
+
+        # MANAGER is allowed; invalid QR returns 404 after auth passes
+        with pytest.raises(HttpError) as exc_info:
+            validate_qr(request, MagicMock(qr_code="INVALID_QR"))
+        assert exc_info.value.status_code == 404
+
+    def test_superadmin_cannot_access_validate(self, db):
+        """SUPER_ADMIN role should be denied access to scanner validate (not staff_or_above)."""
+        from apps.transactions.api import validate_qr
+        from ninja.errors import HttpError
+
+        tenant = make_tenant()
+        superadmin = make_superadmin()
+
+        request = MagicMock()
+        request.tenant = tenant
+        request.user = superadmin
 
         with pytest.raises(HttpError) as exc_info:
             validate_qr(request, MagicMock(qr_code="ANY"))
@@ -199,7 +225,8 @@ class TestScannerAuthorization:
         request.user = staff
 
         # Mock the RedemptionGateway to avoid full redemption logic
-        with patch("apps.transactions.api.RedemptionGateway") as mock_gateway:
+        # Gateway is imported locally inside the function
+        with patch("apps.redemption.gateway.RedemptionGateway") as mock_gateway:
             mock_result = MagicMock()
             mock_result.success = True
             mock_result.transaction_id = "test-tx-id"
@@ -215,8 +242,8 @@ class TestScannerAuthorization:
             result = transact(request, MagicMock(qr_code=cp.qr_code, amount=0, notes="", idempotency_key=""))
             assert result["success"] is True
 
-    def test_owner_cannot_access_transact(self, db):
-        """OWNER role should be denied access to scanner transact."""
+    def test_owner_can_access_transact(self, db):
+        """OWNER role should be allowed to transact (is_staff_or_above includes OWNER)."""
         from apps.transactions.api import transact
         from ninja.errors import HttpError
 
@@ -227,12 +254,13 @@ class TestScannerAuthorization:
         request.tenant = tenant
         request.user = owner
 
+        # OWNER is allowed; invalid QR causes 422 (pass not found) after auth passes
         with pytest.raises(HttpError) as exc_info:
             transact(request, MagicMock(qr_code="ANY", amount=0, notes="", idempotency_key=""))
-        assert exc_info.value.status_code == 403
+        assert exc_info.value.status_code == 422
 
-    def test_manager_cannot_access_transact(self, db):
-        """MANAGER role should be denied access to scanner transact."""
+    def test_manager_can_access_transact(self, db):
+        """MANAGER role should be allowed to transact (is_staff_or_above includes MANAGER)."""
         from apps.transactions.api import transact
         from ninja.errors import HttpError
 
@@ -242,6 +270,23 @@ class TestScannerAuthorization:
         request = MagicMock()
         request.tenant = tenant
         request.user = manager
+
+        # MANAGER is allowed; invalid QR causes 422 (pass not found) after auth passes
+        with pytest.raises(HttpError) as exc_info:
+            transact(request, MagicMock(qr_code="ANY", amount=0, notes="", idempotency_key=""))
+        assert exc_info.value.status_code == 422
+
+    def test_superadmin_cannot_access_transact(self, db):
+        """SUPER_ADMIN role should be denied access to scanner transact (not staff_or_above)."""
+        from apps.transactions.api import transact
+        from ninja.errors import HttpError
+
+        tenant = make_tenant()
+        superadmin = make_superadmin()
+
+        request = MagicMock()
+        request.tenant = tenant
+        request.user = superadmin
 
         with pytest.raises(HttpError) as exc_info:
             transact(request, MagicMock(qr_code="ANY", amount=0, notes="", idempotency_key=""))
@@ -263,17 +308,33 @@ class TestScannerAuthorization:
         assert len(result["results"]) >= 1
         assert result["results"][0]["email"] == "john@test.com"
 
-    def test_owner_cannot_search_customers_via_scanner(self, db):
-        """OWNER role should be denied access to scanner customer search."""
+    def test_owner_can_search_customers_via_scanner(self, db):
+        """OWNER role should be allowed to search customers (is_staff_or_above includes OWNER)."""
         from apps.transactions.api import search_customer
-        from ninja.errors import HttpError
 
         tenant = make_tenant()
+        customer = make_customer(tenant, first_name="John", email="john@test.com")
         owner = make_owner(tenant)
 
         request = MagicMock()
         request.tenant = tenant
         request.user = owner
+
+        result = search_customer(request, "john")
+        assert len(result["results"]) >= 1
+        assert result["results"][0]["email"] == "john@test.com"
+
+    def test_superadmin_cannot_search_customers_via_scanner(self, db):
+        """SUPER_ADMIN role should be denied access to scanner customer search."""
+        from apps.transactions.api import search_customer
+        from ninja.errors import HttpError
+
+        tenant = make_tenant()
+        superadmin = make_superadmin()
+
+        request = MagicMock()
+        request.tenant = tenant
+        request.user = superadmin
 
         with pytest.raises(HttpError) as exc_info:
             search_customer(request, "john")

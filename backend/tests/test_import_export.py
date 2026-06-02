@@ -136,21 +136,26 @@ class TestCustomerImportService:
         result = service.process_import(file_obj, "genders.csv")
 
         assert result["imported"] == 3
-        customers = Customer.objects.filter(tenant=tenant).order_by("email")
-        assert customers[0].gender == "M"
-        assert customers[1].gender == "F"
-        assert customers[2].gender == "O"
+        # Verify each customer by email since ordering is alphabetical
+        john = Customer.objects.get(tenant=tenant, email="john@test.com")
+        jane = Customer.objects.get(tenant=tenant, email="jane@test.com")
+        alex = Customer.objects.get(tenant=tenant, email="alex@test.com")
+        assert john.gender == "M"
+        assert jane.gender == "F"
+        assert alex.gender == "O"
 
     def test_import_rejects_oversized_file(self, db):
-        """Import should reject files larger than MAX_FILE_SIZE."""
+        """Import service should process files up to reasonable size."""
         tenant = make_tenant()
+        plan = make_plan()
+        make_subscription(tenant, plan=plan)
         big_content = "nombre,email\n" + "\n".join([f"User{i},user{i}@test.com" for i in range(100)])
         file_obj = io.BytesIO(big_content.encode("utf-8"))
-        # The file is small; we test the API layer rejection, not the service
-        # Service does not check file size (API layer does)
         service = CustomerImportService(tenant)
         result = service.process_import(file_obj, "big.csv")
-        assert result["success"] is True  # Service allows it
+        # Service processes the file; size checks happen at API layer
+        assert result["success"] is True
+        assert result["imported"] == 100
 
     def test_import_preserves_total_spent_and_visits(self, db):
         """Import should parse total_spent and total_visits columns."""
