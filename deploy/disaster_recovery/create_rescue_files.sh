@@ -199,6 +199,7 @@ export_postgresql() {
         exit 1
     }
 
+    chmod 0600 "$dump_file"
     local size
     size="$(wc -c < "$dump_file" | tr -d ' ')"
     log "Saved: pg_dump_rescue_${DATESTAMP}.dump ($size bytes)"
@@ -348,6 +349,7 @@ export_redis() {
         return
     }
 
+    chmod 0600 "$rdb_file"
     local size
     size="$(wc -c < "$rdb_file" | tr -d ' ')"
     log "Saved: redis_rescue_${DATESTAMP}.rdb ($size bytes)"

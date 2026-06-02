@@ -289,7 +289,7 @@ start_vault_and_import() {
     local timeout=60
     local elapsed=0
     while [ "$elapsed" -lt "$timeout" ]; do
-        if docker exec "$VAULT_CONTAINER" wget --spider --quiet http://127.0.0.1:8200/v1/sys/health?standbyok=true 2>/dev/null; then
+        if docker exec "$VAULT_CONTAINER" wget --no-check-certificate --spider --quiet https://127.0.0.1:8200/v1/sys/health?standbyok=true 2>/dev/null; then
             log "Vault API ready."
             break
         fi
@@ -304,7 +304,7 @@ start_vault_and_import() {
     fi
 
     local status_code
-    status_code="$(docker exec "$VAULT_CONTAINER" wget --server-response --spider --quiet "http://127.0.0.1:8200/v1/sys/seal-status" 2>&1 | head -1 | awk '{print $2}' || echo "000")"
+    status_code="$(docker exec "$VAULT_CONTAINER" wget --no-check-certificate --server-response --spider --quiet "https://127.0.0.1:8200/v1/sys/seal-status" 2>&1 | head -1 | awk '{print $2}' || echo "000")"
 
     if [ "$status_code" != "200" ]; then
         log "Vault is sealed. Unsealing with rescued key..."
@@ -336,21 +336,19 @@ print(data['root_token'])
     log "Importing all rescued secrets into Vault..."
     docker cp "$RESCUE_DIR/vault_secrets_rescue.json" "$VAULT_CONTAINER:/tmp/vault_secrets_import.json" >/dev/null
 
-    docker exec -e VAULT_TOKEN="$root_token" "$VAULT_CONTAINER" sh -c '
-        python3 -c "
+    # Process JSON on host (vault container has no Python) — extract KV v2 inner data
+    python3 -c "
 import json
-
-with open(\"/tmp/vault_secrets_import.json\") as f:
+with open('$RESCUE_DIR/vault_secrets_rescue.json') as f:
     data = json.load(f)
-
-secrets = data.get(\"secrets\", data)
-if \"_meta\" in secrets:
-    secrets.pop(\"_meta\", None)
-
-output = {\"data\": secrets}
-print(json.dumps(output))
-" > /tmp/vault_import_clean.json
-    ' >/dev/null
+# KV v2 format: top-level 'data' -> inner 'data' -> actual secrets
+secrets = data.get('data', {}).get('data', data)
+if '_meta' in secrets:
+    secrets.pop('_meta', None)
+with open('/tmp/vault_import_clean.json', 'w') as f:
+    json.dump({'data': secrets}, f)
+" >/dev/null
+    docker cp /tmp/vault_import_clean.json "$VAULT_CONTAINER:/tmp/vault_import_clean.json" >/dev/null
 
     docker exec -e VAULT_TOKEN="$root_token" -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true "$VAULT_CONTAINER" \
         vault kv put -mount="$VAULT_KV_MOUNT" "$VAULT_KV_PATH" @/tmp/vault_import_clean.json >/dev/null
@@ -358,6 +356,7 @@ print(json.dumps(output))
     log "All secrets imported into Vault at $VAULT_KV_MOUNT/$VAULT_KV_PATH."
 
     docker exec "$VAULT_CONTAINER" rm -f /tmp/vault_secrets_import.json /tmp/vault_import_clean.json 2>/dev/null || true
+    rm -f /tmp/vault_import_clean.json 2>/dev/null || true
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
