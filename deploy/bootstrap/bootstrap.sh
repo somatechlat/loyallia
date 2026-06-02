@@ -3,10 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+BOOTSTRAP_MODE="${LOYALLIA_BOOTSTRAP_MODE:-development}"
 SECRETS_FILE="${BOOTSTRAP_SECRETS_FILE:-$PROJECT_ROOT/.bootstrap_secrets.${BOOTSTRAP_MODE}.env}"
 RESCUE_DIR="$PROJECT_ROOT/.agents"
 BOOTSTRAP_VOL="loyallia_bootstrap_tmp"
-BOOTSTRAP_MODE="${LOYALLIA_BOOTSTRAP_MODE:-development}"
 VAULT_KV_PATH="loyallia/$BOOTSTRAP_MODE"
 
 # Production mode: automatically include docker-compose.prod.yml
