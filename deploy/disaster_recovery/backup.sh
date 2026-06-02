@@ -7,6 +7,8 @@ BACKUP_BASE="${BACKUP_DIR:-/var/backups/loyallia}"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 AGE_PUBLIC_KEY="${AGE_PUBLIC_KEY:-}"
 AGE_KEY_FILE="${AGE_KEY_FILE:-$PROJECT_ROOT/.age_keys/loyallia_age_public_key.txt}"
+VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-loyallia/production}"
+POSTGRES_DB="${POSTGRES_DB:-loyallia}"
 COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
 COMPOSE_PROD_FILE="$PROJECT_ROOT/docker-compose.prod.yml"
 
@@ -60,7 +62,7 @@ backup_postgres() {
     fi
 
     docker compose exec -T postgres \
-        pg_dump -U loyallia -d loyallia \
+        pg_dump -U loyallia -d "$POSTGRES_DB" \
         --format=custom --compress=9 \
         > "$backup_file" 2>/dev/null
 
@@ -178,8 +180,9 @@ backup_minio() {
         -e MINIO_ROOT_USER="$minio_user" \
         -e MINIO_ROOT_PASSWORD="$minio_pass" \
         -v "$backup_dir:/backup" \
+        --entrypoint sh \
         minio/mc:RELEASE.2025-07-21T05-28-08Z \
-        sh -c "
+        -c "
             mc alias set local http://minio:9000 \$MINIO_ROOT_USER \$MINIO_ROOT_PASSWORD >/dev/null 2>&1
             mc mirror --overwrite local/passes /backup/passes >/dev/null 2>&1 || true
             mc mirror --overwrite local/assets /backup/assets >/dev/null 2>&1 || true
@@ -215,22 +218,31 @@ backup_minio() {
 backup_vault() {
     log "Backing up Vault..."
 
-    if ! docker compose exec -T vault vault status &>/dev/null; then
+    if ! docker compose exec -T -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true vault vault status &>/dev/null; then
         warn "Vault not available. Skipping backup."
         return 1
     fi
 
     local vault_token
-    vault_token="$(docker compose exec -T vault sh -c 'cat /run/loyallia-vault/app-token 2>/dev/null || cat /vault/file/init.json 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin)[\"root_token\"])" 2>/dev/null' 2>/dev/null || true)"
+    vault_token="$(docker compose exec -T vault sh -c 'cat /run/loyallia-vault/app-token 2>/dev/null' 2>/dev/null || true)"
+    if [ -z "$vault_token" ]; then
+        vault_token="$(docker compose exec -T vault sh -c 'grep "root_token" /vault/file/init.json 2>/dev/null | sed '\''s/.*"root_token": *"\([^"]*\)".*/\1/'\''' 2>/dev/null || true)"
+    fi
 
     if [ -z "$vault_token" ]; then
         warn "Vault token not found. Skipping Vault backup."
         return 1
     fi
 
+    local vault_env_path
+    vault_env_path="${VAULT_SECRET_PATH:-loyallia/production}"
+    # Strip 'secret/data/' prefix if present for vault CLI
+    vault_env_path="${vault_env_path#secret/data/}"
+    vault_env_path="${vault_env_path#secret/}"
+
     local secrets_backup="$BACKUP_BASE/vault/loyallia_vault_secrets_${TIMESTAMP}.json"
-    docker compose exec -T -e VAULT_TOKEN="$vault_token" vault \
-        vault kv get -mount=secret -format=json "loyallia/production" \
+    docker compose exec -T -e VAULT_TOKEN="$vault_token" -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true vault \
+        vault kv get -mount=secret -format=json "$vault_env_path" \
         > "$secrets_backup" 2>/dev/null || true
 
     if [ ! -s "$secrets_backup" ]; then
