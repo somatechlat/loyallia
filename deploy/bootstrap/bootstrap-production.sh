@@ -145,6 +145,11 @@ start_vault() {
         chmod 0600 "$PROJECT_ROOT/.bootstrap_secrets.env"
     fi
 
+    log "Building Docker images (no cache to ensure latest code)..."
+    docker compose build --no-cache api web celery-pass celery-push celery-default celery-beat flower whatsapp-bridge 2>/dev/null || {
+        warn "Some image builds failed — continuing with cached images"
+    }
+
     log "Starting Vault..."
     docker compose up -d vault
 
