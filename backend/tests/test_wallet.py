@@ -260,7 +260,7 @@ class TestGoogleWalletUrlGeneration:
         customer = make_customer(tenant)
         cp = make_customer_pass(customer, card)
 
-        with patch("apps.customers.pass_engine.google_pass.is_google_wallet_configured", return_value=False):
+        with patch("apps.customers.pass_engine.google_pass._load_service_account", return_value=None):
             url = generate_google_wallet_url(cp)
         assert url is None
 
