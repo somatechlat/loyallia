@@ -200,7 +200,28 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "auxiliaryFields": [
                 {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
             ],
-            "backFields": [],
+            "backFields": [
+                {
+                    "key": "expiry",
+                    "label": "Válido hasta",
+                    "value": str(metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))),
+                },
+                {
+                    "key": "usage_limit",
+                    "label": "Límite de usos",
+                    "value": str(metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1))),
+                },
+                {
+                    "key": "terms",
+                    "label": "Términos",
+                    "value": card.description or metadata.get("coupon_description", ""),
+                },
+                {
+                    "key": "status",
+                    "label": "Estado",
+                    "value": f"{customer_pass.coupon_redemption_count} usados",
+                },
+            ],
         }
 
     elif card.card_type == "referral_pass":

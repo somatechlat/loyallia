@@ -28,6 +28,12 @@ from .base import router
 
 def _get_campaign_task(data: CampaignCreateIn):
     """Return the Celery task function and kwargs for a campaign channel."""
+    common_kwargs = {
+        "target_program_ids": data.target_program_ids,
+        "target_device_type": data.target_device_type,
+        "target_wallet_platform": data.target_wallet_platform,
+        "target_customer_ids": data.target_customer_ids,
+    }
     if data.channel == "email":
         from apps.notifications.tasks import send_email_campaign
 
@@ -37,6 +43,7 @@ def _get_campaign_task(data: CampaignCreateIn):
             "html_body": data.message,
             "segment_id": data.segment_id,
             "image_url": data.image_url or "",
+            **common_kwargs,
         }
     elif data.channel == "wallet":
         from apps.notifications.tasks import send_wallet_notification_campaign
@@ -48,6 +55,7 @@ def _get_campaign_task(data: CampaignCreateIn):
             "segment_id": data.segment_id,
             "wallet_platform": data.wallet_platform,
             "action_url": data.action_url or "",
+            **common_kwargs,
         }
     elif data.channel == "whatsapp":
         from apps.notifications.tasks import send_whatsapp_campaign
@@ -58,6 +66,7 @@ def _get_campaign_task(data: CampaignCreateIn):
             "message": data.message,
             "segment_id": data.segment_id,
             "image_url": data.image_url or "",
+            **common_kwargs,
         }
     elif data.channel == "sms":
         from apps.notifications.sms.tasks import send_sms_campaign
@@ -67,6 +76,7 @@ def _get_campaign_task(data: CampaignCreateIn):
             "title": data.title,
             "message": data.message,
             "segment_id": data.segment_id,
+            **common_kwargs,
         }
     return None, {}
 
@@ -93,6 +103,10 @@ class CampaignCreateIn(BaseModel):
     action_url: str | None = ""  # Custom link for wallet push notifications (optional)
     schedule_type: str = "immediate"  # 'immediate' or 'scheduled'
     scheduled_at: str | None = None  # ISO datetime string for scheduled campaigns
+    target_program_ids: list[str] = []
+    target_device_type: str = "both"
+    target_wallet_platform: str = "both"
+    target_customer_ids: list[str] = []
 
 
 SEGMENT_NAMES = {
@@ -259,6 +273,12 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         }
 
     # -- Immediate dispatch (existing flow) -----------------------------------
+    common_task_kwargs = {
+        "target_program_ids": data.target_program_ids,
+        "target_device_type": data.target_device_type,
+        "target_wallet_platform": data.target_wallet_platform,
+        "target_customer_ids": data.target_customer_ids,
+    }
     if data.channel == "email":
         check_feature_access(tenant, "email_campaigns")
         check_plan_limit(tenant, "emails_month", write=True)
@@ -271,6 +291,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
             html_body=data.message,
             segment_id=data.segment_id,
             image_url=data.image_url or "",
+            **common_task_kwargs,
         )
         log_action(
             request=request,
@@ -299,6 +320,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
             segment_id=data.segment_id,
             wallet_platform=data.wallet_platform,
             action_url=data.action_url or "",
+            **common_task_kwargs,
         )
         log_action(
             request=request,
@@ -326,6 +348,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
             message=data.message,
             segment_id=data.segment_id,
             image_url=data.image_url or "",
+            **common_task_kwargs,
         )
         log_action(
             request=request,
@@ -354,6 +377,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
             title=data.title,
             message=data.message,
             segment_id=data.segment_id,
+            **common_task_kwargs,
         )
         log_action(
             request=request,

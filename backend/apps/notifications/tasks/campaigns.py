@@ -28,6 +28,10 @@ def send_wallet_notification_campaign(
     segment_id: str = "all",
     wallet_platform: str = "both",
     action_url: str = "",
+    target_program_ids: list[str] | None = None,
+    target_device_type: str = "both",
+    target_wallet_platform: str = "both",
+    target_customer_ids: list[str] | None = None,
 ) -> dict:
     """Send wallet push notifications to customers with active passes.
 
@@ -59,10 +63,17 @@ def send_wallet_notification_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    from apps.customers.segment_api import _apply_segment_filter
+    from apps.customers.segment_api import apply_campaign_filters
 
     base_qs = Customer.objects.filter(tenant=tenant, is_active=True)
-    audience = _apply_segment_filter(base_qs, segment_id)
+    audience = apply_campaign_filters(
+        base_qs,
+        segment_id=segment_id,
+        target_program_ids=target_program_ids,
+        target_device_type=target_device_type,
+        target_wallet_platform=target_wallet_platform,
+        target_customer_ids=target_customer_ids,
+    )
     total = (
         CustomerPass.objects.filter(customer__in=audience, is_active=True)
         .values("customer_id")
@@ -85,8 +96,18 @@ def send_wallet_notification_campaign(
         segment_id=segment_id,
         status=CampaignStatus.IN_PROGRESS,
         total_recipients=total,
+        target_device_types=target_device_type,
+        target_wallet_platforms=target_wallet_platform,
         started_at=timezone.now(),
     )
+    if target_program_ids:
+        from apps.cards.models import Card
+
+        program_cards = Card.objects.filter(id__in=target_program_ids)
+        campaign_run.target_programs.set(program_cards)
+    if target_customer_ids:
+        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        campaign_run.target_customers.set(target_customers)
 
     succeeded = 0
     failed = 0
@@ -99,7 +120,14 @@ def send_wallet_notification_campaign(
         apple_push_sent = 0
         broadcast_message_ids = {}
 
-        if segment_id == "all":
+        use_broadcast = segment_id == "all" and not (
+            target_customer_ids
+            or target_program_ids
+            or target_device_type != "both"
+            or target_wallet_platform != "both"
+        )
+
+        if use_broadcast:
             from apps.cards.models import Card
             from apps.customers.pass_engine.google_pass import (
                 send_push_notification_to_class,
@@ -192,7 +220,7 @@ def send_wallet_notification_campaign(
                 notification.mark_as_sent()
 
                 # Send individual push only if NOT a broadcast segment (to avoid double notification)
-                if segment_id != "all":
+                if not use_broadcast:
                     for pass_obj in passes:
                         if action_url:
                             pass_action_url = action_url
@@ -332,6 +360,10 @@ def send_whatsapp_campaign(
     message: str,
     segment_id: str = "all",
     image_url: str = "",
+    target_program_ids: list[str] | None = None,
+    target_device_type: str = "both",
+    target_wallet_platform: str = "both",
+    target_customer_ids: list[str] | None = None,
 ) -> dict:
     """WhatsApp campaign via Baileys bridge with per-message tracking.
 
@@ -363,10 +395,17 @@ def send_whatsapp_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    from apps.customers.segment_api import _apply_segment_filter
+    from apps.customers.segment_api import apply_campaign_filters
 
     base_qs = Customer.objects.filter(tenant=tenant, is_active=True)
-    audience = _apply_segment_filter(base_qs, segment_id)
+    audience = apply_campaign_filters(
+        base_qs,
+        segment_id=segment_id,
+        target_program_ids=target_program_ids,
+        target_device_type=target_device_type,
+        target_wallet_platform=target_wallet_platform,
+        target_customer_ids=target_customer_ids,
+    )
     total = audience.count()
 
     # Create CampaignRun record
@@ -378,8 +417,18 @@ def send_whatsapp_campaign(
         segment_id=segment_id,
         status=CampaignStatus.IN_PROGRESS,
         total_recipients=total,
+        target_device_types=target_device_type,
+        target_wallet_platforms=target_wallet_platform,
         started_at=timezone.now(),
     )
+    if target_program_ids:
+        from apps.cards.models import Card
+
+        program_cards = Card.objects.filter(id__in=target_program_ids)
+        campaign_run.target_programs.set(program_cards)
+    if target_customer_ids:
+        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        campaign_run.target_customers.set(target_customers)
 
     # Check bridge availability
     bridge_available = wa_client.is_bridge_available()

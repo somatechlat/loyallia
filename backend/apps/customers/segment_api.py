@@ -53,12 +53,28 @@ _BUILTIN_SEGMENTS = {
         "filter": {"is_active": True},
         "extra": "vip",
     },
+    "new": {
+        "name": "Nuevos",
+        "description": "Clientes registrados en los últimos 30 días",
+        "filter": {"is_active": True},
+        "extra": "new",
+    },
 }
 
 
 def _apply_segment_filter(queryset, segment_id: str):
     """Apply segment filter to a Customer queryset."""
     from django.utils import timezone
+
+    # Program-specific segment: program:{card_id}
+    if segment_id.startswith("program:"):
+        card_id = segment_id.split(":", 1)[1]
+        if not card_id:
+            return queryset.none()
+        return queryset.filter(
+            passes__card_id=card_id,
+            passes__is_active=True,
+        ).distinct()
 
     seg = _BUILTIN_SEGMENTS.get(segment_id)
     if not seg:
@@ -94,7 +110,69 @@ def _apply_segment_filter(queryset, segment_id: str):
             else sorted_spends[-1]
         )
         return base.filter(total_spent__gte=threshold)
+    elif extra == "new":
+        return base.filter(created_at__gte=timezone.now() - timedelta(days=30))
     return base
+
+
+def apply_campaign_filters(
+    queryset,
+    segment_id: str = "all",
+    target_program_ids: list[str] | None = None,
+    target_device_type: str = "both",
+    target_wallet_platform: str = "both",
+    target_customer_ids: list[str] | None = None,
+):
+    """Apply campaign targeting filters on top of a Customer queryset.
+
+    Priority:
+        1. If target_customer_ids provided, ignore segment and program filters.
+        2. Apply segment filter.
+        3. Intersect with target programs (if specified).
+        4. Filter by device type (if not 'both').
+        5. Filter by wallet platform (if not 'both').
+    """
+    from apps.notifications.models import PushDevice
+
+    if target_customer_ids:
+        return queryset.filter(id__in=target_customer_ids).distinct()
+
+    audience = _apply_segment_filter(queryset, segment_id)
+
+    if target_program_ids:
+        audience = audience.filter(
+            passes__card_id__in=target_program_ids,
+            passes__is_active=True,
+        ).distinct()
+
+    if target_device_type != "both":
+        if target_device_type == "none":
+            audience = audience.filter(devices__isnull=True)
+        elif target_device_type in ("ios", "android"):
+            audience = audience.filter(
+                devices__device_type=target_device_type,
+                devices__is_active=True,
+            ).distinct()
+
+    if target_wallet_platform != "both":
+        if target_wallet_platform == "none":
+            audience = audience.filter(
+                passes__is_active=True,
+                passes__apple_pass_id="",
+                passes__google_pass_id="",
+            ).distinct()
+        elif target_wallet_platform == "apple":
+            audience = audience.filter(
+                passes__is_active=True,
+                passes__apple_pass_id__gt="",
+            ).distinct()
+        elif target_wallet_platform == "google":
+            audience = audience.filter(
+                passes__is_active=True,
+                passes__google_pass_id__gt="",
+            ).distinct()
+
+    return audience
 
 
 @router.get("/segments/", auth=jwt_auth, summary="Listar segmentos de clientes")

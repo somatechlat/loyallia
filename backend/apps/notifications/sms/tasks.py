@@ -40,6 +40,10 @@ def send_sms_campaign(
     title: str,
     message: str,
     segment_id: str = "all",
+    target_program_ids: list[str] | None = None,
+    target_device_type: str = "both",
+    target_wallet_platform: str = "both",
+    target_customer_ids: list[str] | None = None,
 ) -> dict:
     """: SMS campaign via Twilio with per-message tracking.
 
@@ -77,12 +81,19 @@ def send_sms_campaign(
         logger.error("SMS campaign: Twilio not configured for tenant %s", tenant_id)
         return {"success": False, "error": "Twilio SMS not configured"}
 
-    from apps.customers.segment_api import _apply_segment_filter
+    from apps.customers.segment_api import apply_campaign_filters
 
     base_qs = Customer.objects.filter(
         tenant=tenant, is_active=True, phone__isnull=False, phone__gt=""
     )
-    audience = _apply_segment_filter(base_qs, segment_id)
+    audience = apply_campaign_filters(
+        base_qs,
+        segment_id=segment_id,
+        target_program_ids=target_program_ids,
+        target_device_type=target_device_type,
+        target_wallet_platform=target_wallet_platform,
+        target_customer_ids=target_customer_ids,
+    )
     total = audience.count()
 
     logger.info(
@@ -98,8 +109,20 @@ def send_sms_campaign(
         segment_id=segment_id,
         status=CampaignStatus.IN_PROGRESS,
         total_recipients=total,
+        target_device_types=target_device_type,
+        target_wallet_platforms=target_wallet_platform,
         started_at=timezone.now(),
     )
+    if target_program_ids:
+        from apps.cards.models import Card
+
+        program_cards = Card.objects.filter(id__in=target_program_ids)
+        campaign_run.target_programs.set(program_cards)
+    if target_customer_ids:
+        from apps.customers.models import Customer
+
+        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        campaign_run.target_customers.set(target_customers)
 
     # Build SMS body: title + message
     sms_body = f"{title}: {message}" if title else message

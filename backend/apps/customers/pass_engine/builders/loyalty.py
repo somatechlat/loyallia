@@ -182,7 +182,15 @@ def _build_points_for_type(card, customer_pass) -> dict:
     if card.card_type == "stamp":
         current = customer_pass.stamp_count_val
         return {"label": "Sellos", "balance": {"int": current}}
+    elif card.card_type == "multipass":
+        remaining = customer_pass.multipass_remaining_val or 0
+        bundle_size = metadata.get("bundle_size", 10)
+        return {
+            "label": "Usos",
+            "balance": {"string": f"{remaining} / {bundle_size}"},
+        }
     elif card.card_type == "cashback":
+        # WARNING: Unreachable — cashback maps to giftCard, not loyalty
         balance = str(customer_pass.cashback_balance_val)
         return {
             "label": "Credito",
@@ -199,6 +207,7 @@ def _build_points_for_type(card, customer_pass) -> dict:
             "balance": {"string": pass_data.get("membership_tier", "VIP")},
         }
     elif card.card_type == "referral_pass":
+        # WARNING: Unreachable — referral_pass maps to offer, not loyalty
         return {
             "label": "Referidos",
             "balance": {"int": customer_pass.referral_count_val},
