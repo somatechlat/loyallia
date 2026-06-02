@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-REPORT="/var/backups/verification_report.txt"
+REPORT="/var/backups/loyallia/verification_report.txt"
 ERRORS=0
 
 echo "=== Backup Verification Report ===" > "$REPORT"
@@ -12,8 +12,8 @@ echo "Date: $(date)" >> "$REPORT"
 echo "" >> "$REPORT"
 
 # Check PostgreSQL daily backup
-PG_DIR="/var/backups/postgresql/daily"
-LATEST_PG=$(ls -t "$PG_DIR"/pg_dump_*.dump 2>/dev/null | head -1)
+PG_DIR="/var/backups/loyallia/pg"
+LATEST_PG=$(ls -t "$PG_DIR"/*.dump 2>/dev/null | head -1)
 if [ -z "$LATEST_PG" ]; then
   echo "❌ PostgreSQL: No backup found!" >> "$REPORT"
   ERRORS=$((ERRORS + 1))
@@ -29,8 +29,8 @@ else
 fi
 
 # Check Redis backup
-REDIS_DIR="/var/backups/redis"
-LATEST_REDIS=$(ls -t "$REDIS_DIR"/dump_*.rdb.gz 2>/dev/null | head -1)
+REDIS_DIR="/var/backups/loyallia/redis"
+LATEST_REDIS=$(ls -t "$REDIS_DIR"/*.rdb 2>/dev/null | head -1)
 if [ -z "$LATEST_REDIS" ]; then
   echo "❌ Redis: No backup found!" >> "$REPORT"
   ERRORS=$((ERRORS + 1))
@@ -40,7 +40,7 @@ else
 fi
 
 # Check MinIO backup
-MINIO_DIR="/var/backups/minio"
+MINIO_DIR="/var/backups/loyallia/minio"
 if [ -d "$MINIO_DIR" ] && [ "$(ls -A $MINIO_DIR 2>/dev/null)" ]; then
   echo "✅ MinIO: Backups exist" >> "$REPORT"
 else
@@ -49,7 +49,7 @@ else
 fi
 
 # Check Vault backup
-VAULT_DIR="/var/backups/vault"
+VAULT_DIR="/var/backups/loyallia/vault"
 LATEST_VAULT_SECRETS=$(ls -t "$VAULT_DIR"/loyallia_vault_secrets_*.json.age 2>/dev/null | head -1)
 LATEST_VAULT_INIT=$(ls -t "$VAULT_DIR"/loyallia_vault_init_*.json.age 2>/dev/null | head -1)
 if [ -z "$LATEST_VAULT_SECRETS" ]; then

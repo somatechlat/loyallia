@@ -10,7 +10,12 @@ echo "╚═══════════════════════�
 echo ""
 
 EMAIL="${1:-admin@loyallia.com}"
-PASS="${2:-LoyalliaAdmin2026!}"
+PASS="${2:-}"
+
+if [ -z "$PASS" ]; then
+    echo "Error: Password argument is required." >&2
+    exit 1
+fi
 
 docker compose exec -T api python manage.py recover_admin_access \
     --email "$EMAIL" \

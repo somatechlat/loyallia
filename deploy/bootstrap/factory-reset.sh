@@ -36,6 +36,37 @@ echo -e "${RED}║  This action is IRREVERSIBLE.                                
 echo -e "${RED}╚══════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
+# --- Production safety check ---
+PRODUCTION_FLAG=0
+for arg in "$@"; do
+    if [ "$arg" = "--i-am-sure-production" ]; then
+        PRODUCTION_FLAG=1
+    fi
+done
+
+is_production=0
+if [ -n "${COMPOSE_FILE:-}" ] && [[ "$COMPOSE_FILE" == *prod* ]]; then
+    is_production=1
+elif [ -f "$PROJECT_ROOT/.env" ] && grep -qE '^\s*DOMAIN\s*=\s*rewards\.loyallia\.com' "$PROJECT_ROOT/.env" 2>/dev/null; then
+    is_production=1
+fi
+
+if [ "$is_production" -eq 1 ]; then
+    if [ "$PRODUCTION_FLAG" -eq 0 ]; then
+        err "PRODUCTION ENVIRONMENT DETECTED."
+        err "Factory reset in production requires the --i-am-sure-production flag."
+        err "Aborting."
+        exit 1
+    fi
+
+    expected_domain="rewards.loyallia.com"
+    read -r -p "Production environment detected. Type the domain name to confirm destruction: " domain_input
+    if [ "$domain_input" != "$expected_domain" ]; then
+        err "Domain confirmation failed. Expected '$expected_domain'. Aborting."
+        exit 1
+    fi
+fi
+
 # --- Confirmation ---
 read -r -p "Type 'DESTROY' to confirm complete factory reset: " confirm
 echo ""

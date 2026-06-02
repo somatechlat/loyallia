@@ -34,6 +34,12 @@ for arg in "$@"; do
     esac
 done
 
+if [ "$DEPLOY_ENV" = "development" ]; then
+    echo "ERROR: Development environment is not supported by this script." >&2
+    echo "Please use deploy/backups/development/orchestrator.sh instead." >&2
+    exit 1
+fi
+
 export COMPOSE_FILE COMPOSE_PROD_FILE
 
 mkdir -p "$BACKUP_DIR"

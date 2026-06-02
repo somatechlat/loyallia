@@ -628,6 +628,12 @@ PYEOF
 main() {
     parse_args "$@"
 
+    if [ "$DEPLOY_ENV" = "development" ]; then
+        err "Development environment is not supported by this script."
+        err "Please use deploy/backups/development/orchestrator.sh instead."
+        exit 1
+    fi
+
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║        LOYALLIA — FULL BACKUP ORCHESTRATOR                          ║${NC}"
