@@ -229,7 +229,7 @@ class TestScannerAuthorization:
         with patch("apps.redemption.gateway.RedemptionGateway") as mock_gateway:
             mock_result = MagicMock()
             mock_result.success = True
-            mock_result.transaction_id = "test-tx-id"
+            mock_result.transaction_id = "12345678-1234-5678-1234-567812345678"
             mock_result.transaction_type = "stamp_earned"
             mock_result.pass_updated = False
             mock_result.reward_earned = False
