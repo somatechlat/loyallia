@@ -88,6 +88,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://rewards.loyallia.com}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://rewards.loyallia.com}
+    command: ["node", "server.js"]
     environment:
       NODE_ENV: production
       NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://api:8000}
