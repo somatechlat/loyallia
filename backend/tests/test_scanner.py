@@ -223,6 +223,7 @@ class TestScannerAuthorization:
         request = MagicMock()
         request.tenant = tenant
         request.user = staff
+        request.META = {"REMOTE_ADDR": "127.0.0.1"}
 
         # Mock the RedemptionGateway to avoid full redemption logic
         # Gateway is imported locally inside the function
