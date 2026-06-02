@@ -105,22 +105,18 @@ configure() {
     # Database settings (read from .env or use defaults)
     if [ -f "$PROJECT_ROOT/.env" ]; then
         POSTGRES_USER="$(grep '^POSTGRES_USER=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "loyallia")"
-        POSTGRES_DB="$(grep '^POSTGRES_DB=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "")"
-        VAULT_SECRET_PATH="$(grep '^VAULT_SECRET_PATH=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "")"
+        POSTGRES_DB="$(grep '^POSTGRES_DB=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "loyallia")"
+        VAULT_SECRET_PATH="$(grep '^VAULT_SECRET_PATH=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "secret/data/loyallia/production")"
     else
-        POSTGRES_USER=""
-        POSTGRES_DB=""
-        VAULT_SECRET_PATH=""
+        POSTGRES_USER="loyallia"
+        POSTGRES_DB="loyallia"
+        VAULT_SECRET_PATH="secret/data/loyallia/production"
     fi
 
-    # Clean defaults if empty, respecting detected environment
+    # Clean defaults if empty
     POSTGRES_USER="${POSTGRES_USER:-loyallia}"
-    if [ "$ENVIRONMENT" = "production" ]; then
-        POSTGRES_DB="${POSTGRES_DB:-loyallia}"
-    else
-        POSTGRES_DB="${POSTGRES_DB:-loyallia_dev}"
-    fi
-    VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-secret/data/loyallia/${ENVIRONMENT}}"
+    POSTGRES_DB="${POSTGRES_DB:-loyallia}"
+    VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-secret/data/loyallia/production}"
 
     # Extract KV mount and path for vault CLI
     # VAULT_SECRET_PATH like "secret/data/loyallia/production" → mount="secret", path="loyallia/production"
@@ -289,7 +285,7 @@ start_vault_and_import() {
     local timeout=60
     local elapsed=0
     while [ "$elapsed" -lt "$timeout" ]; do
-        if docker exec "$VAULT_CONTAINER" wget --no-check-certificate --spider --quiet https://127.0.0.1:8200/v1/sys/health?standbyok=true 2>/dev/null; then
+        if docker exec "$VAULT_CONTAINER" wget --spider --quiet http://127.0.0.1:8200/v1/sys/health?standbyok=true 2>/dev/null; then
             log "Vault API ready."
             break
         fi
@@ -304,7 +300,7 @@ start_vault_and_import() {
     fi
 
     local status_code
-    status_code="$(docker exec "$VAULT_CONTAINER" wget --no-check-certificate --server-response --spider --quiet "https://127.0.0.1:8200/v1/sys/seal-status" 2>&1 | head -1 | awk '{print $2}' || echo "000")"
+    status_code="$(docker exec "$VAULT_CONTAINER" wget --server-response --spider --quiet "http://127.0.0.1:8200/v1/sys/seal-status" 2>&1 | head -1 | awk '{print $2}' || echo "000")"
 
     if [ "$status_code" != "200" ]; then
         log "Vault is sealed. Unsealing with rescued key..."
@@ -336,19 +332,21 @@ print(data['root_token'])
     log "Importing all rescued secrets into Vault..."
     docker cp "$RESCUE_DIR/vault_secrets_rescue.json" "$VAULT_CONTAINER:/tmp/vault_secrets_import.json" >/dev/null
 
-    # Process JSON on host (vault container has no Python) — extract KV v2 inner data
-    python3 -c "
+    docker exec -e VAULT_TOKEN="$root_token" "$VAULT_CONTAINER" sh -c '
+        python3 -c "
 import json
-with open('$RESCUE_DIR/vault_secrets_rescue.json') as f:
+
+with open(\"/tmp/vault_secrets_import.json\") as f:
     data = json.load(f)
-# KV v2 format: top-level 'data' -> inner 'data' -> actual secrets
-secrets = data.get('data', {}).get('data', data)
-if '_meta' in secrets:
-    secrets.pop('_meta', None)
-with open('/tmp/vault_import_clean.json', 'w') as f:
-    json.dump({'data': secrets}, f)
-" >/dev/null
-    docker cp /tmp/vault_import_clean.json "$VAULT_CONTAINER:/tmp/vault_import_clean.json" >/dev/null
+
+secrets = data.get(\"secrets\", data)
+if \"_meta\" in secrets:
+    secrets.pop(\"_meta\", None)
+
+output = {\"data\": secrets}
+print(json.dumps(output))
+" > /tmp/vault_import_clean.json
+    ' >/dev/null
 
     docker exec -e VAULT_TOKEN="$root_token" -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true "$VAULT_CONTAINER" \
         vault kv put -mount="$VAULT_KV_MOUNT" "$VAULT_KV_PATH" @/tmp/vault_import_clean.json >/dev/null
@@ -356,7 +354,6 @@ with open('/tmp/vault_import_clean.json', 'w') as f:
     log "All secrets imported into Vault at $VAULT_KV_MOUNT/$VAULT_KV_PATH."
 
     docker exec "$VAULT_CONTAINER" rm -f /tmp/vault_secrets_import.json /tmp/vault_import_clean.json 2>/dev/null || true
-    rm -f /tmp/vault_import_clean.json 2>/dev/null || true
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -566,22 +563,16 @@ with open('$certs_rescue') as f:
 
 sections = re.findall(r'=== (.+?) ===\n(.+?)(?=\n=== |\Z)', content, re.DOTALL)
 
-import fnmatch
-
-cert_map = [
-    ('apple_pass_new.key', 'apple_pass.key'),
-    ('passNew.pem', 'apple_pass.pem'),
-    ('AppleWWDRCAG4.pem', 'apple_wwdr.pem'),
-    ('loyalliarewardswallet-*.json', 'google_wallet_service_account.json'),
-]
+cert_map = {
+    'apple_pass_new.key': 'apple_pass.key',
+    'passNew.pem': 'apple_pass.pem',
+    'AppleWWDRCAG4.pem': 'apple_wwdr.pem',
+    'scenic-parity-494022-h5-628cf7e3795c.json': 'google_wallet_service_account.json',
+}
 
 written = []
 for filename, data in sections:
-    target = filename
-    for pattern, mapped in cert_map:
-        if fnmatch.fnmatch(filename, pattern):
-            target = mapped
-            break
+    target = cert_map.get(filename, filename)
     path = '$certs_dir/' + target
     with open(path, 'w') as f:
         f.write(data.strip() + '\n')

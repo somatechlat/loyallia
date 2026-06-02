@@ -194,7 +194,7 @@ log_section "Phase 6: Disaster Recovery — Create Rescue Files"
 # Archive old rescue files to avoid collisions
 archive_dir="$RESCUE_DIR/old_rescue_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$archive_dir"
-mv "$RESCUE_DIR"/*rescue* "$archive_dir"/ 2>/dev/null || true
+find "$RESCUE_DIR" -maxdepth 1 -type f -name "*rescue*" -exec mv {} "$archive_dir"/ \; 2>/dev/null || true
 mv "$RESCUE_DIR"/vault_init_rescue.json "$archive_dir"/ 2>/dev/null || true
 mv "$RESCUE_DIR"/vault_secrets_rescue.json "$archive_dir"/ 2>/dev/null || true
 
