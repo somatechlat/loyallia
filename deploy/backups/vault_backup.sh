@@ -19,6 +19,20 @@ COMPOSE_FILE="${COMPOSE_FILE:-${SCRIPT_DIR}/docker-compose.yml}"
 COMPOSE_PROD_FILE="${COMPOSE_PROD_FILE:-${SCRIPT_DIR}/docker-compose.prod.yml}"
 AGE_PUBLIC_KEY="${AGE_PUBLIC_KEY:-}"
 AGE_KEY_FILE="${AGE_KEY_FILE:-/etc/loyallia/age_public_key.txt}"
+DEPLOY_ENV="${DEPLOY_ENV:-production}"
+
+# Parse CLI args
+for arg in "$@"; do
+    case "$arg" in
+        --env=production|--env=development)
+            DEPLOY_ENV="${arg#*=}"
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--env=production|development]"
+            exit 0
+            ;;
+    esac
+done
 
 export COMPOSE_FILE COMPOSE_PROD_FILE
 
@@ -52,7 +66,7 @@ if docker compose exec -T vault sh -c 'test -f /run/loyallia-vault/app-token' 2>
 fi
 
 if [ -z "$VAULT_TOKEN" ]; then
-    VAULT_TOKEN=$(docker compose exec -T vault sh -c 'python3 -c "import json; f=open(\"/vault/file/init.json\"); print(json.load(f)[\"root_token\"])"' 2>/dev/null || true)
+    VAULT_TOKEN=$(docker compose exec -T vault sh -c 'grep "root_token" /vault/file/init.json | sed '\''s/.*"root_token": *"\([^"]*\)".*/\1/'\''' 2>/dev/null || true)
 fi
 
 if [ -z "$VAULT_TOKEN" ]; then
@@ -62,8 +76,8 @@ fi
 
 # Dump all secrets
 SECRETS_FILE="$BACKUP_DIR/loyallia_vault_secrets_${TIMESTAMP}.json"
-docker compose exec -T -e VAULT_TOKEN="$VAULT_TOKEN" vault \
-    vault kv get -mount=secret -format=json "loyallia/production" \
+docker compose exec -T -e VAULT_TOKEN="$VAULT_TOKEN" -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true vault \
+    vault kv get -mount=secret -format=json "loyallia/${DEPLOY_ENV}" \
     > "$SECRETS_FILE" 2>/dev/null || true
 
 if [ ! -s "$SECRETS_FILE" ]; then

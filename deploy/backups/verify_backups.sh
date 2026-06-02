@@ -50,13 +50,21 @@ fi
 
 # Check Vault backup
 VAULT_DIR="/var/backups/vault"
-LATEST_VAULT=$(ls -t "$VAULT_DIR"/vault_*.json.age 2>/dev/null | head -1)
-if [ -z "$LATEST_VAULT" ]; then
-  echo "❌ Vault: No backup found!" >> "$REPORT"
+LATEST_VAULT_SECRETS=$(ls -t "$VAULT_DIR"/loyallia_vault_secrets_*.json.age 2>/dev/null | head -1)
+LATEST_VAULT_INIT=$(ls -t "$VAULT_DIR"/loyallia_vault_init_*.json.age 2>/dev/null | head -1)
+if [ -z "$LATEST_VAULT_SECRETS" ]; then
+  echo "❌ Vault: No secrets backup found!" >> "$REPORT"
   ERRORS=$((ERRORS + 1))
 else
-  SIZE=$(du -h "$LATEST_VAULT" | cut -f1)
-  echo "✅ Vault: $LATEST_VAULT ($SIZE)" >> "$REPORT"
+  SIZE=$(du -h "$LATEST_VAULT_SECRETS" | cut -f1)
+  echo "✅ Vault secrets: $(basename "$LATEST_VAULT_SECRETS") ($SIZE)" >> "$REPORT"
+fi
+if [ -z "$LATEST_VAULT_INIT" ]; then
+  echo "⚠️  Vault: No init backup found!" >> "$REPORT"
+  ERRORS=$((ERRORS + 1))
+else
+  SIZE=$(du -h "$LATEST_VAULT_INIT" | cut -f1)
+  echo "✅ Vault init: $(basename "$LATEST_VAULT_INIT") ($SIZE)" >> "$REPORT"
 fi
 
 echo "" >> "$REPORT"

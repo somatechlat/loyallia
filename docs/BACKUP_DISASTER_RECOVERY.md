@@ -1,7 +1,7 @@
 # Loyallia — Backup & Disaster Recovery Plan
 
-**Document Version:** 1.1
-**Last Updated:** 2026-05-20
+**Document Version:** 1.2
+**Last Updated:** 2026-06-02
 **Owner:** Infrastructure & SRE Team
 **Classification:** Internal — Confidential
 
@@ -10,14 +10,16 @@
 ## Table of Contents
 
 1. [RTO/RPO Targets](#1-rtorpo-targets)
-2. [PostgreSQL Backup Strategy](#2-postgresql-backup-strategy)
-3. [Redis Backup Strategy](#3-redis-backup-strategy)
-4. [MinIO Bucket Replication](#4-minio-bucket-replication)
-5. [Vault Snapshot Automation](#5-vault-snapshot-automation)
-6. [Step-by-Step Recovery Procedures](#6-step-by-step-recovery-procedures)
-7. [Monitoring & Alerting Setup](#7-monitoring--alerting-setup)
-8. [Security Hardening Checklist](#8-security-hardening-checklist)
-9. [Resilience Patterns](#9-resilience-patterns)
+2. [Backup System Architecture](#2-backup-system-architecture)
+3. [PostgreSQL Backup Strategy](#3-postgresql-backup-strategy)
+4. [Redis Backup Strategy](#4-redis-backup-strategy)
+5. [MinIO Bucket Replication](#5-minio-bucket-replication)
+6. [Vault Snapshot Automation](#6-vault-snapshot-automation)
+7. [Step-by-Step Recovery Procedures](#7-step-by-step-recovery-procedures)
+8. [Monitoring & Alerting Setup](#8-monitoring--alerting-setup)
+9. [Security Hardening Checklist](#9-security-hardening-checklist)
+10. [Resilience Patterns](#10-resilience-patterns)
+11. [Changelog](#11-changelog)
 
 ---
 
@@ -47,9 +49,62 @@
 
 ---
 
-## 2. PostgreSQL Backup Strategy
+---
 
-### 2.1 Architecture
+## 2. Backup System Architecture
+
+### 2.1 Environment Isolation
+
+The backup system is **completely isolated** between Development and Production. Scripts are organized by environment and enforce strict boundaries:
+
+```
+deploy/backups/
+├── development/          # DEVELOPMENT ONLY
+│   ├── pg_dump.sh        # docker compose exec -T postgres pg_dump …
+│   ├── redis.sh          # docker compose exec -T redis …
+│   ├── vault.sh          # docker compose exec -T vault …
+│   ├── orchestrator.sh   # Runs all dev backups
+│   └── verify.sh         # Verifies ./.agents/backups/
+│
+├── production/           # PRODUCTION ONLY (runs on server host)
+│   ├── pg_dump.sh        # host pg_dump → /var/backups/postgresql/daily
+│   ├── pg_basebackup.sh  # host pg_basebackup → /var/backups/postgresql/weekly
+│   ├── redis.sh          # host redis-cli → /var/backups/redis
+│   ├── vault.sh          # docker compose exec -T vault …
+│   ├── minio.sh          # host mc mirror → /var/backups/minio
+│   ├── orchestrator.sh   # Full stack backup
+│   └── verify.sh         # Verifies /var/backups/loyallia/
+│
+└── breach_notification.py
+    encrypt_backup.sh
+    restore.sh
+
+deploy/disaster_recovery/
+├── create_rescue_files.sh    # Works in BOTH envs (--dev / --prod)
+├── recover_from_rescue.sh    # Works in BOTH envs (--dev / --prod)
+└── backup.sh                 # DR backup wrapper
+```
+
+**Safety guardrails:**
+- Production scripts reject `--env=development` with a fatal error.
+- Dev scripts write to `./.agents/backups/` (project-relative).
+- Production scripts write to `/var/backups/loyallia/` (absolute host paths).
+- Disaster recovery scripts auto-detect environment or accept `--dev` / `--prod`.
+
+### 2.2 Quick Reference
+
+| Task | Development | Production |
+|------|-------------|------------|
+| Run all backups | `bash deploy/backups/development/orchestrator.sh` | `bash deploy/backups/production/orchestrator.sh` |
+| Verify backups | `bash deploy/backups/development/verify.sh` | `bash deploy/backups/production/verify.sh` |
+| Create rescue files | `bash deploy/disaster_recovery/create_rescue_files.sh --dev` | `bash deploy/disaster_recovery/create_rescue_files.sh --prod` |
+| Recover from rescue | `bash deploy/disaster_recovery/recover_from_rescue.sh --dev` | `bash deploy/disaster_recovery/recover_from_rescue.sh --prod` |
+
+---
+
+## 3. PostgreSQL Backup Strategy
+
+### 3.1 Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -75,7 +130,7 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 WAL Archiving (Continuous)
+### 3.2 WAL Archiving (Continuous)
 
 **Configuration in `postgresql.conf`:**
 
@@ -109,7 +164,7 @@ SELECT * FROM pg_stat_archiver;
 SELECT count(*) FROM pg_ls_waldir() WHERE modification < now() - interval '5 minutes';
 ```
 
-### 2.3 pg_dump (Daily Logical Backup)
+### 3.3 pg_dump (Daily Logical Backup)
 
 **Cron schedule: Daily at 2:00 AM UTC**
 
@@ -184,7 +239,7 @@ def daily_pg_dump():
     client.fput_object("pg-backups", f"daily/loyallia_{timestamp}.dump", backup_file)
 ```
 
-### 2.4 Point-in-Time Recovery (PITR)
+### 3.4 Point-in-Time Recovery (PITR)
 
 **To restore to a specific point in time:**
 
@@ -215,7 +270,7 @@ systemctl start postgresql
 psql -d loyallia -c "SELECT count(*) FROM loyallia_audit_log;"
 ```
 
-### 2.5 Backup Verification
+### 3.5 Backup Verification
 
 **Automated weekly restore test (every Sunday at 4:00 AM):**
 
@@ -251,9 +306,9 @@ fi
 
 ---
 
-## 3. Redis Backup Strategy
+## 4. Redis Backup Strategy
 
-### 3.1 RDB Snapshots (Point-in-Time)
+### 4.1 RDB Snapshots (Point-in-Time)
 
 **Configuration in `redis.conf`:**
 
@@ -271,7 +326,7 @@ rdbcompression yes
 rdbchecksum yes
 ```
 
-### 3.2 AOF (Append-Only File) — Durability
+### 4.2 AOF (Append-Only File) — Durability
 
 ```ini
 # AOF — logs every write operation for durability
@@ -284,7 +339,7 @@ auto-aof-rewrite-min-size 64mb
 aof-use-rdb-preamble yes
 ```
 
-### 3.3 Backup Script
+### 4.3 Backup Script
 
 ```bash
 #!/bin/bash
@@ -320,7 +375,7 @@ find "${BACKUP_DIR}" -mtime +7 -delete
 echo "[OK] Redis backup completed"
 ```
 
-### 3.4 Redis Sentinel (High Availability)
+### 4.4 Redis Sentinel (High Availability)
 
 ```ini
 # sentinel.conf
@@ -337,9 +392,9 @@ sentinel parallel-syncs loyallia-master 1
 
 ---
 
-## 4. MinIO Bucket Replication
+## 5. MinIO Bucket Replication
 
-### 4.1 Bucket Structure
+### 5.1 Bucket Structure
 
 ```
 minio/
@@ -354,7 +409,7 @@ minio/
 └── pg-wal-archive/      # PostgreSQL WAL segments
 ```
 
-### 4.2 Cross-Site Replication
+### 5.2 Cross-Site Replication
 
 ```bash
 # Set up remote MinIO as replication target
@@ -378,7 +433,7 @@ mc replicate add primary/pg-backups \
   --storage-class STANDARD
 ```
 
-### 4.3 Lifecycle Policies
+### 5.3 Lifecycle Policies
 
 ```json
 {
@@ -411,7 +466,7 @@ mc replicate add primary/pg-backups \
 }
 ```
 
-### 4.4 MinIO Erasure Coding
+### 5.4 MinIO Erasure Coding
 
 MinIO uses erasure coding by default (data split across drives with parity):
 - Tolerates up to N/2 drive failures (where N = total drives)
@@ -420,9 +475,9 @@ MinIO uses erasure coding by default (data split across drives with parity):
 
 ---
 
-## 5. Vault Snapshot Automation
+## 6. Vault Snapshot Automation
 
-### 5.1 Snapshot Schedule
+### 6.1 Snapshot Schedule
 
 ```bash
 #!/bin/bash
@@ -452,7 +507,7 @@ echo "[OK] Vault snapshot completed: ${SNAPSHOT_FILE}.gpg"
 
 **Cron schedule:** Every 6 hours (`0 */6 * * *`)
 
-### 5.2 Vault HA Configuration
+### 6.2 Vault HA Configuration
 
 ```hcl
 # vault.hcl
@@ -476,7 +531,7 @@ seal "awskms" {
 }
 ```
 
-### 5.3 Vault Recovery
+### 6.3 Vault Recovery
 
 ```bash
 # 1. Install Vault on new host
@@ -490,9 +545,9 @@ vault kv get secret/data/loyallia
 
 ---
 
-## 6. Step-by-Step Recovery Procedures
+## 7. Step-by-Step Recovery Procedures
 
-### 6.1 PostgreSQL Recovery (Full Loss)
+### 7.1 PostgreSQL Recovery (Full Loss)
 
 **Time estimate: 20-30 minutes**
 
@@ -538,7 +593,7 @@ psql -d loyallia -c "REINDEX DATABASE loyallia;"
 watch -n 5 'psql -d loyallia -c "SELECT count(*) FROM pg_stat_activity;"'
 ```
 
-### 6.2 Redis Recovery
+### 7.2 Redis Recovery
 
 **Time estimate: 5-10 minutes**
 
@@ -565,7 +620,7 @@ redis-cli PING
 # Django will repopulate cache on first requests
 ```
 
-### 6.3 MinIO Recovery
+### 7.3 MinIO Recovery
 
 **Time estimate: 15-30 minutes**
 
@@ -588,7 +643,7 @@ mc ls primary/assets/ | wc -l
 # STEP 4: Update application MINIO_ENDPOINT if changed
 ```
 
-### 6.4 Vault Recovery
+### 7.4 Vault Recovery
 
 **Time estimate: 10-15 minutes**
 
@@ -613,7 +668,7 @@ vault status
 # STEP 6: Update VAULT_ADDR and VAULT_TOKEN in environment
 ```
 
-### 6.5 Full Stack Recovery (Region Outage)
+### 7.5 Full Stack Recovery (Region Outage)
 
 **Time estimate: 2-4 hours**
 
@@ -651,7 +706,7 @@ docker compose logs -f --tail=100
 
 ---
 
-### 6.6 Test Environment Recovery
+### 7.6 Test Environment Recovery
 
 **Use case:** Restore `loyallia_dev` from a production dump for local testing or disaster recovery verification.
 
@@ -684,11 +739,11 @@ docker compose start api celery-beat celery-default celery-pass celery-push
 cd frontend && npx playwright test --project=setup
 ```
 
-### 6.7 Disaster Recovery Rescue Files
+### 7.7 Disaster Recovery Rescue Files
 
 Two environment-aware scripts handle complete backup and restore of the Docker runtime.
 
-#### 6.7.1 Creating Rescue Files
+#### 7.7.1 Creating Rescue Files
 
 **Script:** `deploy/disaster_recovery/create_rescue_files.sh` (389 lines)
 
@@ -715,10 +770,10 @@ Two environment-aware scripts handle complete backup and restore of the Docker r
 |------|-------------|-------------|
 | `vault_init_rescue.json` | Vault unseal key + root token | **CRITICAL — store offline** |
 | `vault_secrets_rescue.json` | All secrets from Vault KV | **CRITICAL — store offline** |
-| `pg_dump_rescue.sql` | PostgreSQL logical dump | High |
-| `runtime_files_rescue.tar.gz` | Runtime secret files + Vault TLS | High |
-| `certs_rescue.tar.gz` | Apple Wallet certs + Google SA JSON | High |
-| `redis_rdb_rescue.rdb` | Redis cache snapshot | Medium |
+| `pg_dump_rescue_YYYYMMDD.dump` | PostgreSQL logical dump (custom format) | High |
+| `vault_runtime_rescue_YYYYMMDD.txt` | Runtime secret files + Vault TLS | High |
+| `certs_rescue_YYYYMMDD.txt` | Apple Wallet certs + Google SA JSON | High |
+| `redis_rescue_YYYYMMDD.rdb` | Redis cache snapshot | Medium |
 
 **Post-run checklist:**
 - Copy `vault_init_rescue.json` to offline storage (USB, password manager)
@@ -727,7 +782,7 @@ Two environment-aware scripts handle complete backup and restore of the Docker r
 
 ---
 
-#### 6.7.2 Restoring from Rescue Files
+#### 7.7.2 Restoring from Rescue Files
 
 **Script:** `deploy/disaster_recovery/recover_from_rescue.sh` (710 lines)
 
@@ -765,7 +820,7 @@ Vault → PostgreSQL → Redis → Application
 
 ---
 
-### 6.8 Factory Reset Procedure
+### 7.8 Factory Reset Procedure
 
 **Use case:** Wipe all tenant data while preserving platform infrastructure.
 
@@ -812,7 +867,7 @@ docker compose exec api python backend/clean_demo_data.py
 
 ---
 
-### 6.9 Admin Account Recovery
+### 7.9 Admin Account Recovery
 
 **Use case:** Regain admin access when locked out or after restoring from a production dump.
 
@@ -848,9 +903,9 @@ docker compose exec api python manage.py recover_admin_access \
 
 ---
 
-## 7. Monitoring & Alerting Setup
+## 8. Monitoring & Alerting Setup
 
-### 7.1 Health Check Endpoints
+### 8.1 Health Check Endpoints
 
 ```python
 # apps/api/health.py
@@ -897,7 +952,7 @@ def health_check(request):
     }, status=http_status)
 ```
 
-### 7.2 Prometheus Metrics
+### 8.2 Prometheus Metrics
 
 ```yaml
 # prometheus/alerts.yml
@@ -991,7 +1046,7 @@ groups:
           summary: "High rate of rate limit violations (possible attack)"
 ```
 
-### 7.3 Grafana Dashboard Queries
+### 8.3 Grafana Dashboard Queries
 
 ```promql
 # Request rate by endpoint
@@ -1015,7 +1070,7 @@ redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_t
 time() - loyallia_backup_last_success_timestamp
 ```
 
-### 7.4 Alert Routing
+### 8.4 Alert Routing
 
 | Severity | Channel | Response Time |
 |----------|---------|---------------|
@@ -1025,9 +1080,9 @@ time() - loyallia_backup_last_success_timestamp
 
 ---
 
-## 8. Security Hardening Checklist
+## 9. Security Hardening Checklist
 
-### 8.1 Infrastructure
+### 9.1 Infrastructure
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
@@ -1042,7 +1097,7 @@ time() - loyallia_backup_last_success_timestamp
 | H-09 | Redis password protected | ⚠️ | Verify `requirepass` in redis.conf |
 | H-10 | MinIO with IAM policies | ⚠️ | Verify bucket policies restrict public access |
 
-### 8.2 Application
+### 9.2 Application
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
@@ -1057,7 +1112,7 @@ time() - loyallia_backup_last_success_timestamp
 | H-19 | File upload size limits | ✅ | 5MB limit enforced |
 | H-20 | Webhook signature verification | ✅ | HMAC on payment webhook |
 
-### 8.3 Operational
+### 9.3 Operational
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
@@ -1071,9 +1126,9 @@ time() - loyallia_backup_last_success_timestamp
 
 ---
 
-## 9. Resilience Patterns
+## 10. Resilience Patterns
 
-### 9.1 Circuit Breaker (External Services)
+### 10.1 Circuit Breaker (External Services)
 
 **Implementation for payment gateway and external API calls:**
 
@@ -1152,7 +1207,7 @@ def process_payment(amount, token):
         raise
 ```
 
-### 9.2 Retry with Exponential Backoff
+### 10.2 Retry with Exponential Backoff
 
 **For transient failures (network timeouts, 503s):**
 
@@ -1204,7 +1259,7 @@ def send_notification_task(self, notification_id):
     pass
 ```
 
-### 9.3 Bulkhead Pattern (Resource Isolation)
+### 10.3 Bulkhead Pattern (Resource Isolation)
 
 **Celery queue isolation (already implemented):**
 
@@ -1271,7 +1326,7 @@ services:
           memory: 512M
 ```
 
-### 9.4 Timeout Configuration
+### 10.4 Timeout Configuration
 
 | Component | Timeout | Notes |
 |-----------|---------|-------|
@@ -1285,7 +1340,7 @@ services:
 | Vault API | 5s | `urllib.request.urlopen(req, timeout=5)` |
 | Google OAuth | 10s | `httpx.get(..., timeout=10.0)` |
 
-### 9.5 Graceful Degradation
+### 10.5 Graceful Degradation
 
 | Dependency | Degradation Strategy |
 |------------|---------------------|
@@ -1308,6 +1363,40 @@ services:
 | Redis AOF | Every second | AOF rewrite monitoring | 7 days |
 | MinIO replication | Continuous | `mc replicate status` | Match source |
 | Vault snapshot | Every 6 hours | Restore test quarterly | 30 days |
+
+---
+
+---
+
+## 11. Changelog
+
+### v1.2 — 2026-06-02
+
+**Critical Bug Fixes:**
+- Fixed `recover_from_rescue.sh` Google Wallet certificate filename mismatch. Previously looked for `scenic-parity-*.json` but `create_rescue_files.sh` saves `loyalliarewardswallet-*.json` — Google Wallet credentials were **never restored** in a disaster.
+- Fixed `disaster_recovery/backup.sh` Redis LASTSAVE race condition. The wait loop compared against `date +%s` (always different) instead of the pre-BGSAVE timestamp, causing premature exit before save completion.
+- Fixed `deploy/backups/backup.sh` MinIO mirror mount. Ephemeral `minio/mc` containers wrote to `/backup/` without a host volume mount, so media files never reached the backup archive.
+- Fixed `deploy/backups/vault_backup.sh` hardcoded `loyallia/production` path. Now accepts `--env=` flag and dynamically uses `loyallia/$DEPLOY_ENV`.
+- Fixed `deploy/backups/verify_backups.sh` Vault filename pattern mismatch. Looked for `vault_*.json.age` but actual files are `loyallia_vault_secrets_*.json.age` and `loyallia_vault_init_*.json.age`.
+- Fixed token extraction in Vault backup scripts to use `grep + sed` instead of `python3` (not available in Vault container).
+- Fixed Vault KV access to use `https://127.0.0.1:8200` with `VAULT_SKIP_VERIFY=true` (Vault runs with TLS).
+
+**Dev/Prod Isolation:**
+- Created `deploy/backups/development/` with 5 isolated scripts (pg_dump, redis, vault, orchestrator, verify) that use `docker compose exec` and write to `./.agents/backups/`.
+- Added `--env=` validation to all production scripts (`pg_dump_backup.sh`, `pg_basebackup.sh`, `redis_backup.sh`, `minio_backup.sh`). They now reject `--env=development` with a fatal error.
+- Fixed `create_rescue_files.sh` and `recover_from_rescue.sh` to default `POSTGRES_DB` to `loyallia_dev` in development and `VAULT_SECRET_PATH` to `loyallia/development`.
+
+**Documentation:**
+- Added §2 "Backup System Architecture" documenting the dev/prod isolation and quick reference.
+- Updated rescue file names to match actual output (`pg_dump_rescue_YYYYMMDD.dump`, etc.).
+- Fixed all section numbering to accommodate the new architecture section.
+
+**Known Gaps (aspirational features not yet implemented):**
+- WAL archiving is to local disk (`/var/lib/postgresql/data/wal_archive/`), not MinIO bucket `pg-wal-archive`.
+- Vault backup exports KV secrets with `age` encryption; Raft snapshots with GPG are not implemented.
+- Weekly automated restore test (Sundays 4:00 AM) does not exist as a standalone script.
+- MinIO cross-site replication is documented but not configured.
+- Circuit breaker pattern is documented but not implemented in code.
 
 ---
 

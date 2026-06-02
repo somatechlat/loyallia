@@ -1,131 +1,65 @@
-# Loyallia Backup & Disaster Recovery
+# Loyallia Backup System
 
-## Backup Schedule
+## Directory Structure (Isolated by Environment)
 
-| Service | Script | Schedule | Retention | Type |
-|---------|--------|----------|-----------|------|
-| PostgreSQL (logical) | `pg_dump_backup.sh` | Daily at 02:00 | 30 days | pg_dump custom format |
-| PostgreSQL (physical) | `pg_basebackup.sh` | Weekly (Sunday 03:00) | 4 weeks | pg_basebackup tar+gzip |
-| Redis | `redis_backup.sh` | Every 6 hours | 7 days | BGSAVE + RDB copy |
-| MinIO | `minio_backup.sh` | Daily at 04:00 | 30 days | mc mirror (passes, assets) |
-| Vault | `vault_backup.sh` | Daily at 05:00 | 30 days | Raft snapshot |
-| Verification | `verify_backups.sh` | Daily at 06:00 | — | Checks all backups exist |
-
-## Cron Configuration
-
-```cron
-0 2 * * * /deploy/backups/pg_dump_backup.sh >> /var/log/backups/pg_dump.log 2>&1
-0 3 * * 0 /deploy/backups/pg_basebackup.sh >> /var/log/backups/pg_basebackup.log 2>&1
-0 */6 * * * /deploy/backups/redis_backup.sh >> /var/log/backups/redis.log 2>&1
-0 4 * * * /deploy/backups/minio_backup.sh >> /var/log/backups/minio.log 2>&1
-0 5 * * * /deploy/backups/vault_backup.sh >> /var/log/backups/vault.log 2>&1
-0 6 * * * /deploy/backups/verify_backups.sh >> /var/log/backups/verify.log 2>&1
+```
+deploy/backups/
+├── README.md                          # This file
+├── breach_notification.py             # Security incident notification (env-agnostic)
+├── encrypt_backup.sh                  # Encryption utility (env-agnostic)
+├── restore.sh                         # Full restore orchestrator (both envs via --env=)
+│
+├── production/                        # PRODUCTION ONLY — run on server host
+│   ├── pg_dump.sh                     # Daily logical backup (cron 02:00)
+│   ├── pg_basebackup.sh               # Weekly physical backup (cron 03:00 Sun)
+│   ├── redis.sh                       # Every 6 hours (cron 00 */6 * * *)
+│   ├── vault.sh                       # Daily Vault backup (cron 05:00)
+│   ├── minio.sh                       # Daily MinIO mirror (cron 04:00)
+│   ├── orchestrator.sh                # Full stack backup (calls all above)
+│   └── verify.sh                      # Daily verification (cron 06:00)
+│
+└── development/                       # DEVELOPMENT ONLY — run from project root
+    ├── pg_dump.sh                     # PostgreSQL logical backup
+    ├── redis.sh                       # Redis RDB backup
+    ├── vault.sh                       # Vault KV backup
+    ├── orchestrator.sh                # Runs all dev backups
+    └── verify.sh                      # Verifies dev backups
 ```
 
-## Recovery Procedures
+## Usage
 
-### PostgreSQL — Logical Restore (pg_dump)
-
+### Development
 ```bash
-# List available backups
-ls -lh /var/backups/postgresql/daily/pg_dump_*.dump
+# Run all dev backups
+bash deploy/backups/development/orchestrator.sh
 
-# Restore full database
-pg_restore -h postgres -U loyallia -d loyallia \
-  --clean --if-exists \
-  /var/backups/postgresql/daily/pg_dump_20260429_020000.dump
+# Or individually
+bash deploy/backups/development/pg_dump.sh
+bash deploy/backups/development/redis.sh
+bash deploy/backups/development/vault.sh
 
-# Restore specific table only
-pg_restore -h postgres -U loyallia -d loyallia \
-  --table=members \
-  /var/backups/postgresql/daily/pg_dump_20260429_020000.dump
+# Verify
+bash deploy/backups/development/verify.sh
 ```
 
-### PostgreSQL — Physical Restore (pg_basebackup)
+Backups land in `./.agents/backups/` (relative to project root).
 
+### Production
 ```bash
-# Stop PostgreSQL
-pg_ctl stop -D /var/lib/postgresql/data
+# Run a single backup
+bash deploy/backups/production/pg_dump.sh
 
-# Replace data directory
-rm -rf /var/lib/postgresql/data/*
-tar xzf /var/backups/postgresql/weekly/base_20260427_030000/base.tar.gz \
-  -C /var/lib/postgresql/data/
+# Or the full orchestrator
+bash deploy/backups/production/orchestrator.sh
 
-# Create recovery signal and restart
-touch /var/lib/postgresql/data/recovery.signal
-pg_ctl start -D /var/lib/postgresql/data
+# Verify
+bash deploy/backups/production/verify.sh
 ```
 
-### Redis Restore
+Backups land in `/var/backups/loyallia/`.
 
-```bash
-# Stop Redis
-redis-cli shutdown
+## Safety Guardrails
 
-# Replace dump file
-cp /var/backups/redis/dump_20260429_060000.rdb.gz /var/lib/redis/
-gunzip /var/lib/redis/dump_20260429_060000.rdb.gz
-mv /var/lib/redis/dump_20260429_060000.rdb /var/lib/redis/dump.rdb
-
-# Start Redis
-redis-server /etc/redis/redis.conf
-```
-
-### MinIO Restore
-
-```bash
-# Set alias
-mc alias set local http://minio:9000 minioadmin minioadmin
-
-# Mirror bucket back
-mc mirror /var/backups/minio/passes/20260429_040000/ local/passes/
-mc mirror /var/backups/minio/assets/20260429_040000/ local/assets/
-```
-
-### Vault Restore
-
-```bash
-# Restore Raft snapshot
-curl -X PUT \
-  -H "X-Vault-Token: $VAULT_TOKEN" \
-  -H "Content-Type: application/octet-stream" \
-  --data-binary @/var/backups/vault/vault_20260429_050000.snap.gz \
-  http://vault:8200/v1/sys/storage/raft/snapshot
-```
-
-## Verification
-
-Run manually:
-
-```bash
-/deploy/backups/verify_backups.sh
-cat /var/backups/verification_report.txt
-```
-
-The verification script checks:
-- PostgreSQL backup exists and is < 25 hours old
-- Redis backup exists
-- MinIO backup directory is non-empty
-- Vault backup exists
-
-Returns exit code 1 if any issues found.
-
-## Offsite / S3 Replication (Recommended)
-
-For production, add S3 sync after each backup:
-
-```bash
-aws s3 sync /var/backups/ s3://loyallia-backups/ \
-  --storage-class STANDARD_IA \
-  --sse AES256
-```
-
-## Disaster Recovery RTO/RPO Targets
-
-| Service | RPO | RTO |
-|---------|-----|-----|
-| PostgreSQL | 24h (logical) / 7d (physical) | 30 min |
-| Redis | 6h | 5 min |
-| MinIO | 24h | 15 min |
-| Vault | 24h | 10 min |
+- All production scripts reject `--env=development` with a clear error.
+- All development scripts use `docker compose exec` (no host binaries required).
+- Production scripts run `pg_dump` / `redis-cli` / `mc` directly on the host (assumes installed binaries).

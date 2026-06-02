@@ -94,6 +94,9 @@ backup_redis() {
         return 1
     fi
 
+    local redis_lastsave_before
+    redis_lastsave_before="$(docker compose exec -T redis redis-cli LASTSAVE 2>/dev/null || echo "0")"
+
     docker compose exec -T redis redis-cli BGSAVE >/dev/null
 
     sleep 3
@@ -103,7 +106,7 @@ backup_redis() {
     while [ "$waited" -lt "$max_wait" ]; do
         local bgsave_result
         bgsave_result="$(docker compose exec -T redis redis-cli LASTSAVE 2>/dev/null || echo "0")"
-        if [ "$bgsave_result" != "0" ] && [ "$bgsave_result" != "$(date +%s 2>/dev/null || echo 0)" ]; then
+        if [ "$bgsave_result" != "0" ] && [ "$bgsave_result" != "$redis_lastsave_before" ]; then
             break
         fi
         sleep 1
