@@ -112,8 +112,13 @@ class TestAppleWalletDiagnostics:
 
     def test_diagnostics_all_missing(self):
         """Diagnostics should report all fields missing when Vault is empty."""
-        with patch("apps.customers.pass_engine.apple_pass.get_secret", return_value=""):
-            diag = get_apple_wallet_diagnostics()
+        set_test_override("apple_wallet_enabled", "")
+        set_test_override("apple_pass_type_identifier", "")
+        set_test_override("apple_team_identifier", "")
+        set_test_override("apple_cert_pem", "")
+        set_test_override("apple_cert_key_pem", "")
+        set_test_override("apple_wwdr_cert_pem", "")
+        diag = get_apple_wallet_diagnostics()
         assert diag["enabled"] is False
         assert diag["pass_type_id_present"] is False
         assert diag["team_id_present"] is False
@@ -160,8 +165,10 @@ class TestGoogleWalletDiagnostics:
 
     def test_diagnostics_all_missing(self):
         """Diagnostics should report all fields missing when Vault is empty."""
-        with patch("apps.customers.pass_engine.google_pass.get_secret", return_value=""):
-            diag = get_google_wallet_diagnostics()
+        set_test_override("google_wallet_enabled", "")
+        set_test_override("google_wallet_issuer_id", "")
+        set_test_override("google_service_account_json", "")
+        diag = get_google_wallet_diagnostics()
         assert diag["enabled"] is False
         assert diag["issuer_id_present"] is False
         assert diag["service_account_present"] is False
@@ -253,7 +260,7 @@ class TestGoogleWalletUrlGeneration:
         customer = make_customer(tenant)
         cp = make_customer_pass(customer, card)
 
-        with patch("apps.customers.pass_engine.google_pass._check_google_config", return_value=False):
+        with patch("apps.customers.pass_engine.google_pass.is_google_wallet_configured", return_value=False):
             url = generate_google_wallet_url(cp)
         assert url is None
 
