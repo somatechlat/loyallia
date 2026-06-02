@@ -1391,9 +1391,14 @@ services:
 - Updated rescue file names to match actual output (`pg_dump_rescue_YYYYMMDD.dump`, etc.).
 - Fixed all section numbering to accommodate the new architecture section.
 
+**Testing & Automation:**
+- Created `deploy/backups/development/test_backups.sh` — single-script test suite covering all dev backups, integrity checks, production safety negative tests, and rescue-file validation.
+- Fixed `create_rescue_files.sh` missing `chmod 0600` on `pg_dump_rescue_*.dump` and `redis_rescue_*.rdb`.
+
 **Known Gaps (aspirational features not yet implemented):**
 - WAL archiving is to local disk (`/var/lib/postgresql/data/wal_archive/`), not MinIO bucket `pg-wal-archive`.
 - Vault backup exports KV secrets with `age` encryption; Raft snapshots with GPG are not implemented.
+- `recover_from_rescue.sh` has unfixed Vault recovery bugs (see `docs/BACKUP_TESTING_PLAN.md` §9). Do not use for full DR until redesigned.
 - Weekly automated restore test (Sundays 4:00 AM) does not exist as a standalone script.
 - MinIO cross-site replication is documented but not configured.
 - Circuit breaker pattern is documented but not implemented in code.
