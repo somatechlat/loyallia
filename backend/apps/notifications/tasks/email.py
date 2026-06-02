@@ -27,6 +27,10 @@ def send_email_campaign(
     html_body: str,
     segment_id: str = "all",
     image_url: str = "",
+    target_program_ids: list[str] | None = None,
+    target_device_type: str = "both",
+    target_wallet_platform: str = "both",
+    target_customer_ids: list[str] | None = None,
 ) -> dict:
     """Send a rich HTML email campaign to customers in a segment.
 
@@ -60,12 +64,19 @@ def send_email_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    from apps.customers.segment_api import _apply_segment_filter
+    from apps.customers.segment_api import apply_campaign_filters
 
     base_qs = Customer.objects.filter(
         tenant=tenant, is_active=True, email__isnull=False, email__gt=""
     )
-    audience = _apply_segment_filter(base_qs, segment_id)
+    audience = apply_campaign_filters(
+        base_qs,
+        segment_id=segment_id,
+        target_program_ids=target_program_ids,
+        target_device_type=target_device_type,
+        target_wallet_platform=target_wallet_platform,
+        target_customer_ids=target_customer_ids,
+    )
     total = audience.count()
 
     logger.info(
@@ -80,8 +91,18 @@ def send_email_campaign(
         segment_id=segment_id,
         status=CampaignStatus.IN_PROGRESS,
         total_recipients=total,
+        target_device_types=target_device_type,
+        target_wallet_platforms=target_wallet_platform,
         started_at=timezone.now(),
     )
+    if target_program_ids:
+        from apps.cards.models import Card
+
+        program_cards = Card.objects.filter(id__in=target_program_ids)
+        campaign_run.target_programs.set(program_cards)
+    if target_customer_ids:
+        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        campaign_run.target_customers.set(target_customers)
 
     succeeded = 0
     failed = 0

@@ -61,6 +61,71 @@ def _build_offer_object(
     class_id = f"{issuer_id}.offer-{card.id}"
     object_id = f"{issuer_id}.offer-pass-{customer_pass.id}"
     google_images = _get_google_images(card)
+    pass_data = customer_pass.pass_data or {}
+    metadata = card.metadata or {}
+
+    text_modules = [
+        {"header": "Negocio", "body": tenant.name},
+        {"header": "Oferta", "body": card.name},
+    ]
+
+    if card.card_type == "referral_pass":
+        text_modules.append(
+            {"header": "Referidos", "body": str(customer_pass.referral_count_val)}
+        )
+        ref_code = customer.referral_code or customer_pass.qr_code or "N/A"
+        text_modules.append({"header": "Código", "body": ref_code})
+        text_modules.append(
+            {
+                "header": "Recompensa",
+                "body": metadata.get("referrer_reward", pass_data.get("referrer_reward", "")),
+            }
+        )
+    elif card.card_type == "corporate_discount":
+        discount_pct = str(customer_pass.corporate_discount)
+        company = pass_data.get("company_name", metadata.get("company_name", card.name))
+        text_modules.append(
+            {"header": "Descuento corporativo", "body": f"{discount_pct}%"}
+        )
+        text_modules.append({"header": "Empresa", "body": company})
+    elif card.card_type == "discount":
+        tiers = metadata.get("tiers", [])
+        current_tier = customer_pass.discount_tier or pass_data.get("discount_tier", "")
+        current_discount = 0
+        for tier in tiers:
+            if tier.get("tier_name") == current_tier:
+                current_discount = tier.get("discount_percentage", 0)
+                break
+        if not current_tier and tiers:
+            current_tier = tiers[0].get("tier_name", "Básico")
+            current_discount = tiers[0].get("discount_percentage", 0)
+        text_modules.append(
+            {"header": "Nivel actual", "body": current_tier or "Básico"}
+        )
+        text_modules.append(
+            {"header": "Descuento", "body": f"{current_discount}%"}
+        )
+    elif card.card_type == "coupon":
+        usage_limit = metadata.get(
+            "usage_limit", metadata.get("usage_limit_per_customer", 1)
+        )
+        coupon_end = metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
+        text_modules.append(
+            {
+                "header": "Usos",
+                "body": f"{customer_pass.coupon_redemption_count} / {usage_limit}",
+            }
+        )
+        text_modules.append(
+            {"header": "Válido hasta", "body": str(coupon_end)}
+        )
+        text_modules.append(
+            {
+                "header": "Términos",
+                "body": card.description or metadata.get("coupon_description", ""),
+            }
+        )
+
     obj = {
         "id": object_id,
         "classId": class_id,
@@ -70,10 +135,7 @@ def _build_offer_object(
             "value": customer_pass.qr_code,
             "alternateText": customer_pass.qr_code[:10],
         },
-        "textModulesData": [
-            {"header": "Negocio", "body": tenant.name},
-            {"header": "Oferta", "body": card.name},
-        ],
+        "textModulesData": text_modules,
     }
 
     hero_uri = _resolve_url(

@@ -136,6 +136,15 @@ class MessageOut(BaseModel):
     message: str
 
 
+class CustomerSearchOut(BaseModel):
+    id: str
+    name: str
+    email: str
+    phone: str
+    programs: list[str]
+    wallet_platforms: list[str]
+
+
 class CustomerListOut(BaseModel):
     customers: list[CustomerOut]
     total: int

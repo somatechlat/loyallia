@@ -8,6 +8,7 @@ import uuid
 
 from django.db import models
 
+from apps.cards.models import Card
 from apps.customers.models import Customer
 from apps.tenants.models import Tenant
 
@@ -76,6 +77,42 @@ class CampaignRun(models.Model):
         default="loyallia",
         verbose_name="Dominio remitente",
         help_text="'loyallia' for default or 'custom' for tenant SMTP",
+    )
+
+    # Targeting filters
+    target_programs = models.ManyToManyField(
+        Card,
+        blank=True,
+        related_name="campaigns",
+        verbose_name="Programas objetivo",
+    )
+    target_device_types = models.CharField(
+        max_length=20,
+        choices=[
+            ("ios", "iOS"),
+            ("android", "Android"),
+            ("both", "Ambos"),
+            ("none", "Ninguno"),
+        ],
+        default="both",
+        verbose_name="Tipos de dispositivo objetivo",
+    )
+    target_wallet_platforms = models.CharField(
+        max_length=20,
+        choices=[
+            ("apple", "Apple Wallet"),
+            ("google", "Google Wallet"),
+            ("both", "Ambos"),
+            ("none", "Ninguno"),
+        ],
+        default="both",
+        verbose_name="Plataformas de wallet objetivo",
+    )
+    target_customers = models.ManyToManyField(
+        Customer,
+        blank=True,
+        related_name="targeted_campaigns",
+        verbose_name="Clientes objetivo",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

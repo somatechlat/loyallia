@@ -22,6 +22,7 @@ from apps.customers.schemas import (
     CustomerListOut,
     CustomerOut,
     CustomerPassOut,
+    CustomerSearchOut,
     CustomerUpdateIn,
     MessageOut,
     ResendPassIn,
@@ -74,6 +75,115 @@ def list_customers(
     )
 
     return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
+
+
+@router.get("/search/", auth=jwt_auth, response=list[CustomerSearchOut], summary="Buscar clientes filtrados")
+def search_customers(
+    request: HttpRequest,
+    query: str | None = None,
+    program_ids: str | None = None,
+    device_type: str | None = None,
+    wallet_platform: str | None = None,
+) -> list[CustomerSearchOut]:
+    """Search customers with filters. MANAGER+ only. Max 50 results."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    tenant = require_tenant(request)
+    queryset = Customer.objects.filter(tenant=tenant, is_active=True)
+
+    if query:
+        queryset = queryset.filter(
+            Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+            | Q(email__icontains=query)
+            | Q(phone__icontains=query)
+        )
+
+    if program_ids:
+        card_ids = [c.strip() for c in program_ids.split(",") if c.strip()]
+        if card_ids:
+            queryset = queryset.filter(
+                passes__card_id__in=card_ids,
+                passes__is_active=True,
+            ).distinct()
+
+    if device_type and device_type != "both":
+        if device_type == "none":
+            queryset = queryset.filter(devices__isnull=True)
+        elif device_type in ("ios", "android"):
+            queryset = queryset.filter(
+                devices__device_type=device_type,
+                devices__is_active=True,
+            ).distinct()
+
+    if wallet_platform and wallet_platform != "both":
+        if wallet_platform == "none":
+            queryset = queryset.filter(
+                passes__is_active=True,
+                passes__apple_pass_id="",
+                passes__google_pass_id="",
+            ).distinct()
+        elif wallet_platform == "apple":
+            queryset = queryset.filter(
+                passes__is_active=True,
+                passes__apple_pass_id__gt="",
+            ).distinct()
+        elif wallet_platform == "google":
+            queryset = queryset.filter(
+                passes__is_active=True,
+                passes__google_pass_id__gt="",
+            ).distinct()
+
+    customers = queryset.order_by("-created_at")[:50]
+
+    # Prefetch related data to avoid N+1
+    from django.db.models import Prefetch
+
+    passes_qs = CustomerPass.objects.filter(is_active=True).select_related("card")
+    customer_ids = [c.id for c in customers]
+
+    # Build a mapping of customer -> programs and wallet platforms
+    passes_map = {}
+    for cp in passes_qs.filter(customer_id__in=customer_ids):
+        passes_map.setdefault(cp.customer_id, []).append(cp)
+
+    from apps.notifications.models import PushDevice
+
+    devices_map = {}
+    for device in PushDevice.objects.filter(customer_id__in=customer_ids, is_active=True):
+        devices_map.setdefault(device.customer_id, set()).add(device.device_type)
+
+    results = []
+    for customer in customers:
+        customer_passes = passes_map.get(customer.id, [])
+        programs = []
+        wallet_platforms = []
+        has_apple = False
+        has_google = False
+        for cp in customer_passes:
+            if cp.card and cp.card.name and cp.card.name not in programs:
+                programs.append(cp.card.name)
+            if cp.apple_pass_id:
+                has_apple = True
+            if cp.google_pass_id:
+                has_google = True
+        if has_apple:
+            wallet_platforms.append("apple")
+        if has_google:
+            wallet_platforms.append("google")
+
+        results.append(
+            CustomerSearchOut(
+                id=str(customer.id),
+                name=customer.full_name,
+                email=customer.email,
+                phone=customer.phone,
+                programs=programs,
+                wallet_platforms=wallet_platforms,
+            )
+        )
+
+    return results
 
 
 @router.post("/", auth=jwt_auth, response=CustomerOut, summary="Crear cliente")
