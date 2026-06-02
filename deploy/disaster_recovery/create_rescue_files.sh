@@ -91,7 +91,7 @@ configure() {
 
     if [ -f "$PROJECT_ROOT/.env" ]; then
         POSTGRES_USER="$(grep '^POSTGRES_USER=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "loyallia")"
-        POSTGRES_DB="$(grep '^POSTGRES_DB=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "")"
+        POSTGRES_DB="$(grep '^POSTGRES_DB=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "loyallia")"
         VAULT_SECRET_PATH="$(grep '^VAULT_SECRET_PATH=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "")"
     else
         POSTGRES_USER="loyallia"
@@ -100,13 +100,9 @@ configure() {
     fi
 
     POSTGRES_USER="${POSTGRES_USER:-loyallia}"
-    if [ "$ENVIRONMENT" = "production" ]; then
-        POSTGRES_DB="${POSTGRES_DB:-loyallia}"
-    else
-        POSTGRES_DB="${POSTGRES_DB:-loyallia_dev}"
-    fi
-    # Vault path format: secret/data/loyallia/<env> → mount=secret, path=loyallia/<env>
-    VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-secret/data/loyallia/${ENVIRONMENT}}"
+    POSTGRES_DB="${POSTGRES_DB:-loyallia}"
+    # Vault path format: secret/data/loyallia/production → mount=secret, path=loyallia/production
+    VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-secret/data/loyallia/production}"
 
     VAULT_KV_MOUNT="$(echo "$VAULT_SECRET_PATH" | cut -d/ -f1)"
     # Strip mount and /data/ prefix: secret/data/loyallia/production → loyallia/production
@@ -199,7 +195,6 @@ export_postgresql() {
         exit 1
     }
 
-    chmod 0600 "$dump_file"
     local size
     size="$(wc -c < "$dump_file" | tr -d ' ')"
     log "Saved: pg_dump_rescue_${DATESTAMP}.dump ($size bytes)"
@@ -349,7 +344,6 @@ export_redis() {
         return
     }
 
-    chmod 0600 "$rdb_file"
     local size
     size="$(wc -c < "$rdb_file" | tr -d ' ')"
     log "Saved: redis_rescue_${DATESTAMP}.rdb ($size bytes)"

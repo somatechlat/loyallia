@@ -83,21 +83,30 @@ docker network ls | grep loyallia
 
 ## Step 4 — Re-Bootstrap From Zero
 
+**Development:**
 ```bash
-deploy/bootstrap/bootstrap.sh
+./deploy/bootstrap/bootstrap-development.sh
+```
+
+**Production (requires ADMIN_PASSWORD):**
+```bash
+ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap-production.sh
 ```
 
 **This runs the Zero Trust Bootstrap sequence:**
 1. Check prerequisites (docker, compose)
-2. Generate secrets + auto-discover certificates from `certs/` → `.bootstrap_secrets.json`
+2. Generate secrets + auto-discover certificates from `certs/` → `.bootstrap_secrets.{mode}.env`
 3. Start Vault + vault-init (secrets injected via read-only volume, **NEVER via env vars**)
 4. Auto-save `init.json` to `.agents/vault_init_rescue.json`
 5. Auto-export Vault secrets to `.agents/vault_secrets_rescue.json`
 6. Start PostgreSQL, Redis, MinIO, PgBouncer, replica
 7. Run migrations + seeds (API container startup)
-8. Start Celery workers, Flower, WhatsApp bridge, Nginx, monitoring
-9. Securely shred `.bootstrap_secrets.json`, cleanup temp volume
-10. Verify all containers healthy
+8. Ensure SuperAdmin account exists
+9. Start Celery workers, Flower, WhatsApp bridge, Nginx, monitoring
+10. Securely cleanup temp volume
+11. Verify all containers healthy
+
+**Idempotent:** Both scripts are fully idempotent. If interrupted, simply re-run — completed steps are skipped automatically.
 
 **Architecture:** See `docs/BOOTSTRAP_ARCHITECTURE.md` for full Zero Trust design.
 
@@ -162,5 +171,5 @@ docker cp loyallia-redis:/data/dump.rdb .agents/redis_rescue_$(date +%Y%m%d).rdb
 
 ---
 
-*Last updated: 2026-05-14*  
-*Procedure verified against docker-compose.yml v2026-05-12*
+*Last updated: 2026-06-02*  
+*Procedure verified against idempotent bootstrap scripts v2026-06-02*
