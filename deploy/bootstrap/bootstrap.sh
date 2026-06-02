@@ -4,9 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SECRETS_FILE="${BOOTSTRAP_SECRETS_FILE:-$PROJECT_ROOT/.bootstrap_secrets.${BOOTSTRAP_MODE}.env}"
-# Fallback to legacy paths for backwards compatibility
-[ -f "$SECRETS_FILE" ] || SECRETS_FILE="$PROJECT_ROOT/.bootstrap_secrets.env"
-[ -f "$SECRETS_FILE" ] || SECRETS_FILE="$PROJECT_ROOT/.bootstrap_secrets.json"
 RESCUE_DIR="$PROJECT_ROOT/.agents"
 BOOTSTRAP_VOL="loyallia_bootstrap_tmp"
 BOOTSTRAP_MODE="${LOYALLIA_BOOTSTRAP_MODE:-development}"
@@ -84,10 +81,6 @@ generate_or_load_secrets() {
         log "Found existing secrets file: $SECRETS_FILE"
         log "This file will be mounted into vault-init as a read-only volume."
         log "It will NEVER be sourced or exported to environment variables."
-    elif [ -f "$PROJECT_ROOT/.bootstrap_secrets.json" ]; then
-        log "No .env secrets found, but legacy .bootstrap_secrets.json exists."
-        log "Converting to .env format is recommended. Continuing with JSON..."
-        SECRETS_FILE="$PROJECT_ROOT/.bootstrap_secrets.json"
     elif [ -f "$RESCUE_DIR/vault_secrets_rescue.json" ]; then
         log "No .bootstrap_secrets.json found, but rescue files exist in .agents/"
         warn "This appears to be a DISASTER RECOVERY, not a fresh bootstrap."
@@ -116,24 +109,13 @@ prepare_bootstrap_volume() {
     log "Created temporary volume: $compose_vol"
 
     # Copy secrets JSON into the volume (never export to env)
-    # Determine the source filename and target filename for vault-init
-    if [ "$SECRETS_FILE" = "$PROJECT_ROOT/.bootstrap_secrets.json" ]; then
-        # Legacy JSON format
-        src_name=".bootstrap_secrets.json"
-        dst_name="secrets.json"
-    else
-        # New .env format (default)
-        src_name="$(basename "$SECRETS_FILE")"
-        dst_name="secrets.env"
-    fi
-
     docker run --rm \
         -v "$compose_vol:/bootstrap" \
         -v "$PROJECT_ROOT:/project:ro" \
         alpine \
-        cp "/project/$src_name" "/bootstrap/$dst_name" >/dev/null 2>&1
+        cp "/project/.bootstrap_secrets.${BOOTSTRAP_MODE}.env" "/bootstrap/secrets.env" >/dev/null 2>&1
 
-    log "Secrets $dst_name copied to temporary volume (read-only mount)."
+    log "Secrets secrets.env copied to temporary volume (read-only mount)."
     log "NO secrets were exported to environment variables."
 }
 
