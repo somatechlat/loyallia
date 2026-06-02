@@ -128,7 +128,7 @@ export const customersApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/customers/', { params }),
   get: (id: string) => api.get(`/api/v1/customers/${id}/`),
   create: (data: Record<string, unknown>) => api.post('/api/v1/customers/', data),
-  update: (id: string, data: Record<string, unknown>) => api.put(`/api/v1/customers/${id}/`, data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/api/v1/customers/${id}/`, data),
   delete: (id: string) => api.delete(`/api/v1/customers/${id}/`),
   importCsv: (formData: FormData) => api.post('/api/v1/customers/import/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -151,6 +151,7 @@ export const programsApi = {
   publish: (id: string) => api.post(`/api/v1/programs/${id}/publish/`),
   delete: (id: string) => api.delete(`/api/v1/programs/${id}/`),
   stats: (id: string) => api.get(`/api/v1/programs/${id}/stats/`),
+  memberCount: (id: string) => api.get(`/api/v1/programs/${id}/member-count/`),
   members: (id: string, params?: { search?: string; limit?: number; offset?: number }) =>
     api.get(`/api/v1/programs/${id}/members/`, { params }),
   transactions: (id: string, params?: { limit?: number; offset?: number }) =>
@@ -222,6 +223,10 @@ export const transactionsApi = {
 
 export const mediaApi = {
   listAssets: () => api.get<{ success: boolean; assets: Array<{ url: string; name: string; size: number; last_modified: string }>; count: number }>('/api/v1/upload/assets/'),
+};
+
+export const campaignsApi = {
+  create: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
 };
 
 export const scannerApi = {

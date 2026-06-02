@@ -542,8 +542,8 @@ def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
 def update_customer(
     request: HttpRequest, customer_id: str, data: CustomerUpdateIn
 ) -> CustomerOut:
-    """Update customer information. OWNER only."""
-    if not is_owner(request):
+    """Update customer information. MANAGER+ can edit; OWNER only for hard delete."""
+    if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     customer = get_object_or_404(
         Customer, id=customer_id, tenant=require_tenant(request)
