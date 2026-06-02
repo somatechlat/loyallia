@@ -131,3 +131,4 @@ backups/tmp/
 backups/*.dump
 backups/*.rdb
 backups/*.tar.gz
+.age_keys/
