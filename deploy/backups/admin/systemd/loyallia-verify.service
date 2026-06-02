@@ -1,0 +1,19 @@
+[Unit]
+Description=Loyallia Backup Verification
+After=docker.service
+Documentation=https://github.com/somatechlat/loyallia/blob/main/docs/BACKUP_DISASTER_RECOVERY.md
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '/opt/loyallia/deploy/disaster_recovery/verify_backups.sh >> /var/log/loyallia/backups/verify.log 2>&1'
+User=root
+Group=root
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=loyallia-verify
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/loyallia /var/log/loyallia/backups /opt/loyallia
