@@ -326,7 +326,7 @@ migrate_and_seed() {
     docker compose up -d api --no-deps
 
     log "Waiting for API readiness..."
-    local timeout=90
+    local timeout=120
     local elapsed=0
     while [ "$elapsed" -lt "$timeout" ]; do
         if docker compose exec -T api curl -sf http://localhost:8000/api/v1/health/ &>/dev/null; then
@@ -341,6 +341,11 @@ migrate_and_seed() {
         warn "API health check timed out. Checking logs..."
         docker compose logs api --tail=20
     fi
+
+    log "Running explicit migrations on direct database..."
+    docker compose exec -T api python manage.py migrate --database=direct --noinput --settings loyallia.settings.production || {
+        warn "Explicit migration failed — may have already run via container startup"
+    }
 
     log "Seeding subscription plans..."
     docker compose exec -T api python manage.py seed_subscription_plans \
