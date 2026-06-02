@@ -130,14 +130,6 @@ start_vault() {
         fi
     fi
 
-    # docker-compose.yml mounts ./.bootstrap_secrets.env into vault-init.
-    # Copy the mode-specific secrets file so the compose mount works.
-    if [ "$SECRETS_FILE" != "$PROJECT_ROOT/.bootstrap_secrets.env" ]; then
-        log "Copying $SECRETS_FILE to .bootstrap_secrets.env for docker-compose mount..."
-        cp "$SECRETS_FILE" "$PROJECT_ROOT/.bootstrap_secrets.env"
-        chmod 0600 "$PROJECT_ROOT/.bootstrap_secrets.env"
-    fi
-
     log "Starting Vault..."
     docker compose up -d vault
 
