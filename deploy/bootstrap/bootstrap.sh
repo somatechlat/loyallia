@@ -267,10 +267,17 @@ start_stateful_services() {
 
     log "Waiting for Redis health..."
 
-    # Extract Redis password from bootstrap secrets JSON
+    # Extract Redis password from bootstrap secrets file
     local redis_password=""
-    if command -v python3 &>/dev/null && [ -f "$SECRETS_FILE" ]; then
-        redis_password="$(python3 -c "import json; d=json.load(open('$SECRETS_FILE')); print(d.get('secrets',{}).get('redis_url','').split(':')[2].split('@')[0], end='')" 2>/dev/null)"
+    if [ -f "$SECRETS_FILE" ]; then
+        # Try JSON format first, then fall back to .env format
+        if command -v python3 &>/dev/null && python3 -c "import json; json.load(open('$SECRETS_FILE'))" 2>/dev/null; then
+            redis_password="$(python3 -c "import json; d=json.load(open('$SECRETS_FILE')); print(d.get('secrets',{}).get('redis_url','').split(':')[2].split('@')[0], end='')" 2>/dev/null)"
+        else
+            # Parse .env format: extract password from redis_url
+            redis_url="$(grep '^redis_url=' "$SECRETS_FILE" | head -1 | cut -d= -f2-)"
+            redis_password="$(printf '%s' "$redis_url" | sed -n 's|redis://:\([^@]*\)@.*|\1|p')"
+        fi
     fi
 
     elapsed=0
