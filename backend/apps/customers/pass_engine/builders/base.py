@@ -65,7 +65,7 @@ def _resolve_gw_type(card_type: str) -> str:
     Reference: https://developers.google.com/wallet/generic/rest/v1
     """
     OFFER_TYPES = {"coupon", "discount", "corporate_discount", "referral_pass"}
-    GIFT_TYPES = {"gift_certificate", "cashback"}
+    GIFT_TYPES = {"gift_certificate"}
     if card_type in OFFER_TYPES:
         return "offer"
     elif card_type in GIFT_TYPES:

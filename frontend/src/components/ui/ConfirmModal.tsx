@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 
 interface ConfirmModalProps {
   title: string;
@@ -23,13 +24,16 @@ interface ConfirmModalProps {
 export default function ConfirmModal({
   title,
   message,
-  confirmLabel = 'Confirmar',
-  cancelLabel = 'Cancelar',
+  confirmLabel: confirmLabelProp,
+  cancelLabel: cancelLabelProp,
   variant = 'danger',
   onConfirm,
   onCancel,
   loading = false,
 }: ConfirmModalProps) {
+  const { t } = useI18n();
+  const confirmLabel = confirmLabelProp ?? t('common.confirm');
+  const cancelLabel = cancelLabelProp ?? t('common.cancel');
   const modalRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);

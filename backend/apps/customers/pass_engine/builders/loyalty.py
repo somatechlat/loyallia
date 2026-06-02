@@ -87,6 +87,7 @@ def _build_loyalty_object(
     object_id = f"{issuer_id}.loyallia-pass-{customer_pass.id}"
     loyalty_points = _build_points_for_type(card, customer_pass)
     google_images = _get_google_images(card)
+    metadata = card.metadata or {}
 
     hero_uri = _resolve_url(
         google_images.get("hero_image") or card.strip_image_url, base_url
@@ -170,6 +171,13 @@ def _build_loyalty_object(
             }
         ]
 
+    if card.card_type == "cashback":
+        pct = metadata.get("cashback_percentage", 10)
+        obj["secondaryLoyaltyPoints"] = {
+            "label": "Tasa de cashback",
+            "balance": {"string": f"{pct}%"},
+        }
+
     _apply_google_advanced_to_object(card, obj)
     return obj
 
@@ -190,16 +198,10 @@ def _build_points_for_type(card, customer_pass) -> dict:
             "balance": {"string": f"{remaining} / {bundle_size}"},
         }
     elif card.card_type == "cashback":
-        # WARNING: Unreachable — cashback maps to giftCard, not loyalty
         balance = str(customer_pass.cashback_balance_val)
         return {
-            "label": "Credito",
-            "balance": {
-                "money": {
-                    "micros": int(float(balance) * 1_000_000),
-                    "currencyCode": metadata.get("currency", "USD"),
-                }
-            },
+            "label": "Crédito",
+            "balance": {"string": f"${balance}"},
         }
     elif card.card_type == "vip_membership":
         return {

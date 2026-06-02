@@ -60,23 +60,13 @@ def _build_gift_card_object(
     object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
     pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
-    if card.card_type == "gift_certificate":
-        balance = str(customer_pass.gift_balance_val)
-    else:
-        balance = str(customer_pass.cashback_balance_val)
+    balance = str(customer_pass.gift_balance_val)
     google_images = _get_google_images(card)
 
     text_modules = [
         {"header": "Negocio", "body": tenant.name},
         {"header": "Tarjeta", "body": card.name},
     ]
-    if card.card_type == "cashback":
-        text_modules.append(
-            {"header": "Tasa de cashback", "body": f"{metadata.get('cashback_percentage', 0)}%"}
-        )
-        text_modules.append(
-            {"header": "Crédito acumulado", "body": f"${balance}"}
-        )
 
     obj = {
         "id": object_id,

@@ -172,5 +172,27 @@ def _build_offer_object(
             }
         ]
 
+    if card.card_type == "coupon":
+        coupon_end = metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
+        if coupon_end:
+            obj["validTimeInterval"] = {
+                "start": {"date": customer_pass.enrolled_at.isoformat() if customer_pass.enrolled_at else ""},
+                "end": {"date": coupon_end},
+            }
+
+    if card.card_type == "discount":
+        tiers = metadata.get("tiers", [])
+        current_tier = customer_pass.discount_tier or pass_data.get("discount_tier", "")
+        current_discount = 0
+        for tier in tiers:
+            if tier.get("tier_name") == current_tier:
+                current_discount = tier.get("discount_percentage", 0)
+                break
+        obj["details"] = f"{current_discount}% de descuento"
+
+    if card.card_type == "corporate_discount":
+        discount_pct = str(customer_pass.corporate_discount)
+        obj["details"] = f"{discount_pct}% de descuento corporativo"
+
     _apply_google_advanced_to_object(card, obj)
     return obj

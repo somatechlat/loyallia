@@ -5,7 +5,7 @@ Phase 3 implementation of all program CRUD endpoints.
 
 import logging
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from common.request import TenantRequest
 from django.shortcuts import get_object_or_404
@@ -422,18 +422,131 @@ def delete_program(request: TenantRequest, program_id: str) -> HttpResponse:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
 
+    # Count passes before deletion for logging
+    pass_count = CustomerPass.objects.filter(card=card).count()
+    active_pass_count = CustomerPass.objects.filter(card=card, is_active=True).count()
+
     log_action(
         request=request,
         action="DELETE",
         resource_type="program",
         resource_id=str(card.id),
-        details={"name": card.name, "card_type": card.card_type},
+        details={
+            "name": card.name,
+            "card_type": card.card_type,
+            "deleted_passes": pass_count,
+            "active_passes": active_pass_count,
+        },
     )
 
+    # Cascade delete: remove all CustomerPasses first (this cascades to ApplePassRegistration, etc.)
+    CustomerPass.objects.filter(card=card).delete()
+
+    # Now delete the program itself
     card.delete()
 
-    #
     return HttpResponse(status=204)
+
+
+@router.get("/{program_id}/member-count/", auth=jwt_auth, summary="Contar miembros del programa")
+def program_member_count(request: TenantRequest, program_id: str) -> dict:
+    """Returns member count for a program. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
+    total = CustomerPass.objects.filter(card=card).count()
+    active = CustomerPass.objects.filter(card=card, is_active=True).count()
+    return {"count": total, "active_count": active}
+
+
+@router.get("/{program_id}/members/", auth=jwt_auth, response=dict, summary="Miembros del programa")
+def program_members(
+    request: TenantRequest,
+    program_id: str,
+    search: str | None = None,
+    limit: int = 25,
+    offset: int = 0,
+) -> dict:
+    """Returns paginated members of a program. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
+
+    qs = CustomerPass.objects.filter(card=card).select_related("customer")
+
+    if search:
+        qs = qs.filter(
+            Q(customer__first_name__icontains=search)
+            | Q(customer__last_name__icontains=search)
+            | Q(customer__email__icontains=search)
+            | Q(customer__phone__icontains=search)
+        )
+
+    total = qs.count()
+    passes = qs[offset : offset + limit]
+
+    items = []
+    for cp in passes:
+        c = cp.customer
+        items.append(
+            {
+                "id": str(c.id),
+                "first_name": c.first_name,
+                "last_name": c.last_name,
+                "email": c.email,
+                "phone": c.phone,
+                "total_visits": c.total_visits,
+                "total_spent": str(c.total_spent),
+                "last_visit": c.last_visit.isoformat() if c.last_visit else None,
+                "is_active": c.is_active,
+                "enrolled_at": cp.enrolled_at.isoformat() if cp.enrolled_at else "",
+                "pass_state": {
+                    "stamp_count": cp.stamp_count_val,
+                    "cashback_balance": str(cp.cashback_balance_val),
+                    "coupon_used": cp.coupon_redemption_count > 0,
+                    "gift_balance": str(cp.gift_balance_val),
+                    "multipass_remaining": cp.multipass_remaining_val,
+                },
+            }
+        )
+
+    return {"items": items, "total": total}
+
+
+@router.get("/{program_id}/transactions/", auth=jwt_auth, response=dict, summary="Transacciones del programa")
+def program_transactions(
+    request: TenantRequest,
+    program_id: str,
+    limit: int = 25,
+    offset: int = 0,
+) -> dict:
+    """Returns paginated transactions for a program. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
+
+    from apps.transactions.models import Transaction
+
+    qs = Transaction.objects.filter(customer_pass__card=card).select_related(
+        "customer_pass__customer"
+    )
+    total = qs.count()
+    transactions = qs.order_by("-created_at")[offset : offset + limit]
+
+    items = []
+    for t in transactions:
+        c = t.customer_pass.customer if t.customer_pass else None
+        items.append(
+            {
+                "id": str(t.id),
+                "customer_name": f"{c.first_name} {c.last_name}".strip() if c else "—",
+                "amount": str(t.amount),
+                "type": t.transaction_type,
+                "created_at": t.created_at.isoformat() if t.created_at else "",
+            }
+        )
+
+    return {"items": items, "total": total}
 
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
