@@ -3,7 +3,7 @@
     "model": "tenants.platformsetting",
     "fields": {
       "key": "TRIAL_DAYS",
-      "value": "5",
+      "value": "14",
       "description": "Días de prueba por defecto para nuevos tenants",
       "category": "billing",
       "requires_restart": false
