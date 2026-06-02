@@ -2,23 +2,23 @@ import { VaultField } from './types';
 
 export const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
   google_wallet: [
-    { key: 'google_wallet_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'] },
-    { key: 'google_wallet_issuer_id', label: 'Issuer ID', type: 'text' },
-    { key: 'google_service_account_json', label: 'Service Account JSON', type: 'textarea' },
-    { key: 'google_oauth_client_id', label: 'OAuth Client ID', type: 'text' },
-    { key: 'google_oauth_client_secret', label: 'OAuth Client Secret', type: 'password' },
+    { key: 'google_wallet_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'], description: 'Requiere reinicio del contenedor API para activar/desactivar' },
+    { key: 'google_wallet_issuer_id', label: 'Issuer ID', type: 'text', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
+    { key: 'google_service_account_json', label: 'Service Account JSON', type: 'textarea', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
+    { key: 'google_oauth_client_id', label: 'OAuth Client ID', type: 'text', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
+    { key: 'google_oauth_client_secret', label: 'OAuth Client Secret', type: 'password', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
   ],
   google_oauth: [
     { key: 'google_oauth_client_id', label: 'Client ID', type: 'text' },
     { key: 'google_oauth_client_secret', label: 'Client Secret', type: 'password' },
   ],
   apple_wallet: [
-    { key: 'apple_wallet_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'] },
-    { key: 'apple_pass_type_identifier', label: 'Pass Type ID', type: 'text' },
-    { key: 'apple_team_identifier', label: 'Team ID', type: 'text' },
-    { key: 'apple_cert_pem', label: 'Certificate PEM', type: 'textarea' },
-    { key: 'apple_cert_key_pem', label: 'Private Key PEM', type: 'textarea' },
-    { key: 'apple_wwdr_cert_pem', label: 'WWDR Certificate PEM', type: 'textarea' },
+    { key: 'apple_wallet_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'], description: 'Requiere reinicio del contenedor API para activar/desactivar' },
+    { key: 'apple_pass_type_identifier', label: 'Pass Type ID', type: 'text', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
+    { key: 'apple_team_identifier', label: 'Team ID', type: 'text', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
+    { key: 'apple_cert_pem', label: 'Certificate PEM', type: 'textarea', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
+    { key: 'apple_cert_key_pem', label: 'Private Key PEM', type: 'textarea', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
+    { key: 'apple_wwdr_cert_pem', label: 'WWDR Certificate PEM', type: 'textarea', description: 'Requiere reinicio del contenedor API para aplicar cambios' },
   ],
   payment_gateway: [
     { key: 'payment_gateway_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'] },

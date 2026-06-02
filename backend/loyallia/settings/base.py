@@ -305,11 +305,8 @@ APPLE_PASS_TYPE_IDENTIFIER = get_secret(
     default="",
 )
 APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", default="")
-APPLE_CERT_PATH = config("APPLE_CERT_PATH", default="/app/certs/apple_pass.pem")
-APPLE_CERT_KEY_PATH = config("APPLE_CERT_KEY_PATH", default="/app/certs/apple_pass.key")
-APPLE_WWDR_CERT_PATH = config(
-    "APPLE_WWDR_CERT_PATH", default="/app/certs/apple_wwdr.pem"
-)
+# Apple Wallet certificates are loaded directly from Vault at runtime.
+# Legacy filesystem paths removed  certs are never stored on disk in production.
 PASS_HMAC_SECRET = get_secret("pass_hmac_secret", default="")
 # Apple Wallet webServiceURL the base URL Apple Wallet calls for pass
 # registration, update checking, and pass re-download. Must be HTTPS in production.
@@ -326,10 +323,8 @@ APPLE_APNS_AUTH_KEY_PATH = config(
     "APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8"
 )
 
-GOOGLE_SERVICE_ACCOUNT_FILE = config(
-    "GOOGLE_SERVICE_ACCOUNT_FILE",
-    default="/app/certs/google_wallet_service_account.json",
-)
+# Google Wallet service account JSON is loaded directly from Vault at runtime.
+# Legacy filesystem path removed  credentials are never stored on disk in production.
 GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", default="")
 
 # PAYMENT GATEWAY (Pluggable Manual / Disabled)

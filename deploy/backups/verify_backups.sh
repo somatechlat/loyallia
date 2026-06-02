@@ -50,7 +50,7 @@ fi
 
 # Check Vault backup
 VAULT_DIR="/var/backups/vault"
-LATEST_VAULT=$(ls -t "$VAULT_DIR"/vault_*.snap.gz 2>/dev/null | head -1)
+LATEST_VAULT=$(ls -t "$VAULT_DIR"/vault_*.json.age 2>/dev/null | head -1)
 if [ -z "$LATEST_VAULT" ]; then
   echo "❌ Vault: No backup found!" >> "$REPORT"
   ERRORS=$((ERRORS + 1))

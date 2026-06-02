@@ -131,26 +131,44 @@ def _fetch_vault_secrets() -> dict:
             vault_ca_cert,
         )
 
-    try:
-        req = urllib.request.Request(url, headers=headers, method="GET")
-        with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
-            body = json.loads(response.read().decode("utf-8"))
-            secrets = body.get("data", {}).get("data", {})
-            logger.info(
-                "Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH
+    # Retry with exponential backoff (3 attempts: 1s, 2s, 4s)
+    last_exc = None
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(url, headers=headers, method="GET")
+            with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
+                body = json.loads(response.read().decode("utf-8"))
+                secrets = body.get("data", {}).get("data", {})
+                logger.info(
+                    "Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH
+                )
+                _secrets_cache = secrets
+                _cache_fetched_at = now
+                return secrets
+        except urllib.error.URLError as exc:
+            last_exc = exc
+            logger.warning(
+                "Vault: connection failed (attempt %d/3): %s", attempt + 1, exc.reason
             )
-            _secrets_cache = secrets
-            _cache_fetched_at = now
-            return secrets
-    except urllib.error.URLError as exc:
-        logger.warning("Vault: connection failed (%s).", exc.reason)
-        return _secrets_cache  # Return stale cache on connection failure
-    except (json.JSONDecodeError, KeyError) as exc:
-        logger.warning("Vault: invalid response format (%s).", exc)
-        return _secrets_cache
-    except Exception as exc:
-        logger.warning("Vault: unexpected error (%s).", exc)
-        return _secrets_cache
+        except (json.JSONDecodeError, KeyError) as exc:
+            last_exc = exc
+            logger.warning(
+                "Vault: invalid response format (attempt %d/3): %s", attempt + 1, exc
+            )
+        except Exception as exc:
+            last_exc = exc
+            logger.warning(
+                "Vault: unexpected error (attempt %d/3): %s", attempt + 1, exc
+            )
+
+        if attempt < 2:
+            sleep_seconds = 2 ** attempt  # 1s, 2s
+            logger.info("Vault: retrying in %ds...", sleep_seconds)
+            time.sleep(sleep_seconds)
+
+    # All retries exhausted  return stale cache if available
+    logger.error("Vault: all retries exhausted. Last error: %s", last_exc)
+    return _secrets_cache
 
 
 def fetch_vault_secrets() -> dict:
