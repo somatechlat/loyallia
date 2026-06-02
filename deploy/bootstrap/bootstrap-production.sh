@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# =============================================================================
+# LOYALLIA — PRODUCTION BOOTSTRAP (ISOLATED)
+# =============================================================================
+# This script is for PRODUCTION DEPLOYMENTS ONLY.
+# It uses .bootstrap_secrets.production.env and production settings.
+# NO shared logic with development bootstrap.
+# =============================================================================
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BOOTSTRAP_MODE="${LOYALLIA_BOOTSTRAP_MODE:-development}"
-SECRETS_FILE="${BOOTSTRAP_SECRETS_FILE:-$PROJECT_ROOT/.bootstrap_secrets.${BOOTSTRAP_MODE}.env}"
+BOOTSTRAP_MODE="production"
+SECRETS_FILE="${BOOTSTRAP_SECRETS_FILE:-$PROJECT_ROOT/.bootstrap_secrets.production.env}"
 RESCUE_DIR="$PROJECT_ROOT/.agents"
 BOOTSTRAP_VOL="loyallia_bootstrap_tmp"
-VAULT_KV_PATH="loyallia/$BOOTSTRAP_MODE"
+VAULT_KV_PATH="loyallia/production"
 
-# Production mode: automatically include docker-compose.prod.yml
-if [ "$BOOTSTRAP_MODE" = "production" ]; then
-    export COMPOSE_FILE="docker-compose.yml:docker-compose.prod.yml"
-    echo "[bootstrap] Production mode: using COMPOSE_FILE=$COMPOSE_FILE"
-fi
+export COMPOSE_FILE="docker-compose.yml:docker-compose.prod.yml"
+echo "[bootstrap] PRODUCTION BOOTSTRAP — using COMPOSE_FILE=$COMPOSE_FILE"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -31,8 +36,10 @@ check_prerequisites() {
 
     local missing=0
 
-    if [ "$BOOTSTRAP_MODE" != "development" ] && [ "$BOOTSTRAP_MODE" != "production" ]; then
-        err "LOYALLIA_BOOTSTRAP_MODE must be development or production."
+    # Production-only validation
+    if [ ! -f "$SECRETS_FILE" ]; then
+        err "Production secrets file not found: $SECRETS_FILE"
+        err "Create it from your local .bootstrap_secrets.json before deploying."
         missing=1
     fi
 
@@ -332,23 +339,21 @@ migrate_and_seed() {
 
     log "Seeding subscription plans..."
     docker compose exec -T api python manage.py seed_subscription_plans \
-        --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
+        --settings loyallia.settings.production 2>/dev/null || {
         warn "seed_subscription_plans not available — skipping"
     }
 
     log "Seeding platform settings..."
-    docker compose exec -T api python manage.py seed_platform_settings --mode="$BOOTSTRAP_MODE" \
-        --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
+    docker compose exec -T api python manage.py seed_platform_settings --mode=production \
+        --settings loyallia.settings.production 2>/dev/null || {
         warn "seed_platform_settings not available — skipping"
     }
 
-    if [ "$BOOTSTRAP_MODE" = "production" ]; then
-        log "Validating production runtime guardrails..."
-        docker compose exec -T api python manage.py validate_runtime_environment --mode production \
-            --settings loyallia.settings.production 2>/dev/null || {
-            warn "Runtime validation failed — continuing anyway"
-        }
-    fi
+    log "Validating production runtime guardrails..."
+    docker compose exec -T api python manage.py validate_runtime_environment --mode production \
+        --settings loyallia.settings.production 2>/dev/null || {
+        warn "Runtime validation failed — continuing anyway"
+    }
 }
 
 ensure_admin_password() {
@@ -358,16 +363,9 @@ ensure_admin_password() {
     local admin_pass="${ADMIN_PASSWORD:-}"
 
     if [ -z "$admin_pass" ]; then
-        if [ "$BOOTSTRAP_MODE" = "production" ]; then
-            err "ADMIN_PASSWORD environment variable is required in production mode."
-            err "Example: ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap.sh"
-            exit 1
-        else
-            warn "ADMIN_PASSWORD not set. Using an auto-generated password."
-            admin_pass="$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 24)"
-            log "Generated admin password: $admin_pass"
-            log "Set ADMIN_PASSWORD to use a fixed password."
-        fi
+        err "ADMIN_PASSWORD environment variable is required for production bootstrap."
+        err "Example: ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap-production.sh"
+        exit 1
     fi
 
     log "Ensuring admin account has a usable password..."
@@ -376,8 +374,7 @@ ensure_admin_password() {
         --password "$admin_pass" \
         --create || {
         err "Could not set admin password via recover_admin_access."
-        err "You may need to set it manually after bootstrap:"
-        err "  docker compose exec api python manage.py recover_admin_access --password 'YourPass' --create"
+        err "Set it manually: docker compose exec api python manage.py recover_admin_access --password 'YourPass' --create"
         exit 1
     }
 
