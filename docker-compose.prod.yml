@@ -127,8 +127,6 @@ services:
   vault-init:
     environment:
       VAULT_APP_SECRET_PATH: loyallia/production
-    volumes: !reset []
-      - ./.bootstrap_secrets.production.env:/vault/bootstrap/secrets.env:ro
 
   # ═══════════════════════════════════════════════════════════════════════
   # NGINX — Production: Host nginx handles 80/443, container has NO port bind
