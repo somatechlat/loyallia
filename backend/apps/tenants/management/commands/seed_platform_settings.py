@@ -11,6 +11,7 @@ Idempotent  safe to run multiple times; existing keys are skipped unless
 """
 
 import json
+import os
 from pathlib import Path
 
 from django.core.management.base import BaseCommand
@@ -113,41 +114,59 @@ _BACKUP_SETTINGS = [
     },
 ]
 
-# URL settings
+# URL settings — configure via SuperAdmin > Platform Settings
 _URL_SETTINGS = [
     {
+        "key": "public_base_url",
+        "value": "",
+        "description": "Public base URL for links, emails, and wallet passes (overrides env)",
+        "category": "url",
+    },
+    {
         "key": "api_base_url",
-        "value": "https://rewards.loyallia.com/api/v1/",
+        "value": "",
         "description": "Base URL for the Loyallia API",
         "category": "url",
     },
     {
         "key": "dashboard_url",
-        "value": "https://rewards.loyallia.com",
+        "value": "",
         "description": "Main dashboard / frontend URL",
         "category": "url",
     },
     {
         "key": "webhook_base_url",
-        "value": "https://rewards.loyallia.com/api/v1/webhooks/",
+        "value": "",
         "description": "Base URL for incoming webhooks",
         "category": "url",
     },
     {
         "key": "wallet_web_service_url",
-        "value": "https://rewards.loyallia.com/api/v1/pass/",
+        "value": "",
         "description": "Apple/Google Wallet webServiceURL base",
         "category": "url",
     },
     {
         "key": "scanner_url",
-        "value": "https://rewards.loyallia.com/scanner",
+        "value": "",
         "description": "QR code scanner web app URL",
+        "category": "url",
+    },
+    {
+        "key": "minio_public_endpoint",
+        "value": "",
+        "description": "Public MinIO/S3 endpoint for asset URLs (overrides env)",
+        "category": "url",
+    },
+    {
+        "key": "google_oauth_redirect_uri",
+        "value": "",
+        "description": "Google OAuth redirect URI",
         "category": "url",
     },
 ]
 
-# Notification settings
+# Notification settings — configure via SuperAdmin > Platform Settings
 _NOTIFICATION_SETTINGS = [
     {
         "key": "mailjet_sender_email",
@@ -171,6 +190,30 @@ _NOTIFICATION_SETTINGS = [
         "key": "push_notification_ttl",
         "value": "86400",
         "description": "Push notification time-to-live in seconds (24h default)",
+        "category": "notification",
+    },
+    {
+        "key": "email_host",
+        "value": "",
+        "description": "SMTP server hostname (overrides env EMAIL_HOST)",
+        "category": "notification",
+    },
+    {
+        "key": "email_port",
+        "value": "",
+        "description": "SMTP server port (overrides env EMAIL_PORT)",
+        "category": "notification",
+    },
+    {
+        "key": "email_use_tls",
+        "value": "",
+        "description": "Use TLS for SMTP (true/false, overrides env EMAIL_USE_TLS)",
+        "category": "notification",
+    },
+    {
+        "key": "whatsapp_bridge_url",
+        "value": "",
+        "description": "WhatsApp Bridge base URL (overrides env)",
         "category": "notification",
     },
 ]
@@ -272,19 +315,39 @@ ALL_DEFAULTS = (
 )
 
 # Mode-specific overrides
+# URL values can be overridden via environment variables for CI/CD and LAN testing.
 _MODE_OVERRIDES = {
     "development": {
         "development_mode": "true",
         "sandbox_webhooks": "true",
-        "api_base_url": "http://localhost:8000/api/v1/",
-        "dashboard_url": "http://localhost:3000",
-        "webhook_base_url": "http://localhost:8000/api/v1/webhooks/",
-        "wallet_web_service_url": "http://localhost:8000/api/v1/pass/",
-        "scanner_url": "http://localhost:3000/scanner",
+        "public_base_url": os.getenv("PUBLIC_BASE_URL", "http://localhost"),
+        "api_base_url": os.getenv("API_BASE_URL", "http://localhost:33905/api/v1/"),
+        "dashboard_url": os.getenv("DASHBOARD_URL", "http://localhost:33906"),
+        "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", "http://localhost:33905/api/v1/webhooks/"),
+        "wallet_web_service_url": os.getenv("WALLET_WEB_SERVICE_URL", "http://localhost:33905/api/v1/pass/"),
+        "scanner_url": os.getenv("SCANNER_URL", "http://localhost:33906/scanner"),
+        "minio_public_endpoint": os.getenv("MINIO_PUBLIC_ENDPOINT", "http://localhost:33903"),
+        "google_oauth_redirect_uri": os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:33905/api/v1/auth/google/callback/"),
+        "email_host": os.getenv("EMAIL_HOST", "in-v3.mailjet.com"),
+        "email_port": os.getenv("EMAIL_PORT", "587"),
+        "email_use_tls": os.getenv("EMAIL_USE_TLS", "true"),
+        "whatsapp_bridge_url": os.getenv("WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
     },
     "production": {
         "development_mode": "false",
         "sandbox_webhooks": "true",
+        "public_base_url": os.getenv("PUBLIC_BASE_URL", "https://rewards.loyallia.com"),
+        "api_base_url": os.getenv("API_BASE_URL", "https://rewards.loyallia.com/api/v1/"),
+        "dashboard_url": os.getenv("DASHBOARD_URL", "https://rewards.loyallia.com"),
+        "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", "https://rewards.loyallia.com/api/v1/webhooks/"),
+        "wallet_web_service_url": os.getenv("WALLET_WEB_SERVICE_URL", "https://rewards.loyallia.com/api/v1/pass/"),
+        "scanner_url": os.getenv("SCANNER_URL", "https://rewards.loyallia.com/scanner"),
+        "minio_public_endpoint": os.getenv("MINIO_PUBLIC_ENDPOINT", "https://rewards.loyallia.com"),
+        "google_oauth_redirect_uri": os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "https://rewards.loyallia.com/api/v1/auth/google/callback/"),
+        "email_host": os.getenv("EMAIL_HOST", "in-v3.mailjet.com"),
+        "email_port": os.getenv("EMAIL_PORT", "587"),
+        "email_use_tls": os.getenv("EMAIL_USE_TLS", "true"),
+        "whatsapp_bridge_url": os.getenv("WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
     },
 }
 

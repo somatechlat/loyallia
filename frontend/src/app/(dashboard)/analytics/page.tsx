@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { analyticsApi } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import toast from 'react-hot-toast';
+import { usePlan } from '@/hooks/usePlan';
 
 // BUG-003/004 fix: removed @ts-nocheck and `as any` casts
 // PERF-003: Single dynamic import wrapper for all recharts (was 13 separate chunks)
@@ -74,6 +75,9 @@ function KpiCard({ label, value, sub, icon, color }: {
 
 
 export default function AnalyticsPage() {
+  const { hasFeature } = usePlan();
+  const hasAdvancedAnalytics = hasFeature('advanced_analytics');
+
   const [days, setDays] = useState(30);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [trends, setTrends] = useState<DailyPoint[]>([]);
@@ -180,16 +184,38 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts — dynamically loaded as single chunk (PERF-003) */}
-      <ChartContent
-        trends={trends}
-        segments={segments}
-        programs={programs}
-        days={days}
-        isDark={isDark}
-        gridColor={gridColor}
-        chart={chart}
-        setChart={setChart}
-      />
+      {hasAdvancedAnalytics ? (
+        <ChartContent
+          trends={trends}
+          segments={segments}
+          programs={programs}
+          days={days}
+          isDark={isDark}
+          gridColor={gridColor}
+          chart={chart}
+          setChart={setChart}
+        />
+      ) : (
+        <div className="card p-16 text-center">
+          <div className="w-14 h-14 mx-auto mb-4 bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center">
+            <svg className="w-7 h-7 text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+          </div>
+          <p className="text-surface-700 font-semibold text-lg">Analíticas avanzadas no disponibles</p>
+          <p className="text-surface-400 text-sm mt-2 max-w-sm mx-auto">
+            Esta función no está incluida en tu plan actual. Actualiza tu plan para acceder a tendencias, segmentación y reportes avanzados.
+          </p>
+          <button
+            onClick={() => window.location.href = '/billing/upgrade'}
+            className="btn-primary mt-6"
+            id="upgrade-plan-analytics"
+          >
+            Actualizar Plan
+          </button>
+        </div>
+      )}
     </div>
   );
 }

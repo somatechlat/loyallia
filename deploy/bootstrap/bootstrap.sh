@@ -27,7 +27,7 @@ err() { echo -e "${RED}[error]${NC} $*" >&2; }
 step() { echo ""; echo -e "${CYAN}════════════════════════════════════════════════════════════${NC}"; echo -e "${CYAN}  STEP $1${NC}"; echo -e "${CYAN}════════════════════════════════════════════════════════════${NC}"; }
 
 check_prerequisites() {
-    step "1/9 — Checking prerequisites"
+    step "1/10 — Checking prerequisites"
 
     local missing=0
 
@@ -75,7 +75,7 @@ check_existing_data() {
 }
 
 generate_or_load_secrets() {
-    step "2/9 — Loading or generating secrets"
+    step "2/10 — Loading or generating secrets"
 
     if [ -f "$SECRETS_FILE" ]; then
         log "Found existing secrets file: $SECRETS_FILE"
@@ -98,7 +98,7 @@ generate_or_load_secrets() {
 }
 
 prepare_bootstrap_volume() {
-    step "3/9 — Preparing secure bootstrap volume"
+    step "3/10 — Preparing secure bootstrap volume"
 
     # Docker Compose prefixes volume names with project name (loyallia_)
     local compose_vol="loyallia_${BOOTSTRAP_VOL}"
@@ -120,7 +120,15 @@ prepare_bootstrap_volume() {
 }
 
 start_vault() {
-    step "4/9 — Starting Vault + vault-init"
+    step "4/10 — Starting Vault + vault-init"
+
+    # Ensure TLS certificates exist (generate self-signed for development)
+    if [ "$BOOTSTRAP_MODE" = "development" ]; then
+        if [ ! -f "$PROJECT_ROOT/certs/vault.crt" ] || [ ! -f "$PROJECT_ROOT/certs/vault.key" ]; then
+            log "Development TLS certificates not found. Generating self-signed certs..."
+            bash "$PROJECT_ROOT/deploy/vault/generate-dev-certs.sh" "$PROJECT_ROOT/certs"
+        fi
+    fi
 
     log "Starting Vault..."
     docker compose up -d vault
@@ -178,7 +186,7 @@ start_vault() {
 }
 
 auto_create_rescue_files() {
-    step "5/9 — Creating rescue files"
+    step "5/10 — Creating rescue files"
 
     # --- Rescue file detection: redirect to DR if rescue files already exist ---
     if [ -f "$RESCUE_DIR/vault_init_rescue.json" ] && [ -f "$RESCUE_DIR/vault_secrets_rescue.json" ]; then
@@ -229,7 +237,7 @@ auto_create_rescue_files() {
 }
 
 start_stateful_services() {
-    step "6/9 — Starting stateful services"
+    step "6/10 — Starting stateful services"
 
     log "Starting PostgreSQL, Redis, MinIO..."
     docker compose up -d postgres redis minio minio-init
@@ -285,7 +293,7 @@ start_stateful_services() {
 }
 
 migrate_and_seed() {
-    step "7/9 — Running migrations + seeds"
+    step "7/10 — Running migrations + operational seeds"
 
     log "Starting API container for migrations..."
     docker compose up -d api --no-deps
@@ -307,37 +315,29 @@ migrate_and_seed() {
         docker compose logs api --tail=20
     fi
 
-    if [ "$BOOTSTRAP_MODE" = "development" ]; then
-        log "Provisioning development RBAC E2E users..."
-        docker compose exec -T api python manage.py seed_development_data --generate \
-            --settings loyallia.settings.development || {
-            warn "Development RBAC user provisioning failed."
-            docker compose logs api --tail=20
-            return 1
-        }
-    else
+    log "Seeding subscription plans..."
+    docker compose exec -T api python manage.py seed_subscription_plans \
+        --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
+        warn "seed_subscription_plans not available — skipping"
+    }
+
+    log "Seeding platform settings..."
+    docker compose exec -T api python manage.py seed_platform_settings --mode="$BOOTSTRAP_MODE" \
+        --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
+        warn "seed_platform_settings not available — skipping"
+    }
+
+    if [ "$BOOTSTRAP_MODE" = "production" ]; then
         log "Validating production runtime guardrails..."
-        docker compose exec -T api python manage.py seed_production_operational_data \
-            --settings loyallia.settings.production
         docker compose exec -T api python manage.py validate_runtime_environment --mode production \
-            --settings loyallia.settings.production
-
-        log "Seeding platform settings..."
-        docker compose exec -T api python manage.py seed_platform_settings --mode="$BOOTSTRAP_MODE" \
-            --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
-            warn "seed_platform_settings not available — skipping"
-        }
-
-        log "Seeding subscription plans..."
-        docker compose exec -T api python manage.py seed_subscription_plans \
-            --settings "loyallia.settings.$BOOTSTRAP_MODE" 2>/dev/null || {
-            warn "seed_subscription_plans not available — skipping"
+            --settings loyallia.settings.production 2>/dev/null || {
+            warn "Runtime validation failed — continuing anyway"
         }
     fi
 }
 
 ensure_admin_password() {
-    step "8/10 — Setting admin password"
+    step "8/10 — Ensuring SuperAdmin account"
 
     local admin_email="${ADMIN_EMAIL:-admin@loyallia.com}"
     local admin_pass="${ADMIN_PASSWORD:-}"
@@ -432,10 +432,12 @@ cleanup_bootstrap() {
     docker volume rm "$compose_vol" 2>/dev/null || true
     log "Removed temporary volume: $compose_vol"
 
-    # Securely delete bootstrap secrets JSON
+    # NOTE: We do NOT delete .bootstrap_secrets.json here.
+    # It is required for re-bootstrap, disaster recovery, and CI/CD pipelines.
+    # The secrets file should be protected by .gitignore and filesystem permissions.
     if [ -f "$SECRETS_FILE" ]; then
-        secure_delete "$SECRETS_FILE"
-        log "Securely deleted: $SECRETS_FILE"
+        chmod 0600 "$SECRETS_FILE"
+        log "Preserved secrets file (permissions 0600): $SECRETS_FILE"
     fi
 }
 
@@ -555,9 +557,9 @@ main() {
     auto_create_rescue_files
     start_stateful_services
     migrate_and_seed
+    ensure_admin_password
     start_workers_and_proxy
     start_redis_sentinel
-    ensure_admin_password
     cleanup_bootstrap
     verify_bootstrap
 

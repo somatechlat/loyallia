@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { billingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Tooltip from '@/components/ui/Tooltip';
@@ -80,6 +81,7 @@ function getGaugeColor(pct: number): string {
 }
 
 export default function BillingPage() {
+  const router = useRouter();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -147,7 +149,7 @@ export default function BillingPage() {
                 : 'Gestiona tu plan actual y sus características. Puedes cambiar de plan en cualquier momento.'}
             </p>
           </div>
-          <button className="btn-primary whitespace-nowrap" id="upgrade-btn">
+          <button onClick={() => router.push('/billing/upgrade')} className="btn-primary whitespace-nowrap" id="upgrade-btn">
             {planSlug === 'trial' ? <span className="flex items-center gap-1"><Rocket className="w-4 h-4" /> Mejorar plan</span> : <span className="flex items-center gap-1"><ArrowUpCircle className="w-4 h-4" /> Cambiar plan</span>}
           </button>
         </div>

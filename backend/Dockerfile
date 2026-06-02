@@ -9,11 +9,11 @@
 # =============================================================================
 
 # --- Stage 1: Builder ---
-FROM python:3.12-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /build
 
-# System dependencies for psycopg2, Pillow, cryptography
+# System dependencies for psycopg (v3), Pillow, cryptography
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -30,7 +30,7 @@ RUN pip install --upgrade pip && \
     pip install --prefix=/install --no-cache-dir -r requirements.txt
 
 # --- Stage 2: Production ---
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 

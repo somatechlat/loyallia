@@ -99,6 +99,8 @@ def register(request, payload: RegisterIn):
             ),
             tenant_id="",
             user_id="",
+            # Distinguishable from real creation so frontend can show helpful message
+            existing_email=True,
         )
     # Server-side phone verification (NO BYPASS)
     is_phone_verified = False
@@ -123,23 +125,35 @@ def register(request, payload: RegisterIn):
                 exc,
             )
 
-    with transaction.atomic():
-        slug = slugify_business(payload.business_name)
-        tenant = Tenant.objects.create(name=payload.business_name.strip(), slug=slug)
-        tenant.activate_trial()
-        user_manager = cast(UserManager, User.objects)
-        user = user_manager.create_user(
-            email=payload.email,
-            password=payload.password,
-            first_name=payload.first_name.strip(),
-            last_name=payload.last_name.strip(),
-            phone_number=payload.phone_number.strip(),
-            tenant=tenant,
-            role=UserRole.OWNER,
-            is_active=True,
-            is_email_verified=False,
-            is_phone_verified=is_phone_verified,
-        )
+    # Retry loop for race-condition-safe slug creation
+    max_slug_attempts = 5
+    tenant = None
+    for _attempt in range(max_slug_attempts):
+        try:
+            with transaction.atomic():
+                slug = slugify_business(payload.business_name)
+                tenant = Tenant.objects.create(name=payload.business_name.strip(), slug=slug)
+                tenant.activate_trial()
+                user_manager = cast(UserManager, User.objects)
+                user = user_manager.create_user(
+                    email=payload.email,
+                    password=payload.password,
+                    first_name=payload.first_name.strip(),
+                    last_name=payload.last_name.strip(),
+                    phone_number=payload.phone_number.strip(),
+                    tenant=tenant,
+                    role=UserRole.OWNER,
+                    is_active=True,
+                    is_email_verified=False,
+                    is_phone_verified=is_phone_verified,
+                )
+            break  # Success — exit retry loop
+        except IntegrityError:
+            # Another request created the same slug; retry with a new one
+            continue
+
+    if tenant is None:
+        raise HttpError(500, get_message("TENANT_CREATE_ERROR"))
 
     otp = secrets.token_urlsafe(8)
     store_otp(payload.email, otp, "verify_email")

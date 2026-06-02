@@ -13,6 +13,7 @@ const Chatbot = dynamic(() => import('@/components/chat/Chatbot'), { ssr: false 
 import ProfileModal from '@/components/dashboard/ProfileModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LOYALLIA_LOGO, LOYALLIA_LOGO_DARK } from '@/lib/loyalliaLogo';
+import { PlanProvider } from '@/hooks/usePlan';
 import Cookies from 'js-cookie';
 
 import { APP_CONFIG } from '@/lib/constants';
@@ -359,9 +360,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main content */}
       <main className="flex-1 ml-64 p-8 min-h-screen animate-fade-in relative">
-        <ImpersonationBanner />
-        <ErrorBoundary>{children}</ErrorBoundary>
-        <Chatbot />
+        <PlanProvider>
+          <ImpersonationBanner />
+          <ErrorBoundary>{children}</ErrorBoundary>
+          <Chatbot />
+        </PlanProvider>
       </main>
 
       {/* Profile Modal */}

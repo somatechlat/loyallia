@@ -198,6 +198,14 @@ def enroll_customer_public(
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
 
+    # Only enforce customer limit if tenant has an active subscription
+    # Public enrollment should work during trial or for basic free tier
+    from apps.billing.models import Subscription
+
+    subscription = Subscription.objects.filter(tenant=card.tenant).first()
+    if subscription and subscription.is_access_allowed:
+        check_plan_limit(card.tenant, "customers", write=True)
+
     date_of_birth = None
     if customer_data.date_of_birth:
         from django.utils.dateparse import parse_date
@@ -320,9 +328,12 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     if hasattr(request, "build_absolute_uri"):
         base_url = request.build_absolute_uri("/").rstrip("/")
     else:
+        from common.platform_config import get_platform_config
         from django.conf import settings
 
-        base_url = getattr(settings, "PUBLIC_BASE_URL", "")
+        base_url = get_platform_config(
+            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+        )
 
     pass_url = f"{base_url}/pass/{pass_id}/"
     apple_url = f"{base_url}/api/v1/wallet/apple/{pass_id}/"

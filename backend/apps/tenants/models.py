@@ -333,10 +333,9 @@ class Tenant(TimestampedModel):
         """Set trial_end to now + TRIAL_DAYS. Called on registration.
 
         Also syncs the denormalized Tenant.plan field for backward compatibility.
+        Creates a Subscription record if one does not exist.
         """
         from datetime import timedelta
-
-        from apps.billing.models import Subscription, SubscriptionStatus
 
         trial_end = timezone.now() + timedelta(
             days=PlatformSetting.get_int(
@@ -349,14 +348,34 @@ class Tenant(TimestampedModel):
         self.plan = Plan.TRIAL
         self.save(update_fields=["trial_end", "plan", "updated_at"])
 
-        # Update authoritative Subscription
-        subscription = Subscription.objects.filter(tenant=self).first()
-        if subscription:
-            subscription.trial_end = trial_end
-            subscription.status = SubscriptionStatus.TRIALING
-            subscription.plan = "trial"
-            subscription.save(
-                update_fields=["trial_end", "status", "plan", "updated_at"]
+        # Update or create authoritative Subscription
+        try:
+            from apps.billing.models import Subscription, SubscriptionStatus
+
+            subscription, created = Subscription.objects.get_or_create(
+                tenant=self,
+                defaults={
+                    "trial_end": trial_end,
+                    "status": SubscriptionStatus.TRIALING,
+                    "plan": "trial",
+                },
+            )
+            if not created:
+                subscription.trial_end = trial_end
+                subscription.status = SubscriptionStatus.TRIALING
+                subscription.plan = "trial"
+                subscription.save(
+                    update_fields=["trial_end", "status", "plan", "updated_at"]
+                )
+        except Exception:
+            # Billing migrations may not be applied yet; don't block registration
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "Could not create/update Subscription for tenant %s (billing table may not exist)",
+                self.slug,
+                exc_info=True,
             )
 
 

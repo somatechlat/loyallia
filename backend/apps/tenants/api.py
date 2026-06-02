@@ -35,9 +35,11 @@ class AIChatIn(Schema):
 from common.messages import get_message  # noqa: E402
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth  # noqa: E402
 from common.plan_enforcement import (  # noqa: E402
+    check_feature_access,
     check_plan_limit,
     get_current_usage,
     get_tenant_limits,
+    require_active_subscription,
 )
 
 logger = logging.getLogger(__name__)
@@ -192,6 +194,7 @@ def create_location(request, payload: LocationCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     check_plan_limit(request.tenant, "locations", write=True)
+    check_feature_access(request.tenant, "geo_fencing")
 
     loc = Location.objects.create(
         tenant=request.tenant,
@@ -324,6 +327,7 @@ def list_team(request):
     response=dict,
     summary="Agregar miembro al equipo",
 )
+@require_active_subscription
 def add_team_member(request, payload: TeamMemberCreateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -421,6 +425,7 @@ def ai_chat_proxy(request, payload: AIChatIn):
     """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    check_feature_access(request.tenant, "ai_assistant")
     import httpx
     from django.conf import settings
 

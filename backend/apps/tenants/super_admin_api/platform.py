@@ -253,7 +253,12 @@ def platform_integrations(request):
     )
 
     payment_enabled = bool(getattr(settings, "PAYMENT_GATEWAY_ENABLED", False))
-    payment_provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
+    from common.platform_config import get_platform_config
+
+    payment_provider = get_platform_config(
+        "payment_gateway_provider",
+        getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual"),
+    )
     mailjet_api_key = get_secret("mailjet_api_key", default="")
     mailjet_secret_key = get_secret("mailjet_secret_key", default="")
     from apps.tenants.models import PlatformSetting
@@ -327,7 +332,9 @@ def platform_integrations(request):
             status="configured" if mailjet_configured else "missing_credentials",
             detail="Mailjet SMTP mass email provider",
             diagnostics={
-                "host": getattr(settings, "EMAIL_HOST", ""),
+                "host": get_platform_config(
+                    "email_host", getattr(settings, "EMAIL_HOST", "")
+                ),
                 "api_key_present": bool(mailjet_api_key),
                 "secret_key_present": bool(mailjet_secret_key),
                 "sender_email_present": bool(mailjet_sender_email),

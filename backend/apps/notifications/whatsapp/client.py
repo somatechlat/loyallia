@@ -27,9 +27,11 @@ def _get_client() -> httpx.Client:
     PERF: Creates a new client per call. For Celery tasks that send
     many messages, callers should create a single client and pass it.
     """
-    base_url = get_secret(
+    from common.platform_config import get_platform_config
+
+    base_url = get_platform_config(
         "whatsapp_bridge_url",
-        default=getattr(settings, "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
+        getattr(settings, "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
     )
     api_key = get_secret(
         "whatsapp_bridge_api_key",

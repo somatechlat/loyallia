@@ -6,18 +6,20 @@
 # Ref: LYL-SEC-001
 
 x-common-env: &common-env
-  DATABASE_URL: postgres://loyallia@postgres:5432/loyallia_dev
-  DATABASE_DIRECT_URL: postgres://loyallia@postgres:5432/loyallia_dev
+  # Database routing — override via .env for production
+  DATABASE_URL: ${DATABASE_URL:-postgres://loyallia@postgres:5432/loyallia_dev}
+  DATABASE_DIRECT_URL: ${DATABASE_DIRECT_URL:-postgres://loyallia@postgres:5432/loyallia_dev}
   # PgBouncer available at pgbouncer:6432 for connection pooling in production
-  PGBOUNCER_URL: postgres://loyallia@pgbouncer:6432/loyallia_dev
+  PGBOUNCER_URL: ${PGBOUNCER_URL:-postgres://loyallia@pgbouncer:6432/loyallia_dev}
   MINIO_ENDPOINT: http://minio:9000
-  MINIO_PUBLIC_ENDPOINT: https://rewards.loyallia.com
-  PUBLIC_BASE_URL: https://rewards.loyallia.com
-  MINIO_BUCKET_PASSES: passes
-  MINIO_BUCKET_ASSETS: assets
-  DJANGO_SETTINGS_MODULE: loyallia.settings.development
-  DEBUG: "True"
-  ALLOWED_HOSTS: "*"
+  # Development defaults — override via .env or docker-compose.override.yml for LAN testing
+  MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:33903}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost}
+  MINIO_BUCKET_PASSES: ${MINIO_BUCKET_PASSES:-passes}
+  MINIO_BUCKET_ASSETS: ${MINIO_BUCKET_ASSETS:-assets}
+  DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-loyallia.settings.development}
+  DEBUG: ${DEBUG:-True}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
   # CORS_ALLOWED_ORIGINS intentionally omitted — development.py sets CORS_ALLOW_ALL_ORIGINS=True
   # Vault: HTTPS with TLS certificates
   # Certificates mounted at /vault/certs/ in Vault container
@@ -27,42 +29,43 @@ x-common-env: &common-env
   VAULT_TOKEN_FILE: /run/loyallia-vault/app-token
   VAULT_SECRET_PATH: secret/data/loyallia/development
   # Apple Wallet
-  APPLE_WALLET_MODE: vault
+  APPLE_WALLET_MODE: ${APPLE_WALLET_MODE:-vault}
   # Google Wallet
-  GOOGLE_WALLET_MODE: vault
+  GOOGLE_WALLET_MODE: ${GOOGLE_WALLET_MODE:-vault}
   # Payment Gateway (manual admin verification or disabled)
-  PAYMENT_GATEWAY_PROVIDER: manual
-  PAYMENT_GATEWAY_BASE_URL:  
+  PAYMENT_GATEWAY_PROVIDER: ${PAYMENT_GATEWAY_PROVIDER:-manual}
+  PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL:-}
   # Email
-  EMAIL_HOST: in-v3.mailjet.com
-  EMAIL_PORT: "587"
-  EMAIL_FROM: noreply@loyallia.com
+  EMAIL_HOST: ${EMAIL_HOST:-in-v3.mailjet.com}
+  EMAIL_PORT: ${EMAIL_PORT:-587}
+  EMAIL_FROM: ${EMAIL_FROM:-noreply@loyallia.com}
   # Google OAuth 2.0 - local development mode
   # Local dev uses a separate Google OAuth client from production.
   # Create your own dev client at: https://console.cloud.google.com/apis/credentials
   #   Authorized JS origins: http://localhost:3000
   #   Authorized redirect URIs: http://localhost:33905/api/v1/auth/google/callback/
   # Then set in your local .env or Vault: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET
-  GOOGLE_OAUTH_REDIRECT_URI: https://rewards.loyallia.com/api/v1/auth/google/callback/
+  # Local development redirect URI (production override in docker-compose.prod.yml)
+  GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:33905/api/v1/auth/google/callback/}
   # Sentry error tracking (B-013)
-  SENTRY_DSN:  
+  SENTRY_DSN: ${SENTRY_DSN:-}
   # WhatsApp Bridge (LYL-SRS-006)
   WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:3001
 services:
   # PostgreSQL 16 primary database (localhost:33900, 1.5GB)
   # WAL archiving, tuned memory, persistent volume
   postgres:
-    image: postgres:16.2-alpine
+    image: postgres:17.4-alpine
     container_name: loyallia-postgres
     depends_on:
       vault-init:
         condition: service_completed_successfully
     environment:
-      POSTGRES_DB: loyallia_dev
-      POSTGRES_USER: loyallia
+      POSTGRES_DB: ${POSTGRES_DB:-loyallia_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-loyallia}
       POSTGRES_PASSWORD_FILE: /run/loyallia-vault/postgres_password
       # Production-grade PostgreSQL tuning
-      POSTGRES_INITDB_ARGS: "--data-checksums"
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:---data-checksums}
     command:
       - "postgres"
       - "-c" 
@@ -133,7 +136,7 @@ services:
   # PostgreSQL replica - streaming replication (LYL-H-INFRA-015)
   # Hot standby for read scaling and failover
   postgres-replica:
-    image: postgres:16.2-alpine
+    image: postgres:17.4-alpine
     container_name: loyallia-postgres-replica
     depends_on:
       vault-init:
@@ -141,9 +144,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      POSTGRES_USER: loyallia
+      POSTGRES_USER: ${POSTGRES_USER:-loyallia}
       POSTGRES_PASSWORD_FILE: /run/loyallia-vault/postgres_password
-      PGUSER: loyallia
+      PGUSER: ${POSTGRES_USER:-loyallia}
       PGPASSWORD_FILE: /run/loyallia-vault/postgres_password
     command: sh /usr/local/bin/replica-entrypoint.sh
     volumes:
@@ -181,7 +184,7 @@ services:
   # PgBouncer connection pooling (localhost:33901, 128M)
   # Transaction pooling for high concurrency
   pgbouncer:
-    image: edoburu/pgbouncer:v1.23.1-p3
+    image: edoburu/pgbouncer:v1.25.1-p0
     container_name: loyallia-pgbouncer
     command: >
       sh -c "export DATABASE_URL=postgres://loyallia:$$(cat /run/loyallia-vault/postgres_password)@postgres:5432/loyallia_dev && exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini"
@@ -233,7 +236,7 @@ services:
   # Redis 7 cache and Celery broker (localhost:33902, 512M)
   # AOF persistence, LRU eviction, production limits
   redis:
-    image: redis:7.2.4-alpine
+    image: redis:7.4.3-alpine
     container_name: loyallia-redis
     depends_on:
       vault-init:
@@ -759,7 +762,7 @@ services:
 
   # HashiCorp Vault secret management (localhost:33908, 256M)
   vault:
-    image: hashicorp/vault:1.15.6
+    image: hashicorp/vault:1.19.0
     container_name: loyallia-vault
     command: vault server -config=/vault/config/vault.hcl
     cap_add:
@@ -772,9 +775,10 @@ services:
       - ./deploy/vault.hcl:/vault/config/vault.hcl:ro
       - vault_data:/vault/file
       # Mount real Let's Encrypt certificates (production)
-      # Falls back to ./certs for local development
-      - ${SSL_CERT_PATH:-/etc/letsencrypt/live/rewards.loyallia.com/fullchain.pem}:/vault/certs/vault.crt:ro
-      - ${SSL_KEY_PATH:-/etc/letsencrypt/live/rewards.loyallia.com/privkey.pem}:/vault/certs/vault.key:ro
+      # Vault TLS certificates. In development, run deploy/vault/generate-dev-certs.sh first.
+      # In production, mount real certificates via SSL_CERT_PATH / SSL_KEY_PATH env vars.
+      - ${SSL_CERT_PATH:-./certs/vault.crt}:/vault/certs/vault.crt:ro
+      - ${SSL_KEY_PATH:-./certs/vault.key}:/vault/certs/vault.key:ro
     ports:
       - "127.0.0.1:33908:8200"
     networks:
@@ -800,7 +804,7 @@ services:
 
   # Vault KV v2 initialization — seeds secrets for development
   vault-init:
-    image: hashicorp/vault:1.15.6
+    image: hashicorp/vault:1.19.0
     container_name: loyallia-vault-init
     depends_on:
       vault:
@@ -816,8 +820,8 @@ services:
     volumes:
       - vault_data:/vault/file
       - vault_runtime:/vault/runtime
-      - ${SSL_CERT_PATH:-/etc/letsencrypt/live/rewards.loyallia.com/fullchain.pem}:/vault/certs/vault.crt:ro
-      - ${SSL_KEY_PATH:-/etc/letsencrypt/live/rewards.loyallia.com/privkey.pem}:/vault/certs/vault.key:ro
+      - ${SSL_CERT_PATH:-./certs/vault.crt}:/vault/certs/vault.crt:ro
+      - ${SSL_KEY_PATH:-./certs/vault.key}:/vault/certs/vault.key:ro
       - ./deploy/vault/init.sh:/vault/bootstrap-script/init.sh:ro
       - ./.bootstrap_secrets.env:/vault/bootstrap/secrets.env:ro
     entrypoint: /bin/sh /vault/bootstrap-script/init.sh
@@ -833,11 +837,11 @@ services:
 
   # Nginx reverse proxy and security headers
   nginx:
-    image: nginx:1.25.4-alpine
+    image: nginx:1.28.0-alpine
     container_name: loyallia-nginx
     ports:
-      - "0.0.0.0:80:80"
-      - "0.0.0.0:443:443"
+      # Development: HTTP only. Production uses host-level nginx with SSL (see docker-compose.prod.yml)
+      - "${DOCKER_BIND_HOST:-127.0.0.1}:80:80"
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -876,7 +880,7 @@ services:
 
   # Prometheus metrics collection (localhost:33909, 512M)
   prometheus:
-    image: prom/prometheus:v2.50.1
+    image: prom/prometheus:v3.3.0
     container_name: loyallia-prometheus
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -902,7 +906,7 @@ services:
 
   # Grafana metrics dashboard (localhost:33910, 512M)
   grafana:
-    image: grafana/grafana:10.3.3
+    image: grafana/grafana:12.0.0
     container_name: loyallia-grafana
     environment:
       GF_SECURITY_ADMIN_PASSWORD__FILE: /run/loyallia-vault/grafana_admin_password
@@ -935,7 +939,7 @@ services:
   # Loki log aggregation (localhost:33912, 256M)
   # LYL-H-INFRA-012: Centralized log collection and querying
   loki:
-    image: grafana/loki:2.9.4
+    image: grafana/loki:3.5.0
     container_name: loyallia-loki
     command: -config.file=/etc/loki/loki-config.yml
     volumes:
@@ -967,7 +971,7 @@ services:
   # Alertmanager alert routing (localhost:9093, 128M)
   # LYL-H-INFRA-013: Alert routing with SMTP email delivery
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: prom/alertmanager:v0.28.0
     container_name: loyallia-alertmanager
     volumes:
       - ./deploy/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
@@ -1001,7 +1005,7 @@ services:
   # Redis Sentinel high availability (localhost:26379, 128M)
   # LYL-H-INFRA-015: Automatic failover when Redis master goes down
   redis-sentinel:
-    image: redis:7.2.4-alpine
+    image: redis:7.4.3-alpine
     container_name: loyallia-redis-sentinel
     depends_on:
       redis:

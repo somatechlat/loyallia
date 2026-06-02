@@ -207,10 +207,15 @@ def get_payment_gateway() -> BasePaymentGateway:
     if _gateway_instance is not None:
         return _gateway_instance
 
+    from common.platform_config import get_platform_config
+
     if not getattr(settings, "PAYMENT_GATEWAY_ENABLED", False):
         provider = "disabled"
     else:
-        provider = getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual")
+        provider = get_platform_config(
+            "payment_gateway_provider",
+            getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "manual"),
+        )
     gateway_class = _GATEWAY_REGISTRY.get(provider)
     if gateway_class is None:
         logger.error("Unknown payment gateway provider: %s", provider)

@@ -39,6 +39,7 @@ class RegisterOut(BaseModel):
     message: str
     tenant_id: str
     user_id: str
+    existing_email: bool = False  # True when email already exists (privacy-safe)
 
 
 class LoginIn(BaseModel):

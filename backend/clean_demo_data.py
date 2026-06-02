@@ -216,8 +216,8 @@ def main():
         errors.append(f"Expected 1 user, found {users.count()}")
     if plans.count() != 4:
         errors.append(f"Expected 4 plans, found {plans.count()}")
-    if settings.count() != 3:
-        errors.append(f"Expected 3 platform settings, found {settings.count()}")
+    if settings.count() < 3:
+        errors.append(f"Expected at least 3 platform settings, found {settings.count()}")
     if Tenant.objects.count() != 0:
         errors.append(f"Expected 0 tenants, found {Tenant.objects.count()}")
     if Customer.objects.count() != 0:

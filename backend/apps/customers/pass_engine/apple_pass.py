@@ -20,6 +20,7 @@ import logging
 import zipfile
 from typing import Any
 
+from common.platform_config import get_platform_config
 from django.conf import settings
 
 from apps.customers.pass_engine.apple_pass_builders import (
@@ -345,7 +346,9 @@ def generate_pkpass(customer_pass) -> bytes | None:
             return None
         # Convert relative URLs to absolute using public base URL
         if url.startswith("/"):
-            public_base = getattr(settings, "PUBLIC_BASE_URL", "").rstrip("/")
+            public_base = get_platform_config(
+                "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+            ).rstrip("/")
             if public_base:
                 url = public_base + url
             else:

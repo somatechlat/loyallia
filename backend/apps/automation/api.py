@@ -18,7 +18,11 @@ from apps.automation.models import (
 from apps.cards.models import Card
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, jwt_auth, require_role
-from common.plan_enforcement import check_plan_limit
+from common.plan_enforcement import (
+    check_feature_access,
+    check_plan_limit,
+    require_active_subscription,
+)
 
 router = Router()
 
@@ -134,10 +138,12 @@ def list_automations(request, active_only: bool = False):
 
 
 @router.post("/", auth=jwt_auth, summary="Create automation")
+@require_active_subscription
 @require_role("OWNER")
 def create_automation(request, data: CreateAutomationSchema):
     """Create a new automation. OWNER only."""
     check_plan_limit(request.tenant, "automations", write=True)
+    check_feature_access(request.tenant, "automation")
 
     # Validate trigger and action
     if data.trigger not in [choice[0] for choice in AutomationTrigger.choices]:
