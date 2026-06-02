@@ -28,6 +28,10 @@ function buildContext(form: { name: string; description: string; card_type: stri
     benefits: 'Beneficios exclusivos',
     company_name: 'Empresa',
     corporate_discount: '10',
+    coupon_usage: '0 / 1',
+    coupon_end_date: '31/12/2026',
+    coupon_terms: 'Términos y condiciones',
+    referrer_reward: 'Recompensa especial',
     multipass_remaining: '10',
     bundle_size: '10',
     bundle_price: '25.00',
@@ -46,6 +50,7 @@ interface AppleWalletCardProps {
     text_color: string;
     card_type: string;
     strip_image_url?: string;
+    discount_percentage?: string;
   };
   selectedType?: { value: string; label: string; icon: string; desc: string };
   logoPreview?: string | null;
@@ -77,7 +82,7 @@ export function AppleWalletCard({
   const defaultPrimary: { label: string; value: string } = {
     stamp:             { label: 'Sellos acumulados', value: '0 / 10' },
     cashback:          { label: 'Saldo disponible', value: '$0.00' },
-    coupon:            { label: form.description || 'Descuento especial', value: '20% OFF' },
+    coupon:            { label: form.description || 'Descuento especial', value: form.discount_percentage ? `${form.discount_percentage}% OFF` : '20% OFF' },
     vip_membership:    { label: 'Membresía', value: 'Club VIP' },
     referral_pass:     { label: 'Tu código de referido', value: 'REF-XXXX' },
     discount:          { label: 'Descuento actual', value: '5%' },
@@ -98,7 +103,7 @@ export function AppleWalletCard({
     affiliate: form.name?.slice(0, 6) || '—', corporate_discount: '0%', multipass: '10/10',
   };
   const defaultHeaderLabel: Record<string, string> = {
-    stamp: 'SELLOS', cashback: 'SALDO', coupon: 'OFERTA', vip_membership: 'NIVEL',
+    stamp: 'SELLOS', cashback: 'CREDITO', coupon: 'OFERTA', vip_membership: 'MEMBRESIA',
     referral_pass: 'REFERIDOS', discount: 'NIVEL', gift_certificate: 'SALDO',
     affiliate: 'PROGRAMA', corporate_discount: 'DESC.', multipass: 'USOS',
   };
@@ -258,7 +263,7 @@ export function AppleWalletCard({
 export function AppleWalletBackCard({
   form, walletDesign, customerName,
 }: {
-  form: { name: string; description: string; background_color: string; text_color: string; card_type: string };
+  form: { name: string; description: string; background_color: string; text_color: string; card_type: string; discount_percentage?: string };
   walletDesign?: WalletDesignState;
   customerName?: string;
 }) {

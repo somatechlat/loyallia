@@ -85,13 +85,13 @@ export function GoogleWalletCard({
   switch (form.card_type) {
     case 'stamp':             defaultRows.push({ label: 'Sellos', value: '0 / 10' }); break;
     case 'cashback':          defaultRows.push({ label: 'Crédito', value: '$0.00' }, { label: 'Tasa de cashback', value: '10%' }); break;
-    case 'coupon':            defaultRows.push({ label: 'Descuento', value: form.description || 'Especial' }); break;
-    case 'vip_membership':    defaultRows.push({ label: 'Nivel', value: 'Club VIP' }); break;
-    case 'referral_pass':     defaultRows.push({ label: 'Código', value: 'REF-XXXX' }); break;
-    case 'discount':          defaultRows.push({ label: 'Descuento actual', value: '5%' }); break;
+    case 'coupon':            defaultRows.push({ label: 'Negocio', value: ctx.program_name || 'Negocio' }, { label: 'Oferta', value: form.name || 'Oferta' }, { label: 'Usos', value: '0 / 1' }, { label: 'Válido hasta', value: '31/12/2026' }, { label: 'Términos', value: form.description || 'Términos y condiciones' }); break;
+    case 'vip_membership':    defaultRows.push({ label: 'Membresía', value: 'Club VIP' }); break;
+    case 'referral_pass':     defaultRows.push({ label: 'Negocio', value: ctx.program_name || 'Negocio' }, { label: 'Oferta', value: form.name || 'Oferta' }, { label: 'Referidos', value: '0' }, { label: 'Código', value: 'REF-XXXX' }, { label: 'Recompensa', value: 'Recompensa especial' }); break;
+    case 'discount':          defaultRows.push({ label: 'Negocio', value: ctx.program_name || 'Negocio' }, { label: 'Oferta', value: form.name || 'Oferta' }, { label: 'Nivel actual', value: 'Bronce' }, { label: 'Descuento', value: '5%' }); break;
     case 'gift_certificate':  defaultRows.push({ label: 'Saldo', value: '$0.00' }); break;
     case 'affiliate':         defaultRows.push({ label: 'Programa', value: form.name || 'Afiliación' }); break;
-    case 'corporate_discount':defaultRows.push({ label: 'Descuento', value: '0%' }); break;
+    case 'corporate_discount':defaultRows.push({ label: 'Negocio', value: ctx.program_name || 'Negocio' }, { label: 'Oferta', value: form.name || 'Oferta' }, { label: 'Descuento corporativo', value: '10%' }, { label: 'Empresa', value: 'Empresa' }); break;
     case 'multipass':         defaultRows.push({ label: 'Usos restantes', value: '10' }); break;
   }
   defaultRows.push({ label: 'Tipo', value: GOOGLE_WALLET_TYPES[form.card_type]?.label || 'Programa' });
