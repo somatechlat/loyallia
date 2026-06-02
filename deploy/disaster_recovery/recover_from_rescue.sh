@@ -105,18 +105,22 @@ configure() {
     # Database settings (read from .env or use defaults)
     if [ -f "$PROJECT_ROOT/.env" ]; then
         POSTGRES_USER="$(grep '^POSTGRES_USER=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "loyallia")"
-        POSTGRES_DB="$(grep '^POSTGRES_DB=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "loyallia")"
-        VAULT_SECRET_PATH="$(grep '^VAULT_SECRET_PATH=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "secret/data/loyallia/production")"
+        POSTGRES_DB="$(grep '^POSTGRES_DB=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "")"
+        VAULT_SECRET_PATH="$(grep '^VAULT_SECRET_PATH=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 || echo "")"
     else
-        POSTGRES_USER="loyallia"
-        POSTGRES_DB="loyallia"
-        VAULT_SECRET_PATH="secret/data/loyallia/production"
+        POSTGRES_USER=""
+        POSTGRES_DB=""
+        VAULT_SECRET_PATH=""
     fi
 
-    # Clean defaults if empty
+    # Clean defaults if empty, respecting detected environment
     POSTGRES_USER="${POSTGRES_USER:-loyallia}"
-    POSTGRES_DB="${POSTGRES_DB:-loyallia}"
-    VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-secret/data/loyallia/production}"
+    if [ "$ENVIRONMENT" = "production" ]; then
+        POSTGRES_DB="${POSTGRES_DB:-loyallia}"
+    else
+        POSTGRES_DB="${POSTGRES_DB:-loyallia_dev}"
+    fi
+    VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-secret/data/loyallia/${ENVIRONMENT}}"
 
     # Extract KV mount and path for vault CLI
     # VAULT_SECRET_PATH like "secret/data/loyallia/production" → mount="secret", path="loyallia/production"
@@ -563,16 +567,22 @@ with open('$certs_rescue') as f:
 
 sections = re.findall(r'=== (.+?) ===\n(.+?)(?=\n=== |\Z)', content, re.DOTALL)
 
-cert_map = {
-    'apple_pass_new.key': 'apple_pass.key',
-    'passNew.pem': 'apple_pass.pem',
-    'AppleWWDRCAG4.pem': 'apple_wwdr.pem',
-    'scenic-parity-494022-h5-628cf7e3795c.json': 'google_wallet_service_account.json',
-}
+import fnmatch
+
+cert_map = [
+    ('apple_pass_new.key', 'apple_pass.key'),
+    ('passNew.pem', 'apple_pass.pem'),
+    ('AppleWWDRCAG4.pem', 'apple_wwdr.pem'),
+    ('loyalliarewardswallet-*.json', 'google_wallet_service_account.json'),
+]
 
 written = []
 for filename, data in sections:
-    target = cert_map.get(filename, filename)
+    target = filename
+    for pattern, mapped in cert_map:
+        if fnmatch.fnmatch(filename, pattern):
+            target = mapped
+            break
     path = '$certs_dir/' + target
     with open(path, 'w') as f:
         f.write(data.strip() + '\n')

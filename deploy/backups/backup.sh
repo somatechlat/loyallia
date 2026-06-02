@@ -401,6 +401,7 @@ step_06_media() {
     # Use mc to mirror buckets
     docker run --rm --network container:loyallia-minio \
         -e MC_HOST_local="http://${minio_user}:${minio_pass}@localhost:9000" \
+        -v "$TMP_DIR/media:/backup" \
         minio/mc:RELEASE.2025-07-21T05-28-08Z \
         mirror local/passes "/backup/passes" 2>/dev/null || {
         warn "Failed to mirror passes bucket — may be empty"
@@ -408,6 +409,7 @@ step_06_media() {
 
     docker run --rm --network container:loyallia-minio \
         -e MC_HOST_local="http://${minio_user}:${minio_pass}@localhost:9000" \
+        -v "$TMP_DIR/media:/backup" \
         minio/mc:RELEASE.2025-07-21T05-28-08Z \
         mirror local/assets "/backup/assets" 2>/dev/null || {
         warn "Failed to mirror assets bucket — may be empty"

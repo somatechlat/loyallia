@@ -5,6 +5,20 @@
 
 set -euo pipefail
 
+DEPLOY_ENV="${DEPLOY_ENV:-production}"
+for arg in "$@"; do
+    case "$arg" in
+        --env=production|--env=development)
+            DEPLOY_ENV="${arg#*=}"
+            ;;
+    esac
+done
+
+if [ "$DEPLOY_ENV" = "development" ]; then
+    echo "ERROR: This script is for PRODUCTION ONLY. Development physical backups are not supported."
+    exit 1
+fi
+
 BACKUP_DIR="/var/backups/postgresql/weekly"
 RETENTION_WEEKS=4
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

@@ -5,6 +5,20 @@
 
 set -euo pipefail
 
+DEPLOY_ENV="${DEPLOY_ENV:-production}"
+for arg in "$@"; do
+    case "$arg" in
+        --env=production|--env=development)
+            DEPLOY_ENV="${arg#*=}"
+            ;;
+    esac
+done
+
+if [ "$DEPLOY_ENV" = "development" ]; then
+    echo "ERROR: This script is for PRODUCTION ONLY. Use deploy/backups/development/orchestrator.sh for development."
+    exit 1
+fi
+
 BACKUP_DIR="/var/backups/minio"
 RETENTION_DAYS=30
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
