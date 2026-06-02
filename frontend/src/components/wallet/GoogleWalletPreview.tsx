@@ -84,7 +84,7 @@ export function GoogleWalletCard({
   ];
   switch (form.card_type) {
     case 'stamp':             defaultRows.push({ label: 'Sellos', value: '0 / 10' }); break;
-    case 'cashback':          defaultRows.push({ label: 'Saldo', value: '$0.00' }); break;
+    case 'cashback':          defaultRows.push({ label: 'Crédito', value: '$0.00' }, { label: 'Tasa de cashback', value: '10%' }); break;
     case 'coupon':            defaultRows.push({ label: 'Descuento', value: form.description || 'Especial' }); break;
     case 'vip_membership':    defaultRows.push({ label: 'Nivel', value: 'Club VIP' }); break;
     case 'referral_pass':     defaultRows.push({ label: 'Código', value: 'REF-XXXX' }); break;

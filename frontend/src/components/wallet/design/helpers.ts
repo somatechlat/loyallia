@@ -31,12 +31,12 @@ export const GOOGLE_FIELD_REGISTRY = [
   { label: 'Nombre del cliente', fieldPath: 'object.accountName', defaultDisplayName: 'Cliente', types: 'all' as const },
   { label: 'Nombre del programa', fieldPath: 'class.programName', defaultDisplayName: 'Programa', types: 'all' as const },
   { label: 'Nombre del negocio', fieldPath: 'class.issuerName', defaultDisplayName: 'Negocio', types: 'all' as const },
-  { label: 'Puntos de lealtad', fieldPath: 'object.loyaltyPoints.balance', defaultDisplayName: 'Puntos', types: ['stamp', 'affiliate', 'vip_membership'] as const },
-  { label: 'Etiqueta de puntos', fieldPath: 'object.loyaltyPoints.label', defaultDisplayName: 'Etiqueta', types: ['stamp', 'affiliate', 'vip_membership'] as const },
-  { label: 'Balance secundario', fieldPath: 'object.secondaryLoyaltyPoints.balance', defaultDisplayName: 'Balance 2', types: ['stamp', 'cashback', 'gift_certificate', 'multipass'] as const },
+  { label: 'Puntos de lealtad', fieldPath: 'object.loyaltyPoints.balance', defaultDisplayName: 'Puntos', types: ['stamp', 'cashback', 'affiliate', 'vip_membership', 'multipass'] as const },
+  { label: 'Etiqueta de puntos', fieldPath: 'object.loyaltyPoints.label', defaultDisplayName: 'Etiqueta', types: ['stamp', 'cashback', 'affiliate', 'vip_membership', 'multipass'] as const },
+  { label: 'Balance secundario', fieldPath: 'object.secondaryLoyaltyPoints.balance', defaultDisplayName: 'Balance 2', types: ['stamp', 'cashback', 'multipass'] as const },
   { label: 'Nivel de recompensa', fieldPath: 'class.rewardsTier', defaultDisplayName: 'Nivel', types: ['discount', 'vip_membership'] as const },
   { label: 'Etiqueta de nivel', fieldPath: 'class.rewardsTierLabel', defaultDisplayName: 'Nivel', types: ['discount', 'vip_membership'] as const },
-  { label: 'Saldo de regalo', fieldPath: 'object.balance.money', defaultDisplayName: 'Saldo', types: ['cashback', 'gift_certificate', 'multipass'] as const },
+  { label: 'Saldo de regalo', fieldPath: 'object.balance.money', defaultDisplayName: 'Saldo', types: ['gift_certificate'] as const },
   { label: 'Personalizado...', fieldPath: 'custom', defaultDisplayName: '', types: 'all' as const },
 ] as const;
 
