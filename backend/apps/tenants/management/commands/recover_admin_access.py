@@ -47,12 +47,38 @@ class Command(BaseCommand):
             action="store_true",
             help="Create the admin account if it does not exist",
         )
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Bypass the production safety guard (required when DEBUG=False)",
+        )
 
     def handle(self, *args, **options):
+        from django.conf import settings
+
         email = options["email"]
         password = options["password"]
         unlock_only = options["unlock_only"]
         create = options["create"]
+        force = options["force"]
+
+        if not settings.DEBUG and not force:
+            raise CommandError(
+                "This command is restricted in production. "
+                "Use --force to override (not recommended)."
+            )
+
+        if not settings.DEBUG and force:
+            self.stdout.write(
+                self.style.WARNING(
+                    "WARNING: You are about to recover admin access in PRODUCTION. "
+                    "This is a sensitive operation."
+                )
+            )
+            confirm = input("Type 'yes' to continue: ")
+            if confirm.lower() != "yes":
+                self.stdout.write("Aborted.")
+                return
 
         if not unlock_only and not password:
             raise CommandError(

@@ -124,9 +124,10 @@ echo "Checking file permissions..."
 for file in "$BOOTSTRAP_FILE" "certs/vault.key" 2>/dev/null; do
     if [ -f "$file" ]; then
         perms=$(stat -c "%a" "$file" 2>/dev/null || stat -f "%Lp" "$file" 2>/dev/null)
-        if [ "$perms" = "600" ] && [ "$file" = "certs/vault.key" ]; then
-            log_warn "${file} has 600 permissions — Vault container may not be able to read it"
-            log_warn "  Fix: chmod 644 ${file}  (readable by container non-root user)"
+        # Private keys must never be world-readable; 600 = owner read/write only.
+        if [ "$perms" != "600" ] && [ "$file" = "certs/vault.key" ]; then
+            log_warn "${file} has ${perms} permissions — private keys must never be world-readable"
+            log_warn "  Fix: chmod 600 ${file}  (owner read/write only)"
         fi
     fi
 done

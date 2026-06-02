@@ -132,3 +132,6 @@ backups/*.dump
 backups/*.rdb
 backups/*.tar.gz
 .age_keys/
+
+# Infrastructure deployment docs (contain credentials / server details)
+docs/AVENDER_MINIO_S3_DEPLOYMENT.md

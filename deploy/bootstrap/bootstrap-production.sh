@@ -4,8 +4,7 @@ set -euo pipefail
 # =============================================================================
 # LOYALLIA — PRODUCTION BOOTSTRAP (ISOLATED, IDEMPOTENT)
 # =============================================================================
-# This script is for LOCAL DEVELOPMENT ONLY.
-# It uses .bootstrap_secrets.production.env and development settings.
+# Production bootstrap script. Uses .bootstrap_secrets.production.env and production settings.
 # NO shared logic with production bootstrap.
 #
 # IDEMPOTENT DESIGN:

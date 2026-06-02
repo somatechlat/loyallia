@@ -37,7 +37,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BOOTSTRAP_SCRIPT="$SCRIPT_DIR/bootstrap.sh"
+if [ "${DEPLOY_ENV:-production}" = "production" ]; then
+    BOOTSTRAP_SCRIPT="$SCRIPT_DIR/bootstrap-production.sh"
+else
+    BOOTSTRAP_SCRIPT="$SCRIPT_DIR/bootstrap-development.sh"
+fi
 STATE_FILE="$PROJECT_ROOT/deployment.state.json"
 ENV_FILE="$PROJECT_ROOT/.env"
 RESCUE_DIR="$PROJECT_ROOT/.agents"
@@ -73,6 +77,11 @@ parse_args() {
         case "$arg" in
             --env=production|--env=development)
                 DEPLOY_ENV="${arg#*=}"
+                if [ "$DEPLOY_ENV" = "production" ]; then
+                    BOOTSTRAP_SCRIPT="$SCRIPT_DIR/bootstrap-production.sh"
+                else
+                    BOOTSTRAP_SCRIPT="$SCRIPT_DIR/bootstrap-development.sh"
+                fi
                 ;;
             --destroy)
                 DESTROY_FLAG=1

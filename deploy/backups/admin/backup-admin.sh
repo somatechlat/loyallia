@@ -33,8 +33,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BACKUP_SCRIPT="$PROJECT_ROOT/deploy/disaster_recovery/backup.sh"
-VERIFY_SCRIPT="$PROJECT_ROOT/deploy/disaster_recovery/verify_backups.sh"
+BACKUP_SCRIPT="$PROJECT_ROOT/deploy/backups/backup.sh"
+VERIFY_SCRIPT="$PROJECT_ROOT/deploy/backups/verify_backups.sh"
 CRON_FILE="/etc/cron.d/loyallia-backups"
 
 # Use local paths when running as non-root (development), system paths as root (production)

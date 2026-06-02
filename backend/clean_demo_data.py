@@ -68,6 +68,14 @@ def delete_model_qs(qs, description):
         return 0
 
 def main():
+    from django.conf import settings
+    from common.environment_guard import enforce_settings_environment
+
+    enforce_settings_environment(mode="development", databases=settings.DATABASES)
+    if not settings.DEBUG:
+        print("ERROR: clean_demo_data.py is for development only. Aborting.")
+        sys.exit(1)
+
     print("=" * 70)
     print("LOYALLIA SURGICAL CLEANUP: Removing all demo & test data")
     print("=" * 70)
