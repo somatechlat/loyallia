@@ -66,6 +66,36 @@ const api = axios.create({
   timeout: 30_000,
 });
 
+/** In-flight request deduplication cache — maps request keys to active promises. */
+const inflight = new Map<string, Promise<unknown>>();
+
+/** Generate a deduplication key from request config. */
+function getRequestKey(config: AxiosRequestConfig): string {
+  const method = (config.method || 'get').toLowerCase();
+  const url = config.url || '';
+  const params = config.params ? JSON.stringify(config.params) : '';
+  const data = config.data ? JSON.stringify(config.data) : '';
+  return `${method}:${url}:${params}:${data}`;
+}
+
+/** Deduplicate identical in-flight GET requests to prevent redundant network calls. */
+const _originalGet = api.get.bind(api);
+api.get = function getDeduped<T = unknown, R = import('axios').AxiosResponse<T>, D = unknown>(
+  url: string,
+  config?: import('axios').AxiosRequestConfig<D>
+): Promise<R> {
+  const key = getRequestKey({ method: 'get', url, ...config });
+  const existing = inflight.get(key);
+  if (existing) {
+    return existing as Promise<R>;
+  }
+  const promise = _originalGet<T, R, D>(url, config).finally(() => {
+    inflight.delete(key);
+  });
+  inflight.set(key, promise);
+  return promise;
+};
+
 /**
  * Recursively trim all string values in an object.
  */
