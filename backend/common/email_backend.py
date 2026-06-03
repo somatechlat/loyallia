@@ -16,7 +16,11 @@ Usage in settings:
 from django.conf import settings
 from django.core.mail.backends.smtp import EmailBackend as DjangoSmtpBackend
 
-from common.platform_config import get_platform_config, get_platform_config_bool, get_platform_config_int
+from common.platform_config import (
+    get_platform_config,
+    get_platform_config_bool,
+    get_platform_config_int,
+)
 
 
 class PlatformSettingEmailBackend(DjangoSmtpBackend):

@@ -77,7 +77,12 @@ def list_customers(
     return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
 
 
-@router.get("/search/", auth=jwt_auth, response=list[CustomerSearchOut], summary="Buscar clientes filtrados")
+@router.get(
+    "/search/",
+    auth=jwt_auth,
+    response=list[CustomerSearchOut],
+    summary="Buscar clientes filtrados",
+)
 def search_customers(
     request: HttpRequest,
     query: str | None = None,
@@ -118,12 +123,17 @@ def search_customers(
 
     if wallet_platform and wallet_platform != "both":
         if wallet_platform == "none":
-            wallet_customer_ids = CustomerPass.objects.filter(
-                is_active=True,
-            ).exclude(
-                apple_pass_id="",
-                google_pass_id="",
-            ).values_list("customer_id", flat=True).distinct()
+            wallet_customer_ids = (
+                CustomerPass.objects.filter(
+                    is_active=True,
+                )
+                .exclude(
+                    apple_pass_id="",
+                    google_pass_id="",
+                )
+                .values_list("customer_id", flat=True)
+                .distinct()
+            )
             queryset = queryset.exclude(id__in=wallet_customer_ids)
         elif wallet_platform == "apple":
             queryset = queryset.filter(
@@ -138,8 +148,6 @@ def search_customers(
 
     customers = queryset.order_by("-created_at")[:50]
 
-
-
     passes_qs = CustomerPass.objects.filter(is_active=True).select_related("card")
     customer_ids = [c.id for c in customers]
 
@@ -151,7 +159,9 @@ def search_customers(
     from apps.notifications.models import PushDevice
 
     devices_map = {}
-    for device in PushDevice.objects.filter(customer_id__in=customer_ids, is_active=True):
+    for device in PushDevice.objects.filter(
+        customer_id__in=customer_ids, is_active=True
+    ):
         devices_map.setdefault(device.customer_id, set()).add(device.device_type)
 
     results = []
@@ -439,8 +449,9 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     if hasattr(request, "build_absolute_uri"):
         base_url = request.build_absolute_uri("/").rstrip("/")
     else:
-        from common.platform_config import get_platform_config
         from django.conf import settings
+
+        from common.platform_config import get_platform_config
 
         base_url = get_platform_config(
             "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")

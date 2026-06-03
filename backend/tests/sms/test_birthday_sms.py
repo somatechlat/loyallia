@@ -19,6 +19,7 @@ from tests.factories import (
     make_tenant,
 )
 
+
 class BirthdayTriggerTaskTest(TestCase):
     """Tests for evaluate_birthday_triggers Celery task."""
 
@@ -27,7 +28,9 @@ class BirthdayTriggerTaskTest(TestCase):
 
         today = date.today()
         tenant = make_tenant()
-        make_customer(tenant, date_of_birth=today.replace(year=1990), email="bday@test.com")
+        make_customer(
+            tenant, date_of_birth=today.replace(year=1990), email="bday@test.com"
+        )
         make_automation(
             tenant,
             trigger=AutomationTrigger.BIRTHDAY_COMING,
@@ -36,13 +39,13 @@ class BirthdayTriggerTaskTest(TestCase):
 
         result = evaluate_birthday_triggers()
 
- # Real automation executes and creates AutomationExecution records
+        # Real automation executes and creates AutomationExecution records
         self.assertGreaterEqual(result["triggered"], 0)
 
     def test_no_birthdays_returns_zero(self):
         from apps.automation.tasks import evaluate_birthday_triggers
 
         make_tenant()
- # No customers with birthday today
+        # No customers with birthday today
         result = evaluate_birthday_triggers()
         self.assertEqual(result["triggered"], 0)

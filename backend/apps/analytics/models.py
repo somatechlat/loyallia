@@ -19,7 +19,12 @@ class CustomerAnalytics(models.Model):
     Updated daily or on significant events.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -36,31 +41,48 @@ class CustomerAnalytics(models.Model):
     )
 
     # Engagement metrics
-    total_passes = models.PositiveIntegerField(default=0, verbose_name="Total de pases", help_text="Total number of passes held.")
-    active_passes = models.PositiveIntegerField(default=0, verbose_name="Pases activos", help_text="Number of currently active passes.")
+    total_passes = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Total de pases",
+        help_text="Total number of passes held.",
+    )
+    active_passes = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Pases activos",
+        help_text="Number of currently active passes.",
+    )
     total_visits = models.PositiveIntegerField(
-        default=0, verbose_name="Total de visitas"
-        ,help_text="Total number of visits recorded.",
+        default=0,
+        verbose_name="Total de visitas",
+        help_text="Total number of visits recorded.",
     )
 
     # Financial metrics
     total_spent = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0, verbose_name="Total gastado"
-        ,help_text="Total amount spent.",
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Total gastado",
+        help_text="Total amount spent.",
     )
     average_transaction = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, verbose_name="Transacción promedio"
-        ,help_text="Average transaction amount.",
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Transacción promedio",
+        help_text="Average transaction amount.",
     )
 
     # Reward metrics
     total_rewards_earned = models.PositiveIntegerField(
-        default=0, verbose_name="Recompensas ganadas"
-        ,help_text="Total rewards earned.",
+        default=0,
+        verbose_name="Recompensas ganadas",
+        help_text="Total rewards earned.",
     )
     total_rewards_redeemed = models.PositiveIntegerField(
-        default=0, verbose_name="Recompensas canjeadas"
-        ,help_text="Total rewards redeemed.",
+        default=0,
+        verbose_name="Recompensas canjeadas",
+        help_text="Total rewards redeemed.",
     )
 
     # Engagement segment
@@ -80,12 +102,14 @@ class CustomerAnalytics(models.Model):
 
     # Timestamps
     last_updated = models.DateTimeField(
-        auto_now=True, verbose_name="Última actualización"
-        ,help_text="Last updated.",
+        auto_now=True,
+        verbose_name="Última actualización",
+        help_text="Last updated.",
     )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_customer_analytics"
         verbose_name = "Análisis de cliente"
         verbose_name_plural = "Análisis de clientes"
@@ -157,7 +181,12 @@ class ProgramAnalytics(models.Model):
     Updated daily with program performance data.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -175,22 +204,28 @@ class ProgramAnalytics(models.Model):
 
     # Enrollment metrics
     total_enrollments = models.PositiveIntegerField(
-        default=0, verbose_name="Total de inscritos"
-        ,help_text="Total customer enrollments.",
+        default=0,
+        verbose_name="Total de inscritos",
+        help_text="Total customer enrollments.",
     )
     active_members = models.PositiveIntegerField(
-        default=0, verbose_name="Miembros activos"
-        ,help_text="Number of active members.",
+        default=0,
+        verbose_name="Miembros activos",
+        help_text="Number of active members.",
     )
 
     # Activity metrics
     total_transactions = models.PositiveIntegerField(
-        default=0, verbose_name="Total de transacciones"
-        ,help_text="Total transactions.",
+        default=0,
+        verbose_name="Total de transacciones",
+        help_text="Total transactions.",
     )
     total_revenue = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0, verbose_name="Ingresos totales"
-        ,help_text="Total cumulative revenue.",
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Ingresos totales",
+        help_text="Total cumulative revenue.",
     )
     average_order_value = models.DecimalField(
         max_digits=10,
@@ -202,16 +237,21 @@ class ProgramAnalytics(models.Model):
 
     # Reward metrics
     total_rewards_issued = models.PositiveIntegerField(
-        default=0, verbose_name="Recompensas emitidas"
-        ,help_text="Total rewards issued.",
+        default=0,
+        verbose_name="Recompensas emitidas",
+        help_text="Total rewards issued.",
     )
     total_rewards_redeemed = models.PositiveIntegerField(
-        default=0, verbose_name="Recompensas canjeadas"
-        ,help_text="Total rewards redeemed.",
+        default=0,
+        verbose_name="Recompensas canjeadas",
+        help_text="Total rewards redeemed.",
     )
     redemption_rate = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0, verbose_name="Tasa de canje %"
-        ,help_text="Percentage of issued rewards redeemed.",
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        verbose_name="Tasa de canje %",
+        help_text="Percentage of issued rewards redeemed.",
     )
 
     # Engagement metrics
@@ -223,18 +263,23 @@ class ProgramAnalytics(models.Model):
         help_text="Percentage of enrolled members active.",
     )
     repeat_purchase_rate = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0, verbose_name="Tasa de recompra %"
-        ,help_text="Percentage of members with repeat purchases.",
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        verbose_name="Tasa de recompra %",
+        help_text="Percentage of members with repeat purchases.",
     )
 
     # Timestamps
     last_updated = models.DateTimeField(
-        auto_now=True, verbose_name="Última actualización"
-        ,help_text="Last updated.",
+        auto_now=True,
+        verbose_name="Última actualización",
+        help_text="Last updated.",
     )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_program_analytics"
         verbose_name = "Análisis de programa"
         verbose_name_plural = "Análisis de programas"
@@ -309,7 +354,12 @@ class DailyAnalytics(models.Model):
     Used for trend analysis and reporting.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -319,41 +369,54 @@ class DailyAnalytics(models.Model):
     )
 
     # Date
-    analytics_date = models.DateField(db_index=True, verbose_name="Fecha", help_text="Date of the analytics snapshot.")
+    analytics_date = models.DateField(
+        db_index=True, verbose_name="Fecha", help_text="Date of the analytics snapshot."
+    )
 
     # Daily metrics
     new_customers = models.PositiveIntegerField(
-        default=0, verbose_name="Nuevos clientes"
-        ,help_text="Number of new customers.",
+        default=0,
+        verbose_name="Nuevos clientes",
+        help_text="Number of new customers.",
     )
     new_enrollments = models.PositiveIntegerField(
-        default=0, verbose_name="Nuevas inscripciones"
-        ,help_text="Number of new enrollments.",
+        default=0,
+        verbose_name="Nuevas inscripciones",
+        help_text="Number of new enrollments.",
     )
-    transactions = models.PositiveIntegerField(default=0, verbose_name="Transacciones", help_text="Number of transactions.")
+    transactions = models.PositiveIntegerField(
+        default=0, verbose_name="Transacciones", help_text="Number of transactions."
+    )
     daily_revenue = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0, verbose_name="Ingresos diarios"
-        ,help_text="Revenue recorded on this date.",
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Ingresos diarios",
+        help_text="Revenue recorded on this date.",
     )
 
     # Reward metrics
     rewards_issued = models.PositiveIntegerField(
-        default=0, verbose_name="Recompensas emitidas"
-        ,help_text="Number of rewards issued.",
+        default=0,
+        verbose_name="Recompensas emitidas",
+        help_text="Number of rewards issued.",
     )
     rewards_redeemed = models.PositiveIntegerField(
-        default=0, verbose_name="Recompensas canjeadas"
-        ,help_text="Number of rewards redeemed.",
+        default=0,
+        verbose_name="Recompensas canjeadas",
+        help_text="Number of rewards redeemed.",
     )
 
     # Notifications
     notifications_sent = models.PositiveIntegerField(
-        default=0, verbose_name="Notificaciones enviadas"
-        ,help_text="Number of notifications sent.",
+        default=0,
+        verbose_name="Notificaciones enviadas",
+        help_text="Number of notifications sent.",
     )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_daily_analytics"
         verbose_name = "Análisis diario"
         verbose_name_plural = "Análisis diarios"

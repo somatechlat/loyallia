@@ -323,31 +323,55 @@ _MODE_OVERRIDES = {
         "public_base_url": os.getenv("PUBLIC_BASE_URL", "http://localhost"),
         "api_base_url": os.getenv("API_BASE_URL", "http://localhost:33905/api/v1/"),
         "dashboard_url": os.getenv("DASHBOARD_URL", "http://localhost:33906"),
-        "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", "http://localhost:33905/api/v1/webhooks/"),
-        "wallet_web_service_url": os.getenv("WALLET_WEB_SERVICE_URL", "http://localhost:33905/api/v1/pass/"),
+        "webhook_base_url": os.getenv(
+            "WEBHOOK_BASE_URL", "http://localhost:33905/api/v1/webhooks/"
+        ),
+        "wallet_web_service_url": os.getenv(
+            "WALLET_WEB_SERVICE_URL", "http://localhost:33905/api/v1/pass/"
+        ),
         "scanner_url": os.getenv("SCANNER_URL", "http://localhost:33906/scanner"),
-        "minio_public_endpoint": os.getenv("MINIO_PUBLIC_ENDPOINT", "http://localhost:33903"),
-        "google_oauth_redirect_uri": os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:33905/api/v1/auth/google/callback/"),
+        "minio_public_endpoint": os.getenv(
+            "MINIO_PUBLIC_ENDPOINT", "http://localhost:33903"
+        ),
+        "google_oauth_redirect_uri": os.getenv(
+            "GOOGLE_OAUTH_REDIRECT_URI",
+            "http://localhost:33905/api/v1/auth/google/callback/",
+        ),
         "email_host": os.getenv("EMAIL_HOST", "in-v3.mailjet.com"),
         "email_port": os.getenv("EMAIL_PORT", "587"),
         "email_use_tls": os.getenv("EMAIL_USE_TLS", "true"),
-        "whatsapp_bridge_url": os.getenv("WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
+        "whatsapp_bridge_url": os.getenv(
+            "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"
+        ),
     },
     "production": {
         "development_mode": "false",
         "sandbox_webhooks": "true",
         "public_base_url": os.getenv("PUBLIC_BASE_URL", "https://rewards.loyallia.com"),
-        "api_base_url": os.getenv("API_BASE_URL", "https://rewards.loyallia.com/api/v1/"),
+        "api_base_url": os.getenv(
+            "API_BASE_URL", "https://rewards.loyallia.com/api/v1/"
+        ),
         "dashboard_url": os.getenv("DASHBOARD_URL", "https://rewards.loyallia.com"),
-        "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", "https://rewards.loyallia.com/api/v1/webhooks/"),
-        "wallet_web_service_url": os.getenv("WALLET_WEB_SERVICE_URL", "https://rewards.loyallia.com/api/v1/pass/"),
+        "webhook_base_url": os.getenv(
+            "WEBHOOK_BASE_URL", "https://rewards.loyallia.com/api/v1/webhooks/"
+        ),
+        "wallet_web_service_url": os.getenv(
+            "WALLET_WEB_SERVICE_URL", "https://rewards.loyallia.com/api/v1/pass/"
+        ),
         "scanner_url": os.getenv("SCANNER_URL", "https://rewards.loyallia.com/scanner"),
-        "minio_public_endpoint": os.getenv("MINIO_PUBLIC_ENDPOINT", "https://rewards.loyallia.com"),
-        "google_oauth_redirect_uri": os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "https://rewards.loyallia.com/api/v1/auth/google/callback/"),
+        "minio_public_endpoint": os.getenv(
+            "MINIO_PUBLIC_ENDPOINT", "https://rewards.loyallia.com"
+        ),
+        "google_oauth_redirect_uri": os.getenv(
+            "GOOGLE_OAUTH_REDIRECT_URI",
+            "https://rewards.loyallia.com/api/v1/auth/google/callback/",
+        ),
         "email_host": os.getenv("EMAIL_HOST", "in-v3.mailjet.com"),
         "email_port": os.getenv("EMAIL_PORT", "587"),
         "email_use_tls": os.getenv("EMAIL_USE_TLS", "true"),
-        "whatsapp_bridge_url": os.getenv("WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
+        "whatsapp_bridge_url": os.getenv(
+            "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"
+        ),
     },
 }
 

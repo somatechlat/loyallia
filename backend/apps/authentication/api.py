@@ -34,7 +34,7 @@ from typing import cast
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone as dj_timezone
 from ninja import Router
 from ninja.errors import HttpError
@@ -131,7 +131,9 @@ def register(request, payload: RegisterIn):
         try:
             with transaction.atomic():
                 slug = slugify_business(payload.business_name)
-                tenant = Tenant.objects.create(name=payload.business_name.strip(), slug=slug)
+                tenant = Tenant.objects.create(
+                    name=payload.business_name.strip(), slug=slug
+                )
                 tenant.activate_trial()
                 user_manager = cast(UserManager, User.objects)
                 user = user_manager.create_user(
@@ -160,7 +162,7 @@ def register(request, payload: RegisterIn):
         email=payload.email,
         otp=otp,
         subject="Verifica tu correo -- Loyallia",
-        body=f"Hola {user.first_name or payload.email},\n\nTu codigo de verificacion es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",# noqa: E501
+        body=f"Hola {user.first_name or payload.email},\n\nTu codigo de verificacion es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",  # noqa: E501
     )
     return RegisterOut(
         success=True,
@@ -203,7 +205,11 @@ def login(request, payload: LoginIn):
                 action=AuditAction.LOGIN,
                 resource_type="user",
                 resource_id=str(user.id),
-                tenant_id=str(getattr(user, "tenant_id", None)) if getattr(user, "tenant_id", None) else None,
+                tenant_id=(
+                    str(getattr(user, "tenant_id", None))
+                    if getattr(user, "tenant_id", None)
+                    else None
+                ),
                 details={"method": "email", "reason": "invalid_password"},
                 status="denied",
             )
@@ -222,7 +228,11 @@ def login(request, payload: LoginIn):
             action=AuditAction.LOGIN,
             resource_type="user",
             resource_id=str(user.id),
-            tenant_id=str(getattr(user, "tenant_id", None)) if getattr(user, "tenant_id", None) else None,
+            tenant_id=(
+                str(getattr(user, "tenant_id", None))
+                if getattr(user, "tenant_id", None)
+                else None
+            ),
             details={"method": "email"},
             status="success",
         )

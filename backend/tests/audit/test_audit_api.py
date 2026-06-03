@@ -10,12 +10,14 @@ from django.test import RequestFactory, TestCase, override_settings
 
 # Helpers
 
+
 def _make_tenant(**kwargs):
     from apps.tenants.models import Tenant
 
     defaults = {"name": "Test Tenant", "slug": f"test-{uuid.uuid4().hex[:8]}"}
     defaults.update(kwargs)
     return Tenant.objects.create(**defaults)
+
 
 def _make_user(tenant, **kwargs):
     from apps.authentication.models import User, UserManager
@@ -35,6 +37,7 @@ def _make_user(tenant, **kwargs):
         user.tenant = tenant
         user.save(update_fields=["tenant"])
     return user
+
 
 def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     from apps.cards.models import Card
@@ -76,6 +79,7 @@ def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     defaults.update(kwargs)
     return Card.objects.create(tenant=tenant, **defaults)
 
+
 def _make_customer(tenant, **kwargs):
     from apps.customers.models import Customer
 
@@ -87,12 +91,15 @@ def _make_customer(tenant, **kwargs):
     defaults.update(kwargs)
     return Customer.objects.create(tenant=tenant, **defaults)
 
+
 def _make_pass(customer, card):
     from apps.customers.models import CustomerPass
 
     return CustomerPass.objects.create(customer=customer, card=card)
 
+
 # Plan enforcement decorators
+
 
 class PlanEnforcementDecoratorsTest(TestCase):
     """Verify that plan enforcement decorators are applied to endpoints via runtime behavior."""
@@ -119,7 +126,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
         from apps.customers.api import list_customers
 
         req = self._request(self.owner)
- # With active subscription (setUp), should not raise subscription error
+        # With active subscription (setUp), should not raise subscription error
         result = list_customers(req)
         self.assertIsNotNone(result)
 
@@ -133,7 +140,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
             card_type="stamp",
             metadata={"reward_description": "Free coffee", "stamps_required": 10},
         )
- # With active subscription, should not raise subscription error
+        # With active subscription, should not raise subscription error
         result = create_program(req, payload)
         self.assertIsNotNone(result)
 
@@ -148,7 +155,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
             segment_id="",
             channel="email",
         )
- # With active subscription, should not raise subscription error
+        # With active subscription, should not raise subscription error
         result = create_campaign(req, payload)
         self.assertIsNotNone(result)
 
@@ -159,11 +166,13 @@ class PlanEnforcementDecoratorsTest(TestCase):
 
         req = self._request(self.owner)
         payload = LocationCreateIn(name="Test Location", address="123 Test St")
- # With active subscription, should not raise subscription error
+        # With active subscription, should not raise subscription error
         result = create_location(req, payload)
         self.assertIsNotNone(result)
 
+
 # Enrollment rate limiting + no data overwrite
+
 
 class EnrollmentEndpointTest(TestCase):
     """Verify enrollment rate limiting and data preservation."""
@@ -173,12 +182,14 @@ class EnrollmentEndpointTest(TestCase):
         self.card = _make_card(self.tenant, card_type="stamp")
         self.factory = RequestFactory()
 
-    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    @override_settings(
+        CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+    )
     def test_rate_limiting_applied(self):
         """Enrollment endpoint should reject excessive requests with 429."""
         import json
 
- # Make 11 rapid enrollment requests from the same IP
+        # Make 11 rapid enrollment requests from the same IP
         for i in range(11):
             resp = self.client.post(
                 f"/api/v1/customers/enroll/?card_id={self.card.id}",
@@ -192,7 +203,7 @@ class EnrollmentEndpointTest(TestCase):
                 ),
                 content_type="application/json",
             )
- # The 11th request should be rate-limited
+        # The 11th request should be rate-limited
         self.assertEqual(resp.status_code, 429)
 
     def test_enrollment_does_not_overwrite_customer_data(self):
@@ -201,7 +212,7 @@ class EnrollmentEndpointTest(TestCase):
 
         from apps.customers.models import Customer
 
- # First enrollment
+        # First enrollment
         resp1 = self.client.post(
             f"/api/v1/customers/enroll/?card_id={self.card.id}",
             data=json.dumps(
@@ -215,10 +226,12 @@ class EnrollmentEndpointTest(TestCase):
             content_type="application/json",
         )
         self.assertEqual(resp1.status_code, 200)
-        customer = Customer.objects.get(email="re-enroll@loyallia.com", tenant=self.tenant)
+        customer = Customer.objects.get(
+            email="re-enroll@loyallia.com", tenant=self.tenant
+        )
         self.assertEqual(customer.first_name, "Original")
 
- # Enroll same customer in a different card data must not be overwritten
+        # Enroll same customer in a different card data must not be overwritten
         card2 = _make_card(self.tenant, card_type="stamp")
         resp2 = self.client.post(
             f"/api/v1/customers/enroll/?card_id={card2.id}",
@@ -234,14 +247,16 @@ class EnrollmentEndpointTest(TestCase):
         )
         self.assertEqual(resp2.status_code, 200)
         customer.refresh_from_db()
- # Original data must be preserved
+        # Original data must be preserved
         self.assertEqual(customer.first_name, "Original")
         self.assertEqual(customer.last_name, "Name")
         self.assertEqual(customer.phone, "+593991234567")
- # Customer should have two passes
+        # Customer should have two passes
         self.assertEqual(customer.passes.count(), 2)
 
+
 #
+
 
 class AgentAPIFixTest(TestCase):
     """Verify Agent API uses transaction_data instead of metadata."""
@@ -266,6 +281,6 @@ class AgentAPIFixTest(TestCase):
         request.user = user
         request.tenant = tenant
 
- # The API should not crash and should return a list
+        # The API should not crash and should return a list
         result = get_recent_transactions(request)
         self.assertIsNotNone(result)

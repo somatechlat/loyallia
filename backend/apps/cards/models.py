@@ -43,36 +43,63 @@ class Card(TimestampedModel):
     """
 
     tenant = models.ForeignKey(
-        Tenant, on_delete=models.CASCADE, related_name="cards", verbose_name="Negocio"
-        ,help_text="The business this record belongs to.",
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name="cards",
+        verbose_name="Negocio",
+        help_text="The business this record belongs to.",
     )
     card_type = models.CharField(
-        max_length=20, choices=CardType.choices, verbose_name="Tipo de tarjeta"
-        ,help_text="Type of loyalty program.",
+        max_length=20,
+        choices=CardType.choices,
+        verbose_name="Tipo de tarjeta",
+        help_text="Type of loyalty program.",
     )
-    name = models.CharField(max_length=100, verbose_name="Nombre del programa", help_text="Name of this record.")
-    description = models.TextField(blank=True, default="", verbose_name="Descripción", help_text="Description of this record.")
+    name = models.CharField(
+        max_length=100,
+        verbose_name="Nombre del programa",
+        help_text="Name of this record.",
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Descripción",
+        help_text="Description of this record.",
+    )
 
     # Branding
     logo_url = models.URLField(
-        blank=True, default="", max_length=2000, verbose_name="URL del logo"
-        ,help_text="URL of the logo image.",
+        blank=True,
+        default="",
+        max_length=2000,
+        verbose_name="URL del logo",
+        help_text="URL of the logo image.",
     )
     background_color = models.CharField(
-        max_length=7, default="#1a1a2e", verbose_name="Color de fondo (HEX)"
-        ,help_text="Background color in HEX format.",
+        max_length=7,
+        default="#1a1a2e",
+        verbose_name="Color de fondo (HEX)",
+        help_text="Background color in HEX format.",
     )
     text_color = models.CharField(
-        max_length=7, default="#ffffff", verbose_name="Color del texto (HEX)"
-        ,help_text="Text color in HEX format.",
+        max_length=7,
+        default="#ffffff",
+        verbose_name="Color del texto (HEX)",
+        help_text="Text color in HEX format.",
     )
     strip_image_url = models.URLField(
-        blank=True, default="", max_length=2000, verbose_name="Imagen de tira"
-        ,help_text="URL of the strip image.",
+        blank=True,
+        default="",
+        max_length=2000,
+        verbose_name="Imagen de tira",
+        help_text="URL of the strip image.",
     )
     icon_url = models.URLField(
-        blank=True, default="", max_length=2000, verbose_name="URL del ícono"
-        ,help_text="URL of the icon image.",
+        blank=True,
+        default="",
+        max_length=2000,
+        verbose_name="URL del ícono",
+        help_text="URL of the icon image.",
     )
     barcode_type = models.CharField(
         max_length=20,
@@ -83,13 +110,23 @@ class Card(TimestampedModel):
     )
 
     # Status
-    is_active = models.BooleanField(default=True, verbose_name="Programa activo", help_text="Whether this record is currently active.")
-    is_published = models.BooleanField(default=False, verbose_name="Programa publicado", help_text="Whether this program is publicly visible.")
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Programa activo",
+        help_text="Whether this record is currently active.",
+    )
+    is_published = models.BooleanField(
+        default=False,
+        verbose_name="Programa publicado",
+        help_text="Whether this program is publicly visible.",
+    )
 
     # Type-specific configuration (Typed columns for core metrics)
     stamps_required = models.PositiveSmallIntegerField(
-        null=True, blank=True, verbose_name="Sellos requeridos"
-        ,help_text="Number of stamps required for a reward.",
+        null=True,
+        blank=True,
+        verbose_name="Sellos requeridos",
+        help_text="Number of stamps required for a reward.",
     )
     cashback_percentage = models.DecimalField(
         max_digits=5,
@@ -109,28 +146,38 @@ class Card(TimestampedModel):
         help_text="Minimum purchase amount required.",
     )
     credit_expiry_days = models.PositiveIntegerField(
-        default=365, null=True, blank=True, verbose_name="Días de expiración de crédito"
-        ,help_text="Days until earned credit expires.",
+        default=365,
+        null=True,
+        blank=True,
+        verbose_name="Días de expiración de crédito",
+        help_text="Days until earned credit expires.",
     )
 
     # Type-specific configuration stored as JSONB (Legacy/Dynamic)
-    metadata = models.JSONField(default=dict, verbose_name="Configuración específica", help_text="Additional configuration stored as JSON.")
+    metadata = models.JSONField(
+        default=dict,
+        verbose_name="Configuración específica",
+        help_text="Additional configuration stored as JSON.",
+    )
 
     # Geofencing Locations (Array of dicts: {"lat": float, "lng": float, "name": str})
     locations = models.JSONField(
-        default=list, blank=True, verbose_name="Ubicaciones (Geofencing)"
-        ,help_text="Geographic locations stored as JSON.",
+        default=list,
+        blank=True,
+        verbose_name="Ubicaciones (Geofencing)",
+        help_text="Geographic locations stored as JSON.",
     )
 
     # NEW: Structured redemption rules (replaces loose metadata for rules)
     redemption_rules = models.JSONField(
         default=dict,
         verbose_name="Reglas de canje",
-        help_text="JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}",# noqa: E501
+        help_text="JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}",  # noqa: E501
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_cards"
         verbose_name = "Programa de fidelización"
         verbose_name_plural = "Programas de fidelización"

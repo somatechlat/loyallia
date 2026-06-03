@@ -384,9 +384,7 @@ def get_restore_options_endpoint(request: HttpRequest):
 def get_restore_status(request: HttpRequest):
     """Return the status of the most recent restore job."""
     job = (
-        BackupJob.objects.filter(backup_type="restore")
-        .order_by("-created_at")
-        .first()
+        BackupJob.objects.filter(backup_type="restore").order_by("-created_at").first()
     )
 
     if not job:

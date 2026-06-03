@@ -23,6 +23,7 @@ from tests.factories import (
 
 # Coupon Double-Redemption Tests
 
+
 class CouponDoubleRedemptionTest(TransactionTestCase):
     """Test that coupon redemption is atomic  no double-redemption under concurrent access."""
 
@@ -43,9 +44,9 @@ class CouponDoubleRedemptionTest(TransactionTestCase):
         card = make_card(t, card_type=CardType.COUPON)
         customer = make_customer(t)
         cp = make_customer_pass(customer, card)
- # First redemption
+        # First redemption
         cp.process_transaction("coupon")
- # Second redemption attempt
+        # Second redemption attempt
         result = cp.process_transaction("coupon")
         self.assertFalse(result["pass_updated"])
 
@@ -61,7 +62,7 @@ class CouponDoubleRedemptionTest(TransactionTestCase):
 
         def redeem():
             try:
- # Re-fetch the pass to simulate separate requests
+                # Re-fetch the pass to simulate separate requests
                 fresh_cp = CustomerPass.objects.get(pk=cp.pk)
                 result = fresh_cp.process_transaction("coupon")
                 results.append(result["pass_updated"])
@@ -74,12 +75,14 @@ class CouponDoubleRedemptionTest(TransactionTestCase):
         for t_thread in threads:
             t_thread.join()
 
- # At most one should have succeeded (due to select_for_update)
+        # At most one should have succeeded (due to select_for_update)
         successful = sum(1 for r in results if r)
         self.assertLessEqual(successful, 1)
         self.assertEqual(len(errors), 0)
 
+
 # Concurrent Enrollment Tests
+
 
 class ConcurrentEnrollmentTest(TestCase):
     """Test that enrollment prevents duplicates under concurrent access."""
@@ -90,7 +93,7 @@ class ConcurrentEnrollmentTest(TestCase):
         card = make_card(t)
         customer = make_customer(t)
         make_customer_pass(customer, card)
- # Second enrollment should fail due to unique_together
+        # Second enrollment should fail due to unique_together
         with self.assertRaises(IntegrityError):
             make_customer_pass(customer, card)
 
@@ -104,7 +107,9 @@ class ConcurrentEnrollmentTest(TestCase):
         make_customer_pass(c2, card)
         self.assertEqual(CustomerPass.objects.filter(card=card).count(), 2)
 
+
 # Stamp Counter Race Condition Tests
+
 
 class StampRaceConditionTest(TransactionTestCase):
     """Test that stamp counter uses select_for_update to prevent lost updates."""
@@ -130,7 +135,7 @@ class StampRaceConditionTest(TransactionTestCase):
             except Exception as e:
                 errors.append(e)
 
- # 10 threads each adding 10 stamps = 100 total stamps
+        # 10 threads each adding 10 stamps = 100 total stamps
         threads = [threading.Thread(target=add_stamps, args=(10,)) for _ in range(10)]
         for t_thread in threads:
             t_thread.start()
@@ -139,11 +144,13 @@ class StampRaceConditionTest(TransactionTestCase):
 
         self.assertEqual(len(errors), 0)
         cp.refresh_from_db()
- # After 100 stamps with stamps_required=100, reward should be earned
- # and stamp_count should be 0 (100 % 100 = 0)
+        # After 100 stamps with stamps_required=100, reward should be earned
+        # and stamp_count should be 0 (100 % 100 = 0)
         self.assertEqual(cp.pass_data.get("stamp_count", -1), 0)
 
+
 # Cashback Race Condition Tests
+
 
 class CashbackRaceConditionTest(TransactionTestCase):
     """Test that cashback balance updates are atomic."""
@@ -172,11 +179,13 @@ class CashbackRaceConditionTest(TransactionTestCase):
 
         self.assertEqual(len(errors), 0)
         cp.refresh_from_db()
- # 5 threads × $10 × 5% cashback = $2.50
+        # 5 threads × $10 × 5% cashback = $2.50
         balance = Decimal(cp.pass_data.get("cashback_balance", "0"))
         self.assertEqual(balance, Decimal("2.50"))
 
+
 # Gift Certificate Balance Tests
+
 
 class GiftBalanceRaceConditionTest(TransactionTestCase):
     """Test that gift certificate balance prevents overdraft under concurrent access."""
@@ -193,12 +202,14 @@ class GiftBalanceRaceConditionTest(TransactionTestCase):
         def redeem(amount):
             try:
                 fresh_cp = CustomerPass.objects.get(pk=cp.pk)
-                result = fresh_cp.process_transaction("gift", amount=Decimal(str(amount)))
+                result = fresh_cp.process_transaction(
+                    "gift", amount=Decimal(str(amount))
+                )
                 results.append(result["pass_updated"])
             except Exception:
                 results.append(False)
 
- # Try to redeem $10 twice (total $20) with only $15 balance
+        # Try to redeem $10 twice (total $20) with only $15 balance
         threads = [
             threading.Thread(target=redeem, args=(10,)),
             threading.Thread(target=redeem, args=(10,)),
@@ -210,12 +221,14 @@ class GiftBalanceRaceConditionTest(TransactionTestCase):
 
         cp.refresh_from_db()
         balance = Decimal(cp.pass_data.get("gift_balance", "0"))
- # Balance should be non-negative
+        # Balance should be non-negative
         self.assertGreaterEqual(balance, Decimal("0"))
- # At least one should have succeeded
+        # At least one should have succeeded
         self.assertTrue(any(results))
 
+
 # Multipass Race Condition Tests
+
 
 class MultipassRaceConditionTest(TransactionTestCase):
     """Test that multipass usage is atomic."""
@@ -245,13 +258,15 @@ class MultipassRaceConditionTest(TransactionTestCase):
 
         cp.refresh_from_db()
         remaining = cp.pass_data.get("multipass_remaining", 0)
- # Should not go below zero
+        # Should not go below zero
         self.assertGreaterEqual(remaining, 0)
- # Exactly 2 should have succeeded (initial balance)
+        # Exactly 2 should have succeeded (initial balance)
         successful = sum(1 for r in results if r)
         self.assertEqual(successful, 2)
 
+
 # Referral Limit Tests
+
 
 class ReferralLimitRaceConditionTest(TestCase):
     """Test that referral count respects max_referrals_per_customer."""
@@ -271,14 +286,16 @@ class ReferralLimitRaceConditionTest(TestCase):
         customer = make_customer(t)
         cp = make_customer_pass(customer, card, pass_data={"referral_count": 0})
 
- # Process 5 referrals only 3 should succeed
+        # Process 5 referrals only 3 should succeed
         for _ in range(5):
             cp.process_transaction("referral")
 
         cp.refresh_from_db()
         self.assertEqual(cp.pass_data.get("referral_count", 0), 3)
 
+
 # Discount Tier Race Condition Tests
+
 
 class DiscountTierRaceConditionTest(TransactionTestCase):
     """Test that discount tier calculation is atomic under concurrent scans."""

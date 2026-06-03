@@ -377,6 +377,3 @@ class StaffRoleValidator(RuleValidator):
                 )
 
         return violations
-
-
-

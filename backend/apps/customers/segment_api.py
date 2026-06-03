@@ -11,7 +11,7 @@ from django.db.models import Q
 from ninja import Router
 from ninja.errors import HttpError
 
-from apps.customers.models import Customer
+from apps.customers.models import Customer, CustomerPass
 from apps.customers.schemas import CustomerOut
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
@@ -154,12 +154,17 @@ def apply_campaign_filters(
 
     if target_wallet_platform != "both":
         if target_wallet_platform == "none":
-            wallet_customer_ids = CustomerPass.objects.filter(
-                is_active=True,
-            ).exclude(
-                apple_pass_id="",
-                google_pass_id="",
-            ).values_list("customer_id", flat=True).distinct()
+            wallet_customer_ids = (
+                CustomerPass.objects.filter(
+                    is_active=True,
+                )
+                .exclude(
+                    apple_pass_id="",
+                    google_pass_id="",
+                )
+                .values_list("customer_id", flat=True)
+                .distinct()
+            )
             audience = audience.exclude(id__in=wallet_customer_ids)
         elif target_wallet_platform == "apple":
             audience = audience.filter(

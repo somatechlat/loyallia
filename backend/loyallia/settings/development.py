@@ -53,4 +53,3 @@ if not PASS_WEB_SERVICE_URL:  # noqa: F405
     _public_base = globals().get("PUBLIC_BASE_URL", "")
     if _public_base:
         PASS_WEB_SERVICE_URL = f"{_public_base.rstrip('/')}/wallet/apple"
-

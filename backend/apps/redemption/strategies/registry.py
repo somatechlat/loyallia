@@ -4,11 +4,18 @@ Loyallia Redemption Engine — Strategy Registry
 Maps (card_type, intent) → RedemptionStrategy subclass.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .base import BaseRedemptionStrategy
+
 # Lazy-import cache to avoid circular imports at module level
-_strategy_cache: dict[str, "BaseRedemptionStrategy"] = {}
+_strategy_cache: dict[str, BaseRedemptionStrategy] = {}
 
 
-def get_strategy(card_type: str, intent: str) -> "BaseRedemptionStrategy":
+def get_strategy(card_type: str, intent: str) -> BaseRedemptionStrategy:
     """Resolve a card type + intent to the appropriate strategy instance.
 
     Args:
@@ -30,7 +37,7 @@ def get_strategy(card_type: str, intent: str) -> "BaseRedemptionStrategy":
     return strategy
 
 
-def _resolve(card_type: str, intent: str) -> "BaseRedemptionStrategy":
+def _resolve(card_type: str, intent: str) -> BaseRedemptionStrategy:
     """Internal resolution logic (called once per unique key).
 
     Maps card_type + intent to the correct strategy subclass.

@@ -169,7 +169,11 @@ def get_local_backup_list() -> list[dict]:
                 break
 
     if not backup_dir:
-        backup_dir = str(project_root / "backups") if env == "development" else "/var/backups/loyallia"
+        backup_dir = (
+            str(project_root / "backups")
+            if env == "development"
+            else "/var/backups/loyallia"
+        )
 
     backup_dir = backup_dir.replace("$PROJECT_ROOT", str(project_root))
 

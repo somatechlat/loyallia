@@ -28,6 +28,7 @@ from tests.factories import (
 
 # TransactionService Tests
 
+
 class TransactionServiceScanQRTest(TestCase):
     """Tests for TransactionService.scan_qr"""
 
@@ -74,6 +75,7 @@ class TransactionServiceScanQRTest(TestCase):
         result2 = TransactionService.scan_qr(t, cp.qr_code)
         self.assertFalse(result2["pass_updated"])
 
+
 class TransactionServiceEnrollTest(TestCase):
     """Tests for TransactionService.enroll_customer"""
 
@@ -83,8 +85,12 @@ class TransactionServiceEnrollTest(TestCase):
         customer = make_customer(t)
         cp = TransactionService.enroll_customer(t, customer, card)
         self.assertIsNotNone(cp)
-        self.assertTrue(CustomerPass.objects.filter(customer=customer, card=card).exists())
-        self.assertTrue(Enrollment.objects.filter(customer=customer, card=card).exists())
+        self.assertTrue(
+            CustomerPass.objects.filter(customer=customer, card=card).exists()
+        )
+        self.assertTrue(
+            Enrollment.objects.filter(customer=customer, card=card).exists()
+        )
 
     def test_enroll_customer_already_enrolled_raises(self):
         t = make_tenant()
@@ -101,23 +107,29 @@ class TransactionServiceEnrollTest(TestCase):
         with self.assertRaises(ValueError):
             TransactionService.enroll_customer(t, customer, card)
 
+
 class TransactionServiceRemoteIssueTest(TestCase):
     """Tests for TransactionService.remote_issue"""
 
     def test_remote_issue_success(self):
         t, _, _, card, customer, cp = make_full_stack()
         staff = make_user(tenant=t, role=UserRole.STAFF)
-        result = TransactionService.remote_issue(t, customer, card, quantity=3, staff=staff)
+        result = TransactionService.remote_issue(
+            t, customer, card, quantity=3, staff=staff
+        )
         self.assertTrue(result["success"])
         self.assertTrue(result["pass_updated"])
 
     def test_remote_issue_creates_remote_transaction(self):
         t, _, _, card, customer, cp = make_full_stack()
-        TransactionService.remote_issue(t, customer, card, quantity=2, notes="Manual reward")
+        TransactionService.remote_issue(
+            t, customer, card, quantity=2, notes="Manual reward"
+        )
         txn = Transaction.objects.filter(customer_pass=cp, is_remote=True).first()
         self.assertIsNotNone(txn)
         assert txn is not None
         self.assertTrue(txn.is_remote)
+
 
 class TransactionServiceListTest(TestCase):
     """Tests for TransactionService.list_transactions"""
@@ -140,7 +152,9 @@ class TransactionServiceListTest(TestCase):
         result = TransactionService.list_transactions(t, limit=3)
         self.assertLessEqual(len(result), 3)
 
+
 # BillingService Tests
+
 
 class BillingServicePlansTest(TestCase):
     """Tests for BillingService.get_plans"""
@@ -160,6 +174,7 @@ class BillingServicePlansTest(TestCase):
         if plans:
             self.assertIn("limits", plans[0])
             self.assertIn("max_customers", plans[0]["limits"])
+
 
 class BillingServiceCheckUsageTest(TestCase):
     """Tests for BillingService.check_usage"""
@@ -207,7 +222,9 @@ class BillingServiceCheckUsageTest(TestCase):
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["percentage"], 50.0)
 
+
 # AutomationService Tests
+
 
 class AutomationServiceFireTriggerTest(TestCase):
     """Tests for AutomationService.fire_trigger"""
@@ -218,8 +235,10 @@ class AutomationServiceFireTriggerTest(TestCase):
         make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED)
         from apps.automation.service import AutomationService
 
-        count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
- # Real execute() runs and creates AutomationExecution records
+        count = AutomationService.fire_trigger(
+            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
+        )
+        # Real execute() runs and creates AutomationExecution records
         self.assertGreaterEqual(count, 0)
 
     def test_fire_trigger_no_matching_automations(self):
@@ -227,7 +246,9 @@ class AutomationServiceFireTriggerTest(TestCase):
         customer = make_customer(t)
         from apps.automation.service import AutomationService
 
-        count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
+        count = AutomationService.fire_trigger(
+            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
+        )
         self.assertEqual(count, 0)
 
     def test_fire_trigger_inactive_automation_skipped(self):
@@ -236,8 +257,11 @@ class AutomationServiceFireTriggerTest(TestCase):
         make_automation(t, trigger=AutomationTrigger.CUSTOMER_ENROLLED, is_active=False)
         from apps.automation.service import AutomationService
 
-        count = AutomationService.fire_trigger(t, AutomationTrigger.CUSTOMER_ENROLLED, customer)
+        count = AutomationService.fire_trigger(
+            t, AutomationTrigger.CUSTOMER_ENROLLED, customer
+        )
         self.assertEqual(count, 0)
+
 
 class AutomationServiceCreateTest(TestCase):
     """Tests for AutomationService.create_automation"""
@@ -302,6 +326,7 @@ class AutomationServiceCreateTest(TestCase):
         )
         self.assertEqual(auto.target_programs.count(), 1)
 
+
 class AutomationServiceUpdateTest(TestCase):
     """Tests for AutomationService.update_automation"""
 
@@ -321,6 +346,7 @@ class AutomationServiceUpdateTest(TestCase):
         updated = AutomationService.update_automation(auto, {"is_active": False})
         updated.refresh_from_db()
         self.assertFalse(updated.is_active)
+
 
 class AutomationServiceGetStatsTest(TestCase):
     """Tests for AutomationService.get_stats"""
@@ -343,7 +369,9 @@ class AutomationServiceGetStatsTest(TestCase):
         self.assertEqual(stats["total_automations"], 2)
         self.assertEqual(stats["active_automations"], 2)
 
+
 # CustomerService Tests
+
 
 class CustomerServiceCreateTest(TestCase):
     """Tests for CustomerService.create"""
@@ -413,6 +441,7 @@ class CustomerServiceCreateTest(TestCase):
         )
         self.assertEqual(customer.gender, "M")
 
+
 class CustomerServiceUpdateTest(TestCase):
     """Tests for CustomerService.update"""
 
@@ -442,6 +471,7 @@ class CustomerServiceUpdateTest(TestCase):
         CustomerService.update(customer, {})
         customer.refresh_from_db()
         self.assertEqual(customer.first_name, "Alice")
+
 
 class CustomerServiceSearchTest(TestCase):
     """Tests for CustomerService.search"""
@@ -476,6 +506,7 @@ class CustomerServiceSearchTest(TestCase):
         results = CustomerService.search(t, "Searchable", limit=3)
         self.assertLessEqual(len(results), 3)
 
+
 class CustomerServiceEnrollTest(TestCase):
     """Tests for CustomerService.enroll_in_program"""
 
@@ -494,7 +525,9 @@ class CustomerServiceEnrollTest(TestCase):
         with self.assertRaises(ValueError):
             CustomerService.enroll_in_program(t, customer, card)
 
+
 # TransactionService._serialize_result Tests
+
 
 class SerializeResultTest(TestCase):
     """Tests for TransactionService._serialize_result"""
