@@ -16,7 +16,7 @@ import type {
   BarcodeConfig,
   BackContentDefaults,
   BackContent,
-} from './types';
+} from './types/index';
 
 /* ------------------------------------------------------------------ */
 /*  Card Type Metadata                                                */
