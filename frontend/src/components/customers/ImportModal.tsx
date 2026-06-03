@@ -5,7 +5,7 @@ interface ImportModalProps {
   consentGiven: boolean;
   setConsentGiven: (v: boolean) => void;
   importing: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDownloadTemplate: () => void;
   onClose: () => void;

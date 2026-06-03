@@ -12,7 +12,6 @@ interface PlatformSelectorProps {
 }
 
 export default function PlatformSelector({
-  programs,
   programCounts,
   selectedPlatform,
   selectedProgramId,
