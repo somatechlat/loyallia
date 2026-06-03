@@ -8,7 +8,12 @@ import TenantDetailModal from '@/components/superadmin/tenants/TenantDetailModal
 const api = (path: string, opts?: { method?: string; body?: string }) => {
   const url = `/api/v1/admin${path}`;
   const method = (opts?.method || 'GET').toLowerCase();
-  const body = opts?.body ? JSON.parse(opts.body) : undefined;
+  let body;
+  try {
+    body = opts?.body ? JSON.parse(opts.body) : undefined;
+  } catch {
+    body = undefined;
+  }
   return centralizedApi({ url, method, data: body });
 };
 

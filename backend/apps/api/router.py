@@ -7,6 +7,7 @@ Mounted at /api/v1/ in loyallia/urls.py
 from typing import Any
 
 from django.http import HttpRequest, JsonResponse
+from django.conf import settings
 from ninja import NinjaAPI
 from ninja.errors import HttpError, ValidationError
 
@@ -44,8 +45,8 @@ api = NinjaAPI(
     version="1.0.0",
     description="Loyallia Digital Loyalty Platform REST API",
     urls_namespace="loyallia_api",
-    docs_url="/docs/",
-    openapi_url="/openapi.json",
+    docs_url="/docs/" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 

@@ -109,9 +109,11 @@ class PortalDeleteAccountOut(Schema):
 # Helpers
 
 
-def _generate_temp_password(length: int = 12) -> str:
+def _generate_temp_password(length: int = 16) -> str:
     """Generate a secure random temporary password."""
-    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    alphabet = (
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_+=?"
+    )
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
