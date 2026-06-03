@@ -163,3 +163,38 @@ export const campaignSchema = z.object({
 );
 
 export type CampaignFormData = z.infer<typeof campaignSchema>;
+
+// ─── Campaign Wizard Step Schemas ───
+// Each schema validates only the fields relevant to its step
+
+export const campaignStep0Schema = z.object({
+  channel: z.enum(['email', 'wallet', 'whatsapp', 'sms'], {
+    errorMap: () => ({ message: 'Selecciona un canal válido' }),
+  }),
+  walletPlatform: z.enum(['apple', 'google', 'both'], {
+    errorMap: () => ({ message: 'Selecciona una plataforma válida' }),
+  }),
+}).refine(
+  (data) => data.channel !== 'wallet' || data.walletPlatform !== undefined,
+  { message: 'Selecciona una plataforma de wallet', path: ['walletPlatform'] }
+);
+
+export const campaignStep1Schema = z.object({
+  audience: z.object({
+    programId: z.string().min(1, 'Selecciona un programa'),
+    segmentId: z.string().min(1, 'Selecciona un segmento'),
+    customerCount: z.number().min(1, 'La audiencia debe tener al menos 1 destinatario'),
+    customerIds: z.array(z.string()),
+    excludedCustomerIds: z.array(z.string()),
+  }),
+});
+
+export const campaignStep2Schema = z.object({
+  title: z.string().min(1, 'El título es obligatorio').max(200, 'Máximo 200 caracteres'),
+  message: z.string().min(1, 'El mensaje es obligatorio').max(10000, 'Máximo 10,000 caracteres'),
+  scheduleType: z.enum(['immediate', 'scheduled']),
+  scheduledAt: z.string().nullable().optional(),
+}).refine(
+  (data) => data.scheduleType !== 'scheduled' || (!!data.scheduledAt && data.scheduledAt.length > 0),
+  { message: 'Selecciona una fecha y hora para el envío programado', path: ['scheduledAt'] }
+);

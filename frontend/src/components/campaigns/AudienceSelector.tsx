@@ -16,6 +16,7 @@ interface AudienceSelectorProps {
   channel: CampaignChannel;
   value: AudienceSelection;
   onChange: (audience: AudienceSelection) => void;
+  errors?: Record<string, string>;
 }
 
 type SubStep = 0 | 1 | 2;
@@ -40,7 +41,7 @@ const SEGMENT_META: Record<string, { icon: string; color: string }> = {
   most_active: { icon: '🔥', color: 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' },
 };
 
-export default function AudienceSelector({ programs, segments, channel, value, onChange }: AudienceSelectorProps) {
+export default function AudienceSelector({ programs, segments, channel, value, onChange, errors = {} }: AudienceSelectorProps) {
   const { t } = useI18n();
   const isWallet = channel === 'wallet';
 
@@ -236,6 +237,15 @@ export default function AudienceSelector({ programs, segments, channel, value, o
           </div>
         ))}
       </div>
+
+      {/* Validation errors */}
+      {(errors['audience.programId'] || errors['audience.segmentId'] || errors['audience.customerCount']) && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+          {errors['audience.programId'] && <p className="text-xs text-red-600 dark:text-red-400">{errors['audience.programId']}</p>}
+          {errors['audience.segmentId'] && <p className="text-xs text-red-600 dark:text-red-400">{errors['audience.segmentId']}</p>}
+          {errors['audience.customerCount'] && <p className="text-xs text-red-600 dark:text-red-400">{errors['audience.customerCount']}</p>}
+        </div>
+      )}
 
       {/* Program */}
       <section className={`transition-opacity duration-300 ${subStep === 0 ? 'opacity-100' : 'opacity-60'}`}>

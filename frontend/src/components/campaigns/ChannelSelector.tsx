@@ -11,6 +11,7 @@ interface ChannelSelectorProps {
   planLimits: Record<string, number>;
   planUsage: Record<string, number>;
   programs: ProgramOption[];
+  errors?: Record<string, string>;
   onQuickPreset: (programId: string, segmentId: string, walletPlatform: WalletPlatform) => void;
   onCustomSelected: () => void;
 }
@@ -30,6 +31,7 @@ export default function ChannelSelector({
   planLimits,
   planUsage,
   programs,
+  errors = {},
   onQuickPreset,
   onCustomSelected,
 }: ChannelSelectorProps) {
@@ -165,6 +167,12 @@ export default function ChannelSelector({
             );
           })}
         </div>
+        {(errors.channel || errors.walletPlatform) && (
+          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+            {errors.channel && <p className="text-xs text-red-600 dark:text-red-400">{errors.channel}</p>}
+            {errors.walletPlatform && <p className="text-xs text-red-600 dark:text-red-400">{errors.walletPlatform}</p>}
+          </div>
+        )}
       </section>
 
       {/* Section 2: Quick Presets */}
