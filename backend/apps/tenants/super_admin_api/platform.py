@@ -127,8 +127,8 @@ def toggle_platform_mode(request, payload: PlatformModeToggleIn):
             details={"new_mode": payload.mode},
             status="success",
         )
-    except Exception:
-        logger.warning("Failed to audit platform mode toggle", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to audit platform mode toggle: %s", e, exc_info=True)
 
     return PlatformModeOut(mode=setting.value, updated_at=setting.updated_at)
 
@@ -177,7 +177,8 @@ def platform_metrics(request):
 
     try:
         total_customers = Customer.objects.count()
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to count customers: %s", e)
         total_customers = 0
 
     trial_tenants = Subscription.objects.filter(
@@ -565,8 +566,8 @@ def bulk_update_platform_settings(request, payload: PlatformSettingsBulkUpdateIn
             details={"updated": updated_count, "skipped": skipped_count},
             status="success",
         )
-    except Exception:
-        logger.warning("Failed to audit bulk settings update", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to audit bulk settings update: %s", e, exc_info=True)
 
     return PlatformSettingsBulkUpdateOut(
         success=updated_count > 0,

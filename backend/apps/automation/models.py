@@ -409,12 +409,13 @@ class Automation(TimestampedModel):
         # Enforce daily WhatsApp plan limit (prevents automation bypass)
         try:
             check_plan_limit(self.tenant, "whatsapp_day", write=True)
-        except Exception:
+        except Exception as e:
             import logging
 
             logging.getLogger(__name__).warning(
-                "WhatsApp automation blocked: plan limit exceeded for tenant %s",
+                "WhatsApp automation blocked: plan limit exceeded for tenant %s (%s)",
                 self.tenant.id,
+                e,
             )
             return False
 

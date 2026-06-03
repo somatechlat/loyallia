@@ -236,10 +236,11 @@ def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Custom
     try:
         task_fn: Any = generate_qr_for_pass
         task_fn.delay(str(pass_obj.id))
-    except Exception:
+    except Exception as e:
         logger.warning(
-            "Could not queue QR generation task for pass %s",
+            "Could not queue QR generation task for pass %s: %s",
             str(pass_obj.id),
+            e,
             exc_info=True,
         )
 
@@ -393,10 +394,11 @@ def enroll_customer(tenant, customer: Customer, card: Card) -> CustomerPass:
     try:
         task_fn: Any = generate_qr_for_pass
         task_fn.delay(str(pass_obj.id))
-    except Exception:
+    except Exception as e:
         logger.warning(
-            "Could not queue QR generation task for pass %s",
+            "Could not queue QR generation task for pass %s: %s",
             str(pass_obj.id),
+            e,
             exc_info=True,
         )
 

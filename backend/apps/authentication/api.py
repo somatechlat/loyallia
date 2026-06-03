@@ -135,8 +135,8 @@ def login(request: HttpRequest, payload: LoginIn):
             details={"method": "email"},
             status="success",
         )
-    except Exception:
-        logger.exception("Failed to log successful login audit action")
+    except Exception as e:
+        logger.exception("Failed to log successful login audit action: %s", e)
     return tokens
 
 
@@ -186,8 +186,8 @@ def logout(request: HttpRequest, payload: LogoutIn):
             details={"method": "refresh_token_revocation"},
             status="success",
         )
-    except Exception:
-        logger.exception("Failed to log logout audit action")
+    except Exception as e:
+        logger.exception("Failed to log logout audit action: %s", e)
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
 
 

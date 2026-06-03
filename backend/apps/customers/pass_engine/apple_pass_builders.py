@@ -566,7 +566,8 @@ def _build_locations(card) -> list:
 
     try:
         tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to build locations: %s", e)
         return locations
 
     if not tenant_locations:

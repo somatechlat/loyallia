@@ -128,8 +128,8 @@ def restore_postgresql(dump_file: str) -> bool:
         stderr = (exc.stderr or b"").decode("utf-8", errors="replace")
         logger.error("restore: PostgreSQL restore failed: %s", scrub_error(stderr))
         return False
-    except Exception:
-        logger.exception("restore: PostgreSQL restore unexpected error")
+    except Exception as e:
+        logger.exception("restore: PostgreSQL restore unexpected error: %s", e)
         return False
     finally:
         env.pop("PGPASSWORD", None)

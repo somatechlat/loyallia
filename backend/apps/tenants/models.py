@@ -420,14 +420,15 @@ class Tenant(TimestampedModel):
                 subscription.save(
                     update_fields=["trial_end", "status", "plan", "updated_at"]
                 )
-        except Exception:
+        except Exception as e:
             # Billing migrations may not be applied yet; don't block registration
             import logging
 
             logger = logging.getLogger(__name__)
             logger.warning(
-                "Could not create/update Subscription for tenant %s (billing table may not exist)",
+                "Could not create/update Subscription for tenant %s (billing table may not exist): %s",
                 self.slug,
+                e,
                 exc_info=True,
             )
 
@@ -614,7 +615,8 @@ class PlatformSetting(models.Model):
                     _PLATFORM_SETTING_CACHE_TTL,
                 )
                 refreshed += 1
-            except Exception:
+            except Exception as e:
+                logger.debug("PlatformSetting cache refresh failed for key %s: %s", setting.key, e)
                 failed += 1
 
         return {"refreshed": refreshed, "failed": failed, "total": refreshed + failed}

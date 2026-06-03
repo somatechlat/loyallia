@@ -191,7 +191,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         # Parse error reason
         try:
             reason = response.json().get("reason", "Unknown")
-        except Exception:
+        except (ValueError, TypeError):
             reason = response.text[:200]
 
         if reason in ("BadDeviceToken", "Unregistered"):

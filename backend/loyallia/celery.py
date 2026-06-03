@@ -4,6 +4,7 @@ Configured via Django settings (CELERY_* keys in base.py).
 Workers use this module: celery -A loyallia worker ...
 """
 
+import logging
 import os
 
 from celery import Celery
@@ -31,7 +32,10 @@ def get_backup_schedule():
         frequency = PlatformSetting.get("backup_frequency", "daily")
         hour = PlatformSetting.get_int("backup_hour", 3)
         minute = PlatformSetting.get_int("backup_minute", 0)
-    except Exception:
+    except Exception as e:
+        logging.getLogger(__name__).warning(
+            "Backup schedule fallback: %s", e
+        )
         frequency = "daily"
         hour = 3
         minute = 0

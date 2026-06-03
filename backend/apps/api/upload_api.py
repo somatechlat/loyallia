@@ -23,7 +23,7 @@ from common.request import as_tenant_request
 
 try:
     from botocore.exceptions import ClientError
-except Exception:
+except ImportError:
     ClientError = Exception  # type: ignore[misc,assignment]
 
 logger = logging.getLogger(__name__)

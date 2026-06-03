@@ -255,8 +255,8 @@ def get_offsite_backup_list() -> list[dict]:
                     }
                 )
         return backups
-    except Exception:
-        logger.exception("Failed to list offsite backups")
+    except Exception as e:
+        logger.exception("Failed to list offsite backups: %s", e)
         return []
 
 

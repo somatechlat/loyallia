@@ -169,7 +169,7 @@ def send_apns_message(
         # Parse APNs error reason
         try:
             reason = response.json().get("reason", "Unknown")
-        except Exception:
+        except (ValueError, TypeError):
             reason = response.text[:100]
 
         if reason == "BadDeviceToken" or reason == "Unregistered":
