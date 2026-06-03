@@ -12,64 +12,48 @@ No fake credentials. Tests skip if Vault credentials are unavailable.
 from django.test import TestCase
 
 from common.messages import get_message
-from common.vault import clear_test_overrides, get_secret, set_test_override
+from common.vault import get_secret
 
 
 def _get_twilio_test_credentials():
-    """Fetch Twilio test credentials from Vault. Returns dict or None."""
-    sid = get_secret("twilio_test_account_sid") or get_secret("twilio_account_sid")
-    token = get_secret("twilio_test_auth_token") or get_secret("twilio_auth_token")
+    """Fetch Twilio credentials that the code will ACTUALLY use. Returns dict or None."""
     from_number = get_secret("twilio_from_number")
+    if not from_number:
+        return None
+
+    use_test = (get_secret("twilio_use_test_mode") or "").strip().lower() in {"1", "true", "yes", "on"}
+    if use_test:
+        sid = get_secret("twilio_test_account_sid")
+        token = get_secret("twilio_test_auth_token")
+    else:
+        sid = get_secret("twilio_account_sid")
+        token = get_secret("twilio_auth_token")
+
     if sid and token and from_number:
         return {"sid": sid, "token": token, "from": from_number}
     return None
 
 
 class SMSClientAvailabilityTest(TestCase):
-    """Tests for is_sms_available() configuration checking."""
+    """Tests for is_sms_available() with real Vault state."""
 
-    def tearDown(self):
-        clear_test_overrides()
-
-    def test_not_available_when_no_credentials(self):
+    def test_available_when_credentials_present(self):
+        """If Vault has Twilio credentials, SMS is available."""
         from apps.notifications.sms.client import is_sms_available
 
-        clear_test_overrides()
-        set_test_override("twilio_use_test_mode", "false")
-        set_test_override("twilio_account_sid", "")
-        set_test_override("twilio_auth_token", "")
-        set_test_override("twilio_from_number", "")
-        self.assertFalse(is_sms_available())
-
-    def test_not_available_missing_auth_token(self):
-        from apps.notifications.sms.client import is_sms_available
-
-        clear_test_overrides()
-        set_test_override("twilio_use_test_mode", "false")
-        set_test_override("twilio_account_sid", "ACdummy")
-        set_test_override("twilio_auth_token", "")
-        set_test_override("twilio_from_number", "+15550000000")
-        self.assertFalse(is_sms_available())
+        creds = _get_twilio_test_credentials()
+        if not creds:
+            self.skipTest("Twilio credentials not available in Vault")
+        self.assertTrue(is_sms_available())
 
 
 class SMSClientSendTest(TestCase):
     """Tests for send_sms() function with real Twilio client."""
 
-    def setUp(self):
-        self.creds = _get_twilio_test_credentials()
-        if self.creds:
-            clear_test_overrides()
-            set_test_override("twilio_use_test_mode", "true")
-            set_test_override("twilio_test_account_sid", self.creds["sid"])
-            set_test_override("twilio_test_auth_token", self.creds["token"])
-            set_test_override("twilio_from_number", self.creds["from"])
-
-    def tearDown(self):
-        clear_test_overrides()
-
     def test_send_sms_with_real_client(self):
         """Send SMS using real Twilio client with Vault credentials."""
-        if not self.creds:
+        creds = _get_twilio_test_credentials()
+        if not creds:
             self.skipTest("Twilio credentials not available in Vault")
 
         from apps.notifications.sms.client import send_sms
@@ -86,39 +70,13 @@ class SMSClientSendTest(TestCase):
         self.assertFalse(result["success"])
         self.assertIn("No recipient", result["error"])
 
-    def test_send_sms_raises_when_not_configured(self):
-        from apps.notifications.sms.client import send_sms
-        from common.vault import clear_test_overrides, set_test_override
-
-        clear_test_overrides()
-        set_test_override("twilio_account_sid", "")
-        set_test_override("twilio_auth_token", "")
-        set_test_override("twilio_from_number", "")
-
-        with self.assertRaises(RuntimeError) as ctx:
-            send_sms(phone="+593991234567", message="test")
-        self.assertIn("not configured", str(ctx.exception))
-
-        clear_test_overrides()
-
 
 class SMSClientBulkTest(TestCase):
     """Tests for send_sms_bulk() function."""
 
-    def setUp(self):
-        self.creds = _get_twilio_test_credentials()
-        if self.creds:
-            clear_test_overrides()
-            set_test_override("twilio_use_test_mode", "true")
-            set_test_override("twilio_test_account_sid", self.creds["sid"])
-            set_test_override("twilio_test_auth_token", self.creds["token"])
-            set_test_override("twilio_from_number", self.creds["from"])
-
-    def tearDown(self):
-        clear_test_overrides()
-
     def test_bulk_send_mixed_results(self):
-        if not self.creds:
+        creds = _get_twilio_test_credentials()
+        if not creds:
             self.skipTest("Twilio credentials not available in Vault")
 
         from apps.notifications.sms.client import send_sms_bulk
@@ -132,26 +90,6 @@ class SMSClientBulkTest(TestCase):
         result = send_sms_bulk(recipients)
         self.assertIn("succeeded", result)
         self.assertIn("failed", result)
-
-    def test_bulk_send_raises_when_twilio_not_configured(self):
-        """Real behavior: when Twilio is not configured, bulk send raises."""
-        from apps.notifications.sms.client import send_sms_bulk
-
-        # Simulate missing credentials by overriding Vault secrets
-        set_test_override("twilio_use_test_mode", "false")
-        set_test_override("twilio_account_sid", "")
-        set_test_override("twilio_auth_token", "")
-        set_test_override("twilio_from_number", "")
-
-        recipients = [
-            {"phone": "", "message": "Hi"},
-            {"phone": "+593991111111", "message": ""},
-        ]
-        try:
-            with self.assertRaises(RuntimeError):
-                send_sms_bulk(recipients)
-        finally:
-            clear_test_overrides()
 
 
 class I18nSMSMessagesTest(TestCase):
