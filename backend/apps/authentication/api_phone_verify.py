@@ -61,6 +61,21 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
             message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),
         )
 
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.CREATE,
+            resource_type="phone_verification",
+            resource_id=payload.phone,
+            details={"channel": result.get("channel", "sms"), "strategy": result.get("strategy", "")},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit phone verify start: %s", e, exc_info=True)
+
     return PhoneVerifyStartOut(
         success=True,
         message=get_message("VERIFY_OTP_SENT", channel=result.get("channel", "sms")),
@@ -108,6 +123,21 @@ def verify_phone_check(request, payload: PhoneVerifyCheckIn):
         )
 
     if is_valid:
+        try:
+            from apps.audit.models import AuditAction, AuditStatus
+            from apps.audit.service import log_action
+
+            log_action(
+                request=request,
+                action=AuditAction.UPDATE,
+                resource_type="phone_verification",
+                resource_id=phone,
+                details={"event": "verified"},
+                status=AuditStatus.SUCCESS,
+            )
+        except Exception as e:
+            logger.warning("Failed to audit phone verify check: %s", e, exc_info=True)
+
         return PhoneVerifyCheckOut(
             success=True,
             message=get_message("VERIFY_OTP_VALID"),
