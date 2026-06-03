@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
+/**
+ * Represents a loyalty program transaction.
+ */
 interface Transaction {
   id: string;
   transaction_type: string;
@@ -18,8 +21,13 @@ interface Transaction {
   transaction_data: Record<string, unknown>;
 }
 
+/**
+ * Props for the ProgramTransactionsModal component.
+ */
 interface Props {
+  /** Program ID to load transactions for */
   programId: string;
+  /** Callback to close the modal */
   onClose: () => void;
 }
 
@@ -39,6 +47,11 @@ const TYPE_COLORS: Record<string, string> = {
   remote_reward: 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
 };
 
+/**
+ * @description Modal displaying paginated program transactions with type badges.
+ * @param {Props} props - Component props
+ * @returns JSX.Element
+ */
 export default function ProgramTransactionsModal({ programId, onClose }: Props) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);

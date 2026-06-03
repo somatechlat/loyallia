@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * Result data after a successful enrollment.
+ */
 interface EnrollResult {
   id: string;
   card_name: string;
@@ -13,6 +16,9 @@ interface EnrollResult {
   already_enrolled?: boolean;
 }
 
+/**
+ * Status of digital wallet pass availability.
+ */
 interface WalletStatus {
   pass_id: string;
   apple_wallet_available: boolean;
@@ -39,13 +45,25 @@ function IconAlertTriangle({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+/**
+ * Props for the WalletButtons component.
+ */
 interface WalletButtonsProps {
+  /** Enrollment result data */
   enrollResult: EnrollResult | null;
+  /** Current wallet pass status */
   walletStatus: WalletStatus | null;
+  /** Callback to add the pass to Apple Wallet */
   onAppleWallet: () => void;
+  /** Callback to add the pass to Google Wallet */
   onGoogleWallet: () => void;
 }
 
+/**
+ * @description Device-specific wallet buttons for Apple Wallet and Google Wallet.
+ * @param {WalletButtonsProps} props - Component props
+ * @returns JSX.Element | null
+ */
 export default function WalletButtons({ enrollResult, walletStatus, onAppleWallet, onGoogleWallet }: WalletButtonsProps) {
   if (!enrollResult) return null;
 

@@ -54,6 +54,9 @@ const META_LABELS: Record<string, string> = {
   bundle_price: 'Precio del paquete',
 };
 
+/**
+ * Program form data shape used in the review step.
+ */
 type ProgramForm = {
   name: string;
   card_type: string;
@@ -67,6 +70,9 @@ type ProgramForm = {
   locations: Array<{ lat: number; lng: number; name: string }>;
 };
 
+/**
+ * Selected card type option or undefined.
+ */
 type SelectedType = {
   value: string;
   label: string;
@@ -74,16 +80,32 @@ type SelectedType = {
   desc: string;
 } | undefined;
 
+/**
+ * Props for the ProgramReviewStep component.
+ */
 interface ProgramReviewStepProps {
+  /** Program form data */
   form: ProgramForm;
+  /** Program metadata */
   meta: Record<string, unknown>;
+  /** Selected card type */
   selectedType: SelectedType;
+  /** Active wallet provider */
   walletProvider: 'apple' | 'google';
+  /** Wallet provider change handler */
   setWalletProvider: (value: 'apple' | 'google') => void;
+  /** Apple Wallet feature configuration */
   appleWalletConfig: AppleWalletFeatureConfig;
+  /** Wallet design state */
   walletDesign?: WalletDesignState;
 }
 
+/**
+ * @description Small checkmark or empty circle indicator.
+ * @param {Object} props - Component props
+ * @param {boolean} props.filled - Whether to show a filled checkmark
+ * @returns JSX.Element
+ */
 function Checkmark({ filled }: { filled: boolean }) {
   return filled ? (
     <span className="text-green-500 text-sm">✓</span>
@@ -92,6 +114,11 @@ function Checkmark({ filled }: { filled: boolean }) {
   );
 }
 
+/**
+ * @description Final review step of the program wizard with a live wallet preview.
+ * @param {ProgramReviewStepProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function ProgramReviewStep({
   form,
   meta,

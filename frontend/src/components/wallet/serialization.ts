@@ -13,6 +13,11 @@ function stripTempUrl(url: string | undefined): string {
   return stripLocalMinioUrl(url);
 }
 
+/**
+ * @description Parses wallet design state from program metadata.
+ * @param {Record<string, unknown>} metadata - Program metadata object
+ * @returns {WalletDesignState} Parsed wallet design state
+ */
 export function parseWalletDesignFromMetadata(
   metadata: Record<string, unknown>
 ): WalletDesignState {
@@ -54,6 +59,11 @@ export function parseWalletDesignFromMetadata(
   };
 }
 
+/**
+ * @description Builds wallet design metadata from a design state object.
+ * @param {WalletDesignState} state - Wallet design state
+ * @returns {Record<string, unknown>} Metadata object for storage
+ */
 export function buildWalletDesignMetadata(
   state: WalletDesignState
 ): Record<string, unknown> {

@@ -2,27 +2,50 @@
 
 import React from 'react';
 
+/**
+ * Represents a loyalty card for enrollment.
+ */
 interface Card {
   id: string; name: string; description: string; card_type: string; tenant_name: string;
   background_color: string; text_color: string; logo_url: string; strip_image_url: string;
   metadata: Record<string, unknown>;
 }
 
+/**
+ * Props for the EnrollmentForm component.
+ */
 interface EnrollmentFormProps {
+  /** Card data for the program */
   card: Card;
+  /** Current form field values */
   form: Record<string, string>;
+  /** Form state setter */
   setForm: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  /** Current form validation errors */
   formErrors: Record<string, string>;
+  /** Error state setter */
   setFormErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  /** Whether the privacy policy is accepted */
   privacyAccepted: boolean;
+  /** Privacy acceptance setter */
   setPrivacyAccepted: (v: boolean) => void;
+  /** Honeypot field value (anti-bot) */
   honeypot: string;
+  /** Honeypot setter */
   setHoneypot: (v: string) => void;
+  /** Whether the form is submitting */
   loading: boolean;
+  /** Cooldown seconds before re-submit */
   cooldown: number;
+  /** Form submit handler */
   onSubmit: (e: React.FormEvent) => void;
 }
 
+/**
+ * @description Dynamic enrollment form with custom fields, honeypot, and privacy consent.
+ * @param {EnrollmentFormProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function EnrollmentForm({
   card,
   form,

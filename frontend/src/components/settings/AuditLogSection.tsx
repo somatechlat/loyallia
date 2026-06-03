@@ -4,6 +4,9 @@ import api from '@/lib/api';
 import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
 
+/**
+ * Single audit log entry.
+ */
 interface AuditEntry {
   id: string;
   actor_email: string;
@@ -16,7 +19,11 @@ interface AuditEntry {
   created_at: string;
 }
 
+/**
+ * Props for the AuditLogSection component.
+ */
 interface AuditLogSectionProps {
+  /** Role of the current user */
   userRole: string | undefined;
 }
 
@@ -41,6 +48,11 @@ const STATUS_COLORS: Record<string, string> = {
   error: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
 };
 
+/**
+ * @description Displays recent audit log entries for the tenant owner.
+ * @param {AuditLogSectionProps} props - Component props
+ * @returns JSX.Element | null
+ */
 export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);

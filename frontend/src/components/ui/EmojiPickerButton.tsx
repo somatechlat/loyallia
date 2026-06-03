@@ -8,11 +8,21 @@ const COMMON_EMOJIS = [
   '🎮', '📱', '🎸', '🌮', '🍔', '🍦', '🍩', '🥂', '🎳', '🎯',
 ];
 
+/**
+ * Props for the EmojiPickerButton component.
+ */
 interface EmojiPickerButtonProps {
+  /** Callback invoked when an emoji is selected */
   onEmojiSelect: (emoji: string) => void;
+  /** Additional CSS classes for the button */
   className?: string;
 }
 
+/**
+ * @description Button that opens a popover with common emojis for quick insertion.
+ * @param {EmojiPickerButtonProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function EmojiPickerButton({ onEmojiSelect, className = '' }: EmojiPickerButtonProps) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);

@@ -16,6 +16,9 @@ const api = (path: string, opts?: { method?: string; body?: string }) => {
   return centralizedApi({ url, method, data: body });
 };
 
+/**
+ * Represents a tenant (business) in the admin panel.
+ */
 interface Tenant {
   id: string;
   name: string;
@@ -39,6 +42,9 @@ interface Tenant {
   created_at: string;
 }
 
+/**
+ * Represents a tenant location (branch).
+ */
 interface TenantLocation {
   id: string;
   name: string;
@@ -51,9 +57,15 @@ interface TenantLocation {
   is_primary?: boolean;
 }
 
+/**
+ * Props for the TenantDetailModal component.
+ */
 interface TenantDetailModalProps {
+  /** Tenant to display, or null to hide */
   tenant: Tenant | null;
+  /** Close handler */
   onClose: () => void;
+  /** Update handler after mutations */
   onUpdate: () => void;
 }
 
@@ -88,6 +100,11 @@ const INDUSTRIES = [
   { value: 'other', label: 'Otro' },
 ];
 
+/**
+ * @description SuperAdmin modal with tabs for tenant info, locations, and actions.
+ * @param {TenantDetailModalProps} props - Component props
+ * @returns JSX.Element | null
+ */
 export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantDetailModalProps) {
   const [dtTab, setDtTab] = useState<'info'|'locs'|'actions'>('info');
   const [dtEdit, setDtEdit] = useState(false);

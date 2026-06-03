@@ -20,12 +20,13 @@ class AgentAPIKey(models.Model):
     Enterprise plan feature only.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="agent_api_keys",
         verbose_name="Negocio",
+        help_text="The business this record belongs to.",
     )
     name = models.CharField(
         max_length=100,
@@ -38,6 +39,7 @@ class AgentAPIKey(models.Model):
         max_length=64,
         unique=True,
         verbose_name="Hash SHA-256",
+        help_text="Hashed credential for security.",
     )
     key_prefix = models.CharField(
         max_length=8,
@@ -46,24 +48,27 @@ class AgentAPIKey(models.Model):
     )
 
     # Access control
-    is_active = models.BooleanField(default=True, verbose_name="Activo")
+    is_active = models.BooleanField(default=True, verbose_name="Activo", help_text="Whether this record is currently active.")
     last_used_at = models.DateTimeField(
         null=True, blank=True, verbose_name="Último uso"
+        ,help_text="Timestamp for last used.",
     )
-    expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Expira en")
+    expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Expira en", help_text="Timestamp for expires.")
 
     # Audit
-    created_by_id = models.UUIDField(verbose_name="Creado por (user_id)")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_by_id = models.UUIDField(verbose_name="Creado por (user_id)", help_text="ID of the user who created this record.")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
+    updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
+        """Model metadata and database configuration."""
         db_table = "loyallia_agent_api_keys"
         verbose_name = "Clave de API (Agente)"
         verbose_name_plural = "Claves de API (Agentes)"
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return f"{self.name} ({self.key_prefix}...)"
 
     @classmethod
@@ -88,12 +93,13 @@ class AgentAPICallLog(models.Model):
     One row per call. Expired rows are cleaned by a periodic Celery task.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="agent_api_call_logs",
         verbose_name="Negocio",
+        help_text="The business this record belongs to.",
     )
     api_key = models.ForeignKey(
         AgentAPIKey,
@@ -102,6 +108,7 @@ class AgentAPICallLog(models.Model):
         blank=True,
         related_name="call_logs",
         verbose_name="Clave de API",
+        help_text="Unique key or identifier.",
     )
     endpoint = models.CharField(
         max_length=255,
@@ -111,17 +118,21 @@ class AgentAPICallLog(models.Model):
     method = models.CharField(
         max_length=10,
         verbose_name="Método HTTP",
+        help_text="HTTP method used.",
     )
     status_code = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
         verbose_name="Código de respuesta",
+        help_text="HTTP response status code.",
     )
     created_at = models.DateTimeField(
         auto_now_add=True, verbose_name="Fecha de llamada"
+        ,help_text="Timestamp for created.",
     )
 
     class Meta:
+        """Model metadata and database configuration."""
         db_table = "loyallia_agent_api_call_logs"
         verbose_name = "Log de llamada API (Agente)"
         verbose_name_plural = "Logs de llamadas API (Agentes)"

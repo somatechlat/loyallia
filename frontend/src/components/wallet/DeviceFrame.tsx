@@ -1,3 +1,9 @@
+/**
+ * @description iPhone 15 Pro device frame for wallet previews.
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Content to render inside the frame
+ * @returns JSX.Element
+ */
 export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 562 }}>
@@ -56,6 +62,12 @@ export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * @description Google Pixel 7 device frame for wallet previews.
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Content to render inside the frame
+ * @returns JSX.Element
+ */
 export function Pixel7Frame({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 540 }}>

@@ -36,12 +36,13 @@ class Transaction(models.Model):
     Every validation, reward issuance, or redemption is recorded here.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="transactions",
         verbose_name="Negocio",
+        help_text="The business this record belongs to.",
     )
     #
     customer_pass = models.ForeignKey(
@@ -51,6 +52,7 @@ class Transaction(models.Model):
         blank=True,
         related_name="transactions",
         verbose_name="Pase del cliente",
+        help_text="The customer loyalty pass.",
     )
 
     # Who performed the transaction
@@ -61,6 +63,7 @@ class Transaction(models.Model):
         blank=True,
         related_name="transactions",
         verbose_name="Personal",
+        help_text="The staff member who performed this action.",
     )
     location = models.ForeignKey(
         Location,
@@ -69,6 +72,7 @@ class Transaction(models.Model):
         blank=True,
         related_name="transactions",
         verbose_name="Ubicación",
+        help_text="Physical location where the action took place.",
     )
 
     # Transaction details
@@ -76,6 +80,7 @@ class Transaction(models.Model):
         max_length=30,
         choices=TransactionType.choices,
         verbose_name="Tipo de transacción",
+        help_text="Transaction type.",
     )
     amount = models.DecimalField(
         max_digits=10,
@@ -84,19 +89,22 @@ class Transaction(models.Model):
         blank=True,
         validators=[MinValueValidator(0)],
         verbose_name="Monto",
+        help_text="Monetary amount.",
     )
     quantity = models.PositiveIntegerField(
         null=True, blank=True, verbose_name="Cantidad"
+        ,help_text="Quantity or count.",
     )
 
     # Transaction metadata
-    notes = models.TextField(blank=True, default="", verbose_name="Notas")
+    notes = models.TextField(blank=True, default="", verbose_name="Notas", help_text="Additional notes or comments.")
     transaction_data = models.JSONField(
         default=dict, verbose_name="Datos de transacción"
+        ,help_text="Transaction metadata stored as JSON.",
     )
 
     # Remote transaction flag
-    is_remote = models.BooleanField(default=False, verbose_name="Transacción remota")
+    is_remote = models.BooleanField(default=False, verbose_name="Transacción remota", help_text="Whether this transaction was performed remotely.")
 
     # NEW: Idempotency key for exactly-once semantics
     idempotency_key = models.CharField(
@@ -105,6 +113,7 @@ class Transaction(models.Model):
         blank=True,
         default="",
         verbose_name="Clave de idempotencia",
+        help_text="Key for ensuring exactly-once semantics.",
     )
 
     # NEW: Denial audit trail (when redemption is blocked)
@@ -127,15 +136,17 @@ class Transaction(models.Model):
             ("pass_inactive", "Pase inactivo"),
         ],
         verbose_name="Motivo de denegación",
+        help_text="Reason why the transaction was denied.",
     )
 
     # NEW: Which rules were evaluated (for audit)
-    rules_evaluated = models.JSONField(default=list, verbose_name="Reglas evaluadas")
+    rules_evaluated = models.JSONField(default=list, verbose_name="Reglas evaluadas", help_text="Rules that were evaluated for this transaction.")
 
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
 
     class Meta:
+        """Model metadata and database configuration."""
         db_table = "loyallia_transactions"
         verbose_name = "Transacción"
         verbose_name_plural = "Transacciones"
@@ -159,6 +170,7 @@ class Transaction(models.Model):
         return f"<Transaction: {self.transaction_type} - {self.customer_pass} - {self.created_at}>"
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return f"{self.transaction_type} - {self.customer_pass.customer.full_name} - {self.created_at}"
 
     @property
@@ -178,12 +190,13 @@ class Enrollment(models.Model):
     Separate from transactions for analytics and tracking.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
         related_name="enrollments",
         verbose_name="Negocio",
+        help_text="The business this record belongs to.",
     )
     customer = models.ForeignKey(
         Customer,
@@ -192,6 +205,7 @@ class Enrollment(models.Model):
         blank=True,
         related_name="enrollments",
         verbose_name="Cliente",
+        help_text="The customer associated with this record.",
     )
     card = models.ForeignKey(
         "cards.Card",
@@ -200,6 +214,7 @@ class Enrollment(models.Model):
         blank=True,
         related_name="enrollments",
         verbose_name="Programa",
+        help_text="The loyalty program associated with this record.",
     )
 
     # Enrollment method
@@ -213,10 +228,11 @@ class Enrollment(models.Model):
         ],
         default="qr_scan",
         verbose_name="Método de inscripción",
+        help_text="How the customer enrolled.",
     )
 
     # Referral tracking
-    referral_code_used = models.CharField(max_length=20, blank=True, default="")
+    referral_code_used = models.CharField(max_length=20, blank=True, default="", help_text="Referral code used during enrollment.")
 
     # Source location (if applicable)
     location = models.ForeignKey(
@@ -226,18 +242,21 @@ class Enrollment(models.Model):
         blank=True,
         related_name="enrollments",
         verbose_name="Ubicación",
+        help_text="Physical location where the action took place.",
     )
 
     # Device info
-    user_agent = models.TextField(blank=True, default="", verbose_name="User Agent")
+    user_agent = models.TextField(blank=True, default="", verbose_name="User Agent", help_text="Client user agent string.")
     ip_address = models.GenericIPAddressField(
         null=True, blank=True, verbose_name="Dirección IP"
+        ,help_text="IP address of the client.",
     )
 
     # Timestamps
-    enrolled_at = models.DateTimeField(auto_now_add=True)
+    enrolled_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for enrolled.")
 
     class Meta:
+        """Model metadata and database configuration."""
         db_table = "loyallia_enrollments"
         verbose_name = "Inscripción"
         verbose_name_plural = "Inscripciones"
@@ -256,4 +275,5 @@ class Enrollment(models.Model):
         return f"<Enrollment: {self.customer.full_name} in {self.card.name} via {self.enrollment_method}>"
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return f"{self.customer.full_name} enrolled in {self.card.name} via {self.enrollment_method}"

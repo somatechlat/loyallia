@@ -7,6 +7,9 @@ import { uploadFile } from '@/lib/upload';
 import { adjustColor } from '@/components/programs/constants';
 import PremiumQrSvg from '@/components/programs/PremiumQrSvg';
 
+/**
+ * Data shape for a loyalty program card.
+ */
 export interface ProgramData {
   id: string;
   name: string;
@@ -36,6 +39,15 @@ const DESIGN_TEMPLATES = [
   { id: 'custom',    name: 'Personalizado', bg: '',        text: '' },
 ];
 
+/**
+ * @description Modal for editing a loyalty program's design and metadata.
+ * @param {Object} props - Component props
+ * @param {string} props.id - Program ID
+ * @param {ProgramData} props.program - Current program data
+ * @param {() => void} props.onClose - Close handler
+ * @param {() => void} props.onSaved - Saved handler
+ * @returns JSX.Element
+ */
 export default function EditProgramModal({ id, program, onClose, onSaved }: { id: string; program: ProgramData; onClose: () => void; onSaved: () => void }) {
   const [editForm, setEditForm] = useState({
     name: program.name || '',

@@ -52,61 +52,74 @@ class Automation(TimestampedModel):
         on_delete=models.CASCADE,
         related_name="automations",
         verbose_name="Negocio",
+        help_text="The business this record belongs to.",
     )
 
     # Basic info
-    name = models.CharField(max_length=200, verbose_name="Nombre")
-    description = models.TextField(blank=True, default="", verbose_name="Descripción")
+    name = models.CharField(max_length=200, verbose_name="Nombre", help_text="Name of this record.")
+    description = models.TextField(blank=True, default="", verbose_name="Descripción", help_text="Description of this record.")
 
     # Trigger configuration
     trigger = models.CharField(
         max_length=30, choices=AutomationTrigger.choices, verbose_name="Disparador"
+        ,help_text="Trigger.",
     )
     trigger_config = models.JSONField(
         default=dict, verbose_name="Configuración del disparador"
+        ,help_text="Trigger configuration stored as JSON.",
     )
 
     # Action configuration
     action = models.CharField(
         max_length=30, choices=AutomationAction.choices, verbose_name="Acción"
+        ,help_text="Action performed.",
     )
     action_config = models.JSONField(
         default=dict, verbose_name="Configuración de la acción"
+        ,help_text="Action configuration stored as JSON.",
     )
 
     # Targeting
     target_programs = models.ManyToManyField(
         Card, blank=True, related_name="automations", verbose_name="Programas objetivo"
+        ,help_text="Target programs.",
     )
     target_segments = models.JSONField(
         default=list, verbose_name="Segmentos objetivo"
+        ,help_text="Target customer segments.",
     )  # List of segment names
 
     # Scheduling
-    is_active = models.BooleanField(default=True, verbose_name="Activo")
+    is_active = models.BooleanField(default=True, verbose_name="Activo", help_text="Whether this record is currently active.")
     schedule_config = models.JSONField(
         default=dict, verbose_name="Configuración de horario"
+        ,help_text="Schedule configuration stored as JSON.",
     )  # For scheduled automations
 
     # Limits and throttling
     max_executions_per_day = models.PositiveIntegerField(
         null=True, blank=True, verbose_name="Ejecuciones máximas por día"
+        ,help_text="Maximum executions allowed per day.",
     )
     cooldown_hours = models.PositiveIntegerField(
         default=24,
         validators=[MinValueValidator(1)],
         verbose_name="Horas de enfriamiento",
+        help_text="Minimum hours between executions for the same customer.",
     )
 
     # Analytics
     total_executions = models.PositiveIntegerField(
         default=0, verbose_name="Ejecuciones totales"
+        ,help_text="Total number of executions.",
     )
     last_executed = models.DateTimeField(
         null=True, blank=True, verbose_name="Última ejecución"
+        ,help_text="Timestamp of the most recent execution.",
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        """Model metadata and database configuration."""
         db_table = "loyallia_automations"
         verbose_name = "Automatización"
         verbose_name_plural = "Automatizaciones"
@@ -116,6 +129,7 @@ class Automation(TimestampedModel):
         return f"<Automation: {self.name} - {self.trigger} → {self.action}>"
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return f"{self.name} - {self.trigger} → {self.action}"
 
     def can_execute_for_customer(self, customer) -> bool:
@@ -589,31 +603,35 @@ class AutomationExecution(models.Model):
     Log of automation executions for audit and analytics.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
     automation = models.ForeignKey(
         Automation,
         on_delete=models.CASCADE,
         related_name="executions",
         verbose_name="Automatización",
+        help_text="The automation rule that was executed.",
     )
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
         related_name="automation_executions",
         verbose_name="Cliente",
+        help_text="The customer associated with this record.",
     )
 
     # Execution details
-    trigger_event = models.CharField(max_length=50, verbose_name="Evento disparador")
+    trigger_event = models.CharField(max_length=50, verbose_name="Evento disparador", help_text="Event that triggered this execution.")
     execution_context = models.JSONField(
         default=dict, verbose_name="Contexto de ejecución"
+        ,help_text="Execution context stored as JSON.",
     )
-    success = models.BooleanField(verbose_name="Éxito")
+    success = models.BooleanField(verbose_name="Éxito", help_text="Whether the execution or operation succeeded.")
 
     # Timestamps
-    executed_at = models.DateTimeField(auto_now_add=True)
+    executed_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when this execution occurred.")
 
     class Meta:
+        """Model metadata and database configuration."""
         db_table = "loyallia_automation_executions"
         verbose_name = "Ejecución de automatización"
         verbose_name_plural = "Ejecuciones de automatizaciones"
@@ -629,4 +647,5 @@ class AutomationExecution(models.Model):
         )
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return f"{self.automation.name} → {self.customer.full_name}"

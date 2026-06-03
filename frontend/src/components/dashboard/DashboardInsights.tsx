@@ -4,41 +4,97 @@ import { ResponsiveContainer, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell,
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import { CampaignsBlock, type CampaignStats } from '@/components/dashboard/DashboardTabs';
 
+/**
+ * Represents a single data point in the trends chart.
+ */
 interface TrendPoint { [key: string]: string | number;
+  /** Date string for the trend point */
   date: string;
+  /** Number of transactions */
   transactions: number;
+  /** Revenue amount */
   revenue: number;
+  /** New customers count */
   new_customers: number;
+  /** Rewards issued count */
   rewards_issued: number;
+  /** Rewards redeemed count */
   rewards_redeemed: number;
 }
 
+/**
+ * Metrics summarizing customer visits.
+ */
 interface VisitMetrics { total_visits: number; unique_customers: number; new_visitors: number; recurring_visitors: number; non_returning: number; unregistered_visits: number; retention_rate: number; }
+
+/**
+ * Represents a top buyer in the analytics view.
+ */
 interface TopBuyer { customer_id: string; name: string; email: string; total_spent: number; visits: number; }
+
+/**
+ * Demographic breakdown by gender.
+ */
 interface DemoGender { gender: string; count: number; percentage: number; }
+
+/**
+ * Demographic breakdown by age range.
+ */
 interface DemoAge { range: string; count: number; percentage: number; }
+
+/**
+ * Revenue breakdown by customer category.
+ */
 interface RevenueBreakdown { total_revenue: number; loyalty: number; referral: number; non_loyalty: number; loyalty_pct: number; referral_pct: number; non_loyalty_pct: number; }
+
+/**
+ * Performance metrics grouped by program type.
+ */
 interface ProgramType { type: string; label: string; visits: number; revenue: number; unique_customers: number; }
 
+/**
+ * Props for the DashboardInsights component.
+ */
 interface DashboardInsightsProps {
+  /** Trend data points for charts */
   trends: TrendPoint[];
+  /** Visit metrics summary */
   visits: VisitMetrics | null;
+  /** Revenue breakdown data */
   revBreakdown: RevenueBreakdown | null;
+  /** Top 15 buyers list */
   topBuyers: TopBuyer[];
+  /** Gender demographic data */
   genders: DemoGender[];
+  /** Age demographic data */
   ages: DemoAge[];
+  /** Program type performance data */
   programTypes: ProgramType[];
+  /** Campaign statistics */
   campaignStats: CampaignStats | null;
+  /** Whether a notification is being sent to top buyers */
   notifying: boolean;
+  /** Setter for the notifying state */
   setNotifying: (value: boolean) => void;
+  /** Whether dark mode is active */
   isDark: boolean;
+  /** Grid color for charts */
   gridColor: string;
+  /** Tick color for charts */
   tickColor: string;
+  /** Tooltip background color */
   tooltipBg: string;
+  /** Tooltip text color */
   tooltipText: string;
+  /** Tooltip border color */
   tooltipBorder: string;
 }
 
+/**
+ * @description Renders dashboard analytics charts, visit metrics, and top buyers.
+ * @param {DashboardInsightsProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function DashboardInsights({
   trends,
   visits,

@@ -5,6 +5,14 @@ import type { GoogleFieldRow, GoogleFieldItem } from '../types';
 import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, InfoIcon } from '../icons';
 import { uid, getGoogleFieldOptions } from './helpers';
 
+/**
+ * @description Visual builder for Google Wallet cardTemplateOverride rows.
+ * @param {Object} props - Component props
+ * @param {GoogleFieldRow[]} props.rows - Current rows configuration
+ * @param {(rows: GoogleFieldRow[]) => void} props.onChange - Rows change handler
+ * @param {string} props.cardType - Type of loyalty card
+ * @returns JSX.Element
+ */
 export default function GoogleRowBuilder({ rows, onChange, cardType }: { rows: GoogleFieldRow[]; onChange: (rows: GoogleFieldRow[]) => void; cardType: string }) {
   const fieldOptions = getGoogleFieldOptions(cardType);
 

@@ -50,7 +50,11 @@ function getGoogleSampleValue(fieldPath: string, ctx: Record<string, string>): s
   return map[fieldPath] || ctx[fieldPath.replace(/\./g, '_')] || '—';
 }
 
+/**
+ * Props for the GoogleWalletCard component.
+ */
 interface GoogleWalletCardProps {
+  /** Program form data */
   form: {
     name: string;
     description: string;
@@ -59,14 +63,25 @@ interface GoogleWalletCardProps {
     card_type: string;
     strip_image_url?: string;
   };
+  /** Selected card type option */
   selectedType?: { value: string; label: string; icon: string; desc: string };
+  /** Logo image URL preview */
   logoPreview?: string | null;
+  /** Strip image URL preview */
   stripPreview?: string | null;
+  /** Selected barcode type */
   barcodeType: string;
+  /** Customer name for the preview */
   customerName?: string;
+  /** Wallet design state */
   walletDesign?: WalletDesignState;
 }
 
+/**
+ * @description Google Wallet card preview with hero image, logo, and barcode.
+ * @param {GoogleWalletCardProps} props - Component props
+ * @returns JSX.Element
+ */
 export function GoogleWalletCard({
   form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign,
 }: GoogleWalletCardProps) {

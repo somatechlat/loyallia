@@ -14,7 +14,11 @@ import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
 import ImageUploadField from '@/components/ui/ImageUploadField';
 import type { ConfigProps } from './types';
 
-/** Coupon card configuration with discount types, dates, push notifications. */
+/**
+ * @description Coupon card configuration with discount types, dates, and push notifications.
+ * @param {ConfigProps} props - Component props
+ * @returns JSX.Element
+ */
 const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigProps) {
   const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
@@ -245,4 +249,9 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
   );
 });
 
+/**
+ * @description Coupon card configuration with discount types, dates, and push notifications.
+ * @param {ConfigProps} props - Component props
+ * @returns JSX.Element
+ */
 export default CouponConfig;

@@ -2,6 +2,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+/**
+ * @description Displays a cookie consent banner for LOPDP compliance.
+ * @returns JSX.Element | null
+ */
 export default function CookieConsent() {
   const [show, setShow] = useState(false);
 

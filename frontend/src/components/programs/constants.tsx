@@ -14,6 +14,13 @@ const ICON_PATHS: Record<string, string> = {
   refresh: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15',
 };
 
+/**
+ * @description Renders a flat SVG icon for a given card type.
+ * @param {Object} props - Component props
+ * @param {string} props.icon - Icon key from ICON_PATHS
+ * @param {string} [props.className='w-5 h-5'] - Tailwind classes
+ * @returns JSX.Element
+ */
 export function CardTypeIcon({ icon, className = 'w-5 h-5' }: { icon: string; className?: string }) {
   const d = ICON_PATHS[icon] ?? ICON_PATHS.stamp ?? '';
   const segments = d.split('z');

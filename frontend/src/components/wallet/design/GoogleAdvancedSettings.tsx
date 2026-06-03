@@ -5,6 +5,13 @@ import { GOOGLE_DEVICE_SHARING_OPTIONS } from '@/components/programs/constants';
 import type { GoogleAdvancedConfig } from '../types';
 import { PlusIcon, TrashIcon } from '../icons';
 
+/**
+ * @description Advanced settings editor for Google Wallet passes.
+ * @param {Object} props - Component props
+ * @param {GoogleAdvancedConfig} props.config - Current Google advanced configuration
+ * @param {(c: GoogleAdvancedConfig) => void} props.onChange - Configuration change handler
+ * @returns JSX.Element
+ */
 export default function GoogleAdvancedSettings({ config, onChange }: { config: GoogleAdvancedConfig; onChange: (c: GoogleAdvancedConfig) => void }) {
   const [urlErrors, setUrlErrors] = useState({ homepage: false, help: false });
   const patch = (p: Partial<GoogleAdvancedConfig>) => onChange({ ...config, ...p });

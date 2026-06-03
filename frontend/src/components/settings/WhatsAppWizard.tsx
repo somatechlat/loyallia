@@ -4,6 +4,9 @@ import { whatsappApi } from '@/lib/api';
 import { Smartphone, Mail } from '@/components/ui/LucideIcons';
 import toast from 'react-hot-toast';
 
+/**
+ * WhatsApp connection status.
+ */
 interface WaStatus {
   connected: boolean;
   qr: string | null;
@@ -13,14 +16,22 @@ interface WaStatus {
   messages_remaining: number;
 }
 
+/**
+ * Props for the WhatsAppWizard component.
+ */
 interface WhatsAppWizardProps {
+  /** Current tenant ID */
   tenantId: string | undefined;
+  /** Enabled plan features */
   planFeatures: string[];
+  /** Current plan name */
   planName: string;
+  /** Plan usage limits */
   planLimits: Record<string, number>;
 }
 
 /**
+ * @description WhatsApp Business Bridge Wizard for connecting a device via QR.
  * LYL-SRS-007: WhatsApp Business Bridge Wizard
  * Extracted from settings/page.tsx per LYL-NFR-ARCH-040 (Rule 245).
  */

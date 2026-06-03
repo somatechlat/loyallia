@@ -37,8 +37,13 @@ const TYPE_COMPONENTS: Record<string, React.ComponentType<ConfigProps>> = {
 };
 
 /**
- * Renders the configuration form for a specific program type.
+ * @description Renders the configuration form for a specific program type.
  * Falls back to a "no config needed" message for unknown types.
+ * @param {Object} props - Component props
+ * @param {string} props.type - The program type key
+ * @param {Record<string, unknown>} props.meta - Current program metadata
+ * @param {(prev: Record<string, unknown>) => Record<string, unknown>} props.setMeta - State setter for metadata
+ * @returns JSX.Element
  */
 function TypeConfig({ type, meta, setMeta }: { type: string } & ConfigProps) {
   const Component = TYPE_COMPONENTS[type];
@@ -52,4 +57,12 @@ function TypeConfig({ type, meta, setMeta }: { type: string } & ConfigProps) {
   return <Component meta={meta} setMeta={setMeta} />;
 }
 
+/**
+ * @description Dispatcher component that renders the correct configuration form for a given program type.
+ * @param {Object} props - Component props
+ * @param {string} props.type - The program type key
+ * @param {Record<string, unknown>} props.meta - Current program metadata
+ * @param {(prev: Record<string, unknown>) => Record<string, unknown>} props.setMeta - State setter for metadata
+ * @returns JSX.Element
+ */
 export default TypeConfig;

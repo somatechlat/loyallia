@@ -14,7 +14,9 @@ import AppleAdvancedSettings from '../wallet/design/AppleAdvancedSettings';
 import GoogleRowBuilder from '../wallet/design/GoogleRowBuilder';
 import AppleFieldEditor from '../wallet/design/AppleFieldEditor';
 
-// Re-export types for backward compatibility
+/**
+ * Re-export types for backward compatibility.
+ */
 export type {
   AppleWalletFeatureConfig,
   GoogleFieldRow,
@@ -27,8 +29,20 @@ export type {
   WalletLink,
   WalletDesignState,
 } from '../wallet/types';
+
+/**
+ * Re-export default wallet design state factory.
+ */
 export { defaultWalletDesignState } from '../wallet/types';
 
+/**
+ * @description Collapsible accordion section for the wallet designer.
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.title - Section title
+ * @param {React.ReactNode} props.children - Section content
+ * @param {boolean} [props.defaultOpen=false] - Whether the section starts open
+ * @returns JSX.Element
+ */
 function AccordionSection({
   title, children, defaultOpen = false,
 }: {
@@ -51,13 +65,25 @@ function AccordionSection({
   );
 }
 
+/**
+ * Props for the WalletDesigner component.
+ */
 export interface WalletDesignerProps {
+  /** Type of loyalty card */
   cardType: string;
+  /** Current wallet design state */
   state: WalletDesignState;
+  /** State change handler */
   onChange: (state: WalletDesignState) => void;
+  /** Active wallet provider */
   provider: 'apple' | 'google';
 }
 
+/**
+ * @description Advanced wallet designer with image uploads, field editors, and NFC settings.
+ * @param {WalletDesignerProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function WalletDesigner({ cardType, state, onChange, provider }: WalletDesignerProps) {
   const passStyle = APPLE_PASS_STYLES[cardType] || 'storeCard';
   const appleSupportsStrip = APPLE_IMAGE_SUPPORT[passStyle]?.strip ?? false;

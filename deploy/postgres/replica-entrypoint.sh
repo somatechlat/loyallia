@@ -1,4 +1,28 @@
 #!/bin/sh
+# =============================================================================
+# LOYALLIA POSTGRESQL — Streaming Replica Entrypoint
+# =============================================================================
+# Configures a PostgreSQL replica (hot standby) by performing a pg_basebackup
+# from the primary and then starting postgres in streaming-replication mode.
+#
+# This script is designed to run inside the postgres-replica container.
+# It reads the replication password from /run/loyallia-vault/postgres_password
+# (injected by the Vault init container).
+#
+# Usage:
+#   Used as the container entrypoint in docker-compose.yml for the
+#   postgres-replica service. Not intended for direct execution.
+#
+# Dependencies:
+#   - gosu (to drop privileges to postgres user)
+#   - pg_basebackup (PostgreSQL client tools)
+#   - Access to primary postgres host on port 5432
+#   - /run/loyallia-vault/postgres_password must exist
+#
+# Environment:
+#   POSTGRES_USER   Replication username (default: loyallia)
+# =============================================================================
+
 set -eu
 
 DATA_DIR=/var/lib/postgresql/data

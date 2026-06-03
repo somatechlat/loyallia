@@ -14,13 +14,24 @@ const DefaultIcon = L.icon({
   popupAnchor: [1, -34],
 });
 
+/**
+ * Props for the LocationPicker component.
+ */
 interface Props {
+  /** Current latitude */
   lat: number | null;
+  /** Current longitude */
   lng: number | null;
+  /** Callback when coordinates or address change */
   onChange: (lat: number, lng: number, address?: string) => void;
 }
 
-/** Click handler component — places marker wherever user clicks */
+/**
+ * @description Click handler component — places marker wherever user clicks.
+ * @param {Object} props - Component props
+ * @param {(lat: number, lng: number) => void} props.onPick - Pick handler
+ * @returns null
+ */
 function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -30,7 +41,13 @@ function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }
   return null;
 }
 
-/** Flies the map to new coordinates */
+/**
+ * @description Flies the map to new coordinates.
+ * @param {Object} props - Component props
+ * @param {number} props.lat - Target latitude
+ * @param {number} props.lng - Target longitude
+ * @returns null
+ */
 function FlyTo({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
@@ -46,6 +63,11 @@ interface SearchResult {
   lon: string;
 }
 
+/**
+ * @description Map-based location picker with Nominatim search and reverse geocoding.
+ * @param {Props} props - Component props
+ * @returns JSX.Element
+ */
 function LocationPickerInner({ lat, lng, onChange }: Props) {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -175,5 +197,15 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
   );
 }
 
+/**
+ * @description Map-based location picker with Nominatim search and reverse geocoding.
+ * Named export for dynamic import resolution.
+ */
 export { LocationPickerInner };
+
+/**
+ * @description Map-based location picker with Nominatim search and reverse geocoding.
+ * @param {Props} props - Component props
+ * @returns JSX.Element
+ */
 export default LocationPickerInner;

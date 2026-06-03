@@ -1,7 +1,14 @@
+/**
+ * @description Generates a random 8-character UID.
+ * @returns {string} Random UID
+ */
 export function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+/**
+ * Registry of available Apple Wallet field placeholders.
+ */
 export const APPLE_FIELD_REGISTRY = [
   { label: 'Nombre del cliente', value: '{customer_name}', types: 'all' as const },
   { label: 'Sellos actuales', value: '{stamp_count}/{stamps_required}', types: ['stamp'] as const },
@@ -27,10 +34,18 @@ export const APPLE_FIELD_REGISTRY = [
   { label: 'Texto personalizado...', value: 'custom', types: 'all' as const },
 ] as const;
 
+/**
+ * @description Returns Apple field options filtered by card type.
+ * @param {string} cardType - Type of loyalty card
+ * @returns {typeof APPLE_FIELD_REGISTRY} Filtered field registry
+ */
 export function getAppleFieldOptions(cardType: string) {
   return APPLE_FIELD_REGISTRY.filter(f => f.types === 'all' || (Array.isArray(f.types) && f.types.includes(cardType)));
 }
 
+/**
+ * Registry of available Google Wallet field placeholders.
+ */
 export const GOOGLE_FIELD_REGISTRY = [
   { label: 'Nombre del cliente', fieldPath: 'object.accountName', defaultDisplayName: 'Cliente', types: 'all' as const },
   { label: 'Nombre del programa', fieldPath: 'class.programName', defaultDisplayName: 'Programa', types: 'all' as const },
@@ -44,14 +59,22 @@ export const GOOGLE_FIELD_REGISTRY = [
   { label: 'Personalizado...', fieldPath: 'custom', defaultDisplayName: '', types: 'all' as const },
 ] as const;
 
+/**
+ * @description Returns Google field options filtered by card type.
+ * @param {string} cardType - Type of loyalty card
+ * @returns {typeof GOOGLE_FIELD_REGISTRY} Filtered field registry
+ */
 export function getGoogleFieldOptions(cardType: string) {
   return GOOGLE_FIELD_REGISTRY.filter(f => f.types === 'all' || (Array.isArray(f.types) && f.types.includes(cardType)));
 }
 
+/**
+ * Visual metadata for Apple Wallet field groups.
+ */
 export const APPLE_GROUP_META: Record<string, { borderColor: string; badge: string; hint: string }> = {
   backFields: { borderColor: 'border-l-surface-400', badge: 'bg-surface-100 dark:bg-surface-700/50 text-surface-700 dark:text-surface-300', hint: '🔄 Detrás de la tarjeta' },
   headerFields:   { borderColor: 'border-l-amber-500',   badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300', hint: '↗️ Esquina superior derecha' },
   primaryFields:  { borderColor: 'border-l-emerald-500', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300', hint: '🔠 Texto grande central' },
   secondaryFields:{ borderColor: 'border-l-indigo-500',  badge: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300', hint: '📊 Debajo del principal' },
-  auxiliaryFields:{ borderColor: 'border-l-slate-400',   badge: 'bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300', hint: '📋 Parte inferior' },
+  auxiliaryFields:{ borderColor: 'border-l-slate-400',   badge: 'bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-surface-300', hint: '📋 Parte inferior' },
 };

@@ -13,6 +13,9 @@ import {
   type PlanData,
 } from './PlanModal.shared';
 
+/**
+ * Re-exported plan data type for consumers of PlanModal.
+ */
 export type { PlanData };
 
 function StatusBadge({ status }: { status: PlanData['status'] }) {
@@ -30,13 +33,25 @@ function StatusBadge({ status }: { status: PlanData['status'] }) {
   );
 }
 
+/**
+ * Props for the PlanModal component.
+ */
 interface PlanModalProps {
+  /** Selected plan for editing, or null */
   selected: PlanData | null;
+  /** Whether the modal is in create mode */
   showCreate: boolean;
+  /** Close handler */
   onClose: () => void;
+  /** Saved handler */
   onSaved: () => void;
 }
 
+/**
+ * @description SuperAdmin modal for creating, viewing, and editing subscription plans.
+ * @param {PlanModalProps} props - Component props
+ * @returns JSX.Element | null
+ */
 export default function PlanModal({ selected, showCreate, onClose, onSaved }: PlanModalProps) {
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState(emptyPlan);

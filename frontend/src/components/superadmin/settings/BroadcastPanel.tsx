@@ -1,14 +1,28 @@
 'use client';
 
+/**
+ * Props for the BroadcastPanel component.
+ */
 interface BroadcastPanelProps {
+  /** Email subject */
   subject: string;
+  /** Email body message */
   message: string;
+  /** Whether the broadcast is sending */
   sending: boolean;
+  /** Subject change handler */
   onSubjectChange: (value: string) => void;
+  /** Message change handler */
   onMessageChange: (value: string) => void;
+  /** Form submit handler */
   onSubmit: (e: React.FormEvent) => void;
 }
 
+/**
+ * @description SuperAdmin broadcast panel for sending global emails to all owners.
+ * @param {BroadcastPanelProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function BroadcastPanel({
   subject,
   message,

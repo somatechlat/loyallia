@@ -12,7 +12,11 @@ import React, { useCallback } from 'react';
 import Tooltip from '@/components/ui/Tooltip';
 import type { ConfigProps } from './types';
 
-/** Stamp card configuration form with visit/consumption modes, expiry, and bonus settings. */
+/**
+ * @description Stamp card configuration form with visit/consumption modes, expiry, and bonus settings.
+ * @param {ConfigProps} props - Component props
+ * @returns JSX.Element
+ */
 const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigProps) {
   const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
@@ -148,4 +152,9 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
   );
 });
 
+/**
+ * @description Stamp card configuration form with visit/consumption modes, expiry, and bonus settings.
+ * @param {ConfigProps} props - Component props
+ * @returns JSX.Element
+ */
 export default StampConfig;

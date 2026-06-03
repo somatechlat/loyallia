@@ -10,12 +10,21 @@
  */
 import type { LocationData } from './types';
 
+/**
+ * Props for the LocationCard component.
+ */
 interface LocationCardProps {
+  /** Location data to display */
   location: LocationData;
+  /** Callback when the card is clicked */
   onClick: (loc: LocationData) => void;
 }
 
-/** Individual location card for the grid view. */
+/**
+ * @description Individual location card for the grid view.
+ * @param {LocationCardProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function LocationCard({ location, onClick }: LocationCardProps) {
   return (
     <div

@@ -3,12 +3,18 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { adjustColor } from '@/components/programs/constants';
 
+/**
+ * Represents a loyalty card for enrollment.
+ */
 interface Card {
   id: string; name: string; description: string; card_type: string; tenant_name: string;
   background_color: string; text_color: string; logo_url: string; strip_image_url: string;
   metadata: Record<string, unknown>;
 }
 
+/**
+ * Result data after a successful enrollment.
+ */
 interface EnrollResult {
   id: string;
   card_name: string;
@@ -22,12 +28,25 @@ interface EnrollResult {
   already_enrolled?: boolean;
 }
 
+/**
+ * Props for the EnrollmentHero component.
+ */
 interface EnrollmentHeroProps {
+  /** Card data for the program */
   card: Card;
+  /** Enrollment result data */
   enrollResult: EnrollResult;
+  /** Current form values (used for member name display) */
   form: Record<string, string>;
 }
 
+/**
+ * @description Renders the card type icon for the enrollment hero.
+ * @param {Object} props - Component props
+ * @param {string} props.cardType - Type of loyalty card
+ * @param {string} [props.className] - Additional CSS classes
+ * @returns JSX.Element
+ */
 function IconCardType({ cardType, className = 'w-6 h-6' }: { cardType: string; className?: string }) {
   switch (cardType) {
     case 'stamp':
@@ -57,6 +76,11 @@ function IconCardType({ cardType, className = 'w-6 h-6' }: { cardType: string; c
   }
 }
 
+/**
+ * @description Hero card preview shown after successful enrollment with QR code.
+ * @param {EnrollmentHeroProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function EnrollmentHero({ card, enrollResult, form }: EnrollmentHeroProps) {
   const bgColor = card.background_color || '#1A1A2E';
   const txtColor = card.text_color || '#FFFFFF';

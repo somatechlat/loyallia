@@ -9,9 +9,18 @@ import type { WalletDesignState } from '@/components/wallet/types';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 
-// Re-exports for backward compatibility
+/**
+ * Re-exports for backward compatibility.
+ */
 export { BarcodeSvg, BarcodeTypeSelector } from '@/components/wallet/BarcodeRenderer';
 
+/**
+ * @description Toggle switch between Apple Wallet and Google Wallet previews.
+ * @param {Object} props - Component props
+ * @param {'apple' | 'google'} props.platform - Active platform
+ * @param {(p: 'apple' | 'google') => void} props.onChange - Platform change handler
+ * @returns JSX.Element
+ */
 function PlatformToggle({ platform, onChange }: {
   platform: 'apple' | 'google';
   onChange: (p: 'apple' | 'google') => void;
@@ -48,11 +57,26 @@ function PlatformToggle({ platform, onChange }: {
   );
 }
 
+/**
+ * Apple Wallet NFC feature configuration.
+ */
 export interface AppleWalletFeatureConfig {
+  /** Whether NFC is enabled */
   nfc_enabled: boolean;
+  /** Whether NFC requires device authentication */
   nfc_requires_authentication: boolean;
 }
 
+/**
+ * @description Wallet provider selector with Apple/Google options and NFC settings.
+ * @param {Object} props - Component props
+ * @param {'apple' | 'google'} props.value - Selected provider
+ * @param {(provider: 'apple' | 'google') => void} props.onChange - Provider change handler
+ * @param {AppleWalletFeatureConfig} props.appleConfig - Apple NFC configuration
+ * @param {(config: AppleWalletFeatureConfig) => void} props.onAppleConfigChange - Apple config change handler
+ * @param {string} props.cardType - Type of loyalty card
+ * @returns JSX.Element
+ */
 export function WalletProviderSelector({
   value,
   onChange,
@@ -183,7 +207,11 @@ export function WalletProviderSelector({
   );
 }
 
+/**
+ * Props for the WalletCardPreview component.
+ */
 export interface CardProps {
+  /** Program form data */
   form: {
     name: string;
     description: string;
@@ -192,13 +220,32 @@ export interface CardProps {
     card_type: string;
     strip_image_url?: string;
   };
+  /** Selected card type option */
   selectedType?: typeof CARD_TYPES[0];
+  /** Logo image URL preview */
   logoPreview?: string | null;
+  /** Strip image URL preview */
   stripPreview?: string | null;
+  /** Selected barcode type */
   barcodeType: string;
+  /** Customer name for the preview */
   customerName?: string;
 }
 
+/**
+ * @description Live wallet card preview with platform toggle for Apple and Google Wallet.
+ * @param {Object} props - Component props
+ * @param {CardProps['form']} props.form - Program form data
+ * @param {CardProps['selectedType']} props.selectedType - Selected card type
+ * @param {string | null} [props.logoPreview] - Logo preview URL
+ * @param {string | null} [props.stripPreview] - Strip preview URL
+ * @param {string} [props.barcodeType='qr_code'] - Barcode type
+ * @param {'apple' | 'google'} [props.walletPlatform='apple'] - Active wallet platform
+ * @param {(platform: 'apple' | 'google') => void} [props.onWalletPlatformChange] - Platform change handler
+ * @param {string} [props.customerName] - Customer name
+ * @param {import('@/components/wallet/types').WalletDesignState} [props.walletDesign] - Wallet design state
+ * @returns JSX.Element
+ */
 export default function WalletCardPreview({
   form,
   selectedType,
