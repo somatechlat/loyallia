@@ -88,6 +88,9 @@ class AgentAPIKey(models.Model):
         verbose_name = "Clave de API (Agente)"
         verbose_name_plural = "Claves de API (Agentes)"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["tenant", "is_active"]),
+        ]
 
     def __str__(self) -> str:
         """Return a human-readable string representation."""

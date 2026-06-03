@@ -39,16 +39,20 @@ from ninja import Router
 from ninja.errors import HttpError
 
 from apps.billing.models import (
-    Invoice,
     PaymentMethod,
     Subscription,
     SubscriptionPlan,
     SubscriptionStatus,
 )
-from apps.billing.payment_gateway import PaymentGatewayError, get_payment_gateway
 from apps.billing.schemas import (
     SubscribeSchema,
     UpdateSubscriptionSchema,
+)
+from apps.billing.services import (
+    cancel_subscription as cancel_subscription_service,
+    create_invoice,
+    process_subscription,
+    reactivate_subscription as reactivate_subscription_service,
 )
 from apps.tenants.models import PlatformSetting
 from common.messages import get_message
@@ -368,49 +372,16 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
     ).quantize(Decimal("0.0001"))
 
     with transaction.atomic():
-        subscription, _ = Subscription.objects.select_for_update().get_or_create(
-            tenant=tenant,
-            defaults={"plan": plan.slug},
-        )
-        subscription.subscription_plan = plan
-        subscription.plan = plan.slug
-        subscription.billing_cycle = data.billing_cycle
-        subscription.status = SubscriptionStatus.PAST_DUE
-        subscription.current_period_start = now
-        subscription.current_period_end = period_end
-        subscription.save(
-            update_fields=[
-                "subscription_plan",
-                "plan",
-                "billing_cycle",
-                "status",
-                "current_period_start",
-                "current_period_end",
-                "updated_at",
-            ]
-        )
-
-        invoice = Invoice(
-            tenant=tenant,
+        subscription = process_subscription(tenant, plan, data.billing_cycle)
+        invoice = create_invoice(
             subscription=subscription,
-            invoice_number=Invoice.generate_invoice_number(tenant),
             subtotal=subtotal,
             tax_rate=tax_rate,
-            tax_amount=Decimal("0.00"),
-            total=Decimal("0.00"),
-            currency="USD",
             period_start=now,
             period_end=period_end,
-            status=Invoice.InvoiceStatus.OPEN,
-            invoice_data={
-                "plan_slug": plan.slug,
-                "plan_name": plan.name,
-                "billing_cycle": data.billing_cycle,
-                "verification": "manual",
-            },
+            plan=plan,
+            billing_cycle=data.billing_cycle,
         )
-        invoice.calculate_amounts()
-        invoice.save()
 
     logger.info(
         "Manual payment invoice %s created for tenant %s plan %s",
@@ -486,15 +457,7 @@ def cancel_subscription(request: HttpRequest):
     if subscription.status == SubscriptionStatus.CANCELED:
         raise HttpError(400, get_message("BILLING_ALREADY_CANCELED"))
 
-    # Cancel in payment gateway if active
-    if subscription.gateway_subscription_id:
-        try:
-            gateway = get_payment_gateway()
-            gateway.cancel_subscription(subscription.gateway_subscription_id)
-        except PaymentGatewayError as exc:
-            logger.error("Cancel failed in gateway: %s", exc.message)
-
-    subscription.cancel()
+    cancel_subscription_service(subscription)
 
     try:
         from apps.audit.models import AuditAction, AuditStatus
@@ -543,8 +506,7 @@ def reactivate_subscription(request: HttpRequest):
     if not subscription.cancel_at_period_end:
         raise HttpError(400, get_message("BILLING_NOT_PENDING_CANCEL"))
 
-    subscription.cancel_at_period_end = False
-    subscription.save(update_fields=["cancel_at_period_end", "updated_at"])
+    reactivate_subscription_service(subscription)
 
     try:
         from apps.audit.models import AuditAction, AuditStatus

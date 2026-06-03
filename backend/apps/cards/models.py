@@ -200,6 +200,10 @@ class Card(TimestampedModel):
             "tenant",
             "name",
         ]  # Prevent duplicate program names per tenant
+        indexes = [
+            models.Index(fields=["tenant", "is_active"]),
+            models.Index(fields=["tenant", "card_type"]),
+        ]
 
     def __repr__(self) -> str:
         """Return a developer-friendly representation of the card."""

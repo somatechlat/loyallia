@@ -140,6 +140,7 @@ class CampaignRun(models.Model):
         indexes = [
             models.Index(fields=["tenant", "-created_at"]),
             models.Index(fields=["status"]),
+            models.Index(fields=["tenant", "status"]),
         ]
 
     def save(self, *args, **kwargs) -> None:

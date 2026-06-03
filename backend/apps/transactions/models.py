@@ -202,6 +202,7 @@ class Transaction(models.Model):
                 fields=["transaction_type", "created_at"],
                 name="idx_txn_type_date",
             ),
+            models.Index(fields=["tenant", "idempotency_key"]),
         ]
         constraints = [
             models.CheckConstraint(
@@ -343,6 +344,7 @@ class Enrollment(models.Model):
                 fields=["tenant", "customer", "card"],
                 name="idx_enroll_tnt_cust_card",
             ),
+            models.Index(fields=["customer"]),
         ]
 
     def __repr__(self) -> str:
