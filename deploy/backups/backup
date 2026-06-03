@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# =============================================================================
+# LOYALLIA — UNIFIED BACKUP COMMAND
+# =============================================================================
+# One command for all backups.
+# Usage:
+#   ./deploy/backups/backup --full                    # Backup all data components
+#   ./deploy/backups/backup --snapshot                # Full cluster snapshot
+#   ./deploy/backups/backup --postgres                # Backup only postgres
+#   ./deploy/backups/backup --redis                   # Backup only redis
+#   ./deploy/backups/backup --vault                   # Backup only vault
+#   ./deploy/backups/backup --minio                   # Backup only minio
+#   ./deploy/backups/backup --full --offsite          # Backup + upload to MinIO
+#   ./deploy/backups/backup --verify                  # Verify all backups
+#   ./deploy/backups/backup --full --dry-run          # Show what would happen
+# =============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+# --- Environment detection ---------------------------------------------------
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ENV_FILE="$PROJECT_ROOT/.env"
+
+if [ ! -f "$ENV_FILE" ]; then
+    die ".env file not found at $ENV_FILE"
+fi
+
+# Detect environment from .env
+DEPLOY_ENV=""
+if grep -qE '^\s*COMPOSE_FILE.*prod' "$ENV_FILE" 2>/dev/null; then
+    DEPLOY_ENV="production"
+elif grep -qE '^\s*DJANGO_SETTINGS_MODULE.*production' "$ENV_FILE" 2>/dev/null; then
+    DEPLOY_ENV="production"
+else
+    DEPLOY_ENV="development"
+fi
+
+log "Detected environment: $DEPLOY_ENV"
+
+# Load environment config
+ENV_SCRIPT="$SCRIPT_DIR/$DEPLOY_ENV/env.sh"
+if [ ! -f "$ENV_SCRIPT" ]; then
+    die "Environment config not found: $ENV_SCRIPT"
+fi
+source "$ENV_SCRIPT"
+
+# --- CLI parsing -------------------------------------------------------------
+DO_FULL=0
+DO_SNAPSHOT=0
+DO_POSTGRES=0
+DO_REDIS=0
+DO_VAULT=0
+DO_MINIO=0
+DO_OFFSITE=0
+DO_VERIFY=0
+DO_DRY_RUN=0
+
+parse_args() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: $0 [--full|--snapshot|--postgres|--redis|--vault|--minio] [--offsite] [--verify] [--dry-run]"
+        echo ""
+        echo "  --full       Backup all data components (postgres, redis, vault, minio)"
+        echo "  --snapshot   Full cluster snapshot (containers, volumes, configs, nginx)"
+        echo "  --postgres   Backup PostgreSQL only"
+        echo "  --redis      Backup Redis only"
+        echo "  --vault      Backup Vault only"
+        echo "  --minio      Backup MinIO only"
+        echo "  --offsite    Upload encrypted backups to offsite MinIO"
+        echo "  --verify     Verify backup integrity"
+        echo "  --dry-run    Show what would happen, don't execute"
+        exit 1
+    fi
+
+    for arg in "$@"; do
+        case "$arg" in
+            --full)       DO_FULL=1 ;;
+            --snapshot)   DO_SNAPSHOT=1 ;;
+            --postgres)   DO_POSTGRES=1 ;;
+            --redis)      DO_REDIS=1 ;;
+            --vault)      DO_VAULT=1 ;;
+            --minio)      DO_MINIO=1 ;;
+            --offsite)    DO_OFFSITE=1 ;;
+            --verify)     DO_VERIFY=1 ;;
+            --dry-run)    DO_DRY_RUN=1 ;;
+            *)            die "Unknown argument: $arg" ;;
+        esac
+    done
+}
+
+parse_args "$@"
+
+# --- Dry run banner ----------------------------------------------------------
+if [ "$DO_DRY_RUN" -eq 1 ]; then
+    echo ""
+    warn "DRY RUN MODE — No changes will be made"
+    echo ""
+fi
+
+# --- Verify mode -------------------------------------------------------------
+if [ "$DO_VERIFY" -eq 1 ]; then
+    step "VERIFYING BACKUPS"
+    if [ "$DO_DRY_RUN" -eq 0 ]; then
+        bash "$SCRIPT_DIR/$DEPLOY_ENV/verify.sh"
+    else
+        info "Would run: $SCRIPT_DIR/$DEPLOY_ENV/verify.sh"
+    fi
+    exit 0
+fi
+
+# --- Determine which components to backup ------------------------------------
+COMPONENTS=()
+
+if [ "$DO_SNAPSHOT" -eq 1 ]; then
+    COMPONENTS+=("snapshot")
+fi
+
+if [ "$DO_FULL" -eq 1 ]; then
+    COMPONENTS+=("postgres" "redis" "vault" "minio")
+fi
+
+if [ "$DO_POSTGRES" -eq 1 ]; then
+    COMPONENTS+=("postgres")
+fi
+
+if [ "$DO_REDIS" -eq 1 ]; then
+    COMPONENTS+=("redis")
+fi
+
+if [ "$DO_VAULT" -eq 1 ]; then
+    COMPONENTS+=("vault")
+fi
+
+if [ "$DO_MINIO" -eq 1 ]; then
+    COMPONENTS+=("minio")
+fi
+
+if [ ${#COMPONENTS[@]} -eq 0 ]; then
+    die "No components specified. Use --full, --snapshot, or component flags."
+fi
+
+# --- Execute backups ---------------------------------------------------------
+START_TIME=$(date +%s)
+FAILED=0
+
+for component in "${COMPONENTS[@]}"; do
+    step "BACKUP: $component"
+
+    local_script="$SCRIPT_DIR/$DEPLOY_ENV/${component}.sh"
+    if [ ! -f "$local_script" ]; then
+        die "Backup script not found: $local_script"
+    fi
+
+    if [ "$DO_DRY_RUN" -eq 1 ]; then
+        info "Would run: $local_script"
+        continue
+    fi
+
+    if ! bash "$local_script"; then
+        err "Backup failed: $component"
+        FAILED=1
+        break
+    fi
+
+done
+
+if [ "$FAILED" -eq 1 ]; then
+    die "Backup aborted due to failure."
+fi
+
+# --- Offsite sync ------------------------------------------------------------
+if [ "$DO_OFFSITE" -eq 1 ] && [ "$DO_DRY_RUN" -eq 0 ]; then
+    step "OFFSITE SYNC"
+    bash "$SCRIPT_DIR/$DEPLOY_ENV/offsite-sync.sh"
+fi
+
+# --- Summary -----------------------------------------------------------------
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
+
+step "BACKUP COMPLETE"
+log "Environment: $DEPLOY_ENV"
+log "Components: ${COMPONENTS[*]}"
+log "Duration: ${DURATION}s"
+if [ "$DO_OFFSITE" -eq 1 ]; then
+    log "Offsite sync: YES"
+else
+    log "Offsite sync: NO"
+fi
+
+exit 0

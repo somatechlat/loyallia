@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+# =============================================================================
+# LOYALLIA — UNIFIED RESTORE COMMAND
+# =============================================================================
+# One command for all restores.
+# Usage:
+#   ./deploy/backups/restore --full                    # Restore all from local
+#   ./deploy/backups/restore --snapshot                # Restore full cluster snapshot
+#   ./deploy/backups/restore --postgres                # Restore postgres from local
+#   ./deploy/backups/restore --postgres --offsite      # Restore from offsite MinIO
+#   ./deploy/backups/restore --postgres --offsite --date=2026-06-02
+#   ./deploy/backups/restore --list                    # List available backups
+#   ./deploy/backups/restore --full --dry-run          # Show what would happen
+# =============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+# --- Environment detection ---------------------------------------------------
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ENV_FILE="$PROJECT_ROOT/.env"
+
+if [ ! -f "$ENV_FILE" ]; then
+    die ".env file not found at $ENV_FILE"
+fi
+
+DEPLOY_ENV=""
+if grep -qE '^\s*COMPOSE_FILE.*prod' "$ENV_FILE" 2>/dev/null; then
+    DEPLOY_ENV="production"
+elif grep -qE '^\s*DJANGO_SETTINGS_MODULE.*production' "$ENV_FILE" 2>/dev/null; then
+    DEPLOY_ENV="production"
+else
+    DEPLOY_ENV="development"
+fi
+
+log "Detected environment: $DEPLOY_ENV"
+
+ENV_SCRIPT="$SCRIPT_DIR/$DEPLOY_ENV/env.sh"
+if [ ! -f "$ENV_SCRIPT" ]; then
+    die "Environment config not found: $ENV_SCRIPT"
+fi
+source "$ENV_SCRIPT"
+
+# --- CLI parsing -------------------------------------------------------------
+DO_FULL=0
+DO_SNAPSHOT=0
+DO_POSTGRES=0
+DO_REDIS=0
+DO_VAULT=0
+DO_MINIO=0
+DO_OFFSITE=0
+DO_LIST=0
+DO_DRY_RUN=0
+RESTORE_DATE=""
+
+parse_args() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: $0 [--full|--snapshot|--postgres|--redis|--vault|--minio] [--offsite] [--date=YYYY-MM-DD] [--list] [--dry-run]"
+        echo ""
+        echo "  --full       Restore all data components"
+        echo "  --snapshot   Restore full cluster snapshot"
+        echo "  --postgres   Restore PostgreSQL"
+        echo "  --redis      Restore Redis"
+        echo "  --vault      Restore Vault"
+        echo "  --minio      Restore MinIO"
+        echo "  --offsite    Download from offsite MinIO before restore"
+        echo "  --date=...   Restore specific date (default: latest)"
+        echo "  --list       List available backups"
+        echo "  --dry-run    Show what would happen, don't execute"
+        exit 1
+    fi
+
+    for arg in "$@"; do
+        case "$arg" in
+            --full)       DO_FULL=1 ;;
+            --snapshot)   DO_SNAPSHOT=1 ;;
+            --postgres)   DO_POSTGRES=1 ;;
+            --redis)      DO_REDIS=1 ;;
+            --vault)      DO_VAULT=1 ;;
+            --minio)      DO_MINIO=1 ;;
+            --offsite)    DO_OFFSITE=1 ;;
+            --date=*)     RESTORE_DATE="${arg#*=}" ;;
+            --list)       DO_LIST=1 ;;
+            --dry-run)    DO_DRY_RUN=1 ;;
+            *)            die "Unknown argument: $arg" ;;
+        esac
+    done
+}
+
+parse_args "$@"
+
+# --- List mode ---------------------------------------------------------------
+if [ "$DO_LIST" -eq 1 ]; then
+    step "AVAILABLE BACKUPS"
+    info "Local backups in $BACKUP_DIR:"
+    find "$BACKUP_DIR" -type f -name '*.age' 2>/dev/null | sort || true
+    info ""
+    info "Offsite backups (MinIO):"
+    bash "$SCRIPT_DIR/lib/minio-client.sh" "list" "loyallia/$DEPLOY_ENV/"
+    exit 0
+fi
+
+# --- Dry run banner ----------------------------------------------------------
+if [ "$DO_DRY_RUN" -eq 1 ]; then
+    echo ""
+    warn "DRY RUN MODE — No changes will be made"
+    echo ""
+fi
+
+# --- Determine which components to restore -----------------------------------
+COMPONENTS=()
+
+if [ "$DO_SNAPSHOT" -eq 1 ]; then
+    COMPONENTS+=("snapshot")
+fi
+
+if [ "$DO_FULL" -eq 1 ]; then
+    COMPONENTS+=("postgres" "redis" "vault" "minio")
+fi
+
+if [ "$DO_POSTGRES" -eq 1 ]; then
+    COMPONENTS+=("postgres")
+fi
+
+if [ "$DO_REDIS" -eq 1 ]; then
+    COMPONENTS+=("redis")
+fi
+
+if [ "$DO_VAULT" -eq 1 ]; then
+    COMPONENTS+=("vault")
+fi
+
+if [ "$DO_MINIO" -eq 1 ]; then
+    COMPONENTS+=("minio")
+fi
+
+if [ ${#COMPONENTS[@]} -eq 0 ]; then
+    die "No components specified. Use --full, --snapshot, or component flags."
+fi
+
+# --- Safety confirmation -----------------------------------------------------
+if [ "$DO_DRY_RUN" -eq 0 ]; then
+    echo ""
+    echo -e "${RED}WARNING: This will OVERWRITE live data.${NC}"
+    echo -e "${RED}Environment: $DEPLOY_ENV${NC}"
+    echo -e "${RED}Components: ${COMPONENTS[*]}${NC}"
+    if [ "$DO_OFFSITE" -eq 1 ]; then
+        echo -e "${RED}Source: OFFSITE MinIO${NC}"
+        if [ -n "$RESTORE_DATE" ]; then
+            echo -e "${RED}Date: $RESTORE_DATE${NC}"
+        fi
+    else
+        echo -e "${RED}Source: LOCAL backups${NC}"
+    fi
+    echo ""
+    read -r -p "Type 'RESTORE' to confirm: " confirm
+    if [ "$confirm" != "RESTORE" ]; then
+        die "Restore aborted."
+    fi
+fi
+
+# --- Offsite download --------------------------------------------------------
+if [ "$DO_OFFSITE" -eq 1 ] && [ "$DO_DRY_RUN" -eq 0 ]; then
+    step "DOWNLOADING FROM OFFSITE"
+    # Download logic handled by each restore script
+    export RESTORE_OFFSITE=1
+    export RESTORE_DATE="$RESTORE_DATE"
+fi
+
+# --- Execute restores --------------------------------------------------------
+START_TIME=$(date +%s)
+FAILED=0
+
+for component in "${COMPONENTS[@]}"; do
+    step "RESTORE: $component"
+
+    local_script="$SCRIPT_DIR/$DEPLOY_ENV/restore-${component}.sh"
+    if [ ! -f "$local_script" ]; then
+        die "Restore script not found: $local_script"
+    fi
+
+    if [ "$DO_DRY_RUN" -eq 1 ]; then
+        info "Would run: $local_script"
+        continue
+    fi
+
+    if ! bash "$local_script"; then
+        err "Restore failed: $component"
+        FAILED=1
+        break
+    fi
+done
+
+if [ "$FAILED" -eq 1 ]; then
+    die "Restore aborted due to failure."
+fi
+
+# --- Summary -----------------------------------------------------------------
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
+
+step "RESTORE COMPLETE"
+log "Environment: $DEPLOY_ENV"
+log "Components: ${COMPONENTS[*]}"
+log "Duration: ${DURATION}s"
+
+exit 0

@@ -1,0 +1,17 @@
+[Unit]
+Description=Loyallia Rescue File Creation
+
+[Service]
+Type=oneshot
+ExecStart=/opt/loyallia/deploy/disaster_recovery/production/create_rescue.sh
+WorkingDirectory=/opt/loyallia
+User=root
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

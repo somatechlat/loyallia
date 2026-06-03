@@ -1,63 +1,91 @@
 #!/usr/bin/env bash
-# Vault Backup — DEVELOPMENT ONLY
-# Uses docker compose exec (no host binaries required)
-# Output: ./.agents/backups/vault_secrets_YYYYMMDD_HHMMSS.json
-#         ./.agents/backups/vault_init_YYYYMMDD_HHMMSS.json
+# =============================================================================
+# LOYALLIA BACKUP — Vault (Development)
+# =============================================================================
+# Exports all KV secrets recursively and copies init.json.
+# Archives everything into a tar.gz, encrypts with age, and removes plaintext.
+# =============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BACKUP_DIR="$PROJECT_ROOT/.agents/backups"
-TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
-VAULT_ENV="${VAULT_ENV:-development}"
+source "$SCRIPT_DIR/env.sh"
+source "$SCRIPT_DIR/../lib/common.sh"
+source "$SCRIPT_DIR/../lib/encrypt.sh"
 
-mkdir -p "$BACKUP_DIR"
+TS=$(timestamp)
+OUTDIR="$BACKUP_DIR/vault"
+ensure_dir "$OUTDIR"
 
-echo "[dev-backup] Vault backup starting..."
+TMPDIR=$(mktemp -d)
+setup_cleanup "$TMPDIR"
 
-# Obtain token
+step "Vault Backup"
+
+# --- Obtain token -----------------------------------------------------------
 VAULT_TOKEN=""
-if docker compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T vault sh -c 'test -f /run/loyallia-vault/app-token' 2>/dev/null; then
-    VAULT_TOKEN="$(docker compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T vault sh -c 'cat /run/loyallia-vault/app-token' 2>/dev/null || true)"
+if $COMPOSE_CMD exec -T vault sh -c 'test -f /run/loyallia-vault/app-token' 2>/dev/null; then
+    VAULT_TOKEN="$($COMPOSE_CMD exec -T vault sh -c 'cat /run/loyallia-vault/app-token' 2>/dev/null || true)"
 fi
 
 if [ -z "$VAULT_TOKEN" ]; then
-    VAULT_TOKEN="$(docker compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T vault sh -c 'grep "root_token" /vault/file/init.json | sed '\''s/.*"root_token": *"\([^"]*\)".*/\1/'\''' 2>/dev/null || true)"
+    VAULT_TOKEN="$($COMPOSE_CMD exec -T vault sh -c 'grep "root_token" /vault/file/init.json | sed '"'"'s/.*"root_token": *"\([^"]*\)".*/\1/'"'"' ' 2>/dev/null || true)"
 fi
 
 if [ -z "$VAULT_TOKEN" ]; then
-    echo "[dev-backup] ERROR: Cannot obtain Vault token. Is Vault running?"
-    exit 1
+    die "Cannot obtain Vault token. Is Vault running?"
 fi
 
-# Dump secrets
-SECRETS_FILE="$BACKUP_DIR/vault_secrets_${TIMESTAMP}.json"
-docker compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T -e VAULT_TOKEN="$VAULT_TOKEN" -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true vault \
-    vault kv get -mount=secret -format=json "loyallia/${VAULT_ENV}" \
-    > "$SECRETS_FILE" 2>/dev/null || true
+# --- Export init.json -------------------------------------------------------
+$COMPOSE_CMD exec -T vault sh -c 'cat /vault/file/init.json 2>/dev/null' > "$TMPDIR/init.json" 2>/dev/null || true
 
-if [ ! -s "$SECRETS_FILE" ]; then
-    echo "[dev-backup] ERROR: Vault secrets dump failed."
-    rm -f "$SECRETS_FILE"
-    exit 1
+if [ ! -s "$TMPDIR/init.json" ]; then
+    warn "init.json copy failed"
 fi
 
-KEY_COUNT="$(python3 -c "
-import json
-with open('$SECRETS_FILE') as f:
-    data = json.load(f)
-secrets = data.get('data', {}).get('data', {})
-print(len(secrets))
-" 2>/dev/null || echo "0")"
+# --- Helper: list and get secrets -------------------------------------------
+vault_list() {
+    local path="$1"
+    $COMPOSE_CMD exec -T -e VAULT_TOKEN="$VAULT_TOKEN" -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true vault \
+        vault kv list -format=json "$path" 2>/dev/null || echo "[]"
+}
 
-# Copy init.json
-INIT_FILE="$BACKUP_DIR/vault_init_${TIMESTAMP}.json"
-docker compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T vault sh -c 'cat /vault/file/init.json 2>/dev/null' > "$INIT_FILE" 2>/dev/null || true
+export_path() {
+    local path="$1"
+    local outdir="$2"
+    local keys_json keys
 
-if [ ! -s "$INIT_FILE" ]; then
-    echo "[dev-backup] WARNING: init.json copy failed."
-    rm -f "$INIT_FILE"
+    keys_json=$(vault_list "$path")
+    keys=$(echo "$keys_json" | python3 -c "import sys,json; [print(k) for k in json.load(sys.stdin)]" 2>/dev/null || true)
+
+    for key in $keys; do
+        local full_path="${path%/}/$key"
+        local safe_name="${full_path//\//_}"
+
+        # Try to get as a secret
+        if $COMPOSE_CMD exec -T -e VAULT_TOKEN="$VAULT_TOKEN" -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_SKIP_VERIFY=true vault \
+            vault kv get -format=json "$full_path" > "$outdir/${safe_name}.json" 2>/dev/null; then
+            continue
+        fi
+
+        # If get failed, assume it's a folder and recurse
+        export_path "$full_path" "$outdir"
+    done
+}
+
+export_path "secret/" "$TMPDIR"
+
+# --- Archive and encrypt ----------------------------------------------------
+ARCHIVE="$OUTDIR/vault_${TS}.tar.gz"
+tar czf "$ARCHIVE" -C "$TMPDIR" .
+
+if [ ! -s "$ARCHIVE" ]; then
+    die "Vault archive is empty"
 fi
 
-echo "[dev-backup] Vault backup: ${KEY_COUNT} secrets, init.json copied"
+SIZE="$(du -h "$ARCHIVE" | cut -f1)"
+log "Vault backup: $ARCHIVE ($SIZE)"
+
+encrypt_file "$ARCHIVE" "$ARCHIVE.age"
+rm -f "$ARCHIVE"
+log "Vault backup complete: ${ARCHIVE}.age"

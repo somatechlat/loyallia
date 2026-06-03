@@ -1,0 +1,17 @@
+[Unit]
+Description=Loyallia Backup Verification
+
+[Service]
+Type=oneshot
+ExecStart=/opt/loyallia/deploy/backups/backup --verify
+WorkingDirectory=/opt/loyallia
+User=root
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

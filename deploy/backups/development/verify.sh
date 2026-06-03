@@ -1,78 +1,95 @@
 #!/usr/bin/env bash
-# Development Backup Verification
-# Checks ./.agents/backups/ for recent, non-empty backup files
+# =============================================================================
+# LOYALLIA BACKUP — Verification (Development)
+# =============================================================================
+# Checks that all backup directories contain a recent, non-empty .age file
+# and that at least one file can be decrypted successfully.
+# Returns 0 on pass, 1 on fail.
+# =============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BACKUP_DIR="$PROJECT_ROOT/.agents/backups"
+source "$SCRIPT_DIR/env.sh"
+source "$SCRIPT_DIR/../lib/common.sh"
+source "$SCRIPT_DIR/../lib/encrypt.sh"
+
 ERRORS=0
 
-echo "=== Development Backup Verification ==="
-echo "Backup dir: $BACKUP_DIR"
-echo ""
+step "Backup Verification"
 
-if [ ! -d "$BACKUP_DIR" ]; then
-    echo "❌ Backup directory does not exist!"
-    exit 1
-fi
+# --- Check each component ---------------------------------------------------
+for subdir in postgres redis vault minio; do
+    dir="$BACKUP_DIR/$subdir"
 
-# PostgreSQL
-LATEST_PG="$(ls -t "$BACKUP_DIR"/pg_dump_*.dump 2>/dev/null | head -1 || true)"
-if [ -z "$LATEST_PG" ]; then
-    echo "❌ PostgreSQL: No backup found"
-    ERRORS=$((ERRORS + 1))
-else
-    if stat -c %Y /dev/null >/dev/null 2>&1; then
-        AGE_HOURS="$(( ($(date +%s) - $(stat -c %Y "$LATEST_PG")) / 3600 ))"
-    else
-        AGE_HOURS="$(( ($(date +%s) - $(stat -f %m "$LATEST_PG")) / 3600 ))"
-    fi
-    SIZE="$(du -h "$LATEST_PG" | cut -f1)"
-    if [ "$AGE_HOURS" -gt 25 ]; then
-        echo "⚠️  PostgreSQL: $(basename "$LATEST_PG") ($SIZE, ${AGE_HOURS}h old)"
+    if [ ! -d "$dir" ]; then
+        err "Directory missing: $dir"
         ERRORS=$((ERRORS + 1))
-    else
-        echo "✅ PostgreSQL: $(basename "$LATEST_PG") ($SIZE, ${AGE_HOURS}h old)"
+        continue
     fi
-fi
 
-# Redis
-LATEST_REDIS="$(ls -t "$BACKUP_DIR"/redis_*.rdb 2>/dev/null | head -1 || true)"
-if [ -z "$LATEST_REDIS" ]; then
-    echo "❌ Redis: No backup found"
-    ERRORS=$((ERRORS + 1))
+    # Find latest .age file
+    latest=""
+    for f in "$dir"/*.age; do
+        [ -e "$f" ] || continue
+        if [ -z "$latest" ] || [ "$f" -nt "$latest" ]; then
+            latest="$f"
+        fi
+    done
+
+    if [ -z "$latest" ]; then
+        err "No .age backup found in $dir"
+        ERRORS=$((ERRORS + 1))
+        continue
+    fi
+
+    if [ ! -s "$latest" ]; then
+        err "Backup is empty: $latest"
+        ERRORS=$((ERRORS + 1))
+        continue
+    fi
+
+    age_hours=$(file_age_hours "$latest")
+    if [ "$age_hours" -gt 25 ]; then
+        err "Backup too old: $(basename "$latest") (${age_hours}h > 25h)"
+        ERRORS=$((ERRORS + 1))
+        continue
+    fi
+
+    log "$subdir: $(basename "$latest") (${age_hours}h old, OK)"
+done
+
+# --- Test decrypt one file --------------------------------------------------
+latest_any=""
+while IFS= read -r f; do
+    [ -e "$f" ] || continue
+    if [ -z "$latest_any" ] || [ "$f" -nt "$latest_any" ]; then
+        latest_any="$f"
+    fi
+done < <(find "$BACKUP_DIR" -name '*.age' -type f 2>/dev/null)
+
+if [ -n "$latest_any" ]; then
+    log "Testing age decryption on: $(basename "$latest_any")"
+    TMPFILE=$(mktemp)
+    if decrypt_file "$latest_any" "$TMPFILE" >/dev/null 2>&1; then
+        log "Age decryption test: OK"
+        rm -f "$TMPFILE"
+    else
+        err "Age decryption test FAILED"
+        ERRORS=$((ERRORS + 1))
+        rm -f "$TMPFILE"
+    fi
 else
-    SIZE="$(du -h "$LATEST_REDIS" | cut -f1)"
-    echo "✅ Redis: $(basename "$LATEST_REDIS") ($SIZE)"
-fi
-
-# Vault secrets
-LATEST_VAULT="$(ls -t "$BACKUP_DIR"/vault_secrets_*.json 2>/dev/null | head -1 || true)"
-if [ -z "$LATEST_VAULT" ]; then
-    echo "❌ Vault: No secrets backup found"
+    err "No .age files found to test decryption"
     ERRORS=$((ERRORS + 1))
-else
-    SIZE="$(du -h "$LATEST_VAULT" | cut -f1)"
-    echo "✅ Vault secrets: $(basename "$LATEST_VAULT") ($SIZE)"
 fi
 
-# Vault init
-LATEST_INIT="$(ls -t "$BACKUP_DIR"/vault_init_*.json 2>/dev/null | head -1 || true)"
-if [ -z "$LATEST_INIT" ]; then
-    echo "⚠️  Vault init: No init backup found"
-    ERRORS=$((ERRORS + 1))
-else
-    SIZE="$(du -h "$LATEST_INIT" | cut -f1)"
-    echo "✅ Vault init: $(basename "$LATEST_INIT") ($SIZE)"
-fi
-
+# --- Summary ----------------------------------------------------------------
 echo ""
 if [ "$ERRORS" -gt 0 ]; then
-    echo "⚠️  $ERRORS issue(s) found!"
+    err "$ERRORS verification issue(s) found"
     exit 1
 else
-    echo "✅ All development backups verified"
+    log "All backups verified OK"
     exit 0
 fi
