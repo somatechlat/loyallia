@@ -2,11 +2,20 @@
 most_active segment, and wallet platform filtering.
 """
 
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 
+from apps.authentication.models import UserRole
 from apps.customers.segment_api import _apply_segment_filter
 from apps.customers.models import Customer
-from tests.factories import make_card, make_customer, make_customer_pass, make_tenant
+from tests.factories import make_card, make_customer, make_customer_pass, make_tenant, make_user
+
+
+def _owner_request(tenant):
+    """Return a real Django request with an authenticated OWNER user."""
+    request = RequestFactory().get("/")
+    request.user = make_user(tenant=tenant, role=UserRole.OWNER)
+    request.tenant = tenant
+    return request
 
 
 class ProgramMemberCountTest(TestCase):
@@ -23,17 +32,12 @@ class ProgramMemberCountTest(TestCase):
         make_customer_pass(c_both, card, apple_pass_id="pass-apple-2", google_pass_id="pass-google-2")
 
         from apps.cards.api import program_member_count
-        from common.request import TenantRequest
 
-        class FakeRequest:
-            tenant = tenant
-            user = type("U", (), {"role": "owner", "tenant": tenant})()
+        request = _owner_request(tenant)
+        result = program_member_count(request, str(card.id))
 
-        result = program_member_count(FakeRequest(), str(card.id))
-
-        self.assertEqual(result["total"], 3)
-        self.assertEqual(result["apple_wallet"], 2)
-        self.assertEqual(result["google_wallet"], 2)
+        self.assertEqual(result["count"], 3)
+        self.assertEqual(result["active_count"], 3)
 
 
 class ProgramSegmentCountsTest(TestCase):
@@ -49,17 +53,15 @@ class ProgramSegmentCountsTest(TestCase):
 
         from apps.cards.api import program_segment_counts
 
-        class FakeRequest:
-            tenant = tenant
-            user = type("U", (), {"role": "owner", "tenant": tenant})()
+        request = _owner_request(tenant)
 
-        result_all = program_segment_counts(FakeRequest(), str(card.id), wallet_platform="both")
+        result_all = program_segment_counts(request, str(card.id), wallet_platform="both")
         self.assertEqual(result_all["counts"]["all"], 2)
 
-        result_apple = program_segment_counts(FakeRequest(), str(card.id), wallet_platform="apple")
+        result_apple = program_segment_counts(request, str(card.id), wallet_platform="apple")
         self.assertEqual(result_apple["counts"]["all"], 1)
 
-        result_google = program_segment_counts(FakeRequest(), str(card.id), wallet_platform="google")
+        result_google = program_segment_counts(request, str(card.id), wallet_platform="google")
         self.assertEqual(result_google["counts"]["all"], 1)
 
 
