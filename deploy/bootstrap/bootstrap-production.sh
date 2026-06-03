@@ -321,14 +321,14 @@ start_stateful_services() {
     docker compose up -d postgres redis minio minio-init
 
     # PostgreSQL
-    if docker compose exec -T postgres pg_isready -U loyallia -d loyallia &>/dev/null; then
+    if docker compose exec -T postgres pg_isready -U loyallia -d loyallia_dev &>/dev/null; then
         skip "PostgreSQL is already ready."
     else
         log "Waiting for PostgreSQL health..."
         local timeout=120
         local elapsed=0
         while [ "$elapsed" -lt "$timeout" ]; do
-            if docker compose exec -T postgres pg_isready -U loyallia -d loyallia &>/dev/null; then
+            if docker compose exec -T postgres pg_isready -U loyallia -d loyallia_dev &>/dev/null; then
                 log "PostgreSQL is ready."
                 break
             fi

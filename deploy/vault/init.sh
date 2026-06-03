@@ -379,6 +379,17 @@ POLICYEOF
 
 wait_for_vault
 
+# --- Idempotency: skip if Vault already initialized, unsealed, and app-token exists ---
+status_json=$(vault_status_json)
+if [ -n "$status_json" ]; then
+    init_val=$(printf "%s" "$status_json" | json_extract_bool "initialized")
+    sealed_val=$(printf "%s" "$status_json" | json_extract_bool "sealed")
+    if [ "$init_val" = "true" ] && [ "$sealed_val" = "false" ] && [ -f /vault/runtime/app-token ]; then
+        log_info "Vault already initialized and unsealed. App token exists. Skipping."
+        exit 0
+    fi
+fi
+
 # --- Generate self-signed TLS certificate if none exists (local dev) ---------
 if [ ! -f /vault/certs/vault.crt ]; then
     log_info "No TLS certificates found - generating self-signed cert for local dev..."
@@ -468,11 +479,9 @@ if [ "$VAULT_ALREADY_INIT" -gt 0 ]; then
     if [ "$VAULT_SEALED" -gt 0 ]; then
         if [ -n "$UNSEAL_KEY1" ]; then
             log_info "Vault is sealed - unsealing..."
-            vault operator unseal "$UNSEAL_KEY1" >/dev/null 2>&1 || {
-                log_warn "Unseal with key 1 failed, trying remaining keys..."
-                vault operator unseal "$UNSEAL_KEY2" >/dev/null 2>&1 || true
-                vault operator unseal "$UNSEAL_KEY3" >/dev/null 2>&1 || true
-            }
+            vault operator unseal "$UNSEAL_KEY1" >/dev/null 2>&1 || true
+            vault operator unseal "$UNSEAL_KEY2" >/dev/null 2>&1 || true
+            vault operator unseal "$UNSEAL_KEY3" >/dev/null 2>&1 || true
         else
             log_warn "Vault sealed but no unseal key available. Cannot auto-unseal."
         fi
