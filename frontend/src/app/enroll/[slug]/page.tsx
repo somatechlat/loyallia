@@ -174,6 +174,10 @@ export default function EnrollPage() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); toast.error('Por favor completa los campos obligatorios'); return; }
     setFormErrors({});
     if (submitting || cooldown > 0) return;
+    if (!privacyAccepted) {
+      setFormErrors({ privacy: 'Debes aceptar la política de privacidad para continuar' });
+      return;
+    }
     setSubmitting(true);
     setLoading(true);
     const baseUrl = getBaseUrl();
@@ -181,7 +185,7 @@ export default function EnrollPage() {
       const res = await fetch(`${baseUrl}/api/v1/customers/enroll/?card_id=${cardId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, privacy_accepted: true }),
+        body: JSON.stringify({ ...form, privacy_accepted: privacyAccepted }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);

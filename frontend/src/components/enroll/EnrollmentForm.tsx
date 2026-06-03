@@ -134,14 +134,18 @@ export default function EnrollmentForm({
       </div>
 
       {/* Privacy consent */}
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input type="checkbox" className="mt-0.5 w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
-          checked={privacyAccepted} onChange={e => setPrivacyAccepted(e.target.checked)} />
-        <span className="text-[11px] text-surface-500 leading-relaxed">
-          Acepto la <a href="/privacy" target="_blank" className="text-brand-600 hover:underline">política de privacidad</a> y
-          autorizo el uso de mis datos para este programa de fidelización.
-        </span>
-      </label>
+      <div>
+        <label className={`flex items-start gap-2 cursor-pointer ${formErrors.privacy ? 'text-red-600' : ''}`}>
+          <input type="checkbox" className={`mt-0.5 w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500 ${formErrors.privacy ? 'border-red-500' : ''}`}
+            checked={privacyAccepted} onChange={e => { setPrivacyAccepted(e.target.checked); setFormErrors(prev => { const n = { ...prev }; delete n.privacy; return n; }); }}
+            aria-invalid={!!formErrors.privacy} />
+          <span className="text-[11px] text-surface-500 leading-relaxed">
+            Acepto la <a href="/privacy" target="_blank" className="text-brand-600 hover:underline">política de privacidad</a> y
+            autorizo el uso de mis datos para este programa de fidelización.
+          </span>
+        </label>
+        {formErrors.privacy && <p className="text-xs text-red-500 mt-1">{formErrors.privacy}</p>}
+      </div>
 
       <button type="submit"
         className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
