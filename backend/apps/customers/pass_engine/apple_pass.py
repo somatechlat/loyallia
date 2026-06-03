@@ -340,11 +340,10 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
     bg_color = card.background_color or "#1A1A2E"
 
-    def fetch_image_bytes(url):
-        """Fetch image bytes from a URL with SSRF protection."""
+    async def _fetch_image_bytes_async(url: str) -> bytes | None:
+        """Async fetch image bytes from a URL with SSRF protection."""
         if not url:
             return None
-        # Convert relative URLs to absolute using public base URL
         if url.startswith("/"):
             public_base = get_platform_config(
                 "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
@@ -363,12 +362,11 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
             import httpx
 
-            with httpx.Client(
+            async with httpx.AsyncClient(
                 timeout=10.0, follow_redirects=False, max_redirects=0
             ) as client:
-                resp = client.get(url)
+                resp = await client.get(url)
                 if resp.status_code == 200:
-                    # Enforce 5MB max size
                     content = resp.content
                     if len(content) > 5 * 1024 * 1024:
                         logger.warning(
@@ -391,11 +389,6 @@ def generate_pkpass(customer_pass) -> bytes | None:
         wallet_design.get("apple_images", {}) if isinstance(wallet_design, dict) else {}
     )
 
-    logo_bytes = fetch_image_bytes(apple_images.get("logo") or card.logo_url)
-    logo_2x_bytes = fetch_image_bytes(apple_images.get("logo_2x"))
-    icon_bytes = fetch_image_bytes(apple_images.get("icon") or card.icon_url)
-    icon_2x_bytes = fetch_image_bytes(apple_images.get("icon_2x"))
-
     if pass_style in ("storeCard", "coupon"):
         strip_url = apple_images.get("strip") or card.strip_image_url
         strip_2x_url = apple_images.get("strip_2x")
@@ -406,8 +399,29 @@ def generate_pkpass(customer_pass) -> bytes | None:
         strip_url = None
         strip_2x_url = None
 
-    strip_bytes = fetch_image_bytes(strip_url)
-    strip_2x_bytes = fetch_image_bytes(strip_2x_url)
+    # Fetch all images concurrently to avoid sequential blocking in request threads
+    import asyncio
+
+    from asgiref.sync import async_to_sync
+
+    async def _fetch_all_images():
+        return await asyncio.gather(
+            _fetch_image_bytes_async(apple_images.get("logo") or card.logo_url),
+            _fetch_image_bytes_async(apple_images.get("logo_2x")),
+            _fetch_image_bytes_async(apple_images.get("icon") or card.icon_url),
+            _fetch_image_bytes_async(apple_images.get("icon_2x")),
+            _fetch_image_bytes_async(strip_url),
+            _fetch_image_bytes_async(strip_2x_url),
+        )
+
+    (
+        logo_bytes,
+        logo_2x_bytes,
+        icon_bytes,
+        icon_2x_bytes,
+        strip_bytes,
+        strip_2x_bytes,
+    ) = async_to_sync(_fetch_all_images)()
 
     from PIL import Image
 

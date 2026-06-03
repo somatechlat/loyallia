@@ -4,6 +4,8 @@ Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
 
+from __future__ import annotations
+
 from decimal import Decimal
 
 from django.conf import settings
@@ -11,7 +13,6 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.tenants.models import PlatformSetting, Tenant
 from common.models import TimestampedModel
 
 # PLAN FEATURE FLAGS (REQ-PLAN-003)
@@ -255,6 +256,8 @@ class SubscriptionPlan(TimestampedModel):
     @property
     def price_monthly_with_tax(self) -> Decimal:
         """Monthly price including Ecuador IVA tax."""
+        from apps.tenants.models import PlatformSetting
+
         tax_rate = Decimal(
             str(
                 PlatformSetting.get_float(
@@ -267,6 +270,8 @@ class SubscriptionPlan(TimestampedModel):
     @property
     def price_annual_with_tax(self) -> Decimal:
         """Annual price including Ecuador IVA tax."""
+        from apps.tenants.models import PlatformSetting
+
         tax_rate = Decimal(
             str(
                 PlatformSetting.get_float(
@@ -279,6 +284,30 @@ class SubscriptionPlan(TimestampedModel):
     def has_feature(self, feature: str) -> bool:
         """Check if this plan includes a specific feature."""
         return feature in (self.features or [])
+
+    @property
+    def limits(self) -> dict:
+        """Return all resource limits for this plan as a single dict.
+
+        This is the single source of truth for plan limit mapping.
+        """
+        return {
+            "customers": self.max_customers,
+            "programs": self.max_programs,
+            "locations": self.max_locations,
+            "users": self.max_users,
+            "notifications_month": self.max_notifications_month,
+            "transactions_month": self.max_transactions_month,
+            "whatsapp_day": self.max_whatsapp_day,
+            "emails_month": self.max_emails_month,
+            "sms_day": self.max_sms_day,
+            "wallet_pushes_month": self.max_wallet_pushes_month,
+            "automations": self.max_automations,
+            "automation_executions_day": self.max_automation_executions_day,
+            "ai_queries_month": self.max_ai_queries_month,
+            "api_calls_day": self.max_api_calls_day,
+            "exports_month": self.max_exports_month,
+        }
 
 
 # SUBSCRIPTION STATUS
@@ -305,7 +334,7 @@ class Subscription(TimestampedModel):
     """
 
     tenant = models.OneToOneField(
-        Tenant,
+        "tenants.Tenant",
         on_delete=models.CASCADE,
         related_name="subscription",
         verbose_name="Negocio",
@@ -492,24 +521,7 @@ class Subscription(TimestampedModel):
         if not plan:
             return 0  # No plan = no access
 
-        limit_map = {
-            "customers": plan.max_customers,
-            "programs": plan.max_programs,
-            "locations": plan.max_locations,
-            "users": plan.max_users,
-            "notifications_month": plan.max_notifications_month,
-            "transactions_month": plan.max_transactions_month,
-            "whatsapp_day": plan.max_whatsapp_day,
-            "emails_month": plan.max_emails_month,
-            "sms_day": plan.max_sms_day,
-            "wallet_pushes_month": plan.max_wallet_pushes_month,
-            "automations": plan.max_automations,
-            "automation_executions_day": plan.max_automation_executions_day,
-            "ai_queries_month": plan.max_ai_queries_month,
-            "api_calls_day": plan.max_api_calls_day,
-            "exports_month": plan.max_exports_month,
-        }
-        return limit_map.get(resource, 0)
+        return plan.limits.get(resource, 0)
 
     def has_feature(self, feature: str) -> bool:
         """Check if current plan includes a feature."""
@@ -530,6 +542,8 @@ class Subscription(TimestampedModel):
     def activate_trial(self) -> None:
         """Set trial period. Called on tenant registration."""
         from datetime import timedelta
+
+        from apps.tenants.models import PlatformSetting
 
         trial_days = PlatformSetting.get_int(
             "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)

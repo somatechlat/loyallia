@@ -16,13 +16,7 @@ source "$SCRIPT_DIR/../lib/encrypt.sh"
 step "Redis Restore"
 
 # --- Find latest encrypted backup -------------------------------------------
-LATEST=""
-for f in "$BACKUP_DIR/redis"/*.age; do
-    [ -e "$f" ] || continue
-    if [ -z "$LATEST" ] || [ "$f" -nt "$LATEST" ]; then
-        LATEST="$f"
-    fi
-done
+LATEST=$(find_latest_backup "$BACKUP_DIR/redis" "*.age")
 
 if [ -z "$LATEST" ]; then
     die "No encrypted Redis backup found in $BACKUP_DIR/redis/"

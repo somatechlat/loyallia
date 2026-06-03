@@ -130,7 +130,7 @@ class PlanFeatureSMSTest(TestCase):
         self.assertEqual(plan.max_sms_day, 100)
 
     def test_plan_limit_map_includes_sms(self):
-        """The limit_map in Subscription.get_limit includes sms_day."""
+        """SubscriptionPlan.limits includes sms_day."""
         from apps.billing.models import Subscription
 
         plan = make_plan(max_sms_day=50)

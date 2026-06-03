@@ -18,7 +18,7 @@ if [ "${1:-}" = "--force" ]; then
 fi
 
 BACKUP_DIR_POSTGRES="$BACKUP_DIR/postgres"
-LATEST_AGE=$(ls -t "$BACKUP_DIR_POSTGRES"/*.age 2>/dev/null | head -1 || true)
+LATEST_AGE=$(find_latest_backup "$BACKUP_DIR_POSTGRES" "*.age")
 
 if [ -z "$LATEST_AGE" ]; then
     die "No encrypted PostgreSQL backup found in $BACKUP_DIR_POSTGRES"
@@ -28,16 +28,7 @@ step "POSTGRESQL RESTORE"
 info "Latest backup: $(basename "$LATEST_AGE")"
 
 # --- Confirmation --------------------------------------------------------------
-if [ "$FORCE" -eq 0 ]; then
-    echo ""
-    echo -e "${RED}WARNING: This will DESTROY and REPLACE the current PostgreSQL database.${NC}"
-    echo -e "${RED}Backup: $(basename "$LATEST_AGE")${NC}"
-    echo ""
-    read -r -p "Type 'RESTORE' to confirm: " confirm
-    if [ "$confirm" != "RESTORE" ]; then
-        die "Restore aborted."
-    fi
-fi
+confirm_restore "WARNING: This will DESTROY and REPLACE the current PostgreSQL database."
 
 # --- Decrypt -------------------------------------------------------------------
 TMPFILE="$TEMP_DIR/postgres_restore_$$.dump"

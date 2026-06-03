@@ -202,3 +202,141 @@ def update_customer_analytics(self, customer_id: str) -> dict:
 
     logger.debug("Analytics updated for customer %s", customer_id)
     return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# GOOGLE WALLET ASYNC HTTP TASKS
+# Moved from request threads to Celery to avoid blocking WSGI workers.
+# ---------------------------------------------------------------------------
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    queue="pass_generation",
+    name="apps.customers.tasks.update_loyalty_class_async",
+)
+def update_loyalty_class_async(self, card_id: str, base_url: str = "") -> dict:
+    """Upsert a Google Wallet Loyalty/Offer/GiftCard class via HTTP.
+
+    Called when a Card is updated so Google Wallet reflects new branding.
+    """
+    from apps.cards.models import Card
+    from apps.customers.pass_engine.google_pass import update_loyalty_class
+
+    try:
+        card = Card.objects.get(id=card_id)
+    except Card.DoesNotExist:
+        logger.error("update_loyalty_class_async: card %s not found", card_id)
+        return {"success": False, "error": "Card not found"}
+
+    try:
+        return update_loyalty_class(card, base_url=base_url)
+    except Exception as exc:
+        logger.error("update_loyalty_class_async failed for %s: %s", card_id, exc)
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    queue="pass_generation",
+    name="apps.customers.tasks.update_wallet_object_async",
+)
+def update_wallet_object_async(
+    self, customer_pass_id: str, base_url: str = ""
+) -> dict:
+    """PATCH a Google Wallet Object with updated pass data."""
+    import uuid
+
+    from apps.customers.models import CustomerPass
+    from apps.customers.pass_engine.google_pass import update_wallet_object
+
+    try:
+        pass_obj = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(customer_pass_id))
+    except CustomerPass.DoesNotExist:
+        logger.error(
+            "update_wallet_object_async: pass %s not found", customer_pass_id
+        )
+        return {"success": False, "error": "Pass not found"}
+
+    try:
+        return update_wallet_object(pass_obj, base_url=base_url)
+    except Exception as exc:
+        logger.error(
+            "update_wallet_object_async failed for %s: %s", customer_pass_id, exc
+        )
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    queue="pass_generation",
+    name="apps.customers.tasks.send_google_push_notification_async",
+)
+def send_google_push_notification_async(
+    self,
+    customer_pass_id: str,
+    header: str,
+    body: str,
+    action_url: str = "",
+) -> dict:
+    """Send a Google Wallet push notification via the Add Message API."""
+    import uuid
+
+    from apps.customers.models import CustomerPass
+    from apps.customers.pass_engine.google_pass import send_push_notification
+
+    try:
+        pass_obj = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(customer_pass_id))
+    except CustomerPass.DoesNotExist:
+        logger.error(
+            "send_google_push_notification_async: pass %s not found",
+            customer_pass_id,
+        )
+        return {"success": False, "error": "Pass not found"}
+
+    try:
+        return send_push_notification(
+            pass_obj, header=header, body=body, action_url=action_url
+        )
+    except Exception as exc:
+        logger.error(
+            "send_google_push_notification_async failed for %s: %s",
+            customer_pass_id,
+            exc,
+        )
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    queue="pass_generation",
+    name="apps.customers.tasks.delete_wallet_class_async",
+)
+def delete_wallet_class_async(self, card_id: str) -> dict:
+    """Delete a Google Wallet Class when a Card is permanently removed."""
+    from apps.cards.models import Card
+    from apps.customers.pass_engine.google_pass import delete_wallet_class
+
+    try:
+        card = Card.objects.get(id=card_id)
+    except Card.DoesNotExist:
+        logger.error("delete_wallet_class_async: card %s not found", card_id)
+        return {"success": False, "error": "Card not found"}
+
+    try:
+        return delete_wallet_class(card)
+    except Exception as exc:
+        logger.error("delete_wallet_class_async failed for %s: %s", card_id, exc)
+        raise self.retry(exc=exc)

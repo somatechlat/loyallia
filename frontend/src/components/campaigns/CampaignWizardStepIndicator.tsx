@@ -1,8 +1,3 @@
-/**
- * @description Horizontal step indicator for the campaign creation wizard.
- * Shows 3 steps: Canal → Audiencia → Componer
- */
-
 interface CampaignWizardStepIndicatorProps {
   steps: string[];
   currentStep: number;
