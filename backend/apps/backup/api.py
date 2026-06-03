@@ -23,8 +23,6 @@ Called by: SuperAdmin dashboard (Backup & Restore page).
 """
 
 import logging
-import subprocess
-from pathlib import Path
 from typing import Any, cast
 
 from django.http import HttpRequest
@@ -43,13 +41,13 @@ from apps.backup.schemas import (
     BackupStatusOut,
     BackupVerifyOut,
     OffsiteBackupListOut,
-    OffsiteBackupOut,
     RestoreFromBackupIn,
     RestoreOptionsOut,
     RestoreShellIn,
     RestoreStatusOut,
     TriggerBackupIn,
 )
+from apps.backup.services.offsite import list_offsite_backups as list_offsite_backups_service
 from apps.backup.tasks import (
     cleanup_old_backups,
     run_full_backup,
@@ -418,34 +416,11 @@ def get_restore_status(request: HttpRequest):
 @require_role("SUPER_ADMIN")
 def list_offsite_backups(request: HttpRequest):
     """List offsite backups using the MinIO client wrapper script."""
-    project_root = Path(__file__).resolve().parent.parent.parent.parent
-    minio_script = project_root / "deploy" / "backups" / "lib" / "minio-client.sh"
-
-    if not minio_script.exists():
-        raise HttpError(500, "MinIO client script not found")
-
     try:
-        result = subprocess.run(
-            [str(minio_script), "list", ""],
-            capture_output=True,
-            text=True,
-            cwd=str(project_root),
-        )
-    except Exception as exc:
+        backups = list_offsite_backups_service()
+    except RuntimeError as exc:
         logger.exception("list_offsite_backups failed")
-        raise HttpError(500, f"Failed to list offsite backups: {exc}")
-
-    backups: list[OffsiteBackupOut] = []
-    for line in result.stdout.splitlines():
-        parts = line.strip().split("\t")
-        if len(parts) >= 3:
-            backups.append(
-                OffsiteBackupOut(
-                    key=parts[0],
-                    size=int(parts[1]) if parts[1].isdigit() else 0,
-                    last_modified=parts[2],
-                )
-            )
+        raise HttpError(500, str(exc)) from exc
 
     _audit(
         request,
