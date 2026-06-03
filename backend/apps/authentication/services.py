@@ -252,11 +252,12 @@ def reset_user_password(uid: str, token: str, new_password: str) -> dict:
     if not default_token_generator.check_token(user, token):
         return {"error": "INVALID_RESET"}
 
-    user.set_password(new_password)
-    user.save(update_fields=["password", "updated_at"])
-    RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
-        revoked_at=dj_timezone.now()
-    )
+    with transaction.atomic():
+        user.set_password(new_password)
+        user.save(update_fields=["password", "updated_at"])
+        RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
+            revoked_at=dj_timezone.now()
+        )
     logger.info("Password reset completed for %s", user.email)
     return {"success": True}
 

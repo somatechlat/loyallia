@@ -194,14 +194,15 @@ def deactivate_user(request, user_id: str):
         target = User.objects.get(id=uuid.UUID(user_id), tenant=tenant)
     except (User.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
-    target.is_active = False
-    target.save(update_fields=["is_active", "updated_at"])
-
     from django.utils import timezone as dj_timezone
+    from django.db import transaction
 
-    RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
-        revoked_at=dj_timezone.now()
-    )
+    with transaction.atomic():
+        target.is_active = False
+        target.save(update_fields=["is_active", "updated_at"])
+        RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
+            revoked_at=dj_timezone.now()
+        )
     return MessageOut(success=True, message=get_message("AUTH_USER_DEACTIVATED"))
 
 

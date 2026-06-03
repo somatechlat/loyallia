@@ -76,22 +76,23 @@ def list_payment_methods(request: HttpRequest):
 def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
     """Add a new tokenized payment method."""
     tenant = require_tenant(request)
-    if data.is_default:
-        PaymentMethod.objects.filter(
-            tenant=tenant,
-            is_default=True,
-        ).update(is_default=False)
+    with transaction.atomic():
+        if data.is_default:
+            PaymentMethod.objects.filter(
+                tenant=tenant,
+                is_default=True,
+            ).update(is_default=False)
 
-    pm = PaymentMethod.objects.create(
-        tenant=tenant,
-        gateway_token=data.gateway_token,
-        card_brand=data.card_brand,
-        card_last_four=data.card_last_four,
-        card_exp_month=data.card_exp_month,
-        card_exp_year=data.card_exp_year,
-        cardholder_name=data.cardholder_name,
-        is_default=data.is_default,
-    )
+        pm = PaymentMethod.objects.create(
+            tenant=tenant,
+            gateway_token=data.gateway_token,
+            card_brand=data.card_brand,
+            card_last_four=data.card_last_four,
+            card_exp_month=data.card_exp_month,
+            card_exp_year=data.card_exp_year,
+            cardholder_name=data.cardholder_name,
+            is_default=data.is_default,
+        )
 
     return {
         "success": True,
@@ -150,13 +151,14 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
         is_active=True,
     )
 
-    PaymentMethod.objects.filter(
-        tenant=tenant,
-        is_default=True,
-    ).update(is_default=False)
+    with transaction.atomic():
+        PaymentMethod.objects.filter(
+            tenant=tenant,
+            is_default=True,
+        ).update(is_default=False)
 
-    pm.is_default = True
-    pm.save(update_fields=["is_default", "updated_at"])
+        pm.is_default = True
+        pm.save(update_fields=["is_default", "updated_at"])
 
     return {"success": True, "message": get_message("BILLING_DEFAULT_PM_SET")}
 
