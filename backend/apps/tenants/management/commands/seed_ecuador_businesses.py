@@ -25,9 +25,12 @@ from apps.tenants.models import Location, Tenant
 
 
 class Command(BaseCommand):
+    """Seed database with REAL Ecuadorian business data from JSON (DEMO ONLY)."""
+
     help = "Seed database with REAL Ecuadorian business data from JSON (DEMO ONLY)"
 
     def add_arguments(self, parser):
+        """Add CLI arguments for the demo password."""
         parser.add_argument(
             "--password",
             type=str,
@@ -37,6 +40,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        """Seed the database with real Ecuadorian business demo data."""
         if not settings.DEBUG:
             raise CommandError("Seed commands can only run in DEBUG mode.")
 
@@ -61,6 +65,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("\n=== Seed complete! ==="))
 
     def _load_data(self):
+        """Load Ecuadorian business data from the canonical JSON fixture."""
         json_path = os.path.join(
             os.path.dirname(__file__), "seed_data", "ecuador_businesses.json"
         )
@@ -72,6 +77,7 @@ class Command(BaseCommand):
             return None
 
     def _seed_businesses(self, businesses):
+        """Create or update tenants and related demo data from JSON records."""
         self.stdout.write("\n--- Creating Ecuadorian Businesses ---")
         for biz in businesses:
             tenant = Tenant.objects.filter(slug=biz["slug"]).first()
@@ -135,6 +141,7 @@ class Command(BaseCommand):
                 self._seed_subscription_history(tenant, plan_obj)
 
     def _seed_users(self, tenant, biz):
+        """Seed owner, manager, and staff users for a demo tenant."""
         # Owner
         owner_data = biz["owner"]
         if not User.objects.filter(email=owner_data["email"]).exists():
@@ -173,6 +180,7 @@ class Command(BaseCommand):
                 )
 
     def _seed_subscription_history(self, tenant, plan_obj):
+        """Create a subscription and historical invoices for a demo tenant."""
         sub = Subscription.objects.create(
             tenant=tenant,
             plan=plan_obj.slug if plan_obj else "full",
@@ -198,6 +206,7 @@ class Command(BaseCommand):
             inv.save()
 
     def _update_existing_tenant(self, update_data):
+        """Update an existing test tenant with real Ecuadorian business data."""
         if not update_data:
             return
         self.stdout.write("\n--- Updating existing test tenant ---")
@@ -230,4 +239,8 @@ class Command(BaseCommand):
                     )
             self.stdout.write(f"  [UPDATED] {tenant.name}")
         except Tenant.DoesNotExist:
-            pass
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Tenant {update_data['slug']} not found; skipping update"
+                )
+            )

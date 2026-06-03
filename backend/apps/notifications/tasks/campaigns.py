@@ -271,11 +271,6 @@ def send_wallet_notification_campaign(
                                 )
                                 failed += 1
                                 error_summary += f"Apple push exception for pass {pass_obj.id}: {str(exc)[:100]}; "
-                else:
-                    # Broadcast mode: stats were already tracked in the broadcast loop above.
-                    # Do NOT double-count by adding passes.count() per customer.
-                    pass
-
                 delivery_log.status = DeliveryStatus.SENT
                 delivery_log.sent_at = timezone.now()
                 if segment_id == "all" and broadcast_message_ids:

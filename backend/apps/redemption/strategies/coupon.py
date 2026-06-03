@@ -21,6 +21,7 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
     """Redemption strategy for coupon ("coupon") cards."""
 
     def __init__(self) -> None:
+        """Initialize the strategy for coupon cards."""
         super().__init__("coupon")
 
     def validate(self, context: RedemptionContext) -> list[str]:
@@ -132,6 +133,7 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context) -> str:
+        """Return the resolved intent for coupon redemption."""
         return "redeem"
 
     @staticmethod

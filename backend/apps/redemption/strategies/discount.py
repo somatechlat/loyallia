@@ -8,16 +8,12 @@ applicable discount tier based on card metadata thresholds.
 import logging
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import TYPE_CHECKING
 
 from apps.transactions.models import TransactionType
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
 from .base import BaseRedemptionStrategy, PassStateMutation
-
-if TYPE_CHECKING:
-    from apps.customers.models import CustomerPass
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +40,7 @@ class DiscountTrackStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self):
+        """Initialize the strategy for discount tier cards."""
         super().__init__(card_type="discount")
 
     # ------------------------------------------------------------------
@@ -156,4 +153,5 @@ class DiscountTrackStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context) -> str:
+        """Return the resolved intent for discount tracking."""
         return "track"

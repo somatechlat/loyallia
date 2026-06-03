@@ -15,6 +15,8 @@ from django.db import models
 
 
 class UserRole(models.TextChoices):
+    """RBAC roles available in the Loyallia platform."""
+
     SUPER_ADMIN = "SUPER_ADMIN", "Super Administrador"
     OWNER = "OWNER", "Propietario"
     MANAGER = "MANAGER", "Gerente"
@@ -22,6 +24,8 @@ class UserRole(models.TextChoices):
 
 
 class UserManager(BaseUserManager["User"]):
+    """Custom manager for the User model."""
+
     def create_user(self, email: str, password: str, **extra_fields) -> "User":
         """Create and save a regular user with the given email and password."""
         if not email:

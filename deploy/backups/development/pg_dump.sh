@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# PostgreSQL Logical Backup — DEVELOPMENT ONLY
-# Uses docker compose exec (no host binaries required)
-# Output: ./.agents/backups/pg_dump_YYYYMMDD_HHMMSS.dump
+# =============================================================================
+# LOYALLIA BACKUP — PostgreSQL Logical Dump (Development)
+# =============================================================================
+# Uses docker compose exec (no host binaries required).
+# Output: $PROJECT_ROOT/.agents/backups/pg_dump_YYYYMMDD_HHMMSS.dump
+#
+# Usage:
+#   ./deploy/backups/development/pg_dump.sh
+# =============================================================================
 
 set -euo pipefail
 

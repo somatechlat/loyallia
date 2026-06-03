@@ -23,11 +23,15 @@ DELETION_PHRASE = "ACEPTO ELIMINACIÓN COMPLETA"
 
 
 class SecurityPinIn(Schema):
+    """Payload for setting or updating the owner security PIN."""
+
     current_password: str
     pin: str
 
 
 class DeleteAccountIn(Schema):
+    """Payload for requesting permanent tenant deletion."""
+
     confirmation_phrase: str
     current_password: str
 

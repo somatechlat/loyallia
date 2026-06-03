@@ -8,9 +8,13 @@ Cache has a configurable TTL (default 5 minutes) so
 secret rotation takes effect without requiring a process restart.
 """
 
+import json
 import logging
 import os
+import ssl
 import time
+import urllib.error
+import urllib.request
 
 logger = logging.getLogger(__name__)
 
@@ -100,11 +104,6 @@ def _fetch_vault_secrets() -> dict:
     if not VAULT_ADDR or not vault_token:
         logger.debug("Vault not configured (address or token missing).")
         return {}
-
-    import json
-    import ssl
-    import urllib.error
-    import urllib.request
 
     url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH}"
     headers = {"X-Vault-Token": vault_token}
@@ -237,11 +236,6 @@ def put_secret(vault_key: str, value: str) -> bool:
     if not VAULT_ADDR or not vault_token:
         logger.warning("Vault not configured (address or token missing). Cannot write.")
         return False
-
-    import json
-    import ssl
-    import urllib.error
-    import urllib.request
 
     url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH}"
     headers = {

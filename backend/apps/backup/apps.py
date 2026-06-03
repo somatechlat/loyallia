@@ -9,6 +9,8 @@ from django.apps import AppConfig
 
 
 class BackupConfig(AppConfig):
+    """Django app configuration for backup and restore services."""
+
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.backup"
     verbose_name = "Backup & Restore"

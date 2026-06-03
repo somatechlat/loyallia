@@ -1,5 +1,6 @@
 """Customer notification inbox endpoints."""
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 
@@ -108,8 +109,4 @@ def delete_notification(request, notification_id: str):
         raise HttpError(403, get_message("NOTIFICATION_NOT_FOUND"))
 
     notification.delete()
-
-    #
-    from django.http import HttpResponse
-
     return HttpResponse(status=204)

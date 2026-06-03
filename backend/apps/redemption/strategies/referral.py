@@ -6,16 +6,12 @@ limit defined in card metadata.
 """
 
 import logging
-from typing import TYPE_CHECKING
 
 from apps.transactions.models import TransactionType
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
 from .base import BaseRedemptionStrategy, PassStateMutation
-
-if TYPE_CHECKING:
-    from apps.customers.models import CustomerPass
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +26,7 @@ class ReferralTrackStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self):
+        """Initialize the strategy for referral pass cards."""
         super().__init__(card_type="referral_pass")
 
     # ------------------------------------------------------------------
@@ -102,4 +99,5 @@ class ReferralTrackStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context) -> str:
+        """Return the resolved intent for referral tracking."""
         return "track"

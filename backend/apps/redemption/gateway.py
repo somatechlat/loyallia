@@ -64,6 +64,7 @@ class RedemptionGateway:
     """High-level facade for the redemption engine."""
 
     def __init__(self, validators: list | None = None):
+        """Initialize the gateway with optional custom validators."""
         self.validators = validators or list(_DEFAULT_VALIDATORS)
 
     # ------------------------------------------------------------------
@@ -189,6 +190,7 @@ class RedemptionGateway:
             return None
 
     def _deny(self, code: str, message: str) -> RedemptionResult:
+        """Build a simple denial result from a single reason code."""
         return RedemptionResult.from_denial(reasons=[code])
 
     _RULE_TO_DENIAL: dict[str, str] = {
@@ -208,6 +210,10 @@ class RedemptionGateway:
     def _deny_from_violations(
         self, violations: list[RuleViolation]
     ) -> RedemptionResult:
+        """Build a denial result from rule violations.
+
+        Maps each rule code to a canonical denial reason.
+        """
         reasons = [
             self._RULE_TO_DENIAL.get(v.rule_code, v.rule_code) for v in violations
         ]

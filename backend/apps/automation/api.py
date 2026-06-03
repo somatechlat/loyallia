@@ -29,6 +29,8 @@ router = Router()
 
 # Pydantic Schemas
 class AutomationSchema(BaseModel):
+    """Public automation representation for list and detail views."""
+
     id: str
     name: str
     description: str
@@ -41,6 +43,8 @@ class AutomationSchema(BaseModel):
 
 
 class CreateAutomationSchema(BaseModel):
+    """Schema for creating a new automation workflow."""
+
     name: str
     description: str | None = ""
     trigger: str
@@ -55,6 +59,8 @@ class CreateAutomationSchema(BaseModel):
 
 
 class UpdateAutomationSchema(BaseModel):
+    """Schema for updating an existing automation workflow."""
+
     name: str | None = None
     description: str | None = None
     trigger_config: dict | None = None
@@ -323,7 +329,15 @@ def execute_automation_manually(request, automation_id: str, customer_id: str):
 
 
 def _get_automation_by_id_or_slug(automation_id: str, tenant) -> Automation:
-    """"""
+    """Fetch an automation by UUID or by name (slug-like fallback).
+
+    Args:
+        automation_id: UUID string or automation name.
+        tenant: Tenant instance to scope the lookup.
+
+    Returns:
+        Automation instance.
+    """
     import uuid
 
     try:

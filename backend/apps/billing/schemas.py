@@ -20,11 +20,15 @@ class SubscribeSchema(BaseModel):
 
 
 class UpdateSubscriptionSchema(BaseModel):
+    """Input for updating a tenant's subscription settings."""
+
     billing_cycle: str | None = None
     cancel_at_period_end: bool | None = None
 
 
 class AddPaymentMethodSchema(BaseModel):
+    """Input for adding a new tokenized payment method."""
+
     gateway_token: str
     card_brand: str = ""
     card_last_four: str = ""

@@ -132,8 +132,6 @@ def apply_campaign_filters(
         4. Filter by device type (if not 'both').
         5. Filter by wallet platform (if not 'both').
     """
-    from apps.notifications.models import PushDevice
-
     if target_customer_ids:
         return queryset.filter(id__in=target_customer_ids).distinct()
 

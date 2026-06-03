@@ -7,7 +7,6 @@ and activation status. Does not mutate pass state.
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from django.utils import timezone
 
@@ -16,9 +15,6 @@ from apps.transactions.models import TransactionType
 from ..context import RedemptionContext
 from ..result import RedemptionResult
 from .base import BaseRedemptionStrategy, PassStateMutation
-
-if TYPE_CHECKING:
-    from apps.customers.models import CustomerPass
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +40,7 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self):
+        """Initialize the strategy for VIP/affiliate membership cards."""
         super().__init__(card_type="vip_membership")
 
     # ------------------------------------------------------------------
@@ -94,7 +91,7 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
         self, locked_pass: "CustomerPass", mutation: PassStateMutation
     ) -> None:
         """Membership validation is read-only; no pass state is modified."""
-        pass
+        logger.debug("Membership validation is read-only; no pass state modified.")
 
     # ------------------------------------------------------------------
     # Result builders
@@ -132,4 +129,5 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context) -> str:
+        """Return the resolved intent for membership passes."""
         return "validate"

@@ -9,6 +9,9 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../backups/development/env.sh"
+# env.sh enables 'set -e'; re-disable it so the verification script can track its own failures
+set +e
+set -uo pipefail
 source "$PROJECT_ROOT/deploy/backups/lib/common.sh"
 source "$PROJECT_ROOT/deploy/backups/lib/encrypt.sh"
 

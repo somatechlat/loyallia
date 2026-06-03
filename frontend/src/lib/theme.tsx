@@ -41,7 +41,13 @@ function applyClass(theme: 'light' | 'dark') {
   root.classList.add(theme);
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+/** Props for the {@link ThemeProvider} component. */
+export interface ThemeProviderProps {
+  /** React tree to wrap. */
+  children: ReactNode;
+}
+
+export function ThemeProvider({ children }: ThemeProviderProps) {
   const [mode, setModeState] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem(STORAGE_KEY) as ThemeMode) || 'system';

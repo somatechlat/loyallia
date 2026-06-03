@@ -6,6 +6,8 @@ from django.apps import AppConfig
 
 
 class AutomationConfig(AppConfig):
+    """Django app configuration for the automation module."""
+
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.automation"
     verbose_name = "Automatización"

@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+# =============================================================================
+# LOYALLIA — Production Factory Reset
+# =============================================================================
+# Destroys ALL production Docker resources: containers, volumes, networks,
+# and optionally built images. Requires domain confirmation and typing
+# "DESTROY" to proceed.
+#
+# Usage:
+#   ./deploy/factory_reset/production/factory_reset.sh --i-am-sure-production
+# =============================================================================
+
 set -euo pipefail
 
 echo "=========================================="

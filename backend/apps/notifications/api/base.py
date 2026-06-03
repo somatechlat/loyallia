@@ -14,7 +14,11 @@ router = Router()
 
 
 # Pydantic Schemas
+
+
 class PushDeviceSchema(BaseModel):
+    """Schema for registering a push notification device."""
+
     device_type: str  # ios, android, web
     device_token: str
     device_model: str | None = None
@@ -23,6 +27,8 @@ class PushDeviceSchema(BaseModel):
 
 
 class NotificationSchema(BaseModel):
+    """Schema representing a notification in the customer inbox."""
+
     id: str
     title: str
     message: str
@@ -34,6 +40,8 @@ class NotificationSchema(BaseModel):
 
 
 class SendNotificationSchema(BaseModel):
+    """Schema for sending a notification to a specific customer."""
+
     title: str
     message: str
     notification_type: str

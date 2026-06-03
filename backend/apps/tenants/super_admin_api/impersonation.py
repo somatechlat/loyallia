@@ -62,6 +62,10 @@ def _audit_impersonation(request, tenant, justification: str, status: str, reaso
     "/tenants/{tenant_id}/impersonate/", auth=jwt_auth, response=ImpersonateOut
 )
 def impersonate_tenant(request, tenant_id: str, payload: ImpersonateIn):
+    """Impersonate a tenant owner using a security PIN and justification.
+
+    Generates a short-lived JWT scoped to the owner user. Audit logged.
+    """
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
 

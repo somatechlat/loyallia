@@ -23,6 +23,7 @@ KEY_PREFIX = "redemption:idempotency"
 
 
 def _make_key(tenant_id: str, idempotency_key: str) -> str:
+    """Build the cache key for an idempotency entry."""
     return f"{KEY_PREFIX}:{tenant_id}:{idempotency_key}"
 
 

@@ -24,7 +24,13 @@ const EMPTY_PLAN: PlanData = {
   usage: {},
 };
 
-export function PlanProvider({ children }: { children: React.ReactNode }) {
+/** Props for the {@link PlanProvider} component. */
+export interface PlanProviderProps {
+  /** React tree to wrap. */
+  children: React.ReactNode;
+}
+
+export function PlanProvider({ children }: PlanProviderProps) {
   const [data, setData] = useState<PlanData>(EMPTY_PLAN);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

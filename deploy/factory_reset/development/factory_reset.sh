@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# =============================================================================
+# LOYALLIA — Development Factory Reset
+# =============================================================================
+# Destroys ALL development Docker resources: containers, volumes, networks.
+# Requires typing "DESTROY" to proceed.
+#
+# Usage:
+#   ./deploy/factory_reset/development/factory_reset.sh
+# =============================================================================
+
 set -euo pipefail
 
 echo "=========================================="

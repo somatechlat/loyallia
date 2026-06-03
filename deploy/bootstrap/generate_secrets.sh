@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+# =============================================================================
+# LOYALLIA — Bootstrap Secrets Generator
+# =============================================================================
+# Generates 52 random secrets and integration credentials for Vault seeding.
+# Discovers Apple Wallet and Google Wallet certificates from certs/ directory.
+# Produces .bootstrap_secrets.json and a flat .env file for the Vault init
+# container (Alpine, no Python).
+#
+# Usage:
+#   ./deploy/bootstrap/generate_secrets.sh
+#
+# Output:
+#   $PROJECT_ROOT/.bootstrap_secrets.json
+#   $PROJECT_ROOT/.bootstrap_secrets.env
+# =============================================================================
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

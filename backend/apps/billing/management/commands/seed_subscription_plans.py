@@ -22,6 +22,8 @@ FIXTURE_PATH = (
 
 
 class Command(BaseCommand):
+    """Management command to seed default subscription plans from fixture."""
+
     help = "Seed default subscription plans (Trial, Starter, Professional, Enterprise)"
 
     def add_arguments(self, parser):

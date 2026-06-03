@@ -10,11 +10,16 @@ class TokenManager {
   private refreshPromise: Promise<string> | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** Retrieve the current access token from cookies. */
   getAccessToken(): string | undefined {
     if (typeof window === 'undefined') return undefined;
     return Cookies.get('access_token');
   }
 
+  /**
+   * Persist both tokens in secure, same-site cookies and schedule
+   * proactive refresh before expiry.
+   */
   setTokens(accessToken: string, refreshToken: string): void {
     if (typeof window === 'undefined') return;
     const isSecure = window.location.protocol === 'https:';
@@ -23,6 +28,7 @@ class TokenManager {
     this.scheduleRefresh();
   }
 
+  /** Remove all tokens and cancel pending refresh timers. */
   clearTokens(): void {
     if (typeof window === 'undefined') return;
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
@@ -30,6 +36,15 @@ class TokenManager {
     Cookies.remove('refresh_token');
   }
 
+  /**
+   * Attempt to refresh the access token using the refresh token.
+   *
+   * Deduplicates concurrent refresh calls so only one network request
+   * is ever in-flight at a time.
+   *
+   * @returns The new access token.
+   * @throws {Error} If no refresh token exists or the request fails.
+   */
   async refresh(): Promise<string> {
     if (typeof window === 'undefined') return Promise.reject(new Error('SSR: cannot refresh token'));
     if (!this.refreshPromise) {
@@ -51,6 +66,10 @@ class TokenManager {
     return this.refreshPromise;
   }
 
+  /**
+   * Decode the current access token and schedule a proactive refresh
+   * shortly before it expires.
+   */
   scheduleRefresh(): void {
     if (typeof window === 'undefined') return;
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
@@ -75,6 +94,7 @@ class TokenManager {
     } catch {}
   }
 
+  /** Cancel any pending refresh timer. Safe to call repeatedly. */
   cleanup(): void {
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);

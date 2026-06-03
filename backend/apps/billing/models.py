@@ -550,6 +550,6 @@ class Subscription(TimestampedModel):
         )
 
 
-# RE-EXPORTS (split per 600-line limit see payment_models.py)
+# Re-export payment models so consumers can import everything from apps.billing.models.
 
 from apps.billing.payment_models import Invoice, PaymentMethod  # noqa: E402, F401

@@ -176,9 +176,9 @@ fi
 # ─── Phase 5: Production Script Safety ──────────────────────────────────────
 log_section "Phase 5: Production Script Safety (Negative Tests)"
 
-for script in "$PROJECT_ROOT/deploy/backups/pg_dump_backup.sh" \
-              "$PROJECT_ROOT/deploy/backups/redis_backup.sh" \
-              "$PROJECT_ROOT/deploy/backups/minio_backup.sh"; do
+for script in "$PROJECT_ROOT/deploy/backups/production/postgres.sh" \
+              "$PROJECT_ROOT/deploy/backups/production/redis.sh" \
+              "$PROJECT_ROOT/deploy/backups/production/minio.sh"; do
     name=$(basename "$script")
     output=$(bash "$script" --env=development 2>&1 || true)
     if echo "$output" | grep -qiE "development.*not.*supported|dev.*script|PRODUCTION ONLY"; then
@@ -198,7 +198,7 @@ find "$RESCUE_DIR" -maxdepth 1 -type f -name "*rescue*" -exec mv {} "$archive_di
 mv "$RESCUE_DIR"/vault_init_rescue.json "$archive_dir"/ 2>/dev/null || true
 mv "$RESCUE_DIR"/vault_secrets_rescue.json "$archive_dir"/ 2>/dev/null || true
 
-if bash "$PROJECT_ROOT/deploy/disaster_recovery/create_rescue_files.sh" --dev >/dev/null 2>&1; then
+if bash "$PROJECT_ROOT/deploy/disaster_recovery/development/create_rescue.sh" >/dev/null 2>&1; then
     log_pass "create_rescue_files.sh --dev completes"
 else
     log_fail "create_rescue_files.sh --dev failed"

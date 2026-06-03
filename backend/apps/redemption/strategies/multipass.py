@@ -20,6 +20,7 @@ class MultipassRedeemStrategy(BaseRedemptionStrategy):
     """Redemption strategy for multipass ("multipass") cards."""
 
     def __init__(self) -> None:
+        """Initialize the strategy for multipass cards."""
         super().__init__("multipass")
 
     # ------------------------------------------------------------------
@@ -66,4 +67,5 @@ class MultipassRedeemStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context) -> str:
+        """Return the resolved intent for multipass cards."""
         return "redeem"

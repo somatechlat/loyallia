@@ -1,3 +1,12 @@
+/**
+ * React context & provider for Loyallia authentication state.
+ *
+ * Handles login (credentials & Google OAuth), logout, and automatic
+ * user profile hydration on mount.
+ *
+ * @module auth
+ */
+
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import Cookies from 'js-cookie';
@@ -7,18 +16,37 @@ import type { User } from '@/types';
 
 export type { User } from '@/types';
 
+/** Value exposed by {@link AuthContext}. */
 interface AuthContextType {
+  /** Currently authenticated user, or `null` if unauthenticated. */
   user: User | null;
+  /** `true` while the initial user fetch is in progress. */
   loading: boolean;
+  /** Log in with email and password. */
   login: (email: string, password: string) => Promise<User>;
+  /** Log in with a Google OAuth credential. */
   loginWithGoogle: (credential: string, businessName?: string, isLoginOnly?: boolean) => Promise<User>;
+  /** Clear tokens and log the user out. */
   logout: () => Promise<void>;
+  /** Re-fetch the current user profile. */
   refreshUser: () => Promise<User | null>;
+}
+
+/** Props for the {@link AuthProvider} component. */
+export interface AuthProviderProps {
+  /** React tree to wrap. */
+  children: React.ReactNode;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+/**
+ * Provides authentication state to the React tree.
+ *
+ * On mount it attempts to restore the session from the access token cookie,
+ * and schedules proactive token refresh via {@link tokenManager}.
+ */
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const isInitialLoad = useRef(true);
@@ -78,6 +106,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Hook to access the authentication context.
+ *
+ * @throws {Error} If used outside of an {@link AuthProvider}.
+ */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');

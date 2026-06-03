@@ -14,6 +14,9 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/env.sh"
+# env.sh enables 'set -e'; re-disable it so the test suite can track its own failures
+set +e
+set -uo pipefail
 source "$SCRIPT_DIR/../lib/common.sh"
 source "$SCRIPT_DIR/../lib/encrypt.sh"
 source "$SCRIPT_DIR/../lib/minio-client.sh"

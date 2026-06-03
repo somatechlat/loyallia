@@ -10,6 +10,8 @@ from apps.authentication.models import User, UserRole
 
 
 class RegisterIn(BaseModel):
+    """Schema for user registration with business and account details."""
+
     business_name: str
     email: EmailStr
     password: str
@@ -21,6 +23,7 @@ class RegisterIn(BaseModel):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
+        """Ensure password has at least 8 characters."""
         if len(v) < 8:
             raise ValueError("La contrasena debe tener al menos 8 caracteres.")
         return v
@@ -28,6 +31,7 @@ class RegisterIn(BaseModel):
     @field_validator("business_name")
     @classmethod
     def business_name_not_empty(cls, v: str) -> str:
+        """Ensure business name is not empty after stripping."""
         v = v.strip()
         if not v:
             raise ValueError("El nombre del negocio es obligatorio.")
@@ -35,6 +39,8 @@ class RegisterIn(BaseModel):
 
 
 class RegisterOut(BaseModel):
+    """Response schema for successful registration."""
+
     success: bool
     message: str
     tenant_id: str
@@ -43,11 +49,15 @@ class RegisterOut(BaseModel):
 
 
 class LoginIn(BaseModel):
+    """Schema for email and password login."""
+
     email: EmailStr
     password: str
 
 
 class TokenOut(BaseModel):
+    """Response schema for JWT access and refresh tokens."""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -57,24 +67,34 @@ class TokenOut(BaseModel):
 
 
 class RefreshIn(BaseModel):
+    """Schema for refreshing an access token using a refresh token."""
+
     refresh_token: str
 
 
 class RefreshOut(BaseModel):
+    """Response schema for a refreshed access token."""
+
     access_token: str
     token_type: str = "bearer"
 
 
 class LogoutIn(BaseModel):
+    """Schema for logging out by revoking a refresh token."""
+
     refresh_token: str
 
 
 class VerifyEmailIn(BaseModel):
+    """Schema for verifying an email address with an OTP."""
+
     email: EmailStr
     otp: str
 
 
 class InviteIn(BaseModel):
+    """Schema for inviting a new team member."""
+
     email: EmailStr
     role: str
     first_name: str = ""
@@ -83,6 +103,7 @@ class InviteIn(BaseModel):
     @field_validator("role")
     @classmethod
     def role_must_be_valid(cls, v: str) -> str:
+        """Ensure the invited role is either MANAGER or STAFF."""
         allowed = {UserRole.MANAGER, UserRole.STAFF}
         if v not in allowed:
             raise ValueError(f"Rol invalido. Permitidos: {', '.join(allowed)}")
@@ -90,6 +111,8 @@ class InviteIn(BaseModel):
 
 
 class UserOut(BaseModel):
+    """Public user profile representation."""
+
     id: str
     email: str
     first_name: str
@@ -101,6 +124,7 @@ class UserOut(BaseModel):
 
     @classmethod
     def from_user(cls, user: User) -> "UserOut":
+        """Build a UserOut instance from a User model."""
         return cls(
             id=str(user.id),
             email=user.email,
@@ -114,11 +138,15 @@ class UserOut(BaseModel):
 
 
 class ProfileUpdateIn(BaseModel):
+    """Schema for updating the authenticated user's profile."""
+
     first_name: str | None = None
     last_name: str | None = None
 
 
 class ChangePasswordIn(BaseModel):
+    """Schema for changing the current password."""
+
     current_password: str
     new_password: str
 
@@ -139,6 +167,7 @@ class ResetPasswordIn(BaseModel):
     @field_validator("new_password")
     @classmethod
     def password_min_length(cls, v: str) -> str:
+        """Ensure the new password has at least 6 characters."""
         if len(v) < 6:
             raise ValueError("La contrasena debe tener al menos 6 caracteres")
         return v
@@ -160,6 +189,7 @@ class PhoneVerifyRequestIn(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def validate_phone(cls, v: str) -> str:
+        """Validate E.164 phone number format."""
         import re
 
         v = v.strip()

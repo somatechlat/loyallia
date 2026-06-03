@@ -136,6 +136,7 @@ def _get_google_locations(card) -> list:
 
 
 def _get_wallet_design(card) -> dict:
+    """Return the wallet_design dict from card metadata, if any."""
     metadata = card.metadata or {}
     if isinstance(metadata, dict):
         return metadata.get("wallet_design", {}) or {}
@@ -143,10 +144,12 @@ def _get_wallet_design(card) -> dict:
 
 
 def _get_google_images(card) -> dict:
+    """Return the google_images dict from the card's wallet design."""
     return _get_wallet_design(card).get("google_images", {}) or {}
 
 
 def _get_google_advanced(card) -> dict:
+    """Return the google_advanced dict from the card's wallet design."""
     return _get_wallet_design(card).get("google_advanced", {}) or {}
 
 

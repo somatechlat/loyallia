@@ -138,8 +138,7 @@ def search_customers(
 
     customers = queryset.order_by("-created_at")[:50]
 
-    # Prefetch related data to avoid N+1
-    from django.db.models import Prefetch
+
 
     passes_qs = CustomerPass.objects.filter(is_active=True).select_related("card")
     customer_ids = [c.id for c in customers]

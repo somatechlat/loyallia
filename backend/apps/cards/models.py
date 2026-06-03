@@ -127,10 +127,12 @@ class Card(TimestampedModel):
         ]  # Prevent duplicate program names per tenant
 
     def __repr__(self) -> str:
+        """Return a developer-friendly representation of the card."""
         card_type_label = dict(CardType.choices).get(self.card_type, self.card_type)
         return f"<Card: {self.name} ({card_type_label}) - {self.tenant.name}>"
 
     def __str__(self) -> str:
+        """Return a human-readable string representation of the card."""
         card_type_label = dict(CardType.choices).get(self.card_type, self.card_type)
         return f"{self.name} ({card_type_label}) - {self.tenant.name}"
 
@@ -272,10 +274,13 @@ class Card(TimestampedModel):
             )
 
     def validate_corporate_discount_config(self) -> None:
-        """Validate corporate discount configuration."""
-        # Corporate discounts are managed per customer, not per card config
-        # This method exists for consistency but has no validation
-        pass
+        """Validate corporate discount configuration.
+
+        Corporate discounts are managed per-customer (not per-card), so no
+        card-level validation is required. This method exists for API
+        consistency and is intentionally a no-op.
+        """
+        return
 
     def validate_referral_config(self) -> None:
         """Validate referral program configuration."""

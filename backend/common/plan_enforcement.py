@@ -29,7 +29,7 @@ Usage:
     @enforce_limit("customers")
     @require_feature("ai_assistant")
     def my_endpoint(request):
-        ...
+        pass  # Implementation goes here
 
 Called by: Customer CRUD, Program CRUD, Notification endpoints, Location endpoints.
 """

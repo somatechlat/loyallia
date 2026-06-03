@@ -196,7 +196,10 @@ def transact(request: TenantRequest, data: ScanTransactIn):
             _customer_id = str(txn.customer_pass.customer.id)
             _card_type = txn.customer_pass.card.card_type
         except Transaction.DoesNotExist:
-            pass
+            logger.warning(
+                "Transaction %s not found for automation trigger",
+                result.transaction_id,
+            )
 
     fire_trigger_async(
         trigger="transaction_completed",

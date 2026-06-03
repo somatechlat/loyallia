@@ -30,6 +30,7 @@ class AuditAction:
 
     @classmethod
     def choices(cls):
+        """Return Django model choices tuple for auditable actions."""
         return [
             (cls.CREATE, "Crear"),
             (cls.READ, "Leer"),
@@ -57,6 +58,7 @@ class AuditStatus:
 
     @classmethod
     def choices(cls):
+        """Return Django model choices tuple for audit entry statuses."""
         return [
             (cls.SUCCESS, "Exitoso"),
             (cls.DENIED, "Denegado"),
@@ -138,6 +140,7 @@ class AuditLog(models.Model):
         ]
 
     def __str__(self) -> str:
+        """Human-readable summary for admin/debugging."""
         return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.actor_email} {self.action} {self.resource_type}"
 
     def save(self, *args, **kwargs):

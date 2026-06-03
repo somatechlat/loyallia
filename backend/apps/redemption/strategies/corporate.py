@@ -7,16 +7,12 @@ Active passes are always considered valid.
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from apps.transactions.models import TransactionType
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
 from .base import BaseRedemptionStrategy, PassStateMutation
-
-if TYPE_CHECKING:
-    from apps.customers.models import CustomerPass
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +36,7 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self):
+        """Initialize the strategy for corporate discount cards."""
         super().__init__(card_type="corporate_discount")
 
     # ------------------------------------------------------------------
@@ -78,7 +75,7 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
         self, locked_pass: "CustomerPass", mutation: PassStateMutation
     ) -> None:
         """Corporate validation is read-only; no pass state is modified."""
-        pass
+        logger.debug("Corporate validation is read-only; no pass state modified.")
 
     # ------------------------------------------------------------------
     # Result builders
@@ -113,4 +110,5 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context) -> str:
+        """Return the resolved intent for corporate passes."""
         return "validate"

@@ -161,7 +161,11 @@ def pack_and_upload_archive(component_results: list, job_id: str) -> str:
         import shutil
 
         shutil.rmtree(tmp_dir)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(
+            "pack_and_upload_archive: failed to remove temp dir %s: %s",
+            tmp_dir,
+            exc,
+        )
 
     return s3_key

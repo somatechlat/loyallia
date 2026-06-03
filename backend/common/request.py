@@ -16,7 +16,9 @@ Performance (Rule 12):
 Called by: Every API endpoint and middleware that needs tenant-scoped data access.
 """
 
-from typing import TYPE_CHECKING, Any, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 from django.http import HttpRequest
 from ninja.errors import HttpError
@@ -24,6 +26,8 @@ from ninja.errors import HttpError
 from common.messages import get_message
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from apps.agent_api.models import AgentAPIKey
     from apps.tenants.models import Tenant
 

@@ -9,17 +9,12 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import TYPE_CHECKING
-
 from django.db import transaction as db_transaction
 
 from apps.transactions.models import Transaction
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
-
-if TYPE_CHECKING:
-    from apps.customers.models import CustomerPass
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +35,7 @@ class PassStateMutation:
     remaining_uses: int | None = None
 
     def __post_init__(self):
+        """Ensure mutable defaults are initialized."""
         if self.violations is None:
             self.violations = []
         if self.updates is None:
@@ -60,6 +56,7 @@ class BaseRedemptionStrategy(ABC):
     """
 
     def __init__(self, card_type: str):
+        """Initialize the strategy with the target card type."""
         self.card_type = card_type
 
     def execute(self, context: RedemptionContext) -> RedemptionResult:
@@ -91,7 +88,7 @@ class BaseRedemptionStrategy(ABC):
         Return a list of violation reason codes. Empty list = valid.
         This is called outside the atomic block for speed.
         """
-        ...
+        raise NotImplementedError
 
     def _lock_pass(self, customer_pass: "CustomerPass") -> "CustomerPass":
         """Acquire a pessimistic lock on the pass row."""
@@ -107,7 +104,7 @@ class BaseRedemptionStrategy(ABC):
 
         Called inside the atomic block with the locked pass.
         """
-        ...
+        raise NotImplementedError
 
     def _apply_mutation(
         self, locked_pass: "CustomerPass", mutation: PassStateMutation

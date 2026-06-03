@@ -81,6 +81,7 @@ class CustomerAnalytics(models.Model):
         verbose_name_plural = "Análisis de clientes"
 
     def __str__(self) -> str:
+        """Human-readable label for admin/debugging."""
         return f"Analytics - {self.customer.full_name}"
 
     def update_metrics(self) -> None:
@@ -215,6 +216,7 @@ class ProgramAnalytics(models.Model):
         verbose_name_plural = "Análisis de programas"
 
     def __str__(self) -> str:
+        """Human-readable label for admin/debugging."""
         return f"Analytics - {self.card.name}"
 
     def update_metrics(self) -> None:
@@ -330,4 +332,5 @@ class DailyAnalytics(models.Model):
         ]
 
     def __str__(self) -> str:
+        """Human-readable label for admin/debugging."""
         return f"{self.tenant.name} - {self.analytics_date}"
