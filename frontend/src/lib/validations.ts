@@ -90,6 +90,23 @@ export const programSchema = z.object({
 
 export type ProgramFormData = z.infer<typeof programSchema>;
 
+// ─── Program Wizard Step Schemas ───
+
+export const programWizardStep0Schema = z.object({
+  card_type: z.string().min(1, 'Selecciona un tipo de programa'),
+});
+
+export const programWizardStep2Schema = z.object({
+  name: z.string().min(1, 'El nombre del programa es obligatorio').max(200, 'Máximo 200 caracteres'),
+  description: z.string().max(1000, 'Máximo 1000 caracteres').optional().default(''),
+  background_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color inválido').default('#1a1a2e'),
+  text_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color inválido').default('#ffffff'),
+  locations: z.array(z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    name: z.string().min(1, 'El nombre de la ubicación es obligatorio'),
+  })).optional().default([]),
+});
 
 export const passwordChangeSchema = z
   .object({
