@@ -137,3 +137,4 @@ backups/*.tar.gz
 docs/AVENDER_MINIO_S3_DEPLOYMENT.md
 .bootstrap_secrets.development.env
 .bootstrap_secrets.production.env
+.worktrees/

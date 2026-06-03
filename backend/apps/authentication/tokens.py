@@ -162,6 +162,8 @@ def decode_access_token(token: str) -> dict | None:
     Returns payload dict on success, None on any failure.
     Does NOT raise exceptions.
     Supports both HS256 and RS256 verification.
+
+    SEC: Checks impersonation revocation cache for tokens with impersonated=True.
     """
     try:
         payload = jwt.decode(
@@ -171,6 +173,13 @@ def decode_access_token(token: str) -> dict | None:
         )
         if payload.get("type") != "access":
             return None
+        # SEC: Reject revoked impersonation tokens
+        if payload.get("impersonated"):
+            from django.core.cache import cache
+
+            user_id = payload.get("user_id")
+            if cache.get(f"impersonation:{user_id}") == "revoked":
+                return None
         return payload
     except jwt.ExpiredSignatureError:
         return None

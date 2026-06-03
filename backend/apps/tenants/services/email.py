@@ -60,3 +60,52 @@ def send_team_member_welcome_email(user, temp_password: str, tenant, payload) ->
         logger.info("Welcome email sent to %s", payload.email)
     except Exception as exc:
         logger.error("Failed to send welcome email to %s: %s", payload.email, exc)
+
+
+def send_owner_welcome_email(
+    owner_email: str,
+    owner_first_name: str,
+    tenant_name: str,
+    temp_password: str,
+    trial_days: int,
+) -> None:
+    """Send welcome email to a newly created tenant owner.
+
+    Args:
+        owner_email: The owner's email address.
+        owner_first_name: The owner's first name (falls back to email).
+        tenant_name: The tenant/business name.
+        temp_password: The temporary password for first login.
+        trial_days: Number of trial days granted.
+
+    Raises:
+        Exception: Logs the error but does not re-raise.
+    """
+    from django.core.mail import send_mail
+
+    from common.messages import get_message
+
+    try:
+        dashboard_url = PlatformSetting.get(
+            "dashboard_url", django_settings.FRONTEND_URL
+        )
+        login_url = f"{dashboard_url.rstrip('/')}/login"
+        send_mail(
+            subject=get_message("TENANT_WELCOME_EMAIL_SUBJECT"),
+            message=get_message(
+                "TENANT_WELCOME_EMAIL_BODY",
+                name=owner_first_name or owner_email,
+                tenant=tenant_name,
+                login_url=login_url,
+                email=owner_email,
+                password=temp_password,
+                trial_days=trial_days,
+            ),
+            from_email=None,
+            recipient_list=[owner_email],
+            fail_silently=False,
+        )
+    except Exception as e:
+        logger.exception(
+            "Failed to send owner welcome email to %s: %s", owner_email, e
+        )

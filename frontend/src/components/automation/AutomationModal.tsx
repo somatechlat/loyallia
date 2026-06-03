@@ -35,8 +35,8 @@ export default function AutomationModal({
   onSave,
   onClose,
 }: AutomationModalProps) {
-  if (!show) return null;
   const { t } = useI18n();
+  if (!show) return null;
   const totalSteps = 3;
 
   return (

@@ -442,6 +442,25 @@ def update_subscription(request: HttpRequest, data: UpdateSubscriptionSchema):
 
     subscription.save()
 
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="subscription",
+            resource_id=str(subscription.id),
+            tenant_id=subscription.tenant_id,
+            details={
+                "billing_cycle": subscription.billing_cycle,
+                "cancel_at_period_end": subscription.cancel_at_period_end,
+            },
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit subscription update: %s", e, exc_info=True)
+
     return {
         "success": True,
         "message": get_message("BILLING_SUBSCRIPTION_UPDATED"),

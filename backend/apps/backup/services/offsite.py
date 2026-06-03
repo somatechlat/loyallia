@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 
 from apps.backup.schemas import OffsiteBackupOut
+from common.messages import get_message
 
 logger = logging.getLogger("loyallia.backup")
 

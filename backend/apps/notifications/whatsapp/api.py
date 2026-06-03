@@ -194,6 +194,10 @@ def _verify_bridge_api_key(request) -> None:
         default="",
     )
     if not expected_key:
+        from django.conf import settings
+
+        if not settings.DEBUG:
+            raise HttpError(401, get_message("AUTH_PERMISSION_DENIED"))
         return  # Dev mode no key configured
 
     auth = request.headers.get("Authorization", "")
@@ -214,7 +218,10 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
     # Update specific delivery log if ID provided
     if payload.delivery_log_id:
         try:
-            log = CampaignDeliveryLog.objects.get(id=payload.delivery_log_id)
+            log = CampaignDeliveryLog.objects.select_related("campaign_run").get(
+                id=payload.delivery_log_id,
+                campaign_run__tenant_id=payload.tenant_id,
+            )
             now = timezone.now()
 
             if payload.status == "sent":

@@ -31,7 +31,7 @@ export default function CustomerPicker({
   offset,
   loading,
   search,
-  mode,
+  mode: _mode,
   onSearchChange,
   onOffsetChange,
   onToggle,
