@@ -14,7 +14,7 @@ export default function ChannelBadge({ channel }: ChannelBadgeProps) {
     whatsapp: { icon: <MessageCircle className="w-3 h-3" />, bg: "bg-emerald-100", text: "text-emerald-700", label: t("campaigns.whatsapp") },
     sms: { icon: <Smartphone className="w-3 h-3" />, bg: "bg-orange-100", text: "text-orange-700", label: t("campaigns.sms") },
   };
-  const cfg = configs[channel || "email"] || configs.email;
+  const cfg = configs[channel || "email"] || configs.email!;
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>
       {cfg.icon}

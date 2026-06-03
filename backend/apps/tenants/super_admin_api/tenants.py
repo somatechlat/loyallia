@@ -10,7 +10,6 @@ from datetime import timedelta
 from typing import cast
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 from django.utils.text import slugify
@@ -229,33 +228,16 @@ def create_tenant(request, payload: CreateTenantWizardIn):
             tenant.trial_end = sub.trial_end
             tenant.save(update_fields=["trial_end"])
 
-            def _send_owner_welcome() -> None:
-                from apps.tenants.models import PlatformSetting
+            from apps.tenants.services.email import send_owner_welcome_email
 
-                dashboard_url = PlatformSetting.get(
-                    "dashboard_url", settings.FRONTEND_URL
+            def _send_owner_welcome() -> None:
+                send_owner_welcome_email(
+                    owner_email=owner.email,
+                    owner_first_name=owner.first_name or owner.email,
+                    tenant_name=tenant.name,
+                    temp_password=temp_password,
+                    trial_days=trial_days,
                 )
-                login_url = f"{dashboard_url.rstrip('/')}/login"
-                try:
-                    send_mail(
-                        subject=get_message("TENANT_WELCOME_EMAIL_SUBJECT"),
-                        message=get_message(
-                            "TENANT_WELCOME_EMAIL_BODY",
-                            name=owner.first_name or owner.email,
-                            tenant=tenant.name,
-                            login_url=login_url,
-                            email=owner.email,
-                            password=temp_password,
-                            trial_days=trial_days,
-                        ),
-                        from_email=None,
-                        recipient_list=[owner.email],
-                        fail_silently=False,
-                    )
-                except Exception as e:
-                    logger.exception(
-                        "Failed to send owner welcome email to %s: %s", owner.email, e
-                    )
 
             transaction.on_commit(_send_owner_welcome)
 

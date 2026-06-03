@@ -179,6 +179,7 @@ RATE_LIMIT_RULES = [
     ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP (legacy)
     ("/api/v1/auth/", "ip", 60, 60),  # 60 general auth requests per minute per IP
     ("/api/v1/scanner/", "user", 120, 60),  # 120 scans per minute per user
+    ("/api/v1/scanner/v2/", "user", 120, 60),  # 120 scans per minute per user (v2 canonical)
     # Dashboard loads fan out to several analytics endpoints; 60/min lets normal
     # date-filter usage work while preserving user-scoped abuse protection.
     ("/api/v1/analytics/", "user", 60, 60),

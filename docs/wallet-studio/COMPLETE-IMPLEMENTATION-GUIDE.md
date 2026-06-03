@@ -4,7 +4,8 @@
 > **Status:** ⏳ Awaiting explicit user "PROCEED" before any code  
 > **Last Updated:** 2026-06-03  
 > **Scope:** Complete redesign of Loyallia Wallet Pass Studio  
-> **Documentation Source:** 12 SRS documents (~526KB) consolidated into this actionable guide
+> **Documentation Source:** 12 SRS documents (~526KB) + Testing & QA Strategy (~75KB) consolidated into this actionable guide  
+> **Companion Document:** `TESTING-QA-STRATEGY.md` — Complete testing strategy, test cases, CI/CD, QA checklists per phase
 
 ---
 
@@ -402,7 +403,10 @@ interface WalletPassStudioState {
 | 5 | `frontend/src/components/wallet/types/dynamic-templates.ts` | Dynamic template registry | 3 |
 | 6 | `frontend/src/components/wallet/types/card-type-config.ts` | Card-type specific configs | 5 |
 
-### 5.5 Frontend Tests (~20 new)
+### 5.5 Frontend Tests (~35 new)
+
+> **Full testing strategy documented in:** `TESTING-QA-STRATEGY.md`
+> Includes: Unit tests, Component tests, Integration tests, E2E tests, Visual regression, Accessibility, Performance
 
 | # | File Path | Purpose | Phase |
 |---|-----------|---------|-------|
@@ -1171,14 +1175,20 @@ When Kimi API is unavailable, use rule-based fallback:
 
 ## 12. Testing Strategy
 
+> **Complete testing strategy documented in:** `TESTING-QA-STRATEGY.md`  
+> (~75KB covering unit tests, component tests, integration tests, E2E, visual regression, accessibility, performance, CI/CD)
+
 ### 12.1 Test Pyramid
 
 | Level | Count | Focus | Tools |
 |-------|:-----:|-------|-------|
-| Unit tests | ~40 | Utilities, hooks, mappers | Jest |
-| Component tests | ~15 | React components in isolation | React Testing Library |
-| Integration tests | ~10 | API endpoints, plan enforcement | Django TestCase |
-| E2E tests | ~5 | Full user journeys | Playwright/Cypress |
+| Unit tests | ~80 | Utilities, hooks, mappers | Jest |
+| Component tests | ~50 | React components in isolation | React Testing Library |
+| Integration tests | ~30 | API endpoints, plan enforcement | Django TestCase + DRF |
+| E2E tests | ~10 | Full user journeys | Playwright |
+| Visual regression | ~20 | Pixel-perfect rendering | Chromatic/Storybook |
+| Accessibility | ~15 | Screen readers, keyboard, contrast | axe-core + Lighthouse |
+| Performance | ~10 | Load times, render times, memory | Lighthouse + custom |
 
 ### 12.2 Critical Test Scenarios
 
@@ -1192,6 +1202,9 @@ When Kimi API is unavailable, use rule-based fallback:
 8. **Plan Enforcement:** Feature blocked when not in plan
 9. **Image Processing:** @2x/@3x generated correctly
 10. **Back Content:** Flip toggle shows correct back preview
+11. **Cross-browser:** Chrome, Safari, Firefox compatibility
+12. **Mobile:** Bottom sheet, swipe gestures, touch targets
+13. **Accessibility:** Keyboard nav, screen reader, WCAG AA contrast
 
 ### 12.3 E2E Test Scenarios
 
@@ -1202,6 +1215,24 @@ When Kimi API is unavailable, use rule-based fallback:
 | E2E-3 | Edit existing design → add field → set notification | ~4 min |
 | E2E-4 | Mobile: bottom sheet → upload image → configure stamps | ~4 min |
 | E2E-5 | Plan limit: exceed template limit → see upgrade prompt | ~2 min |
+
+### 12.4 Test Environments
+
+| Environment | Data | Purpose |
+|-------------|------|---------|
+| Local Dev | Fake/test | Developer daily work |
+| Test (CI) | Fixtures | Automated test runs |
+| Staging | Production-like | Pre-release validation |
+| Production | Real | Live monitoring |
+
+### 12.5 Coverage Thresholds
+
+| Category | Minimum Coverage | Enforced By |
+|----------|:----------------:|-------------|
+| Utilities / Hooks | 80% | CI gate |
+| Components | 70% | CI gate |
+| Backend APIs | 75% | CI gate |
+| E2E critical paths | 100% | Manual QA |
 
 ---
 
@@ -1249,92 +1280,155 @@ Before coding begins, user must confirm these decisions:
 ## 15. Definition of Done per Phase
 
 ### Phase 0 Done When:
-- [ ] All utility functions have passing unit tests
-- [ ] State model is fully typed with TypeScript
+- [ ] All utility functions have passing unit tests (≥80% coverage)
+- [ ] State model is fully typed with TypeScript (no `any` types)
 - [ ] Migration function converts all v1 test cases correctly
 - [ ] Icon library has 200+ icons in 6+ categories
 - [ ] Field mapping utilities handle all 5 field groups
+- [ ] Contrast calculations match official WCAG algorithm
+- [ ] Test fixtures created for all design states
 
 ### Phase 1 Done When:
-- [ ] Studio shell renders without errors
+- [ ] Studio shell renders without console errors
 - [ ] Undo/redo works for 50+ consecutive actions
+- [ ] Undo/redo memory usage stays under 1MB
 - [ ] Auto-save persists to localStorage and recovers on reload
 - [ ] Sidebar tab switching works smoothly
 - [ ] Both iPhone and Pixel frames render side-by-side
+- [ ] Keyboard shortcuts work (Ctrl+Z, Ctrl+Y, Ctrl+S, B for flip)
+- [ ] Responsive at 1440px, 1024px, 768px, 390px
+- [ ] Component tests pass for WalletStudio, StudioToolbar, StudioCanvas
 
 ### Phase 2 Done When:
 - [ ] User can upload logo + hero image via drag-drop
 - [ ] Crop preview shows correct Apple rect vs Google circle
 - [ ] Image validation rejects oversized/invalid files
-- [ ] Backend generates @2x/@3x variants
-- [ ] Uploaded images appear in both previews
+- [ ] Backend generates @2x/@3x variants with correct dimensions
+- [ ] Uploaded images appear in both previews within 2s
+- [ ] Image removal clears preview immediately
+- [ ] Failed uploads show user-friendly error message
+- [ ] Component tests pass for ImagesTab, SmartImageUpload
 
 ### Phase 3 Done When:
 - [ ] User can add/edit/delete fields in all 5 groups
-- [ ] Field limits enforced with visual indicators
-- [ ] Dynamic value templates populate correctly
-- [ ] Apple changeMessage configured per field
-- [ ] Google Messages configured per field
+- [ ] Field limits enforced with error messages (header: 3, primary: 1, sec+aux: 4 with QR square)
+- [ ] Dynamic value templates populate correctly in preview
+- [ ] Apple changeMessage configured per field with %@ preview
+- [ ] Google Messages configured per field (onChange/scheduled/beforeExpiry)
 - [ ] Drag-to-reorder works within field groups
+- [ ] Field deletion requires confirmation
+- [ ] Platform visibility toggles per field work
+- [ ] Component tests pass for FieldStudio, FieldCard, FieldEditorModal
+- [ ] Unit tests pass for field validation, field mappers
 
 ### Phase 4 Done When:
-- [ ] All 5 barcode formats selectable
-- [ ] Barcode preview renders correctly
-- [ ] Platform-specific warnings shown
-- [ ] Color picker updates both previews
-- [ ] Contrast check shows WCAG AA/AAA status
-- [ ] Preset swatches apply instantly
+- [ ] All 5 barcode formats selectable and preview correctly
+- [ ] Barcode data builder generates valid data
+- [ ] Platform-specific warnings shown for incompatible formats
+- [ ] Color picker updates both previews in real-time
+- [ ] Contrast check updates on every color change
+- [ ] WCAG badge shows correct level (AAA/AA/FAIL)
+- [ ] Preset swatches apply all 3 colors simultaneously
+- [ ] Invalid hex colors rejected with error
+- [ ] Component tests pass for BarcodeTab, ColorsTab
 
 ### Phase 5 Done When:
-- [ ] All 10 card types have configuration tabs
-- [ ] Stamp grid renders with correct icon/shape/count
-- [ ] VIP badges show correct tier
-- [ ] Cashback progress ring animates
-- [ ] Icon picker allows search + custom upload
+- [ ] All 10 card types have working configuration tabs
+- [ ] Stamp grid renders correct number of filled/empty stamps
+- [ ] Stamp icon changes reflected in preview
+- [ ] VIP tier badge shows correct icon and color
+- [ ] Cashback progress ring animates correctly
+- [ ] Coupon cut line renders on Apple preview
+- [ ] Gift certificate ribbon shows correctly
+- [ ] Icon picker search filters correctly
+- [ ] Custom icon upload works (PNG, SVG, max 256px)
+- [ ] Component tests pass for all card type tabs
+- [ ] Visual regression tests pass for all card types
 
 ### Phase 6 Done When:
-- [ ] Front/back flip animation works
-- [ ] Back content renders correctly on both platforms
-- [ ] Design score calculates 14 checks
-- [ ] Score updates in real-time
+- [ ] Front/back flip animation smooth (60fps)
+- [ ] Back content renders correctly on Apple preview (backFields)
+- [ ] Back content renders correctly on Google preview (detailsTemplateOverride)
+- [ ] Design score calculates within 100ms
+- [ ] All 14 checks have clear pass/fail messages
 - [ ] Auto-fix works for contrast issues
-- [ ] Default back content populated per card type
+- [ ] Default back content populated for all 10 card types
+- [ ] App link button appears when configured
+- [ ] Keyboard shortcut 'B' toggles front/back
+- [ ] Component tests pass for BackDesignTab, AppleBackPreview, GoogleBackPreview
+- [ ] Design score unit tests pass
 
 ### Phase 7 Done When:
-- [ ] 20+ system templates defined
-- [ ] User can save design as template
-- [ ] Template CRUD works (rename, duplicate, delete)
-- [ ] Template preview shows iPhone + Pixel
-- [ ] Usage count tracked correctly
-- [ ] Favorites toggle works
+- [ ] 20+ system templates load in < 2s
+- [ ] Template search filters by name, type, industry
+- [ ] Template preview shows both iPhone + Pixel side-by-side
+- [ ] "Use template" applies all settings correctly
+- [ ] "Save as template" creates new user template
+- [ ] Template rename updates immediately
+- [ ] Template duplicate creates independent copy
+- [ ] Template delete requires confirmation
+- [ ] Usage count increments on apply
+- [ ] Favorite toggle persists
+- [ ] Empty state shown when no user templates
+- [ ] Backend API tests pass for template CRUD
+- [ ] E2E test: Create stamp card from template
 
 ### Phase 8 Done When:
-- [ ] AI button generates 3 template variations
+- [ ] AI button generates 3 variations in < 10s
+- [ ] AI-generated designs have valid structure
+- [ ] AI rate limit blocks after 10 requests/hour (429)
+- [ ] AI quota display updates correctly in UI
+- [ ] Fallback designer works when Kimi API unavailable
+- [ ] AI error shows user-friendly message with retry
 - [ ] Color suggestions based on industry
-- [ ] Design critique identifies issues
-- [ ] Rate limits enforced (10/hour for generation)
-- [ ] Fallback designer works when Kimi down
-- [ ] Cost tracking logged
+- [ ] Design critique identifies real issues
+- [ ] AI cost tracked correctly per request
+- [ ] Backend tests pass for KimiService, AI endpoints
+- [ ] E2E test: Create VIP card with AI
 
 ### Phase 9 Done When:
-- [ ] Studio works on mobile (bottom sheet)
-- [ ] All keyboard shortcuts functional
-- [ ] Session recovery after crash
-- [ ] Canvas renders in < 16ms
-- [ ] WCAG AA accessibility compliance
+- [ ] Studio works on mobile (bottom sheet opens/closes smoothly)
+- [ ] All touch targets ≥ 44x44px on mobile
+- [ ] Swipe gestures work on canvas (switch platform)
+- [ ] All keyboard shortcuts documented and working
+- [ ] Session recovery works after simulated browser crash
+- [ ] Canvas renders in < 16ms on mid-range device
+- [ ] No memory leaks after 100 undo/redo operations
+- [ ] Lighthouse score ≥ 90 on mobile
+- [ ] Screen reader announces all interactive elements
+- [ ] Keyboard navigation works throughout studio
+- [ ] Reduced motion preference respected
+- [ ] Accessibility audit passes (axe-core)
+- [ ] Performance audit passes (Lighthouse)
+- [ ] Cross-browser tests pass (Chrome, Safari, Firefox)
+- [ ] Mobile tests pass (iPhone, Android)
 
 ### Phase 10 Done When:
-- [ ] Old designer fully replaced in wizard
-- [ ] Existing designs load correctly
-- [ ] E2E tests pass
-- [ ] Deployed to staging
+- [ ] Old designer fully removed from wizard
+- [ ] Existing v1 designs load correctly in v2 studio
+- [ ] All E2E tests pass (5 critical journeys)
+- [ ] Cross-browser tests pass (Chrome, Safari, Firefox)
+- [ ] Mobile tests pass (iPhone, Android)
+- [ ] Accessibility audit passes
+- [ ] Performance budget met (Lighthouse ≥ 90)
+- [ ] Visual regression tests pass (Chromatic)
+- [ ] No console errors in staging
+- [ ] Deployed to staging successfully
+- [ ] QA sign-off on staging
 
 ### Phase 11 Done When:
-- [ ] All plan features enforced
-- [ ] Rate limits working
-- [ ] Trial limits correct
-- [ ] Upgrade prompts shown correctly
-- [ ] Database migrations applied
+- [ ] Free plan blocked from studio (403 Forbidden)
+- [ ] Starter plan can access but not save templates
+- [ ] Pro plan can save up to 10 templates
+- [ ] Enterprise plan unlimited templates
+- [ ] Trial gets all features with trial limits (5 templates, 50 updates, 20 AI)
+- [ ] Rate limits enforced at middleware level (429 Too Many Requests)
+- [ ] Plan features endpoint returns correct values for all tiers
+- [ ] Upgrade prompts shown with correct plan comparison
+- [ ] Database migrations run successfully
+- [ ] No data loss during migration
+- [ ] Backend integration tests pass for plan enforcement
+- [ ] E2E test: Plan limit enforcement
 
 ---
 

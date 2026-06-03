@@ -17,6 +17,7 @@ from apps.customers.models import CustomerPass
 from apps.tenants.models import Tenant
 from common.messages import get_message
 from common.permissions import is_staff_or_above, jwt_auth
+from common.rate_limit import rate_limit
 
 from .command import RedemptionCommand
 
@@ -69,6 +70,7 @@ class RedemptionOut(BaseModel):
 
 
 @router.post("/validate/", auth=jwt_auth, summary="Validar código QR (v2)")
+@rate_limit(key_prefix="scanner_validate", max_requests=120, window_seconds=60)
 def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
     """Validate a QR code and return pass state (read-only, v2 engine).
 
@@ -105,6 +107,7 @@ def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
 
 
 @router.post("/transact/", auth=jwt_auth, summary="Registrar transacción (v2)")
+@rate_limit(key_prefix="scanner_transact", max_requests=120, window_seconds=60)
 def transact_v2(request: HttpRequest, data: ScanTransactIn):
     """Record a transaction via the new RedemptionGateway.
 

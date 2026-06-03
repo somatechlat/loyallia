@@ -193,17 +193,16 @@ def enroll_customer_public(
     """
     from django.core.cache import cache
 
-    # Rate limiting: 10 per hour per IP
+    # Rate limiting: 10 per hour per IP (atomic via Redis/Cache INCR)
     client_ip = get_client_ip(request)
     cache_key = f"enroll_rate:{client_ip}"
-    enroll_count = cache.get(cache_key, 0)
-    if enroll_count >= 10:
+    allowed, _ = check_rate_limit(cache_key, max_requests=10, window_seconds=3600)
+    if not allowed:
         raise HttpError(429, get_message("RATE_LIMITED"))
-    cache.set(cache_key, enroll_count + 1, 3600)  # 1 hour TTL
 
     try:
         card = Card.objects.select_related("tenant").get(
-            id=card_id, is_active=True, is_published=True
+            id=card_id, is_active=True, is_published=True, tenant__is_active=True
         )
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
@@ -262,7 +261,7 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
 
     try:
         card = Card.objects.select_related("tenant").get(
-            id=data.card_id, is_active=True, is_published=True
+            id=data.card_id, is_active=True, is_published=True, tenant__is_active=True
         )
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))

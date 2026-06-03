@@ -159,17 +159,19 @@ def revoke_impersonation(request):
     """Revoke the current impersonation session immediately."""
     _require_super_admin(request)
 
+    user_id = str(request.user.id)
+    cache_key = f"impersonation:{user_id}"
+    cache.set(cache_key, "revoked", timeout=3600)
+
     try:
         from apps.audit.models import AuditAction, AuditStatus
         from apps.audit.service import log_action
 
-        cache_key = f"impersonation:{request.auth.user_id}"
-        cache.delete(cache_key)
         log_action(
             request=request,
             action=AuditAction.UPDATE,
             resource_type="impersonation",
-            resource_id=str(request.auth.user_id),
+            resource_id=user_id,
             details={"event": "IMPERSONATION_REVOKED"},
             status=AuditStatus.SUCCESS,
         )
@@ -179,6 +181,6 @@ def revoke_impersonation(request):
     logger.info(
         "SUPER_ADMIN %s revoked impersonation for user %s",
         request.user.email,
-        request.auth.user_id,
+        user_id,
     )
     return {"message": get_message("SUCCESS", detail="Impersonation revoked")}
