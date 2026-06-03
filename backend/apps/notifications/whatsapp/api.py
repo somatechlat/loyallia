@@ -199,7 +199,7 @@ def _verify_bridge_api_key(request) -> None:
     auth = request.headers.get("Authorization", "")
     key = auth.replace("Bearer ", "").strip()
     if key != expected_key:
-        raise HttpError(401, "Unauthorized")
+        raise HttpError(401, get_message("AUTH_PERMISSION_DENIED"))
 
 
 @router.post("/webhook/delivery/")
@@ -326,7 +326,7 @@ def session_webhook(request, payload: SessionWebhookIn):
         logger.warning(
             "SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id
         )
-        raise HttpError(400, "Invalid tenant_id")
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Invalid tenant_id"))
 
     try:
         from apps.tenants.models import Tenant

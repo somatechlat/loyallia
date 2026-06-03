@@ -22,6 +22,7 @@
    - [8.4 Barcode Tab](#84-barcode-tab)
    - [8.5 Colors Tab](#85-colors-tab)
    - [8.6 Advanced Tab](#86-advanced-tab)
+   - [8.7 Back / Details Tab (Reverso)](#87-back--details-tab-reverso)
 9. [Platform-Specific Preview Behaviors](#9-platform-specific-preview-behaviors)
 10. [Design Quality Score Panel](#10-design-quality-score-panel)
 11. [Keyboard Shortcuts](#11-keyboard-shortcuts)
@@ -183,8 +184,11 @@
 │  │                                                  │  │ SIDEBAR                      │ │
 │  │         CANVAS (Dual Platform Preview)           │  │ ┌──────────────────────────┐ │ │
 │  │                                                  │  │ │ [🖼️ Img] [🎯 Sellos]    │ │ │
-│  │    ┌────────────────────────────────────┐       │  │ │ [📝 Cont] [📊 Barcode]   │ │ │
-│  │    │    🍎 iPhone 15 Pro Frame           │       │  │ │ [🎨 Cols] [⚙️ Adv ▼]     │ │ │
+│  │    ┌────────────────────────────────────┐       │  │ │ [📝 Cont] [📄 Reverso]   │ │ │
+│  │    │  [🎨 FRENTE] [📄 REVERSO] ← FLIP   │       │  │ │ [📊 Bar] [🎨 Cols] [⚙️]  │ │ │
+│  │    │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │       │  │ └──────────────────────────┘ │ │
+│  │    │                                    │       │  │                              │ │
+│  │    │    🍎 iPhone 15 Pro Frame           │       │  │                              │ │
 │  │    │  ┌──────────────────────────────┐   │       │  │ └──────────────────────────┘ │ │
 │  │    │  │  [LOGO]  Café Central        │   │       │  │                              │ │
 │  │    │  │                              │   │       │  │ ┌──────────────────────────┐ │ │
@@ -322,7 +326,7 @@
 │  [↩ Undo] [↪ Redo]    [🍎 Apple] [🤖 Google] [👁️ Both]    [−] [100%] [+]            │
 │                                                                                         │
 │  ROW 2:                                                                                 │
-│  [🎨 Templates] [💾 Guardar] [⬇️ Exportar]        ████████░░ Score: 8.2/10           │
+│  [🎨 Templates] [💾 Guardar] [⬇️ Exportar]  [🔄 Frente/Reverso]  ████ Score: 8.2/10 │
 │                                                                                         │
 │  ROW 3 (RIGHT-ALIGNED):                                                                │
 │  ┌────────────────────────────────────────────────────────┐                            │
@@ -339,6 +343,7 @@
 | **Undo** | IconButton, ↩ | Disabled when history empty |
 | **Redo** | IconButton, ↪ | Disabled when redo stack empty |
 | **Platform Toggle** | SegmentedControl | Apple (shows iPhone frame) / Google (shows Pixel frame) / Both |
+| **Flip Toggle** | SegmentedControl | Frente (shows front of pass) / Reverso (shows back/details) |
 | **Zoom** | − / 100% / + | Range 50%-200% |
 | **Templates** | Button | Opens template gallery modal |
 | **Save** | Button | Saves as draft, toast confirmation |
@@ -843,6 +848,7 @@
 | `Ctrl/Cmd + 0` | Reset zoom to 100% |
 | `Ctrl/Cmd + +` | Zoom in |
 | `Ctrl/Cmd + -` | Zoom out |
+| `B` | Toggle front / back (Reverso) |
 | `Escape` | Deselect / Cancel / Close modal |
 | `Ctrl/Cmd + S` | Save draft |
 | `Ctrl/Cmd + E` | Export |

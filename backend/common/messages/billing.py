@@ -33,6 +33,7 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_PLAN_DEACTIVATED": "Plan desactivado exitosamente.",
     "ADMIN_PLAN_REACTIVATED": "Plan '{name}' reactivado exitosamente.",
     "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "No se puede desactivar el plan '{name}' porque tiene {count} suscripción(es) activa(s).",  # noqa: E501
+    "BACKUP_MINIO_SCRIPT_NOT_FOUND": "Script de MinIO no encontrado.",
 }
 
 _MESSAGES_EN: dict[str, str] = {
@@ -66,6 +67,7 @@ _MESSAGES_EN: dict[str, str] = {
     "ADMIN_PLAN_DEACTIVATED": "Plan deactivated successfully.",
     "ADMIN_PLAN_REACTIVATED": "Plan '{name}' reactivated successfully.",
     "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "Cannot deactivate plan '{name}' because it has {count} active subscription(s).",
+    "BACKUP_MINIO_SCRIPT_NOT_FOUND": "MinIO client script not found.",
 }
 
 _MESSAGES_FR: dict[str, str] = {

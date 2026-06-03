@@ -203,6 +203,20 @@ class Invoice(TimestampedModel):
         verbose_name_plural = "Facturas"
         ordering = ["-created_at"]
         unique_together = [["tenant", "invoice_number"]]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(subtotal__gte=0),
+                name="check_invoice_subtotal_non_negative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(tax_amount__gte=0),
+                name="check_invoice_tax_amount_non_negative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(total__gte=0),
+                name="check_invoice_total_non_negative",
+            ),
+        ]
         indexes = [
             models.Index(fields=["tenant", "created_at"]),
             models.Index(fields=["tenant", "status"]),
