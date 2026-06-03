@@ -120,10 +120,9 @@ class Customer(TimestampedModel):
     # Referral system
     referral_code = models.CharField(
         max_length=20,
-        unique=True,
         blank=True,
         default="",
-        help_text="Unique referral code.",
+        help_text="Unique referral code per tenant.",
     )
     referred_by = models.ForeignKey(
         "self",
@@ -176,7 +175,10 @@ class Customer(TimestampedModel):
         verbose_name = "Cliente"
         verbose_name_plural = "Clientes"
         ordering = ["-created_at"]
-        unique_together = ["tenant", "email"]  # One account per email per tenant
+        unique_together = [
+            ["tenant", "email"],  # One account per email per tenant
+            ["tenant", "referral_code"],  # Referral codes scoped per tenant
+        ]
         indexes = [
             # Tenant-scoped time-series queries (analytics, sorting)
             models.Index(
@@ -237,7 +239,7 @@ class Customer(TimestampedModel):
             code = "".join(
                 secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
             )
-            if not Customer.objects.filter(referral_code=code).exists():
+            if not Customer.objects.filter(tenant=self.tenant, referral_code=code).exists():
                 return code
 
         # Fallback: use UUID-based code (guaranteed unique)
@@ -280,6 +282,15 @@ class CustomerPass(models.Model):
         related_name="passes",
         verbose_name="Programa",
         help_text="The loyalty program associated with this record.",
+    )
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.CASCADE,
+        related_name="customer_passes",
+        verbose_name="Negocio",
+        help_text="Tenant for query scoping and isolation.",
+        null=True,
+        blank=True,
     )
 
     # Pass state stored as JSONB (Legacy/Dynamic)
@@ -339,12 +350,11 @@ class CustomerPass(models.Model):
     # QR code for validation indexed for O(log N) scan lookups
     qr_code = models.CharField(
         max_length=100,
-        unique=True,
         db_index=True,
         blank=True,
         default="",
         verbose_name="Código QR",
-        help_text="Unique QR code for pass validation.",
+        help_text="Unique QR code for pass validation per tenant.",
     )
 
     # Status
@@ -409,7 +419,10 @@ class CustomerPass(models.Model):
         verbose_name = "Pase del cliente"
         verbose_name_plural = "Pases de clientes"
         ordering = ["-enrolled_at"]
-        unique_together = ["customer", "card"]  # One pass per customer per program
+        unique_together = [
+            ["customer", "card"],  # One pass per customer per program
+            ["tenant", "qr_code"],  # QR codes scoped per tenant
+        ]
 
     def __repr__(self) -> str:
         return f"<CustomerPass: {self.customer.full_name} - {self.card.name}>"
@@ -455,9 +468,11 @@ class CustomerPass(models.Model):
         self.refresh_from_db(fields=["pass_data", "last_updated"])
 
     def save(self, *args, **kwargs) -> None:
-        """Override save to generate QR code if needed."""
+        """Override save to generate QR code and denormalize tenant if needed."""
         if not self.qr_code:
             self.qr_code = self.generate_qr_code()
+        if self.customer_id and not self.tenant_id:
+            self.tenant_id = self.customer.tenant_id
         super().save(*args, **kwargs)
 
     @property
