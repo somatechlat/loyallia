@@ -6,6 +6,7 @@ import os
 import re
 import tempfile
 from datetime import datetime
+from pathlib import Path
 
 from django.conf import settings
 
@@ -134,3 +135,137 @@ def update_job(job_id: str, **fields) -> None:
     from apps.backup.models import BackupJob
 
     BackupJob.objects.filter(id=job_id).update(**fields)
+
+
+def _get_project_root() -> Path:
+    """Derive project root (parent of Django BASE_DIR)."""
+    return Path(settings.BASE_DIR).parent
+
+
+def _detect_deploy_env() -> str:
+    """Detect deployment environment from .env file."""
+    project_root = _get_project_root()
+    env_file = project_root / ".env"
+    if env_file.exists():
+        content = env_file.read_text()
+        if "COMPOSE_FILE" in content and "prod" in content:
+            return "production"
+        if "DJANGO_SETTINGS_MODULE" in content and "production" in content:
+            return "production"
+    return "development"
+
+
+def get_local_backup_list() -> list[dict]:
+    """List local backups from the backup directory."""
+    project_root = _get_project_root()
+    env = _detect_deploy_env()
+    env_script = project_root / "deploy" / "backups" / env / "env.sh"
+
+    backup_dir = ""
+    if env_script.exists():
+        for line in env_script.read_text().splitlines():
+            if line.strip().startswith("BACKUP_DIR="):
+                backup_dir = line.split("=", 1)[1].strip().strip('"')
+                break
+
+    if not backup_dir:
+        backup_dir = str(project_root / "backups") if env == "development" else "/var/backups/loyallia"
+
+    backup_dir = backup_dir.replace("$PROJECT_ROOT", str(project_root))
+
+    if not os.path.isdir(backup_dir):
+        return []
+
+    backups: list[dict] = []
+    for root, _dirs, files in os.walk(backup_dir):
+        for fname in files:
+            if fname.endswith((".age", ".tar.gz", ".gpg", ".tar")):
+                fpath = os.path.join(root, fname)
+                try:
+                    mtime = os.path.getmtime(fpath)
+                    backups.append(
+                        {
+                            "path": fpath,
+                            "name": fname,
+                            "size": os.path.getsize(fpath),
+                            "date": datetime.fromtimestamp(mtime).strftime("%Y-%m-%d"),
+                        }
+                    )
+                except OSError:
+                    continue
+    return backups
+
+
+def get_offsite_backup_list() -> list[dict]:
+    """List offsite backups on MinIO using boto3."""
+    minio_cfg = get_minio_config()
+    backup_cfg = get_backup_settings()
+
+    endpoint = minio_cfg.get("endpoint") or backup_cfg.get("s3_endpoint")
+    access_key = minio_cfg.get("access_key", "")
+    secret_key = minio_cfg.get("secret_key", "")
+    bucket = backup_cfg.get("s3_bucket", "loyallia-backups")
+
+    if not endpoint or not access_key or not secret_key:
+        logger.warning("MinIO not configured for offsite listing")
+        return []
+
+    try:
+        import boto3
+        from botocore.client import Config
+
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            config=Config(signature_version="s3v4"),
+            verify=getattr(settings, "AWS_S3_VERIFY", True),
+        )
+
+        backups: list[dict] = []
+        paginator = s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                if key.endswith("/"):
+                    continue
+                backups.append(
+                    {
+                        "key": key,
+                        "size": obj["Size"],
+                        "last_modified": obj["LastModified"].isoformat(),
+                    }
+                )
+        return backups
+    except Exception:
+        logger.exception("Failed to list offsite backups")
+        return []
+
+
+def get_restore_options() -> dict:
+    """Combine local and offsite backup lists into restore options grouped by date."""
+    from collections import defaultdict
+
+    local_backups = get_local_backup_list()
+    offsite_backups = get_offsite_backup_list()
+
+    def _group(backups: list[dict]) -> list[dict]:
+        by_date: dict[str, set[str]] = defaultdict(set)
+        for b in backups:
+            date = b.get("date", "unknown")
+            name = b.get("name", b.get("key", ""))
+            for comp in ("postgres", "redis", "vault", "minio", "snapshot"):
+                if comp in name.lower():
+                    by_date[date].add(comp)
+            if not by_date[date]:
+                by_date[date].add("full")
+        return [
+            {"date": d, "components": sorted(list(c))}
+            for d, c in sorted(by_date.items(), reverse=True)
+        ]
+
+    return {
+        "local": _group(local_backups),
+        "offsite": _group(offsite_backups),
+    }

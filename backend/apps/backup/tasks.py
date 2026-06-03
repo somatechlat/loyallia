@@ -6,16 +6,19 @@ All business logic lives in apps.backup.services.
 
 Flow:
     1. run_full_backup() is the Celery Beat entry point.
-    2. It spawns parallel tasks via group(), then chains verify_backup().
-    3. Each component task delegates to its service module.
+    2. It delegates to the unified backup CLI.
+    3. Verification is a separate step via verify_backup().
 
 Called by: Celery Beat scheduler, SuperAdmin API (manual backup).
 """
 
 import logging
+import subprocess
+from pathlib import Path
 from typing import Any, cast
 
-from celery import chain, group, shared_task
+from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 
 from apps.backup.services.cleanup import cleanup_old_backups as cleanup_old_backups_svc
@@ -41,6 +44,18 @@ _BACKUP_QUEUE = "default"
 _BACKUP_TIMEOUT = 1800
 
 
+def _project_root() -> Path:
+    return Path(settings.BASE_DIR).parent
+
+
+def _backup_script() -> Path:
+    return _project_root() / "deploy" / "backups" / "backup"
+
+
+def _restore_script() -> Path:
+    return _project_root() / "deploy" / "backups" / "restore"
+
+
 @shared_task(
     bind=True,
     max_retries=_MAX_RETRIES,
@@ -51,7 +66,7 @@ _BACKUP_TIMEOUT = 1800
     soft_time_limit=_BACKUP_TIMEOUT - 60,
 )
 def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
-    """Orchestrate a complete platform backup."""
+    """Orchestrate a complete platform backup via unified CLI."""
     from apps.backup.models import BackupJobStatus
 
     config = get_backup_settings()
@@ -70,28 +85,102 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
     update_job(job_id, status=BackupJobStatus.RUNNING.value, started_at=timezone.now())
 
     try:
-        task_signatures = [
-            cast(Any, backup_postgresql).s(job_id),
-            cast(Any, backup_redis).s(job_id),
-        ]
-        if config["include_vault"]:
-            task_signatures.append(cast(Any, backup_vault).s(job_id))
-        if config["include_media"]:
-            task_signatures.append(cast(Any, backup_media).s(job_id))
-
-        job_group = group(task_signatures)
-        verify_chain = chain(job_group, cast(Any, verify_backup).s(job_id))
-        result = verify_chain.apply_async()
-
-        chain_id = result.id if result else ""
-        logger.info(
-            "run_full_backup: job %s chained, verify task id=%s", job_id, chain_id
+        script = _backup_script()
+        result = subprocess.run(
+            [str(script), "--full", "--offsite"],
+            capture_output=True,
+            text=True,
+            cwd=str(_project_root()),
+            timeout=_BACKUP_TIMEOUT,
         )
-        return {"success": True, "job_id": job_id, "celery_chain_id": chain_id}
+        success = result.returncode == 0
+
+        update_job(
+            job_id,
+            status=BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value,
+            error_message=scrub_error(result.stderr) if not success else "",
+            completed_at=timezone.now(),
+        )
+
+        if success:
+            cast(Any, verify_backup).delay([], job_id)
+
+        return {
+            "success": success,
+            "job_id": job_id,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
 
     except Exception as exc:
         scrubbed = scrub_error(str(exc))
         logger.exception("run_full_backup failed for job %s", job_id)
+        update_job(
+            job_id,
+            status=BackupJobStatus.FAILED.value,
+            error_message=scrubbed,
+            completed_at=timezone.now(),
+        )
+        notify_backup_failure(job_id, scrubbed)
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=_MAX_RETRIES,
+    default_retry_delay=_RETRY_DELAY,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.run_selective_backup_task",
+    time_limit=900,
+    soft_time_limit=840,
+)
+def run_selective_backup_task(self, component: str, tenant_id: str = "", manual: bool = False) -> dict:
+    """Run a selective component backup via unified CLI."""
+    from apps.backup.models import BackupJobStatus
+
+    config = get_backup_settings()
+    backup_type = f"manual_{component}" if manual else component
+
+    job_id = create_job_record(
+        backup_type=backup_type,
+        tenant_id=tenant_id or None,
+        include_media=config["include_media"],
+        include_vault=config["include_vault"],
+        encryption_enabled=config["encryption_enabled"],
+        compression_enabled=config["compression_enabled"],
+    )
+
+    logger.info("run_selective_backup_task: starting job %s (component=%s)", job_id, component)
+    update_job(job_id, status=BackupJobStatus.RUNNING.value, started_at=timezone.now())
+
+    try:
+        script = _backup_script()
+        result = subprocess.run(
+            [str(script), f"--{component}", "--offsite"],
+            capture_output=True,
+            text=True,
+            cwd=str(_project_root()),
+            timeout=900,
+        )
+        success = result.returncode == 0
+
+        update_job(
+            job_id,
+            status=BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value,
+            error_message=scrub_error(result.stderr) if not success else "",
+            completed_at=timezone.now(),
+        )
+
+        return {
+            "success": success,
+            "job_id": job_id,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
+
+    except Exception as exc:
+        scrubbed = scrub_error(str(exc))
+        logger.exception("run_selective_backup_task failed for job %s", job_id)
         update_job(
             job_id,
             status=BackupJobStatus.FAILED.value,
@@ -179,7 +268,10 @@ def backup_media(self, job_id: str) -> dict:
     time_limit=600,
 )
 def verify_backup(self, component_results: list, job_id: str) -> dict:
-    """Celery wrapper for backup verification service."""
+    """Celery wrapper for backup verification service.
+
+    Delegates to the unified backup CLI (--verify).
+    """
     try:
         return verify_backup_svc(component_results, job_id)
     except Exception as exc:
@@ -223,4 +315,106 @@ def restore_from_backup_task(
         return restore_from_backup(backup_id, s3_key, target_tenant_id)
     except Exception as exc:
         logger.exception("restore_from_backup_task failed for backup %s", backup_id)
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.run_restore_task",
+    time_limit=3600,
+)
+def run_restore_task(self, component: str, source: str, date: str) -> dict:
+    """Celery wrapper for unified restore CLI.
+
+    WARNING: Destructive operation. Only SUPER_ADMIN can trigger.
+    """
+    from apps.backup.models import BackupJobStatus
+    from apps.backup.services.restore import execute_restore
+
+    job_id = create_job_record(backup_type="restore")
+    logger.warning(
+        "run_restore_task: starting restore job %s (component=%s source=%s date=%s)",
+        job_id,
+        component,
+        source,
+        date,
+    )
+    update_job(job_id, status=BackupJobStatus.RUNNING.value, started_at=timezone.now())
+
+    try:
+        result = execute_restore(component, source, date)
+        success = result.get("success", False)
+
+        update_job(
+            job_id,
+            status=BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value,
+            error_message=result.get("stderr", "") if not success else "",
+            completed_at=timezone.now(),
+        )
+
+        return {**result, "job_id": job_id}
+
+    except Exception as exc:
+        scrubbed = scrub_error(str(exc))
+        logger.exception("run_restore_task failed for job %s", job_id)
+        update_job(
+            job_id,
+            status=BackupJobStatus.FAILED.value,
+            error_message=scrubbed,
+            completed_at=timezone.now(),
+        )
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=30,
+    queue=_BACKUP_QUEUE,
+    name="apps.backup.tasks.list_restore_options_task",
+    time_limit=300,
+)
+def list_restore_options_task(self) -> dict:
+    """Celery wrapper that calls the unified restore CLI with --list."""
+    try:
+        script = _restore_script()
+        result = subprocess.run(
+            [str(script), "--list"],
+            capture_output=True,
+            text=True,
+            cwd=str(_project_root()),
+            timeout=300,
+        )
+
+        stdout = result.stdout
+        local: list[str] = []
+        offsite: list[str] = []
+        current_section: str | None = None
+
+        for line in stdout.splitlines():
+            stripped = line.strip()
+            if "Local backups" in stripped:
+                current_section = "local"
+                continue
+            if "Offsite backups" in stripped:
+                current_section = "offsite"
+                continue
+            if stripped and current_section == "local" and stripped.startswith("/"):
+                local.append(stripped)
+            elif stripped and current_section == "offsite" and "/" in stripped:
+                offsite.append(stripped)
+
+        return {
+            "success": result.returncode == 0,
+            "local": local,
+            "offsite": offsite,
+            "raw": stdout,
+            "stderr": result.stderr,
+        }
+
+    except Exception as exc:
+        logger.exception("list_restore_options_task failed")
         raise self.retry(exc=exc)

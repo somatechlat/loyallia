@@ -91,6 +91,55 @@ class BackupVerifyOut(Schema):
     details: str
 
 
+class RestoreShellIn(Schema):
+    """Request body for restoring from local/offsite via unified CLI."""
+
+    component: str
+    source: str
+    date: str
+    confirm: bool = False
+
+
+class RestoreOptionItem(Schema):
+    """Single restore option grouped by date."""
+
+    date: str
+    components: list[str]
+
+
+class RestoreOptionsOut(Schema):
+    """Available restore options from local and offsite."""
+
+    local: list[RestoreOptionItem]
+    offsite: list[RestoreOptionItem]
+
+
+class RestoreStatusOut(Schema):
+    """Current restore job status."""
+
+    status: str
+    component: str | None = None
+    source: str | None = None
+    date: str | None = None
+    started_at: str | None = None
+    completed_at: str | None = None
+    error_message: str = ""
+
+
+class OffsiteBackupOut(Schema):
+    """Single offsite backup object."""
+
+    key: str
+    size: int
+    last_modified: str
+
+
+class OffsiteBackupListOut(Schema):
+    """List of offsite backups on MinIO."""
+
+    backups: list[OffsiteBackupOut]
+
+
 class BackupSettingsOut(Schema):
     """Current backup settings from PlatformSetting."""
 

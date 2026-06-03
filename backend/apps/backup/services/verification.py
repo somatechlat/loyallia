@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 from datetime import datetime
+from pathlib import Path
 
 from django.conf import settings
 
@@ -17,91 +18,64 @@ logger = logging.getLogger(__name__)
 
 
 def verify_backup(component_results: list, job_id: str) -> dict:
-    """Verify backup integrity after all components complete.
+    """Verify backups by calling the unified backup CLI.
 
-    Checks that all component tasks reported success, files exist and are
-    non-empty, and gzip archives are valid.
+    Returns a structured result with status, components, and errors.
     """
     from apps.backup.models import BackupJob, BackupJobStatus
 
-    details_parts = []
-    all_ok = True
-    results = [r for r in (component_results or []) if isinstance(r, dict)]
+    project_root = Path(settings.BASE_DIR).parent
+    backup_script = project_root / "deploy" / "backups" / "backup"
 
-    for result in results:
-        component = result.get("component", "unknown")
-        success = result.get("success", False)
-        file_path = result.get("file_path", "")
+    if not backup_script.exists():
+        raise FileNotFoundError(f"Backup script not found: {backup_script}")
 
-        if not success:
-            details_parts.append(f"FAIL: {component} reported failure")
-            all_ok = False
-            continue
+    result = subprocess.run(
+        [str(backup_script), "--verify"],
+        capture_output=True,
+        text=True,
+        cwd=str(project_root),
+    )
 
-        if result.get("skipped"):
-            details_parts.append(f"SKIP: {component}  {result.get('reason', '')}")
-            continue
+    success = result.returncode == 0
+    stdout = result.stdout
+    stderr = result.stderr
 
-        if file_path and os.path.exists(file_path):
-            actual_size = os.path.getsize(file_path)
-            if actual_size == 0:
-                details_parts.append(f"FAIL: {component} file is empty")
-                all_ok = False
-            else:
-                details_parts.append(f"OK: {component}  {actual_size} bytes")
-                if file_path.endswith(".gz"):
-                    try:
-                        subprocess.run(
-                            ["gzip", "--test", file_path],
-                            check=True,
-                            capture_output=True,
-                        )
-                        details_parts.append(f"  Valid gzip: {component}")
-                    except subprocess.CalledProcessError:
-                        details_parts.append(f"  FAIL: {component} gzip corrupted")
-                        all_ok = False
-        elif not file_path:
-            details_parts.append(f"SKIP: {component}  no file produced")
-        else:
-            details_parts.append(f"FAIL: {component} file not found: {file_path}")
-            all_ok = False
+    components: dict[str, str] = {}
+    errors: list[str] = []
 
-    try:
-        s3_key = pack_and_upload_archive(results, job_id)
-    except Exception as exc:
-        logger.exception("verify_backup: archive/upload failed")
-        s3_key = ""
-        details_parts.append(f"Archive/upload error: {exc}")
-        all_ok = False
+    for line in (stdout + "\n" + stderr).splitlines():
+        line_stripped = line.strip()
+        if line_stripped.startswith("OK:"):
+            comp = line_stripped.replace("OK:", "").strip().split()[0]
+            components[comp] = "ok"
+        elif line_stripped.startswith("FAIL:"):
+            comp = line_stripped.replace("FAIL:", "").strip().split()[0]
+            components[comp] = "failed"
+            errors.append(line_stripped)
+        elif "error" in line_stripped.lower() or "fail" in line_stripped.lower():
+            errors.append(line_stripped)
 
-    verification_status = "verified" if all_ok else "corrupted"
-    details_text = "\n".join(details_parts)
+    status = "ok" if success and not errors else "failed"
 
     try:
         job = BackupJob.objects.get(id=job_id)
-        job.status = (
-            BackupJobStatus.COMPLETED.value if all_ok else BackupJobStatus.FAILED.value
-        )
-        job.verification_status = verification_status
-        job.verification_details = details_text
-        job.s3_key = s3_key
-        if results:
-            total_size = sum(
-                r.get("file_size", 0) for r in results if isinstance(r, dict)
-            )
-            job.file_size_bytes = total_size
-        job.completed_at = __import__("django.utils.timezone", fromlist=["now"]).now()
+        job.verification_status = "verified" if status == "ok" else "corrupted"
+        job.verification_details = stdout + "\n" + stderr
+        if status == "ok":
+            job.status = BackupJobStatus.VERIFIED.value
         job.save()
     except BackupJob.DoesNotExist:
         logger.error("verify_backup: job %s not found", job_id)
 
-    logger.info("verify_backup: job %s  status=%s", job_id, verification_status)
+    logger.info("verify_backup: job %s  status=%s", job_id, status)
     return {
-        "success": all_ok,
+        "status": status,
         "job_id": job_id,
-        "verification_status": verification_status,
-        "details": details_text,
-        "s3_key": s3_key,
+        "components": components,
+        "errors": errors,
+        "stdout": stdout,
+        "stderr": stderr,
     }
 
 

@@ -3,6 +3,7 @@
 import contextlib
 import logging
 import os
+import re
 import shutil
 import subprocess
 
@@ -140,3 +141,80 @@ def find_file(directory: str, prefix: str) -> str:
             if fname.startswith(prefix):
                 return os.path.join(root, fname)
     return ""
+
+
+VALID_COMPONENTS = ("postgres", "redis", "vault", "minio", "full", "snapshot")
+VALID_SOURCES = ("local", "offsite")
+
+
+def execute_restore(component: str, source: str, date: str) -> dict:
+    """Run the restore shell command for a component.
+
+    WARNING: Destructive operation. Overwrites live data.
+    """
+    from django.conf import settings
+    from pathlib import Path
+
+    project_root = Path(settings.BASE_DIR).parent
+    restore_script = project_root / "deploy" / "backups" / "restore"
+
+    if not restore_script.exists():
+        raise FileNotFoundError(f"Restore script not found: {restore_script}")
+
+    cmd = [str(restore_script), f"--{component}"]
+    if source == "offsite":
+        cmd.append("--offsite")
+    if date:
+        cmd.append(f"--date={date}")
+
+    logger.warning(
+        "execute_restore: running %s (component=%s source=%s date=%s)",
+        cmd,
+        component,
+        source,
+        date,
+    )
+
+    result = subprocess.run(
+        cmd,
+        input="RESTORE\n",
+        text=True,
+        capture_output=True,
+        cwd=str(project_root),
+        timeout=3600,
+    )
+
+    return {
+        "success": result.returncode == 0,
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
+
+
+def get_restore_options() -> dict:
+    """Get available restore dates/components."""
+    from apps.backup.services.config import get_restore_options as _get_restore_options
+
+    return _get_restore_options()
+
+
+def validate_restore_request(data: dict) -> tuple[bool, str]:
+    """Validate the restore request body."""
+    component = data.get("component", "")
+    source = data.get("source", "")
+    date = data.get("date", "")
+    confirm = data.get("confirm", False)
+
+    if component not in VALID_COMPONENTS:
+        return False, f"Invalid component. Must be one of: {', '.join(VALID_COMPONENTS)}"
+    if source not in VALID_SOURCES:
+        return False, f"Invalid source. Must be one of: {', '.join(VALID_SOURCES)}"
+    if not confirm:
+        return False, "confirm=true is required"
+    if not date or not isinstance(date, str):
+        return False, "date is required (YYYY-MM-DD)"
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", date):
+        return False, "date must be in YYYY-MM-DD format"
+
+    return True, ""
