@@ -238,10 +238,11 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                     session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
                     session.messages_sent_today += 1
                     session.save(update_fields=["messages_sent_today", "updated_at"])
-                except Exception:
+                except Exception as e:
                     logger.debug(
-                        "Could not increment messages_sent_today for tenant %s",
+                        "Could not increment messages_sent_today for tenant %s: %s",
                         payload.tenant_id,
+                        e,
                     )
 
             elif payload.status == "delivered":

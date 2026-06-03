@@ -230,9 +230,10 @@ def transact(request: TenantRequest, data: ScanTransactIn):
                     id=result.transaction_id
                 )
                 cast(Any, trigger_pass_update).delay(str(txn.customer_pass.id))
-        except Exception:
+        except Exception as e:
             logging.getLogger(__name__).warning(
-                "Could not queue pass update task; transaction completes.",
+                "Could not queue pass update task; transaction completes: %s",
+                e,
                 exc_info=True,
             )
 

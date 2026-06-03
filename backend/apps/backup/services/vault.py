@@ -60,8 +60,8 @@ def backup_vault(job_id: str) -> dict:
             "file_path": vault_file,
             "file_size": file_size,
         }
-    except Exception:
-        logger.exception("backup_vault failed for job %s", job_id)
+    except Exception as e:
+        logger.exception("backup_vault failed for job %s: %s", job_id, e)
         raise
 
 
@@ -99,8 +99,8 @@ def restore_vault(vault_file: str) -> bool:
                 return True
             logger.error("restore: Vault returned status %d", response.status)
             return False
-    except Exception:
-        logger.exception("restore: Vault restore failed")
+    except Exception as e:
+        logger.exception("restore: Vault restore failed: %s", e)
         return False
 
 

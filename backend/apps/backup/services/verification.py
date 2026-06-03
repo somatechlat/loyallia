@@ -147,7 +147,8 @@ def pack_and_upload_archive(component_results: list, job_id: str) -> str:
         )
         try:
             s3.head_bucket(Bucket=s3_bucket)
-        except Exception:
+        except Exception as e:
+            logger.warning("S3 head_bucket failed (%s), attempting create_bucket", e)
             s3.create_bucket(Bucket=s3_bucket)
         s3.upload_file(final_path, s3_bucket, s3_key)
         logger.info(

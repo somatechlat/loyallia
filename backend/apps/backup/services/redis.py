@@ -72,8 +72,8 @@ def backup_redis(job_id: str) -> dict:
                 }
 
         raise FileNotFoundError(f"dump.rdb not found in {redis_dir} or known locations")
-    except Exception:
-        logger.exception("backup_redis failed for job %s", job_id)
+    except Exception as e:
+        logger.exception("backup_redis failed for job %s: %s", job_id, e)
         raise
 
 
@@ -99,6 +99,6 @@ def restore_redis(rdb_file: str) -> bool:
         shutil.copy2(rdb_file, dump_dest)
         logger.info("restore: copied Redis RDB to %s", dump_dest)
         return True
-    except Exception:
-        logger.exception("restore: Redis restore failed")
+    except Exception as e:
+        logger.exception("restore: Redis restore failed: %s", e)
         return False

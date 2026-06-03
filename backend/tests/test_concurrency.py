@@ -6,6 +6,7 @@ These tests use Django's TestCase with transaction=True for real concurrency.
 For actual multi-threaded tests, we use threading with select_for_update patterns.
 """
 
+import logging
 import threading
 from decimal import Decimal
 
@@ -206,7 +207,8 @@ class GiftBalanceRaceConditionTest(TransactionTestCase):
                     "gift", amount=Decimal(str(amount))
                 )
                 results.append(result["pass_updated"])
-            except Exception:
+            except Exception as e:
+                logging.getLogger(__name__).debug("Gift balance redeem failed: %s", e)
                 results.append(False)
 
         # Try to redeem $10 twice (total $20) with only $15 balance
@@ -247,7 +249,8 @@ class MultipassRaceConditionTest(TransactionTestCase):
                 fresh_cp = CustomerPass.objects.get(pk=cp.pk)
                 result = fresh_cp.process_transaction("multipass")
                 results.append(result["pass_updated"])
-            except Exception:
+            except Exception as e:
+                logging.getLogger(__name__).debug("Multipass use failed: %s", e)
                 results.append(False)
 
         threads = [threading.Thread(target=use_pass) for _ in range(5)]

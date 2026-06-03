@@ -77,8 +77,8 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
             details={"triggered_by": _request_user(request).email},
             status="success",
         )
-    except Exception:
-        logger.warning("Failed to audit demo seed", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to audit demo seed: %s", e, exc_info=True)
 
     output = StringIO()
     call_command("seed_development_data", generate=True, stdout=output, stderr=output)
@@ -163,10 +163,11 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
             recipient_list=[user.email],
             fail_silently=True,
         )
-    except Exception:
+    except Exception as e:
         logger.error(
-            "Failed to send factory reset OTP email to %s",
+            "Failed to send factory reset OTP email to %s: %s",
             user.email,
+            e,
             exc_info=True,
         )
 
@@ -232,8 +233,8 @@ def factory_reset_confirm(
             details={"triggered_by": user.email},
             status="success",
         )
-    except Exception:
-        logger.warning("Failed to audit factory reset", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to audit factory reset: %s", e, exc_info=True)
 
     with transaction.atomic():
         # Wipe order: deepest dependencies first to avoid FK violations
@@ -276,8 +277,8 @@ def factory_reset_confirm(
 
     try:
         cache.clear()
-    except Exception:
-        logger.warning("Failed to clear Redis cache during factory reset")
+    except Exception as e:
+        logger.warning("Failed to clear Redis cache during factory reset: %s", e)
 
     logger.critical("FACTORY RESET executed by %s", user.email)
     return MessageOut(

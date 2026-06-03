@@ -38,9 +38,9 @@ def slugify_business(name: str) -> str:
             # Atomic check-and-create: attempt to insert, catch IntegrityError on conflict
             if not Tenant.objects.filter(slug=candidate).exists():
                 return candidate
-        except Exception:
+        except Exception as e:
             logger.warning(
-                "Slug check failed for candidate %s", candidate, exc_info=True
+                "Slug check failed for candidate %s: %s", candidate, e, exc_info=True
             )
         candidate = f"{slug}-{counter}"
         counter += 1

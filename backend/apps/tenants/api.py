@@ -237,7 +237,8 @@ def update_location(request, location_id: str):
     try:
         body = json.loads(request.body)
         payload = LocationUpdateIn(**body)
-    except Exception:
+    except Exception as e:
+        logger.error("Invalid request body: %s", e)
         raise HttpError(
             422, get_message("VALIDATION_ERROR", detail="Invalid request body")
         )

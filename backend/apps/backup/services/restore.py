@@ -138,11 +138,11 @@ def restore_from_backup(
         )
         return {"success": all_ok, "backup_id": backup_id, "results": results}
 
-    except Exception:
-        logger.exception("restore_from_backup failed for backup %s", backup_id)
+    except Exception as e:
+        logger.exception("restore_from_backup failed for backup %s: %s", backup_id, e)
         raise
     finally:
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(OSError):
             shutil.rmtree(tmp_dir)
 
 

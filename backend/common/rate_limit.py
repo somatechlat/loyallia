@@ -50,7 +50,8 @@ def _get_redis_client():
         from django_redis import get_redis_connection
 
         return get_redis_connection("default")
-    except Exception:
+    except Exception as e:
+        logger.debug("Rate limiter: Redis unavailable (%s)", e)
         return None
 
 
@@ -74,8 +75,8 @@ def _check_rate_limit_cache(key: str, max_requests: int, window_seconds: int) ->
                 cache.set(key, 1, window_seconds)
                 current_count = 1
         return current_count <= max_requests
-    except Exception:
-        logger.warning("Rate limiter: Cache operation error. Failing open.")
+    except Exception as e:
+        logger.warning("Rate limiter: Cache operation error (%s). Failing open.", e)
         return True
 
 
@@ -85,7 +86,8 @@ def _get_cache_ttl(key: str, window_seconds: int) -> int:
         from django.core.cache import cache
 
         ttl = getattr(cache, "ttl", lambda _k: window_seconds)(key)
-    except Exception:
+    except Exception as e:
+        logger.debug("Rate limiter: TTL lookup failed (%s)", e)
         ttl = window_seconds
     return ttl
 
@@ -108,8 +110,8 @@ def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) ->
         if current == 1:
             redis_client.expire(key, window_seconds)
         return current <= max_requests
-    except Exception:
-        logger.warning("Rate limiter: Redis INCR failed. Falling back to cache.")
+    except Exception as e:
+        logger.warning("Rate limiter: Redis INCR failed (%s). Falling back to cache.", e)
         return _check_rate_limit_cache(key, max_requests, window_seconds)
 
 
@@ -240,9 +242,9 @@ class RateLimitMiddleware:
                 cache.set("rl:__ping__", 1, 5)
                 self._cache_available = True
             return cache
-        except Exception:
+        except Exception as e:
             self._cache_available = False
-            logger.warning("Rate limiter: Cache backend unavailable. Failing open.")
+            logger.warning("Rate limiter: Cache backend unavailable (%s). Failing open.", e)
             return None
 
     def __call__(self, request: HttpRequest):
@@ -304,9 +306,9 @@ class RateLimitMiddleware:
                         # Key expired between get and incr reset
                         cache.set(rate_key, 1, window)
                         current_count = 1
-            except Exception:
+            except Exception as e:
                 # Cache error fail open
-                logger.warning("Rate limiter: Cache operation error. Failing open.")
+                logger.warning("Rate limiter: Cache operation error (%s). Failing open.", e)
                 break
 
             if current_count > max_requests:
@@ -314,7 +316,8 @@ class RateLimitMiddleware:
                 try:
                     _ttl_func = getattr(cache, "ttl", None)
                     ttl = _ttl_func(rate_key) if _ttl_func is not None else window
-                except Exception:
+                except Exception as e:
+                    logger.debug("Rate limiter: TTL lookup failed (%s)", e)
                     ttl = window
 
                 logger.warning(
@@ -395,8 +398,8 @@ def rate_limit(
                     ttl = redis_client.ttl(rate_key)
                     if ttl < 0:
                         ttl = window_seconds
-                except Exception:
-                    logger.warning("Rate limiter: Redis TTL lookup failed.")
+                except Exception as e:
+                    logger.warning("Rate limiter: Redis TTL lookup failed (%s).", e)
             else:
                 ttl = _get_cache_ttl(rate_key, window_seconds)
 

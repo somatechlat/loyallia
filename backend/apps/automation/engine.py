@@ -263,10 +263,11 @@ def fire_trigger_async(
             tenant_id=tenant_id,
             context=context or {},
         )
-    except Exception:
+    except Exception as e:
         logging.getLogger(__name__).warning(
-            "Could not queue automation trigger %s for customer %s; event continues.",
+            "Could not queue automation trigger %s for customer %s; event continues: %s",
             trigger,
             customer_id,
+            e,
             exc_info=True,
         )

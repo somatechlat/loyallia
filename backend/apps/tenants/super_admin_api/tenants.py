@@ -252,9 +252,9 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                         recipient_list=[owner.email],
                         fail_silently=False,
                     )
-                except Exception:
+                except Exception as e:
                     logger.exception(
-                        "Failed to send owner welcome email to %s", owner.email
+                        "Failed to send owner welcome email to %s: %s", owner.email, e
                     )
 
             transaction.on_commit(_send_owner_welcome)
@@ -304,7 +304,8 @@ def update_tenant_admin(request, tenant_id: str):
     try:
         body = json.loads(request.body)
         payload = TenantAdminUpdateIn(**body)
-    except Exception:
+    except Exception as e:
+        logger.error("Invalid request body: %s", e)
         raise HttpError(
             422, get_message("VALIDATION_ERROR", detail="Invalid request body")
         )
@@ -456,7 +457,7 @@ def delete_tenant(request, tenant_id: str):
     # Require justification
     try:
         body = json.loads(request.body) if request.body else {}
-    except Exception:
+    except (ValueError, TypeError):
         body = {}
     justification = body.get("justification", "").strip()
     if len(justification) < 10:
@@ -493,8 +494,8 @@ def delete_tenant(request, tenant_id: str):
             },
             status=AuditStatus.SUCCESS,
         )
-    except Exception:
-        logger.warning("Failed to log deletion audit", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to log deletion audit: %s", e, exc_info=True)
 
     logger.warning(
         "SUPER_ADMIN %s hard-deleted tenant %s (%s)",
@@ -606,7 +607,8 @@ def set_whatsapp_override(request, tenant_id: str):
         from apps.tenants.super_admin_api.schemas import WhatsAppOverrideIn
 
         payload = WhatsAppOverrideIn(**body)
-    except Exception:
+    except Exception as e:
+        logger.error("Invalid request body: %s", e)
         raise HttpError(
             422, get_message("VALIDATION_ERROR", detail="Invalid request body")
         )

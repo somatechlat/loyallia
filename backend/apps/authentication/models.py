@@ -226,10 +226,11 @@ class User(AbstractBaseUser, PermissionsMixin):
                     recipient_list=[self.email],
                     fail_silently=True,
                 )
-            except Exception:
+            except Exception as e:
                 logger.warning(
-                    "Failed to send lockout notification to %s",
+                    "Failed to send lockout notification to %s: %s",
                     self.email,
+                    e,
                     exc_info=True,
                 )
 

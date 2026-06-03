@@ -89,8 +89,8 @@ def export_tenant_data(request):
             resource_id=str(request.tenant.id),
             details={"type": "full_data_export", "format": "zip"},
         )
-    except Exception:
-        logger.warning("Failed to log data export audit", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to log data export audit: %s", e, exc_info=True)
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     response = HttpResponse(buf.getvalue(), content_type="application/zip")
@@ -143,8 +143,8 @@ def delete_account(request, payload: DeleteAccountIn):
             args=[str(tenant.id)],
             eta=tenant.scheduled_deletion_at,
         )
-    except Exception:
-        logger.error("Failed to schedule Celery deletion task", exc_info=True)
+    except Exception as e:
+        logger.error("Failed to schedule Celery deletion task: %s", e, exc_info=True)
 
     try:
         from apps.audit.models import AuditAction
@@ -161,8 +161,8 @@ def delete_account(request, payload: DeleteAccountIn):
                 "grace_period_hours": 24,
             },
         )
-    except Exception:
-        logger.warning("Failed to log deletion audit", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to log deletion audit: %s", e, exc_info=True)
 
     logger.info(
         "OWNER %s scheduled deletion for tenant %s at %s",

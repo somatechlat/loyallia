@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from apps.audit.service import log_action
 from apps.cards import services
@@ -37,8 +37,8 @@ class CardCreateIn(BaseModel):
     text_color: str | None = "#ffffff"
     strip_image_url: str | None = ""
     icon_url: str | None = ""
-    metadata: dict | None = {}
-    locations: list | None = []
+    metadata: dict | None = Field(default_factory=dict)
+    locations: list | None = Field(default_factory=list)
 
     @field_validator("metadata")
     @classmethod

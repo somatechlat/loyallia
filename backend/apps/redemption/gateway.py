@@ -251,5 +251,5 @@ class RedemptionGateway:
                     ),
                     rules_evaluated=result.rules_evaluated,
                 )
-        except Exception:
-            logger.exception("Failed to record denied transaction audit row")
+        except Exception as e:
+            logger.exception("Failed to record denied transaction audit row: %s", e)

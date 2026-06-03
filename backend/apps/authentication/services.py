@@ -228,8 +228,8 @@ def send_password_reset(email: str) -> dict:
             recipient_list=[user.email],
             fail_silently=True,
         )
-    except Exception:
-        logger.exception("Failed to send password reset email to %s", user.email)
+    except Exception as e:
+        logger.exception("Failed to send password reset email to %s: %s", user.email, e)
 
     logger.info("Password reset requested for %s", email)
     return {"success": True}
