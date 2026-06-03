@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { analyticsApi, notificationsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import { GananciaTab, VisitasTab, type DashboardTab, type CampaignStats } from '@/components/dashboard/DashboardTabs';
@@ -81,6 +82,7 @@ const STAT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>>
 export default function DashboardPage() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const isDark = theme === 'dark';
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : '#f1f3f7';
   const tickColor = isDark ? '#6b7280' : '#9ca3af';
@@ -131,11 +133,11 @@ export default function DashboardPage() {
       setProgramTypes(pt.data.program_types || []);
       setCampaignStats(ns.data);
     } catch {
-      setError('Error de conexión con el servidor');
+      setError(t('dashboard.connectionError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // PERF-001: Debounce date range changes to avoid rapid API calls
   useEffect(() => {
@@ -179,16 +181,16 @@ export default function DashboardPage() {
     return (
       <div className="card p-8 text-center">
         <p className="text-red-500 font-semibold">{error}</p>
-        <button className="btn-primary mt-4" onClick={() => fetchData(dateRange)}>Reintentar</button>
+        <button className="btn-primary mt-4" onClick={() => fetchData(dateRange)}>{t('dashboard.retry')}</button>
       </div>
     );
   }
 
   const stats = [
     {
-      label: 'Clientes totales',
+      label: t('dashboard.stats.totalCustomers'),
       value: overview?.customers?.total?.toLocaleString() ?? '0',
-      sub: `+${overview?.customers?.new ?? 0} nuevos`,
+      sub: t('dashboard.stats.newCustomers', { count: overview?.customers?.new ?? 0 }),
       icon: 'users',
       color: 'text-brand-600 dark:text-brand-400',
       bg: 'bg-brand-50 dark:bg-brand-900/30',
@@ -196,9 +198,9 @@ export default function DashboardPage() {
       delta: overview?.customers?.growth_rate ?? 0,
     },
     {
-      label: 'Programas activos',
+      label: t('dashboard.stats.activePrograms'),
       value: overview?.programs?.active?.toLocaleString() ?? '0',
-      sub: `${overview?.programs?.total ?? 0} totales`,
+      sub: t('dashboard.stats.totalPrograms', { count: overview?.programs?.total ?? 0 }),
       icon: 'target',
       color: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-900/30',
@@ -206,9 +208,9 @@ export default function DashboardPage() {
       delta: 0,
     },
     {
-      label: 'Transacciones',
+      label: t('dashboard.stats.transactions'),
       value: overview?.transactions?.total?.toLocaleString() ?? '0',
-      sub: `$${(overview?.transactions?.revenue ?? 0).toLocaleString()} ingresos`,
+      sub: t('dashboard.stats.income', { amount: (overview?.transactions?.revenue ?? 0).toLocaleString() }),
       icon: 'creditcard',
       color: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-amber-50 dark:bg-amber-900/30',
@@ -216,9 +218,9 @@ export default function DashboardPage() {
       delta: 0,
     },
     {
-      label: 'Notificaciones',
+      label: t('dashboard.stats.notifications'),
       value: overview?.notifications?.sent?.toLocaleString() ?? '0',
-      sub: `últimos ${overview?.period_days ?? 30} días`,
+      sub: t('dashboard.stats.lastNDays', { count: overview?.period_days ?? 30 }),
       icon: 'bell',
       color: 'text-purple-600 dark:text-purple-400',
       bg: 'bg-purple-50 dark:bg-purple-900/30',
@@ -229,29 +231,29 @@ export default function DashboardPage() {
 
 
   const dateRanges: { days: DateRange; label: string }[] = [
-    { days: 1, label: 'Hoy' },
-    { days: 7, label: '7 días' },
-    { days: 28, label: '4 sem' },
-    { days: 180, label: '6 meses' },
-    { days: 365, label: '12 meses' },
-    { days: 'mtd', label: 'MTD' },
-    { days: 'custom', label: 'Periodo' },
+    { days: 1, label: t('dashboard.dateRanges.today') },
+    { days: 7, label: t('dashboard.dateRanges.7days') },
+    { days: 28, label: t('dashboard.dateRanges.4weeks') },
+    { days: 180, label: t('dashboard.dateRanges.6months') },
+    { days: 365, label: t('dashboard.dateRanges.12months') },
+    { days: 'mtd', label: t('dashboard.dateRanges.mtd') },
+    { days: 'custom', label: t('dashboard.dateRanges.custom') },
   ];
 
   const chartTabs: { key: ChartTab; label: string; icon: string }[] = [
-    { key: 'revenue', label: 'Ganancias', icon: 'revenue' },
-    { key: 'visits', label: 'Visitas', icon: 'chart' },
-    { key: 'customers', label: 'Clientes nuevos', icon: 'users' },
+    { key: 'revenue', label: t('dashboard.chartTabs.revenue'), icon: 'revenue' },
+    { key: 'visits', label: t('dashboard.chartTabs.visits'), icon: 'chart' },
+    { key: 'customers', label: t('dashboard.chartTabs.newCustomers'), icon: 'users' },
   ];
 
   const getChartConfig = () => {
     switch (chartTab) {
       case 'revenue':
-        return { dataKey: 'revenue', name: 'Ingresos', stroke: '#10b981', grad: 'revenueGrad', formatter: (v: number) => [`$${v}`, 'Ingresos'] };
+        return { dataKey: 'revenue', name: t('dashboard.chartTabs.revenue'), stroke: '#10b981', grad: 'revenueGrad', formatter: (v: number) => [`$${v}`, t('dashboard.chartTabs.revenue')] };
       case 'visits':
-        return { dataKey: 'transactions', name: 'Transacciones', stroke: '#5660ff', grad: 'brandGrad', formatter: (v: number) => [v, 'Transacciones'] };
+        return { dataKey: 'transactions', name: t('dashboard.stats.transactions'), stroke: '#5660ff', grad: 'brandGrad', formatter: (v: number) => [v, t('dashboard.stats.transactions')] };
       case 'customers':
-        return { dataKey: 'new_customers', name: 'Clientes nuevos', stroke: '#f59e0b', grad: 'customerGrad', formatter: (v: number) => [v, 'Clientes nuevos'] };
+        return { dataKey: 'new_customers', name: t('dashboard.chartTabs.newCustomers'), stroke: '#f59e0b', grad: 'customerGrad', formatter: (v: number) => [v, t('dashboard.chartTabs.newCustomers')] };
     }
   };
 
@@ -262,12 +264,12 @@ export default function DashboardPage() {
       {/* Header with date range selector */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Bienvenido, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}</h1>
-          <p className="page-subtitle">Resumen de tu programa de fidelización</p>
+          <h1 className="page-title">{t('dashboard.welcome', { name: user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || '' })}</h1>
+          <p className="page-subtitle">{t('dashboard.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Date range pills */}
-          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-0.5 flex-wrap" id="date-range-selector" role="radiogroup" aria-label="Período de tiempo">
+          <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-0.5 flex-wrap" id="date-range-selector" role="radiogroup" aria-label={t('dashboard.sectionsAriaLabel')}>
             {dateRanges.map(({ days, label }) => (
               <button
                 key={String(days)}
@@ -286,7 +288,7 @@ export default function DashboardPage() {
             ))}
           </div>
           <a href="/scanner/scan" target="_blank" className="btn-primary" id="open-scanner-btn">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scanner
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> {t('dashboard.scanner')}
           </a>
         </div>
       </div>
@@ -294,16 +296,16 @@ export default function DashboardPage() {
       {/* Custom date picker */}
       {showCustomPicker && (
         <div className="card p-4 flex items-center gap-3 animate-fade-in" id="custom-date-picker">
-          <label className="text-xs text-surface-500 font-medium">Desde</label>
+          <label className="text-xs text-surface-500 font-medium">{t('common.from')}</label>
           <input type="date" className="input text-sm px-3 py-1.5" value={customStart} onChange={e => setCustomStart(e.target.value)} />
-          <label className="text-xs text-surface-500 font-medium">Hasta</label>
+          <label className="text-xs text-surface-500 font-medium">{t('common.to')}</label>
           <input type="date" className="input text-sm px-3 py-1.5" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
-          <button className="btn-primary text-xs px-4 py-1.5" onClick={applyCustomRange}>Aplicar</button>
+          <button className="btn-primary text-xs px-4 py-1.5" onClick={applyCustomRange}>{t('common.apply')}</button>
         </div>
       )}
 
       {/* Ganancia / Visitas tabs */}
-      <div className="flex items-center gap-2" id="dashboard-tab-selector" role="tablist" aria-label="Secciones del dashboard">
+      <div className="flex items-center gap-2" id="dashboard-tab-selector" role="tablist" aria-label={t('dashboard.sectionsAriaLabel')}>
         {(['ganancia', 'visitas'] as DashboardTab[]).map(tab => (
           <button
             key={tab}
@@ -318,7 +320,7 @@ export default function DashboardPage() {
             }`}
             id={`dash-tab-${tab}`}
           >
-            {tab === 'ganancia' ? 'Ganancia' : 'Visitas'}
+            {tab === 'ganancia' ? t('dashboard.tabs.revenue') : t('dashboard.tabs.visits')}
           </button>
         ))}
       </div>
@@ -364,9 +366,9 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">
-              Tendencias — Últimos {resolveDays(dateRange)} días
+              {t('dashboard.trendsTitle', { count: resolveDays(dateRange) })}
             </h2>
-            <InfoTooltip explanation="Gráfico de tendencias que muestra la evolución de ingresos, transacciones y nuevos clientes en el período seleccionado." />
+            <InfoTooltip explanation={t('dashboard.trendsTooltip')} />
           </div>
           <div className="flex bg-surface-100 dark:bg-surface-800 rounded-xl p-1 gap-1" id="chart-tabs" role="tablist">
             {chartTabs.map(({ key, label, icon }) => (
@@ -390,9 +392,9 @@ export default function DashboardPage() {
           </div>
         </div>
         {trends.length > 0 ? (
-          <div role="tabpanel" id={`chart-panel-${chartTab}`} aria-label={`Gráfico de ${chartConfig.name}`}>
+          <div role="tabpanel" id={`chart-panel-${chartTab}`} aria-label={t('dashboard.chartOf', { name: chartConfig.name })}>
             <div className="sr-only" aria-live="polite">
-              {chartConfig.name}: {trends.length} puntos de datos. Último valor: {chartTab === 'revenue' ? `$${trends[trends.length - 1]?.revenue?.toLocaleString()}` : trends[trends.length - 1]?.[chartConfig.dataKey]?.toLocaleString()}.
+              {t('dashboard.chartDataSummary', { name: chartConfig.name, count: trends.length, value: chartTab === 'revenue' ? `$${trends[trends.length - 1]?.revenue?.toLocaleString()}` : (trends[trends.length - 1]?.[chartConfig.dataKey]?.toLocaleString() || '') })}
             </div>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={trends} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -412,7 +414,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="h-[280px] flex items-center justify-center text-surface-400 text-sm">
-            No hay datos de tendencias aún.
+            {t('dashboard.noTrendData')}
           </div>
         )}
       </div>
@@ -438,7 +440,7 @@ export default function DashboardPage() {
 
       {/* Date display footer */}
       <div className="text-center text-xs text-surface-400 py-2" id="current-date">
-        Hoy — {new Date().toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' })}
+        {t('dashboard.todayDate', { date: new Date().toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' }) })}
       </div>
     </div>
   );

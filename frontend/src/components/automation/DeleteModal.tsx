@@ -1,9 +1,13 @@
+import { useI18n } from "@/lib/i18n";
+
 interface DeleteModalProps {
   onCancel: () => void;
   onConfirm: () => void;
 }
 
 export default function DeleteModal({ onCancel, onConfirm }: DeleteModalProps) {
+  const { t } = useI18n();
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={onCancel}>
       <div
@@ -16,14 +20,14 @@ export default function DeleteModal({ onCancel, onConfirm }: DeleteModalProps) {
             <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
           </svg>
         </div>
-        <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2">¿Eliminar automatización?</h3>
-        <p className="text-surface-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
+        <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2">{t("automation.modal.deleteTitle")}</h3>
+        <p className="text-surface-500 text-sm mb-6">{t("automation.modal.deleteConfirm")}</p>
         <div className="flex gap-3">
           <button onClick={onCancel} className="btn-ghost flex-1 text-sm">
-            Cancelar
+            {t("common.cancel")}
           </button>
           <button onClick={onConfirm} className="btn-danger flex-1 text-sm" id="confirm-delete-automation">
-            Eliminar
+            {t("common.delete")}
           </button>
         </div>
       </div>

@@ -4,15 +4,17 @@ import { programsApi } from '@/lib/api';
 import { useAuth, User } from '@/lib/auth';
 import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
+import { useI18n } from '@/lib/i18n';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
-
-const CARD_TYPE_LABELS: Record<string, string> = {
-  stamp: 'Sellos', cashback: 'Cashback', coupon: 'Cupón',
-  affiliate: 'Afiliación', discount: 'Descuento',
-  gift_certificate: 'Certificado regalo', vip_membership: 'Membresía VIP',
-  corporate_discount: 'Descuento corporativo', referral_pass: 'Referidos', multipass: 'Multipase',
-};
+function useCardTypeLabels(t: (key: string) => string): Record<string, string> {
+  return {
+    stamp: t('programs.cardTypes.stamp'), points: t('programs.cardTypes.points'), visits: t('programs.cardTypes.visits'), cashback: t('programs.cardTypes.cashback'),
+    coupon: t('programs.cardTypes.coupon'), affiliate: t('programs.cardTypes.affiliate'), discount: t('programs.cardTypes.discount'),
+    gift_certificate: t('programs.cardTypes.gift_certificate'), vip_membership: t('programs.cardTypes.vip_membership'), corporate_discount: t('programs.cardTypes.corporate_discount'),
+    referral_pass: t('programs.cardTypes.referral_pass'), multipass: t('programs.cardTypes.multipass'),
+  };
+}
 
 interface Program {
   id: string; name: string; card_type: string; description: string;
@@ -21,16 +23,18 @@ interface Program {
 }
 
 /* ─── Status-classified sections (PROG-005/006/007) ──────────────────── */
-function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, onPublish }: {
+function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, onPublish, t }: {
   programs: Program[];
   user: User | null;
   openSuspendModal: (p: Program) => void;
   openDeleteModal: (p: Program) => void;
   onPublish: (p: Program) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   const [expandActive, setExpandActive] = useState(false);
   const [expandDraft, setExpandDraft] = useState(false);
   const [expandInactive, setExpandInactive] = useState(false);
+  const CARD_TYPE_LABELS = useCardTypeLabels(t);
 
   const active = programs.filter(p => p.is_published && p.is_active);
   const drafts = programs.filter(p => !p.is_published);
@@ -38,19 +42,19 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, on
 
   const sections = [
     {
-      title: 'Activas', items: active, expanded: expandActive, setExpanded: setExpandActive,
+      title: t('programs.status.active'), items: active, expanded: expandActive, setExpanded: setExpandActive,
       accentBorder: 'border-l-emerald-500', accentBg: 'bg-emerald-50 dark:bg-emerald-900/20',
       accentText: 'text-emerald-600 dark:text-emerald-400', badge: 'badge-green',
       icon: '●',
     },
     {
-      title: 'Borradores', items: drafts, expanded: expandDraft, setExpanded: setExpandDraft,
+      title: t('programs.status.drafts'), items: drafts, expanded: expandDraft, setExpanded: setExpandDraft,
       accentBorder: 'border-l-amber-500', accentBg: 'bg-amber-50 dark:bg-amber-900/20',
       accentText: 'text-amber-600 dark:text-amber-400', badge: 'badge-amber',
       icon: '◐',
     },
     {
-      title: 'Inactivas', items: inactive, expanded: expandInactive, setExpanded: setExpandInactive,
+      title: t('programs.status.inactive'), items: inactive, expanded: expandInactive, setExpanded: setExpandInactive,
       accentBorder: 'border-l-surface-400', accentBg: 'bg-surface-50 dark:bg-surface-800/50',
       accentText: 'text-surface-500', badge: 'badge-gray',
       icon: '○',
@@ -75,7 +79,7 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, on
                   className="text-xs font-medium text-brand-500 hover:text-brand-600 transition-colors"
                   id={`expand-${sec.title.toLowerCase()}`}
                 >
-                  {sec.expanded ? 'Mostrar menos' : 'Mostrar más'}
+                  {sec.expanded ? t('common.showLess') : t('common.showMore')}
                 </button>
               )}
             </div>
@@ -92,30 +96,30 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, on
                       <p className="text-surface-400 text-sm mt-1 line-clamp-2">{p.description}</p>
                     </div>
                     <span className={sec.badge}>
-                      {!p.is_published ? 'Borrador' : p.is_active ? 'Activo' : 'Inactivo'}
+                      {!p.is_published ? t('common.draft') : p.is_active ? t('common.active') : t('common.inactive')}
                     </span>
                   </div>
                   <div className="border-t border-surface-100 dark:border-surface-800 pt-3 flex items-center justify-between">
                     <div>
                       <p className="text-lg font-bold text-surface-900 dark:text-white">{p.enrollments_count ?? 0}</p>
-                      <p className="text-xs text-surface-400">inscritos</p>
+                      <p className="text-xs text-surface-400">{t('programs.enrolled')}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
                       <a
                         href={`/programs/${p.id}`}
                         className="px-2 py-1 text-[10px] rounded-full bg-brand-100 text-brand-600 hover:bg-brand-200 dark:bg-brand-900/30 dark:text-brand-400 font-medium transition-colors"
-                        title="Ver programa"
+                        title={t('programs.viewProgram')}
                       >
-                        Ver
+                        {t('common.view')}
                       </a>
                       {user?.role === UserRole.OWNER && (
                         <>
                           <a
                             href={`/programs/${p.id}?tab=edit`}
                             className="px-2 py-1 text-[10px] rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 font-medium transition-colors"
-                            title="Editar programa"
+                            title={t('common.edit')}
                           >
-                            Editar
+                            {t('common.edit')}
                           </a>
                           <button
                             onClick={() => openSuspendModal(p)}
@@ -124,25 +128,25 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, on
                                 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400'
                                 : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400'
                             }`}
-                            title={p.is_active ? 'Suspender' : 'Activar'}
+                            title={p.is_active ? t('programs.suspend') : t('programs.activate')}
                           >
-                            {p.is_active ? 'Suspender' : 'Activar'}
+                            {p.is_active ? t('programs.suspend') : t('programs.activate')}
                           </button>
                           {!p.is_published && (
                           <button
                             onClick={() => onPublish(p)}
                             className="px-2 py-1 text-[10px] rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium transition-colors"
-                            title="Publicar programa"
+                            title={t('programs.publish')}
                           >
-                            Publicar
+                            {t('programs.publish')}
                           </button>
                         )}
                         <button
                             onClick={() => openDeleteModal(p)}
                             className="px-2 py-1 text-[10px] rounded-full bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 font-medium transition-colors"
-                            title="Eliminar"
+                            title={t('common.delete')}
                           >
-                            Eliminar
+                            {t('common.delete')}
                           </button>
                         </>
                       )}
@@ -159,6 +163,7 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, on
 }
 
 export default function ProgramsPage() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,7 +177,7 @@ export default function ProgramsPage() {
   const loadPrograms = () => {
     programsApi.list()
       .then(({ data }) => setPrograms(data.programs || []))
-      .catch(() => toast.error('Error al cargar programas'))
+      .catch(() => toast.error(t('programs.loadError')))
       .finally(() => setLoading(false));
   };
 
@@ -201,11 +206,11 @@ export default function ProgramsPage() {
     setProcessing(true);
     try {
       await programsApi.suspend(targetProgram.id);
-      toast.success(targetProgram.is_active ? 'Programa suspendido' : 'Programa reactivado');
+      toast.success(targetProgram.is_active ? t('programs.suspended') : t('programs.reactivated'));
       closeModal();
       loadPrograms();
     } catch {
-      toast.error('Error al cambiar estado del programa');
+      toast.error(t('programs.suspendError'));
     } finally {
       setProcessing(false);
     }
@@ -216,11 +221,11 @@ export default function ProgramsPage() {
     setProcessing(true);
     try {
       await programsApi.delete(targetProgram.id);
-      toast.success('Programa eliminado permanentemente');
+      toast.success(t('programs.deleted'));
       closeModal();
       loadPrograms();
     } catch {
-      toast.error('Error al eliminar programa');
+      toast.error(t('programs.deleteError'));
     } finally {
       setProcessing(false);
     }
@@ -230,18 +235,18 @@ export default function ProgramsPage() {
     <div className="space-y-6" id="programs-view">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Programas de fidelización</h1>
+          <h1 className="page-title">{t('programs.title')}</h1>
           <p className="text-surface-500 text-sm mt-1 max-w-2xl">
-            Crea, administra y organiza tus programas de fidelización desde un solo lugar. Aquí podrás diseñar nuevas tarjetas, revisar tus programas activos, continuar los que están en borrador y consultar los inactivos.
+            {t('programs.description')}
           </p>
           <p className="mt-2">
             <span className="text-emerald-500 font-bold text-sm" id="active-count">
-              {programs.filter(p => p.is_active).length} programa(s) activos
+              {t('programs.activeCount', { count: programs.filter(p => p.is_active).length })}
             </span>
           </p>
         </div>
         {user?.role === UserRole.OWNER && (
-          <a href="/programs/new" className="btn-primary" id="new-program-btn">+ Crear programa</a>
+          <a href="/programs/new" className="btn-primary" id="new-program-btn">+ {t('programs.createProgram')}</a>
         )}
       </div>
 
@@ -254,32 +259,32 @@ export default function ProgramsPage() {
           <div className="w-12 h-12 mx-auto mb-4 bg-brand-50 rounded-full flex items-center justify-center">
             <svg className="w-6 h-6 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
           </div>
-          <p className="text-surface-700 font-semibold text-lg">No tienes programas aun</p>
-          <p className="text-surface-400 text-sm mt-2">Crea tu primer programa de fidelizacion</p>
+          <p className="text-surface-700 font-semibold text-lg">{t('programs.noPrograms')}</p>
+          <p className="text-surface-400 text-sm mt-2">{t('programs.createFirst')}</p>
           {user?.role === UserRole.OWNER && (
             <a href="/programs/new" className="btn-primary mt-6 inline-flex" id="create-first-program-btn">
-              Crear programa
+              {t('programs.createProgram')}
             </a>
           )}
         </div>
       ) : (
         <ProgramSections programs={programs} user={user} openSuspendModal={openSuspendModal} openDeleteModal={openDeleteModal} onPublish={(p) => {
           programsApi.publish(p.id)
-            .then(() => { toast.success('Programa publicado'); loadPrograms(); })
-            .catch(() => toast.error('Error al publicar'));
-        }} />
+            .then(() => { toast.success(t('programs.published')); loadPrograms(); })
+            .catch(() => toast.error(t('programs.publishError')));
+        }} t={t} />
       )}
 
       {/* LYL-H-FE-005: Standardized ConfirmModal for suspend/reactivate */}
       {showSuspendModal && targetProgram && (
         <ConfirmModal
-          title={targetProgram.is_active ? 'Suspender Programa' : 'Reactivar Programa'}
+          title={targetProgram.is_active ? t('programs.suspendTitle') : t('programs.reactivateTitle')}
           message={
             targetProgram.is_active
-              ? `¿Estás seguro de suspender "${targetProgram.name}"? Los clientes no podrán usar sus tarjetas temporalmente.`
-              : `¿Estás seguro de reactivar "${targetProgram.name}"?`
+              ? t('programs.suspendConfirm', { name: targetProgram.name })
+              : t('programs.reactivateConfirm', { name: targetProgram.name })
           }
-          confirmLabel={targetProgram.is_active ? 'Suspender' : 'Reactivar'}
+          confirmLabel={targetProgram.is_active ? t('programs.suspendLabel') : t('programs.reactivateLabel')}
           variant={targetProgram.is_active ? 'warning' : 'default'}
           onConfirm={handleSuspend}
           onCancel={closeModal}
@@ -290,9 +295,9 @@ export default function ProgramsPage() {
       {/* LYL-H-FE-005: Standardized ConfirmModal for delete */}
       {showDeleteModal && targetProgram && (
         <ConfirmModal
-          title="Eliminar Programa"
-          message={`¿Estás seguro de eliminar "${targetProgram.name}"? Se eliminarán todas las tarjetas emitidas (${targetProgram.enrollments_count ?? 0}) y el historial de este programa. Esta acción no se puede deshacer.`}
-          confirmLabel="Eliminar"
+          title={t('programs.deleteTitle')}
+          message={t('programs.deleteConfirm', { name: targetProgram.name })}
+          confirmLabel={t('common.delete')}
           variant="danger"
           onConfirm={handleDelete}
           onCancel={closeModal}

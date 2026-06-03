@@ -5,12 +5,13 @@ import { analyticsApi } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import toast from 'react-hot-toast';
 import { usePlan } from '@/hooks/usePlan';
+import { useI18n } from '@/lib/i18n';
 
 // BUG-003/004 fix: removed @ts-nocheck and `as any` casts
 // PERF-003: Single dynamic import wrapper for all recharts (was 13 separate chunks)
 const ChartContent = dynamic(
   () => import('./ChartContent').then(m => ({ default: m.default })),
-  { ssr: false, loading: () => <div className="h-60 flex items-center justify-center text-surface-400 text-sm animate-pulse">Cargando gráficos...</div> }
+  { ssr: false, loading: () => <div className="h-60 flex items-center justify-center text-surface-400 text-sm animate-pulse">Loading charts...</div> }
 );
 
 // Types
@@ -75,6 +76,7 @@ function KpiCard({ label, value, sub, icon, color }: {
 
 
 export default function AnalyticsPage() {
+  const { t } = useI18n();
   const { hasFeature } = usePlan();
   const hasAdvancedAnalytics = hasFeature('advanced_analytics');
 
@@ -104,10 +106,10 @@ export default function AnalyticsPage() {
         setPrograms(pg.data.programs || []);
       })
       .catch(() => {
-        toast.error('Error al cargar analytics');
+        toast.error(t('analytics.loadError'));
       })
       .finally(() => setLoading(false));
-  }, [days]);
+  }, [days, t]);
 
   const fmt = (n: number, prefix = '') =>
     `${prefix}${n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n.toLocaleString('es-EC')}`;
@@ -116,7 +118,7 @@ export default function AnalyticsPage() {
     return (
       <div className="space-y-6">
         <div className="page-header">
-          <h1 className="page-title">Analíticas</h1>
+          <h1 className="page-title">{t('nav.analytics')}</h1>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -136,8 +138,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="page-header flex flex-wrap gap-4 justify-between items-center">
         <div>
-          <h1 className="page-title">Analíticas</h1>
-          <p className="text-surface-500 text-sm mt-1">Métricas de rendimiento del negocio</p>
+          <h1 className="page-title">{t('nav.analytics')}</h1>
+          <p className="text-surface-500 text-sm mt-1">{t('analytics.subtitle')}</p>
         </div>
         <select
           id="days-selector"
@@ -145,39 +147,39 @@ export default function AnalyticsPage() {
           value={days}
           onChange={e => setDays(Number(e.target.value))}
         >
-          <option value={7}>Últimos 7 días</option>
-          <option value={30}>Últimos 30 días</option>
-          <option value={90}>Últimos 90 días</option>
+          <option value={7}>{t('analytics.last7Days')}</option>
+          <option value={30}>{t('analytics.last30Days')}</option>
+          <option value={90}>{t('analytics.last90Days')}</option>
         </select>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Ingresos totales"
+          label={t('analytics.totalRevenue')}
           value={`$${fmt(overview?.transactions.revenue ?? 0)}`}
-          sub={`${days} días · prom. $${(overview?.transactions.average_value ?? 0).toFixed(2)}/tx`}
+          sub={t('analytics.revenueSub', { days, avg: (overview?.transactions.average_value ?? 0).toFixed(2) })}
           icon="revenue"
           color="bg-indigo-50"
         />
         <KpiCard
-          label="Clientes totales"
+          label={t('analytics.totalCustomers')}
           value={fmt(overview?.customers.total ?? 0)}
-          sub={`+${fmt(overview?.customers.new ?? 0)} nuevos · ${(overview?.customers.growth_rate ?? 0).toFixed(1)}% crecimiento`}
+          sub={t('analytics.customersSub', { count: fmt(overview?.customers.new ?? 0), growth: (overview?.customers.growth_rate ?? 0).toFixed(1) })}
           icon="customers"
           color="bg-emerald-50"
         />
         <KpiCard
-          label="Transacciones"
+          label={t('analytics.transactions')}
           value={fmt(overview?.transactions.total ?? 0)}
-          sub={`En los últimos ${days} días`}
+          sub={t('analytics.transactionsSub', { count: days })}
           icon="transactions"
           color="bg-cyan-50"
         />
         <KpiCard
-          label="Notificaciones"
+          label={t('analytics.notifications')}
           value={fmt(overview?.notifications.sent ?? 0)}
-          sub={`${overview?.programs.active ?? 0} programas activos`}
+          sub={t('analytics.notificationsSub', { count: overview?.programs.active ?? 0 })}
           icon="notifications"
           color="bg-amber-50"
         />
@@ -203,16 +205,16 @@ export default function AnalyticsPage() {
               <path d="M7 11V7a5 5 0 0110 0v4"/>
             </svg>
           </div>
-          <p className="text-surface-700 font-semibold text-lg">Analíticas avanzadas no disponibles</p>
+          <p className="text-surface-700 font-semibold text-lg">{t('analytics.advancedNotAvailable')}</p>
           <p className="text-surface-400 text-sm mt-2 max-w-sm mx-auto">
-            Esta función no está incluida en tu plan actual. Actualiza tu plan para acceder a tendencias, segmentación y reportes avanzados.
+            {t('analytics.upgradeDescription')}
           </p>
           <button
             onClick={() => window.location.href = '/billing/upgrade'}
             className="btn-primary mt-6"
             id="upgrade-plan-analytics"
           >
-            Actualizar Plan
+            {t('billing.upgrade')}
           </button>
         </div>
       )}

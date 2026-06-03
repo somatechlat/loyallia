@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { customersApi, programsApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 
 interface Program {
@@ -31,6 +32,7 @@ interface Pass {
 
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
   const id = params.id;
+  const { t } = useI18n();
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [passes, setPasses] = useState<Pass[]>([]);
@@ -50,7 +52,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
         setPasses(Array.isArray(passRes.data) ? passRes.data : passRes.data.passes || []);
       })
       .catch(() => {
-        toast.error('Error al cargar perfil de cliente');
+        toast.error(t('customers.loadProfileError'));
       })
       .finally(() => setLoading(false));
   };
@@ -74,39 +76,39 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
       }
       setShowEnrollModal(true);
     } catch {
-      toast.error('Error al cargar programas');
+      toast.error(t('customers.loadProgramsError'));
     }
   };
 
   const handleEnroll = async () => {
     if (!selectedProgram) {
-      toast.error('Selecciona un programa');
+      toast.error(t('customers.selectProgramError'));
       return;
     }
     
     setEnrolling(true);
     try {
       await customersApi.enroll(id, selectedProgram);
-      toast.success('Cliente inscrito exitosamente');
+      toast.success(t('customers.enrollSuccess'));
       setShowEnrollModal(false);
       loadData();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Error al inscribir cliente';
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t('customers.enrollError');
       toast.error(msg);
     } finally {
       setEnrolling(false);
     }
   };
 
-  if (loading) return <div className="p-8 text-center animate-pulse">Cargando perfil...</div>;
-  if (!customer) return <div className="p-8 text-center text-red-500">Cliente no encontrado.</div>;
+  if (loading) return <div className="p-8 text-center animate-pulse">{t('customers.loadingProfile')}</div>;
+  if (!customer) return <div className="p-8 text-center text-red-500">{t('customers.customerNotFound')}</div>;
 
   return (
     <div className="space-y-6">
       {/* Back navigation */}
       <a href="/customers" className="inline-flex items-center gap-1.5 text-sm text-surface-500 hover:text-brand-600 transition-colors">
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-        Volver a Clientes
+        {t('customers.backToCustomers')}
       </a>
 
       <div className="page-header flex justify-between items-center bg-surface-50 p-6 rounded-2xl border border-surface-200 dark:border-surface-700">
@@ -115,29 +117,29 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
           <p className="text-surface-500 mt-1">{customer.email} • {customer.phone}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-surface-400">Total Gastado</p>
+          <p className="text-sm text-surface-400">{t('customers.totalSpent')}</p>
           <p className="text-2xl font-black text-emerald-600">${customer.total_spent ?? '0.00'}</p>
         </div>
       </div>
 
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Pases Activos / Billeteras ({passes.length})</h2>
+        <h2 className="text-xl font-bold">{t('customers.activePassesWallets')} ({passes.length})</h2>
         <button onClick={openEnrollModal} className="btn-primary text-sm" id="enroll-customer-btn">
-          + Inscribir en Programa
+          {t('customers.enrollInProgram')}
         </button>
       </div>
       
       {passes.length === 0 ? (
-        <div className="card p-10 text-center text-surface-400">Este cliente no está inscrito en ningún programa.</div>
+        <div className="card p-10 text-center text-surface-400">{t('customers.noEnrollments')}</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {passes.map((p) => (
             <div key={p.id} className="card p-5 border-l-4" style={{ borderColor: '#6366f1' }}>
-               <h3 className="font-semibold text-lg">{p.card_name || 'Programa'}</h3>
-               <p className="text-xs text-surface-400 mt-1 uppercase">{p.card_type || 'unknown'}</p>
+               <h3 className="font-semibold text-lg">{p.card_name || t('customers.program')}</h3>
+               <p className="text-xs text-surface-400 mt-1 uppercase">{p.card_type || t('common.unknown')}</p>
                <div className="mt-4 pt-4 border-t border-surface-100 flex justify-between">
-                  <span className="text-sm">Inscrito: {new Date(p.enrolled_at).toLocaleDateString()}</span>
-                  <span className="badge-green">Activo</span>
+                  <span className="text-sm">{t('customers.enrolledAt', { date: new Date(p.enrolled_at).toLocaleDateString() })}</span>
+                  <span className="badge-green">{t('common.active')}</span>
                </div>
             </div>
           ))}
@@ -148,13 +150,13 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
       {showEnrollModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-surface-900 rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Inscribir en Programa</h3>
+            <h3 className="text-lg font-bold mb-4">{t('customers.enrollModalTitle')}</h3>
             
             {programs.length === 0 ? (
-              <p className="text-surface-500">No hay programas disponibles o el cliente ya está inscrito en todos.</p>
+              <p className="text-surface-500">{t('customers.noProgramsAvailable')}</p>
             ) : (
               <div className="mb-4">
-                <label className="label">Seleccionar Programa</label>
+                <label className="label">{t('customers.selectProgramLabel')}</label>
                 <select 
                   className="input"
                   value={selectedProgram}
@@ -173,14 +175,14 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
                 className="btn-secondary flex-1"
                 disabled={enrolling}
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button 
                 onClick={handleEnroll}
                 className="btn-primary flex-1"
                 disabled={enrolling || programs.length === 0}
               >
-                {enrolling ? 'Inscribiendo...' : 'Inscribir'}
+                {enrolling ? t('customers.enrolling') : t('customers.enroll')}
               </button>
             </div>
           </div>

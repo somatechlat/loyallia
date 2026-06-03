@@ -277,9 +277,9 @@ export default function AudienceSelector({ programs, segments, channel, value, o
           ) : (
             <div className="p-3 bg-surface-50 dark:bg-surface-800 rounded-xl flex items-center gap-2">
               <span className="text-sm font-medium">
-                {value.walletPlatform === 'apple' && '🍎 Apple Wallet'}
-                {value.walletPlatform === 'google' && '🤖 Google Wallet'}
-                {value.walletPlatform === 'both' && '✓ Todas las plataformas'}
+                {value.walletPlatform === 'apple' && '🍎 ' + t('wallet.appleWallet')}
+                {value.walletPlatform === 'google' && '🤖 ' + t('wallet.googleWallet')}
+                {value.walletPlatform === 'both' && '✓ ' + t('campaigns.allPlatforms')}
               </span>
             </div>
           )}
@@ -423,9 +423,9 @@ export default function AudienceSelector({ programs, segments, channel, value, o
                 {isWallet && (
                   <>
                     <span className="px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">
-                      {value.walletPlatform === 'apple' && '🍎 Apple'}
-                      {value.walletPlatform === 'google' && '🤖 Google'}
-                      {value.walletPlatform === 'both' && '✓ Todas'}
+                      {value.walletPlatform === 'apple' && '🍎 ' + t('campaigns.platformApple')}
+                      {value.walletPlatform === 'google' && '🤖 ' + t('campaigns.platformGoogle')}
+                      {value.walletPlatform === 'both' && '✓ ' + t('campaigns.platformAll')}
                     </span>
                     <span className="text-surface-300">→</span>
                   </>

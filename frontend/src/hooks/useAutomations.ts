@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { automationApi, programsApi } from "@/lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/lib/i18n";
 import { APP_CONFIG } from "@/lib/constants";
 
 export interface Automation {
@@ -49,6 +50,7 @@ export const EMPTY_FORM: AutomationForm = {
 };
 
 export function useAutomations() {
+  const { t } = useI18n();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [programs, setPrograms] = useState<ProgramOption[]>([]);
   const [stats, setStats] = useState<{ total_executions: number; success_rate: number } | null>(null);
@@ -67,9 +69,9 @@ export function useAutomations() {
         setAutomations(Array.isArray(list.data) ? list.data : list.data.items || []);
         setStats(s.data);
       })
-      .catch(() => toast.error("Error al cargar automatizaciones"))
+      .catch(() => toast.error(t("automation.toast.loadError")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -92,13 +94,13 @@ export function useAutomations() {
     async (id: string, name: string) => {
       try {
         await automationApi.toggle(id);
-        toast.success(`"${name}" actualizada`);
+        toast.success(t("automation.toast.updated", { name }));
         load();
       } catch {
-        toast.error("Error al actualizar");
+        toast.error(t("automation.toast.updateError"));
       }
     },
-    [load],
+    [load, t],
   );
 
   const openCreate = useCallback(
@@ -142,40 +144,40 @@ export function useAutomations() {
 
   const handleSave = useCallback(async () => {
     if (!form.name.trim()) {
-      toast.error("Ingresa un nombre");
+      toast.error(t("automation.modal.validation.nameRequired"));
       return;
     }
     setSaving(true);
     try {
       if (editingId) {
         await automationApi.update(editingId, form);
-        toast.success("Automatización actualizada");
+        toast.success(t("automation.toast.saved"));
       } else {
         await automationApi.create(form);
-        toast.success("Automatización creada");
+        toast.success(t("automation.toast.saved"));
       }
       setShowModal(false);
       load();
     } catch {
-      toast.error("Error al guardar");
+      toast.error(t("automation.toast.saveError"));
     } finally {
       setSaving(false);
     }
-  }, [editingId, form, load]);
+  }, [editingId, form, load, t]);
 
   const handleDelete = useCallback(
     async (id: string) => {
       try {
         await automationApi.delete(id);
-        toast.success("Automatización eliminada");
+        toast.success(t("automation.toast.deleted"));
         load();
       } catch {
-        toast.error("Error al eliminar");
+        toast.error(t("automation.toast.deleteError"));
       } finally {
         setShowDelete(null);
       }
     },
-    [load],
+    [load, t],
   );
 
   const totalSteps = 3;

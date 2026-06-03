@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import api from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import {
@@ -24,6 +25,7 @@ interface TenantMetric {
 }
 
 export default function SuperAdminMetrics() {
+  const { t } = useI18n();
   const [tenants, setTenants] = useState<TenantMetric[]>([]);
   const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,27 +60,27 @@ export default function SuperAdminMetrics() {
   const planDistribution = [
     { name: 'Full', value: tenants.filter(t => t.plan === 'full').length, color: '#6366f1' },
     { name: 'Trial', value: tenants.filter(t => t.plan === 'trial').length, color: '#f59e0b' },
-    { name: 'Suspendido', value: tenants.filter(t => t.plan === 'suspended').length, color: '#ef4444' },
+    { name: t('common.inactive'), value: tenants.filter(t => t.plan === 'suspended').length, color: '#ef4444' },
   ].filter(d => d.value > 0);
 
   const industryData = Object.entries(
-    tenants.reduce((acc: Record<string, number>, t: TenantMetric) => {
-      const ind = (t.industry || 'other').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+    tenants.reduce((acc: Record<string, number>, tenant: TenantMetric) => {
+      const ind = (tenant.industry || 'other').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
       acc[ind] = (acc[ind] || 0) + 1;
       return acc;
     }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => (b.value as number) - (a.value as number));
 
   const cityData = Object.entries(
-    tenants.reduce((acc: Record<string, number>, t: TenantMetric) => {
-      const city = t.city || 'Sin Ciudad';
+    tenants.reduce((acc: Record<string, number>, tenant: TenantMetric) => {
+      const city = tenant.city || t('superadmin.tenants.wizard.cityPlaceholder');
       acc[city] = (acc[city] || 0) + 1;
       return acc;
     }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => (b.value as number) - (a.value as number));
 
   const locationsByTenant = tenants
-    .map((t) => ({ name: t.name.length > 15 ? t.name.slice(0, 15) + '…' : t.name, locations: t.location_count || 0, users: t.user_count || 0 }))
+    .map((tenant) => ({ name: tenant.name.length > 15 ? tenant.name.slice(0, 15) + '…' : tenant.name, locations: tenant.location_count || 0, users: tenant.user_count || 0 }))
     .sort((a, b) => b.locations - a.locations);
 
   // Synthetic monthly growth (from created_at dates)
@@ -101,23 +103,23 @@ export default function SuperAdminMetrics() {
     return keys.map(k => ({ month: k, ...months[k] }));
   })();
 
-  const totalUsers = tenants.reduce((s: number, t: TenantMetric) => s + (t.user_count || 0), 0);
-  const totalLocations = tenants.reduce((s: number, t: TenantMetric) => s + (t.location_count || 0), 0);
+  const totalUsers = tenants.reduce((s: number, tenant: TenantMetric) => s + (tenant.user_count || 0), 0);
+  const totalLocations = tenants.reduce((s: number, tenant: TenantMetric) => s + (tenant.location_count || 0), 0);
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">Métricas de Plataforma</h1>
-        <p className="text-surface-500 mt-1">Panel de control — análisis en tiempo real</p>
+        <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">{t('superadmin.metrics.title')}</h1>
+        <p className="text-surface-500 mt-1">{t('superadmin.metrics.subtitle')}</p>
       </header>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Negocios', value: (metrics?.total_tenants as number) || tenants.length, delta: '+' + tenants.filter(t => t.plan === 'trial').length + ' en trial', color: 'brand', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
-          { label: 'Usuarios', value: totalUsers, delta: Math.round(totalUsers / Math.max(tenants.length, 1)) + ' promedio/negocio', color: 'blue', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-          { label: 'Sucursales', value: totalLocations, delta: cityData.length + ' ciudades', color: 'purple', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' },
-          { label: 'MRR (USD)', value: '$' + ((metrics?.mrr as number) || 0).toFixed(0), delta: 'Recurrente mensual', color: 'emerald', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+          { label: t('superadmin.metrics.kpi.businesses'), value: (metrics?.total_tenants as number) || tenants.length, delta: t('superadmin.metrics.delta.inTrial', { count: tenants.filter(t => t.plan === 'trial').length }), color: 'brand', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+          { label: t('superadmin.metrics.kpi.users'), value: totalUsers, delta: t('superadmin.metrics.delta.avgPerBusiness', { count: Math.round(totalUsers / Math.max(tenants.length, 1)) }), color: 'blue', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+          { label: t('superadmin.metrics.kpi.locations'), value: totalLocations, delta: t('superadmin.metrics.delta.citiesCount', { count: cityData.length }), color: 'purple', icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' },
+          { label: t('superadmin.metrics.kpi.mrr'), value: '$' + ((metrics?.mrr as number) || 0).toFixed(0), delta: t('superadmin.metrics.delta.monthlyRecurring'), color: 'emerald', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
         ].map(kpi => (
           <div key={kpi.label} className={cardCls} style={cardShadow}>
             <div className={`w-10 h-10 rounded-xl bg-${kpi.color}-50 text-${kpi.color}-600 flex items-center justify-center mb-3`}>
@@ -134,8 +136,8 @@ export default function SuperAdminMetrics() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Growth Area Chart */}
         <div className={`lg:col-span-2 ${cardCls}`} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Crecimiento de Plataforma</h2>
-          <p className="text-xs text-surface-400 mb-4">Últimos 6 meses — negocios, usuarios y sucursales</p>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">{t('superadmin.metrics.platformGrowth')}</h2>
+          <p className="text-xs text-surface-400 mb-4">{t('superadmin.metrics.platformGrowthSubtitle')}</p>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={monthlyGrowth}>
               <defs>
@@ -157,17 +159,17 @@ export default function SuperAdminMetrics() {
               <YAxis tick={{ fontSize: 11, fill: tickColor }} />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="tenants" name="Negocios" stroke="#6366f1" fill="url(#gTenants)" strokeWidth={2} />
-              <Area type="monotone" dataKey="users" name="Usuarios" stroke="#10b981" fill="url(#gUsers)" strokeWidth={2} />
-              <Area type="monotone" dataKey="locations" name="Sucursales" stroke="#8b5cf6" fill="url(#gLocs)" strokeWidth={2} />
+              <Area type="monotone" dataKey="tenants" name={t('superadmin.metrics.chart.businesses')} stroke="#6366f1" fill="url(#gTenants)" strokeWidth={2} />
+              <Area type="monotone" dataKey="users" name={t('superadmin.metrics.chart.users')} stroke="#10b981" fill="url(#gUsers)" strokeWidth={2} />
+              <Area type="monotone" dataKey="locations" name={t('superadmin.metrics.chart.locations')} stroke="#8b5cf6" fill="url(#gLocs)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
         {/* Plan Distribution Pie */}
         <div className={cardCls} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Distribución de Planes</h2>
-          <p className="text-xs text-surface-400 mb-4">Negocios por tipo de plan</p>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">{t('superadmin.metrics.planDistribution')}</h2>
+          <p className="text-xs text-surface-400 mb-4">{t('superadmin.metrics.planDistributionSubtitle')}</p>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={planDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
@@ -193,15 +195,15 @@ export default function SuperAdminMetrics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Industry Bar Chart */}
         <div className={cardCls} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Negocios por Industria</h2>
-          <p className="text-xs text-surface-400 mb-4">Distribución por sector económico</p>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">{t('superadmin.metrics.industryDistribution')}</h2>
+          <p className="text-xs text-surface-400 mb-4">{t('superadmin.metrics.industryDistributionSubtitle')}</p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={industryData} layout="vertical" margin={{ left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11, fill: tickColor }} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: tickColor }} width={120} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" name="Negocios" radius={[0, 6, 6, 0]}>
+              <Bar dataKey="value" name={t('superadmin.metrics.chart.businesses')} radius={[0, 6, 6, 0]}>
                 {industryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
             </BarChart>
@@ -210,8 +212,8 @@ export default function SuperAdminMetrics() {
 
         {/* Locations per Tenant */}
         <div className={cardCls} style={cardShadow}>
-          <h2 className="font-bold text-surface-900 dark:text-white mb-1">Sucursales por Negocio</h2>
-          <p className="text-xs text-surface-400 mb-4">Top negocios por número de sucursales y usuarios</p>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-1">{t('superadmin.metrics.locationsPerBusiness')}</h2>
+          <p className="text-xs text-surface-400 mb-4">{t('superadmin.metrics.locationsPerBusinessSubtitle')}</p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={locationsByTenant} margin={{ left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -219,8 +221,8 @@ export default function SuperAdminMetrics() {
               <YAxis tick={{ fontSize: 11, fill: tickColor }} />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="locations" name="Sucursales" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="users" name="Usuarios" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="locations" name={t('superadmin.metrics.chart.locations')} fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="users" name={t('superadmin.metrics.chart.users')} fill="#10b981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -229,50 +231,50 @@ export default function SuperAdminMetrics() {
       {/* Detailed Table */}
       <div className={`${cardCls} overflow-hidden`} style={cardShadow}>
         <div className="p-4 border-b border-surface-100">
-          <h2 className="font-bold text-surface-900 dark:text-white">Detalle por Negocio</h2>
-          <p className="text-xs text-surface-400">{tenants.length} negocios registrados</p>
+          <h2 className="font-bold text-surface-900 dark:text-white">{t('superadmin.metrics.businessDetail')}</h2>
+          <p className="text-xs text-surface-400">{t('superadmin.metrics.registeredBusinesses', { count: tenants.length })}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-50/50 border-b border-surface-200 dark:border-surface-700 text-xs font-medium text-surface-500 uppercase tracking-wide">
-                <th className="px-5 py-3">Negocio</th>
-                <th className="px-5 py-3">RUC</th>
-                <th className="px-5 py-3">Ciudad</th>
-                <th className="px-5 py-3">Industria</th>
-                <th className="px-5 py-3">Plan</th>
-                <th className="px-5 py-3 text-center">Usuarios</th>
-                <th className="px-5 py-3 text-center">Sucursales</th>
-                <th className="px-5 py-3">Estado</th>
+                <th className="px-5 py-3">{t('superadmin.metrics.table.business')}</th>
+                <th className="px-5 py-3">{t('superadmin.metrics.table.ruc')}</th>
+                <th className="px-5 py-3">{t('superadmin.metrics.table.city')}</th>
+                <th className="px-5 py-3">{t('superadmin.metrics.table.industry')}</th>
+                <th className="px-5 py-3">{t('superadmin.metrics.table.plan')}</th>
+                <th className="px-5 py-3 text-center">{t('superadmin.metrics.table.users')}</th>
+                <th className="px-5 py-3 text-center">{t('superadmin.metrics.table.locations')}</th>
+                <th className="px-5 py-3">{t('superadmin.metrics.table.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 text-sm">
-              {tenants.map((t) => (
-                <tr key={t.id} className="hover:bg-surface-50/50 transition-colors">
+              {tenants.map((tenant) => (
+                <tr key={tenant.id} className="hover:bg-surface-50/50 transition-colors">
                   <td className="px-5 py-3">
-                    <p className="font-semibold text-surface-900 dark:text-white">{t.name}</p>
-                    {t.legal_name && <p className="text-xs text-surface-400 truncate max-w-[200px]">{t.legal_name}</p>}
+                    <p className="font-semibold text-surface-900 dark:text-white">{tenant.name}</p>
+                    {tenant.legal_name && <p className="text-xs text-surface-400 truncate max-w-[200px]">{tenant.legal_name}</p>}
                   </td>
-                  <td className="px-5 py-3 font-mono text-xs text-surface-600">{t.ruc || '—'}</td>
-                  <td className="px-5 py-3 text-surface-600">{t.city || '—'}</td>
+                  <td className="px-5 py-3 font-mono text-xs text-surface-600">{tenant.ruc || '—'}</td>
+                  <td className="px-5 py-3 text-surface-600">{tenant.city || '—'}</td>
                   <td className="px-5 py-3">
                     <span className="text-xs px-2 py-0.5 bg-surface-100 text-surface-600 rounded-full">
-                      {(t.industry || '—').replace(/_/g, ' ')}
+                      {(tenant.industry || '—').replace(/_/g, ' ')}
                     </span>
                   </td>
                   <td className="px-5 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      t.plan === 'full' ? 'bg-brand-100 text-brand-700' :
-                      t.plan === 'trial' ? 'bg-yellow-100 text-yellow-700' :
+                      tenant.plan === 'full' ? 'bg-brand-100 text-brand-700' :
+                      tenant.plan === 'trial' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-red-100 text-red-700'
-                    }`}>{t.plan.toUpperCase()}</span>
+                    }`}>{tenant.plan.toUpperCase()}</span>
                   </td>
-                  <td className="px-5 py-3 text-center font-semibold">{t.user_count}</td>
-                  <td className="px-5 py-3 text-center font-semibold">{t.location_count}</td>
+                  <td className="px-5 py-3 text-center font-semibold">{tenant.user_count}</td>
+                  <td className="px-5 py-3 text-center font-semibold">{tenant.location_count}</td>
                   <td className="px-5 py-3">
                     <span className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${t.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-                      <span className="text-xs">{t.is_active ? 'Activo' : 'Suspendido'}</span>
+                      <span className={`w-2 h-2 rounded-full ${tenant.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <span className="text-xs">{tenant.is_active ? t('common.active') : t('common.inactive')}</span>
                     </span>
                   </td>
                 </tr>
