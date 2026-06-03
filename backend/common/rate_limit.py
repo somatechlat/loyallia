@@ -312,7 +312,8 @@ class RateLimitMiddleware:
             if current_count > max_requests:
                 # Estimate TTL for Retry-After header
                 try:
-                    ttl = getattr(cache, "ttl", lambda _k: window)(rate_key)
+                    _ttl_func = getattr(cache, "ttl", None)
+                    ttl = _ttl_func(rate_key) if _ttl_func is not None else window
                 except Exception:
                     ttl = window
 

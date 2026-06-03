@@ -211,12 +211,11 @@ class TestApplePassGeneration:
         with patch(
             "apps.customers.pass_engine.apple_pass._check_config_ready",
             return_value=True,
-        ):
-            with patch(
-                "apps.customers.pass_engine.apple_pass._sign_manifest"
-            ) as mock_sign:
-                mock_sign.return_value = b"FAKE_SIGNATURE"
-                result = generate_pkpass(cp)
+        ), patch(
+            "apps.customers.pass_engine.apple_pass._sign_manifest"
+        ) as mock_sign:
+            mock_sign.return_value = b"FAKE_SIGNATURE"
+            result = generate_pkpass(cp)
 
         assert result is not None
         assert isinstance(result, bytes)
@@ -304,12 +303,11 @@ class TestWalletApiEndpoints:
             with patch(
                 "apps.customers.pass_engine.apple_pass.is_apple_wallet_configured",
                 return_value=True,
+            ), patch(
+                "apps.customers.pass_engine.google_pass.is_google_wallet_configured",
+                return_value=True,
             ):
-                with patch(
-                    "apps.customers.pass_engine.google_pass.is_google_wallet_configured",
-                    return_value=True,
-                ):
-                    result = get_wallet_status(MagicMock(), str(mock_pass.id))
+                result = get_wallet_status(MagicMock(), str(mock_pass.id))
 
         assert result.apple_wallet_available is True
         assert result.google_wallet_available is True
