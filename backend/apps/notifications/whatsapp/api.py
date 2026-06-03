@@ -174,7 +174,24 @@ def disconnect_session(request, tenant_id: str):
         )
 
         logger.info("WhatsApp disconnected for tenant %s", tenant_id)
-        return MessageOut(success=True, message="WhatsApp desconectado")
+
+        try:
+            from apps.audit.models import AuditAction, AuditStatus
+            from apps.audit.service import log_action
+
+            log_action(
+                request=request,
+                action=AuditAction.UPDATE,
+                resource_type="whatsapp_session",
+                resource_id=tenant_id,
+                tenant_id=str(tenant.id),
+                details={"event": "disconnected"},
+                status=AuditStatus.SUCCESS,
+            )
+        except Exception as audit_exc:
+            logger.warning("Failed to audit WhatsApp disconnect: %s", audit_exc, exc_info=True)
+
+        return MessageOut(success=True, message=get_message("WHATSAPP_DISCONNECTED"))
     except Exception as exc:
         logger.error("WhatsApp disconnect failed for %s: %s", tenant_id, exc)
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
