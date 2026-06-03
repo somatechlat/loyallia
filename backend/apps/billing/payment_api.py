@@ -30,6 +30,26 @@ from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.billing")
 
+
+def _audit_payment_action(request, action: str, resource_type: str, resource_id: str, details: dict | None = None):
+    """Helper to log payment-related audit actions, swallowing errors."""
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=getattr(AuditAction, action.upper(), AuditAction.UPDATE),
+            resource_type=resource_type,
+            resource_id=resource_id,
+            tenant_id=str(require_tenant(request).id),
+            details=details or {},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit payment action: %s", e, exc_info=True)
+
+
 router = Router()
 
 INVOICE_STATUS_LABELS = {
@@ -94,6 +114,11 @@ def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
             is_default=data.is_default,
         )
 
+    _audit_payment_action(
+        request, "create", "payment_method", str(pm.id),
+        {"card_brand": pm.card_brand, "last_four": pm.card_last_four, "is_default": pm.is_default},
+    )
+
     return {
         "success": True,
         "id": str(pm.id),
@@ -132,6 +157,11 @@ def remove_payment_method(request: HttpRequest, payment_method_id: str):
     pm.is_active = False
     pm.save(update_fields=["is_active", "updated_at"])
 
+    _audit_payment_action(
+        request, "delete", "payment_method", payment_method_id,
+        {"card_brand": pm.card_brand, "last_four": pm.card_last_four},
+    )
+
     return {"success": True, "message": get_message("BILLING_PAYMENT_METHOD_REMOVED")}
 
 
@@ -159,6 +189,11 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
 
         pm.is_default = True
         pm.save(update_fields=["is_default", "updated_at"])
+
+    _audit_payment_action(
+        request, "update", "payment_method", payment_method_id,
+        {"card_brand": pm.card_brand, "last_four": pm.card_last_four, "is_default": True},
+    )
 
     return {"success": True, "message": get_message("BILLING_DEFAULT_PM_SET")}
 

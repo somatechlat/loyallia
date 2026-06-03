@@ -295,6 +295,22 @@ def disenroll_from_pass(request: HttpRequest, pass_id: str) -> PortalDisenrollOu
     cp.is_active = False
     cp.save(update_fields=["is_active", "updated_at"])
 
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.DELETE,
+            resource_type="customer_pass",
+            resource_id=pass_id,
+            tenant_id=str(cp.card.tenant_id),
+            details={"customer_email": portal_customer.email},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit pass disenrollment: %s", e, exc_info=True)
+
     return PortalDisenrollOut(
         success=True,
         message=get_message("PASS_DISENROLLED"),
@@ -409,6 +425,21 @@ def delete_my_data(
                 ]
             )
 
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.DELETE,
+            resource_type="customer_data",
+            resource_id=portal_customer.email,
+            details={"affected_customers": customers.count()},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit data deletion: %s", e, exc_info=True)
+
     return PortalDeleteDataOut(
         success=True,
         message="Tus datos personales han sido eliminados.",
@@ -436,6 +467,7 @@ def delete_my_account(
     if data.confirmation_phrase.strip().upper() != expected:
         raise HttpError(400, f"Debes escribir exactamente: {expected}")
 
+    customer_email = portal_customer.email
     with transaction.atomic():
         customers = Customer.objects.filter(email=portal_customer.email)
         for c in customers:
@@ -446,6 +478,21 @@ def delete_my_account(
         portal_customer.is_active = False
         portal_customer.password = ""
         portal_customer.save(update_fields=["is_active", "password", "updated_at"])
+
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.DELETE,
+            resource_type="portal_account",
+            resource_id=customer_email,
+            details={"event": "account_permanently_deleted"},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit account deletion: %s", e, exc_info=True)
 
     return PortalDeleteAccountOut(
         success=True,
