@@ -4,6 +4,8 @@
  * @param {number} props.step - Current active step index
  * @returns JSX.Element
  */
+const steps = ['Tipo', 'Configurar', 'Diseño', 'Revisar'];
+
 export default function StepBar({ step }: { step: number }) {
   return (
     <div className="flex items-center gap-2 mb-8">

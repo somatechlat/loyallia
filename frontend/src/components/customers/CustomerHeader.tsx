@@ -1,6 +1,5 @@
 import { useI18n } from "@/lib/i18n";
 import { customersApi } from "@/lib/api";
-import type { Customer } from "@/hooks/useCustomers";
 
 interface CustomerHeaderProps {
   total: number;

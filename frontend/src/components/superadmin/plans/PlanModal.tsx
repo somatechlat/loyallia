@@ -1,5 +1,5 @@
 'use client';
-import { Bot, Smartphone, Mail, MessageSquare, Rocket, Star, Zap, FileText, Wallet } from '@/components/ui/LucideIcons';
+import { Bot, Smartphone, Mail, MessageSquare, Star, Zap, FileText, Wallet } from '@/components/ui/LucideIcons';
 
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
@@ -125,7 +125,6 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
 
   const handleToggleActive = async () => {
     if (!selected) return;
-    const action = selected.is_active ? 'desactivar' : 'reactivar';
     if (!confirm(`${selected.is_active ? t('superadmin.plans.modal.archive') : t('superadmin.plans.modal.restore')} "${selected.name}"?`)) return;
 
     setSaving(true);
@@ -163,7 +162,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
         <div className="px-6 pt-5 pb-4 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-xl font-black text-surface-900 dark:text-white">
-              {showCreate ? t('superadmin.plans.modal.newPlanTitle') : editMode ? t('superadmin.plans.modal.editTitle', { name: selected?.name }) : selected?.name}
+              {showCreate ? t('superadmin.plans.modal.newPlanTitle') : editMode ? t('superadmin.plans.modal.editTitle', { name: selected?.name ?? '' }) : selected?.name}
             </h2>
             {selected && !editMode && !showCreate && (
               <div className="flex items-center gap-2 mt-1">

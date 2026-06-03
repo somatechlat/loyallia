@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import type { WalletPlatform, ProgramOption } from './CampaignWizard';
+import type { ProgramOption } from './CampaignWizard';
 
 interface ProgramSelectorProps {
   programs: ProgramOption[];
