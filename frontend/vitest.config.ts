@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
+    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx', 'src/components/wallet/__tests__/**/*.test.ts'],
     globals: false,
     setupFiles: ['./tests/unit/setup.ts'],
     css: false,
