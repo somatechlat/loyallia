@@ -32,6 +32,8 @@ class AIChatIn(Schema):
     context_id: str | None = None
 
 
+from apps.audit.models import AuditAction, AuditStatus  # noqa: E402
+from apps.audit.service import log_action  # noqa: E402
 from apps.tenants.services.ai_proxy import (
     AIProxyConfigError,
     AIProxyRequestError,
@@ -375,6 +377,19 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     if getattr(payload, "send_email", True):
         send_team_member_welcome_email(user, temp_password, request.tenant, payload)
 
+    try:
+        log_action(
+            request=request,
+            action=AuditAction.CREATE,
+            resource_type="user",
+            resource_id=str(user.id),
+            tenant_id=request.tenant.id,
+            details={"email": user.email, "role": user.role},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.exception("Failed to log add_team_member audit action: %s", e)
+
     return {
         "success": True,
         "message": get_message(
@@ -458,6 +473,19 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
         request.tenant.name,
     )
 
+    try:
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="user",
+            resource_id=str(member.id),
+            tenant_id=request.tenant.id,
+            details={"email": member.email, "role": member.role, "is_active": member.is_active},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.exception("Failed to log update_team_member audit action: %s", e)
+
     return {"success": True, "message": get_message("TEAM_MEMBER_UPDATED")}
 
 
@@ -483,6 +511,7 @@ def delete_team_member(request, user_id: str):
         raise HttpError(400, get_message("TEAM_CANNOT_DELETE_SELF"))
 
     email = member.email
+    member_id = str(member.id)
     member.delete()
 
     logger.info(
@@ -491,5 +520,18 @@ def delete_team_member(request, user_id: str):
         email,
         request.tenant.name,
     )
+
+    try:
+        log_action(
+            request=request,
+            action=AuditAction.DELETE,
+            resource_type="user",
+            resource_id=member_id,
+            tenant_id=request.tenant.id,
+            details={"email": email},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.exception("Failed to log delete_team_member audit action: %s", e)
 
     return {"success": True, "message": get_message("TEAM_MEMBER_REMOVED")}

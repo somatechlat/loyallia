@@ -18,6 +18,7 @@ interface LocationPin {
 }
 import { useAuth } from '@/lib/auth';
 import api from '@/lib/api';
+import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 
 // Leaflet map loaded dynamically (SSR-incompatible)
@@ -38,7 +39,7 @@ export default function SuperAdminDashboard() {
       setMetrics(m.data);
       setLocations(locs.data || []);
     }).catch(() => {
-      /* silently handle error — loading state cleared in finally */
+      toast.error(t("superadmin.dashboard.loadError"));
     })
       .finally(() => setLoading(false));
   }, []);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
+import toast from 'react-hot-toast';
 import api, { superAdminApi } from '@/lib/api';
 import IntegrationSettings from './IntegrationSettings';
 import PlatformSettings from './PlatformSettings';
@@ -20,14 +21,14 @@ export default function SuperAdminSettings() {
   const loadIntegrations = useCallback(() => {
     api.get('/api/v1/admin/platform/integrations/')
       .then(({ data }) => setIntegrations(data))
-      .catch(() => setIntegrations([]))
+      .catch(() => { setIntegrations([]); toast.error(t("superadmin.settings.loadIntegrationsError")); })
       .finally(() => setLoading(false));
   }, []);
 
   const loadSettings = useCallback(() => {
     api.get('/api/v1/admin/platform/settings/')
       .then(({ data }) => setPlatformSettings(data))
-      .catch(() => setPlatformSettings([]));
+      .catch(() => { setPlatformSettings([]); toast.error(t("superadmin.settings.loadSettingsError")); });
   }, []);
 
   const loadPlatformMode = useCallback(() => {
@@ -36,7 +37,7 @@ export default function SuperAdminSettings() {
         const mode = data.mode === 'development' ? 'development' : 'production';
         setPlatformMode(mode);
       })
-      .catch(() => {});
+      .catch(() => toast.error(t("superadmin.settings.loadPlatformModeError")));
   }, []);
 
   useEffect(() => {

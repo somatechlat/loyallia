@@ -145,6 +145,20 @@ class Automation(TimestampedModel):
         help_text="Timestamp of the most recent execution.",
     )
 
+    # Audit
+    created_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="ID of the user who created this record.",
+    )
+    updated_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Actualizado por",
+        help_text="ID of the user who last updated this record.",
+    )
+
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
 
@@ -152,6 +166,16 @@ class Automation(TimestampedModel):
         verbose_name = "Automatización"
         verbose_name_plural = "Automatizaciones"
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs) -> None:
+        from common.models import get_current_user_id
+
+        user_id = get_current_user_id()
+        if user_id and not self.created_by:
+            self.created_by = user_id
+        if user_id:
+            self.updated_by = user_id
+        super().save(*args, **kwargs)
 
     def __repr__(self) -> str:
         return f"<Automation: {self.name} - {self.trigger} → {self.action}>"

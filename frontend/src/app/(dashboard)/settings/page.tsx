@@ -73,7 +73,7 @@ export default function SettingsPage() {
       });
       if (cleanLogo) setLogoPreview(cleanLogo);
     } catch {
-      /* silently handle error — UI already shows loading state */
+      toast.error(t("settings.loadError"));
     }
     finally { setLoading(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps

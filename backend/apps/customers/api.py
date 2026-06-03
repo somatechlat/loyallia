@@ -30,7 +30,7 @@ from apps.customers.schemas import (
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
-from common.rate_limit import get_client_ip
+from common.rate_limit import check_rate_limit, get_client_ip
 from common.request import require_tenant
 
 logger = logging.getLogger(__name__)
@@ -250,7 +250,16 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
 
     Used when a customer is already enrolled and wants to receive
     their pass link again (e.g., on a new device or after reinstall).
+
+    Rate limited to 3 requests per email per hour.
     """
+    email = data.email.strip().lower()
+    allowed, _ = check_rate_limit(
+        f"resend_pass_email:{email}", max_requests=3, window_seconds=3600
+    )
+    if not allowed:
+        return MessageOut(success=False, message=get_message("RATE_LIMIT_EXCEEDED"))
+
     try:
         card = Card.objects.select_related("tenant").get(
             id=data.card_id, is_active=True, is_published=True

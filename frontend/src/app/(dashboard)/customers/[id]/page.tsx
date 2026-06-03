@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { customersApi, programsApi } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/auth';
 import toast from 'react-hot-toast';
 
 interface Program {
@@ -33,6 +34,8 @@ interface Pass {
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
   const id = params.id;
   const { t } = useI18n();
+  const { user } = useAuth();
+  const isOwner = user?.role === 'OWNER';
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [passes, setPasses] = useState<Pass[]>([]);
@@ -124,9 +127,13 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
 
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{t('customers.activePassesWallets')} ({passes.length})</h2>
-        <button onClick={openEnrollModal} className="btn-primary text-sm" id="enroll-customer-btn">
-          {t('customers.enrollInProgram')}
-        </button>
+        {isOwner ? (
+          <button onClick={openEnrollModal} className="btn-primary text-sm" id="enroll-customer-btn">
+            {t('customers.enrollInProgram')}
+          </button>
+        ) : (
+          <span className="px-2 py-1 rounded-full bg-surface-100 text-surface-500 text-xs font-medium">{t('customers.readOnly')}</span>
+        )}
       </div>
       
       {passes.length === 0 ? (

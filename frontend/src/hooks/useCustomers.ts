@@ -74,9 +74,9 @@ export function useCustomers() {
       const { data } = await programsApi.list({ limit: 100 });
       setPrograms(data.programs || data.items || []);
     } catch {
-      // silently fail — program filter is optional
+      toast.error(t("customers.loadProgramsError"));
     }
-  }, []);
+  }, [t]);
 
   const load = useCallback(async () => {
     setLoading(true);

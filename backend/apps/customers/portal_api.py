@@ -28,6 +28,7 @@ from apps.customers.portal_auth import (
     portal_auth,
 )
 from common.messages import get_message
+from common.rate_limit import check_rate_limit
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -221,9 +222,20 @@ def generate_portal_password(
 ) -> GeneratePasswordOut:
     """Generate a temporary password and email it to the customer.
 
-    Rate limited implicitly by email delivery cost.
+    Rate limited to 3 requests per email per hour.
     """
     email = data.email.strip().lower()
+
+    # Rate limit before any DB query to prevent timing attacks
+    allowed, _ = check_rate_limit(
+        f"portal_password:{email}", max_requests=3, window_seconds=3600
+    )
+    if not allowed:
+        # Return same message as non-existent email to prevent enumeration
+        return GeneratePasswordOut(
+            success=True,
+            message="Si tu correo está registrado, recibirás una contraseña temporal.",
+        )
 
     # Verify this email exists in at least one customer record
     has_customer = Customer.objects.filter(email=email, is_active=True).exists()

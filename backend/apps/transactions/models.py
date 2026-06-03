@@ -163,6 +163,20 @@ class Transaction(models.Model):
         help_text="Rules that were evaluated for this transaction.",
     )
 
+    # Audit
+    created_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="ID of the user who created this record.",
+    )
+    updated_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Actualizado por",
+        help_text="ID of the user who last updated this record.",
+    )
+
     # Timestamps
     created_at = models.DateTimeField(
         auto_now_add=True, help_text="Timestamp for created."
@@ -189,6 +203,22 @@ class Transaction(models.Model):
                 name="idx_txn_type_date",
             ),
         ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(amount__gte=0) | models.Q(amount__isnull=True),
+                name="check_transaction_amount_non_negative",
+            ),
+        ]
+
+    def save(self, *args, **kwargs) -> None:
+        from common.models import get_current_user_id
+
+        user_id = get_current_user_id()
+        if user_id and not self.created_by:
+            self.created_by = user_id
+        if user_id:
+            self.updated_by = user_id
+        super().save(*args, **kwargs)
 
     def __repr__(self) -> str:
         return f"<Transaction: {self.transaction_type} - {self.customer_pass} - {self.created_at}>"
