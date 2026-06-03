@@ -265,7 +265,7 @@ def get_restore_options() -> dict:
             if not by_date[date]:
                 by_date[date].add("full")
         return [
-            {"date": d, "components": sorted(list(c))}
+            {"date": d, "components": sorted(c)}
             for d, c in sorted(by_date.items(), reverse=True)
         ]
 

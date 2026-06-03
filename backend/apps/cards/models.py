@@ -229,7 +229,7 @@ class Card(TimestampedModel):
             "cashback_percentage", 0
         )
         if (
-            not isinstance(percentage, (int, float, Decimal))
+            not isinstance(percentage, int | float | Decimal)
             or percentage <= 0
             or percentage > 99.99
         ):
@@ -240,7 +240,7 @@ class Card(TimestampedModel):
             if self.minimum_purchase is not None
             else self.get_metadata_field("minimum_purchase", 0)
         )
-        if not isinstance(min_purchase, (int, float, Decimal)) or min_purchase < 0:
+        if not isinstance(min_purchase, int | float | Decimal) or min_purchase < 0:
             raise ValueError("minimum_purchase must be non-negative decimal")
 
         expiry_days = self.credit_expiry_days or self.get_metadata_field(
@@ -266,7 +266,7 @@ class Card(TimestampedModel):
         else:
             discount_value = self.get_metadata_field("discount_value", 0)
             if (
-                not isinstance(discount_value, (int, float, Decimal))
+                not isinstance(discount_value, int | float | Decimal)
                 or discount_value <= 0
             ):
                 raise ValueError("discount_value must be positive")
@@ -298,7 +298,7 @@ class Card(TimestampedModel):
                 if field not in tier:
                     raise ValueError(f"tier {i} missing required field: {field}")
 
-            if not isinstance(tier["discount_percentage"], (int, float, Decimal)):
+            if not isinstance(tier["discount_percentage"], int | float | Decimal):
                 raise ValueError(f"tier {i} discount_percentage must be numeric")
 
     def validate_gift_certificate_config(self) -> None:
@@ -308,7 +308,7 @@ class Card(TimestampedModel):
             raise ValueError("denominations must be non-empty list of amounts")
 
         for amount in denominations:
-            if not isinstance(amount, (int, float, Decimal)) or amount <= 0:
+            if not isinstance(amount, int | float | Decimal) or amount <= 0:
                 raise ValueError("all denomination amounts must be positive")
 
         expiry_days = self.get_metadata_field("expiry_days", 365)
@@ -361,7 +361,7 @@ class Card(TimestampedModel):
             raise ValueError("bundle_size must be positive integer")
 
         bundle_price = self.get_metadata_field("bundle_price", 0)
-        if not isinstance(bundle_price, (int, float, Decimal)) or bundle_price <= 0:
+        if not isinstance(bundle_price, int | float | Decimal) or bundle_price <= 0:
             raise ValueError("bundle_price must be positive")
 
     def clean(self) -> None:
