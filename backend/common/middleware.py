@@ -118,3 +118,27 @@ class CSRFExemptAPIMiddleware:
 
         response = self.get_response(request)
         return response
+
+
+class AuditUserMiddleware:
+    """Store the authenticated user ID in thread-local storage for audit fields.
+
+    This allows model save() methods to automatically set created_by/updated_by
+    without passing the user through every call stack.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from common.models import set_current_user_id
+
+        user = getattr(request, "user", None)
+        if user is not None and getattr(user, "is_authenticated", False):
+            set_current_user_id(getattr(user, "id", None))
+        else:
+            set_current_user_id(None)
+
+        response = self.get_response(request)
+        set_current_user_id(None)
+        return response

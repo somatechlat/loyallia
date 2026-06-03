@@ -115,6 +115,20 @@ class CampaignRun(models.Model):
         verbose_name="Clientes objetivo",
     )
 
+    # Audit
+    created_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="ID of the user who created this record.",
+    )
+    updated_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Actualizado por",
+        help_text="ID of the user who last updated this record.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -127,6 +141,16 @@ class CampaignRun(models.Model):
             models.Index(fields=["tenant", "-created_at"]),
             models.Index(fields=["status"]),
         ]
+
+    def save(self, *args, **kwargs) -> None:
+        from common.models import get_current_user_id
+
+        user_id = get_current_user_id()
+        if user_id and not self.created_by:
+            self.created_by = user_id
+        if user_id:
+            self.updated_by = user_id
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.title} ({self.channel})  {self.status}"

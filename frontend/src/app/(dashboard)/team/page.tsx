@@ -27,7 +27,7 @@ export default function TeamPage() {
     api.get('/api/v1/tenants/team/')
       .then(({ data }) => setMembers((data || []).filter((m: TeamMember) => m.role !== UserRole.SUPER_ADMIN)))
       .catch(() => {
-        /* silently handle error — loading state cleared in finally */
+        toast.error(t("team.loadError"));
       })
       .finally(() => setLoading(false));
   };

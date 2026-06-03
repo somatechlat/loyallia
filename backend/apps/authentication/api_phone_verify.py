@@ -17,6 +17,7 @@ from apps.authentication.schemas import (
     PhoneVerifyStartOut,
 )
 from common.messages import get_message
+from common.rate_limit import check_rate_limit
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -78,7 +79,19 @@ def verify_phone_check(request, payload: PhoneVerifyCheckIn):
     """Check phone verification code.
 
     PUBLIC endpoint. No auth required.
+    Rate limited to 5 attempts per phone number per 15 minutes.
     """
+    phone = payload.phone.strip()
+    allowed, _ = check_rate_limit(
+        f"verify_phone_check:{phone}", max_requests=5, window_seconds=900
+    )
+    if not allowed:
+        return PhoneVerifyCheckOut(
+            success=False,
+            message=get_message("VERIFY_RATE_LIMITED", minutes=15),
+            valid=False,
+        )
+
     try:
         is_valid = check_otp(
             recipient=payload.phone,

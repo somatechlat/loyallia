@@ -59,6 +59,23 @@ def set_security_pin(request, payload: SecurityPinIn):
     logger.info(
         "OWNER %s set security PIN for tenant %s", user.email, request.tenant.name
     )
+
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="user_security_pin",
+            resource_id=str(user.id),
+            tenant_id=request.tenant.id,
+            details={"event": "security_pin_set"},
+            status="success",
+        )
+    except Exception as e:
+        logger.warning("Failed to log set_security_pin audit action: %s", e, exc_info=True)
+
     return {"success": True, "message": get_message("SECURITY_PIN_SET")}
 
 

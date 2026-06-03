@@ -175,6 +175,20 @@ class Card(TimestampedModel):
         help_text="JSON schema: {usage_limit, time_window, location, min_purchase, cooldown_hours, allowed_staff_roles, allowed_segments, stacking_allowed}",  # noqa: E501
     )
 
+    # Audit
+    created_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="ID of the user who created this record.",
+    )
+    updated_by = models.UUIDField(
+        null=True,
+        blank=True,
+        verbose_name="Actualizado por",
+        help_text="ID of the user who last updated this record.",
+    )
+
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
 
@@ -392,6 +406,13 @@ class Card(TimestampedModel):
         Internal saves with update_fields (e.g., set_metadata_field) skip
         validation to avoid rejecting partial configurations during editing.
         """
+        from common.models import get_current_user_id
+
+        user_id = get_current_user_id()
+        if user_id and not self.created_by:
+            self.created_by = user_id
+        if user_id:
+            self.updated_by = user_id
         if not kwargs.get("update_fields"):
             self.clean()
         super().save(*args, **kwargs)

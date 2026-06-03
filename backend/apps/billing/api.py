@@ -418,6 +418,28 @@ def subscribe(request: HttpRequest, data: SubscribeSchema):
         tenant.slug,
         plan.slug,
     )
+
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.CREATE,
+            resource_type="subscription",
+            resource_id=str(subscription.id),
+            tenant_id=tenant.id,
+            details={
+                "plan_slug": plan.slug,
+                "billing_cycle": data.billing_cycle,
+                "invoice_number": invoice.invoice_number,
+                "amount_due": float(invoice.total),
+            },
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.exception("Failed to log subscribe audit action: %s", e)
+
     return {
         "success": True,
         "message": get_message("BILLING_INVOICE_GENERATED", amount=f"${invoice.total}"),
@@ -474,6 +496,29 @@ def cancel_subscription(request: HttpRequest):
 
     subscription.cancel()
 
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="subscription",
+            resource_id=str(subscription.id),
+            tenant_id=subscription.tenant_id,
+            details={
+                "event": "subscription_cancelled",
+                "effective_date": (
+                    subscription.current_period_end.isoformat()
+                    if subscription.current_period_end
+                    else None
+                ),
+            },
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.exception("Failed to log cancel_subscription audit action: %s", e)
+
     return {
         "success": True,
         "message": get_message("BILLING_CANCEL_SCHEDULED"),
@@ -500,6 +545,22 @@ def reactivate_subscription(request: HttpRequest):
 
     subscription.cancel_at_period_end = False
     subscription.save(update_fields=["cancel_at_period_end", "updated_at"])
+
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="subscription",
+            resource_id=str(subscription.id),
+            tenant_id=subscription.tenant_id,
+            details={"event": "subscription_reactivated"},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.exception("Failed to log reactivate_subscription audit action: %s", e)
 
     return {
         "success": True,

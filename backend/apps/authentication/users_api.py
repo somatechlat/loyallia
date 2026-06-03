@@ -157,6 +157,23 @@ def invite_user(request, payload: InviteIn):
         body=f"Has sido invitado a unirte a {tenant.name} en Loyallia como {payload.role}.\n\n"
         f"Haz clic en el siguiente enlace para aceptar la invitacion:\n{invite_url}\n\nEste enlace expirara en 7 dias.\n\n-- Loyallia",  # noqa: E501
     )
+
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.CREATE,
+            resource_type="user_invitation",
+            resource_id="",
+            tenant_id=tenant.id,
+            details={"email": payload.email, "role": payload.role},
+            status="success",
+        )
+    except Exception as e:
+        logger.exception("Failed to log invite_user audit action: %s", e)
+
     return MessageOut(
         success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email)
     )
@@ -194,8 +211,8 @@ def deactivate_user(request, user_id: str):
         target = User.objects.get(id=uuid.UUID(user_id), tenant=tenant)
     except (User.DoesNotExist, ValueError):
         raise HttpError(404, get_message("NOT_FOUND"))
-    from django.utils import timezone as dj_timezone
     from django.db import transaction
+    from django.utils import timezone as dj_timezone
 
     with transaction.atomic():
         target.is_active = False
@@ -203,6 +220,23 @@ def deactivate_user(request, user_id: str):
         RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
             revoked_at=dj_timezone.now()
         )
+
+    try:
+        from apps.audit.models import AuditAction
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="user",
+            resource_id=str(target.id),
+            tenant_id=tenant.id,
+            details={"email": target.email, "event": "user_deactivated"},
+            status="success",
+        )
+    except Exception as e:
+        logger.exception("Failed to log deactivate_user audit action: %s", e)
+
     return MessageOut(success=True, message=get_message("AUTH_USER_DEACTIVATED"))
 
 

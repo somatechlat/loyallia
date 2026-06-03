@@ -324,7 +324,8 @@
     "noProgramsAvailable": "No hay programas disponibles o el cliente ya está inscrito en todos.",
     "selectProgramLabel": "Seleccionar Programa",
     "enrolling": "Inscribiendo...",
-    "enroll": "Inscribir"
+    "enroll": "Inscribir",
+    "readOnly": "Solo lectura"
   },
   "audit": {
     "title": "Registro de auditoría",
@@ -600,7 +601,8 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "loading": "Cargando...",
-    "whatsappSuccess": "¡Campaña de WhatsApp iniciada!"
+    "whatsappSuccess": "¡Campaña de WhatsApp iniciada!",
+    "planFeaturesLoadError": "Error al cargar características del plan"
   },
   "wallet": {
     "appleWallet": "Apple Wallet",
@@ -653,7 +655,8 @@
     "newPassword": "Nueva contraseña",
     "passwordMinLength": "Mínimo 8 caracteres",
     "confirmNewPassword": "Confirmar nueva contraseña",
-    "passwordMismatch": "Las contraseñas no coinciden"
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "loadError": "Error al cargar configuración"
   },
   "team": {
     "title": "Equipo",
@@ -702,7 +705,8 @@
     "you": "Tú",
     "editRole": "Editar rol",
     "firstNameRequired": "Nombre requerido",
-    "lastNameRequired": "Apellido requerido"
+    "lastNameRequired": "Apellido requerido",
+    "loadError": "Error al cargar el equipo"
   },
   "locations": {
     "title": "Sucursales",
@@ -780,7 +784,8 @@
       "mapTitle": "Mapa de Sucursales — Ecuador",
       "locationsCount": "{count} ubicaciones registradas",
       "recentActivity": "Actividad Reciente",
-      "fallbackCity": "Ecuador"
+      "fallbackCity": "Ecuador",
+    "loadError": "Error al cargar métricas del dashboard"
     },
     "industries": {
       "food_beverage": "Alimentos y Bebidas",
@@ -1156,6 +1161,9 @@
     "settings": {
       "title": "Configuración Global",
       "subtitle": "Ajustes de la plataforma Loyallia",
+      "loadIntegrationsError": "Error al cargar integraciones",
+      "loadSettingsError": "Error al cargar configuraciones de plataforma",
+      "loadPlatformModeError": "Error al cargar modo de plataforma",
       "integrations": {
         "title": "Integraciones",
         "loading": "Cargando integraciones...",

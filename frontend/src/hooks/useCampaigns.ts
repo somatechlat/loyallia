@@ -92,10 +92,10 @@ export function useCampaigns() {
         setPlanLimits(data.limits || {});
         setPlanUsage(data.usage || {});
       } catch {
-        /* ignore */
+        toast.error(t("campaigns.planFeaturesLoadError"));
       }
     })();
-  }, []);
+  }, [t]);
 
   const handleSubmitCampaign = useCallback(
     async (formData: CampaignFormData) => {

@@ -19,9 +19,15 @@ The key is stored at Vault path: loyallia/production/kimi_api_key
 import argparse
 import json
 import os
+import ssl
 import sys
 import urllib.request
 import urllib.error
+
+# Create SSL context that doesn't verify self-signed certs (dev Vault)
+SSL_CONTEXT = ssl.create_default_context()
+SSL_CONTEXT.check_hostname = False
+SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
 VAULT_ADDR = os.environ.get("VAULT_ADDR", "http://localhost:33908")
 VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia/production")
@@ -52,7 +58,7 @@ def read_current_data(token: str) -> dict:
     url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH}"
     req = urllib.request.Request(url, headers={"X-Vault-Token": token})
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, context=SSL_CONTEXT) as resp:
             data = json.loads(resp.read().decode())
             return data.get("data", {}).get("data", {})
     except urllib.error.HTTPError as e:
@@ -76,7 +82,7 @@ def write_data(token: str, data: dict) -> None:
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, context=SSL_CONTEXT) as resp:
             result = json.loads(resp.read().decode())
             print(f"Vault updated successfully. Version: {result['data']['version']}")
     except urllib.error.HTTPError as e:
@@ -103,6 +109,7 @@ def main():
     parser.add_argument("--kimi-api-key", help="Kimi API Key (use env var KIMI_API_KEY instead)")
     parser.add_argument("--kimi-base-url", default="https://api.moonshot.cn/v1", help="Kimi API base URL")
     parser.add_argument("--verify", action="store_true", help="Verify key is stored in Vault")
+    parser.add_argument("--force", action="store_true", help="Skip confirmation prompt")
     args = parser.parse_args()
 
     token = get_vault_token()
@@ -136,10 +143,11 @@ def main():
     print(f"\nReady to inject Kimi API key: {masked}")
     print(f"Base URL: {args.kimi_base_url}")
     print(f"Vault path: {VAULT_SECRET_PATH}")
-    confirm = input("Proceed? [y/N]: ").strip().lower()
-    if confirm not in ("y", "yes"):
-        print("Aborted.")
-        sys.exit(0)
+    if not args.force:
+        confirm = input("Proceed? [y/N]: ").strip().lower()
+        if confirm not in ("y", "yes"):
+            print("Aborted.")
+            sys.exit(0)
 
     write_data(token, merged)
     print("\n✅ Done! Kimi API key stored securely in Vault.")

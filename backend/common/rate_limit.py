@@ -92,6 +92,33 @@ def _get_cache_ttl(key: str, window_seconds: int) -> int:
     return ttl
 
 
+def check_rate_limit(key: str, max_requests: int, window_seconds: int) -> tuple[bool, int]:
+    """Check a custom rate limit key using Redis (preferred) or Django cache.
+
+    Returns (allowed, ttl) where *allowed* is True when the request is within
+    the limit and *ttl* is the remaining window in seconds (0 when allowed).
+
+    Falls open (allows request) when both backends are unavailable.
+    """
+    allowed = _check_rate_limit_redis(key, max_requests, window_seconds)
+    if allowed:
+        return True, 0
+
+    ttl = window_seconds
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            ttl = redis_client.ttl(key)
+            if ttl < 0:
+                ttl = window_seconds
+        except Exception as e:
+            logger.warning("Rate limiter: Redis TTL lookup failed (%s).", e)
+    else:
+        ttl = _get_cache_ttl(key, window_seconds)
+
+    return False, ttl
+
+
 def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) -> bool:
     """Atomic rate limit check using Redis INCR + EXPIRE.
 

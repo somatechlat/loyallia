@@ -84,6 +84,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.tenants.middleware.TenantMiddleware",  # Tenant resolution from JWT
+    "common.middleware.AuditUserMiddleware",  # Audit user tracking for created_by/updated_by
 ]
 
 ROOT_URLCONF = "loyallia.urls"
