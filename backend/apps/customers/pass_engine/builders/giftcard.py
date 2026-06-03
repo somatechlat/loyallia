@@ -58,7 +58,6 @@ def _build_gift_card_object(
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.giftcard-{card.id}"
     object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
-    pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
     balance = str(customer_pass.gift_balance_val)
     google_images = _get_google_images(card)
@@ -73,7 +72,10 @@ def _build_gift_card_object(
         "classId": class_id,
         "state": "ACTIVE",
         "cardNumber": str(customer.id)[:8],
-        "balance": {"micros": int(float(balance) * 1_000_000), "currencyCode": metadata.get("currency", "USD")},
+        "balance": {
+            "micros": int(float(balance) * 1_000_000),
+            "currencyCode": metadata.get("currency", "USD"),
+        },
         "barcode": {
             "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,

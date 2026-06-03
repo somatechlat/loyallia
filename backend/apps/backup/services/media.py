@@ -88,8 +88,8 @@ def backup_media(job_id: str) -> dict:
             "file_size": file_size,
             "files_backed_up": total_files,
         }
-    except Exception:
-        logger.exception("backup_media failed for job %s", job_id)
+    except Exception as e:
+        logger.exception("backup_media failed for job %s: %s", job_id, e)
         raise
 
 
@@ -145,6 +145,6 @@ def restore_media(media_tar: str) -> bool:
 
         shutil.rmtree(tmp_dir, ignore_errors=True)
         return True
-    except Exception:
-        logger.exception("restore: media restore failed")
+    except Exception as e:
+        logger.exception("restore: media restore failed: %s", e)
         return False

@@ -90,23 +90,7 @@ def get_tenant_limits(tenant) -> dict:
     if not plan:
         return {}
 
-    return {
-        "customers": plan.max_customers,
-        "programs": plan.max_programs,
-        "locations": plan.max_locations,
-        "users": plan.max_users,
-        "notifications_month": plan.max_notifications_month,
-        "transactions_month": plan.max_transactions_month,
-        "whatsapp_day": plan.max_whatsapp_day,
-        "emails_month": plan.max_emails_month,
-        "sms_day": plan.max_sms_day,
-        "wallet_pushes_month": plan.max_wallet_pushes_month,
-        "automations": plan.max_automations,
-        "automation_executions_day": plan.max_automation_executions_day,
-        "ai_queries_month": plan.max_ai_queries_month,
-        "api_calls_day": plan.max_api_calls_day,
-        "exports_month": plan.max_exports_month,
-    }
+    return plan.limits
 
 
 def get_current_usage(tenant, resource: str) -> int:

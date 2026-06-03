@@ -27,7 +27,6 @@ Called by: Dashboard analytics page, customer detail page, program detail page.
 """
 
 import logging
-
 from datetime import timedelta
 
 from django.db.models import Avg, Count, Sum

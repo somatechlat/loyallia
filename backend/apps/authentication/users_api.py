@@ -108,8 +108,8 @@ def change_password(request, payload: ChangePasswordIn):
             details={"event": "password_changed"},
             status="success",
         )
-    except Exception:
-        logger.exception("Failed to log password change audit action")
+    except Exception as e:
+        logger.exception("Failed to log password change audit action: %s", e)
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
 
@@ -155,7 +155,7 @@ def invite_user(request, payload: InviteIn):
         otp="",
         subject=f"Invitacion a {tenant.name} -- Loyallia",
         body=f"Has sido invitado a unirte a {tenant.name} en Loyallia como {payload.role}.\n\n"
-        f"Haz clic en el siguiente enlace para aceptar la invitacion:\n{invite_url}\n\nEste enlace expirara en 7 dias.\n\n-- Loyallia",# noqa: E501
+        f"Haz clic en el siguiente enlace para aceptar la invitacion:\n{invite_url}\n\nEste enlace expirara en 7 dias.\n\n-- Loyallia",  # noqa: E501
     )
     return MessageOut(
         success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email)

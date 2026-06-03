@@ -14,7 +14,6 @@ from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 
-from apps.authentication.models import User
 from apps.audit.models import AuditAction, AuditLog
 from apps.audit.schemas import (
     ActionBreakdownSchema,
@@ -25,6 +24,7 @@ from apps.audit.schemas import (
     AuditStatsSchema,
 )
 from apps.audit.service import log_action
+from apps.authentication.models import User
 from common.permissions import is_owner, jwt_auth, require_role
 from common.request import TenantRequest, require_tenant
 

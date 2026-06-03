@@ -22,10 +22,10 @@ where authenticationToken is the value we set in pass.json.
 
 import hmac
 import logging
+from datetime import UTC
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from datetime import UTC
 from ninja import Router
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
         logger.warning("Apple Web Service: Missing or invalid Authorization header")
         return False
 
-    provided_token = auth_header[len("ApplePass "):].strip()
+    provided_token = auth_header[len("ApplePass ") :].strip()
     expected_token = serial_number.replace("-", "")
     return hmac.compare_digest(provided_token, expected_token)
 
@@ -87,14 +87,16 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
     try:
-        return CustomerPass.objects.select_related("card", "card__tenant", "customer").get(
-            id=serial_number
-        )
+        return CustomerPass.objects.select_related(
+            "card", "card__tenant", "customer"
+        ).get(id=serial_number)
     except CustomerPass.DoesNotExist:
         logger.warning("Apple Web Service: Pass not found: serial=%s", serial_number)
         return None
     except Exception as exc:
-        logger.error("Apple Web Service: Error looking up pass %s: %s", serial_number, exc)
+        logger.error(
+            "Apple Web Service: Error looking up pass %s: %s", serial_number, exc
+        )
         return None
 
 
@@ -249,7 +251,9 @@ def list_updated_passes(
     from apps.customers.models import ApplePassRegistration
 
     # Verify the device is registered for at least one pass
-    if not ApplePassRegistration.objects.filter(device_library_id=device_library_id).exists():
+    if not ApplePassRegistration.objects.filter(
+        device_library_id=device_library_id
+    ).exists():
         logger.warning(
             "Apple Web Service: Device not registered  device=%s",
             device_library_id[-8:],
@@ -362,7 +366,9 @@ def get_updated_pass(
         content_type="application/vnd.apple.pkpass",
         status=200,
     )
-    response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="pass-{serial_number}.pkpass"'
+    )
 
     # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:

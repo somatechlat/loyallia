@@ -14,7 +14,7 @@ _MESSAGES_ES: dict[str, str] = {
     # Tenant
     "TENANT_CREATED": "Negocio registrado. Tu prueba gratuita de {days} días ha comenzado.",
     "TENANT_WELCOME_EMAIL_SUBJECT": "Bienvenido a Loyallia",
-    "TENANT_WELCOME_EMAIL_BODY": "Hola {name},\n\nTu negocio {tenant} fue creado en Loyallia.\n\nURL de acceso: {login_url}\nEmail: {email}\nContraseña temporal: {password}\nPrueba: {trial_days} días\n\nCambia esta contraseña al iniciar sesión.",# noqa: E501
+    "TENANT_WELCOME_EMAIL_BODY": "Hola {name},\n\nTu negocio {tenant} fue creado en Loyallia.\n\nURL de acceso: {login_url}\nEmail: {email}\nContraseña temporal: {password}\nPrueba: {trial_days} días\n\nCambia esta contraseña al iniciar sesión.",  # noqa: E501
     "TENANT_UPDATED": "Configuración del negocio actualizada.",
     "TENANT_SUSPENDED": "Tu cuenta ha sido suspendida. Por favor actualiza tu suscripción.",
     "TENANT_DELETED": "Negocio eliminado permanentemente.",
@@ -53,8 +53,8 @@ _MESSAGES_ES: dict[str, str] = {
     "PASS_UPDATED": "Tarjeta actualizada en tu Wallet.",
     "PASS_APPLE_GEN_ERROR": "Error al generar el pase de Apple Wallet.",
     "PASS_GOOGLE_GEN_ERROR": "Error al generar la URL de Google Wallet.",
-    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet no está configurado. Se requieren los identificadores y certificados de Apple Developer.",# noqa: E501
-    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet no está configurado. Se requiere la cuenta de servicio de Google Wallet.",# noqa: E501
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet no está configurado. Se requieren los identificadores y certificados de Apple Developer.",  # noqa: E501
+    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet no está configurado. Se requiere la cuenta de servicio de Google Wallet.",  # noqa: E501
     "PASS_WALLET_PROVIDER_DISABLED": "Esta billetera no está habilitada para la tarjeta.",
     "PASS_DISENROLLED": "Has salido del programa exitosamente.",
     "PASS_QR_INVALID_SIGNATURE": "Firma del código QR inválida.",
@@ -74,13 +74,13 @@ _MESSAGES_ES: dict[str, str] = {
     "TRANSACTION_REMOTE_ISSUED": "Recompensa emitida remotamente a {customer_name}.",
     "TRANSACTION_SEARCH_MIN_CHARS": "Búsqueda debe tener al menos 2 caracteres.",
     # Redemption Rules
-    "REDEMPTION_USAGE_LIMIT_PER_CUSTOMER_EXCEEDED": "Has alcanzado el límite de {limit} uso(s) por cliente ({used} usado(s)).",# noqa: E501
-    "REDEMPTION_USAGE_LIMIT_GLOBAL_EXCEEDED": "Este beneficio ha alcanzado su límite global de {limit} redenciones ({used} usada(s)).",# noqa: E501
+    "REDEMPTION_USAGE_LIMIT_PER_CUSTOMER_EXCEEDED": "Has alcanzado el límite de {limit} uso(s) por cliente ({used} usado(s)).",  # noqa: E501
+    "REDEMPTION_USAGE_LIMIT_GLOBAL_EXCEEDED": "Este beneficio ha alcanzado su límite global de {limit} redenciones ({used} usada(s)).",  # noqa: E501
     "REDEMPTION_NOT_STARTED_YET": "Este beneficio aún no está activo. Válido desde {valid_from}.",
     "REDEMPTION_EXPIRED": "Este beneficio ha expirado. Válido hasta {valid_until}.",
     "REDEMPTION_DAY_NOT_ALLOWED": "Este beneficio no puede canjearse hoy ({day}).",
     "REDEMPTION_HOURS_NOT_ALLOWED": "Este beneficio solo puede canjearse entre {start} y {end}.",
-    "REDEMPTION_COOLDOWN_ACTIVE": "Debes esperar {cooldown_hours} hora(s) entre canjes. Tiempo restante: {remaining_minutes} minuto(s).",# noqa: E501
+    "REDEMPTION_COOLDOWN_ACTIVE": "Debes esperar {cooldown_hours} hora(s) entre canjes. Tiempo restante: {remaining_minutes} minuto(s).",  # noqa: E501
     "REDEMPTION_LOCATION_NOT_ALLOWED": "Esta ubicación no está autorizada para canjear este beneficio.",
     "REDEMPTION_MIN_PURCHASE_NOT_MET": "La compra mínima requerida es {min_purchase}. Monto actual: {amount}.",
     "REDEMPTION_MAX_PURCHASE_EXCEEDED": "La compra máxima permitida es {max_purchase}. Monto actual: {amount}.",
@@ -141,19 +141,19 @@ _MESSAGES_ES: dict[str, str] = {
     "AGENT_KEY_CREATED": "Clave de API del agente creada exitosamente.",
     "AGENT_KEY_REVOKED": "Clave de API del agente revocada.",
     # Data Export (LOPDP Art.17)
-    "DATA_EXPORT_STARTED": "Exportación de datos iniciada. Se descargará un archivo ZIP con toda la información del negocio.",# noqa: E501
+    "DATA_EXPORT_STARTED": "Exportación de datos iniciada. Se descargará un archivo ZIP con toda la información del negocio.",  # noqa: E501
     "DATA_EXPORT_FAILED": "Error al exportar datos: {detail}",
     "DATA_EXPORT_EMPTY": "No hay datos para exportar.",
     "DATA_EXPORT_EMAIL_SUBJECT": "Tu exportación de datos está lista / Your data export is ready",
-    "DATA_EXPORT_EMAIL_BODY": "<p>Hola,</p><p>Tu solicitud de exportación de datos (Art. 17 LOPDP) ha sido completada.</p><p>Puedes descargar el archivo aquí: <a href='{download_url}'>Descargar Datos</a></p><p>Este enlace expirará por razones de seguridad.</p>",# noqa: E501
+    "DATA_EXPORT_EMAIL_BODY": "<p>Hola,</p><p>Tu solicitud de exportación de datos (Art. 17 LOPDP) ha sido completada.</p><p>Puedes descargar el archivo aquí: <a href='{download_url}'>Descargar Datos</a></p><p>Este enlace expirará por razones de seguridad.</p>",  # noqa: E501
     "DATA_EXPORT_ERROR_SUBJECT": "Error en exportación de datos / Data export error",
-    "DATA_EXPORT_ERROR_BODY": "<p>Ocurrió un error al procesar tu solicitud de exportación de datos. Por favor, intenta nuevamente más tarde o contacta a soporte.</p>",# noqa: E501
+    "DATA_EXPORT_ERROR_BODY": "<p>Ocurrió un error al procesar tu solicitud de exportación de datos. Por favor, intenta nuevamente más tarde o contacta a soporte.</p>",  # noqa: E501
     # AI Assistant
     "AI_ASSISTANT_UNAVAILABLE": "El asistente de IA no está disponible en este momento. Intente más tarde.",
     "AI_ASSISTANT_NOT_CONFIGURED": "El asistente de IA no está configurado. Configure la clave API en Vault.",
     "AI_CHAT_ERROR": "Error al procesar mensaje de IA: {detail}",
     # Account Deletion (LOPDP Art. 18)
-    "ACCOUNT_DELETION_SCHEDULED": "Tu cuenta será eliminada permanentemente en 24 horas. Se ha generado un respaldo de todos tus datos.",# noqa: E501
+    "ACCOUNT_DELETION_SCHEDULED": "Tu cuenta será eliminada permanentemente en 24 horas. Se ha generado un respaldo de todos tus datos.",  # noqa: E501
     "ACCOUNT_DELETION_WRONG_PHRASE": "Frase incorrecta. Escriba exactamente: ACEPTO ELIMINACIÓN COMPLETA",
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Contraseña incorrecta. La eliminación no fue procesada.",
     "ACCOUNT_DELETION_COMPLETED": "Cuenta y todos los datos asociados eliminados permanentemente.",
@@ -181,7 +181,7 @@ _MESSAGES_EN: dict[str, str] = {
     # Tenant
     "TENANT_CREATED": "Business registered. Your {days}-day free trial has started.",
     "TENANT_WELCOME_EMAIL_SUBJECT": "Welcome to Loyallia",
-    "TENANT_WELCOME_EMAIL_BODY": "Hello {name},\n\nYour business {tenant} was created in Loyallia.\n\nLogin URL: {login_url}\nEmail: {email}\nTemporary password: {password}\nTrial: {trial_days} days\n\nChange this password when you sign in.",# noqa: E501
+    "TENANT_WELCOME_EMAIL_BODY": "Hello {name},\n\nYour business {tenant} was created in Loyallia.\n\nLogin URL: {login_url}\nEmail: {email}\nTemporary password: {password}\nTrial: {trial_days} days\n\nChange this password when you sign in.",  # noqa: E501
     "TENANT_UPDATED": "Business settings updated.",
     "TENANT_SUSPENDED": "Your account has been suspended. Please update your subscription.",
     "TENANT_DELETED": "Business permanently deleted.",
@@ -220,7 +220,7 @@ _MESSAGES_EN: dict[str, str] = {
     "PASS_UPDATED": "Card updated in your Wallet.",
     "PASS_APPLE_GEN_ERROR": "Error generating Apple Wallet pass.",
     "PASS_GOOGLE_GEN_ERROR": "Error generating Google Wallet URL.",
-    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet is not configured. Apple Developer identifiers and certificates are required.",# noqa: E501
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet is not configured. Apple Developer identifiers and certificates are required.",  # noqa: E501
     "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet is not configured. A Google Wallet service account is required.",
     "PASS_WALLET_PROVIDER_DISABLED": "This wallet provider is not enabled for the card.",
     "PASS_QR_INVALID_SIGNATURE": "Invalid QR code signature.",
@@ -240,13 +240,13 @@ _MESSAGES_EN: dict[str, str] = {
     "TRANSACTION_REMOTE_ISSUED": "Reward issued remotely to {customer_name}.",
     "TRANSACTION_SEARCH_MIN_CHARS": "Search must be at least 2 characters.",
     # Redemption Rules
-    "REDEMPTION_USAGE_LIMIT_PER_CUSTOMER_EXCEEDED": "You have reached the limit of {limit} use(s) per customer ({used} used).",# noqa: E501
-    "REDEMPTION_USAGE_LIMIT_GLOBAL_EXCEEDED": "This benefit has reached its global limit of {limit} redemptions ({used} used).",# noqa: E501
+    "REDEMPTION_USAGE_LIMIT_PER_CUSTOMER_EXCEEDED": "You have reached the limit of {limit} use(s) per customer ({used} used).",  # noqa: E501
+    "REDEMPTION_USAGE_LIMIT_GLOBAL_EXCEEDED": "This benefit has reached its global limit of {limit} redemptions ({used} used).",  # noqa: E501
     "REDEMPTION_NOT_STARTED_YET": "This benefit is not yet active. Valid from {valid_from}.",
     "REDEMPTION_EXPIRED": "This benefit has expired. Valid until {valid_until}.",
     "REDEMPTION_DAY_NOT_ALLOWED": "This benefit cannot be redeemed today ({day}).",
     "REDEMPTION_HOURS_NOT_ALLOWED": "This benefit can only be redeemed between {start} and {end}.",
-    "REDEMPTION_COOLDOWN_ACTIVE": "You must wait {cooldown_hours} hour(s) between redemptions. Remaining time: {remaining_minutes} minute(s).",# noqa: E501
+    "REDEMPTION_COOLDOWN_ACTIVE": "You must wait {cooldown_hours} hour(s) between redemptions. Remaining time: {remaining_minutes} minute(s).",  # noqa: E501
     "REDEMPTION_LOCATION_NOT_ALLOWED": "This location is not authorized to redeem this benefit.",
     "REDEMPTION_MIN_PURCHASE_NOT_MET": "Minimum purchase required is {min_purchase}. Current amount: {amount}.",
     "REDEMPTION_MAX_PURCHASE_EXCEEDED": "Maximum purchase allowed is {max_purchase}. Current amount: {amount}.",
@@ -311,15 +311,15 @@ _MESSAGES_EN: dict[str, str] = {
     "DATA_EXPORT_FAILED": "Error exporting data: {detail}",
     "DATA_EXPORT_EMPTY": "No data to export.",
     "DATA_EXPORT_EMAIL_SUBJECT": "Your data export is ready / Tu exportación de datos está lista",
-    "DATA_EXPORT_EMAIL_BODY": "<p>Hello,</p><p>Your data export request (Art. 17 LOPDP) has been completed.</p><p>You can download the file here: <a href='{download_url}'>Download Data</a></p><p>This link will expire for security reasons.</p>",# noqa: E501
+    "DATA_EXPORT_EMAIL_BODY": "<p>Hello,</p><p>Your data export request (Art. 17 LOPDP) has been completed.</p><p>You can download the file here: <a href='{download_url}'>Download Data</a></p><p>This link will expire for security reasons.</p>",  # noqa: E501
     "DATA_EXPORT_ERROR_SUBJECT": "Data export error / Error en exportación de datos",
-    "DATA_EXPORT_ERROR_BODY": "<p>An error occurred while processing your data export request. Please try again later or contact support.</p>",# noqa: E501
+    "DATA_EXPORT_ERROR_BODY": "<p>An error occurred while processing your data export request. Please try again later or contact support.</p>",  # noqa: E501
     # AI Assistant
     "AI_ASSISTANT_UNAVAILABLE": "AI assistant is not available at this time. Please try later.",
     "AI_ASSISTANT_NOT_CONFIGURED": "AI assistant is not configured. Set the API key in Vault.",
     "AI_CHAT_ERROR": "Error processing AI message: {detail}",
     # Account Deletion (LOPDP Art. 18)
-    "ACCOUNT_DELETION_SCHEDULED": "Your account will be permanently deleted in 24 hours. A backup of all your data has been generated.",# noqa: E501
+    "ACCOUNT_DELETION_SCHEDULED": "Your account will be permanently deleted in 24 hours. A backup of all your data has been generated.",  # noqa: E501
     "ACCOUNT_DELETION_WRONG_PHRASE": "Incorrect phrase. Type exactly: ACEPTO ELIMINACIÓN COMPLETA",
     "ACCOUNT_DELETION_WRONG_PASSWORD": "Incorrect password. Deletion was not processed.",
     "ACCOUNT_DELETION_COMPLETED": "Account and all associated data permanently deleted.",

@@ -39,9 +39,9 @@ class TenantRequest(HttpRequest):
     (for agent API requests) during the authentication phase.
     """
 
-    tenant: "Tenant | None"
-    agent_api_key: "AgentAPIKey"
-    portal_customer: "Any | None"
+    tenant: Tenant | None
+    agent_api_key: AgentAPIKey
+    portal_customer: Any | None
 
 
 def as_tenant_request(request: HttpRequest) -> TenantRequest:
@@ -53,7 +53,7 @@ def as_tenant_request(request: HttpRequest) -> TenantRequest:
     return cast(TenantRequest, request)
 
 
-def require_tenant(request: HttpRequest) -> "Tenant":
+def require_tenant(request: HttpRequest) -> Tenant:
     """Return the request's tenant or raise 403 if tenant context is missing.
 
     SEC: This is the canonical guard for tenant-scoped endpoints. Any endpoint

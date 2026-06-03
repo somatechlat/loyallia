@@ -97,7 +97,11 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
 
         update_job(
             job_id,
-            status=BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value,
+            status=(
+                BackupJobStatus.COMPLETED.value
+                if success
+                else BackupJobStatus.FAILED.value
+            ),
             error_message=scrub_error(result.stderr) if not success else "",
             completed_at=timezone.now(),
         )
@@ -134,7 +138,9 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
     time_limit=900,
     soft_time_limit=840,
 )
-def run_selective_backup_task(self, component: str, tenant_id: str = "", manual: bool = False) -> dict:
+def run_selective_backup_task(
+    self, component: str, tenant_id: str = "", manual: bool = False
+) -> dict:
     """Run a selective component backup via unified CLI."""
     from apps.backup.models import BackupJobStatus
 
@@ -150,7 +156,9 @@ def run_selective_backup_task(self, component: str, tenant_id: str = "", manual:
         compression_enabled=config["compression_enabled"],
     )
 
-    logger.info("run_selective_backup_task: starting job %s (component=%s)", job_id, component)
+    logger.info(
+        "run_selective_backup_task: starting job %s (component=%s)", job_id, component
+    )
     update_job(job_id, status=BackupJobStatus.RUNNING.value, started_at=timezone.now())
 
     try:
@@ -166,7 +174,11 @@ def run_selective_backup_task(self, component: str, tenant_id: str = "", manual:
 
         update_job(
             job_id,
-            status=BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value,
+            status=(
+                BackupJobStatus.COMPLETED.value
+                if success
+                else BackupJobStatus.FAILED.value
+            ),
             error_message=scrub_error(result.stderr) if not success else "",
             completed_at=timezone.now(),
         )
@@ -350,7 +362,11 @@ def run_restore_task(self, component: str, source: str, date: str) -> dict:
 
         update_job(
             job_id,
-            status=BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value,
+            status=(
+                BackupJobStatus.COMPLETED.value
+                if success
+                else BackupJobStatus.FAILED.value
+            ),
             error_message=result.get("stderr", "") if not success else "",
             completed_at=timezone.now(),
         )

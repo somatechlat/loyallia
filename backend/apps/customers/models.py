@@ -21,18 +21,35 @@ class CustomerPortalAccount(models.Model):
     Not tenant-scoped: one email = one portal account across all businesses.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
-    email = models.EmailField(unique=True, verbose_name="Correo electrónico", help_text="Email address.")
-    password = models.CharField(
-        max_length=128, blank=True, default="", verbose_name="Contraseña"
-        ,help_text="Password or credential.",
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
     )
-    is_active = models.BooleanField(default=True, verbose_name="Cuenta activa", help_text="Whether this record is currently active.")
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
+    email = models.EmailField(
+        unique=True, verbose_name="Correo electrónico", help_text="Email address."
+    )
+    password = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        verbose_name="Contraseña",
+        help_text="Password or credential.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Cuenta activa",
+        help_text="Whether this record is currently active.",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, help_text="Timestamp for created."
+    )
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_customer_portal_accounts"
         verbose_name = "Cuenta de Portal de Cliente"
         verbose_name_plural = "Cuentas de Portal de Clientes"
@@ -65,21 +82,31 @@ class Customer(TimestampedModel):
     )
 
     # Contact Information
-    first_name = models.CharField(max_length=100, verbose_name="Nombre", help_text="First name.")
-    last_name = models.CharField(max_length=100, verbose_name="Apellido", help_text="Last name.")
+    first_name = models.CharField(
+        max_length=100, verbose_name="Nombre", help_text="First name."
+    )
+    last_name = models.CharField(
+        max_length=100, verbose_name="Apellido", help_text="Last name."
+    )
     email = models.EmailField(
-        validators=[EmailValidator()], verbose_name="Correo electrónico"
-        ,help_text="Email address.",
+        validators=[EmailValidator()],
+        verbose_name="Correo electrónico",
+        help_text="Email address.",
     )
     phone = models.CharField(
-        max_length=20, blank=True, default="", verbose_name="Teléfono"
-        ,help_text="Phone number.",
+        max_length=20,
+        blank=True,
+        default="",
+        verbose_name="Teléfono",
+        help_text="Phone number.",
     )
 
     # Optional additional info
     date_of_birth = models.DateField(
-        null=True, blank=True, verbose_name="Fecha de nacimiento"
-        ,help_text="Date of birth.",
+        null=True,
+        blank=True,
+        verbose_name="Fecha de nacimiento",
+        help_text="Date of birth.",
     )
     gender = models.CharField(
         max_length=1,
@@ -91,7 +118,13 @@ class Customer(TimestampedModel):
     )
 
     # Referral system
-    referral_code = models.CharField(max_length=20, unique=True, blank=True, default="", help_text="Unique referral code.")
+    referral_code = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        default="",
+        help_text="Unique referral code.",
+    )
     referred_by = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -103,13 +136,23 @@ class Customer(TimestampedModel):
     )
 
     # Status
-    is_active = models.BooleanField(default=True, verbose_name="Cliente activo", help_text="Whether this record is currently active.")
-    notes = models.TextField(blank=True, default="", verbose_name="Notas", help_text="Additional notes or comments.")
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Cliente activo",
+        help_text="Whether this record is currently active.",
+    )
+    notes = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Notas",
+        help_text="Additional notes or comments.",
+    )
 
     # Analytics
     total_visits = models.PositiveIntegerField(
-        default=0, verbose_name="Total de visitas"
-        ,help_text="Total number of visits recorded.",
+        default=0,
+        verbose_name="Total de visitas",
+        help_text="Total number of visits recorded.",
     )
     total_spent = models.DecimalField(
         max_digits=10,
@@ -120,12 +163,15 @@ class Customer(TimestampedModel):
         help_text="Total amount spent.",
     )
     last_visit = models.DateTimeField(
-        null=True, blank=True, verbose_name="Última visita"
-        ,help_text="Timestamp of the last visit.",
+        null=True,
+        blank=True,
+        verbose_name="Última visita",
+        help_text="Timestamp of the last visit.",
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_customers"
         verbose_name = "Cliente"
         verbose_name_plural = "Clientes"
@@ -215,7 +261,12 @@ class CustomerPass(models.Model):
     Contains the pass data and current state.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
@@ -224,17 +275,25 @@ class CustomerPass(models.Model):
         help_text="The customer associated with this record.",
     )
     card = models.ForeignKey(
-        Card, on_delete=models.PROTECT, related_name="passes", verbose_name="Programa"
-        ,help_text="The loyalty program associated with this record.",
+        Card,
+        on_delete=models.PROTECT,
+        related_name="passes",
+        verbose_name="Programa",
+        help_text="The loyalty program associated with this record.",
     )
 
     # Pass state stored as JSONB (Legacy/Dynamic)
-    pass_data = models.JSONField(default=dict, verbose_name="Datos del pase", help_text="Pass state data stored as JSON.")
+    pass_data = models.JSONField(
+        default=dict,
+        verbose_name="Datos del pase",
+        help_text="Pass state data stored as JSON.",
+    )
 
     # Core metrics (Typed columns for integrity and indexing)
     stamp_count = models.PositiveIntegerField(
-        default=0, verbose_name="Contador de sellos"
-        ,help_text="Current stamp count.",
+        default=0,
+        verbose_name="Contador de sellos",
+        help_text="Current stamp count.",
     )
     cashback_balance = models.DecimalField(
         max_digits=12,
@@ -244,12 +303,14 @@ class CustomerPass(models.Model):
         help_text="Current balance.",
     )
     referral_count = models.PositiveIntegerField(
-        default=0, verbose_name="Contador de referidos"
-        ,help_text="Number of successful referrals.",
+        default=0,
+        verbose_name="Contador de referidos",
+        help_text="Number of successful referrals.",
     )
     multipass_remaining = models.PositiveIntegerField(
-        default=0, verbose_name="Usos restantes multipase"
-        ,help_text="Remaining uses in the multipass.",
+        default=0,
+        verbose_name="Usos restantes multipase",
+        help_text="Remaining uses in the multipass.",
     )
     gift_balance = models.DecimalField(
         max_digits=12,
@@ -261,12 +322,18 @@ class CustomerPass(models.Model):
 
     # Wallet pass identifiers
     apple_pass_id = models.CharField(
-        max_length=100, blank=True, default="", verbose_name="Apple Pass ID"
-        ,help_text="Identifier for the Apple Wallet pass.",
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Apple Pass ID",
+        help_text="Identifier for the Apple Wallet pass.",
     )
     google_pass_id = models.CharField(
-        max_length=100, blank=True, default="", verbose_name="Google Pass ID"
-        ,help_text="Identifier for the Google Wallet pass.",
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="Google Pass ID",
+        help_text="Identifier for the Google Wallet pass.",
     )
 
     # QR code for validation indexed for O(log N) scan lookups
@@ -281,14 +348,20 @@ class CustomerPass(models.Model):
     )
 
     # Status
-    is_active = models.BooleanField(default=True, verbose_name="Pase activo", help_text="Whether this record is currently active.")
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Pase activo",
+        help_text="Whether this record is currently active.",
+    )
     enrolled_at = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha de inscripción"
-        ,help_text="Timestamp for enrolled.",
+        auto_now_add=True,
+        verbose_name="Fecha de inscripción",
+        help_text="Timestamp for enrolled.",
     )
     last_updated = models.DateTimeField(
-        auto_now=True, verbose_name="Última actualización"
-        ,help_text="Last updated.",
+        auto_now=True,
+        verbose_name="Última actualización",
+        help_text="Last updated.",
     )
 
     # NEW: Lifecycle state machine
@@ -309,24 +382,29 @@ class CustomerPass(models.Model):
 
     # NEW: Coupon usage counter (replaces boolean coupon_used)
     coupon_redemption_count = models.PositiveIntegerField(
-        default=0, verbose_name="Contador de canjes de cupón"
-        ,help_text="Number of times the coupon was redeemed.",
+        default=0,
+        verbose_name="Contador de canjes de cupón",
+        help_text="Number of times the coupon was redeemed.",
     )
 
     # NEW: Last redemption timestamp (for cooldown rules)
     last_redemption_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Último canje"
-        ,help_text="Timestamp for last redemption.",
+        null=True,
+        blank=True,
+        verbose_name="Último canje",
+        help_text="Timestamp for last redemption.",
     )
 
     # NEW: Reward queue (JSON list of pending rewards)
     pending_rewards = models.JSONField(
-        default=list, verbose_name="Recompensas pendientes"
-        ,help_text="Queue of pending rewards.",
+        default=list,
+        verbose_name="Recompensas pendientes",
+        help_text="Queue of pending rewards.",
     )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_customer_passes"
         verbose_name = "Pase del cliente"
         verbose_name_plural = "Pases de clientes"
@@ -599,7 +677,12 @@ class ApplePassRegistration(models.Model):
     Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
 
     # The unique device identifier provided by the Apple device
     device_library_id = models.CharField(
@@ -625,11 +708,14 @@ class ApplePassRegistration(models.Model):
         help_text="The customer loyalty pass.",
     )
 
-    registered_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for registered.")
+    registered_at = models.DateTimeField(
+        auto_now_add=True, help_text="Timestamp for registered."
+    )
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_apple_pass_registrations"
         verbose_name = "Apple Pass Registration"
         verbose_name_plural = "Apple Pass Registrations"

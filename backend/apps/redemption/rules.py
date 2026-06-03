@@ -216,7 +216,7 @@ class TimeWindowValidator(RuleValidator):
                             ),
                         )
                     )
-            except Exception:
+            except (ValueError, TypeError):
                 logger.warning(
                     "Invalid allowed_hours config: %s", allowed_hours, exc_info=True
                 )
@@ -377,6 +377,3 @@ class StaffRoleValidator(RuleValidator):
                 )
 
         return violations
-
-
-

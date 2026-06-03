@@ -78,7 +78,9 @@ def _build_offer_object(
         text_modules.append(
             {
                 "header": "Recompensa",
-                "body": metadata.get("referrer_reward", pass_data.get("referrer_reward", "")),
+                "body": metadata.get(
+                    "referrer_reward", pass_data.get("referrer_reward", "")
+                ),
             }
         )
     elif card.card_type == "corporate_discount":
@@ -102,9 +104,7 @@ def _build_offer_object(
         text_modules.append(
             {"header": "Nivel actual", "body": current_tier or "Básico"}
         )
-        text_modules.append(
-            {"header": "Descuento", "body": f"{current_discount}%"}
-        )
+        text_modules.append({"header": "Descuento", "body": f"{current_discount}%"})
     elif card.card_type == "coupon":
         usage_limit = metadata.get(
             "usage_limit", metadata.get("usage_limit_per_customer", 1)
@@ -116,9 +116,7 @@ def _build_offer_object(
                 "body": f"{customer_pass.coupon_redemption_count} / {usage_limit}",
             }
         )
-        text_modules.append(
-            {"header": "Válido hasta", "body": str(coupon_end)}
-        )
+        text_modules.append({"header": "Válido hasta", "body": str(coupon_end)})
         text_modules.append(
             {
                 "header": "Términos",
@@ -176,7 +174,13 @@ def _build_offer_object(
         coupon_end = metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
         if coupon_end:
             obj["validTimeInterval"] = {
-                "start": {"date": customer_pass.enrolled_at.isoformat() if customer_pass.enrolled_at else ""},
+                "start": {
+                    "date": (
+                        customer_pass.enrolled_at.isoformat()
+                        if customer_pass.enrolled_at
+                        else ""
+                    )
+                },
                 "end": {"date": coupon_end},
             }
 

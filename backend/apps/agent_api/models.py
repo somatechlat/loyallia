@@ -20,7 +20,12 @@ class AgentAPIKey(models.Model):
     Enterprise plan feature only.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -48,20 +53,37 @@ class AgentAPIKey(models.Model):
     )
 
     # Access control
-    is_active = models.BooleanField(default=True, verbose_name="Activo", help_text="Whether this record is currently active.")
-    last_used_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Último uso"
-        ,help_text="Timestamp for last used.",
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Activo",
+        help_text="Whether this record is currently active.",
     )
-    expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Expira en", help_text="Timestamp for expires.")
+    last_used_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Último uso",
+        help_text="Timestamp for last used.",
+    )
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Expira en",
+        help_text="Timestamp for expires.",
+    )
 
     # Audit
-    created_by_id = models.UUIDField(verbose_name="Creado por (user_id)", help_text="ID of the user who created this record.")
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
+    created_by_id = models.UUIDField(
+        verbose_name="Creado por (user_id)",
+        help_text="ID of the user who created this record.",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, help_text="Timestamp for created."
+    )
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_agent_api_keys"
         verbose_name = "Clave de API (Agente)"
         verbose_name_plural = "Claves de API (Agentes)"
@@ -93,7 +115,12 @@ class AgentAPICallLog(models.Model):
     One row per call. Expired rows are cleaned by a periodic Celery task.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -127,12 +154,14 @@ class AgentAPICallLog(models.Model):
         help_text="HTTP response status code.",
     )
     created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha de llamada"
-        ,help_text="Timestamp for created.",
+        auto_now_add=True,
+        verbose_name="Fecha de llamada",
+        help_text="Timestamp for created.",
     )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_agent_api_call_logs"
         verbose_name = "Log de llamada API (Agente)"
         verbose_name_plural = "Logs de llamadas API (Agentes)"

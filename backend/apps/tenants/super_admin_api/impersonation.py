@@ -54,8 +54,8 @@ def _audit_impersonation(request, tenant, justification: str, status: str, reaso
             details={"tenant_name": tenant.name, "reason": reason},
             status=status,
         )
-    except Exception:
-        logger.warning("Failed to audit impersonation attempt", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to audit impersonation attempt: %s", e, exc_info=True)
 
 
 @router.post(
@@ -171,8 +171,8 @@ def revoke_impersonation(request):
             details={"event": "IMPERSONATION_REVOKED"},
             status=AuditStatus.SUCCESS,
         )
-    except Exception:
-        logger.warning("Failed to audit impersonation revocation", exc_info=True)
+    except Exception as e:
+        logger.warning("Failed to audit impersonation revocation: %s", e, exc_info=True)
 
     logger.info(
         "SUPER_ADMIN %s revoked impersonation for user %s",

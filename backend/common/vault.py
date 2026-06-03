@@ -135,7 +135,9 @@ def _fetch_vault_secrets() -> dict:
     for attempt in range(3):
         try:
             req = urllib.request.Request(url, headers=headers, method="GET")
-            with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
+            with urllib.request.urlopen(
+                req, timeout=5, context=ssl_context
+            ) as response:
                 body = json.loads(response.read().decode("utf-8"))
                 secrets = body.get("data", {}).get("data", {})
                 logger.info(
@@ -161,7 +163,7 @@ def _fetch_vault_secrets() -> dict:
             )
 
         if attempt < 2:
-            sleep_seconds = 2 ** attempt  # 1s, 2s
+            sleep_seconds = 2**attempt  # 1s, 2s
             logger.info("Vault: retrying in %ds...", sleep_seconds)
             time.sleep(sleep_seconds)
 

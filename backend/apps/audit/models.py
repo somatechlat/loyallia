@@ -73,12 +73,27 @@ class AuditLog(models.Model):
     Cannot be edited or deleted (enforced at application level).
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
 
     # WHO
-    actor_id = models.UUIDField(db_index=True, verbose_name="ID del actor", help_text="ID of the actor who performed the action.")
-    actor_email = models.CharField(max_length=255, verbose_name="Email del actor", help_text="Email of the actor who performed the action.")
-    actor_role = models.CharField(max_length=20, verbose_name="Rol del actor", help_text="Role of the actor.")
+    actor_id = models.UUIDField(
+        db_index=True,
+        verbose_name="ID del actor",
+        help_text="ID of the actor who performed the action.",
+    )
+    actor_email = models.CharField(
+        max_length=255,
+        verbose_name="Email del actor",
+        help_text="Email of the actor who performed the action.",
+    )
+    actor_role = models.CharField(
+        max_length=20, verbose_name="Rol del actor", help_text="Role of the actor."
+    )
 
     # WHAT
     action = models.CharField(
@@ -87,7 +102,11 @@ class AuditLog(models.Model):
         verbose_name="Acción",
         help_text="Action performed.",
     )
-    resource_type = models.CharField(max_length=50, verbose_name="Tipo de recurso", help_text="Type of resource affected.")
+    resource_type = models.CharField(
+        max_length=50,
+        verbose_name="Tipo de recurso",
+        help_text="Type of resource affected.",
+    )
     resource_id = models.CharField(
         max_length=100,
         blank=True,
@@ -105,10 +124,17 @@ class AuditLog(models.Model):
         help_text="Identifier of the business.",
     )
     ip_address = models.GenericIPAddressField(
-        null=True, blank=True, verbose_name="Dirección IP"
-        ,help_text="IP address of the client.",
+        null=True,
+        blank=True,
+        verbose_name="Dirección IP",
+        help_text="IP address of the client.",
     )
-    user_agent = models.TextField(blank=True, default="", verbose_name="User Agent", help_text="Client user agent string.")
+    user_agent = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="User Agent",
+        help_text="Client user agent string.",
+    )
     justification = models.TextField(
         blank=True,
         default="",
@@ -117,7 +143,11 @@ class AuditLog(models.Model):
     )
 
     # RESULT
-    details = models.JSONField(default=dict, verbose_name="Detalles", help_text="Additional details or context.")
+    details = models.JSONField(
+        default=dict,
+        verbose_name="Detalles",
+        help_text="Additional details or context.",
+    )
     status = models.CharField(
         max_length=20,
         choices=AuditStatus.choices(),
@@ -128,12 +158,15 @@ class AuditLog(models.Model):
 
     # WHEN (immutable)
     created_at = models.DateTimeField(
-        auto_now_add=True, db_index=True, verbose_name="Fecha"
-        ,help_text="Timestamp for created.",
+        auto_now_add=True,
+        db_index=True,
+        verbose_name="Fecha",
+        help_text="Timestamp for created.",
     )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_audit_log"
         ordering = ["-created_at"]
         verbose_name = "Registro de auditoría"

@@ -8,11 +8,16 @@ redeem that credit against new purchases.
 
 import logging
 from decimal import Decimal, InvalidOperation
+from typing import TYPE_CHECKING
+
 from apps.transactions.models import TransactionType
 from common.messages import get_message
 
 from ..context import RedemptionContext
 from .base import BaseRedemptionStrategy, PassStateMutation
+
+if TYPE_CHECKING:
+    from apps.customers.models import CustomerPass
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +51,7 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
         return violations
 
     def _compute_mutation(
-        self, locked_pass: "CustomerPassType", context: RedemptionContext
+        self, locked_pass: "CustomerPass", context: RedemptionContext
     ) -> PassStateMutation:
         """Compute the cashback earned and updated balance."""
         metadata = context.card.metadata or {}
@@ -120,7 +125,7 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
         return violations
 
     def _compute_mutation(
-        self, locked_pass: "CustomerPassType", context: RedemptionContext
+        self, locked_pass: "CustomerPass", context: RedemptionContext
     ) -> PassStateMutation:
         """Compute the balance deduction after locking."""
         current_balance = locked_pass.cashback_balance or Decimal(

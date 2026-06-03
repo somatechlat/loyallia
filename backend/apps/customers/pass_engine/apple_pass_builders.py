@@ -51,9 +51,14 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
         "{stamps_required}": str(total_stamps),
         "{reward_description}": reward,
         "{stamp_display}": stamps_display,
-        "{affiliate_code}": customer_pass.qr_code or str(pass_data.get("affiliate_code", "N/A")),
+        "{affiliate_code}": customer_pass.qr_code
+        or str(pass_data.get("affiliate_code", "N/A")),
         "{enrolled_date}": enrolled_date or str(pass_data.get("enrolled_date", "")),
-        "{benefits}": ", ".join(metadata.get("benefits", [])) if isinstance(metadata.get("benefits"), list) else str(metadata.get("benefits", "")),
+        "{benefits}": (
+            ", ".join(metadata.get("benefits", []))
+            if isinstance(metadata.get("benefits"), list)
+            else str(metadata.get("benefits", ""))
+        ),
         "{cashback_balance}": str(customer_pass.cashback_balance_val),
         "{cashback_percentage}": str(metadata.get("cashback_percentage", 10)),
     }
@@ -110,7 +115,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         stamps_display = "\u2b1b" * current + "\u2b1c" * (total - current)
         return {
             "headerFields": [
-                {"key": "stamps", "label": "SELLOS", "value": f"{current}/{total}", "changeMessage": "¡Nuevo sello! Ahora tienes %@"}
+                {
+                    "key": "stamps",
+                    "label": "SELLOS",
+                    "value": f"{current}/{total}",
+                    "changeMessage": "¡Nuevo sello! Ahora tienes %@",
+                }
             ],
             "primaryFields": [
                 {"key": "reward", "label": "RECOMPENSA", "value": reward}
@@ -119,7 +129,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "progress", "label": "PROGRESO", "value": stamps_display}
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {"key": "name", "label": "Cliente", "value": customer_name},
@@ -153,10 +168,20 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
-                {"key": "desc", "label": "Descripcion", "value": card.description or "", "changeMessage": "Detalles actualizados"}
+                {
+                    "key": "desc",
+                    "label": "Descripcion",
+                    "value": card.description or "",
+                    "changeMessage": "Detalles actualizados",
+                }
             ],
         }
 
@@ -164,7 +189,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         tier = pass_data.get("membership_tier", "VIP")
         return {
             "headerFields": [
-                {"key": "tier", "label": "MEMBRESIA", "value": tier.upper(), "changeMessage": "Membresía actualizada: %@"}
+                {
+                    "key": "tier",
+                    "label": "MEMBRESIA",
+                    "value": tier.upper(),
+                    "changeMessage": "Membresía actualizada: %@",
+                }
             ],
             "primaryFields": [
                 {"key": "name", "label": "MIEMBRO", "value": customer_name}
@@ -173,7 +203,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "program", "label": "CLUB", "value": card.name}
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
@@ -187,7 +222,14 @@ def _build_fields_for_type(card, customer_pass) -> dict:
 
     elif card.card_type == "coupon":
         return {
-            "headerFields": [{"key": "offer", "label": "OFERTA", "value": card.name, "changeMessage": "¡Nueva oferta! %@"}],
+            "headerFields": [
+                {
+                    "key": "offer",
+                    "label": "OFERTA",
+                    "value": card.name,
+                    "changeMessage": "¡Nueva oferta! %@",
+                }
+            ],
             "primaryFields": [
                 {
                     "key": "discount",
@@ -199,18 +241,31 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "customer", "label": "CLIENTE", "value": customer_name}
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
                     "key": "expiry",
                     "label": "Válido hasta",
-                    "value": str(metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))),
+                    "value": str(
+                        metadata.get(
+                            "coupon_end_date", pass_data.get("expiry_date", "")
+                        )
+                    ),
                 },
                 {
                     "key": "usage_limit",
                     "label": "Límite de usos",
-                    "value": str(metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1))),
+                    "value": str(
+                        metadata.get(
+                            "usage_limit", metadata.get("usage_limit_per_customer", 1)
+                        )
+                    ),
                 },
                 {
                     "key": "terms",
@@ -237,7 +292,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "customer", "label": "EMBAJADOR", "value": customer_name}
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
@@ -283,7 +343,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "program", "label": "PROGRAMA", "value": card.name},
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
@@ -327,7 +392,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 },
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
@@ -362,7 +432,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "recipient", "label": "BENEFICIARIO", "value": customer_name},
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
@@ -393,7 +468,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "employee", "label": "EMPLEADO", "value": customer_name},
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
@@ -426,7 +506,12 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 {"key": "customer", "label": "CLIENTE", "value": customer_name},
             ],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
                 {
@@ -454,10 +539,20 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             ],
             "secondaryFields": [],
             "auxiliaryFields": [
-                {"key": "last_message", "label": "MENSAJE", "value": "", "changeMessage": "Nuevo mensaje: %@"}
+                {
+                    "key": "last_message",
+                    "label": "MENSAJE",
+                    "value": "",
+                    "changeMessage": "Nuevo mensaje: %@",
+                }
             ],
             "backFields": [
-                {"key": "desc", "label": "Descripcion", "value": card.description or "", "changeMessage": "Detalles actualizados"}
+                {
+                    "key": "desc",
+                    "label": "Descripcion",
+                    "value": card.description or "",
+                    "changeMessage": "Detalles actualizados",
+                }
             ],
         }
 
@@ -466,12 +561,13 @@ def _build_locations(card) -> list:
     """Build location array from tenant locations for geo-push."""
     locations = []
 
-    if not hasattr(card.tenant, 'locations'):
+    if not hasattr(card.tenant, "locations"):
         return locations
 
     try:
         tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to build locations: %s", e)
         return locations
 
     if not tenant_locations:
@@ -505,7 +601,11 @@ def _hex_to_rgb(hex_color: str) -> str:
     if len(hex_color) != 6:
         return "rgb(26, 26, 46)"
     try:
-        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+        r, g, b = (
+            int(hex_color[0:2], 16),
+            int(hex_color[2:4], 16),
+            int(hex_color[4:6], 16),
+        )
     except ValueError:
         return "rgb(26, 26, 46)"
     return f"rgb({r}, {g}, {b})"
@@ -604,6 +704,3 @@ def _resize_image(img, width: int, height: int) -> bytes:
     img_resized = img.resize((width, height), resample)
     img_resized.save(buf, format="PNG")
     return buf.getvalue()
-
-
-

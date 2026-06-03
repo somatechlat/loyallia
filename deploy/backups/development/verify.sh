@@ -20,43 +20,11 @@ step "Backup Verification"
 
 # --- Check each component ---------------------------------------------------
 for subdir in postgres redis vault minio; do
-    dir="$BACKUP_DIR/$subdir"
-
-    if [ ! -d "$dir" ]; then
-        err "Directory missing: $dir"
-        ERRORS=$((ERRORS + 1))
-        continue
-    fi
-
-    # Find latest .age file
-    latest=""
-    for f in "$dir"/*.age; do
-        [ -e "$f" ] || continue
-        if [ -z "$latest" ] || [ "$f" -nt "$latest" ]; then
-            latest="$f"
-        fi
-    done
-
-    if [ -z "$latest" ]; then
-        err "No .age backup found in $dir"
-        ERRORS=$((ERRORS + 1))
-        continue
-    fi
-
-    if [ ! -s "$latest" ]; then
-        err "Backup is empty: $latest"
-        ERRORS=$((ERRORS + 1))
-        continue
-    fi
-
-    age_hours=$(file_age_hours "$latest")
-    if [ "$age_hours" -gt 25 ]; then
-        err "Backup too old: $(basename "$latest") (${age_hours}h > 25h)"
-        ERRORS=$((ERRORS + 1))
-        continue
-    fi
-
-    log "$subdir: $(basename "$latest") (${age_hours}h old, OK)"
+    pattern="*.age"
+    case "$subdir" in
+        vault|minio) pattern="*.tar.age" ;;
+    esac
+    verify_component "$subdir" "$BACKUP_DIR/$subdir" "$pattern" || ERRORS=$((ERRORS + 1))
 done
 
 # --- Test decrypt one file --------------------------------------------------

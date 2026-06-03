@@ -33,7 +33,7 @@ def backup_redis(job_id: str) -> dict:
                 break
 
         config_get = redis_conn.execute_command("CONFIG", "GET", "dir")
-        if isinstance(config_get, (list, tuple)) and len(config_get) >= 2:
+        if isinstance(config_get, list | tuple) and len(config_get) >= 2:
             redis_dir = (
                 config_get[1].decode()
                 if isinstance(config_get[1], bytes)
@@ -72,8 +72,8 @@ def backup_redis(job_id: str) -> dict:
                 }
 
         raise FileNotFoundError(f"dump.rdb not found in {redis_dir} or known locations")
-    except Exception:
-        logger.exception("backup_redis failed for job %s", job_id)
+    except Exception as e:
+        logger.exception("backup_redis failed for job %s: %s", job_id, e)
         raise
 
 
@@ -85,7 +85,7 @@ def restore_redis(rdb_file: str) -> bool:
 
         redis_conn = get_redis_connection("default")
         config_get = redis_conn.execute_command("CONFIG", "GET", "dir")
-        if isinstance(config_get, (list, tuple)) and len(config_get) >= 2:
+        if isinstance(config_get, list | tuple) and len(config_get) >= 2:
             redis_dir = (
                 config_get[1].decode()
                 if isinstance(config_get[1], bytes)
@@ -99,6 +99,6 @@ def restore_redis(rdb_file: str) -> bool:
         shutil.copy2(rdb_file, dump_dest)
         logger.info("restore: copied Redis RDB to %s", dump_dest)
         return True
-    except Exception:
-        logger.exception("restore: Redis restore failed")
+    except Exception as e:
+        logger.exception("restore: Redis restore failed: %s", e)
         return False

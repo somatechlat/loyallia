@@ -5,15 +5,14 @@ Phase 3 implementation of all program CRUD endpoints.
 
 import logging
 
-from django.db.models import Count, Q
 from django.http import HttpResponse
-from common.request import TenantRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from apps.audit.service import log_action
+from apps.cards import services
 from apps.cards.models import Card, CardType
 from apps.customers.models import CustomerPass
 from apps.customers.segment_api import _apply_segment_filter
@@ -21,7 +20,7 @@ from apps.transactions.models import Enrollment
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
-from common.request import require_tenant
+from common.request import TenantRequest, require_tenant
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +39,8 @@ class CardCreateIn(BaseModel):
     text_color: str | None = "#ffffff"
     strip_image_url: str | None = ""
     icon_url: str | None = ""
-    metadata: dict | None = {}
-    locations: list | None = []
+    metadata: dict | None = Field(default_factory=dict)
+    locations: list | None = Field(default_factory=list)
 
     @field_validator("metadata")
     @classmethod
@@ -203,12 +202,12 @@ class MessageOut(BaseModel):
     message: str
 
 
-# ENDPOINTS
-
-
 class CardListOut(BaseModel):
     programs: list[CardOut]
     total: int
+
+
+# ENDPOINTS
 
 
 @router.get(
@@ -219,21 +218,10 @@ def list_programs(request: TenantRequest) -> CardListOut:
     tenant = require_tenant(request)
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    cards = list(
-        Card.objects.filter(tenant=tenant)
-        .annotate(_enrollments_count=Count("passes", distinct=True))
-        .order_by("-created_at")
-    )
+
+    cards = services.list_programs(tenant)
     return CardListOut(
-        programs=[
-            CardOut.from_model(
-                c,
-                getattr(
-                    c, "_enrollments_count", CustomerPass.objects.filter(card=c).count()
-                ),
-            )
-            for c in cards
-        ],
+        programs=[CardOut.from_model(card, count) for card, count in cards],
         total=len(cards),
     )
 
@@ -252,27 +240,13 @@ def create_program(request: TenantRequest, data: CardCreateIn) -> CardOut:
 
     check_plan_limit(tenant, "programs", write=True)
 
-    # Check for duplicate name
-    if Card.objects.filter(tenant=tenant, name=data.name).exists():
-        raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
-
     try:
-        card = Card.objects.create(
-            tenant=tenant,
-            card_type=data.card_type,
-            barcode_type=data.barcode_type,
-            name=data.name,
-            description=data.description,
-            logo_url=data.logo_url,
-            background_color=data.background_color,
-            text_color=data.text_color,
-            strip_image_url=data.strip_image_url,
-            icon_url=data.icon_url,
-            metadata=data.metadata,
-            locations=data.locations,
-        )
+        card = services.create_program(tenant, data.model_dump())
     except ValueError as exc:
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
+        msg = str(exc)
+        if msg == "PROGRAM_DUPLICATE_NAME":
+            raise HttpError(400, get_message(msg))
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     log_action(
         request=request,
@@ -306,89 +280,23 @@ def update_program(
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
-    # Update fields if provided
-    update_fields = []
-    if data.name is not None:
-        # Check for duplicate name (excluding current card)
-        if (
-            Card.objects.filter(tenant=request.tenant, name=data.name)
-            .exclude(id=card.id)
-            .exists()
-        ):
-            raise HttpError(400, get_message("PROGRAM_DUPLICATE_NAME"))
-        card.name = data.name
-        update_fields.append("name")
+    try:
+        card = services.update_program(card, data.model_dump(), request.tenant)
+    except ValueError as exc:
+        msg = str(exc)
+        if msg == "PROGRAM_DUPLICATE_NAME":
+            raise HttpError(400, get_message(msg))
+        if msg.startswith("VALIDATION_ERROR:"):
+            raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg.split(":", 1)[1]))
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
-    if data.description is not None:
-        card.description = data.description
-        update_fields.append("description")
-
-    if data.logo_url is not None:
-        card.logo_url = data.logo_url
-        update_fields.append("logo_url")
-
-    if data.background_color is not None:
-        card.background_color = data.background_color
-        update_fields.append("background_color")
-
-    if data.text_color is not None:
-        card.text_color = data.text_color
-        update_fields.append("text_color")
-
-    if data.strip_image_url is not None:
-        card.strip_image_url = data.strip_image_url
-        update_fields.append("strip_image_url")
-
-    if data.icon_url is not None:
-        card.icon_url = data.icon_url
-        update_fields.append("icon_url")
-
-    if data.metadata is not None:
-        card.metadata = data.metadata
-        update_fields.append("metadata")
-
-    if data.locations is not None:
-        card.locations = data.locations
-        update_fields.append("locations")
-
-    if data.barcode_type is not None:
-        card.barcode_type = data.barcode_type
-        update_fields.append("barcode_type")
-
-    if data.is_active is not None:
-        card.is_active = data.is_active
-        update_fields.append("is_active")
-
-    if data.is_published is not None:
-        card.is_published = data.is_published
-        update_fields.append("is_published")
-
-    if update_fields:
-        try:
-            card.save(update_fields=update_fields + ["updated_at"])
-        except ValueError as exc:
-            raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
-
-        log_action(
-            request=request,
-            action="UPDATE",
-            resource_type="program",
-            resource_id=str(card.id),
-            details={"updated_fields": update_fields},
-        )
-
-        # Sync changes to Google Wallet in background (non-blocking if possible, but currently direct)
-        try:
-            from apps.customers.pass_engine.google_pass import update_loyalty_class
-
-            update_loyalty_class(card)
-        except Exception as e:
-            logger.error(
-                "Failed to sync Card %s to Google Wallet on update: %s",
-                card.id,
-                e,
-            )
-
+    log_action(
+        request=request,
+        action="UPDATE",
+        resource_type="program",
+        resource_id=str(card.id),
+        details={"updated_fields": [k for k, v in data.model_dump().items() if v is not None]},
+    )
     return CardOut.from_model(card)
 
 
@@ -404,9 +312,7 @@ def publish_program(request: TenantRequest, program_id: str) -> CardOut:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
-    card.is_published = True
-    card.is_active = True
-    card.save(update_fields=["is_published", "is_active", "updated_at"])
+    card = services.publish_program(card)
 
     log_action(
         request=request,
@@ -431,8 +337,7 @@ def suspend_program(request: TenantRequest, program_id: str) -> MessageOut:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=request.tenant)
 
-    card.is_active = not card.is_active  # Toggle status
-    card.save(update_fields=["is_active", "updated_at"])
+    card = services.suspend_program(card)
 
     log_action(
         request=request,
@@ -461,9 +366,7 @@ def delete_program(request: TenantRequest, program_id: str) -> HttpResponse:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
 
-    # Count passes before deletion for logging
-    pass_count = CustomerPass.objects.filter(card=card).count()
-    active_pass_count = CustomerPass.objects.filter(card=card, is_active=True).count()
+    stats = services.delete_program(card)
 
     log_action(
         request=request,
@@ -473,29 +376,23 @@ def delete_program(request: TenantRequest, program_id: str) -> HttpResponse:
         details={
             "name": card.name,
             "card_type": card.card_type,
-            "deleted_passes": pass_count,
-            "active_passes": active_pass_count,
+            "deleted_passes": stats["deleted_passes"],
+            "active_passes": stats["active_passes"],
         },
     )
-
-    # Cascade delete: remove all CustomerPasses first (this cascades to ApplePassRegistration, etc.)
-    CustomerPass.objects.filter(card=card).delete()
-
-    # Now delete the program itself
-    card.delete()
 
     return HttpResponse(status=204)
 
 
-@router.get("/{program_id}/member-count/", auth=jwt_auth, summary="Contar miembros del programa")
+@router.get(
+    "/{program_id}/member-count/", auth=jwt_auth, summary="Contar miembros del programa"
+)
 def program_member_count(request: TenantRequest, program_id: str) -> dict:
     """Returns member count for a program. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
-    total = CustomerPass.objects.filter(card=card).count()
-    active = CustomerPass.objects.filter(card=card, is_active=True).count()
-    return {"count": total, "active_count": active}
+    return services.program_member_count(card)
 
 
 @router.get("/{program_id}/segment-counts/", auth=jwt_auth, summary="Contar segmentos del programa")
@@ -540,49 +437,15 @@ def program_members(
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
-
-    qs = CustomerPass.objects.filter(card=card).select_related("customer")
-
-    if search:
-        qs = qs.filter(
-            Q(customer__first_name__icontains=search)
-            | Q(customer__last_name__icontains=search)
-            | Q(customer__email__icontains=search)
-            | Q(customer__phone__icontains=search)
-        )
-
-    total = qs.count()
-    passes = qs[offset : offset + limit]
-
-    items = []
-    for cp in passes:
-        c = cp.customer
-        items.append(
-            {
-                "id": str(c.id),
-                "first_name": c.first_name,
-                "last_name": c.last_name,
-                "email": c.email,
-                "phone": c.phone,
-                "total_visits": c.total_visits,
-                "total_spent": str(c.total_spent),
-                "last_visit": c.last_visit.isoformat() if c.last_visit else None,
-                "is_active": c.is_active,
-                "enrolled_at": cp.enrolled_at.isoformat() if cp.enrolled_at else "",
-                "pass_state": {
-                    "stamp_count": cp.stamp_count_val,
-                    "cashback_balance": str(cp.cashback_balance_val),
-                    "coupon_used": cp.coupon_redemption_count > 0,
-                    "gift_balance": str(cp.gift_balance_val),
-                    "multipass_remaining": cp.multipass_remaining_val,
-                },
-            }
-        )
-
-    return {"items": items, "total": total}
+    return services.program_members(card, search, limit, offset)
 
 
-@router.get("/{program_id}/transactions/", auth=jwt_auth, response=dict, summary="Transacciones del programa")
+@router.get(
+    "/{program_id}/transactions/",
+    auth=jwt_auth,
+    response=dict,
+    summary="Transacciones del programa",
+)
 def program_transactions(
     request: TenantRequest,
     program_id: str,
@@ -593,29 +456,7 @@ def program_transactions(
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
-
-    from apps.transactions.models import Transaction
-
-    qs = Transaction.objects.filter(customer_pass__card=card).select_related(
-        "customer_pass__customer"
-    )
-    total = qs.count()
-    transactions = qs.order_by("-created_at")[offset : offset + limit]
-
-    items = []
-    for t in transactions:
-        c = t.customer_pass.customer if t.customer_pass else None
-        items.append(
-            {
-                "id": str(t.id),
-                "customer_name": f"{c.first_name} {c.last_name}".strip() if c else "—",
-                "amount": str(t.amount),
-                "type": t.transaction_type,
-                "created_at": t.created_at.isoformat() if t.created_at else "",
-            }
-        )
-
-    return {"items": items, "total": total}
+    return services.program_transactions(card, limit, offset)
 
 
 @router.get("/{program_id}/stats/", auth=jwt_auth, summary="Estadísticas del programa")
@@ -624,27 +465,7 @@ def program_stats(request: TenantRequest, program_id: str) -> dict:
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
-
-    # Get enrollment count
-    enrollment_count = Enrollment.objects.filter(card=card).count()
-
-    # Get active passes count
-    active_passes = CustomerPass.objects.filter(card=card, is_active=True).count()
-
-    # Get transaction count for this program
-    from apps.transactions.models import Transaction
-
-    transaction_count = Transaction.objects.filter(customer_pass__card=card).count()
-
-    return {
-        "program_id": str(card.id),
-        "program_name": card.name,
-        "enrollments": enrollment_count,
-        "active_passes": active_passes,
-        "transactions": transaction_count,
-        "card_type": card.card_type,
-        "is_active": card.is_active,
-    }
+    return services.program_stats(card)
 
 
 @router.get(
@@ -657,38 +478,9 @@ def public_program(request: TenantRequest, slug: str) -> dict:
     URL format: /api/v1/programs/{tenant_slug}--{card_id}/public/
     Uses card_id to keep it simple and unambiguous.
     """
-    import uuid
-
     try:
-        card_uuid = uuid.UUID(slug)
-    except ValueError:
-        raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
-
-    try:
-        card = Card.objects.select_related("tenant").get(
-            id=card_uuid,
-            is_active=True,
-            is_published=True,
-        )
-    except Card.DoesNotExist:
-        raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
-
-    tenant = card.tenant
-
-    return {
-        "program_id": str(card.id),
-        "name": card.name,
-        "description": card.description,
-        "card_type": card.card_type,
-        "logo_url": card.logo_url,
-        "background_color": card.background_color,
-        "text_color": card.text_color,
-        "strip_image_url": card.strip_image_url,
-        "metadata": card.metadata,
-        "tenant": {
-            "name": tenant.name,
-            "logo_url": tenant.logo_url,
-            "primary_color": tenant.primary_color,
-            "secondary_color": tenant.secondary_color,
-        },
-    }
+        return services.public_program(slug)
+    except ValueError as exc:
+        if str(exc) == "PROGRAM_NOT_FOUND":
+            raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
+        raise

@@ -300,7 +300,8 @@ def payment_webhook(request: HttpRequest):
 
             try:
                 gateway.process_webhook(event_type, payload.get("data", {}))
-            except Exception:
+            except Exception as e:
+                logger.exception("Webhook processing failed for event %s: %s", event_id, e)
                 WebhookEvent.objects.filter(event_id=event_id).delete()
                 raise
     except IntegrityError:

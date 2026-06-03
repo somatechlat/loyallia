@@ -26,8 +26,10 @@ def get_default_from_email(fallback: str = "noreply@loyallia.com") -> str:
         value = PlatformSetting.get("mailjet_sender_email", "")
         if value and "@" in value:
             return value
-    except Exception:
-        logger.debug("PlatformSetting mailjet_sender_email unavailable, using fallback.")
+    except Exception as e:
+        logger.debug(
+            "PlatformSetting mailjet_sender_email unavailable (%s), using fallback.", e
+        )
     return fallback
 
 
@@ -42,8 +44,8 @@ def get_default_sender_name(fallback: str = "Loyallia") -> str:
         value = PlatformSetting.get("mailjet_sender_name", "")
         if value:
             return value
-    except Exception:
-        logger.debug("PlatformSetting mailjet_sender_name unavailable, using fallback.")
+    except Exception as e:
+        logger.debug("PlatformSetting mailjet_sender_name unavailable (%s), using fallback.", e)
     return fallback
 
 

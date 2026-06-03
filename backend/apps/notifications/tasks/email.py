@@ -185,7 +185,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 # Generate a stable Message-ID for webhook correlation
                 import uuid as _uuid
 
-                message_id = f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"# noqa: E501
+                message_id = f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"  # noqa: E501
                 msg = EmailMultiAlternatives(
                     subject=subject, from_email=from_email, to=[customer.email]
                 )

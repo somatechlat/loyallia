@@ -182,7 +182,11 @@ def get_local_backup_list() -> list[dict]:
                 break
 
     if not backup_dir:
-        backup_dir = str(project_root / "backups") if env == "development" else "/var/backups/loyallia"
+        backup_dir = (
+            str(project_root / "backups")
+            if env == "development"
+            else "/var/backups/loyallia"
+        )
 
     backup_dir = backup_dir.replace("$PROJECT_ROOT", str(project_root))
 
@@ -251,8 +255,8 @@ def get_offsite_backup_list() -> list[dict]:
                     }
                 )
         return backups
-    except Exception:
-        logger.exception("Failed to list offsite backups")
+    except Exception as e:
+        logger.exception("Failed to list offsite backups: %s", e)
         return []
 
 
@@ -274,7 +278,7 @@ def get_restore_options() -> dict:
             if not by_date[date]:
                 by_date[date].add("full")
         return [
-            {"date": d, "components": sorted(list(c))}
+            {"date": d, "components": sorted(c)}
             for d, c in sorted(by_date.items(), reverse=True)
         ]
 
