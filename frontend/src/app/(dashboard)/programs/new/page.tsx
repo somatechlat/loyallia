@@ -19,6 +19,8 @@ import { type WalletDesignState, defaultWalletDesignState } from '@/components/w
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 import StepBar from '@/components/programs/new/StepBar';
 import ProgramReviewStep from '@/components/programs/new/ProgramReviewStep';
+import { programWizardStep0Schema, programWizardStep2Schema } from '@/lib/validations';
+import type { ZodError } from 'zod';
 
 
 export default function NewProgramPage() {
@@ -26,6 +28,7 @@ export default function NewProgramPage() {
   const [loading, setLoading] = useState(false);
   const [hoveredType, setHoveredType] = useState<string | null>(null);
   const [createdProgram, setCreatedProgram] = useState<{ id: string; name: string } | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     name: '',
     card_type: '',
@@ -71,10 +74,37 @@ export default function NewProgramPage() {
   };
 
 
+  const validateStep = (targetStep: number): boolean => {
+    setValidationErrors({});
+    try {
+      if (targetStep === 0) {
+        programWizardStep0Schema.parse({ card_type: form.card_type });
+      } else if (targetStep === 2) {
+        programWizardStep2Schema.parse(form);
+      }
+      return true;
+    } catch (err) {
+      const zodErr = err as ZodError;
+      const fieldErrors: Record<string, string> = {};
+      zodErr.errors.forEach((e) => {
+        const path = e.path.join('.');
+        fieldErrors[path] = e.message;
+      });
+      setValidationErrors(fieldErrors);
+      return false;
+    }
+  };
+
   const canNext = () => {
-    if (step === 0) return !!form.card_type;
+    if (step === 0) {
+      const result = programWizardStep0Schema.safeParse({ card_type: form.card_type });
+      return result.success;
+    }
     if (step === 1) return true;
-    if (step === 2) return !!form.name;
+    if (step === 2) {
+      const result = programWizardStep2Schema.safeParse(form);
+      return result.success;
+    }
     return true;
   };
 
@@ -296,14 +326,37 @@ export default function NewProgramPage() {
               <h2 className="text-lg font-bold text-surface-900 dark:text-white">Nombre y descripción</h2>
               <div>
                 <label className="label" htmlFor="program-name">Nombre del programa</label>
-                <input id="program-name" type="text" required maxLength={200} className="input" placeholder="Ej: Café Frecuente"
-                  value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                <input
+                  id="program-name"
+                  type="text"
+                  required
+                  maxLength={200}
+                  className={`input ${validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                  placeholder="Ej: Café Frecuente"
+                  value={form.name}
+                  onChange={e => {
+                    setValidationErrors(prev => { const n = { ...prev }; delete n.name; return n; });
+                    setForm(f => ({ ...f, name: e.target.value }));
+                  }}
+                  aria-invalid={!!validationErrors.name}
+                />
+                {validationErrors.name && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.name}</p>}
               </div>
               <div>
                 <label className="label" htmlFor="program-desc">Descripción</label>
-                <textarea id="program-desc" className="input min-h-[80px] resize-none" maxLength={1000}
+                <textarea
+                  id="program-desc"
+                  className={`input min-h-[80px] resize-none ${validationErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                  maxLength={1000}
                   placeholder="Describe las reglas y beneficios..."
-                  value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                  value={form.description}
+                  onChange={e => {
+                    setValidationErrors(prev => { const n = { ...prev }; delete n.description; return n; });
+                    setForm(f => ({ ...f, description: e.target.value }));
+                  }}
+                  aria-invalid={!!validationErrors.description}
+                />
+                {validationErrors.description && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.description}</p>}
               </div>
             </div>
 
@@ -318,7 +371,17 @@ export default function NewProgramPage() {
                   + Agregar
                 </button>
               </div>
-              
+
+              {/* Location validation errors summary */}
+              {Object.keys(validationErrors).some(k => k.startsWith('locations')) && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Corrige las ubicaciones:</p>
+                  {Object.entries(validationErrors).filter(([k]) => k.startsWith('locations')).map(([k, msg]) => (
+                    <p key={k} className="text-xs text-red-600 dark:text-red-400">{msg}</p>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-3">
                 {form.locations.map((loc, i) => (
                   <div key={i} className="flex gap-2 items-center bg-surface-50 p-2 rounded-lg border border-surface-200 dark:border-surface-700">
@@ -450,7 +513,10 @@ export default function NewProgramPage() {
       <div className="flex justify-between pt-4">
         <button
           type="button"
-          onClick={() => setStep(s => Math.max(0, s - 1))}
+          onClick={() => {
+            setValidationErrors({});
+            setStep(s => Math.max(0, s - 1));
+          }}
           className={`btn-secondary ${step === 0 ? 'invisible' : ''}`}
           id="wizard-prev"
         >
@@ -460,7 +526,13 @@ export default function NewProgramPage() {
         {step < 3 ? (
           <button
             type="button"
-            onClick={() => setStep(s => s + 1)}
+            onClick={() => {
+              if (!validateStep(step)) {
+                toast.error('Corrige los errores antes de continuar');
+                return;
+              }
+              setStep(s => s + 1);
+            }}
             className="btn-primary"
             disabled={!canNext()}
             id="wizard-next"
