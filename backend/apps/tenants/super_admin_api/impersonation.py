@@ -10,6 +10,8 @@ from datetime import UTC, datetime, timedelta
 import jwt as pyjwt
 from django.conf import settings
 from django.core.cache import cache
+
+from apps.authentication.tokens import _get_signing_key
 from ninja import Router
 from ninja.errors import HttpError
 
@@ -128,7 +130,7 @@ def impersonate_tenant(request, tenant_id: str, payload: ImpersonateIn):
         "impersonated": True,
     }
     access = pyjwt.encode(
-        token_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+        token_payload, _get_signing_key(), algorithm=settings.JWT_ALGORITHM
     )
 
     _audit_impersonation(
