@@ -10,7 +10,8 @@ import uuid
 from decimal import Decimal
 
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
+from django.db.models import F
 from django.utils import timezone
 
 from common.models import TimestampedModel
@@ -76,6 +77,26 @@ class PaymentMethod(TimestampedModel):
         return f"{self.card_brand} terminada en {self.card_last_four}"
 
 
+# INVOICE COUNTER (atomic sequence per tenant)
+
+
+class InvoiceCounter(models.Model):
+    """Atomic invoice number counter per tenant. Prevents race conditions."""
+
+    tenant = models.OneToOneField(
+        "tenants.Tenant",
+        on_delete=models.CASCADE,
+        related_name="invoice_counter",
+        verbose_name="Negocio",
+    )
+    last_number = models.PositiveIntegerField(default=0, verbose_name="Último número")
+
+    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        db_table = "loyallia_invoice_counters"
+        verbose_name = "Contador de facturas"
+        verbose_name_plural = "Contadores de facturas"
+
+
 # INVOICE
 
 
@@ -107,7 +128,7 @@ class Invoice(TimestampedModel):
 
     # Invoice number (sequential per tenant)
     invoice_number = models.CharField(
-        max_length=50, unique=True, verbose_name="Número de factura"
+        max_length=50, verbose_name="Número de factura"
     )
 
     # Amounts
@@ -181,6 +202,7 @@ class Invoice(TimestampedModel):
         verbose_name = "Factura"
         verbose_name_plural = "Facturas"
         ordering = ["-created_at"]
+        unique_together = [["tenant", "invoice_number"]]
         indexes = [
             models.Index(fields=["tenant", "created_at"]),
             models.Index(fields=["tenant", "status"]),
@@ -205,10 +227,22 @@ class Invoice(TimestampedModel):
 
     @classmethod
     def generate_invoice_number(cls, tenant: "Tenant") -> str:
-        """Generate sequential invoice number: LYL-{tenant_slug}-{seq}."""
-        count = cls.objects.filter(tenant=tenant).count() + 1
+        """Generate sequential invoice number: LYL-{tenant_slug}-{seq}.
+
+        Uses InvoiceCounter with select_for_update() to prevent race conditions
+        when multiple invoices are created concurrently for the same tenant.
+        """
         slug = tenant.slug[:10].upper().replace("-", "")
-        return f"LYL-{slug}-{count:05d}"
+
+        with transaction.atomic():
+            counter, _created = InvoiceCounter.objects.select_for_update().get_or_create(
+                tenant=tenant, defaults={"last_number": 0}
+            )
+            counter.last_number = F("last_number") + 1
+            counter.save(update_fields=["last_number"])
+            counter.refresh_from_db()
+
+        return f"LYL-{slug}-{counter.last_number:05d}"
 
     def calculate_amounts(self) -> None:
         """Calculate tax and total from subtotal and tax_rate."""
