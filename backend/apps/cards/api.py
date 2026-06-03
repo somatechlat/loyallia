@@ -15,6 +15,8 @@ from apps.audit.service import log_action
 from apps.cards import services
 from apps.cards.models import Card, CardType
 from apps.customers.models import CustomerPass
+from apps.customers.segment_api import _apply_segment_filter
+from apps.transactions.models import Enrollment
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
@@ -355,12 +357,37 @@ def program_member_count(request: TenantRequest, program_id: str) -> dict:
     return services.program_member_count(card)
 
 
-@router.get(
-    "/{program_id}/members/",
-    auth=jwt_auth,
-    response=dict,
-    summary="Miembros del programa",
-)
+@router.get("/{program_id}/segment-counts/", auth=jwt_auth, summary="Contar segmentos del programa")
+def program_segment_counts(
+    request: TenantRequest,
+    program_id: str,
+    wallet_platform: str = "both",
+) -> dict:
+    """Returns segment member counts for a program. MANAGER+ only."""
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
+
+    from apps.customers.models import Customer
+
+    base = Customer.objects.filter(
+        passes__card=card,
+        passes__is_active=True,
+    ).distinct()
+
+    if wallet_platform == "apple":
+        base = base.filter(passes__apple_pass_id__gt="")
+    elif wallet_platform == "google":
+        base = base.filter(passes__google_pass_id__gt="")
+
+    counts: dict[str, int] = {}
+    for seg_id in ["all", "active", "vip", "at_risk", "inactive", "new", "most_active"]:
+        counts[seg_id] = _apply_segment_filter(base, seg_id).count()
+
+    return {"counts": counts}
+
+
+@router.get("/{program_id}/members/", auth=jwt_auth, response=dict, summary="Miembros del programa")
 def program_members(
     request: TenantRequest,
     program_id: str,
