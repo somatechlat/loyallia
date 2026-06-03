@@ -144,7 +144,7 @@ class BackupJob(models.Model):
     class Meta:
         """Model metadata and database configuration."""
 
-        db_table = "backup_jobs"
+        db_table = "loyallia_backup_jobs"
         ordering = ["-created_at"]
         verbose_name = "Backup Job"
         verbose_name_plural = "Backup Jobs"
