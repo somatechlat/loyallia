@@ -1032,4 +1032,427 @@ SCENARIO: Optimal Dual-Platform Design
 
 ---
 
-*End of Document SRS-005*
+## 9. User Template Library Journeys
+
+---
+
+### J-24: Save Design as Template
+
+**User Goal:** Save a completed design for reuse in future programs.
+
+**Persona:** María, café owner, wants to use the same design for her second location.
+
+```
+STEP 1: IN STUDIO
+├─ María has finished designing her stamp card
+├─ Design Score: 9.2/10
+├─ She clicks [💾 Guardar] dropdown in toolbar
+└─ Selects "Guardar como plantilla"
+
+STEP 2: SAVE TEMPLATE MODAL
+├─ Name pre-filled: "Café Central — Tarjeta de Sellos"
+├─ She changes to: "Café Central Template"
+├─ Adds description: "Diseño marrón con sellos de taza para cafeterías"
+├─ Card type: "stamp" (locked — from current design)
+├─ Industry: "cafe"
+├─ Preview auto-generated from current canvas
+├─ [✓] Include back content: checked
+└─ Clicks [💾 Guardar plantilla]
+
+STEP 3: SUCCESS
+├─ Toast: "✅ Plantilla guardada en 'Mis Plantillas'"
+├─ Quick actions: [Ver mis plantillas] [Seguir diseñando]
+├─ She clicks [Seguir diseñando]
+└─ Back in Studio, continues to save program
+
+STEP 4: LATER — NEW PROGRAM
+├─ María creates program for her second location
+├─ Wizard Step 2: Template Gallery opens
+├─ Clicks [⭐ Mis Plantillas] tab
+├─ Sees "Café Central Template" with "Usada 0 veces"
+├─ Clicks [Usar] → Studio loads with template
+├─ Changes logo to second location's logo
+├─ Saves program in 2 minutes
+└─ SUCCESS ✓
+```
+
+---
+
+### J-25: Apply My Template to New Program
+
+**User Goal:** Use a previously saved template as starting point.
+
+```
+STEP 1: TEMPLATE GALLERY
+├─ User at Template Gallery, [⭐ Mis Plantillas] tab active
+├─ Sees 3 saved templates:
+│   ├─ ☕ Café Central (Usada 5x)
+│   ├─ 💪 Gym Power (Usada 2x)
+│   └─ 🎁 Regalo Navidad (Usada 1x)
+├─ User clicks on ☕ Café Central
+
+STEP 2: TEMPLATE PREVIEW
+├─ Modal shows:
+│   ├─ Metadata: name, type, industry, created date
+│   ├─ iPhone + Pixel preview (front and back)
+│   ├─ Color palette swatches
+│   ├─ Content summary: 5 fields, logo, hero, barcode
+│   └─ [Cancelar] [✏️ Personalizar] [Usar ahora]
+├─ User clicks [Usar ahora]
+
+STEP 3: STUDIO LOADS
+├─ Template cloned into Studio
+├─ All layers, colors, fields, back content applied
+├─ Banner: "🎨 Personalizando plantilla: Café Central"
+├─ Usage count increments to 6
+├─ User can modify or save as-is
+└─ SUCCESS ✓
+```
+
+---
+
+### J-26: Manage My Templates (CRUD)
+
+**User Goal:** Organize, rename, duplicate, or delete templates.
+
+```
+STEP 1: MY TEMPLATES TAB
+├─ User clicks [⋮] menu on "Café Central" template card
+├─ Menu opens:
+│   ├─ ✏️ Renombrar
+│   ├─ 📋 Duplicar
+│   ├─ ⭐ Favorito (toggle)
+│   └─ 🗑️ Eliminar
+
+SCENARIO A: RENAME
+├─ User clicks ✏️ Renombrar
+├─ Modal: "Nombre actual: Café Central"
+├─ User types: "Café Central — Sucursal Principal"
+├─ Clicks [Guardar]
+└─ Template card updates instantly
+
+SCENARIO B: DUPLICATE
+├─ User clicks 📋 Duplicar
+├─ Modal: "Nombre de la copia: Café Central (copia)"
+├─ User edits: "Café Central — Versión Verano"
+├─ Clicks [Duplicar]
+└─ New template appears in grid
+
+SCENARIO C: DELETE
+├─ User clicks 🗑️ Eliminar
+├─ Confirmation modal:
+│   "¿Eliminar 'Café Central' permanentemente?"
+│   "Los programas creados NO se verán afectados."
+├─ User clicks [Eliminar permanentemente]
+└─ Template removed, toast confirmation
+
+SCENARIO D: FAVORITE
+├─ User clicks ⭐ on "Gym Power"
+├─ Star fills, template moves to top of grid
+├─ Filter [⭐ Favoritos] now shows 1 template
+└─ SUCCESS ✓
+```
+
+---
+
+### J-27: Generate Template Variations with AI
+
+**User Goal:** Create seasonal variants of an existing template.
+
+```
+STEP 1: TEMPLATE GALLERY
+├─ User in [⭐ Mis Plantillas], clicks [⋮] on "Café Central"
+├─ Selects "🎨 Generar variaciones con IA"
+
+STEP 2: AI VARIATION MODAL
+├─ "Quiero una versión de 'Café Central' para:"
+├─ Options:
+│   [●] Verano (colores claros, frescos)
+│   [○] Navidad (rojo, verde, dorado)
+│   [○] Minimalista (blanco y negro)
+│   [○] Premium (negro y dorado)
+│   [○] Festiva (colores vibrantes)
+├─ User selects "Verano"
+├─ Clicks [✨ Generar variaciones]
+
+STEP 3: AI GENERATES
+├─ Loading: "Analizando tu plantilla..."
+├─ Progress steps:
+│   1. "Extrayendo estructura y campos..."
+│   2. "Generando paleta de verano..."
+│   3. "Adaptando imágenes y colores..."
+│   4. "Finalizando diseños..."
+
+STEP 4: RESULTS
+├─ 3 variations shown:
+│   ├─ "Verano Claro" — Cream background, mint accents
+│   ├─ "Verano Tropical" — Yellow background, palm graphics
+│   └─ "Verano Fresh" — White background, blue accents
+├─ Each with iPhone + Pixel preview
+├─ User clicks [Guardar como plantilla] on "Verano Claro"
+└─ Saved to My Templates
+```
+
+---
+
+### J-28: Duplicate and Modify Template
+
+**User Goal:** Use existing template as base, modify for new use case.
+
+```
+STEP 1: DUPLICATE
+├─ User clicks 📋 on "Café Central"
+├─ Names copy: "Café Central — VIP"
+
+STEP 2: MODIFY IN STUDIO
+├─ Studio loads with duplicated template
+├─ User modifies:
+│   ├─ Changes card type from "stamp" to "vip_membership"
+│   ├─ Updates colors: brown → black/gold
+│   ├─ Replaces stamp grid with tier badges
+│   ├─ Updates fields:
+│   │   ├─ Header: "NIVEL" → "VIP GOLD"
+│   │   ├─ Primary: "MEMBRESÍA" → "Juan Pérez"
+│   │   └─ Secondary: Adds "Desde: Marzo 2024"
+│   ├─ Updates back content with VIP benefits
+│   └─ Design Score: 9.0/10
+
+STEP 3: SAVE AS NEW TEMPLATE
+├─ [💾 Guardar como plantilla]
+├─ Name: "Café Central — VIP Membership"
+├─ Saved to My Templates
+└─ SUCCESS ✓
+```
+
+---
+
+## 10. Custom Fields & Notifications Journeys
+
+---
+
+### J-29: Add Custom Field with Notification
+
+**User Goal:** Add a field that sends push notification when value changes.
+
+```
+STEP 1: CONTENT TAB
+├─ User in Studio, clicks "Content" tab
+├─ Clicks [+ Añadir campo secundario]
+
+STEP 2: POSITION SELECTOR
+├─ Modal: "¿Dónde colocar este campo?"
+├─ Options: Cabecera / Principal / Secundario / Auxiliar / Reverso
+├─ User selects "Secundario"
+
+STEP 3: FIELD CONFIGURATION
+├─ Etiqueta: "PUNTOS"
+├─ Valor: "{loyalty_points} pts"
+├─ [✓] Usar valor dinámico
+├─ Tipo: Número → Formato: Decimal
+├─ Alineación: Centro
+
+STEP 4: NOTIFICATION CONFIGURATION
+├─ 🍎 Apple Wallet:
+│   [✓] Enviar notificación push
+│   Mensaje: "🏆 ¡Nuevos puntos! Ahora tienes %@"
+├─ 🤖 Google Wallet:
+│   [✓] Mostrar mensaje
+│   Título: "🏆 ¡Nuevos puntos!"
+│   Cuerpo: "Has ganado puntos. Total: {loyalty_points} pts"
+│   Disparador: [Al cambiar el valor ●]
+
+STEP 5: PREVIEW
+├─ iPhone preview shows: "PUNTOS  1,250 pts" (centered)
+├─ Pixel preview shows: "PUNTOS  1,250 pts"
+├─ [💾 Añadir campo]
+
+STEP 6: FIELD CARD APPEARS
+├─ Sidebar shows new field card:
+│   [⋮⋮] [🔔] PUNTOS: {loyalty_points} pts
+│   🔄 Dinámico  [🍎✓] [🤖✓]
+├─ Canvas preview updates
+└─ SUCCESS ✓
+```
+
+---
+
+### J-30: Configure Dynamic Value Template
+
+**User Goal:** Use system variables that auto-populate per customer.
+
+```
+STEP 1: FIELD VALUE INPUT
+├─ User editing "Cliente" field
+├─ Value field shows: "Juan Pérez" (static)
+├─ User clicks [📋 Plantillas de valor ▼]
+
+STEP 2: TEMPLATE PICKER
+├─ Modal opens with categories:
+│   ├─ 👤 Cliente: {customer_name}, {customer_id}, {customer_email}
+│   ├─ ☕ Sellos: {stamp_count}, {stamps_required}, {stamp_display}
+│   ├─ 🏆 Puntos: {loyalty_points}, {tier_name}, {cashback_balance}
+│   ├─ 🎁 Regalo: {gift_balance}, {gift_card_number}
+│   └─ 📅 Fechas: {current_date}, {days_until_expiry}
+├─ User clicks on {customer_name}
+
+STEP 3: TEMPLATE APPLIED
+├─ Value field now shows: "{customer_name}"
+├─ 🔄 icon appears indicating dynamic
+├─ Preview shows: "CLIENTE  Juan Pérez" (with example value)
+├─ Tooltip: "Este valor se actualiza automáticamente para cada cliente"
+
+STEP 4: COMBINE TEMPLATES
+├─ User edits value to: "{customer_name} — {tier_name}"
+├─ Preview: "CLIENTE  Juan Pérez — Oro"
+├─ System validates both templates exist
+└─ SUCCESS ✓
+```
+
+---
+
+### J-31: Set Up Apple Push Notification (changeMessage)
+
+**User Goal:** Configure iOS push notification when stamp count increases.
+
+```
+STEP 1: EDIT STAMP FIELD
+├─ User clicks on "SELLOS" field card
+├─ Expanded field editor opens
+
+STEP 2: APPLE NOTIFICATION SECTION
+├─ Scrolls to 🍎 Apple Wallet notifications
+├─ [✓] Enviar notificación push cuando cambie este valor
+├─ Enters message: "⭐ ¡Nuevo sello! Ahora tienes %@"
+├─ Character counter: 38 / 120 ✅
+
+STEP 3: PREVIEW NOTIFICATION
+├─ iPhone lock screen preview:
+│   ┌─────────────────────────┐
+│   │  ☕ Café Central        │
+│   │  ⭐ ¡Nuevo sello!      │
+│   │  Ahora tienes 4 / 10   │
+│   └─────────────────────────┘
+
+STEP 4: VALIDATION
+├─ System checks:
+│   ✓ webServiceURL configured in Advanced tab
+│   ✓ APNs certificate valid
+│   ✓ changeMessage length < 120
+├─ Warning if web service not configured:
+│   "⚠️ Configura Web Service URL para activar notificaciones push"
+
+STEP 5: SAVE
+├─ [💾 Guardar cambios]
+├─ Field card now shows 🔔 (filled)
+├─ Hover: "Notificación push activa: '¡Nuevo sello! %@'"
+└─ SUCCESS ✓
+```
+
+---
+
+### J-32: Set Up Google Wallet Message
+
+**User Goal:** Configure Google Wallet in-app message for coupon expiration.
+
+```
+STEP 1: EDIT EXPIRATION FIELD
+├─ User has "Válido hasta" field with date value
+├─ Clicks field card to expand editor
+
+STEP 2: GOOGLE MESSAGE SECTION
+├─ Scrolls to 🤖 Google Wallet messages
+├─ [✓] Mostrar mensaje cuando este campo cambie
+├─ Título: "⚠️ Cupón por expirar"
+├─ Cuerpo: "Tu cupón expira en {days_until_expiry}. ¡Úsalo pronto!"
+
+STEP 3: TRIGGER CONFIGURATION
+├─ Disparador options:
+│   [○] Al cambiar el valor
+│   [○] Programado
+│   [●] Antes de expirar
+├─ Days before expiry: [ 3 ▼]
+├─ Duration: Mostrar durante [ 5 ▼] días
+
+STEP 4: PREVIEW
+├─ Google Wallet preview:
+│   ┌─────────────────────────┐
+│   │  ⚠️ Cupón por expirar   │
+│   │  Tu cupón expira en 3   │
+│   │  días. ¡Úsalo pronto!   │
+│   │  [Descartar]            │
+│   └─────────────────────────┘
+
+STEP 5: SAVE
+├─ [💾 Guardar cambios]
+├─ Field card shows 📢 icon
+└─ SUCCESS ✓
+```
+
+---
+
+### J-33: Hit Field Limit and Resolve Conflict
+
+**User Goal:** User adds too many fields, system helps resolve.
+
+```
+SCENARIO: Adding 5th secondary field with square barcode
+
+STEP 1: ATTEMPT TO ADD
+├─ User clicks [+ Añadir campo secundario]
+├─ System shows warning modal:
+│   "⚠️ Límite de campos alcanzado"
+│   "Con barcode QR cuadrado: máximo 4 campos secundarios + auxiliares"
+│   "Actualmente: 4 secundarios + 1 auxiliar = 5 (límite: 4)"
+
+STEP 2: RESOLUTION OPTIONS
+├─ Modal shows options:
+│   ├─ [1] Mover un campo a Auxiliar (si hay espacio)
+│   ├─ [2] Combinar 2 campos en 1 (merge)
+│   ├─ [3] Cambiar a barcode rectangular (libera espacio)
+│   ├─ [4] Mover campo al reverso (backFields)
+│   └─ [5] Cambiar tipo de paso a Generic (más flexible)
+
+STEP 3: USER CHOOSES
+├─ User selects [4] Mover al reverso
+├─ System:
+│   ├─ Moves "NOTAS" field to Back section
+│   ├─ Updates Apple: from secondaryFields → backFields
+│   ├─ Updates Google: from cardTemplateOverride → detailsTemplateOverride
+│   ├─ Canvas preview updates
+│   └─ Toast: "✅ 'NOTAS' movido al reverso de la tarjeta"
+
+STEP 4: CONTINUE
+├─ User can now add new secondary field
+├─ Limit indicator updates:
+│   "Secundario: ██████░░ (2/4)  Auxiliar: ████░░░░ (1/4)"
+│   "Sec+Aux: ████████░░░░░░░░ (3/4) ✅"
+└─ SUCCESS ✓
+```
+
+---
+
+## 11. Updated Journey Metrics & Success Criteria
+
+| Journey | Target Time | Max Touchpoints | Success Criteria |
+|---------|:-----------:|:---------------:|------------------|
+| J-01 Template → Save | 5 min | 12 | Design Score ≥ 8.0, both platforms rendered |
+| J-02 AI Generation | 4 min | 8 | AI generates 3 valid designs in < 10s |
+| J-03 Blank Canvas | 12 min | 20 | Full customization, Score ≥ 8.5 |
+| J-04 Edit Existing | 5 min | 10 | Changes applied, push update option shown |
+| J-09 Image Upload | 2 min | 6 | Auto-variants generated, preview updated |
+| J-10 Field Config | 3 min | 8 | Field added/edited, preview updated |
+| J-13 Quality Fix | 2 min | 5 | Score improved by ≥ 1.5 points |
+| J-14 Session Recovery | 30s | 3 | Draft restored, < 30s work lost |
+| **J-24 Save as Template** | 1 min | 5 | Template appears in My Templates |
+| **J-25 Apply My Template** | 30s | 4 | Studio loads with template data |
+| **J-26 Manage Templates** | 30s | 3 | CRUD operation completes |
+| **J-29 Add Field + Notify** | 2 min | 8 | Field added with notification configured |
+| **J-30 Dynamic Template** | 1 min | 5 | Template applied, preview shows example |
+| **J-31 Apple Push Setup** | 1 min | 6 | changeMessage configured, preview shown |
+| **J-33 Resolve Limit** | 30s | 4 | Field conflict resolved, user can continue |
+
+---
+
+*End of Document SRS-005 v2*
+*Updated with User Template Library and Custom Fields journeys*
+

@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, cast
 
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
 from apps.audit.service import log_action
 from apps.notifications.models import CampaignRun, Notification, NotificationType
+from apps.notifications.services.dispatch import (
+    build_campaign_task_kwargs,
+    dispatch_campaign_immediately,
+    schedule_campaign_dispatch,
+)
 from common.messages import get_message
 from common.permissions import is_owner, jwt_auth
 from common.plan_enforcement import (
@@ -21,64 +25,10 @@ from common.request import TenantRequest, require_tenant
 
 from .base import router
 
+
 # ---------------------------------------------------------------------------
-# Scheduled campaign support
+# Schemas
 # ---------------------------------------------------------------------------
-
-
-def _get_campaign_task(data: CampaignCreateIn):
-    """Return the Celery task function and kwargs for a campaign channel."""
-    common_kwargs = {
-        "target_program_ids": data.target_program_ids,
-        "target_device_type": data.target_device_type,
-        "target_wallet_platform": data.target_wallet_platform,
-        "target_customer_ids": data.target_customer_ids,
-    }
-    if data.channel == "email":
-        from apps.notifications.tasks import send_email_campaign
-
-        return send_email_campaign, {
-            "tenant_id": None,  # filled at dispatch time
-            "subject": data.title,
-            "html_body": data.message,
-            "segment_id": data.segment_id,
-            "image_url": data.image_url or "",
-            **common_kwargs,
-        }
-    elif data.channel == "wallet":
-        from apps.notifications.tasks import send_wallet_notification_campaign
-
-        return send_wallet_notification_campaign, {
-            "tenant_id": None,
-            "title": data.title,
-            "message": data.message,
-            "segment_id": data.segment_id,
-            "wallet_platform": data.wallet_platform,
-            "action_url": data.action_url or "",
-            **common_kwargs,
-        }
-    elif data.channel == "whatsapp":
-        from apps.notifications.tasks import send_whatsapp_campaign
-
-        return send_whatsapp_campaign, {
-            "tenant_id": None,
-            "title": data.title,
-            "message": data.message,
-            "segment_id": data.segment_id,
-            "image_url": data.image_url or "",
-            **common_kwargs,
-        }
-    elif data.channel == "sms":
-        from apps.notifications.sms.tasks import send_sms_campaign
-
-        return send_sms_campaign, {
-            "tenant_id": None,
-            "title": data.title,
-            "message": data.message,
-            "segment_id": data.segment_id,
-            **common_kwargs,
-        }
-    return None, {}
 
 
 class CampaignOut(BaseModel):
@@ -214,7 +164,6 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
 
     # -- Scheduled campaign support -------------------------------------------
     if data.schedule_type == "scheduled" and data.scheduled_at:
-        from celery import current_app as celery_app
         from django.utils import timezone
 
         try:
@@ -238,24 +187,25 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
                 ),
             )
 
-        # Resolve task for the channel
-        task_fn, task_kwargs = _get_campaign_task(data)
-        if task_fn is None:
-            raise HttpError(
-                400,
-                get_message(
-                    "VALIDATION_ERROR", detail="Canal no válido para programación."
-                ),
-            )
+        task_kwargs = build_campaign_task_kwargs(
+            channel=data.channel,
+            title=data.title,
+            message=data.message,
+            segment_id=data.segment_id,
+            image_url=data.image_url or "",
+            wallet_platform=data.wallet_platform,
+            action_url=data.action_url or "",
+            target_program_ids=data.target_program_ids,
+            target_device_type=data.target_device_type,
+            target_wallet_platform=data.target_wallet_platform,
+            target_customer_ids=data.target_customer_ids,
+        )
 
-        # Fill tenant_id
-        task_kwargs["tenant_id"] = str(tenant.id)
-
-        # Schedule via Celery
-        cast(Any, celery_app).send_task(
-            cast(Any, task_fn).name,
+        schedule_campaign_dispatch(
+            channel=data.channel,
+            tenant_id=str(tenant.id),
             kwargs=task_kwargs,
-            eta=scheduled_time,
+            scheduled_at=scheduled_time,
         )
 
         log_action(
@@ -277,126 +227,32 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         }
 
     # -- Immediate dispatch (existing flow) -----------------------------------
-    common_task_kwargs = {
-        "target_program_ids": data.target_program_ids,
-        "target_device_type": data.target_device_type,
-        "target_wallet_platform": data.target_wallet_platform,
-        "target_customer_ids": data.target_customer_ids,
-    }
+    task_kwargs = build_campaign_task_kwargs(
+        channel=data.channel,
+        title=data.title,
+        message=data.message,
+        segment_id=data.segment_id,
+        image_url=data.image_url or "",
+        wallet_platform=data.wallet_platform,
+        action_url=data.action_url or "",
+        target_program_ids=data.target_program_ids,
+        target_device_type=data.target_device_type,
+        target_wallet_platform=data.target_wallet_platform,
+        target_customer_ids=data.target_customer_ids,
+    )
+
     if data.channel == "email":
         check_feature_access(tenant, "email_campaigns")
         check_plan_limit(tenant, "emails_month", write=True)
-        from apps.notifications.tasks import send_email_campaign
-
-        _task_fn: Any = send_email_campaign
-        _task_fn.delay(
-            tenant_id=str(tenant.id),
-            subject=data.title,
-            html_body=data.message,
-            segment_id=data.segment_id,
-            image_url=data.image_url or "",
-            **common_task_kwargs,
-        )
-        log_action(
-            request=request,
-            action="CREATE",
-            resource_type="campaign",
-            details={
-                "channel": data.channel,
-                "segment_id": data.segment_id,
-                "title": data.title,
-            },
-        )
-        return {
-            "success": True,
-            "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=data.segment_id),
-        }
     elif data.channel == "wallet":
         check_feature_access(tenant, "wallet_campaigns")
         check_plan_limit(tenant, "wallet_pushes_month", write=True)
-        from apps.notifications.tasks import send_wallet_notification_campaign
-
-        _task_fn: Any = send_wallet_notification_campaign
-        _task_fn.delay(
-            tenant_id=str(tenant.id),
-            title=data.title,
-            message=data.message,
-            segment_id=data.segment_id,
-            wallet_platform=data.wallet_platform,
-            action_url=data.action_url or "",
-            **common_task_kwargs,
-        )
-        log_action(
-            request=request,
-            action="CREATE",
-            resource_type="campaign",
-            details={
-                "channel": data.channel,
-                "segment_id": data.segment_id,
-                "title": data.title,
-            },
-        )
-        return {
-            "success": True,
-            "message": get_message("CAMPAIGN_WALLET_STARTED", segment=data.segment_id),
-        }
     elif data.channel == "whatsapp":
         check_feature_access(tenant, "whatsapp_campaigns")
         check_plan_limit(tenant, "whatsapp_day", write=True)
-        from apps.notifications.tasks import send_whatsapp_campaign
-
-        _task_fn: Any = send_whatsapp_campaign
-        _task_fn.delay(
-            tenant_id=str(tenant.id),
-            title=data.title,
-            message=data.message,
-            segment_id=data.segment_id,
-            image_url=data.image_url or "",
-            **common_task_kwargs,
-        )
-        log_action(
-            request=request,
-            action="CREATE",
-            resource_type="campaign",
-            details={
-                "channel": data.channel,
-                "segment_id": data.segment_id,
-                "title": data.title,
-            },
-        )
-        return {
-            "success": True,
-            "message": get_message(
-                "CAMPAIGN_WHATSAPP_STARTED", segment=data.segment_id
-            ),
-        }
     elif data.channel == "sms":
         check_feature_access(tenant, "sms_campaigns")
         check_plan_limit(tenant, "sms_day", write=True)
-        from apps.notifications.sms.tasks import send_sms_campaign
-
-        _task_fn: Any = send_sms_campaign
-        _task_fn.delay(
-            tenant_id=str(tenant.id),
-            title=data.title,
-            message=data.message,
-            segment_id=data.segment_id,
-            **common_task_kwargs,
-        )
-        log_action(
-            request=request,
-            action="CREATE",
-            resource_type="campaign",
-            details={
-                "channel": data.channel,
-                "segment_id": data.segment_id,
-                "title": data.title,
-            },
-        )
-        return {
-            "success": True,
-            "message": get_message("SMS_CAMPAIGN_STARTED", segment=data.segment_id),
-        }
     else:
         raise HttpError(
             400,
@@ -405,3 +261,21 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
                 detail="Canal no válido. Usa 'email', 'wallet', 'whatsapp' o 'sms'.",
             ),
         )
+
+    result = dispatch_campaign_immediately(
+        channel=data.channel,
+        tenant_id=str(tenant.id),
+        kwargs=task_kwargs,
+    )
+
+    log_action(
+        request=request,
+        action="CREATE",
+        resource_type="campaign",
+        details={
+            "channel": data.channel,
+            "segment_id": data.segment_id,
+            "title": data.title,
+        },
+    )
+    return result

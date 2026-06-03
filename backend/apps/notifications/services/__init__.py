@@ -1,0 +1,1 @@
+"""Loyallia notification services package."""

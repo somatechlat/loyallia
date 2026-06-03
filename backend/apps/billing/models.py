@@ -237,6 +237,9 @@ class SubscriptionPlan(TimestampedModel):
         verbose_name = "Plan de Suscripción"
         verbose_name_plural = "Planes de Suscripción"
         ordering = ["sort_order", "price_monthly"]
+        indexes = [
+            models.Index(fields=["is_active", "status"]),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(price_monthly__gte=0),
@@ -472,6 +475,7 @@ class Subscription(TimestampedModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["status"]),
+            models.Index(fields=["tenant"]),
         ]
 
     def __repr__(self) -> str:

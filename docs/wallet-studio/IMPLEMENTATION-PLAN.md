@@ -72,6 +72,9 @@ REPLACE (new files):
     ├── ContentTab.tsx           → Unified field editor
     ├── BarcodeTab.tsx           → Barcode config with platform warnings
     ├── ColorsTab.tsx            → Color picker with contrast check
+    ├── BackDesignTab.tsx        → Back/reverse content editor
+    ├── AppleBackPreview.tsx     → Apple back-of-pass preview
+    ├── GoogleBackPreview.tsx    → Google details view preview
     ├── AdvancedTab.tsx          → Apple/Google specific settings
     ├── DesignScore.tsx          → Quality score panel
     ├── IconPicker.tsx           → Emoji/flat icon selector modal
@@ -82,7 +85,9 @@ REPLACE (new files):
     ├── useWalletStudio.ts       → Main state management hook
     ├── useUndoRedo.ts           → Undo/redo hook
     ├── useAutoSave.ts           → Auto-save hook
-    └── useDesignScore.ts        → Design quality scoring hook
+    ├── useDesignScore.ts        → Design quality scoring hook
+    ├── useTemplateLibrary.ts    → Template library CRUD hook
+    └── useFieldStudio.ts        → Field editor state hook
 
 BACKEND (Django):
 ├── apps/ai/                   → NEW Django app
@@ -93,9 +98,13 @@ BACKEND (Django):
 │   │   ├── fallback_designer.py → Rule-based fallback
 │   │   └── cost_tracker.py    → AI cost tracking
 │   └── middleware.py          → Rate limiting middleware
+├── apps/wallet/               → Extend existing
+│   ├── models.py              → WalletTemplate model
+│   ├── views.py               → Template CRUD, pass generation
+│   ├── urls.py                → Template API endpoints
+│   └── migrations/            → Template table migration
 ├── common/vault.py            → Already has get_secret, put_secret
-└── apps/wallet/               → Extend existing
-    └── views.py               → Add template CRUD, pass generation endpoints
+└── media/templates/           → Template preview image storage
 ```
 
 ---
@@ -159,23 +168,28 @@ BACKEND (Django):
 
 ---
 
-### Phase 3: Content Tab (Week 3)
-**Goal:** Unified field editor replacing AppleFieldEditor + GoogleRowBuilder.
+### Phase 3: Field Studio (Week 3)
+**Goal:** Complete field editor with dynamic values, notifications, and platform mapping.
 
 | # | Task | Files | Dependencies | Risk |
 |---|------|-------|-------------|------|
-| 3.1 | Design unified field model (abstracted from platform) | `types.ts` | 0.1 | Medium |
-| 3.2 | Create `ContentTab` with field cards | `ContentTab.tsx` | 3.1, 1.6 | Medium |
-| 3.3 | Add drag-to-reorder fields | `ContentTab.tsx` | 3.2 | Medium |
-| 3.4 | Add field type selector (Header/Primary/Secondary/Auxiliary/Back) | `ContentTab.tsx` | 3.2 | Low |
-| 3.5 | Add platform visibility toggles per field | `ContentTab.tsx` | 3.2 | Low |
-| 3.6 | Add dynamic value templates ({customer_name}, {stamp_count}) | `ContentTab.tsx` | 3.2 | Low |
-| 3.7 | Add field count limits with visual indicators | `ContentTab.tsx` | 3.2 | Low |
-| 3.8 | Map unified fields to Apple preview | `utils/field-mappers.ts` | 3.1, 0.6 | Medium |
-| 3.9 | Map unified fields to Google preview | `utils/field-mappers.ts` | 3.1, 0.6 | Medium |
-| 3.10 | Add platform limit warnings (e.g., "Max 4 combined") | `ContentTab.tsx` | 3.7 | Low |
+| 3.1 | Design unified field model with notifications | `types.ts` | 0.1 | Medium |
+| 3.2 | Create `FieldStudio` container component | `FieldStudio.tsx` | 3.1, 1.6 | Medium |
+| 3.3 | Create `FieldCard` component with notification bell | `FieldCard.tsx` | 3.2 | Medium |
+| 3.4 | Create `FieldEditorModal` (expanded field editor) | `FieldEditorModal.tsx` | 3.2 | Medium |
+| 3.5 | Add drag-to-reorder fields | `FieldStudio.tsx` | 3.2 | Medium |
+| 3.6 | Add field position selector (Header/Primary/Secondary/Auxiliary/Back) | `FieldEditorModal.tsx` | 3.4 | Low |
+| 3.7 | Add dynamic value template picker | `DynamicTemplatePicker.tsx` | 3.2 | Low |
+| 3.8 | Add field count limits with visual indicators | `FieldLimitIndicator.tsx` | 3.2 | Low |
+| 3.9 | Create `NotificationConfigPanel` (Apple changeMessage + Google Messages) | `NotificationConfigPanel.tsx` | 3.4 | Medium |
+| 3.10 | Add Apple changeMessage push notification config | `NotificationConfigPanel.tsx` | 3.9 | Medium |
+| 3.11 | Add Google Wallet message config | `NotificationConfigPanel.tsx` | 3.9 | Medium |
+| 3.12 | Add field validation (limits, types, templates) | `utils/field-validation.ts` | 3.1 | Low |
+| 3.13 | Map unified fields to Apple preview | `utils/field-mappers.ts` | 3.1, 0.6 | Medium |
+| 3.14 | Map unified fields to Google preview | `utils/field-mappers.ts` | 3.1, 0.6 | Medium |
+| 3.15 | Add platform limit conflict resolution | `FieldStudio.tsx` | 3.8 | Low |
 
-**Deliverable:** User can add/edit/reorder fields. Both Apple and Google previews update. Platform limits enforced.
+**Deliverable:** User can add/edit/reorder fields with dynamic values and notifications. Platform limits enforced with conflict resolution.
 
 ---
 
@@ -228,30 +242,41 @@ BACKEND (Django):
 | 6.2 | Add Apple: icon upload, description, NFC, locations, beacons | `AdvancedTab.tsx` | 6.1 | Low |
 | 6.3 | Add Google: Smart Tap, app link, screenshot disable, grouping | `AdvancedTab.tsx` | 6.1 | Low |
 | 6.4 | Create `DesignScore` component | `DesignScore.tsx` | 0.7 | Low |
-| 6.5 | Implement 9-check scoring algorithm | `hooks/useDesignScore.ts` | 0.7 | Medium |
+| 6.5 | Implement 14-check scoring algorithm (incl. back content) | `hooks/useDesignScore.ts` | 0.7 | Medium |
 | 6.6 | Add score breakdown panel | `DesignScore.tsx` | 6.5 | Low |
-| 6.7 | Add inline fix suggestions | `DesignScore.tsx` | 6.5 | Low |
-| 6.8 | Add auto-fix button for simple issues | `DesignScore.tsx` | 6.7 | Low |
-| 6.9 | Integrate score into toolbar | `StudioToolbar.tsx` | 6.4 | Low |
+| 6.7 | Add back content checks (terms, contact, rules, length) | `hooks/useDesignScore.ts` | 6.5 | Low |
+| 6.8 | Add inline fix suggestions | `DesignScore.tsx` | 6.5 | Low |
+| 6.9 | Add auto-fix button for simple issues | `DesignScore.tsx` | 6.8 | Low |
+| 6.10 | Integrate score into toolbar | `StudioToolbar.tsx` | 6.4 | Low |
 
-**Deliverable:** Advanced settings accessible. Design score calculates in real-time. Auto-fix works for contrast issues.
+**Deliverable:** Advanced settings accessible. Design score calculates in real-time with back content validation. Auto-fix works for contrast issues.
 
 ---
 
-### Phase 7: Template Gallery (Week 5)
-**Goal:** Entry point with 20+ templates and AI generation.
+### Phase 7: Template Gallery & User Template Library (Week 5)
+**Goal:** Dual-template system: System templates + User-created template library.
 
 | # | Task | Files | Dependencies | Risk |
 |---|------|-------|-------------|------|
-| 7.1 | Create `TemplateGallery` page/modal | `TemplateGallery.tsx` | None | Medium |
+| 7.1 | Create `TemplateGallery` page/modal with tabs | `TemplateGallery.tsx` | None | Medium |
 | 7.2 | Add search, filter, category tabs | `TemplateGallery.tsx` | 7.1 | Low |
-| 7.3 | Design 20+ template definitions (JSON) | `templates/registry.ts` | 0.1 | Medium |
+| 7.3 | Design 20+ system template definitions (JSON) | `templates/registry.ts` | 0.1 | Medium |
 | 7.4 | Add template preview modal (side-by-side iPhone+Pixel) | `TemplatePreviewModal.tsx` | 7.1 | Low |
 | 7.5 | Add "Empezar desde cero" blank option | `TemplateGallery.tsx` | 7.1 | Low |
 | 7.6 | Connect template selection to studio | `TemplateGallery.tsx` | 1.6 | Low |
 | 7.7 | Add template application animation | `TemplateGallery.tsx` | 7.6 | Low |
+| 7.8 | Create `MyTemplatesTab` component | `MyTemplatesTab.tsx` | 7.1 | Medium |
+| 7.9 | Create `SaveTemplateModal` (from Studio) | `SaveTemplateModal.tsx` | 7.8 | Medium |
+| 7.10 | Add template card with actions (⋮ menu, ⭐, usage count) | `TemplateCard.tsx` | 7.8 | Low |
+| 7.11 | Add template CRUD: rename, duplicate, delete | `useTemplateLibrary.ts` | 7.8 | Low |
+| 7.12 | Add template favorite toggle | `TemplateCard.tsx` | 7.10 | Low |
+| 7.13 | Add empty state for My Templates | `MyTemplatesTab.tsx` | 7.8 | Low |
+| 7.14 | Create Django `WalletTemplate` model + migration | Backend | None | Low |
+| 7.15 | Add template CRUD API endpoints | Django views | 7.14 | Low |
+| 7.16 | Add template preview image generation | Django service | 7.14 | Medium |
+| 7.17 | Add "AI Variations" feature (generate from existing template) | AI service | 8.1 | Medium |
 
-**Deliverable:** User sees template gallery, can preview, select, and apply. Studio loads with template data.
+**Deliverable:** User can browse system templates, save own templates, manage (CRUD) template library, and generate AI variations.
 
 ---
 
@@ -345,6 +370,9 @@ BACKEND (Django):
 | Mobile bottom sheet UX feels clunky | Medium | Medium | Iterative user testing |
 | Existing design migration breaks | Low | High | Thorough migration function + backup v1 |
 | Undo/redo state grows too large | Low | Medium | Cap history at 50 actions |
+| Template preview generation load | Medium | Medium | Async generation, caching |
+| User template storage growth | Low | Medium | Storage limits, cleanup policy |
+| Field notification configuration complexity | Medium | Medium | Guided setup, smart defaults |
 | Team capacity during implementation | Medium | High | Phased approach, can stop after any phase |
 
 ---
@@ -358,21 +386,23 @@ Phase 0 (Foundation)
     │       │
     │       ├──→ Phase 2 (Images) ──┐
     │       │                       │
-    │       ├──→ Phase 3 (Content) ─┤
-    │       │                       ├──→ Phase 5 (Card-Type Visuals)
+    │       ├──→ Phase 3 (Field Studio) ─┤
+    │       │                            ├──→ Phase 5 (Card-Type Visuals)
     │       ├──→ Phase 4 (Barcode/Colors)─┘       │
     │       │                                      │
-    │       ├──→ Phase 6 (Advanced/Score) ←───────┘
+    │       ├──→ Phase 6 (Advanced/Score/Back) ←──┘
     │       │
-    │       └──→ Phase 7 (Templates)
+    │       └──→ Phase 7 (Templates + User Library)
     │               │
-    │               └──→ Phase 8 (AI)
-    │                       │
-    │                       └──→ Phase 9 (Mobile/Polish)
-    │                               │
-    │                               └──→ Phase 10 (Integration)
-    │                                       │
-    │                                       └──→ Phase 11 (Launch)
+    │               ├──→ Phase 8 (AI)
+    │               │       │
+    │               │       └──→ Phase 9 (Mobile/Polish)
+    │               │               │
+    │               │               └──→ Phase 10 (Integration)
+    │               │                       │
+    │               │                       └──→ Phase 11 (Launch)
+    │               │
+    │               └──→ Can run parallel with Phase 8 backend
     │
     └──→ Can run in parallel: Phase 8 backend (8.1-8.8) during Phases 2-7
 ```
@@ -393,6 +423,11 @@ Before coding begins, user must decide:
 | 6 | **Stamp icon animation** | CSS only / Lottie / GIF | CSS only |
 | 7 | **Export formats** | .pkpass only / .pkpass + JWT link / + PNG preview | .pkpass + JWT |
 | 8 | **Can users save custom templates?** | Yes / No | Yes |
+| 9 | **Max user templates per account** | 10 / 25 / 50 / Unlimited | 50 |
+| 10 | **Template sharing** | Private only / Team / Public | Private + Team |
+| 11 | **Default back content** | Minimal / Standard / Full | Standard |
+| 12 | **Field notifications default** | All ON / All OFF / Smart defaults | Smart defaults |
+| 13 | **Dynamic templates scope** | Basic (5) / Standard (15) / Full (25+) | Full (25+) |
 
 ---
 
@@ -400,13 +435,13 @@ Before coding begins, user must decide:
 
 | Category | New Files | Modified Files | Deleted Files |
 |----------|:---------:|:--------------:|:-------------:|
-| Components | ~25 | ~5 | ~2 |
-| Hooks | ~8 | 0 | 0 |
-| Utilities | ~5 | 0 | 0 |
-| Types/Constants | ~3 | ~2 | ~1 |
-| Tests | ~15 | 0 | 0 |
-| Backend (Django) | ~8 | ~2 | 0 |
-| **Total** | **~64** | **~9** | **~3** |
+| Components | ~35 | ~5 | ~2 |
+| Hooks | ~10 | 0 | 0 |
+| Utilities | ~6 | 0 | 0 |
+| Types/Constants | ~4 | ~2 | ~1 |
+| Tests | ~20 | 0 | 0 |
+| Backend (Django) | ~12 | ~3 | 0 |
+| **Total** | **~87** | **~10** | **~3** |
 
 ---
 

@@ -65,6 +65,9 @@ class PaymentMethod(TimestampedModel):
         verbose_name = "Método de pago"
         verbose_name_plural = "Métodos de pago"
         ordering = ["-is_default", "-created_at"]
+        indexes = [
+            models.Index(fields=["tenant", "is_default"]),
+        ]
 
     def __repr__(self) -> str:
         return f"<PaymentMethod: {self.card_brand} ****{self.card_last_four}  {self.tenant.name}>"

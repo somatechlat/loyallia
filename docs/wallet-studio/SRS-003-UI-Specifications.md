@@ -763,6 +763,107 @@
 
 ---
 
+## 8.7 Back / Details Tab (Reverso)
+
+**This tab is ONLY visible when the user toggles to "Reverso"** (back view) in the canvas.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ SIDEBAR: REVERSO TAB                                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  📄 CAMPOS DEL REVERSO — Sin límite                              │   │
+│  │  (Apple: backFields | Google: textModulesData en details)        │   │
+│  │                                                                  │   │
+│  │  ┌─────────────────────────────────────────────────────────┐    │   │
+│  │  │ [⋮⋮] Campo 1  [🗑️]                                    │    │   │
+│  │  │ Etiqueta:  [TÉRMINOS Y CONDICIONES      ]               │    │   │
+│  │  │ Valor:     [Participa acumulando sellos...]             │    │   │
+│  │  │                                                          │    │   │
+│  │  │ [✓] Convertir en enlace clickeable                      │    │   │
+│  │  │    URL:     [https://...                   ]            │    │   │
+│  │  │    Texto:   [Leer términos completos       ]            │    │   │
+│  │  │                                                          │    │   │
+│  │  │ 🍎 Solo Apple: [✓] attributedValue                      │    │   │
+│  │  │ 🤖 Solo Google: [✓] linksModuleData                      │    │   │
+│  │  └─────────────────────────────────────────────────────────┘    │   │
+│  │                                                                  │   │
+│  │  ┌─────────────────────────────────────────────────────────┐    │   │
+│  │  │ [⋮⋮] Campo 2  [🗑️]                                    │    │   │
+│  │  │ Etiqueta:  [CONTACTO                    ]               │    │   │
+│  │  │ Valor:     [contacto@cafecentral.com    ]               │    │   │
+│  │  │                                                          │    │   │
+│  │  │ [✓] Convertir en enlace                                 │    │   │
+│  │  │    Tipo: [Email ●] [Teléfono ○] [Web ○]                │    │   │
+│  │  └─────────────────────────────────────────────────────────┘    │   │
+│  │                                                                  │   │
+│  │  ┌─────────────────────────────────────────────────────────┐    │   │
+│  │  │ [⋮⋮] Campo 3  [🗑️]                                    │    │   │
+│  │  │ Etiqueta:  [REGLAS DEL PROGRAMA         ]               │    │   │
+│  │  │ Valor:     [• 1 sello por compra >$5    ]               │    │   │
+│  │  │            [• Recompensa: café gratis     ]               │    │   │
+│  │  │            [• No acumulable con otras     ]               │    │   │
+│  │  │            [  promociones                 ]               │    │   │
+│  │  └─────────────────────────────────────────────────────────┘    │   │
+│  │                                                                  │   │
+│  │  [+ Añadir campo del reverso]                                   │   │
+│  │                                                                  │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  🔗 ENLACES RÁPIDOS                                              │   │
+│  │  (Aparecen como botones en Google, links en Apple)              │   │
+│  │                                                                  │   │
+│  │  [✓] Sitio Web:     [https://cafecentral.com       ]           │   │
+│  │  [✓] Teléfono:      [+1-234-567-8900               ]           │   │
+│  │  [✓] Email:         [contacto@cafecentral.com      ]           │   │
+│  │  [  ] Instagram:    [                                ]           │   │
+│  │  [  ] Facebook:     [                                ]           │   │
+│  │                                                                  │   │
+│  │  [+ Añadir enlace]                                              │   │
+│  │                                                                  │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  📱 ENLACE A LA APP                                              │   │
+│  │                                                                  │   │
+│  │  [✓] Añadir botón "Abrir en la app"                             │   │
+│  │                                                                  │   │
+│  │  Apple (appLaunchURL):                                           │   │
+│  │  [https://loyallia.app/open?program=123            ]            │   │
+│  │                                                                  │   │
+│  │  Google (appLinkData):                                           │   │
+│  │  Android: [com.loyallia.app                        ]            │   │
+│  │  iOS:     [https://apps.apple.com/app/id...        ]            │   │
+│  │  Web:     [https://loyallia.app                    ]            │   │
+│  │                                                                  │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  🎨 IMÁGENES EN DETALLES (Google Wallet exclusivo)               │   │
+│  │                                                                  │   │
+│  │  [+ Añadir imagen a la vista de detalles]                       │   │
+│  │  ⚠️ Apple Wallet no soporta imágenes en el reverso              │   │
+│  │                                                                  │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Back Tab Rules:**
+
+| Rule | Behavior |
+|------|----------|
+| **Visibility** | Only shown when canvas is in "Reverso" mode |
+| **Field count** | Unlimited (both platforms support unlimited back fields) |
+| **Link detection** | Auto-detects email, phone, URL patterns and suggests link conversion |
+| **Smart links** | `mailto:`, `tel:`, `https://` auto-formatting |
+| **Platform badges** | Each field shows 🍎/🤖 toggles for platform-specific visibility |
+| **Default content** | Every template includes: Terms, Contact, Rules (auto-populated) |
+
+---
+
 ## 9. Platform-Specific Preview Behaviors
 
 ### Apple Wallet Preview

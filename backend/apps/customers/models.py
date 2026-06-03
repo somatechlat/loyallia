@@ -444,6 +444,11 @@ class CustomerPass(models.Model):
             ["customer", "card"],  # One pass per customer per program
             ["tenant", "qr_code"],  # QR codes scoped per tenant
         ]
+        indexes = [
+            models.Index(fields=["tenant", "lifecycle_state"]),
+            models.Index(fields=["tenant", "is_active"]),
+            models.Index(fields=["tenant", "qr_code"]),
+        ]
 
     def __repr__(self) -> str:
         return f"<CustomerPass: {self.customer.full_name} - {self.card.name}>"
