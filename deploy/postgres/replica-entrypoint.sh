@@ -10,7 +10,7 @@ export PGPASSWORD="$(cat /run/loyallia-vault/postgres_password)"
 
 if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
     export PGPASSWORD="$(cat /run/loyallia-vault/postgres_password)"
-    until su-exec postgres pg_basebackup \
+    until gosu postgres pg_basebackup \
         --pgdata="$DATA_DIR" \
         --host=postgres \
         --port=5432 \
@@ -30,12 +30,12 @@ POSTGRES_PASSWORD="$(cat /run/loyallia-vault/postgres_password)"
 PRIMARY_CONNINFO="host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD}"
 export PRIMARY_CONNINFO
 
-su-exec postgres sh -c '
-printf "%s\n" "primary_conninfo = '\''${PRIMARY_CONNINFO}'\''" "hot_standby = on" > /var/lib/postgresql/data/postgresql.auto.conf
+gosu postgres sh -c "
+printf '%s\n' \"primary_conninfo = '${PRIMARY_CONNINFO}'\" \"hot_standby = on\" > /var/lib/postgresql/data/postgresql.auto.conf
 touch /var/lib/postgresql/data/standby.signal
-'
+"
 
-exec su-exec postgres postgres \
+exec gosu postgres postgres \
     -c hot_standby=on \
     -c max_connections=200 \
     -c shared_buffers=256MB \

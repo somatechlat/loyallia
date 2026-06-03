@@ -73,16 +73,8 @@ api_is_healthy() {
 }
 
 service_is_running() {
-    local name="$1"
     local state
-    state="$(docker compose ps --format json "$name" 2>/dev/null | python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    if isinstance(data, list): data = data[0]
-    print(data.get('State', 'unknown'))
-except: print('unknown')
-" 2>/dev/null || echo "unknown")"
+    state="$(docker inspect "loyallia-$1" --format '{{.State.Status}}' 2>/dev/null || echo 'unknown')"
     [ "$state" = "running" ] || [ "$state" = "healthy" ]
 }
 
@@ -289,7 +281,7 @@ auto_create_rescue_files() {
     log "Extracting Vault init.json..."
     docker cp loyallia-vault:/vault/file/init.json "$RESCUE_DIR/vault_init_rescue.json" 2>/dev/null || {
         warn "Failed to copy init.json. Vault may not have initialized."
-        return 1
+        return 0
     }
     chmod 0600 "$RESCUE_DIR/vault_init_rescue.json"
     log "Saved: $RESCUE_DIR/vault_init_rescue.json"
@@ -322,14 +314,14 @@ start_stateful_services() {
     docker compose up -d postgres redis minio minio-init
 
     # PostgreSQL
-    if docker compose exec -T postgres pg_isready -U loyallia -d loyallia &>/dev/null; then
+    if docker compose exec -T postgres pg_isready -U loyallia -d loyallia_dev &>/dev/null; then
         skip "PostgreSQL is already ready."
     else
         log "Waiting for PostgreSQL health..."
         local timeout=120
         local elapsed=0
         while [ "$elapsed" -lt "$timeout" ]; do
-            if docker compose exec -T postgres pg_isready -U loyallia -d loyallia &>/dev/null; then
+            if docker compose exec -T postgres pg_isready -U loyallia -d loyallia_dev &>/dev/null; then
                 log "PostgreSQL is ready."
                 break
             fi
@@ -452,7 +444,7 @@ try:
     print('1' if u.has_usable_password() else '0')
 except:
     print('0')
-" --settings loyallia.settings.development 2>/dev/null || echo '0')"
+" 2>/dev/null || echo '0')"
 
     if [ "$admin_exists" = "1" ]; then
         skip "Admin account $admin_email already exists with usable password."
@@ -486,7 +478,7 @@ except:
 start_workers_and_proxy() {
     step "9/10 — Starting workers, monitoring, proxy"
 
-    local services=("celery-pass" "celery-push" "celery-default" "celery-beat" "flower" "whatsapp-bridge" "nginx" "prometheus" "grafana" "loki")
+    local services=("celery-pass" "celery-push" "celery-default" "celery-beat" "flower" "whatsapp-bridge" "web" "nginx" "prometheus" "grafana" "loki")
     local started=0
 
     for svc in "${services[@]}"; do
@@ -494,7 +486,7 @@ start_workers_and_proxy() {
             skip "$svc is already running."
         else
             log "Starting $svc..."
-            docker compose up -d "$svc" 2>/dev/null || warn "$svc failed to start"
+            docker compose up -d "$svc" || warn "$svc failed to start"
             started=$((started + 1))
         fi
     done
@@ -503,7 +495,7 @@ start_workers_and_proxy() {
         skip "Alertmanager is already running."
     else
         log "Starting Alertmanager..."
-        docker compose up -d alertmanager 2>/dev/null || warn "Alertmanager not configured — skipping"
+        docker compose up -d alertmanager || warn "Alertmanager not configured — skipping"
     fi
 
     if [ "$started" -gt 0 ]; then
