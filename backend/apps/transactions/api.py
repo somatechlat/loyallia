@@ -29,6 +29,7 @@ Security (SEC):
 Called by: Scanner UI (React), Dashboard transaction page, Automation engine.
 """
 
+import logging
 from decimal import Decimal
 from typing import Any, cast
 
@@ -46,6 +47,7 @@ from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_staff_or_above, jwt_auth
 from common.request import TenantRequest, require_tenant
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 
