@@ -487,7 +487,7 @@ def google_login(request, payload: GoogleTokenIn):
             timeout=10.0,
         )
         if resp.status_code != 200:
-            logger.warning("Google token verification failed: %s", resp.text)
+            logger.warning("Google token verification failed: status=%s", resp.status_code)
             raise HttpError(401, get_message("AUTH_GOOGLE_FAILED"))
         google_data = resp.json()
     except httpx.HTTPError as exc:

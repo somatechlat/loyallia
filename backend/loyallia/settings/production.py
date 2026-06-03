@@ -38,7 +38,9 @@ AWS_S3_VERIFY = True
 
 # Trust the Nginx proxy for host validation
 # NOTE: Set ALLOWED_HOSTS via environment variable. No hardcoded defaults in production.
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=Csv()) or ["*"]
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=Csv())
+if not ALLOWED_HOSTS:
+    raise ValueError("ALLOWED_HOSTS must be explicitly set in production.")
 
 # SECRETS VIA VAULT (STRICT MODE: Vault or fail)
 

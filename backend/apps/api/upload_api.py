@@ -5,6 +5,7 @@ Handles direct image uploads (logos, etc.) to MinIO/S3 and returns public URLs.
 
 import logging
 import os
+import re
 import uuid
 from io import BytesIO
 from typing import Any
@@ -29,9 +30,16 @@ logger = logging.getLogger(__name__)
 
 router = Router(tags=["Uploads"])
 
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
-ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Remove path traversal and unsafe characters from filename."""
+    filename = os.path.basename(filename)
+    filename = re.sub(r"[^a-zA-Z0-9._-]", "", filename)
+    return filename
 
 
 class AssetOut(Schema):
@@ -61,7 +69,7 @@ def upload_file(request, file: UploadedFile):
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     request = as_tenant_request(request)
-    filename = file.name or ""
+    filename = _sanitize_filename(file.name or "")
     ext = os.path.splitext(filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HttpError(

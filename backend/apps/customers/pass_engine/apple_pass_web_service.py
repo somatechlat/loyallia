@@ -20,6 +20,7 @@ Authentication: Apple sends `Authorization: ApplePass <authenticationToken>`
 where authenticationToken is the value we set in pass.json.
 """
 
+import hmac
 import logging
 
 from django.conf import settings
@@ -51,7 +52,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
 
     provided_token = auth_header[len("ApplePass "):].strip()
     expected_token = serial_number.replace("-", "")
-    return provided_token == expected_token
+    return hmac.compare_digest(provided_token, expected_token)
 
 
 def _require_device_registered(device_library_id: str, serial_number: str) -> bool:
