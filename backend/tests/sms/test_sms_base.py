@@ -133,12 +133,21 @@ class SMSClientBulkTest(TestCase):
         """Real behavior: when Twilio is not configured, bulk send raises."""
         from apps.notifications.sms.client import send_sms_bulk
 
+        # Simulate missing credentials by overriding Vault secrets
+        set_test_override("twilio_use_test_mode", "false")
+        set_test_override("twilio_account_sid", "")
+        set_test_override("twilio_auth_token", "")
+        set_test_override("twilio_from_number", "")
+
         recipients = [
             {"phone": "", "message": "Hi"},
             {"phone": "+593991111111", "message": ""},
         ]
-        with self.assertRaises(RuntimeError):
-            send_sms_bulk(recipients)
+        try:
+            with self.assertRaises(RuntimeError):
+                send_sms_bulk(recipients)
+        finally:
+            clear_test_overrides()
 
 class I18nSMSMessagesTest(TestCase):
     """Tests for SMS/Twilio/Data Export/AI i18n message codes."""
