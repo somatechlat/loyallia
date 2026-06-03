@@ -108,7 +108,6 @@ def register(request, payload: RegisterIn):
         try:
             from apps.notifications.twilio_verify.client import (
                 VerifyClient,
-                VerifyServiceError,
             )
 
             client = VerifyClient()
@@ -209,7 +208,7 @@ def login(request, payload: LoginIn):
                 status="denied",
             )
         except Exception:
-            pass
+            logger.exception("Failed to log failed login audit action")
         raise HttpError(401, get_message("AUTH_INVALID_CREDENTIALS"))
 
     user.reset_failed_login()
@@ -228,7 +227,7 @@ def login(request, payload: LoginIn):
             status="success",
         )
     except Exception:
-        pass
+        logger.exception("Failed to log successful login audit action")
     return tokens
 
 
@@ -296,7 +295,7 @@ def logout(request, payload: LogoutIn):
             status="success",
         )
     except Exception:
-        pass
+        logger.exception("Failed to log logout audit action")
     return MessageOut(success=True, message=get_message("AUTH_LOGOUT_SUCCESS"))
 
 

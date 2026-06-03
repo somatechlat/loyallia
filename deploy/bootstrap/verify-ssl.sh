@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# verify-ssl.sh — SSL Certificate Verification for Production Bootstrap
+# =============================================================================
+# LOYALLIA — SSL Certificate Verification for Production Bootstrap
+# =============================================================================
 # Document: LYL-DEPLOY-SSL-001
 #
 # Verifies that SSL certificates exist, are valid, and match the domain
 # before starting the deployment. Fails fast if certificates are missing
 # or invalid, preventing Vault/Nginx TLS failures.
 #
-# Usage: ./deploy/bootstrap/verify-ssl.sh [--cert-path PATH] [--key-path PATH]
+# Usage:
+#   ./deploy/bootstrap/verify-ssl.sh [--cert-path PATH] [--key-path PATH]
+# =============================================================================
 
 set -euo pipefail
 
@@ -55,6 +59,11 @@ echo "[verify-ssl] PASS: Private key exists"
 # ---------------------------------------------------------------------------
 CERT_MOD=$(openssl x509 -noout -modulus -in "${CERT_PATH}" 2>/dev/null | openssl md5 | awk '{print $2}')
 KEY_MOD=$(openssl rsa -noout -modulus -in "${KEY_PATH}" 2>/dev/null | openssl md5 | awk '{print $2}')
+
+if [[ -z "${CERT_MOD}" ]] || [[ -z "${KEY_MOD}" ]]; then
+  echo "[verify-ssl] FAIL: Could not compute certificate or key modulus"
+  exit 1
+fi
 
 if [[ "${CERT_MOD}" != "${KEY_MOD}" ]]; then
   echo "[verify-ssl] FAIL: Certificate and private key do not match"

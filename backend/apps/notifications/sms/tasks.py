@@ -45,7 +45,7 @@ def send_sms_campaign(
     target_wallet_platform: str = "both",
     target_customer_ids: list[str] | None = None,
 ) -> dict:
-    """: SMS campaign via Twilio with per-message tracking.
+    """SMS campaign via Twilio with per-message tracking.
 
     Creates a CampaignRun and CampaignDeliveryLog rows, then sends messages
     through the Twilio SMS client. Follows the same architecture as

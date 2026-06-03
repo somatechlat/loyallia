@@ -37,6 +37,7 @@ class RedemptionContext:
     is_remote: bool = False
 
     def __post_init__(self):
+        """Ensure mutable defaults are initialized."""
         if self.rules_evaluated is None:
             self.rules_evaluated = []
 

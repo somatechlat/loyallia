@@ -122,7 +122,12 @@ HEALTHY=0
 TOTAL=0
 for svc in $(${COMPOSE_CMD} ps --services 2>/dev/null); do
     TOTAL=$((TOTAL + 1))
-    status="$(docker inspect -f '{{.State.Health.Status}}' "${COMPOSE_CMD##*-f }_${svc}_1" 2>/dev/null || true)"
+    cid="$(${COMPOSE_CMD} ps -q "$svc" 2>/dev/null | head -1)"
+    if [ -n "$cid" ]; then
+        status="$(docker inspect -f '{{.State.Health.Status}}' "$cid" 2>/dev/null || true)"
+    else
+        status=""
+    fi
     if [ "$status" = "healthy" ] || [ "$status" = "" ]; then
         # No healthcheck configured or healthy
         HEALTHY=$((HEALTHY + 1))

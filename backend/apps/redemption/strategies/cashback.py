@@ -8,16 +8,11 @@ redeem that credit against new purchases.
 
 import logging
 from decimal import Decimal, InvalidOperation
-from typing import TYPE_CHECKING
-
 from apps.transactions.models import TransactionType
 from common.messages import get_message
 
 from ..context import RedemptionContext
 from .base import BaseRedemptionStrategy, PassStateMutation
-
-if TYPE_CHECKING:
-    from apps.customers.models import CustomerPass as CustomerPassType
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +27,11 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self) -> None:
+        """Initialize the earn strategy for cashback cards."""
         super().__init__(card_type="cashback")
 
     def validate(self, context: RedemptionContext) -> list[str]:
+        """Validate that the purchase meets the minimum threshold."""
         violations: list[str] = []
         metadata = context.card.metadata or {}
 
@@ -51,6 +48,7 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
     def _compute_mutation(
         self, locked_pass: "CustomerPassType", context: RedemptionContext
     ) -> PassStateMutation:
+        """Compute the cashback earned and updated balance."""
         metadata = context.card.metadata or {}
 
         try:
@@ -82,6 +80,7 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context: RedemptionContext) -> str:
+        """Return the resolved intent for cashback earn."""
         return "earn"
 
 
@@ -96,9 +95,11 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self) -> None:
+        """Initialize the redeem strategy for cashback cards."""
         super().__init__(card_type="cashback")
 
     def validate(self, context: RedemptionContext) -> list[str]:
+        """Validate that the redemption amount is within balance limits."""
         violations: list[str] = []
         current_balance = context.customer_pass.cashback_balance or Decimal(
             str(context.customer_pass.pass_data.get("cashback_balance", "0"))
@@ -114,13 +115,14 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
                 if context.amount < Decimal(str(minimum_redemption)):
                     violations.append("minimum_redemption_not_met")
             except (InvalidOperation, TypeError, ValueError):
-                pass
+                logger.warning("Invalid minimum_redemption config, ignoring.")
 
         return violations
 
     def _compute_mutation(
         self, locked_pass: "CustomerPassType", context: RedemptionContext
     ) -> PassStateMutation:
+        """Compute the balance deduction after locking."""
         current_balance = locked_pass.cashback_balance or Decimal(
             str(locked_pass.pass_data.get("cashback_balance", "0"))
         )
@@ -150,4 +152,5 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context: RedemptionContext) -> str:
+        """Return the resolved intent for cashback redeem."""
         return "redeem"

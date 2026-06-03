@@ -367,7 +367,7 @@ def rate_limit(
     Example:
         @rate_limit(key_prefix="stripe_webhook", max_requests=100, window_seconds=60)
         def payment_webhook(request: HttpRequest):
-            ...
+            pass  # Implementation goes here
     """
 
     def decorator(func: F) -> F:
@@ -395,7 +395,7 @@ def rate_limit(
                     if ttl < 0:
                         ttl = window_seconds
                 except Exception:
-                    pass
+                    logger.warning("Rate limiter: Redis TTL lookup failed.")
             else:
                 ttl = _get_cache_ttl(rate_key, window_seconds)
 

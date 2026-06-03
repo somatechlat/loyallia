@@ -4,6 +4,7 @@ Internal builder functions for Apple PKPass field layouts.
 Used by apple_pass.py  not imported directly from outside pass_engine.
 """
 
+import io
 import logging
 
 logger = logging.getLogger(__name__)
@@ -605,5 +606,4 @@ def _resize_image(img, width: int, height: int) -> bytes:
     return buf.getvalue()
 
 
-# Need io for image operations
-import io  # noqa: E402
+

@@ -14,7 +14,11 @@ Usage:
     email_host = get_platform_config("email_host", settings.EMAIL_HOST)
 """
 
+import logging
+
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 def get_platform_config(key: str, fallback: str = "") -> str:
@@ -26,7 +30,7 @@ def get_platform_config(key: str, fallback: str = "") -> str:
         if value:
             return value
     except Exception:
-        pass
+        logger.debug("PlatformSetting unavailable for key '%s', using fallback.", key)
     # Fallback to Django settings attribute if it exists
     if fallback:
         return fallback

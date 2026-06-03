@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# Development Backup Orchestrator
-# Runs pg_dump + redis + vault backups into ./.agents/backups/
-# Usage: ./orchestrator.sh
+# =============================================================================
+# LOYALLIA BACKUP — Development Orchestrator
+# =============================================================================
+# Runs pg_dump, Redis, and Vault backup scripts sequentially.
+# Output goes to ./.agents/backups/ (hardcoded for development).
+#
+# Usage:
+#   ./deploy/backups/development/orchestrator.sh
+# =============================================================================
 
 set -euo pipefail
 

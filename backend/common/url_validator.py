@@ -36,8 +36,6 @@ BLOCKED_NETWORKS = [
 class SSRFError(ValueError):
     """Raised when a URL fails SSRF validation."""
 
-    pass
-
 
 def validate_external_url(url: str, allow_http: bool = True) -> str:
     """

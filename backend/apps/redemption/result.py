@@ -31,10 +31,17 @@ class RedemptionResult:
 
     @classmethod
     def from_success(cls, **kwargs):
+        """Create a result representing a successful redemption."""
         return cls(success=True, **kwargs)
 
     @classmethod
     def from_denial(cls, reasons: list[str], rules_evaluated: list[dict] | None = None):
+        """Create a result representing a denied redemption.
+
+        Args:
+            reasons: List of denial reason codes.
+            rules_evaluated: Optional list of evaluated rule details.
+        """
         return cls(
             success=False, denial_reasons=reasons, rules_evaluated=rules_evaluated or []
         )

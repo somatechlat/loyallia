@@ -1,12 +1,33 @@
+/**
+ * Loyallia API client layer.
+ *
+ * Configures an Axios instance with:
+ *  - Automatic JWT Bearer token injection
+ *  - Token refresh on 401 responses
+ *  - Exponential-backoff retry for transient HTTP errors
+ *  - Offline detection helpers
+ *
+ * @module api
+ */
+
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { tokenManager } from './token-manager';
 
-// Retry with exponential backoff for transient failures.
+/** Maximum number of retries for transient failures. */
 const MAX_RETRIES = 3;
+/** Base delay in milliseconds for exponential backoff. */
 const BASE_DELAY_MS = 1000;
+/** HTTP status codes that trigger an automatic retry. */
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 
+/**
+ * Compute the delay before the next retry attempt.
+ *
+ * @param attempt - Zero-based retry attempt number.
+ * @param retryAfter - Optional `Retry-After` header value (seconds or string).
+ * @returns Delay in milliseconds.
+ */
 function getRetryDelay(attempt: number, retryAfter?: string | number): number {
   if (retryAfter) {
     const seconds = typeof retryAfter === 'number' ? retryAfter : parseInt(String(retryAfter), 10);
@@ -15,8 +36,14 @@ function getRetryDelay(attempt: number, retryAfter?: string | number): number {
   return BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
 }
 
-// Offline detection for UX feedback.
+/** Internal offline state updated by browser `online`/`offline` events. */
 let _isOffline = false;
+
+/**
+ * Returns the current offline state.
+ *
+ * @returns `true` if the browser reports it is offline.
+ */
 export function isOffline(): boolean {
   return _isOffline;
 }
@@ -80,7 +107,7 @@ api.interceptors.response.use(
   }
 );
 
-// AbortController support for request cancellation
+/** Global {@link AbortController} used to cancel in-flight requests. */
 const globalController = new AbortController();
 
 /** Abort all in-flight requests that used the global signal. */
@@ -90,7 +117,9 @@ export const cancelAllRequests = () => {
 
 export default api;
 
-// Typed API helpers
+// ── Typed API helpers ───────────────────────────────────────────────
+
+/** Authentication endpoints. */
 export const authApi = {
   login: (email: string, password: string) =>
     api.post('/api/v1/auth/login/', { email, password }),
@@ -111,6 +140,7 @@ export const authApi = {
     api.post('/api/v1/auth/verify-phone/check/', { phone, code, sid }),
 };
 
+/** Analytics & reporting endpoints. */
 export const analyticsApi = {
   dashboard: (days = 30) => api.get(`/api/v1/analytics/overview/?days=${days}`),
   trends: (days = 30) => api.get(`/api/v1/analytics/trends/?days=${days}`),
@@ -124,6 +154,7 @@ export const analyticsApi = {
   byProgramType: (days = 30) => api.get(`/api/v1/analytics/by-program-type/?days=${days}`),
 };
 
+/** Customer CRUD, import/export, and segmentation endpoints. */
 export const customersApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/customers/', { params }),
   get: (id: string) => api.get(`/api/v1/customers/${id}/`),
@@ -142,6 +173,7 @@ export const customersApi = {
   exportCsvUrl: () => '/api/v1/customers/export/',
 };
 
+/** Loyalty program management endpoints. */
 export const programsApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/programs/', { params }),
   get: (id: string) => api.get(`/api/v1/programs/${id}/`),
@@ -158,6 +190,7 @@ export const programsApi = {
     api.get(`/api/v1/programs/${id}/transactions/`, { params }),
 };
 
+/** Notification campaign management endpoints. */
 export const notificationsApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/', { params }),
   campaigns: (params?: Record<string, unknown>) => api.get('/api/v1/notifications/campaigns/', { params }),
@@ -170,12 +203,14 @@ export const notificationsApi = {
   campaignExportUrl: (runId: string) => `/api/v1/notifications/campaigns/${runId}/export/`,
 };
 
+/** WhatsApp Bridge QR and status endpoints. */
 export const whatsappApi = {
   qr: (tenantId: string) => api.get(`/api/v1/whatsapp/qr/${tenantId}/`),
   status: (tenantId: string) => api.get(`/api/v1/whatsapp/status/${tenantId}/`),
   disconnect: (tenantId: string) => api.post(`/api/v1/whatsapp/disconnect/${tenantId}/`),
 };
 
+/** Automation rule CRUD and execution endpoints. */
 export const automationApi = {
   list: () => api.get('/api/v1/automation/'),
   get: (id: string) => api.get(`/api/v1/automation/${id}/`),
@@ -187,6 +222,7 @@ export const automationApi = {
   stats: () => api.get('/api/v1/automation/stats/'),
 };
 
+/** Billing, subscription, and invoice endpoints. */
 export const billingApi = {
   plans: () => api.get('/api/v1/billing/plans/'),
   subscription: () => api.get('/api/v1/billing/subscription/'),
@@ -194,6 +230,7 @@ export const billingApi = {
   invoices: () => api.get('/api/v1/billing/invoices/'),
 };
 
+/** Super-admin platform management endpoints. */
 export const superAdminApi = {
   plans: () => api.get('/api/v1/admin/plans/'),
   createPlan: (data: Record<string, unknown>) => api.post('/api/v1/admin/plans/', data),
@@ -216,19 +253,23 @@ export const superAdminApi = {
     api.post('/api/v1/admin/platform/mode/toggle/', { mode }),
 };
 
+/** Transaction history endpoints. */
 export const transactionsApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/transactions/', { params }),
   get: (id: string) => api.get(`/api/v1/transactions/${id}/`),
 };
 
+/** Media asset management endpoints. */
 export const mediaApi = {
   listAssets: () => api.get<{ success: boolean; assets: Array<{ url: string; name: string; size: number; last_modified: string }>; count: number }>('/api/v1/upload/assets/'),
 };
 
+/** Notification campaign creation endpoints. */
 export const campaignsApi = {
   create: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
 };
 
+/** Scanner validation and transaction endpoints. */
 export const scannerApi = {
   validate: (qr_code: string) =>
     api.post('/api/v1/scanner/validate/', { qr_code }),

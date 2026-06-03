@@ -35,6 +35,8 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
 class AssetOut(Schema):
+    """Single uploaded asset metadata."""
+
     url: str
     name: str
     size: int
@@ -42,6 +44,8 @@ class AssetOut(Schema):
 
 
 class AssetListOut(Schema):
+    """Paginated list of uploaded assets."""
+
     success: bool
     assets: list[AssetOut]
     count: int

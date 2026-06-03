@@ -37,12 +37,14 @@ def _require_super_admin(request) -> None:
 
 @router.get("/plans/", auth=jwt_auth, response=list[PlanOut])
 def list_plans(request: HttpRequest) -> list[PlanOut]:
+    """List all subscription plans."""
     _require_super_admin(request)
     return [PlanOut.from_plan(p) for p in SubscriptionPlan.objects.all()]
 
 
 @router.post("/plans/", auth=jwt_auth, response=PlanOut)
 def create_plan(request: HttpRequest, payload: PlanCreateIn) -> PlanOut:
+    """Create a new subscription plan."""
     _require_super_admin(request)
     validate_plan_config(payload.model_dump())
     plan = SubscriptionPlan.objects.create(
@@ -78,6 +80,7 @@ def create_plan(request: HttpRequest, payload: PlanCreateIn) -> PlanOut:
 
 @router.delete("/plans/{plan_id}/", auth=jwt_auth, response=MessageOut)
 def delete_plan(request: HttpRequest, plan_id: str) -> MessageOut:
+    """Soft-delete a subscription plan if it has no active subscriptions."""
     _require_super_admin(request)
     try:
         plan = SubscriptionPlan.objects.get(id=uuid.UUID(plan_id))

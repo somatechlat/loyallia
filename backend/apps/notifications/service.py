@@ -150,7 +150,7 @@ class NotificationService:
                 action_url="",
             )
         except Exception as e:
-            logger.warning(f"Google Wallet push failed: {e}")
+            logger.warning("Google Wallet push failed: %s", e)
 
         return notification
 
@@ -231,12 +231,12 @@ class NotificationService:
             phone = notification.customer.phone
             if not phone:
                 logger.warning(
-                    f"No phone number for customer {notification.customer.id}"
+                    "No phone number for customer %s", notification.customer.id
                 )
                 return False
 
             # In production, use Twilio or similar service
-            logger.info(f"Would send SMS to {phone}: {notification.message}")
+            logger.info("Would send SMS to %s: %s", phone, notification.message)
 
             notification.mark_as_sent()
             return True
@@ -274,7 +274,7 @@ class NotificationService:
                     sent_count += 1
             except Exception as e:
                 logger.error(
-                    f"Failed to send notification to customer {customer.id}: {str(e)}"
+                    "Failed to send notification to customer %s: %s", customer.id, e
                 )
 
         return sent_count

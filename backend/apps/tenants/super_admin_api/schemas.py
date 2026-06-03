@@ -15,6 +15,8 @@ from apps.tenants.models import Location, Tenant
 
 
 class TenantAdminOut(BaseModel):
+    """Tenant summary exposed in the SuperAdmin tenant list and detail views."""
+
     id: str
     name: str
     slug: str
@@ -37,6 +39,7 @@ class TenantAdminOut(BaseModel):
 
     @classmethod
     def from_tenant(cls, t: Tenant) -> "TenantAdminOut":
+        """Build a TenantAdminOut from a Tenant ORM instance."""
         subscription = getattr(t, "subscription", None)
         plan = (
             subscription.subscription_plan.slug
@@ -67,6 +70,8 @@ class TenantAdminOut(BaseModel):
 
 
 class LocationIn(BaseModel):
+    """Input schema for creating or updating a tenant location."""
+
     name: str
     address: str = ""
     city: str = ""
@@ -77,6 +82,7 @@ class LocationIn(BaseModel):
     @field_validator("latitude", mode="before")
     @classmethod
     def validate_latitude(cls, v):
+        """Coerce and validate latitude bounds."""
         if v is None or v == "":
             return None
         try:
@@ -90,6 +96,7 @@ class LocationIn(BaseModel):
     @field_validator("longitude", mode="before")
     @classmethod
     def validate_longitude(cls, v):
+        """Coerce and validate longitude bounds."""
         if v is None or v == "":
             return None
         try:
@@ -102,6 +109,8 @@ class LocationIn(BaseModel):
 
 
 class LocationOut(BaseModel):
+    """Serialized tenant location for SuperAdmin responses."""
+
     id: str
     name: str
     address: str
@@ -113,6 +122,7 @@ class LocationOut(BaseModel):
 
     @classmethod
     def from_location(cls, loc: Location) -> "LocationOut":
+        """Build a LocationOut from a Location ORM instance."""
         return cls(
             id=str(loc.id),
             name=loc.name,
@@ -154,6 +164,8 @@ class CreateTenantWizardIn(BaseModel):
 
 
 class TenantAdminUpdateIn(BaseModel):
+    """Partial update payload for a tenant from the SuperAdmin dashboard."""
+
     name: str | None = None
     legal_name: str | None = None
     ruc: str | None = None
@@ -172,6 +184,8 @@ class TenantAdminUpdateIn(BaseModel):
 
 
 class CreateTenantOut(BaseModel):
+    """Response payload after creating a tenant via the SuperAdmin wizard."""
+
     success: bool
     message: str
     tenant_id: str
@@ -181,6 +195,8 @@ class CreateTenantOut(BaseModel):
 
 
 class PlatformMetricsOut(BaseModel):
+    """High-level platform metrics for the SuperAdmin dashboard."""
+
     total_tenants: int
     active_tenants: int
     trial_tenants: int
@@ -193,11 +209,15 @@ class PlatformMetricsOut(BaseModel):
 
 
 class MessageOut(BaseModel):
+    """Generic success/failure message response."""
+
     success: bool
     message: str
 
 
 class PlatformIntegrationOut(BaseModel):
+    """Integration status summary for the SuperAdmin platform health panel."""
+
     key: str
     name: str
     enabled: bool
@@ -209,20 +229,28 @@ class PlatformIntegrationOut(BaseModel):
 
 
 class ExtendTrialIn(BaseModel):
+    """Payload for extending a tenant's trial period."""
+
     days: int
 
 
 class BroadcastIn(BaseModel):
+    """Payload for sending a broadcast message to all tenant owners."""
+
     subject: str
     message: str
 
 
 class ImpersonateIn(BaseModel):
+    """Payload for SuperAdmin impersonation of a tenant owner."""
+
     owner_pin: str
     justification: str = Field(..., min_length=10)
 
 
 class ImpersonateOut(BaseModel):
+    """JWT and metadata returned after successful impersonation."""
+
     access_token: str
     token_type: str = "bearer"
     impersonated_tenant_id: str
@@ -230,6 +258,8 @@ class ImpersonateOut(BaseModel):
 
 
 class InvoiceOut(BaseModel):
+    """Serialized invoice for SuperAdmin tenant billing views."""
+
     id: str
     invoice_number: str
     subtotal: float
@@ -246,6 +276,8 @@ class InvoiceOut(BaseModel):
 
 
 class PlanOut(BaseModel):
+    """Subscription plan exposed in SuperAdmin plan management."""
+
     id: str
     name: str
     slug: str
@@ -276,6 +308,7 @@ class PlanOut(BaseModel):
 
     @classmethod
     def from_plan(cls, p: SubscriptionPlan) -> "PlanOut":
+        """Build a PlanOut from a SubscriptionPlan ORM instance."""
         return cls(
             id=str(p.id),
             name=p.name,
@@ -308,6 +341,8 @@ class PlanOut(BaseModel):
 
 
 class PlanCreateIn(BaseModel):
+    """Payload for creating a new subscription plan."""
+
     name: str
     slug: str
     description: str = ""
@@ -337,6 +372,7 @@ class PlanCreateIn(BaseModel):
     @field_validator("features")
     @classmethod
     def features_must_be_known(cls, value: list[str]) -> list[str]:
+        """Reject unknown feature flags during plan creation."""
         allowed = set(PlanFeature.ALL_FEATURES)
         unknown = sorted(set(value) - allowed)
         if unknown:
@@ -345,6 +381,8 @@ class PlanCreateIn(BaseModel):
 
 
 class PlanUpdateIn(BaseModel):
+    """Partial update payload for an existing subscription plan."""
+
     name: str | None = None
     description: str | None = None
     price_monthly: float | None = None
@@ -374,6 +412,7 @@ class PlanUpdateIn(BaseModel):
     @field_validator("features")
     @classmethod
     def features_must_be_known(cls, value: list[str] | None) -> list[str] | None:
+        """Reject unknown feature flags during plan updates (allows None)."""
         if value is None:
             return None
         allowed = set(PlanFeature.ALL_FEATURES)
@@ -477,6 +516,7 @@ class PlatformModeToggleIn(BaseModel):
     @field_validator("mode")
     @classmethod
     def mode_must_be_valid(cls, value: str) -> str:
+        """Ensure platform mode is either development or production."""
         if value not in ("development", "production"):
             raise ValueError("mode must be 'development' or 'production'")
         return value

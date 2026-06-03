@@ -45,6 +45,7 @@ class CustomerImportService:
     EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
     def __init__(self, tenant):
+        """Initialize the import service with the target tenant."""
         self.tenant = tenant
 
     def process_import(self, file_obj: Any, filename: str) -> dict:
@@ -105,6 +106,7 @@ class CustomerImportService:
         """Detect relevant columns using keyword matching."""
 
         def _find_col(keywords: list) -> str | None:
+            """Return the first DataFrame column matching any of the keywords."""
             for col in df.columns:
                 if any(kw in col for kw in keywords):
                     return col
@@ -208,7 +210,7 @@ class CustomerImportService:
                     )
                     total_spent = float(spent_raw) if spent_raw else 0.0
                 except ValueError:
-                    pass
+                    logger.debug("Failed to parse total_spent value, defaulting to 0.0")
 
             total_visits = 0
             if col_map["total_visits"]:
@@ -218,7 +220,7 @@ class CustomerImportService:
                     )
                     total_visits = int(visits_raw) if visits_raw else 0
                 except ValueError:
-                    pass
+                    logger.debug("Failed to parse total_visits value, defaulting to 0")
 
             seen_in_file.add(email_raw)
             customers_to_create.append(

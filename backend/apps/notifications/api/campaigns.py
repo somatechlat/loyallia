@@ -82,6 +82,8 @@ def _get_campaign_task(data: CampaignCreateIn):
 
 
 class CampaignOut(BaseModel):
+    """Schema for campaign list responses."""
+
     id: str
     title: str
     message: str
@@ -93,6 +95,8 @@ class CampaignOut(BaseModel):
 
 
 class CampaignCreateIn(BaseModel):
+    """Schema for creating a new marketing campaign."""
+
     title: str
     message: str
     segment_id: str

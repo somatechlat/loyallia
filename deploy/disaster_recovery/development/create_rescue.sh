@@ -131,7 +131,6 @@ $COMPOSE_CMD exec -T vault rm -f /tmp/runtime_rescue.tar.gz
 log "Encrypting rescue files ..."
 for f in "$TMPDIR"/*; do
     [ -f "$f" ] || continue
-    local name
     name=$(basename "$f")
     encrypt_file "$f" "$RESCUE_DIR/${name}.age"
     rm -f "$f"

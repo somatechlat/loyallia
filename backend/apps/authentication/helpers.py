@@ -28,8 +28,6 @@ logger = logging.getLogger(__name__)
 
 def slugify_business(name: str) -> str:
     """Generate a unique slug from business name. Handles race conditions."""
-    from django.db import IntegrityError
-
     slug_base = re.sub(r"[^a-z0-9]+", "-", name.lower().strip()).strip("-")
     slug = slug_base[:80]
     counter = 1
@@ -41,7 +39,7 @@ def slugify_business(name: str) -> str:
             if not Tenant.objects.filter(slug=candidate).exists():
                 return candidate
         except Exception:
-            pass
+            logger.warning("Slug check failed for candidate %s", candidate, exc_info=True)
         candidate = f"{slug}-{counter}"
         counter += 1
     # Fallback: append UUID suffix if all attempts exhausted

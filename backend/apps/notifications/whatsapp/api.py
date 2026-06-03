@@ -134,7 +134,8 @@ def get_session_status(request, tenant_id: str):
 
     try:
         result = wa_client.get_status(tenant_id)
-    except Exception:
+    except Exception as exc:
+        logger.warning("WhatsApp get_status failed for %s: %s", tenant_id, exc)
         result = {"connected": False, "qr": None, "phone": ""}
 
     # Merge with local session data

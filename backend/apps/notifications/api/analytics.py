@@ -21,6 +21,8 @@ from .base import router
 
 
 class CampaignResultsOut(BaseModel):
+    """Schema for aggregate campaign metrics and error breakdown."""
+
     campaign_run_id: str
     title: str
     channel: str
@@ -42,6 +44,8 @@ class CampaignResultsOut(BaseModel):
 
 
 class RecipientStatusOut(BaseModel):
+    """Schema for a single recipient's delivery status."""
+
     customer_id: str | None
     name: str
     phone: str
@@ -56,6 +60,8 @@ class RecipientStatusOut(BaseModel):
 
 
 class RecipientListOut(BaseModel):
+    """Schema for paginated campaign recipient lists."""
+
     total: int
     page: int
     per_page: int
@@ -63,6 +69,8 @@ class RecipientListOut(BaseModel):
 
 
 class CampaignRunListOut(BaseModel):
+    """Schema for campaign run list items."""
+
     id: str
     title: str
     channel: str

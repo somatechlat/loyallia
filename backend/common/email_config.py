@@ -9,6 +9,10 @@ SEC: mailjet_api_key / mailjet_secret_key remain in Vault.
 NON-SECRET: mailjet_sender_email and mailjet_sender_name are PlatformSettings.
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def get_default_from_email(fallback: str = "noreply@loyallia.com") -> str:
     """Return the platform default sender email address.
@@ -23,7 +27,7 @@ def get_default_from_email(fallback: str = "noreply@loyallia.com") -> str:
         if value and "@" in value:
             return value
     except Exception:
-        pass
+        logger.debug("PlatformSetting mailjet_sender_email unavailable, using fallback.")
     return fallback
 
 
@@ -39,7 +43,7 @@ def get_default_sender_name(fallback: str = "Loyallia") -> str:
         if value:
             return value
     except Exception:
-        pass
+        logger.debug("PlatformSetting mailjet_sender_name unavailable, using fallback.")
     return fallback
 
 

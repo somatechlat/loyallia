@@ -66,7 +66,7 @@ class RuleValidator(ABC):
         Returns:
             A (possibly empty) list of ``RuleViolation`` objects.
         """
-        ...  # pragma: no cover
+        raise NotImplementedError
 
 
 class UsageLimitValidator(RuleValidator):
@@ -78,6 +78,7 @@ class UsageLimitValidator(RuleValidator):
     """
 
     def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
+        """Check per-customer and global usage limits."""
         violations: list[RuleViolation] = []
 
         # Per-customer limit
@@ -131,6 +132,7 @@ class TimeWindowValidator(RuleValidator):
     """
 
     def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
+        """Check temporal redemption windows."""
         violations: list[RuleViolation] = []
         scanned = context.scanned_at
 
@@ -230,6 +232,7 @@ class CooldownValidator(RuleValidator):
     """
 
     def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
+        """Check cooldown period between redemptions."""
         violations: list[RuleViolation] = []
         cooldown_hours = rules.get("cooldown_hours")
 
@@ -261,6 +264,7 @@ class LocationValidator(RuleValidator):
     """
 
     def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
+        """Check location-based restrictions."""
         violations: list[RuleViolation] = []
         allowed_locations = rules.get("allowed_locations")
 
@@ -290,6 +294,7 @@ class MinPurchaseValidator(RuleValidator):
     """
 
     def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
+        """Check minimum and maximum purchase thresholds."""
         violations: list[RuleViolation] = []
         amount = context.amount
 
@@ -330,6 +335,7 @@ class StaffRoleValidator(RuleValidator):
     """
 
     def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
+        """Check staff role permissions."""
         violations: list[RuleViolation] = []
         allowed_roles = rules.get("allowed_staff_roles")
 
@@ -373,27 +379,4 @@ class StaffRoleValidator(RuleValidator):
         return violations
 
 
-class CustomerSegmentValidator(RuleValidator):
-    """Restrict redemption to specific customer segments.
 
-    .. note::
-       This validator is currently a no-op (placeholder).  Segment
-       resolution will be wired in once the segmentation service is
-       integrated.
-    """
-
-    def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
-        return []
-
-
-class StackingValidator(RuleValidator):
-    """Enforce whether the offer can be combined with other offers.
-
-    .. note::
-       This validator is currently a no-op (placeholder).  Stacking
-       logic requires knowledge of concurrent promotions in the
-       current basket, which is not yet available in the context.
-    """
-
-    def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
-        return []

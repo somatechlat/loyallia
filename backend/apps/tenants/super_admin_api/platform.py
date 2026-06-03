@@ -135,6 +135,7 @@ def toggle_platform_mode(request, payload: PlatformModeToggleIn):
 
 @router.get("/platform/metrics/", auth=jwt_auth, response=PlatformMetricsOut)
 def platform_metrics(request):
+    """Return high-level platform metrics for the SuperAdmin dashboard."""
     _require_super_admin(request)
 
     from apps.customers.models import Customer

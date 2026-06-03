@@ -7,17 +7,12 @@ at which point a reward becomes available for redemption.
 """
 
 import logging
-from typing import TYPE_CHECKING
-
 from apps.customers.models import CustomerPass
 from apps.transactions.models import TransactionType
 from common.messages import get_message
 
 from ..context import RedemptionContext
 from .base import BaseRedemptionStrategy, PassStateMutation
-
-if TYPE_CHECKING:
-    from apps.customers.models import CustomerPass as CustomerPassType
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +26,11 @@ class StampEarnStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self) -> None:
+        """Initialize the earn strategy for stamp cards."""
         super().__init__(card_type="stamp")
 
     def validate(self, context: RedemptionContext) -> list[str]:
+        """Validate that the stamp quantity is positive."""
         violations: list[str] = []
         if context.quantity <= 0:
             violations.append("invalid_quantity")
@@ -42,6 +39,7 @@ class StampEarnStrategy(BaseRedemptionStrategy):
     def _compute_mutation(
         self, locked_pass: "CustomerPassType", context: RedemptionContext
     ) -> PassStateMutation:
+        """Compute stamp accumulation and reward readiness."""
         metadata = context.card.metadata or {}
 
         try:
@@ -81,6 +79,7 @@ class StampEarnStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context: RedemptionContext) -> str:
+        """Return the resolved intent for stamp earn."""
         return "earn"
 
 
@@ -94,9 +93,11 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
     """
 
     def __init__(self) -> None:
+        """Initialize the redeem strategy for stamp cards."""
         super().__init__(card_type="stamp")
 
     def validate(self, context: RedemptionContext) -> list[str]:
+        """Validate that the reward is ready before redemption."""
         violations: list[str] = []
         if not self._is_reward_ready(context.customer_pass):
             violations.append("reward_not_ready")
@@ -105,6 +106,7 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
     def _compute_mutation(
         self, locked_pass: "CustomerPassType", context: RedemptionContext
     ) -> PassStateMutation:
+        """Compute the reward consumption and state reset."""
         if not self._is_reward_ready(locked_pass):
             return PassStateMutation(
                 is_valid=False,
@@ -126,10 +128,12 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
 
     @staticmethod
     def _is_reward_ready(customer_pass: "CustomerPassType") -> bool:
+        """Check whether the pass has a reward ready for redemption."""
         return (
             customer_pass.lifecycle_state == CustomerPass.LifecycleState.REWARD_READY
             or customer_pass.pass_data.get("reward_ready", False)
         )
 
     def _resolve_intent(self, context: RedemptionContext) -> str:
+        """Return the resolved intent for stamp redeem."""
         return "redeem"

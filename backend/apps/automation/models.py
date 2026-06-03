@@ -275,6 +275,7 @@ class Automation(TimestampedModel):
             return False
 
         from django.core.mail import EmailMultiAlternatives
+        from django.template.loader import render_to_string
 
         from apps.notifications.models import (
             Notification,
@@ -298,26 +299,14 @@ class Automation(TimestampedModel):
             message=body_text[:500],
         )
 
-        html_content = f"""<!DOCTYPE html>  # noqa: E501
-<html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f4f4f8; color:#1e293b; }}  # noqa: E501
-.container {{ max-width:560px; margin:40px auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }}  # noqa: E501
-.header {{ background: linear-gradient(135deg, {primary_color} 0%, #312e81 100%); padding:32px 24px; text-align:center; color:#fff; }}  # noqa: E501
-.header h1 {{ margin:0 0 4px; font-size:22px; font-weight:700; }}
-.content {{ padding:28px 24px; }}
-.content p {{ margin:0 0 16px; font-size:14px; line-height:1.65; color:#475569; }}
-.footer {{ padding:20px 24px; text-align:center; background:#f8fafc; border-top:1px solid #f1f5f9; }}
-.footer p {{ margin:0; font-size:11px; color:#94a3b8; }}
-</style></head>
-<body>
-<div class="container">
-<div class="header"><h1>{self.tenant.name}</h1></div>
-<div class="content"><p>{body_text}</p></div>
-<div class="footer"><p>Powered by Loyallia Intelligent Rewards</p></div>
-</div>
-</body></html>"""
+        html_content = render_to_string(
+            "automation/branded_email.html",
+            {
+                "primary_color": primary_color,
+                "tenant_name": self.tenant.name,
+                "body_text": body_text,
+            },
+        )
 
         try:
             msg = EmailMultiAlternatives(

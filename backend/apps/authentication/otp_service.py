@@ -98,6 +98,7 @@ class VerifyOTPStrategy(OTPStrategy):
 
     @property
     def client(self) -> VerifyClient:
+        """Lazy-loaded Twilio Verify client instance."""
         if self._client is None:
             self._client = VerifyClient()
         return self._client

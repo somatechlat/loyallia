@@ -371,9 +371,12 @@ def _load_legacy_fixture():
 
 
 class Command(BaseCommand):
+    """Seed default platform settings (idempotent)."""
+
     help = "Seed default platform settings (idempotent)"
 
     def add_arguments(self, parser):
+        """Add CLI arguments for mode and update-existing flag."""
         parser.add_argument(
             "--mode",
             type=str,
@@ -388,6 +391,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Run the seeding logic for platform settings."""
         mode = options["mode"]
         update_existing = options["update_existing"]
         overrides = _MODE_OVERRIDES.get(mode, {})
@@ -432,7 +436,9 @@ class Command(BaseCommand):
                         )
                         updated_count += 1
                 except PlatformSetting.DoesNotExist:
-                    pass
+                    self.stdout.write(
+                        self.style.WARNING(f"Override key {key} not found; skipping")
+                    )
 
         self.stdout.write(
             self.style.SUCCESS(

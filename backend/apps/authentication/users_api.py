@@ -109,7 +109,7 @@ def change_password(request, payload: ChangePasswordIn):
             status="success",
         )
     except Exception:
-        pass
+        logger.exception("Failed to log password change audit action")
     return MessageOut(success=True, message=get_message("AUTH_PASSWORD_CHANGED"))
 
 

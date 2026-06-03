@@ -52,7 +52,6 @@ from apps.backup.schemas import (
 )
 from apps.backup.tasks import (
     cleanup_old_backups,
-    list_restore_options_task,
     run_full_backup,
     run_restore_task,
     verify_backup,

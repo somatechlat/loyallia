@@ -73,7 +73,13 @@ const I18nContext = createContext<I18nContextValue>({
 });
 
 // Provider
-export function I18nProvider({ children }: { children: ReactNode }) {
+/** Props for the {@link I18nProvider} component. */
+export interface I18nProviderProps {
+  /** React tree to wrap. */
+  children: ReactNode;
+}
+
+export function I18nProvider({ children }: I18nProviderProps) {
   const [locale, setLocaleState] = useState<SupportedLocale>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY) as SupportedLocale | null;

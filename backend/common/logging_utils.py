@@ -64,6 +64,14 @@ class JsonFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format a log record as a JSON string with PII masking.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            A JSON-encoded log entry with masked PII.
+        """
         raw_message = record.getMessage()
         masked_message = mask_pii(raw_message)
 

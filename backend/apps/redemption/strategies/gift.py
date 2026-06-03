@@ -21,6 +21,7 @@ class GiftRedeemStrategy(BaseRedemptionStrategy):
     """Redemption strategy for gift certificate ("gift_certificate") cards."""
 
     def __init__(self) -> None:
+        """Initialize the strategy for gift certificate cards."""
         super().__init__("gift_certificate")
 
     # ------------------------------------------------------------------
@@ -70,4 +71,5 @@ class GiftRedeemStrategy(BaseRedemptionStrategy):
         )
 
     def _resolve_intent(self, context) -> str:
+        """Return the resolved intent for gift certificates."""
         return "redeem"

@@ -26,6 +26,8 @@ Security (SEC):
 Called by: Dashboard analytics page, customer detail page, program detail page.
 """
 
+import logging
+
 from datetime import timedelta
 
 from django.db.models import Avg, Count, Sum
@@ -43,14 +45,20 @@ from common.plan_enforcement import require_feature
 
 router = Router()
 
+logger = logging.getLogger(__name__)
+
 
 # Pydantic Schemas
 class AnalyticsDateRange(BaseModel):
+    """ISO date range filter for analytics queries."""
+
     start_date: str  # ISO format
     end_date: str  # ISO format
 
 
 class CustomerAnalyticsSchema(BaseModel):
+    """Serialized customer analytics metrics."""
+
     customer_id: str
     customer_name: str
     total_visits: int
@@ -63,6 +71,8 @@ class CustomerAnalyticsSchema(BaseModel):
 
 
 class ProgramAnalyticsSchema(BaseModel):
+    """Serialized program (loyalty card) analytics metrics."""
+
     program_id: str
     program_name: str
     total_enrollments: int
@@ -404,8 +414,11 @@ def get_trends_analytics(request, days: int = 30):
 
     # If no data, generate from transactions
     if not daily_data.exists():
-        # This would be done by a background task in production
-        pass
+        logger.warning(
+            "No daily analytics data found for tenant %s; "
+            "background task will backfill.",
+            tenant.id,
+        )
 
     return {
         "period_days": days,

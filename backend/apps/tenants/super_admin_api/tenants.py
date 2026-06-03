@@ -286,6 +286,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
     summary="[SuperAdmin] Detalle de negocio",
 )
 def get_tenant_detail(request, tenant_id: str):
+    """Retrieve full tenant details for the SuperAdmin dashboard."""
     _require_super_admin(request)
     return TenantAdminOut.from_tenant(_get_tenant_or_404(tenant_id))
 
@@ -348,6 +349,7 @@ def update_tenant_admin(request, tenant_id: str):
     summary="[SuperAdmin] Ubicaciones de un negocio",
 )
 def list_tenant_locations(request, tenant_id: str):
+    """List all locations belonging to a tenant."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     return [
@@ -362,6 +364,7 @@ def list_tenant_locations(request, tenant_id: str):
     summary="[SuperAdmin] Agregar ubicacion a un negocio",
 )
 def add_tenant_location(request, tenant_id: str, payload: LocationIn):
+    """Add a new location to an existing tenant."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     loc = Location.objects.create(
@@ -387,6 +390,7 @@ def add_tenant_location(request, tenant_id: str, payload: LocationIn):
     summary="[SuperAdmin] Facturas de un negocio",
 )
 def list_tenant_invoices(request, tenant_id: str):
+    """List all invoices for a specific tenant."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     invoices = Invoice.objects.filter(tenant=tenant).order_by("-created_at")
@@ -412,7 +416,7 @@ def list_tenant_invoices(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/suspend/", auth=jwt_auth, response=MessageOut)
 def suspend_tenant(request, tenant_id: str):
-    """"""
+    """Suspend a tenant and mark its subscription as suspended."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     tenant.is_active = False
@@ -503,7 +507,7 @@ def delete_tenant(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/reactivate/", auth=jwt_auth, response=MessageOut)
 def reactivate_tenant(request, tenant_id: str):
-    """"""
+    """Reactivate a tenant and restore its subscription to active."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
     tenant.is_active = True
@@ -526,9 +530,11 @@ def reactivate_tenant(request, tenant_id: str):
 
 @router.post("/tenants/{tenant_id}/extend-trial/", auth=jwt_auth, response=MessageOut)
 def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
+    """Extend a tenant's trial period by a given number of days.
+
+    Capped at 90 days from the initial trial start to prevent unlimited trials.
     """
-    to prevent unlimited trials.
-    """
+
     _require_super_admin(request)
     if payload.days < 1 or payload.days > 365:
         raise HttpError(
