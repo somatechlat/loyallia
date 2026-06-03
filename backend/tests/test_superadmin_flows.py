@@ -61,7 +61,6 @@ class SuperAdminTenantCreationTest(TestCase):
         self.assertEqual(subscription.plan, plan.slug)
         self.assertEqual(subscription.status, SubscriptionStatus.ACTIVE)
         self.assertEqual(response.owner_email, "owner-plan-linked@example.com")
-        self.assertTrue(response.temp_password)
 
 
 class PlanValidationTest(TestCase):

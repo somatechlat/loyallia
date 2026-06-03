@@ -414,7 +414,6 @@ def add_team_member(request, payload: TeamMemberCreateIn):
             "TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"
         ),
         "user_id": str(user.id),
-        "temp_password": temp_password,
     }
 
 
