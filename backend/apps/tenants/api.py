@@ -6,7 +6,6 @@ All strings via get_message() — Rule #11.
 All endpoints require JWT auth with tenant scope.
 """
 
-import html
 import logging
 import uuid
 from typing import cast
@@ -33,6 +32,12 @@ class AIChatIn(Schema):
     context_id: str | None = None
 
 
+from apps.tenants.services.ai_proxy import (
+    AIProxyConfigError,
+    AIProxyRequestError,
+    chat_with_ai,
+)
+from apps.tenants.services.email import send_team_member_welcome_email
 from common.messages import get_message  # noqa: E402
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth  # noqa: E402
 from common.plan_enforcement import (  # noqa: E402
@@ -368,45 +373,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     )
 
     if getattr(payload, "send_email", True):
-        try:
-            from django.conf import settings as django_settings
-            from django.core.mail import EmailMultiAlternatives
-
-            role_labels = {
-                "MANAGER": "Gerente",
-                "STAFF": "Personal / Cajero",
-            }
-            role_label = role_labels.get(payload.role, payload.role)
-            tenant_name = request.tenant.name
-            from apps.tenants.models import PlatformSetting
-
-            dashboard_url = PlatformSetting.get(
-                "dashboard_url", django_settings.FRONTEND_URL
-            )
-            login_url = dashboard_url.rstrip("/") + "/login"
-            from common.email_config import get_default_from_email
-
-            from_email = get_default_from_email()
-            primary_color = (
-                getattr(request.tenant, "primary_color", "#6366f1") or "#6366f1"
-            )
-
-            from datetime import datetime as _dt
-
-            current_year = _dt.now().year
-
-            html_content = f"""<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4f4f8;color:#1e293b;}}.container{{max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}}.header{{background:linear-gradient(135deg,{html.escape(primary_color)} 0%,#312e81 100%);padding:32px 24px;text-align:center;color:#fff;}}.header h1{{margin:0 0 4px;font-size:22px;font-weight:700;}}.header p{{margin:0;font-size:13px;opacity:0.8;}}.body{{padding:28px 24px;}}.body h2{{margin:0 0 8px;font-size:18px;font-weight:700;color:#1e293b;}}.body p{{margin:0 0 16px;font-size:14px;line-height:1.6;color:#475569;}}.cred-box{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:16px 0;}}.cred-box .label{{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:600;margin-bottom:4px;}}.cred-box .value{{font-size:16px;font-weight:700;color:#1e293b;font-family:monospace;}}.cta{{display:inline-block;margin:20px 0;padding:14px 28px;background:{html.escape(primary_color)};color:#fff;text-decoration:none;border-radius:12px;font-weight:600;font-size:14px;}}.warning{{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:16px 0;}}.warning p{{margin:0;font-size:12px;color:#92400e;}}.footer{{padding:20px 24px;text-align:center;background:#f8fafc;border-top:1px solid #f1f5f9;}}.footer p{{margin:0;font-size:11px;color:#94a3b8;}}.footer a{{color:{html.escape(primary_color)};text-decoration:none;}}</style></head><body><div class="container"><div class="header"><h1>{html.escape(tenant_name)}</h1><p>Bienvenido al equipo</p></div><div class="body"><h2>Hola {html.escape(payload.first_name)}</h2><p>Has sido invitado como <strong>{html.escape(role_label)}</strong> en <strong>{html.escape(tenant_name)}</strong>. A continuación encontrarás tus credenciales de acceso:</p><div class="cred-box"><div class="label">Email de acceso</div><div class="value">{html.escape(payload.email)}</div></div><div class="cred-box"><div class="label">Contraseña temporal</div><div class="value">{html.escape(temp_password)}</div></div><div class="warning"><p><strong>Importante:</strong> Por seguridad, te recomendamos cambiar tu contraseña al iniciar sesión por primera vez.</p></div><center><a href="{html.escape(login_url)}" class="cta">Iniciar Sesión →</a></center><p style="font-size:12px;color:#94a3b8;text-align:center;margin-top:20px;">Si no reconoces esta invitación, puedes ignorar este correo.</p></div><div class="footer"><p>Powered by <a href="https://loyallia.com">Loyallia</a> Intelligent Rewards</p><p style="margin-top:4px;">© {html.escape(str(current_year))} {html.escape(tenant_name)}. Todos los derechos reservados.</p></div></div></body></html>"""# noqa: E501
-
-            msg = EmailMultiAlternatives(
-                subject=f"Bienvenido al equipo de {tenant_name}",
-                from_email=from_email,
-                to=[payload.email],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=True)
-            logger.info("Welcome email sent to %s", payload.email)
-        except Exception as exc:
-            logger.error("Failed to send welcome email to %s: %s", payload.email, exc)
+        send_team_member_welcome_email(user, temp_password, request.tenant, payload)
 
     return {
         "success": True,
@@ -427,47 +394,20 @@ def ai_chat_proxy(request, payload: AIChatIn):
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     check_feature_access(request.tenant, "ai_assistant")
-    import httpx
-    from django.conf import settings
-
-    from common.vault import get_secret
-
-    api_key = get_secret("ai_agent_api_key")
-    if not api_key:
-        logger.error("AI_AGENT_API_KEY not found in Vault.")
-        raise HttpError(503, "AI agent service is not configured correctly.")
-
-    agent_base_url = get_secret("ai_agent_base_url")
-    if not agent_base_url:
-        agent_base_url = getattr(settings, "AI_AGENT_BASE_URL", "")
-    if not agent_base_url:
-        logger.error("AI_AGENT_BASE_URL not configured.")
-        raise HttpError(503, "AI agent service is not configured correctly.")
-
-    request_data = {
-        "message": payload.message,
-        "lifetime_hours": 24,
-    }
-    if payload.context_id:
-        request_data["context_id"] = payload.context_id
 
     try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(
-                f"{agent_base_url}/api_message",
-                json=request_data,
-                headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
-            )
-            resp.raise_for_status()
-            return resp.json()
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            f"AI Agent returned status {e.response.status_code}: {e.response.text}"
+        return chat_with_ai(
+            message=payload.message,
+            history=None,
+            model=None,
+            context_id=payload.context_id,
         )
-        raise HttpError(e.response.status_code, "Failed to fetch from AI agent")
-    except Exception as e:
-        logger.error(f"Error calling AI agent: {str(e)}")
-        raise HttpError(500, "Internal server error while contacting AI agent")
+    except AIProxyConfigError as exc:
+        raise HttpError(503, str(exc)) from exc
+    except AIProxyRequestError as exc:
+        if exc.status_code:
+            raise HttpError(exc.status_code, str(exc)) from exc
+        raise HttpError(500, str(exc)) from exc
 
 
 @router.patch(

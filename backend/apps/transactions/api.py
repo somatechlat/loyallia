@@ -31,7 +31,7 @@ Called by: Scanner UI (React), Dashboard transaction page, Automation engine.
 
 import logging
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -81,7 +81,9 @@ class ScanTransactIn(BaseModel):
 
     qr_code: str
     amount: float = 0
+    quantity: int = 1
     notes: str = ""
+    intent: Literal["earn", "redeem", "auto"] = "auto"
     idempotency_key: str = ""
 
 
@@ -89,103 +91,31 @@ class ScanTransactIn(BaseModel):
 def validate_qr(request: TenantRequest, data: ScanValidateIn):
     """Validate QR HMAC token and return pass state + customer info.
 
-    This is a read-only operation  the pass state is not modified.
-    Used by staff to preview a customer's pass before recording a transaction.
-
-    SEC: Tenant-scoped lookup (card__tenant=request.tenant) prevents cross-tenant access.
-    PERF: select_related loads Pass+Customer+Card+Tenant in a single JOIN query.
+    Thin wrapper around the v2 redemption engine for backward compatibility.
     """
-    if not is_staff_or_above(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    if not data.qr_code:
-        raise HttpError(400, get_message("PASS_QR_REQUIRED"))
+    from apps.redemption.api import validate_qr_v2
 
-    try:
-        # PERF: single JOIN query for Pass + Customer + Card + Tenant
-        # SEC: card__tenant=request.tenant ensures tenant isolation
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(qr_code=data.qr_code, is_active=True, card__tenant=request.tenant)
-    except CustomerPass.DoesNotExist:
-        raise HttpError(404, get_message("PASS_NOT_FOUND_INACTIVE"))
-
-    return {
-        "pass_id": str(pass_obj.id),
-        "customer": {
-            "id": str(pass_obj.customer.id),
-            "name": pass_obj.customer.full_name,
-            "email": pass_obj.customer.email,
-        },
-        "card": {
-            "id": str(pass_obj.card.id),
-            "name": pass_obj.card.name,
-            "type": pass_obj.card.card_type,
-        },
-        "pass_data": pass_obj.pass_data,
-        "is_valid": True,
-    }
+    result = validate_qr_v2(request, data)
+    # Remove v2-only field to maintain exact v1 backward compatibility
+    result.pop("lifecycle_state", None)
+    return result
 
 
 @scanner_router.post("/transact/", auth=jwt_auth, summary="Registrar transacción")
 def transact(request: TenantRequest, data: ScanTransactIn):
     """Record a transaction from a QR scan via the Redemption Engine.
 
-    This is the HOTTEST endpoint in the system  called on every customer scan
-    at every POS terminal. Latency directly impacts staff experience.
-
-    SEC: Tenant-scoped pass lookup prevents cross-tenant transactions.
-    PERF: Customer stats updated via F() expressions (atomic increment) to prevent
-    lost updates under concurrent scans from multiple POS terminals.
-    PERF: Analytics recalc + automation triggers fire ASYNC via Celery  scanner
-    response is never blocked by downstream processing.
+    Thin wrapper around the v2 redemption engine. Delegates core processing
+    and preserves v1-specific async side effects and response shape.
     """
-    if not is_staff_or_above(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    if not data.qr_code:
-        raise HttpError(400, get_message("PASS_INVALID_QR"))
+    from apps.redemption.api import transact_v2
 
-    from decimal import Decimal
+    # Delegate core processing to v2 (handles auth, validation, gateway)
+    result = transact_v2(request, data)
 
-    from apps.redemption.command import RedemptionCommand
-    from apps.redemption.gateway import RedemptionGateway
-
+    # V1-specific async side effects
     tenant = require_tenant(request)
-    staff_id = (
-        str(cast(User, request.user).id)
-        if hasattr(request, "user") and request.user
-        else None
-    )
-    location_id = getattr(request, "location_id", None)
 
-    command = RedemptionCommand(
-        tenant_id=str(tenant.id),
-        qr_code=data.qr_code,
-        intent="auto",
-        amount=Decimal(str(data.amount)),
-        quantity=1,
-        staff_id=staff_id,
-        location_id=location_id,
-        notes=data.notes,
-        idempotency_key=data.idempotency_key,
-    )
-
-    gateway = RedemptionGateway()
-    result = gateway.process(command, tenant)
-
-    if not result.success:
-        raise HttpError(
-            422,
-            cast(
-                Any,
-                {
-                    "success": False,
-                    "denial_reasons": result.denial_reasons,
-                    "rules_evaluated": result.rules_evaluated,
-                },
-            ),
-        )
-
-    # Async side effects
     from apps.analytics.tasks import update_tenant_analytics
 
     analytics_task = update_tenant_analytics
@@ -195,39 +125,40 @@ def transact(request: TenantRequest, data: ScanTransactIn):
 
     _customer_id = ""
     _card_type = ""
-    if result.transaction_id:
+    transaction_id = result.get("transaction_id")
+    if transaction_id:
         try:
             txn = Transaction.objects.select_related(
                 "customer_pass__customer", "customer_pass__card"
-            ).get(id=result.transaction_id)
+            ).get(id=transaction_id)
             _customer_id = str(txn.customer_pass.customer.id)
             _card_type = txn.customer_pass.card.card_type
         except Transaction.DoesNotExist:
             logger.warning(
                 "Transaction %s not found for automation trigger",
-                result.transaction_id,
+                transaction_id,
             )
 
     fire_trigger_async(
         trigger="transaction_completed",
         customer_id=_customer_id,
         context={
-            "transaction_id": result.transaction_id,
+            "transaction_id": transaction_id,
             "card_type": _card_type,
             "amount": str(data.amount),
-            "reward_earned": result.reward_earned,
+            "reward_earned": result.get("reward_earned"),
         },
     )
 
-    if result.pass_updated:
+    if result.get("pass_updated"):
         import logging
 
         from apps.customers.tasks import trigger_pass_update
 
         try:
-            if result.transaction_id:
+            if transaction_id:
                 txn = Transaction.objects.select_related("customer_pass").get(
-                    id=result.transaction_id
+                    id=transaction_id
                 )
                 cast(Any, trigger_pass_update).delay(str(txn.customer_pass.id))
         except Exception as e:
@@ -241,25 +172,15 @@ def transact(request: TenantRequest, data: ScanTransactIn):
         request=request,
         action="CREATE",
         resource_type="transaction",
-        resource_id=result.transaction_id or "",
+        resource_id=transaction_id or "",
         details={
-            "transaction_type": result.transaction_type,
+            "transaction_type": result.get("transaction_type"),
             "amount": str(data.amount) if data.amount > 0 else None,
         },
     )
 
-    response_data = {
-        "transaction_id": result.transaction_id,
-        "success": True,
-        "message": get_message("TRANSACTION_RECORDED"),
-        "pass_updated": result.pass_updated,
-        "reward_earned": result.reward_earned,
-        "reward_description": result.reward_description,
-        "intent_resolved": result.intent_resolved,
-        "new_balance": result.new_balance,
-        "remaining_uses": result.remaining_uses,
-    }
-    return _serialize_json_value(response_data)
+    result["message"] = get_message("TRANSACTION_RECORDED")
+    return _serialize_json_value(result)
 
 
 @scanner_router.get(

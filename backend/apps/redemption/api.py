@@ -19,7 +19,6 @@ from common.messages import get_message
 from common.permissions import is_staff_or_above, jwt_auth
 
 from .command import RedemptionCommand
-from .gateway import RedemptionGateway
 
 router = Router()
 
@@ -136,6 +135,8 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
         notes=data.notes,
         idempotency_key=data.idempotency_key,
     )
+
+    from .gateway import RedemptionGateway
 
     gateway = RedemptionGateway()
     result = gateway.process(command, tenant)
