@@ -46,7 +46,7 @@ class CardCreateIn(BaseModel):
     @field_validator("metadata")
     @classmethod
     def validate_metadata_size(cls, v: dict | None) -> dict | None:
-        """B-007: Limit metadata JSON to 10KB to prevent abuse."""
+        """B-007: Limit metadata JSON to 10KB and validate form_fields schema."""
         if v is not None:
             import json
 
@@ -55,6 +55,25 @@ class CardCreateIn(BaseModel):
                 raise ValueError(
                     f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
                 )
+
+            # Validate form_fields schema if present
+            form_fields = v.get("form_fields")
+            if form_fields is not None:
+                if not isinstance(form_fields, list):
+                    raise ValueError("form_fields must be a list")
+                for field in form_fields:
+                    if not isinstance(field, dict):
+                        raise ValueError("Each form_field must be an object")
+                    if not field.get("id"):
+                        raise ValueError("Each form_field must have an 'id'")
+                    if field.get("type") not in ("text", "email", "tel", "date", "select", "number"):
+                        raise ValueError(f"Invalid form_field type: {field.get('type')}")
+                # Ensure mandatory enrollment fields exist
+                field_ids = {f.get("id") for f in form_fields}
+                if "name" not in field_ids:
+                    raise ValueError("Enrollment form must include a 'name' field")
+                if "email" not in field_ids:
+                    raise ValueError("Enrollment form must include an 'email' field")
         return v
 
     @field_validator("name")
@@ -93,7 +112,7 @@ class CardUpdateIn(BaseModel):
     @field_validator("metadata")
     @classmethod
     def validate_metadata_size(cls, v: dict | None) -> dict | None:
-        """B-007: Limit metadata JSON to 10KB to prevent abuse."""
+        """B-007: Limit metadata JSON to 10KB and validate form_fields schema."""
         if v is not None:
             import json
 
@@ -102,6 +121,25 @@ class CardUpdateIn(BaseModel):
                 raise ValueError(
                     f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
                 )
+
+            # Validate form_fields schema if present
+            form_fields = v.get("form_fields")
+            if form_fields is not None:
+                if not isinstance(form_fields, list):
+                    raise ValueError("form_fields must be a list")
+                for field in form_fields:
+                    if not isinstance(field, dict):
+                        raise ValueError("Each form_field must be an object")
+                    if not field.get("id"):
+                        raise ValueError("Each form_field must have an 'id'")
+                    if field.get("type") not in ("text", "email", "tel", "date", "select", "number"):
+                        raise ValueError(f"Invalid form_field type: {field.get('type')}")
+                # Ensure mandatory enrollment fields exist
+                field_ids = {f.get("id") for f in form_fields}
+                if "name" not in field_ids:
+                    raise ValueError("Enrollment form must include a 'name' field")
+                if "email" not in field_ids:
+                    raise ValueError("Enrollment form must include an 'email' field")
         return v
 
     @field_validator("name")

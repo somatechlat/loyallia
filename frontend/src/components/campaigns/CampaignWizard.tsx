@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useI18n } from '@/lib/i18n';
+import { campaignSchema } from '@/lib/validations';
+import type { ZodError } from 'zod';
 import ChannelSelector from './ChannelSelector';
 import AudienceSelector from './AudienceSelector';
 import MessageComposer from './MessageComposer';
@@ -155,21 +157,37 @@ export default function CampaignWizard({
     }
   }, [step]);
 
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const validateStep = useCallback((targetStep: number): boolean => {
+    setValidationErrors({});
+    try {
+      campaignSchema.parse(formData);
+      return true;
+    } catch (err) {
+      const zodErr = err as ZodError;
+      const fieldErrors: Record<string, string> = {};
+      zodErr.errors.forEach((e) => {
+        const path = e.path.join('.');
+        fieldErrors[path] = e.message;
+      });
+      setValidationErrors(fieldErrors);
+      return false;
+    }
+  }, [formData]);
+
   const canProceed = useCallback(() => {
     if (step === 0) {
-      // Step 1: must have a valid channel based on plan
       if (formData.channel === 'email' && !hasEmail) return false;
       if (formData.channel === 'wallet' && !hasWallet) return false;
       if (formData.channel === 'whatsapp' && !hasWhatsApp) return false;
       if (formData.channel === 'sms' && !hasSMS) return false;
-      return true;
+      return !!formData.channel;
     }
     if (step === 1) {
-      // Step 2: must have valid audience
-      return formData.audience.customerCount > 0;
+      return formData.audience.customerCount > 0 && formData.audience.segmentId.length > 0;
     }
     if (step === 2) {
-      // Step 3: must have title and message
       return formData.title.trim().length > 0 && formData.message.trim().length > 0;
     }
     return false;
@@ -177,7 +195,18 @@ export default function CampaignWizard({
 
   const handleSubmit = useCallback(
     async (scheduleType: 'immediate' | 'scheduled' = 'immediate', scheduledAt: string | null = null) => {
-      if (!canProceed()) {
+      const payload = { ...formData, scheduleType, scheduledAt };
+      try {
+        campaignSchema.parse(payload);
+        setValidationErrors({});
+      } catch (err) {
+        const zodErr = err as ZodError;
+        const fieldErrors: Record<string, string> = {};
+        zodErr.errors.forEach((e) => {
+          const path = e.path.join('.');
+          fieldErrors[path] = e.message;
+        });
+        setValidationErrors(fieldErrors);
         toast.error(t('campaigns.fillFields'));
         return;
       }

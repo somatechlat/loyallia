@@ -78,6 +78,9 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
   };
 
   const removeField = (id: string) => {
+    const field = currentFields.find(f => f.id === id);
+    // Prevent removing mandatory enrollment fields
+    if (field?.required) return;
     // Prevent removing all fields
     if (currentFields.length <= 1) return;
     onChange(currentFields.filter(f => f.id !== id));
@@ -141,9 +144,13 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
               </div>
 
               {/* Delete */}
-              <button type="button" className="text-surface-400 hover:text-red-500 transition-colors text-sm"
+              <button type="button"
+                className={`transition-colors text-sm ${field.required ? 'text-surface-300 cursor-not-allowed' : 'text-surface-400 hover:text-red-500'}`}
                 onClick={e => { e.stopPropagation(); removeField(field.id); }}
-                disabled={currentFields.length <= 1}>✕</button>
+                disabled={field.required || currentFields.length <= 1}
+                title={field.required ? 'Campo obligatorio — no se puede eliminar' : 'Eliminar campo'}>
+                ✕
+              </button>
 
               {/* Chevron */}
               <span className={`text-surface-400 text-xs transition-transform ${expandedField === field.id ? 'rotate-180' : ''}`}>▾</span>
