@@ -6,6 +6,7 @@ Extracted business logic from customer API views.
 import logging
 import re
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils.dateparse import parse_date
 
@@ -176,13 +177,14 @@ class CustomerService:
                 f"Customer {customer.email} is already enrolled in {card.name}"
             )
 
-        pass_obj = CustomerPass.objects.create(customer=customer, card=card)
+        with transaction.atomic():
+            pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
-        Enrollment.objects.create(
-            tenant=tenant,
-            customer=customer,
-            card=card,
-            enrollment_method=enrollment_method,
-        )
+            Enrollment.objects.create(
+                tenant=tenant,
+                customer=customer,
+                card=card,
+                enrollment_method=enrollment_method,
+            )
 
         return pass_obj

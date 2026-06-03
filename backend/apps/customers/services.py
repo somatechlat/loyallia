@@ -6,6 +6,7 @@ Extracted business logic from customers API views.
 import logging
 from typing import Any
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils.dateparse import parse_date
 
@@ -206,43 +207,46 @@ def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Custom
         k: v for k, v in customer_data.items() if k not in standard_fields
     }
 
-    pass_obj = CustomerPass.objects.create(customer=customer, card=card)
+    with transaction.atomic():
+        pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
-    if dynamic_fields:
-        pass_obj.update_pass_data({"enrollment_data": dynamic_fields})
+        if dynamic_fields:
+            pass_obj.update_pass_data({"enrollment_data": dynamic_fields})
 
-    Enrollment.objects.create(
-        tenant=card.tenant,
-        customer=customer,
-        card=card,
-        enrollment_method="qr_scan",
-    )
-
-    from apps.automation.engine import fire_trigger_async
-
-    fire_trigger_async(
-        trigger="customer_enrolled",
-        customer_id=str(customer.id),
-        context={
-            "card_id": str(card.id),
-            "card_type": card.card_type,
-            "method": "qr_scan",
-            "is_new_customer": created,
-        },
-    )
-
-    from apps.customers.tasks import generate_qr_for_pass
-
-    try:
-        task_fn: Any = generate_qr_for_pass
-        task_fn.delay(str(pass_obj.id))
-    except Exception as e:
-        logger.warning(
-            "Could not queue QR generation task for pass %s: %s",
-            str(pass_obj.id),
-            e,
-            exc_info=True,
+        Enrollment.objects.create(
+            tenant=card.tenant,
+            customer=customer,
+            card=card,
+            enrollment_method="qr_scan",
         )
+
+        from apps.automation.engine import fire_trigger_async
+
+        transaction.on_commit(
+            lambda: fire_trigger_async(
+                trigger="customer_enrolled",
+                customer_id=str(customer.id),
+                context={
+                    "card_id": str(card.id),
+                    "card_type": card.card_type,
+                    "method": "qr_scan",
+                    "is_new_customer": created,
+                },
+            )
+        )
+
+        from apps.customers.tasks import generate_qr_for_pass
+
+        try:
+            task_fn: Any = generate_qr_for_pass
+            transaction.on_commit(lambda: task_fn.delay(str(pass_obj.id)))
+        except Exception as e:
+            logger.warning(
+                "Could not queue QR generation task for pass %s: %s",
+                str(pass_obj.id),
+                e,
+                exc_info=True,
+            )
 
     return pass_obj, customer, False
 
@@ -371,35 +375,38 @@ def enroll_customer(tenant, customer: Customer, card: Card) -> CustomerPass:
     if CustomerPass.objects.filter(customer=customer, card=card).exists():
         raise ValueError("ALREADY_ENROLLED")
 
-    pass_obj = CustomerPass.objects.create(customer=customer, card=card)
+    with transaction.atomic():
+        pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
-    Enrollment.objects.create(
-        tenant=tenant, customer=customer, card=card, enrollment_method="manual"
-    )
-
-    from apps.automation.engine import fire_trigger_async
-
-    fire_trigger_async(
-        trigger="customer_enrolled",
-        customer_id=str(customer.id),
-        context={
-            "card_id": str(card.id),
-            "card_type": card.card_type,
-            "method": "manual",
-        },
-    )
-
-    from apps.customers.tasks import generate_qr_for_pass
-
-    try:
-        task_fn: Any = generate_qr_for_pass
-        task_fn.delay(str(pass_obj.id))
-    except Exception as e:
-        logger.warning(
-            "Could not queue QR generation task for pass %s: %s",
-            str(pass_obj.id),
-            e,
-            exc_info=True,
+        Enrollment.objects.create(
+            tenant=tenant, customer=customer, card=card, enrollment_method="manual"
         )
+
+        from apps.automation.engine import fire_trigger_async
+
+        transaction.on_commit(
+            lambda: fire_trigger_async(
+                trigger="customer_enrolled",
+                customer_id=str(customer.id),
+                context={
+                    "card_id": str(card.id),
+                    "card_type": card.card_type,
+                    "method": "manual",
+                },
+            )
+        )
+
+        from apps.customers.tasks import generate_qr_for_pass
+
+        try:
+            task_fn: Any = generate_qr_for_pass
+            transaction.on_commit(lambda: task_fn.delay(str(pass_obj.id)))
+        except Exception as e:
+            logger.warning(
+                "Could not queue QR generation task for pass %s: %s",
+                str(pass_obj.id),
+                e,
+                exc_info=True,
+            )
 
     return pass_obj

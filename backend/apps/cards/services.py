@@ -6,6 +6,7 @@ Extracted business logic from cards API views.
 import logging
 import uuid
 
+from django.db import transaction
 from django.db.models import Count, Q
 
 from apps.cards.models import Card
@@ -109,20 +110,24 @@ def update_program(card: Card, data: dict, tenant) -> Card:
 
     if update_fields:
         try:
-            card.save(update_fields=update_fields + ["updated_at"])
-        except ValueError as exc:
-            raise ValueError(f"VALIDATION_ERROR:{exc}")
-
-        try:
             from apps.customers.tasks import update_loyalty_class_async
-
-            update_loyalty_class_async.delay(str(card.id))
         except Exception as e:
             logger.error(
                 "Failed to enqueue Google Wallet sync for Card %s on update: %s",
                 card.id,
                 e,
             )
+            update_loyalty_class_async = None
+
+        try:
+            with transaction.atomic():
+                card.save(update_fields=update_fields + ["updated_at"])
+                if update_loyalty_class_async is not None:
+                    transaction.on_commit(
+                        lambda: update_loyalty_class_async.delay(str(card.id))
+                    )
+        except ValueError as exc:
+            raise ValueError(f"VALIDATION_ERROR:{exc}")
 
     return card
 
@@ -150,8 +155,9 @@ def delete_program(card: Card) -> dict:
     pass_count = CustomerPass.objects.filter(card=card).count()
     active_pass_count = CustomerPass.objects.filter(card=card, is_active=True).count()
 
-    CustomerPass.objects.filter(card=card).delete()
-    card.delete()
+    with transaction.atomic():
+        CustomerPass.objects.filter(card=card).delete()
+        card.delete()
 
     return {
         "deleted_passes": pass_count,

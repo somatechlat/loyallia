@@ -12,6 +12,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction
 from django.utils import timezone as dj_timezone
 
 from apps.authentication.models import RefreshToken, User
@@ -132,11 +133,12 @@ def issue_tokens(user: User) -> dict:
     expires_at = dj_timezone.now() + timedelta(
         days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS
     )
-    RefreshToken.objects.create(
-        user=user, token_hash=hash_token(refresh_str), expires_at=expires_at
-    )
-    user.last_login = dj_timezone.now()
-    user.save(update_fields=["last_login"])
+    with transaction.atomic():
+        RefreshToken.objects.create(
+            user=user, token_hash=hash_token(refresh_str), expires_at=expires_at
+        )
+        user.last_login = dj_timezone.now()
+        user.save(update_fields=["last_login"])
     return {
         "access_token": access,
         "refresh_token": refresh_str,

@@ -7,6 +7,8 @@ import logging
 from decimal import Decimal
 from typing import Any
 
+from django.db import transaction
+
 from apps.customers.models import CustomerPass
 from apps.transactions.models import Enrollment, Transaction
 
@@ -118,14 +120,15 @@ class TransactionService:
                 f"Customer {customer.email} is already enrolled in {card.name}"
             )
 
-        pass_obj = CustomerPass.objects.create(customer=customer, card=card)
+        with transaction.atomic():
+            pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
-        Enrollment.objects.create(
-            tenant=tenant,
-            customer=customer,
-            card=card,
-            enrollment_method=enrollment_method,
-        )
+            Enrollment.objects.create(
+                tenant=tenant,
+                customer=customer,
+                card=card,
+                enrollment_method=enrollment_method,
+            )
 
         return pass_obj
 
