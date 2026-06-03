@@ -342,7 +342,7 @@ def platform_integrations(request):
                 "sender_email_present": bool(mailjet_sender_email),
             },
             preview_values={
-                "mailjet_api_key": mailjet_api_key,
+                "mailjet_api_key": "<redacted>" if mailjet_api_key else "",
                 "mailjet_sender_email": mailjet_sender_email,
                 "mailjet_sender_name": PlatformSetting.get("mailjet_sender_name", ""),
             },
