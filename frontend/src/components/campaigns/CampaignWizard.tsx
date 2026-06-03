@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useI18n } from '@/lib/i18n';
-import { campaignSchema } from '@/lib/validations';
+import { campaignSchema, campaignStep0Schema, campaignStep1Schema, campaignStep2Schema } from '@/lib/validations';
 import type { ZodError } from 'zod';
 import ChannelSelector from './ChannelSelector';
 import AudienceSelector from './AudienceSelector';
@@ -145,14 +145,9 @@ export default function CampaignWizard({
     []
   );
 
-  const handleNext = useCallback(() => {
-    if (step < STEPS.length - 1) {
-      setStep(s => s + 1);
-    }
-  }, [step]);
-
   const handleBack = useCallback(() => {
     if (step > 0) {
+      setValidationErrors({});
       setStep(s => s - 1);
     }
   }, [step]);
@@ -162,7 +157,18 @@ export default function CampaignWizard({
   const validateStep = useCallback((targetStep: number): boolean => {
     setValidationErrors({});
     try {
-      campaignSchema.parse(formData);
+      if (targetStep === 0) {
+        campaignStep0Schema.parse({ channel: formData.channel, walletPlatform: formData.walletPlatform });
+      } else if (targetStep === 1) {
+        campaignStep1Schema.parse({ audience: formData.audience });
+      } else if (targetStep === 2) {
+        campaignStep2Schema.parse({
+          title: formData.title,
+          message: formData.message,
+          scheduleType: formData.scheduleType,
+          scheduledAt: formData.scheduledAt,
+        });
+      }
       return true;
     } catch (err) {
       const zodErr = err as ZodError;
@@ -182,16 +188,34 @@ export default function CampaignWizard({
       if (formData.channel === 'wallet' && !hasWallet) return false;
       if (formData.channel === 'whatsapp' && !hasWhatsApp) return false;
       if (formData.channel === 'sms' && !hasSMS) return false;
-      return !!formData.channel;
+      const result = campaignStep0Schema.safeParse({ channel: formData.channel, walletPlatform: formData.walletPlatform });
+      return result.success;
     }
     if (step === 1) {
-      return formData.audience.customerCount > 0 && formData.audience.segmentId.length > 0;
+      const result = campaignStep1Schema.safeParse({ audience: formData.audience });
+      return result.success;
     }
     if (step === 2) {
-      return formData.title.trim().length > 0 && formData.message.trim().length > 0;
+      const result = campaignStep2Schema.safeParse({
+        title: formData.title,
+        message: formData.message,
+        scheduleType: formData.scheduleType,
+        scheduledAt: formData.scheduledAt,
+      });
+      return result.success;
     }
     return false;
   }, [step, formData, hasEmail, hasWallet, hasWhatsApp, hasSMS]);
+
+  const handleNext = useCallback(() => {
+    if (!validateStep(step)) {
+      toast.error(t('campaigns.fixErrors'));
+      return;
+    }
+    if (step < STEPS.length - 1) {
+      setStep(s => s + 1);
+    }
+  }, [step, validateStep, t]);
 
   const handleSubmit = useCallback(
     async (scheduleType: 'immediate' | 'scheduled' = 'immediate', scheduledAt: string | null = null) => {
@@ -328,14 +352,23 @@ export default function CampaignWizard({
           {step === 0 && (
             <ChannelSelector
               value={formData.channel}
-              onChange={(channel) => updateForm({ channel })}
+              onChange={(channel) => {
+                setValidationErrors(prev => {
+                  const next = { ...prev };
+                  delete next.channel;
+                  delete next.walletPlatform;
+                  return next;
+                });
+                updateForm({ channel });
+              }}
               planFeatures={planFeatures}
               planLimits={planLimits}
               planUsage={planUsage}
               programs={programs}
+              errors={validationErrors}
               onQuickPreset={(programId, segmentId, walletPlatform) => {
-                const program = programs.find(p => p.id === programId);
                 const segment = segments.find(s => s.id === segmentId);
+                setValidationErrors({});
                 updateForm({
                   audience: {
                     mode: 'preset',
@@ -351,7 +384,10 @@ export default function CampaignWizard({
                 // Skip step 2 (audience) if using a quick preset
                 setStep(2);
               }}
-              onCustomSelected={() => setStep(1)}
+              onCustomSelected={() => {
+                setValidationErrors({});
+                setStep(1);
+              }}
             />
           )}
 
@@ -360,18 +396,36 @@ export default function CampaignWizard({
               programs={programs}
               segments={segments}
               channel={formData.channel}
-              walletPlatform={formData.walletPlatform}
               value={formData.audience}
-              onChange={(audience) => updateForm({ audience })}
+              onChange={(audience) => {
+                setValidationErrors(prev => {
+                  const next = { ...prev };
+                  delete next['audience.programId'];
+                  delete next['audience.segmentId'];
+                  delete next['audience.customerCount'];
+                  return next;
+                });
+                updateForm({ audience });
+              }}
+              errors={validationErrors}
             />
           )}
 
           {step === 2 && (
             <MessageComposer
               data={formData}
-              onChange={updateForm}
+              onChange={(updates) => {
+                setValidationErrors(prev => {
+                  const next = { ...prev };
+                  Object.keys(updates).forEach(k => delete next[k]);
+                  if (updates.scheduleType || updates.scheduledAt) delete next.scheduledAt;
+                  return next;
+                });
+                updateForm(updates);
+              }}
               planLimits={planLimits}
               planUsage={planUsage}
+              errors={validationErrors}
             />
           )}
         </div>

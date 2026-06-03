@@ -12,9 +12,10 @@ interface MessageComposerProps {
   onChange: (updates: Partial<CampaignFormData>) => void;
   planLimits: Record<string, number>;
   planUsage: Record<string, number>;
+  errors?: Record<string, string>;
 }
 
-export default function MessageComposer({ data, onChange, planLimits, planUsage }: MessageComposerProps) {
+export default function MessageComposer({ data, onChange, planLimits, planUsage, errors = {} }: MessageComposerProps) {
   const { t } = useI18n();
   const imgInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
@@ -120,12 +121,14 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage 
         </div>
         <input
           id="campaign-title"
-          className="input"
+          className={`input ${errors.title ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
           maxLength={titleMaxLength}
           placeholder={t('campaigns.titlePlaceholder')}
           value={data.title}
           onChange={e => onChange({ title: e.target.value })}
+          aria-invalid={!!errors.title}
         />
+        {errors.title && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.title}</p>}
         <p className="text-xs text-surface-400 mt-1">
           {data.title.length} / {titleMaxLength}
         </p>
@@ -181,24 +184,27 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage 
           <>
             <textarea
               id="campaign-message"
-              className="input min-h-[120px] resize-none font-mono text-sm"
+              className={`input min-h-[120px] resize-none font-mono text-sm ${errors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
               placeholder={t('campaigns.emailPlaceholderHtml')}
               maxLength={messageMaxLength}
               value={data.message}
               onChange={e => onChange({ message: e.target.value })}
+              aria-invalid={!!errors.message}
             />
             <p className="text-xs text-surface-400 mt-1">{t('campaigns.htmlHelp')}</p>
           </>
         ) : (
           <textarea
             id="campaign-message"
-            className="input min-h-[80px] resize-none"
+            className={`input min-h-[80px] resize-none ${errors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
             placeholder={t('campaigns.messagePlaceholder')}
             maxLength={messageMaxLength}
             value={data.message}
             onChange={e => onChange({ message: e.target.value })}
+            aria-invalid={!!errors.message}
           />
         )}
+        {errors.message && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.message}</p>}
         <p className="text-xs text-surface-400 mt-1">
           {data.message.length} / {messageMaxLength}
         </p>
@@ -249,13 +255,17 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage 
           </button>
         </div>
         {data.scheduleType === 'scheduled' && (
-          <input
-            type="datetime-local"
-            className="input mt-3"
-            value={data.scheduledAt || ''}
-            onChange={e => onChange({ scheduledAt: e.target.value })}
-            min={new Date().toISOString().slice(0, 16)}
-          />
+          <>
+            <input
+              type="datetime-local"
+              className={`input mt-3 ${errors.scheduledAt ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+              value={data.scheduledAt || ''}
+              onChange={e => onChange({ scheduledAt: e.target.value })}
+              min={new Date().toISOString().slice(0, 16)}
+              aria-invalid={!!errors.scheduledAt}
+            />
+            {errors.scheduledAt && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.scheduledAt}</p>}
+          </>
         )}
       </section>
 
