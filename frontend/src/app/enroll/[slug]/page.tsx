@@ -140,9 +140,37 @@ export default function EnrollPage() {
       return;
     }
     const errors: Record<string, string> = {};
-    if (!form.first_name) errors.first_name = 'El nombre es obligatorio';
-    if (!form.last_name) errors.last_name = 'El apellido es obligatorio';
-    if (!form.email) errors.email = 'El correo electrónico es obligatorio';
+
+    // Dynamic validation based on card.metadata.form_fields
+    const customFields = (card?.metadata as Record<string, unknown>)?.form_fields as Array<{
+      id: string; type: string; label: string; required: boolean; country_code?: boolean;
+    }> | undefined;
+
+    const fieldsToValidate = customFields && customFields.length > 0
+      ? customFields
+      : [
+          { id: 'first_name', type: 'text', label: 'Nombre', required: true },
+          { id: 'last_name', type: 'text', label: 'Apellido', required: true },
+          { id: 'email', type: 'email', label: 'Correo', required: true },
+          { id: 'phone', type: 'tel', label: 'Teléfono', required: false },
+          { id: 'date_of_birth', type: 'date', label: 'Fecha de nacimiento', required: false },
+        ];
+
+    for (const field of fieldsToValidate) {
+      const value = form[field.id] || '';
+      if (field.required && !value.trim()) {
+        errors[field.id] = `${field.label} es obligatorio`;
+      }
+      if (value.trim()) {
+        if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          errors[field.id] = 'Ingresa un correo electrónico válido';
+        }
+        if (field.type === 'tel' && !/^[\d\s\+\-\(\)]+$/.test(value)) {
+          errors[field.id] = 'Ingresa un teléfono válido';
+        }
+      }
+    }
+
     if (Object.keys(errors).length > 0) { setFormErrors(errors); toast.error('Por favor completa los campos obligatorios'); return; }
     setFormErrors({});
     if (submitting || cooldown > 0) return;

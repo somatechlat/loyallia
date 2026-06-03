@@ -109,6 +109,7 @@ export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
 
 
 export const campaignSchema = z.object({
+  internalName: z.string().max(200, 'Máximo 200 caracteres').optional().default(''),
   title: z
     .string()
     .min(1, 'El título es obligatorio')
@@ -117,8 +118,48 @@ export const campaignSchema = z.object({
     .string()
     .min(1, 'El mensaje es obligatorio')
     .max(10000, 'Máximo 10,000 caracteres'),
-  segment_id: z.string().min(1, 'Selecciona un segmento'),
-  image_url: z.string().url('URL inválida').optional().or(z.literal('')).default(''),
-});
+  imageUrl: z.string().url('URL inválida').optional().or(z.literal('')).default(''),
+  actionUrl: z.string().url('URL inválida').optional().or(z.literal('')).default(''),
+  channel: z.enum(['email', 'wallet', 'whatsapp', 'sms'], {
+    errorMap: () => ({ message: 'Selecciona un canal válido' }),
+  }),
+  walletPlatform: z.enum(['apple', 'google', 'both'], {
+    errorMap: () => ({ message: 'Selecciona una plataforma válida' }),
+  }),
+  audience: z.object({
+    mode: z.enum(['preset', 'custom']),
+    programId: z.string().min(1, 'Selecciona un programa'),
+    walletPlatform: z.enum(['apple', 'google', 'both']),
+    segmentId: z.string().min(1, 'Selecciona un segmento'),
+    customerIds: z.array(z.string()),
+    excludedCustomerIds: z.array(z.string()),
+    customerCount: z.number().min(1, 'La audiencia debe tener al menos 1 destinatario'),
+    label: z.string(),
+  }),
+  scheduleType: z.enum(['immediate', 'scheduled']),
+  scheduledAt: z.string().nullable().optional(),
+}).refine(
+  (data) => {
+    if (data.scheduleType === 'scheduled') {
+      return data.scheduledAt && data.scheduledAt.length > 0;
+    }
+    return true;
+  },
+  {
+    message: 'Selecciona una fecha y hora para el envío programado',
+    path: ['scheduledAt'],
+  }
+).refine(
+  (data) => {
+    if (data.channel === 'wallet') {
+      return data.walletPlatform !== undefined;
+    }
+    return true;
+  },
+  {
+    message: 'Selecciona una plataforma de wallet',
+    path: ['walletPlatform'],
+  }
+);
 
 export type CampaignFormData = z.infer<typeof campaignSchema>;
