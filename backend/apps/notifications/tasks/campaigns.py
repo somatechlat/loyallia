@@ -191,12 +191,17 @@ def send_wallet_notification_campaign(
                         failed += 1
                         error_summary += f"Apple broadcast failed for {card.name}: {str(exc)[:100]}; "
 
-        for customer in audience.iterator(chunk_size=50):
-            passes = CustomerPass.objects.filter(
-                customer=customer, is_active=True
-            ).select_related("card", "card__tenant")
+        # Pre-fetch all active CustomerPass records for the audience to avoid N+1
+        all_passes = CustomerPass.objects.filter(
+            customer__in=audience, is_active=True
+        ).select_related("card", "card__tenant")
+        passes_by_customer: dict[str, list] = {}
+        for cp in all_passes:
+            passes_by_customer.setdefault(str(cp.customer_id), []).append(cp)
 
-            if not passes.exists():
+        for customer in audience.iterator(chunk_size=50):
+            passes = passes_by_customer.get(str(customer.id), [])
+            if not passes:
                 continue
 
             delivery_log = CampaignDeliveryLog.objects.create(

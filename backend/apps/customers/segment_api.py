@@ -107,14 +107,12 @@ def _apply_segment_filter(queryset, segment_id: str):
         if count == 0:
             return base.none()
         threshold_index = max(0, int(count * 0.9))
-        sorted_spends = list(
-            base.order_by("total_spent").values_list("total_spent", flat=True)
+        threshold_value = list(
+            base.order_by("total_spent").values_list("total_spent", flat=True)[
+                threshold_index : threshold_index + 1
+            ]
         )
-        threshold = (
-            sorted_spends[threshold_index]
-            if threshold_index < len(sorted_spends)
-            else sorted_spends[-1]
-        )
+        threshold = threshold_value[0] if threshold_value else 0
         return base.filter(total_spent__gte=threshold)
     elif extra == "new":
         return base.filter(created_at__gte=timezone.now() - timedelta(days=30))
@@ -194,19 +192,87 @@ def apply_campaign_filters(
 
 @router.get("/segments/", auth=jwt_auth, summary="Listar segmentos de clientes")
 def list_segments(request):
-    """List all available customer segments with their current member count. MANAGER+ only."""
+    """List all available customer segments with their current member count. MANAGER+ only.
+
+    PERF: Computes simple segment counts in a single aggregate query using Count
+    with Q-object filters. Only percentile-based segments (vip, most_active)
+    require separate optimized queries.
+    """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    results = []
+
+    from django.db.models import Count, Q
+    from django.utils import timezone
+
     base_queryset = Customer.objects.filter(tenant=request.tenant)
+    now = timezone.now()
+    cutoff_30 = now - timedelta(days=30)
+    cutoff_60 = now - timedelta(days=60)
+
+    # Single-query aggregate for all filter-based segments
+    agg = base_queryset.aggregate(
+        all_count=Count("id", filter=Q(is_active=True)),
+        active_count=Count(
+            "id", filter=Q(is_active=True, last_visit__gte=cutoff_30)
+        ),
+        at_risk_count=Count(
+            "id",
+            filter=Q(
+                is_active=True,
+                last_visit__gte=cutoff_60,
+                last_visit__lt=cutoff_30,
+            ),
+        ),
+        lost_count=Count(
+            "id",
+            filter=Q(is_active=True)
+            & (
+                Q(last_visit__lt=cutoff_60)
+                | Q(last_visit__isnull=True, created_at__lt=cutoff_60)
+            ),
+        ),
+        new_count=Count(
+            "id", filter=Q(is_active=True, created_at__gte=cutoff_30)
+        ),
+    )
+
+    count_map = {
+        "all": agg["all_count"],
+        "active": agg["active_count"],
+        "at_risk": agg["at_risk_count"],
+        "lost": agg["lost_count"],
+        "new": agg["new_count"],
+    }
+
+    # vip and most_active are percentile-based and need separate logic
+    base_active = base_queryset.filter(is_active=True)
+    active_total = base_active.count()
+
+    if active_total == 0:
+        count_map["vip"] = 0
+        count_map["most_active"] = 0
+    else:
+        # vip: top 10% by total_spent
+        threshold_index = max(0, int(active_total * 0.9))
+        threshold_value = list(
+            base_active.order_by("total_spent").values_list("total_spent", flat=True)[
+                threshold_index : threshold_index + 1
+            ]
+        )
+        threshold = threshold_value[0] if threshold_value else 0
+        count_map["vip"] = base_active.filter(total_spent__gte=threshold).count()
+
+        # most_active: top 15% by activity (exact count = threshold)
+        count_map["most_active"] = max(1, int(active_total * 0.15))
+
+    results = []
     for seg_id, seg_def in _BUILTIN_SEGMENTS.items():
-        count = _apply_segment_filter(base_queryset, seg_id).count()
         results.append(
             {
                 "id": seg_id,
                 "name": seg_def["name"],
                 "description": seg_def["description"],
-                "member_count": count,
+                "member_count": count_map.get(seg_id, 0),
                 "type": "builtin",
             }
         )

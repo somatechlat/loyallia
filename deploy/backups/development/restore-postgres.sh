@@ -25,13 +25,7 @@ done
 step "PostgreSQL Restore"
 
 # --- Find latest encrypted backup -------------------------------------------
-LATEST=""
-for f in "$BACKUP_DIR/postgres"/*.age; do
-    [ -e "$f" ] || continue
-    if [ -z "$LATEST" ] || [ "$f" -nt "$LATEST" ]; then
-        LATEST="$f"
-    fi
-done
+LATEST=$(find_latest_backup "$BACKUP_DIR/postgres" "*.age")
 
 if [ -z "$LATEST" ]; then
     die "No encrypted PostgreSQL backup found in $BACKUP_DIR/postgres/"
@@ -40,14 +34,7 @@ fi
 log "Latest backup: $(basename "$LATEST")"
 
 # --- Confirmation -----------------------------------------------------------
-if [ "$FORCE" -eq 0 ]; then
-    echo ""
-    warn "This will DROP the existing 'loyallia' database and recreate it."
-    read -r -p "Type 'RESTORE' to confirm: " confirm
-    if [ "$confirm" != "RESTORE" ]; then
-        die "Restore aborted."
-    fi
-fi
+confirm_restore "This will DROP the existing 'loyallia' database and recreate it."
 
 # --- Decrypt ----------------------------------------------------------------
 TMPDIR=$(mktemp -d)

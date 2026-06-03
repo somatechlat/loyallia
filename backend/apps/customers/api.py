@@ -6,7 +6,6 @@ Phase 5 implementation of customer + pass management endpoints.
 import logging
 from typing import Any
 
-from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -16,6 +15,7 @@ from ninja.files import UploadedFile
 from apps.audit.models import AuditAction
 from apps.audit.service import log_action
 from apps.cards.models import Card
+from apps.customers import services
 from apps.customers.models import Customer, CustomerPass
 from apps.customers.schemas import (
     CustomerCreateIn,
@@ -27,7 +27,6 @@ from apps.customers.schemas import (
     MessageOut,
     ResendPassIn,
 )
-from common.email_config import get_default_from_email
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
@@ -49,18 +48,7 @@ def list_customers(
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = require_tenant(request)
-    queryset = Customer.objects.filter(tenant=tenant).select_related("tenant")
-
-    if search:
-        queryset = queryset.filter(
-            Q(first_name__icontains=search)
-            | Q(last_name__icontains=search)
-            | Q(email__icontains=search)
-            | Q(phone__icontains=search)
-        )
-
-    customers = queryset.order_by("-created_at")[offset : offset + limit]
-    total = queryset.count()
+    result = services.list_customers(tenant, search, limit, offset)
 
     log_action(
         request=request,
@@ -70,11 +58,14 @@ def list_customers(
             "search": search,
             "limit": limit,
             "offset": offset,
-            "returned_count": len(customers),
+            "returned_count": len(result["customers"]),
         },
     )
 
-    return {"customers": [CustomerOut.from_model(c) for c in customers], "total": total}
+    return {
+        "customers": [CustomerOut.from_model(c) for c in result["customers"]],
+        "total": result["total"],
+    }
 
 
 @router.get(
@@ -94,107 +85,19 @@ def search_customers(
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = require_tenant(request)
-    queryset = Customer.objects.filter(tenant=tenant, is_active=True)
+    results = services.search_customers(tenant, query, program_ids, device_type, wallet_platform)
 
-    if query:
-        queryset = queryset.filter(
-            Q(first_name__icontains=query)
-            | Q(last_name__icontains=query)
-            | Q(email__icontains=query)
-            | Q(phone__icontains=query)
+    return [
+        CustomerSearchOut(
+            id=str(r["customer"].id),
+            name=r["customer"].full_name,
+            email=r["customer"].email,
+            phone=r["customer"].phone,
+            programs=r["programs"],
+            wallet_platforms=r["wallet_platforms"],
         )
-
-    if program_ids:
-        card_ids = [c.strip() for c in program_ids.split(",") if c.strip()]
-        if card_ids:
-            queryset = queryset.filter(
-                passes__card_id__in=card_ids,
-                passes__is_active=True,
-            ).distinct()
-
-    if device_type and device_type != "both":
-        if device_type == "none":
-            queryset = queryset.filter(devices__isnull=True)
-        elif device_type in ("ios", "android"):
-            queryset = queryset.filter(
-                devices__device_type=device_type,
-                devices__is_active=True,
-            ).distinct()
-
-    if wallet_platform and wallet_platform != "both":
-        if wallet_platform == "none":
-            wallet_customer_ids = (
-                CustomerPass.objects.filter(
-                    is_active=True,
-                )
-                .exclude(
-                    apple_pass_id="",
-                    google_pass_id="",
-                )
-                .values_list("customer_id", flat=True)
-                .distinct()
-            )
-            queryset = queryset.exclude(id__in=wallet_customer_ids)
-        elif wallet_platform == "apple":
-            queryset = queryset.filter(
-                passes__is_active=True,
-                passes__apple_pass_id__gt="",
-            ).distinct()
-        elif wallet_platform == "google":
-            queryset = queryset.filter(
-                passes__is_active=True,
-                passes__google_pass_id__gt="",
-            ).distinct()
-
-    customers = queryset.order_by("-created_at")[:50]
-
-    passes_qs = CustomerPass.objects.filter(is_active=True).select_related("card")
-    customer_ids = [c.id for c in customers]
-
-    # Build a mapping of customer -> programs and wallet platforms
-    passes_map = {}
-    for cp in passes_qs.filter(customer_id__in=customer_ids):
-        passes_map.setdefault(cp.customer_id, []).append(cp)
-
-    from apps.notifications.models import PushDevice
-
-    devices_map = {}
-    for device in PushDevice.objects.filter(
-        customer_id__in=customer_ids, is_active=True
-    ):
-        devices_map.setdefault(device.customer_id, set()).add(device.device_type)
-
-    results = []
-    for customer in customers:
-        customer_passes = passes_map.get(customer.id, [])
-        programs = []
-        wallet_platforms = []
-        has_apple = False
-        has_google = False
-        for cp in customer_passes:
-            if cp.card and cp.card.name and cp.card.name not in programs:
-                programs.append(cp.card.name)
-            if cp.apple_pass_id:
-                has_apple = True
-            if cp.google_pass_id:
-                has_google = True
-        if has_apple:
-            wallet_platforms.append("apple")
-        if has_google:
-            wallet_platforms.append("google")
-
-        results.append(
-            CustomerSearchOut(
-                id=str(customer.id),
-                name=customer.full_name,
-                email=customer.email,
-                phone=customer.phone,
-                programs=programs,
-                wallet_platforms=wallet_platforms,
-            )
-        )
-
-    return results
+        for r in results
+    ]
 
 
 @router.post("/", auth=jwt_auth, response=CustomerOut, summary="Crear cliente")
@@ -210,25 +113,13 @@ def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut
         raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
     check_plan_limit(tenant, "customers", write=True)
 
-    if Customer.objects.filter(tenant=tenant, email=data.email).exists():
-        raise HttpError(400, get_message("CUSTOMER_DUPLICATE_EMAIL"))
-
-    date_of_birth = None
-    if data.date_of_birth:
-        from django.utils.dateparse import parse_date
-
-        date_of_birth = parse_date(data.date_of_birth)
-
-    customer = Customer.objects.create(
-        tenant=tenant,
-        first_name=data.first_name,
-        last_name=data.last_name,
-        email=data.email,
-        phone=data.phone or "",
-        date_of_birth=date_of_birth,
-        gender=data.gender or "",
-        notes=data.notes or "",
-    )
+    try:
+        customer = services.create_customer(tenant, data.model_dump())
+    except ValueError as exc:
+        msg = str(exc)
+        if msg == "CUSTOMER_DUPLICATE_EMAIL":
+            raise HttpError(400, get_message("CUSTOMER_DUPLICATE_EMAIL"))
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     log_action(
         request=request,
@@ -291,16 +182,14 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     return result
 
 
-@router.post(
-    "/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente"
-)
+@router.post("/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente")
 def enroll_customer_public(
     request: HttpRequest, card_id: str, customer_data: CustomerCreateIn
 ) -> CustomerPassOut:
     """Public endpoint for customer self-enrollment via QR code scan.
 
     Rate limited to 10 enrollments per hour per IP address.
-    Does NOT overwrite existing customer profile data  only creates/updates the pass.
+    Does NOT overwrite existing customer profile data — only creates/updates the pass.
     """
     from django.core.cache import cache
 
@@ -327,83 +216,15 @@ def enroll_customer_public(
     if subscription and subscription.is_access_allowed:
         check_plan_limit(card.tenant, "customers", write=True)
 
-    date_of_birth = None
-    if customer_data.date_of_birth:
-        from django.utils.dateparse import parse_date
-
-        date_of_birth = parse_date(customer_data.date_of_birth)
-
-    customer, created = Customer.objects.get_or_create(
-        tenant=card.tenant,
-        email=customer_data.email,
-        defaults={
-            "first_name": customer_data.first_name,
-            "last_name": customer_data.last_name,
-            "phone": customer_data.phone,
-            "date_of_birth": date_of_birth,
-            "gender": customer_data.gender,
-            "notes": customer_data.notes,
-        },
-    )
-
-    # SECURITY: Do NOT overwrite existing customer profile data on re-enrollment.
-    # Only the pass (CustomerPass) is created/updated customer fields stay as-is.
-
-    existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
-    if existing_pass:
-        # Return existing pass with flag instead of error — UX: show user their card
-        return CustomerPassOut.from_model(existing_pass, already_enrolled=True)
-
-    # Extract any dynamic extra fields from the Pydantic model
-    standard_fields = {
-        "first_name",
-        "last_name",
-        "email",
-        "phone",
-        "date_of_birth",
-        "gender",
-        "notes",
-    }
-    dynamic_fields = {
-        k: v for k, v in customer_data.model_dump().items() if k not in standard_fields
-    }
-
-    pass_obj = CustomerPass.objects.create(customer=customer, card=card)
-
-    # Store custom enrollment metadata in pass_data
-    if dynamic_fields:
-        pass_obj.update_pass_data({"enrollment_data": dynamic_fields})
-
-    from apps.transactions.models import Enrollment
-
-    Enrollment.objects.create(
-        tenant=card.tenant, customer=customer, card=card, enrollment_method="qr_scan"
-    )
-
-    from apps.automation.engine import fire_trigger_async
-
-    fire_trigger_async(
-        trigger="customer_enrolled",
-        customer_id=str(customer.id),
-        context={
-            "card_id": str(card.id),
-            "card_type": card.card_type,
-            "method": "qr_scan",
-            "is_new_customer": created,
-        },
-    )
-
-    from apps.customers.tasks import generate_qr_for_pass
-
     try:
-        task_fn: Any = generate_qr_for_pass
-        task_fn.delay(str(pass_obj.id))
-    except Exception:
-        logger.warning(
-            "Could not queue QR generation task for pass %s",
-            str(pass_obj.id),
-            exc_info=True,
+        pass_obj, customer, already_enrolled = services.public_enroll(
+            card, customer_data.model_dump()
         )
+    except ValueError as exc:
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
+
+    if already_enrolled:
+        return CustomerPassOut.from_model(pass_obj, already_enrolled=True)
 
     log_action(
         request=request,
@@ -414,7 +235,10 @@ def enroll_customer_public(
             "customer_id": str(customer.id),
             "card_id": str(card.id),
             "enrollment_method": "qr_scan",
-            "is_new_customer": created,
+            "is_new_customer": Customer.objects.filter(
+                tenant=card.tenant, email=customer_data.email
+            ).count()
+            == 1,
         },
     )
     return CustomerPassOut.from_model(pass_obj)
@@ -427,8 +251,6 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     Used when a customer is already enrolled and wants to receive
     their pass link again (e.g., on a new device or after reinstall).
     """
-    from django.core.mail import send_mail
-
     try:
         card = Card.objects.select_related("tenant").get(
             id=data.card_id, is_active=True, is_published=True
@@ -436,15 +258,6 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     except Card.DoesNotExist:
         raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
 
-    customer = Customer.objects.filter(tenant=card.tenant, email=data.email).first()
-    if not customer:
-        raise HttpError(404, get_message("CUSTOMER_NOT_FOUND"))
-
-    existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
-    if not existing_pass:
-        raise HttpError(404, get_message("PASS_NOT_FOUND"))
-
-    pass_id = str(existing_pass.id)
     base_url = ""
     if hasattr(request, "build_absolute_uri"):
         base_url = request.build_absolute_uri("/").rstrip("/")
@@ -457,66 +270,18 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
             "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
         )
 
-    pass_url = f"{base_url}/pass/{pass_id}/"
-    apple_url = f"{base_url}/api/v1/wallet/apple/{pass_id}/"
-    google_url = f"{base_url}/api/v1/wallet/google/{pass_id}/?redirect=true"
-
-    # Build platform-appropriate wallet links
-    wallet_instructions = f"""Apple Wallet (iPhone/iPad):  # noqa: E501
-{apple_url}
-
-Google Wallet (Android):
-{google_url}
-"""
-
-    subject = f"Tu tarjeta de {card.name} — {card.tenant.name}"
-    message = f"""Hola {customer.first_name},  # noqa: E501
-
-Ya estás inscrito en el programa {card.name} de {card.tenant.name}.
-Aquí tienes los enlaces para acceder a tu tarjeta digital:
-
-Ver tu tarjeta (código QR):
-{pass_url}
-
-{wallet_instructions}
----
-¿Necesitas gestionar tus datos?
-Muy pronto podrás crear una contraseña y acceder a tu portal de cliente
-para ver todas tus tarjetas, descargarlas y gestionar tu información.
-
-Saludos,
-Equipo {card.tenant.name}
-"""
-
-    html_message = f"""<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">  # noqa: E501
-<div style="max-width: 480px; margin: 0 auto; padding: 24px;">
-  <h2 style="color: #1a1a2e;">¡Hola {customer.first_name}!</h2>
-  <p>Ya estás inscrito en <strong>{card.name}</strong> de <strong>{card.tenant.name}</strong>.</p>
-  <div style="background: #f8f9fa; border-radius: 12px; padding: 16px; margin: 16px 0;">
-    <p style="margin: 0 0 8px;"><strong>Tu tarjeta digital:</strong></p>
-    <a href="{pass_url}" style="display: inline-block; background: #5660ff; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Ver mi tarjeta</a>  # noqa: E501
-  </div>
-  <p style="color: #666; font-size: 14px;">Muy pronto podrás crear una contraseña y acceder a tu portal de cliente para gestionar todas tus tarjetas e información</p>  # noqa: E501
-  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 12px; color: #999;">Equipo {card.tenant.name}</p>
-</div>
-</body></html>"""
-
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=get_default_from_email(),
-            recipient_list=[customer.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-    except Exception as exc:
-        logger.error("Failed to send pass resend email to %s: %s", customer.email, exc)
-        raise HttpError(500, get_message("EMAIL_SEND_ERROR"))
+        result = services.resend_pass_email(card, data.email, base_url)
+    except ValueError as exc:
+        msg = str(exc)
+        if msg == "CUSTOMER_NOT_FOUND":
+            raise HttpError(404, get_message("CUSTOMER_NOT_FOUND"))
+        if msg == "PASS_NOT_FOUND":
+            raise HttpError(404, get_message("PASS_NOT_FOUND"))
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     return MessageOut(
-        success=True, message=get_message("PASS_RESENT", email=customer.email)
+        success=True, message=get_message("PASS_RESENT", email=result["email"])
     )
 
 
@@ -559,33 +324,9 @@ def update_customer(
         Customer, id=customer_id, tenant=require_tenant(request)
     )
 
-    update_fields = []
-    if data.first_name is not None:
-        customer.first_name = data.first_name
-        update_fields.append("first_name")
-    if data.last_name is not None:
-        customer.last_name = data.last_name
-        update_fields.append("last_name")
-    if data.phone is not None:
-        customer.phone = data.phone
-        update_fields.append("phone")
-    if data.date_of_birth is not None:
-        from django.utils.dateparse import parse_date
+    customer, update_fields = services.update_customer(customer, data.model_dump())
 
-        customer.date_of_birth = parse_date(data.date_of_birth)
-        update_fields.append("date_of_birth")
-    if data.gender is not None:
-        customer.gender = data.gender
-        update_fields.append("gender")
-    if data.notes is not None:
-        customer.notes = data.notes
-        update_fields.append("notes")
-    if data.is_active is not None:
-        customer.is_active = data.is_active
-        update_fields.append("is_active")
     if update_fields:
-        customer.save(update_fields=update_fields + ["updated_at"])
-
         log_action(
             request=request,
             action=AuditAction.UPDATE,
@@ -628,7 +369,7 @@ def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
         details={"email": customer.email},
     )
 
-    customer.delete()
+    services.delete_customer(customer)
 
     return HttpResponse(status=204)
 
@@ -648,7 +389,7 @@ def get_customer_passes(
     customer = get_object_or_404(
         Customer, id=customer_id, tenant=require_tenant(request)
     )
-    passes = CustomerPass.objects.filter(customer=customer).select_related("card")
+    passes = services.get_customer_passes(customer)
     return [CustomerPassOut.from_model(pass_obj) for pass_obj in passes]
 
 
@@ -668,39 +409,12 @@ def enroll_customer(
     customer = get_object_or_404(Customer, id=customer_id, tenant=tenant)
     card = get_object_or_404(Card, id=card_id, tenant=tenant, is_active=True)
 
-    if CustomerPass.objects.filter(customer=customer, card=card).exists():
-        raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
-
-    pass_obj = CustomerPass.objects.create(customer=customer, card=card)
-
-    from apps.transactions.models import Enrollment
-
-    Enrollment.objects.create(
-        tenant=tenant, customer=customer, card=card, enrollment_method="manual"
-    )
-
-    from apps.automation.engine import fire_trigger_async
-
-    fire_trigger_async(
-        trigger="customer_enrolled",
-        customer_id=str(customer.id),
-        context={
-            "card_id": str(card.id),
-            "card_type": card.card_type,
-            "method": "manual",
-        },
-    )
-
-    from apps.customers.tasks import generate_qr_for_pass
-
     try:
-        task_fn: Any = generate_qr_for_pass
-        task_fn.delay(str(pass_obj.id))
-    except Exception:
-        logger.warning(
-            "Could not queue QR generation task for pass %s",
-            str(pass_obj.id),
-            exc_info=True,
-        )
+        pass_obj = services.enroll_customer(tenant, customer, card)
+    except ValueError as exc:
+        msg = str(exc)
+        if msg == "ALREADY_ENROLLED":
+            raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     return CustomerPassOut.from_model(pass_obj)

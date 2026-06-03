@@ -4,6 +4,8 @@ Split from billing/models.py per the 600-line architectural limit.
 Contains PaymentMethod and Invoice models.
 """
 
+from __future__ import annotations
+
 import uuid
 from decimal import Decimal
 
@@ -11,8 +13,6 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.billing.models import Subscription
-from apps.tenants.models import Tenant
 from common.models import TimestampedModel
 
 # PAYMENT METHOD
@@ -25,7 +25,7 @@ class PaymentMethod(TimestampedModel):
     """
 
     tenant = models.ForeignKey(
-        Tenant,
+        "tenants.Tenant",
         on_delete=models.CASCADE,
         related_name="payment_methods",
         verbose_name="Negocio",
@@ -93,13 +93,13 @@ class Invoice(TimestampedModel):
         UNCOLLECTIBLE = "uncollectible", "Incobrable"
 
     tenant = models.ForeignKey(
-        Tenant,
+        "tenants.Tenant",
         on_delete=models.CASCADE,
         related_name="invoices",
         verbose_name="Negocio",
     )
     subscription = models.ForeignKey(
-        Subscription,
+        "billing.Subscription",
         on_delete=models.PROTECT,
         related_name="invoices",
         verbose_name="Suscripción",
@@ -204,7 +204,7 @@ class Invoice(TimestampedModel):
             raise ValueError("total must be non-negative")
 
     @classmethod
-    def generate_invoice_number(cls, tenant: Tenant) -> str:
+    def generate_invoice_number(cls, tenant: "Tenant") -> str:
         """Generate sequential invoice number: LYL-{tenant_slug}-{seq}."""
         count = cls.objects.filter(tenant=tenant).count() + 1
         slug = tenant.slug[:10].upper().replace("-", "")

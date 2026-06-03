@@ -4,6 +4,8 @@ Core multi-tenant entity. All business data ties to Tenant.
 Ecuadorian business fields for SRI compliance.
 """
 
+from __future__ import annotations
+
 import re
 from contextlib import suppress
 

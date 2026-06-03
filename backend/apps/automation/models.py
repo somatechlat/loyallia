@@ -470,37 +470,34 @@ class Automation(TimestampedModel):
             # Google Wallet
             if wallet_platform in ("google", "both"):
                 try:
-                    # First: silently PATCH object data
-                    from apps.customers.pass_engine.google_pass import (
-                        update_wallet_object,
+                    # Fire Google Wallet updates asynchronously to avoid blocking
+                    from apps.customers.tasks import (
+                        send_google_push_notification_async,
+                        update_wallet_object_async,
                     )
 
-                    gw_update = update_wallet_object(pass_obj)
-                    if gw_update.get("success"):
-                        push_sent = True
+                    update_wallet_object_async.delay(str(pass_obj.id))
+                    push_sent = True
 
-                    # Then: send visible message notification
                     from django.conf import settings
 
-                    from apps.customers.pass_engine.google_pass import (
-                        send_push_notification,
-                    )
                     from apps.tenants.models import PlatformSetting
 
                     dashboard_url = PlatformSetting.get(
                         "dashboard_url", settings.PUBLIC_BASE_URL
                     )
                     action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
-                    result = send_push_notification(
-                        pass_obj, header=title, body=message, action_url=action_url
+                    send_google_push_notification_async.delay(
+                        str(pass_obj.id),
+                        header=title,
+                        body=message,
+                        action_url=action_url,
                     )
-                    if result.get("success"):
-                        push_sent = True
                 except Exception as exc:
                     import logging
 
                     logging.getLogger(__name__).warning(
-                        "Google wallet push failed for pass %s: %s", pass_obj.id, exc
+                        "Google wallet enqueue failed for pass %s: %s", pass_obj.id, exc
                     )
 
             # Apple Wallet
