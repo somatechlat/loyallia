@@ -156,9 +156,11 @@ export default function AudienceSelector({ programs, segments, channel, value, o
   );
 
   useEffect(() => {
-    if (showManual || showExclude) {
+    if (!showManual && !showExclude) return;
+    const timer = setTimeout(() => {
       loadCustomers(manualSearch, manualOffset);
-    }
+    }, 300);
+    return () => clearTimeout(timer);
   }, [showManual, showExclude, manualSearch, manualOffset, loadCustomers]);
 
   const toggleCustomer = useCallback(

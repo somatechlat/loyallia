@@ -66,10 +66,30 @@ const api = axios.create({
   timeout: 30_000,
 });
 
-// Attach JWT access token to every request
+/**
+ * Recursively trim all string values in an object.
+ */
+function deepTrim<T>(value: T): T {
+  if (typeof value === 'string') return value.trim() as unknown as T;
+  if (Array.isArray(value)) return value.map(deepTrim) as unknown as T;
+  if (value && typeof value === 'object') {
+    const trimmed: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      trimmed[k] = deepTrim(v);
+    }
+    return trimmed as unknown as T;
+  }
+  return value;
+}
+
+// Attach JWT access token to every request and sanitize data
 api.interceptors.request.use((config) => {
   const token = Cookies.get('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Trim all string inputs before sending to API
+  if (config.data && typeof config.data === 'object') {
+    config.data = deepTrim(config.data);
+  }
   return config;
 });
 
@@ -107,12 +127,22 @@ api.interceptors.response.use(
   }
 );
 
-/** Global {@link AbortController} used to cancel in-flight requests. */
-const globalController = new AbortController();
+/** Per-request AbortControllers tracked for cleanup. */
+const activeControllers = new Set<AbortController>();
 
-/** Abort all in-flight requests that used the global signal. */
+/** Create a new AbortController and track it. */
+export function createRequestSignal(): AbortSignal {
+  const ctrl = new AbortController();
+  activeControllers.add(ctrl);
+  return ctrl.signal;
+}
+
+/** Abort all tracked in-flight requests and clear the set. */
 export const cancelAllRequests = () => {
-  globalController.abort();
+  activeControllers.forEach((ctrl) => {
+    try { ctrl.abort(); } catch { /* ignore */ }
+  });
+  activeControllers.clear();
 };
 
 export default api;

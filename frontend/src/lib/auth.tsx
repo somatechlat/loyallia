@@ -61,8 +61,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { data } = await authApi.me();
       setUser(data);
       return data;
-    } catch {
-      tokenManager.clearTokens();
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number } };
+      // Only clear tokens on 401 Unauthorized, not on network errors or 5xx
+      if (axiosErr?.response?.status === 401) {
+        tokenManager.clearTokens();
+      }
       setUser(null);
       return null;
     } finally {
