@@ -13,13 +13,13 @@ Endpoints:
 import logging
 import uuid
 
-from common.platform_config import get_platform_config
 from django.conf import settings
 from django.http import HttpResponse
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
 from common.messages import get_message
+from common.platform_config import get_platform_config
 
 logger = logging.getLogger(__name__)
 

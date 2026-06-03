@@ -9,12 +9,17 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import TYPE_CHECKING
+
 from django.db import transaction as db_transaction
 
 from apps.transactions.models import Transaction
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
+
+if TYPE_CHECKING:
+    from apps.customers.models import CustomerPass
 
 logger = logging.getLogger(__name__)
 

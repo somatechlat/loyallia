@@ -20,6 +20,7 @@ from tests.factories import make_user
 
 # Role-Based Access Control Tests
 
+
 class RequireRoleDecoratorTest(TestCase):
     """Tests for @require_role decorator."""
 
@@ -79,7 +80,7 @@ class RequireRoleDecoratorTest(TestCase):
         request = RequestFactory().get("/")
         request.user = user
 
- # SUPER_ADMIN is not explicitly in the role list
+        # SUPER_ADMIN is not explicitly in the role list
         @require_role("OWNER")
         def view(req):
             return "ok"
@@ -101,7 +102,7 @@ class RequireRoleDecoratorTest(TestCase):
 
     def test_request_without_user_attribute(self):
         request = RequestFactory().get("/")
- # Bare WSGIRequest has no .user attribute
+        # Bare WSGIRequest has no .user attribute
 
         @require_role("OWNER")
         def view(req):
@@ -113,7 +114,9 @@ class RequireRoleDecoratorTest(TestCase):
             view(request)
         self.assertEqual(ctx.exception.status_code, 401)
 
+
 # Ecuadorian Document Validation Tests
+
 
 class CedulaValidationTest(TestCase):
     """Tests for cédula de identidad validation."""
@@ -139,12 +142,13 @@ class CedulaValidationTest(TestCase):
             validate_cedula("01020304051")
 
     def test_province_01_format_valid(self):
- # Province 01 (Azuay) may fail module-10 check but format is valid
+        # Province 01 (Azuay) may fail module-10 check but format is valid
         try:
             validate_cedula("0102030405")
         except ValidationError as e:
- # Module-10 check failure is acceptable for random digits
+            # Module-10 check failure is acceptable for random digits
             self.assertIn("verificador", str(e).lower())
+
 
 class RucValidationTest(TestCase):
     """Tests for RUC validation."""
@@ -165,7 +169,7 @@ class RucValidationTest(TestCase):
             validate_ruc("2590012345001")  # Province 25 doesn't exist
 
     def test_province_30_accepted(self):
- # Province 30 is for foreign entities
+        # Province 30 is for foreign entities
         validate_ruc("3090012345001")  # Should not raise
 
     def test_empty_string_rejected(self):
@@ -176,7 +180,9 @@ class RucValidationTest(TestCase):
         with self.assertRaises(ValidationError):
             validate_ruc("17900123450011")
 
+
 # Input Validation Edge Cases
+
 
 class PasswordComplexityEdgeCasesTest(TestCase):
     """Additional password complexity edge cases."""
@@ -185,7 +191,7 @@ class PasswordComplexityEdgeCasesTest(TestCase):
         self.validator = ComplexityValidator()
 
     def test_minimum_valid_password(self):
- # Exactly 12 chars with all requirements
+        # Exactly 12 chars with all requirements
         self.validator.validate("Abcdefgh1!@")
 
     def test_long_password_accepted(self):
@@ -198,7 +204,7 @@ class PasswordComplexityEdgeCasesTest(TestCase):
             self.validator.validate("!@#$%^&*()_+")
 
     def test_unicode_uppercase_rejected(self):
- # Non-ASCII uppercase should not count
+        # Non-ASCII uppercase should not count
         from django.core.exceptions import ValidationError
 
         with self.assertRaises(ValidationError):
@@ -223,7 +229,9 @@ class PasswordComplexityEdgeCasesTest(TestCase):
                 f"Special char '{char}' not matched by SPECIAL_CHARS regex",
             )
 
+
 # User Role Tests
+
 
 class UserRoleTest(TestCase):
     """Tests for User role assignment and validation."""
@@ -235,7 +243,7 @@ class UserRoleTest(TestCase):
 
     def test_user_default_role(self):
         user = make_user()
- # Default is STAFF per model definition
+        # Default is STAFF per model definition
         self.assertIn(user.role, [r for r, _ in UserRole.choices])
 
     def test_role_persists_after_save(self):
@@ -254,7 +262,9 @@ class UserRoleTest(TestCase):
         self.assertTrue(admin.is_staff)
         self.assertTrue(admin.is_superuser)
 
+
 # User Account Lock Tests
+
 
 class AccountLockTest(TestCase):
     """Tests for account lockout after failed login attempts."""
@@ -276,7 +286,7 @@ class AccountLockTest(TestCase):
         for _ in range(5):
             user.record_failed_login()
         user.refresh_from_db()
- # locked_until should be ~15 minutes from now
+        # locked_until should be ~15 minutes from now
         expected_min = timezone.now() + timedelta(minutes=14)
         expected_max = timezone.now() + timedelta(minutes=16)
         self.assertIsNotNone(user.locked_until)

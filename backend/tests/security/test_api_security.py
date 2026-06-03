@@ -17,6 +17,7 @@ from common.url_validator import BLOCKED_NETWORKS, SSRFError, validate_external_
 
 #
 
+
 class TestClientIPExtraction(TestCase):
     """Verify _get_client_ip uses REMOTE_ADDR, not X-Forwarded-For."""
 
@@ -40,7 +41,7 @@ class TestClientIPExtraction(TestCase):
         request.META["REMOTE_ADDR"] = "203.0.113.50"
         request.META["HTTP_X_FORWARDED_FOR"] = "1.2.3.4, 10.0.0.1"
         ip = _get_client_ip(request)
- # Must use REMOTE_ADDR, not the spoofed XFF
+        # Must use REMOTE_ADDR, not the spoofed XFF
         self.assertEqual(ip, "203.0.113.50")
 
     def test_defaults_to_unknown(self):
@@ -53,14 +54,16 @@ class TestClientIPExtraction(TestCase):
         ip = _get_client_ip(request)
         self.assertEqual(ip, "unknown")
 
+
 # Webhook Replay Protection Tests
+
 
 class TestWebhookReplayProtection(TestCase):
     """Verify webhook timestamp validation and idempotency."""
 
     def test_fresh_webhook_accepted(self):
         """Webhook with current timestamp should be accepted."""
- # This tests the timestamp logic conceptually
+        # This tests the timestamp logic conceptually
         timestamp = time.time()
         self.assertLess(abs(time.time() - timestamp), 300)
 
@@ -89,14 +92,16 @@ class TestWebhookReplayProtection(TestCase):
         self.assertIn("payload_hash", field_names)
         self.assertIn("processed_at", field_names)
 
+
 #
+
 
 class TestSSRFProtection(TestCase):
     """Verify SSRF validation blocks private/reserved IPs."""
 
     def test_valid_public_url_passes(self):
         """Public URLs should pass validation."""
- # This test may fail without network skip if DNS fails
+        # This test may fail without network skip if DNS fails
         try:
             result = validate_external_url("https://example.com/image.png")
             self.assertEqual(result, "https://example.com/image.png")
@@ -158,7 +163,9 @@ class TestSSRFProtection(TestCase):
         """SSRFError should be a subclass of ValueError."""
         self.assertTrue(issubclass(SSRFError, ValueError))
 
+
 # Cross-Tenant Isolation Tests
+
 
 class TestCrossTenantIsolation(TestCase):
     """Verify tenants cannot access each other's data via ID manipulation."""
@@ -208,7 +215,9 @@ class TestCrossTenantIsolation(TestCase):
         if hasattr(ctx.exception, "status_code"):
             self.assertIn(ctx.exception.status_code, (403, 404))
 
+
 # Role Boundary API Tests
+
 
 class TestRoleBoundariesAPI(TestCase):
     """Verify MANAGER cannot perform OWNER-only API operations."""
@@ -225,7 +234,9 @@ class TestRoleBoundariesAPI(TestCase):
     def _request(self, user):
         from django.test import RequestFactory
 
-        req = RequestFactory().post("/api/v1/test/", data=b"{}", content_type="application/json")
+        req = RequestFactory().post(
+            "/api/v1/test/", data=b"{}", content_type="application/json"
+        )
         req.user = user
         req.tenant = self.tenant
         return req
@@ -248,12 +259,16 @@ class TestRoleBoundariesAPI(TestCase):
         from apps.tenants.schemas import TeamMemberCreateIn
 
         req = self._request(self.manager)
-        payload = TeamMemberCreateIn(email="x@test.com", first_name="X", last_name="Y", role="STAFF")
+        payload = TeamMemberCreateIn(
+            email="x@test.com", first_name="X", last_name="Y", role="STAFF"
+        )
         with self.assertRaises(HttpError) as ctx:
             add_team_member(req, payload)
         self.assertEqual(ctx.exception.status_code, 403)
 
+
 # Rate Limit Rule Coverage Tests
+
 
 class TestRateLimitRules(TestCase):
     """Verify rate limit rules cover newly added endpoint prefixes."""
@@ -289,7 +304,9 @@ class TestRateLimitRules(TestCase):
         general_index = paths.index("/api/v1/")
         self.assertEqual(general_index, len(paths) - 1)
 
+
 # Rate Limiter Runtime Behavior Tests
+
 
 class TestRateLimiterRuntimeBehavior(TestCase):
     """Verify rate limiter behavior at runtime (no source-code reading)."""

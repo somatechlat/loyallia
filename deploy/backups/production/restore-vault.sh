@@ -18,7 +18,7 @@ if [ "${1:-}" = "--force" ]; then
 fi
 
 BACKUP_DIR_VAULT="$BACKUP_DIR/vault"
-LATEST_AGE=$(ls -t "$BACKUP_DIR_VAULT"/*.tar.age 2>/dev/null | head -1 || true)
+LATEST_AGE=$(find_latest_backup "$BACKUP_DIR_VAULT" "*.tar.age")
 
 if [ -z "$LATEST_AGE" ]; then
     die "No encrypted Vault backup found in $BACKUP_DIR_VAULT"
@@ -28,15 +28,7 @@ step "VAULT RESTORE"
 info "Latest backup: $(basename "$LATEST_AGE")"
 
 # --- Confirmation --------------------------------------------------------------
-if [ "$FORCE" -eq 0 ]; then
-    echo ""
-    echo -e "${RED}WARNING: This will REPLACE Vault data.${NC}"
-    echo ""
-    read -r -p "Type 'RESTORE' to confirm: " confirm
-    if [ "$confirm" != "RESTORE" ]; then
-        die "Restore aborted."
-    fi
-fi
+confirm_restore "WARNING: This will REPLACE Vault data."
 
 # --- Decrypt -------------------------------------------------------------------
 TMPDIR="$TEMP_DIR/vault_restore_$$"

@@ -52,7 +52,12 @@ class BackupJob(models.Model):
     interpretable even if platform settings change later.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
 
     # -- Ownership --
     tenant = models.ForeignKey(
@@ -80,32 +85,65 @@ class BackupJob(models.Model):
         default=BackupJobType.FULL.value,
         help_text="Type of backup operation.",
     )
-    include_media = models.BooleanField(default=True, help_text="Whether media files are included.")
-    include_vault = models.BooleanField(default=True, help_text="Whether vault secrets are included.")
-    encryption_enabled = models.BooleanField(default=True, help_text="Whether the backup is encrypted.")
-    compression_enabled = models.BooleanField(default=True, help_text="Whether the backup is compressed.")
+    include_media = models.BooleanField(
+        default=True, help_text="Whether media files are included."
+    )
+    include_vault = models.BooleanField(
+        default=True, help_text="Whether vault secrets are included."
+    )
+    encryption_enabled = models.BooleanField(
+        default=True, help_text="Whether the backup is encrypted."
+    )
+    compression_enabled = models.BooleanField(
+        default=True, help_text="Whether the backup is compressed."
+    )
 
     # -- Results --
-    started_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp for started.")
-    completed_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp for completed.")
-    file_size_bytes = models.BigIntegerField(null=True, blank=True, help_text="Size of the backup file in bytes.")
-    file_path = models.CharField(max_length=500, blank=True, default="", help_text="Local file path of the backup.")
-    s3_key = models.CharField(max_length=500, blank=True, default="", help_text="Object key in S3-compatible storage.")
+    started_at = models.DateTimeField(
+        null=True, blank=True, help_text="Timestamp for started."
+    )
+    completed_at = models.DateTimeField(
+        null=True, blank=True, help_text="Timestamp for completed."
+    )
+    file_size_bytes = models.BigIntegerField(
+        null=True, blank=True, help_text="Size of the backup file in bytes."
+    )
+    file_path = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Local file path of the backup.",
+    )
+    s3_key = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="Object key in S3-compatible storage.",
+    )
 
     # -- Verification --
-    verification_status = models.CharField(max_length=20, default="pending", help_text="Current verification status.")
-    verification_details = models.TextField(blank=True, default="", help_text="Details of the verification result.")
+    verification_status = models.CharField(
+        max_length=20, default="pending", help_text="Current verification status."
+    )
+    verification_details = models.TextField(
+        blank=True, default="", help_text="Details of the verification result."
+    )
 
     # -- Error handling --
-    error_message = models.TextField(blank=True, default="", help_text="Error message or details.")
+    error_message = models.TextField(
+        blank=True, default="", help_text="Error message or details."
+    )
     retry_count = models.IntegerField(default=0, help_text="Number of retry attempts.")
 
     # -- Timestamps --
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True, help_text="Timestamp for created.")
+    created_at = models.DateTimeField(
+        auto_now_add=True, db_index=True, help_text="Timestamp for created."
+    )
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "backup_jobs"
         ordering = ["-created_at"]
         verbose_name = "Backup Job"

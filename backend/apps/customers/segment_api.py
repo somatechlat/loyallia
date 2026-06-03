@@ -11,13 +11,20 @@ from django.db.models import Q
 from ninja import Router
 from ninja.errors import HttpError
 
-from apps.customers.models import Customer
+from apps.customers.models import Customer, CustomerPass
 from apps.customers.schemas import CustomerOut
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 
 logger = logging.getLogger(__name__)
 router = Router()
+
+# Constants
+DAYS_30 = 30
+DAYS_60 = 60
+VIP_PERCENTILE = 0.9
+MOST_ACTIVE_PERCENTILE = 0.15
+CSV_CHUNK_SIZE = 500
 
 
 # BUILT-IN SEGMENTS
@@ -31,37 +38,37 @@ _BUILTIN_SEGMENTS = {
     },
     "active": {
         "name": "Clientes activos",
-        "description": "Clientes con al menos una visita en los ultimos 30 dias",
+        "description": f"Clientes con al menos una visita en los ultimos {DAYS_30} dias",
         "filter": {"is_active": True, "last_visit__isnull": False},
         "extra": "last_30d",
     },
     "at_risk": {
         "name": "En riesgo",
-        "description": "Clientes sin visitas en 30-60 dias",
+        "description": f"Clientes sin visitas en {DAYS_30}-{DAYS_60} dias",
         "filter": {"is_active": True},
         "extra": "at_risk",
     },
     "lost": {
         "name": "Clientes perdidos",
-        "description": "Clientes sin visitas en mas de 60 dias",
+        "description": f"Clientes sin visitas en mas de {DAYS_60} dias",
         "filter": {"is_active": True},
         "extra": "lost",
     },
     "vip": {
         "name": "Clientes VIP",
-        "description": "Top 10% de clientes por gasto total",
+        "description": f"Top {int((1 - VIP_PERCENTILE) * 100)}% de clientes por gasto total",
         "filter": {"is_active": True},
         "extra": "vip",
     },
     "new": {
         "name": "Nuevos",
-        "description": "Clientes registrados en los últimos 30 días",
+        "description": f"Clientes registrados en los últimos {DAYS_30} días",
         "filter": {"is_active": True},
         "extra": "new",
     },
     "most_active": {
         "name": "Más activos",
-        "description": "Top 15% de clientes por actividad (visitas y gasto)",
+        "description": f"Top {int(MOST_ACTIVE_PERCENTILE * 100)}% de clientes por actividad (visitas y gasto)",
         "filter": {"is_active": True},
         "extra": "most_active",
     },
@@ -90,15 +97,15 @@ def _apply_segment_filter(queryset, segment_id: str):
     extra = seg.get("extra")
 
     if extra == "last_30d":
-        return base.filter(last_visit__gte=timezone.now() - timedelta(days=30))
+        return base.filter(last_visit__gte=timezone.now() - timedelta(days=DAYS_30))
     elif extra == "at_risk":
         now = timezone.now()
         return base.filter(
-            last_visit__gte=now - timedelta(days=60),
-            last_visit__lt=now - timedelta(days=30),
+            last_visit__gte=now - timedelta(days=DAYS_60),
+            last_visit__lt=now - timedelta(days=DAYS_30),
         )
     elif extra == "lost":
-        cutoff = timezone.now() - timedelta(days=60)
+        cutoff = timezone.now() - timedelta(days=DAYS_60)
         return base.filter(
             Q(last_visit__lt=cutoff) | Q(last_visit__isnull=True, created_at__lt=cutoff)
         )
@@ -106,23 +113,21 @@ def _apply_segment_filter(queryset, segment_id: str):
         count = base.count()
         if count == 0:
             return base.none()
-        threshold_index = max(0, int(count * 0.9))
-        sorted_spends = list(
-            base.order_by("total_spent").values_list("total_spent", flat=True)
+        threshold_index = max(0, int(count * VIP_PERCENTILE))
+        threshold_value = list(
+            base.order_by("total_spent").values_list("total_spent", flat=True)[
+                threshold_index : threshold_index + 1
+            ]
         )
-        threshold = (
-            sorted_spends[threshold_index]
-            if threshold_index < len(sorted_spends)
-            else sorted_spends[-1]
-        )
+        threshold = threshold_value[0] if threshold_value else 0
         return base.filter(total_spent__gte=threshold)
     elif extra == "new":
-        return base.filter(created_at__gte=timezone.now() - timedelta(days=30))
+        return base.filter(created_at__gte=timezone.now() - timedelta(days=DAYS_30))
     elif extra == "most_active":
         count = base.count()
         if count == 0:
             return base.none()
-        threshold = max(1, int(count * 0.15))
+        threshold = max(1, int(count * MOST_ACTIVE_PERCENTILE))
         return base.order_by("-total_visits", "-total_spent")[:threshold]
     return base
 
@@ -166,12 +171,17 @@ def apply_campaign_filters(
 
     if target_wallet_platform != "both":
         if target_wallet_platform == "none":
-            wallet_customer_ids = CustomerPass.objects.filter(
-                is_active=True,
-            ).exclude(
-                apple_pass_id="",
-                google_pass_id="",
-            ).values_list("customer_id", flat=True).distinct()
+            wallet_customer_ids = (
+                CustomerPass.objects.filter(
+                    is_active=True,
+                )
+                .exclude(
+                    apple_pass_id="",
+                    google_pass_id="",
+                )
+                .values_list("customer_id", flat=True)
+                .distinct()
+            )
             audience = audience.exclude(id__in=wallet_customer_ids)
         elif target_wallet_platform == "apple":
             audience = audience.filter(
@@ -189,19 +199,87 @@ def apply_campaign_filters(
 
 @router.get("/segments/", auth=jwt_auth, summary="Listar segmentos de clientes")
 def list_segments(request):
-    """List all available customer segments with their current member count. MANAGER+ only."""
+    """List all available customer segments with their current member count. MANAGER+ only.
+
+    PERF: Computes simple segment counts in a single aggregate query using Count
+    with Q-object filters. Only percentile-based segments (vip, most_active)
+    require separate optimized queries.
+    """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    results = []
+
+    from django.db.models import Count, Q
+    from django.utils import timezone
+
     base_queryset = Customer.objects.filter(tenant=request.tenant)
+    now = timezone.now()
+    cutoff_30 = now - timedelta(days=DAYS_30)
+    cutoff_60 = now - timedelta(days=DAYS_60)
+
+    # Single-query aggregate for all filter-based segments
+    agg = base_queryset.aggregate(
+        all_count=Count("id", filter=Q(is_active=True)),
+        active_count=Count(
+            "id", filter=Q(is_active=True, last_visit__gte=cutoff_30)
+        ),
+        at_risk_count=Count(
+            "id",
+            filter=Q(
+                is_active=True,
+                last_visit__gte=cutoff_60,
+                last_visit__lt=cutoff_30,
+            ),
+        ),
+        lost_count=Count(
+            "id",
+            filter=Q(is_active=True)
+            & (
+                Q(last_visit__lt=cutoff_60)
+                | Q(last_visit__isnull=True, created_at__lt=cutoff_60)
+            ),
+        ),
+        new_count=Count(
+            "id", filter=Q(is_active=True, created_at__gte=cutoff_30)
+        ),
+    )
+
+    count_map = {
+        "all": agg["all_count"],
+        "active": agg["active_count"],
+        "at_risk": agg["at_risk_count"],
+        "lost": agg["lost_count"],
+        "new": agg["new_count"],
+    }
+
+    # vip and most_active are percentile-based and need separate logic
+    base_active = base_queryset.filter(is_active=True)
+    active_total = base_active.count()
+
+    if active_total == 0:
+        count_map["vip"] = 0
+        count_map["most_active"] = 0
+    else:
+        # vip: top 10% by total_spent
+        threshold_index = max(0, int(active_total * VIP_PERCENTILE))
+        threshold_value = list(
+            base_active.order_by("total_spent").values_list("total_spent", flat=True)[
+                threshold_index : threshold_index + 1
+            ]
+        )
+        threshold = threshold_value[0] if threshold_value else 0
+        count_map["vip"] = base_active.filter(total_spent__gte=threshold).count()
+
+        # most_active: top 15% by activity (exact count = threshold)
+        count_map["most_active"] = max(1, int(active_total * MOST_ACTIVE_PERCENTILE))
+
+    results = []
     for seg_id, seg_def in _BUILTIN_SEGMENTS.items():
-        count = _apply_segment_filter(base_queryset, seg_id).count()
         results.append(
             {
                 "id": seg_id,
                 "name": seg_def["name"],
                 "description": seg_def["description"],
-                "member_count": count,
+                "member_count": count_map.get(seg_id, 0),
                 "type": "builtin",
             }
         )
@@ -260,7 +338,7 @@ def export_segment(request, segment_id: str):
 
     def generate_rows():
         yield "id,first_name,last_name,email,phone,total_visits,total_spent,last_visit,created_at\n"
-        for customer in members.iterator(chunk_size=500):
+        for customer in members.iterator(chunk_size=CSV_CHUNK_SIZE):
             yield (
                 f"{customer.id},{customer.first_name},{customer.last_name},"
                 f"{customer.email},{customer.phone},{customer.total_visits},"

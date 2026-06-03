@@ -245,7 +245,8 @@ def generate_portal_password(
 
     try:
         _send_portal_password_email(email, temp_password)
-    except Exception:
+    except Exception as e:
+        logger.error("Failed to send portal password email: %s", e)
         return GeneratePasswordOut(
             success=False,
             message="No se pudo enviar el correo. Intenta más tarde.",

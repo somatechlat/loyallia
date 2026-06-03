@@ -24,7 +24,7 @@ def _clean_value(value: Any) -> Any:
         return value.isoformat()
     if hasattr(value, "hex"):
         return str(value)
-    if isinstance(value, (dict, list, int, float, bool)) or value is None:
+    if isinstance(value, dict | list | int | float | bool) or value is None:
         return value
     return str(value)
 

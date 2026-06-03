@@ -16,13 +16,7 @@ source "$SCRIPT_DIR/../lib/encrypt.sh"
 step "MinIO Restore"
 
 # --- Find latest encrypted backup -------------------------------------------
-LATEST=""
-for f in "$BACKUP_DIR/minio"/*.age; do
-    [ -e "$f" ] || continue
-    if [ -z "$LATEST" ] || [ "$f" -nt "$LATEST" ]; then
-        LATEST="$f"
-    fi
-done
+LATEST=$(find_latest_backup "$BACKUP_DIR/minio" "*.age")
 
 if [ -z "$LATEST" ]; then
     die "No encrypted MinIO backup found in $BACKUP_DIR/minio/"

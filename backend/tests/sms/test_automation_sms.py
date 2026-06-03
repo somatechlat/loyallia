@@ -21,6 +21,7 @@ from tests.factories import (
     make_tenant,
 )
 
+
 def _get_twilio_test_credentials():
     sid = get_secret("twilio_test_account_sid") or get_secret("twilio_account_sid")
     token = get_secret("twilio_test_auth_token") or get_secret("twilio_auth_token")
@@ -28,6 +29,7 @@ def _get_twilio_test_credentials():
     if sid and token and from_number:
         return {"sid": sid, "token": token, "from": from_number}
     return None
+
 
 class AutomationSendEmailTest(TestCase):
     """Tests for _execute_send_email with real Django SMTP."""
@@ -45,7 +47,7 @@ class AutomationSendEmailTest(TestCase):
             action_config={"title": "Welcome!", "message": "Thanks for joining"},
         )
         result = auto._execute_send_email(self.customer, {})
- # Real email backend executes (console in dev). Method returns True on success.
+        # Real email backend executes (console in dev). Method returns True on success.
         self.assertTrue(result)
 
     def test_send_email_no_email_returns_false(self):
@@ -59,17 +61,18 @@ class AutomationSendEmailTest(TestCase):
         self.assertFalse(result)
 
     def test_send_email_smtp_failure_returns_false(self):
- # SMTP failure is handled internally the method catches exceptions
- # and returns False. We test with a customer that has an email.
+        # SMTP failure is handled internally the method catches exceptions
+        # and returns False. We test with a customer that has an email.
         auto = make_automation(
             self.tenant,
             action=AutomationAction.SEND_EMAIL,
             action_config={"title": "Hi", "message": "World"},
         )
- # Real execution: if SMTP fails, method catches and returns False
+        # Real execution: if SMTP fails, method catches and returns False
         result = auto._execute_send_email(self.customer, {})
- # In dev with console backend, this succeeds. In production SMTP, failures are caught.
+        # In dev with console backend, this succeeds. In production SMTP, failures are caught.
         self.assertIsInstance(result, bool)
+
 
 class AutomationSendSMSTest(TestCase):
     """Tests for _execute_send_sms with real Twilio."""
@@ -127,6 +130,7 @@ class AutomationSendSMSTest(TestCase):
 
         clear_test_overrides()
 
+
 class AutomationSendWalletTest(TestCase):
     """Tests for _execute_send_wallet with real push services."""
 
@@ -143,8 +147,8 @@ class AutomationSendWalletTest(TestCase):
             action_config={"title": "New Offer!", "message": "Check your wallet"},
         )
         result = auto._execute_send_wallet(self.customer, {})
- # Google/Apple push functions return False gracefully when not configured.
- # The method returns push_sent (False if none succeeded).
+        # Google/Apple push functions return False gracefully when not configured.
+        # The method returns push_sent (False if none succeeded).
         self.assertIsInstance(result, bool)
 
     def test_send_wallet_no_passes(self):
@@ -156,6 +160,7 @@ class AutomationSendWalletTest(TestCase):
         )
         result = auto._execute_send_wallet(customer2, {})
         self.assertFalse(result)
+
 
 class AutomationChoicesTest(TestCase):
     """Tests for action/trigger enum integrity."""
@@ -186,6 +191,7 @@ class AutomationChoicesTest(TestCase):
         issue_reward, update_segment, send_wallet, trigger_webhook)."""
         self.assertEqual(len(AutomationAction.choices), 8)
 
+
 class AutomationDispatchTest(TestCase):
     """Tests that execute() dispatches to the correct action method."""
 
@@ -198,7 +204,7 @@ class AutomationDispatchTest(TestCase):
     def test_dispatch_send_notification(self):
         auto = make_automation(self.tenant, action=AutomationAction.SEND_NOTIFICATION)
         result = auto.execute(self.customer)
- # Real _execute_send_notification creates a Notification record
+        # Real _execute_send_notification creates a Notification record
         self.assertIsInstance(result, bool)
 
     def test_dispatch_send_email(self):

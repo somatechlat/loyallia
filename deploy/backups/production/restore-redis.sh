@@ -18,7 +18,7 @@ if [ "${1:-}" = "--force" ]; then
 fi
 
 BACKUP_DIR_REDIS="$BACKUP_DIR/redis"
-LATEST_AGE=$(ls -t "$BACKUP_DIR_REDIS"/*.age 2>/dev/null | head -1 || true)
+LATEST_AGE=$(find_latest_backup "$BACKUP_DIR_REDIS" "*.age")
 
 if [ -z "$LATEST_AGE" ]; then
     die "No encrypted Redis backup found in $BACKUP_DIR_REDIS"
@@ -28,16 +28,7 @@ step "REDIS RESTORE"
 info "Latest backup: $(basename "$LATEST_AGE")"
 
 # --- Confirmation --------------------------------------------------------------
-if [ "$FORCE" -eq 0 ]; then
-    echo ""
-    echo -e "${RED}WARNING: This will REPLACE the current Redis dataset.${NC}"
-    echo -e "${RED}Backup: $(basename "$LATEST_AGE")${NC}"
-    echo ""
-    read -r -p "Type 'RESTORE' to confirm: " confirm
-    if [ "$confirm" != "RESTORE" ]; then
-        die "Restore aborted."
-    fi
-fi
+confirm_restore "WARNING: This will REPLACE the current Redis dataset."
 
 # --- Decrypt -------------------------------------------------------------------
 TMPFILE="$TEMP_DIR/redis_restore_$$.rdb"

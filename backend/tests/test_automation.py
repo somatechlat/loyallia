@@ -26,6 +26,7 @@ from tests.factories import (
 
 # Automation Model Tests
 
+
 class AutomationCreateTest(TestCase):
     """Tests for Automation creation and basic properties."""
 
@@ -73,7 +74,9 @@ class AutomationCreateTest(TestCase):
         auto.refresh_from_db()
         self.assertEqual(auto.action_config["title"], "Hi!")
 
+
 # can_execute_for_customer Tests
+
 
 class CanExecuteForCustomerTest(TestCase):
     """Tests for Automation.can_execute_for_customer cooldown logic."""
@@ -106,8 +109,10 @@ class CanExecuteForCustomerTest(TestCase):
             trigger_event="customer_enrolled",
             success=True,
         )
- # Move execution to 2 hours ago
-        AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=timezone.now() - timedelta(hours=2))
+        # Move execution to 2 hours ago
+        AutomationExecution.objects.filter(pk=exec_obj.pk).update(
+            executed_at=timezone.now() - timedelta(hours=2)
+        )
         self.assertTrue(auto.can_execute_for_customer(self.customer))
 
     def test_per_customer_cooldown_not_global(self):
@@ -116,14 +121,14 @@ class CanExecuteForCustomerTest(TestCase):
         customer2 = make_customer(self.tenant, email="c2@test.com")
         make_customer_pass(customer2, self.card)
 
- # Execute for customer1
+        # Execute for customer1
         AutomationExecution.objects.create(
             automation=auto,
             customer=self.customer,
             trigger_event="customer_enrolled",
             success=True,
         )
- # customer2 should still be able to execute
+        # customer2 should still be able to execute
         self.assertTrue(auto.can_execute_for_customer(customer2))
 
     def test_failed_execution_does_not_block_cooldown(self):
@@ -147,7 +152,9 @@ class CanExecuteForCustomerTest(TestCase):
         )
         self.assertTrue(auto.can_execute_for_customer(self.customer))
 
+
 # Automation Execution Tests
+
 
 class AutomationExecuteTest(TestCase):
     """Tests for Automation.execute method."""
@@ -171,7 +178,11 @@ class AutomationExecuteTest(TestCase):
     def test_execute_creates_execution_log(self):
         auto = make_automation(self.tenant)
         auto.execute(self.customer)
-        self.assertTrue(AutomationExecution.objects.filter(automation=auto, customer=self.customer).exists())
+        self.assertTrue(
+            AutomationExecution.objects.filter(
+                automation=auto, customer=self.customer
+            ).exists()
+        )
 
     def test_execute_increments_total(self):
         auto = make_automation(
@@ -202,7 +213,11 @@ class AutomationExecuteTest(TestCase):
         )
         result = auto.execute(self.customer)
         self.assertFalse(result)
-        self.assertFalse(AutomationExecution.objects.filter(automation=auto, customer=self.customer).exists())
+        self.assertFalse(
+            AutomationExecution.objects.filter(
+                automation=auto, customer=self.customer
+            ).exists()
+        )
 
     def test_execute_blocked_within_cooldown(self):
         auto = make_automation(self.tenant, cooldown_hours=24)
@@ -215,7 +230,9 @@ class AutomationExecuteTest(TestCase):
         result = auto.execute(self.customer)
         self.assertFalse(result)
 
+
 # Daily Limits Tests
+
 
 class AutomationDailyLimitsTest(TestCase):
     """Tests for max_executions_per_day enforcement."""
@@ -234,7 +251,7 @@ class AutomationDailyLimitsTest(TestCase):
             action_config={"new_segment": "vip"},
             cooldown_hours=0,
         )
- # Create 2 executions today
+        # Create 2 executions today
         for _ in range(2):
             AutomationExecution.objects.create(
                 automation=auto,
@@ -281,7 +298,7 @@ class AutomationDailyLimitsTest(TestCase):
             action_config={"new_segment": "vip"},
             cooldown_hours=0,
         )
- # Create 2 executions yesterday
+        # Create 2 executions yesterday
         for _ in range(2):
             exec_obj = AutomationExecution.objects.create(
                 automation=auto,
@@ -289,7 +306,9 @@ class AutomationDailyLimitsTest(TestCase):
                 trigger_event="customer_enrolled",
                 success=True,
             )
-            AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=timezone.now() - timedelta(days=1))
+            AutomationExecution.objects.filter(pk=exec_obj.pk).update(
+                executed_at=timezone.now() - timedelta(days=1)
+            )
         result = auto.execute(self.customer)
         self.assertTrue(result)
 
@@ -304,7 +323,9 @@ class AutomationDailyLimitsTest(TestCase):
         result = auto.execute(self.customer)
         self.assertFalse(result)
 
+
 # Action Execution Tests
+
 
 class AutomationActionTest(TestCase):
     """Tests for individual automation actions."""
@@ -333,9 +354,9 @@ class AutomationActionTest(TestCase):
             action_config={"message": "Hi"},
         )
         result = auto._execute_send_sms(self.customer, {})
- # Result is bool regardless of whether Twilio is configured
+        # Result is bool regardless of whether Twilio is configured
         self.assertIsInstance(result, bool)
- # If Twilio is not configured, should return False
+        # If Twilio is not configured, should return False
         if not is_sms_available():
             self.assertFalse(result)
 
@@ -346,7 +367,7 @@ class AutomationActionTest(TestCase):
             action_config={"program_id": str(self.card.id)},
         )
         result = auto._execute_issue_reward(self.customer, {})
- # Should succeed since customer has a pass for the card
+        # Should succeed since customer has a pass for the card
         self.assertIsInstance(result, bool)
 
     def test_issue_reward_with_invalid_program(self):
@@ -378,7 +399,9 @@ class AutomationActionTest(TestCase):
         result = auto._execute_update_segment(self.customer, {})
         self.assertFalse(result)
 
+
 # AutomationExecution Model Tests
+
 
 class AutomationExecutionModelTest(TestCase):
     """Tests for AutomationExecution log model."""

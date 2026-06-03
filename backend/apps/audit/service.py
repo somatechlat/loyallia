@@ -102,8 +102,8 @@ def safe_log_action(
             justification=justification,
             status=status,
         )
-    except Exception:
-        logger.debug("safe_log_action swallowed exception", exc_info=True)
+    except Exception as e:
+        logger.debug("safe_log_action swallowed exception: %s", e, exc_info=True)
         return None
 
 

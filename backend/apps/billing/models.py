@@ -4,6 +4,8 @@ Subscription management with pluggable payment gateway.
 All payment operations route through the generic gateway abstraction.
 """
 
+from __future__ import annotations
+
 from decimal import Decimal
 
 from django.conf import settings
@@ -11,7 +13,6 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.tenants.models import PlatformSetting, Tenant
 from common.models import TimestampedModel
 
 # PLAN FEATURE FLAGS (REQ-PLAN-003)
@@ -80,9 +81,18 @@ class SubscriptionPlan(TimestampedModel):
     Plans are created via the Super Admin wizard with selectable features.
     """
 
-    name = models.CharField(max_length=100, verbose_name="Nombre del plan", help_text="Name of this record.")
-    slug = models.SlugField(max_length=50, unique=True, help_text="URL-friendly unique identifier.")
-    description = models.TextField(blank=True, default="", verbose_name="Descripción", help_text="Description of this record.")
+    name = models.CharField(
+        max_length=100, verbose_name="Nombre del plan", help_text="Name of this record."
+    )
+    slug = models.SlugField(
+        max_length=50, unique=True, help_text="URL-friendly unique identifier."
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Descripción",
+        help_text="Description of this record.",
+    )
 
     # Pricing (monthly AND annual REQ-PLAN-001)
     price_monthly = models.DecimalField(
@@ -104,22 +114,30 @@ class SubscriptionPlan(TimestampedModel):
 
     # Usage Limits (enforced by plan_enforcement.py)
     max_locations = models.PositiveIntegerField(
-        default=1, verbose_name="Máx. sucursales"
-        ,help_text="Maximum allowed locations.",
+        default=1,
+        verbose_name="Máx. sucursales",
+        help_text="Maximum allowed locations.",
     )
-    max_users = models.PositiveIntegerField(default=3, verbose_name="Máx. usuarios", help_text="Maximum allowed users.")
+    max_users = models.PositiveIntegerField(
+        default=3, verbose_name="Máx. usuarios", help_text="Maximum allowed users."
+    )
     max_customers = models.PositiveIntegerField(
-        default=500, verbose_name="Máx. clientes"
-        ,help_text="Maximum allowed customers.",
+        default=500,
+        verbose_name="Máx. clientes",
+        help_text="Maximum allowed customers.",
     )
-    max_programs = models.PositiveIntegerField(default=1, verbose_name="Máx. programas", help_text="Maximum allowed programs.")
+    max_programs = models.PositiveIntegerField(
+        default=1, verbose_name="Máx. programas", help_text="Maximum allowed programs."
+    )
     max_notifications_month = models.PositiveIntegerField(
-        default=1000, verbose_name="Máx. notificaciones/mes"
-        ,help_text="Maximum notifications per month.",
+        default=1000,
+        verbose_name="Máx. notificaciones/mes",
+        help_text="Maximum notifications per month.",
     )
     max_transactions_month = models.PositiveIntegerField(
-        default=5000, verbose_name="Máx. transacciones/mes"
-        ,help_text="Maximum transactions per month.",
+        default=5000,
+        verbose_name="Máx. transacciones/mes",
+        help_text="Maximum transactions per month.",
     )
 
     # Messaging channel quotas
@@ -191,15 +209,30 @@ class SubscriptionPlan(TimestampedModel):
         choices=Status.choices,
         default=Status.PUBLISHED,
         verbose_name="Estado",
-        help_text="draft=Borrador (solo visible en SuperAdmin), published=Publicado (visible para todos), archived=Archivado (oculto)",# noqa: E501
+        help_text="draft=Borrador (solo visible en SuperAdmin), published=Publicado (visible para todos), archived=Archivado (oculto)",  # noqa: E501
     )
-    is_active = models.BooleanField(default=True, verbose_name="Activo", help_text="Whether this record is currently active.")
-    is_featured = models.BooleanField(default=False, verbose_name="Plan recomendado", help_text="Whether this plan is highlighted as recommended.")
-    trial_days = models.PositiveIntegerField(default=5, verbose_name="Días de prueba", help_text="Number of days in the trial period.")
-    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Orden", help_text="Display order.")
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Activo",
+        help_text="Whether this record is currently active.",
+    )
+    is_featured = models.BooleanField(
+        default=False,
+        verbose_name="Plan recomendado",
+        help_text="Whether this plan is highlighted as recommended.",
+    )
+    trial_days = models.PositiveIntegerField(
+        default=5,
+        verbose_name="Días de prueba",
+        help_text="Number of days in the trial period.",
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0, verbose_name="Orden", help_text="Display order."
+    )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_subscription_plans"
         verbose_name = "Plan de Suscripción"
         verbose_name_plural = "Planes de Suscripción"
@@ -223,6 +256,8 @@ class SubscriptionPlan(TimestampedModel):
     @property
     def price_monthly_with_tax(self) -> Decimal:
         """Monthly price including Ecuador IVA tax."""
+        from apps.tenants.models import PlatformSetting
+
         tax_rate = Decimal(
             str(
                 PlatformSetting.get_float(
@@ -235,6 +270,8 @@ class SubscriptionPlan(TimestampedModel):
     @property
     def price_annual_with_tax(self) -> Decimal:
         """Annual price including Ecuador IVA tax."""
+        from apps.tenants.models import PlatformSetting
+
         tax_rate = Decimal(
             str(
                 PlatformSetting.get_float(
@@ -247,6 +284,30 @@ class SubscriptionPlan(TimestampedModel):
     def has_feature(self, feature: str) -> bool:
         """Check if this plan includes a specific feature."""
         return feature in (self.features or [])
+
+    @property
+    def limits(self) -> dict:
+        """Return all resource limits for this plan as a single dict.
+
+        This is the single source of truth for plan limit mapping.
+        """
+        return {
+            "customers": self.max_customers,
+            "programs": self.max_programs,
+            "locations": self.max_locations,
+            "users": self.max_users,
+            "notifications_month": self.max_notifications_month,
+            "transactions_month": self.max_transactions_month,
+            "whatsapp_day": self.max_whatsapp_day,
+            "emails_month": self.max_emails_month,
+            "sms_day": self.max_sms_day,
+            "wallet_pushes_month": self.max_wallet_pushes_month,
+            "automations": self.max_automations,
+            "automation_executions_day": self.max_automation_executions_day,
+            "ai_queries_month": self.max_ai_queries_month,
+            "api_calls_day": self.max_api_calls_day,
+            "exports_month": self.max_exports_month,
+        }
 
 
 # SUBSCRIPTION STATUS
@@ -273,7 +334,7 @@ class Subscription(TimestampedModel):
     """
 
     tenant = models.OneToOneField(
-        Tenant,
+        "tenants.Tenant",
         on_delete=models.CASCADE,
         related_name="subscription",
         verbose_name="Negocio",
@@ -333,50 +394,68 @@ class Subscription(TimestampedModel):
 
     # Dates
     trial_start = models.DateTimeField(
-        null=True, blank=True, verbose_name="Inicio del trial"
-        ,help_text="Trial start.",
+        null=True,
+        blank=True,
+        verbose_name="Inicio del trial",
+        help_text="Trial start.",
     )
     trial_end = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fin del trial"
-        ,help_text="End date of the trial period.",
+        null=True,
+        blank=True,
+        verbose_name="Fin del trial",
+        help_text="End date of the trial period.",
     )
     current_period_start = models.DateTimeField(
-        null=True, blank=True, verbose_name="Inicio del período actual"
-        ,help_text="Start of the current billing period.",
+        null=True,
+        blank=True,
+        verbose_name="Inicio del período actual",
+        help_text="Start of the current billing period.",
     )
     current_period_end = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fin del período actual"
-        ,help_text="End of the current billing period.",
+        null=True,
+        blank=True,
+        verbose_name="Fin del período actual",
+        help_text="End of the current billing period.",
     )
     cancel_at_period_end = models.BooleanField(
-        default=False, verbose_name="Cancelar al final del período"
-        ,help_text="Whether to cancel at the end of the period.",
+        default=False,
+        verbose_name="Cancelar al final del período",
+        help_text="Whether to cancel at the end of the period.",
     )
     canceled_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Cancelado en"
-        ,help_text="When the subscription was canceled.",
+        null=True,
+        blank=True,
+        verbose_name="Cancelado en",
+        help_text="When the subscription was canceled.",
     )
     trial_extended_count = models.SmallIntegerField(
-        default=0, verbose_name="Extensiones de trial"
-        ,help_text="Count or tally.",
+        default=0,
+        verbose_name="Extensiones de trial",
+        help_text="Count or tally.",
     )
 
     # Payment failure tracking
     failed_payment_count = models.SmallIntegerField(
-        default=0, verbose_name="Intentos de pago fallidos"
-        ,help_text="Number of failed payment attempts.",
+        default=0,
+        verbose_name="Intentos de pago fallidos",
+        help_text="Number of failed payment attempts.",
     )
     last_payment_error = models.TextField(
-        blank=True, default="", verbose_name="Último error de pago"
-        ,help_text="Details of the last payment failure.",
+        blank=True,
+        default="",
+        verbose_name="Último error de pago",
+        help_text="Details of the last payment failure.",
     )
     last_payment_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Último pago exitoso"
-        ,help_text="Timestamp of the last successful payment.",
+        null=True,
+        blank=True,
+        verbose_name="Último pago exitoso",
+        help_text="Timestamp of the last successful payment.",
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_subscriptions"
         verbose_name = "Suscripción"
         verbose_name_plural = "Suscripciones"
@@ -442,24 +521,7 @@ class Subscription(TimestampedModel):
         if not plan:
             return 0  # No plan = no access
 
-        limit_map = {
-            "customers": plan.max_customers,
-            "programs": plan.max_programs,
-            "locations": plan.max_locations,
-            "users": plan.max_users,
-            "notifications_month": plan.max_notifications_month,
-            "transactions_month": plan.max_transactions_month,
-            "whatsapp_day": plan.max_whatsapp_day,
-            "emails_month": plan.max_emails_month,
-            "sms_day": plan.max_sms_day,
-            "wallet_pushes_month": plan.max_wallet_pushes_month,
-            "automations": plan.max_automations,
-            "automation_executions_day": plan.max_automation_executions_day,
-            "ai_queries_month": plan.max_ai_queries_month,
-            "api_calls_day": plan.max_api_calls_day,
-            "exports_month": plan.max_exports_month,
-        }
-        return limit_map.get(resource, 0)
+        return plan.limits.get(resource, 0)
 
     def has_feature(self, feature: str) -> bool:
         """Check if current plan includes a feature."""
@@ -480,6 +542,8 @@ class Subscription(TimestampedModel):
     def activate_trial(self) -> None:
         """Set trial period. Called on tenant registration."""
         from datetime import timedelta
+
+        from apps.tenants.models import PlatformSetting
 
         trial_days = PlatformSetting.get_int(
             "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)

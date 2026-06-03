@@ -17,7 +17,7 @@ if [ "${1:-}" = "--force" ]; then
 fi
 
 BACKUP_DIR_MINIO="$BACKUP_DIR/minio"
-LATEST_AGE=$(ls -t "$BACKUP_DIR_MINIO"/*.tar.age 2>/dev/null | head -1 || true)
+LATEST_AGE=$(find_latest_backup "$BACKUP_DIR_MINIO" "*.tar.age")
 
 if [ -z "$LATEST_AGE" ]; then
     die "No encrypted MinIO backup found in $BACKUP_DIR_MINIO"
@@ -27,15 +27,7 @@ step "MINIO RESTORE"
 info "Latest backup: $(basename "$LATEST_AGE")"
 
 # --- Confirmation --------------------------------------------------------------
-if [ "$FORCE" -eq 0 ]; then
-    echo ""
-    echo -e "${RED}WARNING: This will REPLACE objects in MinIO buckets.${NC}"
-    echo ""
-    read -r -p "Type 'RESTORE' to confirm: " confirm
-    if [ "$confirm" != "RESTORE" ]; then
-        die "Restore aborted."
-    fi
-fi
+confirm_restore "WARNING: This will REPLACE objects in MinIO buckets."
 
 # --- Decrypt -------------------------------------------------------------------
 TMPDIR="$TEMP_DIR/minio_restore_$$"

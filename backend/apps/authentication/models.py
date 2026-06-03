@@ -51,7 +51,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     tenant is nullable for SUPER_ADMIN users (platform-level access).
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         "tenants.Tenant",
         on_delete=models.CASCADE,
@@ -61,16 +66,29 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text="The business this record belongs to.",
     )
     email = models.EmailField(unique=True, help_text="Email address.")
-    first_name = models.CharField(max_length=100, blank=True, default="", help_text="First name.")
-    last_name = models.CharField(max_length=100, blank=True, default="", help_text="Last name.")
+    first_name = models.CharField(
+        max_length=100, blank=True, default="", help_text="First name."
+    )
+    last_name = models.CharField(
+        max_length=100, blank=True, default="", help_text="Last name."
+    )
     role = models.CharField(
-        max_length=20, choices=UserRole.choices, default=UserRole.STAFF, db_index=True
-        ,help_text="Role or permission level.",
+        max_length=20,
+        choices=UserRole.choices,
+        default=UserRole.STAFF,
+        db_index=True,
+        help_text="Role or permission level.",
     )
 
-    is_active = models.BooleanField(default=True, help_text="Whether this record is currently active.")
-    is_staff = models.BooleanField(default=False, help_text="Whether the user can access the Django admin.")  # Django admin access
-    is_email_verified = models.BooleanField(default=False, help_text="Whether the email address has been verified.")
+    is_active = models.BooleanField(
+        default=True, help_text="Whether this record is currently active."
+    )
+    is_staff = models.BooleanField(
+        default=False, help_text="Whether the user can access the Django admin."
+    )  # Django admin access
+    is_email_verified = models.BooleanField(
+        default=False, help_text="Whether the email address has been verified."
+    )
 
     # Phone verification
     phone_number = models.CharField(
@@ -80,7 +98,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name="Teléfono",
         help_text="E.164 format: +593991234567",
     )
-    is_phone_verified = models.BooleanField(default=False, help_text="Whether the phone number has been verified.")
+    is_phone_verified = models.BooleanField(
+        default=False, help_text="Whether the phone number has been verified."
+    )
 
     # Invitation tracking
     invited_by = models.ForeignKey(
@@ -91,12 +111,23 @@ class User(AbstractBaseUser, PermissionsMixin):
         related_name="invited_users",
         help_text="User who invited this person.",
     )
-    invitation_token = models.CharField(max_length=200, blank=True, default="", help_text="Token for tracking invitations.")
-    invitation_accepted_at = models.DateTimeField(null=True, blank=True, help_text="When the invitation was accepted.")
+    invitation_token = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Token for tracking invitations.",
+    )
+    invitation_accepted_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the invitation was accepted."
+    )
 
     # Failed login tracking
-    failed_login_count = models.SmallIntegerField(default=0, help_text="Number of consecutive failed login attempts.")
-    locked_until = models.DateTimeField(null=True, blank=True, help_text="Account lockout expiration time.")
+    failed_login_count = models.SmallIntegerField(
+        default=0, help_text="Number of consecutive failed login attempts."
+    )
+    locked_until = models.DateTimeField(
+        null=True, blank=True, help_text="Account lockout expiration time."
+    )
 
     # i18n user language preference (REQ-I18N-001)
     preferred_language = models.CharField(
@@ -117,7 +148,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     date_joined = models.DateTimeField(auto_now_add=True, help_text="Date joined.")
-    last_login = models.DateTimeField(null=True, blank=True, help_text="Timestamp of the last successful login.")
+    last_login = models.DateTimeField(
+        null=True, blank=True, help_text="Timestamp of the last successful login."
+    )
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     objects = UserManager()
@@ -127,6 +160,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_users"
         verbose_name = "Usuario"
         verbose_name_plural = "Usuarios"
@@ -192,10 +226,11 @@ class User(AbstractBaseUser, PermissionsMixin):
                     recipient_list=[self.email],
                     fail_silently=True,
                 )
-            except Exception:
+            except Exception as e:
                 logger.warning(
-                    "Failed to send lockout notification to %s",
+                    "Failed to send lockout notification to %s: %s",
                     self.email,
+                    e,
                     exc_info=True,
                 )
 
@@ -235,19 +270,37 @@ class User(AbstractBaseUser, PermissionsMixin):
 class RefreshToken(models.Model):
     """Stores issued refresh tokens for revocation support."""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="refresh_tokens"
-        ,help_text="The user associated with this record.",
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
     )
-    token_hash = models.CharField(max_length=64, unique=True, help_text="Token for authentication or verification.")  # SHA-256 hash
-    device_name = models.CharField(max_length=200, blank=True, default="", help_text="Name of the device.")
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="refresh_tokens",
+        help_text="The user associated with this record.",
+    )
+    token_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        help_text="Token for authentication or verification.",
+    )  # SHA-256 hash
+    device_name = models.CharField(
+        max_length=200, blank=True, default="", help_text="Name of the device."
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, help_text="Timestamp for created."
+    )
     expires_at = models.DateTimeField(help_text="Timestamp for expires.")
-    revoked_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp for revoked.")
+    revoked_at = models.DateTimeField(
+        null=True, blank=True, help_text="Timestamp for revoked."
+    )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_refresh_tokens"
         indexes = [
             models.Index(fields=["token_hash"]),

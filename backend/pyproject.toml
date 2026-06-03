@@ -35,7 +35,7 @@ ignore = [
     "B008",   # do not perform function calls in argument defaults (Django pattern)
     "B904",   # raise-without-from-inside-except (widespread in existing codebase)
     "SIM108", # Use ternary operator (readability preference)
-    "UP046",  # non-pep695-generic-class (requires 3.12+ syntax)
+    # "UP046",  # non-pep695-generic-class (requires 3.12+ syntax) — rule added in ruff>=0.6
 ]
 
 [tool.ruff.lint.isort]

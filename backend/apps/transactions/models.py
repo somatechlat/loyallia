@@ -36,7 +36,12 @@ class Transaction(models.Model):
     Every validation, reward issuance, or redemption is recorded here.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -92,19 +97,31 @@ class Transaction(models.Model):
         help_text="Monetary amount.",
     )
     quantity = models.PositiveIntegerField(
-        null=True, blank=True, verbose_name="Cantidad"
-        ,help_text="Quantity or count.",
+        null=True,
+        blank=True,
+        verbose_name="Cantidad",
+        help_text="Quantity or count.",
     )
 
     # Transaction metadata
-    notes = models.TextField(blank=True, default="", verbose_name="Notas", help_text="Additional notes or comments.")
+    notes = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Notas",
+        help_text="Additional notes or comments.",
+    )
     transaction_data = models.JSONField(
-        default=dict, verbose_name="Datos de transacción"
-        ,help_text="Transaction metadata stored as JSON.",
+        default=dict,
+        verbose_name="Datos de transacción",
+        help_text="Transaction metadata stored as JSON.",
     )
 
     # Remote transaction flag
-    is_remote = models.BooleanField(default=False, verbose_name="Transacción remota", help_text="Whether this transaction was performed remotely.")
+    is_remote = models.BooleanField(
+        default=False,
+        verbose_name="Transacción remota",
+        help_text="Whether this transaction was performed remotely.",
+    )
 
     # NEW: Idempotency key for exactly-once semantics
     idempotency_key = models.CharField(
@@ -140,13 +157,20 @@ class Transaction(models.Model):
     )
 
     # NEW: Which rules were evaluated (for audit)
-    rules_evaluated = models.JSONField(default=list, verbose_name="Reglas evaluadas", help_text="Rules that were evaluated for this transaction.")
+    rules_evaluated = models.JSONField(
+        default=list,
+        verbose_name="Reglas evaluadas",
+        help_text="Rules that were evaluated for this transaction.",
+    )
 
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
+    created_at = models.DateTimeField(
+        auto_now_add=True, help_text="Timestamp for created."
+    )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_transactions"
         verbose_name = "Transacción"
         verbose_name_plural = "Transacciones"
@@ -190,7 +214,12 @@ class Enrollment(models.Model):
     Separate from transactions for analytics and tracking.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -232,7 +261,12 @@ class Enrollment(models.Model):
     )
 
     # Referral tracking
-    referral_code_used = models.CharField(max_length=20, blank=True, default="", help_text="Referral code used during enrollment.")
+    referral_code_used = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        help_text="Referral code used during enrollment.",
+    )
 
     # Source location (if applicable)
     location = models.ForeignKey(
@@ -246,17 +280,27 @@ class Enrollment(models.Model):
     )
 
     # Device info
-    user_agent = models.TextField(blank=True, default="", verbose_name="User Agent", help_text="Client user agent string.")
+    user_agent = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="User Agent",
+        help_text="Client user agent string.",
+    )
     ip_address = models.GenericIPAddressField(
-        null=True, blank=True, verbose_name="Dirección IP"
-        ,help_text="IP address of the client.",
+        null=True,
+        blank=True,
+        verbose_name="Dirección IP",
+        help_text="IP address of the client.",
     )
 
     # Timestamps
-    enrolled_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for enrolled.")
+    enrolled_at = models.DateTimeField(
+        auto_now_add=True, help_text="Timestamp for enrolled."
+    )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_enrollments"
         verbose_name = "Inscripción"
         verbose_name_plural = "Inscripciones"

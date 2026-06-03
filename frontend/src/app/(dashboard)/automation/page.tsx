@@ -1,272 +1,48 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { automationApi, programsApi } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
-import { UserRole } from '@/types';
-import { APP_CONFIG } from '@/lib/constants';
-import toast from 'react-hot-toast';
-import { usePlan } from '@/hooks/usePlan';
-import WalletPlatformSelector from '@/components/notifications/WalletPlatformSelector';
-import WalletNotificationPreview from '@/components/notifications/WalletNotificationPreview';
-import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
+"use client";
 
-interface Automation {
-  id: string; name: string; description: string; trigger: string;
-  action: string; is_active: boolean; total_executions: number;
-  last_executed: string | null; trigger_config: Record<string, unknown>; action_config: Record<string, unknown>;
-  cooldown_hours: number; max_executions_per_day: number | null;
-}
-
-interface ProgramOption { id: string; name: string; card_type: string; }
-
-const TRIGGER_LABELS: Record<string, string> = {
-  customer_enrolled: 'Cliente inscrito', transaction_completed: 'Transacción completada',
-  reward_earned: 'Recompensa ganada', reward_ready: 'Recompensa lista',
-  birthday_coming: 'Cumpleaños próximo', inactive_reminder: 'Recordatorio de inactividad',
-  milestone_reached: 'Hito alcanzado', scheduled_time: 'Hora programada',
-};
-
-const TRIGGER_DESCRIPTIONS: Record<string, string> = {
-  customer_enrolled: 'Se ejecuta cuando un cliente se inscribe por primera vez.',
-  transaction_completed: 'Se ejecuta cada vez que un cliente completa una transacción (sello, puntos, etc).',
-  reward_earned: 'Se ejecuta cuando un cliente gana una recompensa.',
-  reward_ready: 'Se ejecuta cuando la recompensa está lista para canjear.',
-  birthday_coming: 'Se ejecuta X días antes del cumpleaños del cliente.',
-  inactive_reminder: 'Se ejecuta si el cliente no visita en X días.',
-  milestone_reached: 'Se ejecuta cuando el cliente alcanza un hito (N visitas, N puntos).',
-  scheduled_time: 'Se ejecuta a una hora / día programado.',
-};
-
-// Preset automation templates
-const PRESET_TEMPLATES = [
-  {
-    id: 'welcome',
-    name: 'Bienvenida a nuevos clientes',
-    description: 'Envia un mensaje de bienvenida cuando alguien seinscribe',
-    trigger: 'customer_enrolled',
-    action: 'send_email',
-    action_config: { title: '¡Bienvenido a nuestro programa!', message: 'Gracias por unirte. Ahora puedes ganar recompensas con cada visita.' },
-  },
-  {
-    id: 'birthday',
-    name: 'Felicidades de cumpleaños',
-    description: 'Envia una promoción especial en el cumpleaños del cliente',
-    trigger: 'birthday_coming',
-    action: 'send_email',
-    action_config: { title: '¡Feliz cumpleaños!', message: '¡Tenemos un regalo especial para ti! Visita nuestro local y muestra este mensaje.' },
-  },
-  {
-    id: 'inactive',
-    name: 'Recordatorio de inactividad',
-    description: 'Recuerda a los clientes que no han visitado en mucho tiempo',
-    trigger: 'inactive_reminder',
-    action: 'send_email',
-    action_config: { title: '¡Te extrañamos!', message: 'Ha pasado un tiempo desde tu última visita. Tenemos una oferta especial esperándote.' },
-  },
-  {
-    id: 'milestone',
-    name: 'Cliente fiel - Hitos',
-    description: 'Celebra cuando el cliente alcanza un número de visitas/puntos',
-    trigger: 'milestone_reached',
-    action: 'send_email',
-    action_config: { title: '¡Felicidades! Has alcanzado un hito', message: 'Gracias por ser un cliente fiel. Has ganado una recompensa especial.' },
-  },
-  {
-    id: 'reward_ready',
-    name: 'Recompensa lista para canjear',
-    description: 'Notifica cuando el cliente tiene una recompensa lista',
-    trigger: 'reward_ready',
-    action: 'send_email',
-    action_config: { title: '¡Tu recompensa está lista!', message: 'Ya puedes canjear tu recompensa. Visita nuestro local y muestra tu código.' },
-  },
-  {
-    id: 'transaction',
-    name: 'Confirmación de transacción',
-    description: 'Confirma cada transacción con Sellos/Puntos',
-    trigger: 'transaction_completed',
-    action: 'send_email',
-    action_config: { title: 'Transacción registrada', message: '¡Has ganado sellos/puntos! Sigue acumulando para obtener tu próxima recompensa.' },
-  },
-  // Wallet preset templates
-  {
-    id: 'wallet_welcome',
-    name: 'Bienvenida Wallet',
-    description: 'Envía notificación en wallet cuando alguien se inscribe',
-    trigger: 'customer_enrolled',
-    action: 'send_wallet',
-    action_config: {
-      title: '¡Bienvenido!',
-      message: 'Gracias por unirte. Tu tarjeta digital está lista. Acumula sellos y gana recompensas.',
-      wallet_platform: 'both',
-    },
-  },
-  {
-    id: 'wallet_reward',
-    name: 'Recompensa en Wallet',
-    description: 'Notifica en wallet cuando el cliente gana una recompensa',
-    trigger: 'reward_earned',
-    action: 'send_wallet',
-    action_config: {
-      title: '¡Recompensa ganada!',
-      message: 'Has alcanzado una recompensa. ¡Canjéala en tu próxima visita!',
-      wallet_platform: 'both',
-    },
-  },
-  {
-    id: 'wallet_transaction',
-    name: 'Confirmación Wallet',
-    description: 'Confirma transacciones directamente en la tarjeta digital',
-    trigger: 'transaction_completed',
-    action: 'send_wallet',
-    action_config: {
-      title: 'Transacción registrada',
-      message: '¡Has ganado sellos/puntos! Sigue acumulando para tu próxima recompensa.',
-      wallet_platform: 'both',
-    },
-  },
-];
-
-const ACTION_LABELS: Record<string, string> = {
-  send_notification: 'Notificación (Push/Email)', send_email: 'Solo Email',
-  send_sms: 'Enviar SMS', issue_reward: 'Emitir recompensa',
-  update_segment: 'Actualizar segmento', create_campaign: 'Crear campaña',
-  send_wallet: 'Notificación Wallet',
-};
-/* Flat SVG icons for actions — NO emojis */
-const ACTION_ICON_PATHS: Record<string, string> = {
-  send_notification: 'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0',
-  send_email: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6',
-  send_sms: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
-  issue_reward: 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z',
-  update_segment: 'M18 20V10M12 20V4M6 20v-6',
-  create_campaign: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
-};
-function ActionIcon({ action, className = 'w-5 h-5' }: { action: string; className?: string }) {
-  const d = ACTION_ICON_PATHS[action] || ACTION_ICON_PATHS.send_notification;
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d={d} />
-    </svg>
-  );
-}
-
-interface AutomationForm {
-  name: string;
-  description: string;
-  trigger: string;
-  action: string;
-  trigger_config: Record<string, unknown>;
-  action_config: Record<string, unknown>;
-  cooldown_hours: number;
-  max_executions_per_day: number | null;
-}
-
-const EMPTY_FORM: AutomationForm = {
-  name: '', description: '', trigger: 'customer_enrolled', action: 'send_notification',
-  trigger_config: {}, action_config: { title: '', message: '' },
-  cooldown_hours: APP_CONFIG.DEFAULT_COOLDOWN_HOURS, max_executions_per_day: null,
-};
+import { useAuth } from "@/lib/auth";
+import { UserRole } from "@/types";
+import { usePlan } from "@/hooks/usePlan";
+import { useAutomations } from "@/hooks/useAutomations";
+import StatsCards from "@/components/automation/StatsCards";
+import PresetTemplates from "@/components/automation/PresetTemplates";
+import AutomationList from "@/components/automation/AutomationList";
+import DeleteModal from "@/components/automation/DeleteModal";
+import AutomationModal from "@/components/automation/AutomationModal";
 
 export default function AutomationPage() {
   const { user } = useAuth();
   const isOwner = user?.role === UserRole.OWNER;
   const { hasFeature, getLimit, getUsage, isAtLimit } = usePlan();
 
-  const hasAutomation = hasFeature('automation');
-  const automationLimit = getLimit('automations');
-  const automationUsage = getUsage('automations');
-  const atAutomationLimit = isAtLimit('automations');
+  const hasAutomation = hasFeature("automation");
+  const automationLimit = getLimit("automations");
+  const automationUsage = getUsage("automations");
+  const atAutomationLimit = isAtLimit("automations");
 
-  const [automations, setAutomations] = useState<Automation[]>([]);
-  const [programs, setPrograms] = useState<ProgramOption[]>([]);
-  const [stats, setStats] = useState<{total_executions: number; success_rate: number} | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  /* Modal state */
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [saving, setSaving] = useState(false);
-  const [step, setStep] = useState(1);
-  const [showDelete, setShowDelete] = useState<string | null>(null);
-  const [stepErrors, setStepErrors] = useState({ name: false });
-
-  const load = () => {
-    Promise.all([automationApi.list(), automationApi.stats()])
-      .then(([list, s]) => { setAutomations(Array.isArray(list.data) ? list.data : list.data.items || []); setStats(s.data); })
-      .catch(() => toast.error('Error al cargar automatizaciones'))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    load();
-    programsApi.list().then(res => {
-      const items = Array.isArray(res.data) ? res.data : res.data.items || [];
-      setPrograms(items.map((p: { id: string; name: string; card_type: string }) => ({ id: p.id, name: p.name, card_type: p.card_type })));
-    }).catch(() => {});
-  }, []);
-
-  const toggle = async (id: string, name: string) => {
-    try { await automationApi.toggle(id); toast.success(`"${name}" actualizada`); load(); }
-    catch { toast.error('Error al actualizar'); }
-  };
-
-  const openCreate = (preset?: typeof PRESET_TEMPLATES[0]) => {
-    setEditingId(null);
-    if (preset) {
-      setForm({
-        name: preset.name,
-        description: preset.description,
-        trigger: preset.trigger,
-        action: preset.action,
-        trigger_config: {},
-        action_config: preset.action_config,
-        cooldown_hours: APP_CONFIG.DEFAULT_COOLDOWN_HOURS,
-        max_executions_per_day: null,
-      });
-    } else {
-      setForm({ ...EMPTY_FORM });
-    }
-    setStep(1);
-    setShowModal(true);
-  };
-
-  const openEdit = (a: Automation) => {
-    setEditingId(a.id);
-    setForm({
-      name: a.name, description: a.description, trigger: a.trigger, action: a.action,
-      trigger_config: typeof a.trigger_config === 'object' && a.trigger_config !== null ? a.trigger_config as Record<string, string> : {},
-      action_config: typeof a.action_config === 'object' && a.action_config !== null ? a.action_config as Record<string, unknown> : { title: '', message: '' },
-      cooldown_hours: a.cooldown_hours || 24, max_executions_per_day: a.max_executions_per_day,
-    });
-    setStep(1);
-    setShowModal(true);
-  };
-
-  const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Ingresa un nombre'); return; }
-    setSaving(true);
-    try {
-      if (editingId) {
-        await automationApi.update(editingId, form);
-        toast.success('Automatización actualizada');
-      } else {
-        await automationApi.create(form);
-        toast.success('Automatización creada');
-      }
-      setShowModal(false);
-      load();
-    } catch { toast.error('Error al guardar'); }
-    finally { setSaving(false); }
-  };
-
-  const handleDelete = async (id: string) => {
-    try { await automationApi.delete(id); toast.success('Automatización eliminada'); load(); }
-    catch { toast.error('Error al eliminar'); }
-    finally { setShowDelete(null); }
-  };
-
-  const totalSteps = 3;
+  const {
+    automations,
+    programs,
+    stats,
+    loading,
+    showModal,
+    setShowModal,
+    editingId,
+    form,
+    setForm,
+    saving,
+    step,
+    setStep,
+    showDelete,
+    setShowDelete,
+    stepErrors,
+    setStepErrors,
+    toggle,
+    openCreate,
+    openEdit,
+    handleSave,
+    handleDelete,
+  } = useAutomations();
 
   return (
     <div className="space-y-6">
@@ -282,7 +58,10 @@ export default function AutomationPage() {
         </div>
         {isOwner && hasAutomation && (
           <button onClick={() => openCreate()} className="btn-primary flex items-center gap-2" id="create-automation-btn">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
             Nueva automatización
           </button>
         )}
@@ -292,19 +71,15 @@ export default function AutomationPage() {
         <div className="card p-16 text-center">
           <div className="w-14 h-14 mx-auto mb-4 bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center">
             <svg className="w-7 h-7 text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4"/>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
           </div>
           <p className="text-surface-700 font-semibold text-lg">Automatización no disponible</p>
           <p className="text-surface-400 text-sm mt-2 max-w-sm mx-auto">
             Esta función no está incluida en tu plan actual. Actualiza tu plan para acceder a la automatización de campañas.
           </p>
-          <button
-            onClick={() => window.location.href = '/billing/upgrade'}
-            className="btn-primary mt-6"
-            id="upgrade-plan-automation"
-          >
+          <button onClick={() => (window.location.href = "/billing/upgrade")} className="btn-primary mt-6" id="upgrade-plan-automation">
             Actualizar Plan
           </button>
         </div>
@@ -313,9 +88,9 @@ export default function AutomationPage() {
       {hasAutomation && atAutomationLimit && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center gap-3">
           <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <p className="text-sm text-amber-800 dark:text-amber-200">
             Has alcanzado el límite de {automationLimit} automatizaciones. Actualiza tu plan para crear más.
@@ -323,325 +98,63 @@ export default function AutomationPage() {
         </div>
       )}
 
-      {hasAutomation && (<>
+      {hasAutomation && (
+        <>
+          <StatsCards stats={stats} />
 
-      {stats && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="stat-card">
-            <p className="stat-label">Total ejecuciones</p>
-            <p className="stat-value text-brand-600">{stats.total_executions.toLocaleString()}</p>
-          </div>
-          <div className="stat-card">
-            <p className="stat-label">Tasa de éxito</p>
-            <p className="stat-value text-emerald-600">{stats.success_rate.toFixed(1)}%</p>
-          </div>
-        </div>
-      )}
+          {isOwner && <PresetTemplates onSelect={(preset) => openCreate(preset)} />}
 
-      {/* Preset Templates - Quick Start */}
-      {isOwner && (
-        <div className="card p-6">
-          <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-4">Inicio rápido - Plantillas predefinidas</h2>
-          <p className="text-sm text-surface-500 mb-4">Crea automatizaciones en un clic usando estas plantillas:</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {PRESET_TEMPLATES.map(preset => (
-              <button
-                key={preset.id}
-                onClick={() => openCreate(preset)}
-                className="text-left p-4 rounded-xl border-2 border-surface-200 dark:border-surface-700 hover:border-brand-400 hover:bg-brand-50 transition-all group"
-              >
-                <p className="font-semibold text-surface-900 dark:text-white group-hover:text-brand-700">{preset.name}</p>
-                <p className="text-xs text-surface-500 mt-1">{preset.description}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {hasAutomation && loading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-surface-200 rounded-2xl animate-pulse" />)}
-        </div>
-      ) : hasAutomation && automations.length === 0 ? (
-        <div className="card p-16 text-center">
-          <div className="w-14 h-14 mx-auto mb-4 bg-brand-50 rounded-2xl flex items-center justify-center">
-            <svg className="w-7 h-7 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          </div>
-          <p className="text-surface-700 font-semibold text-lg">No hay automatizaciones configuradas</p>
-          <p className="text-surface-400 text-sm mt-2 max-w-sm mx-auto">
-            Las automatizaciones envían mensajes y recompensas automáticamente basándose en el comportamiento de tus clientes.
-          </p>
-          {isOwner && (
-            <button onClick={() => openCreate()} className="btn-primary mt-6" id="create-first-automation">
-              Crear primera automatización
-            </button>
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-20 bg-surface-200 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : automations.length === 0 ? (
+            <div className="card p-16 text-center">
+              <div className="w-14 h-14 mx-auto mb-4 bg-brand-50 rounded-2xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <p className="text-surface-700 font-semibold text-lg">No hay automatizaciones configuradas</p>
+              <p className="text-surface-400 text-sm mt-2 max-w-sm mx-auto">
+                Las automatizaciones envían mensajes y recompensas automáticamente basándose en el comportamiento de tus clientes.
+              </p>
+              {isOwner && (
+                <button onClick={() => openCreate()} className="btn-primary mt-6" id="create-first-automation">
+                  Crear primera automatización
+                </button>
+              )}
+            </div>
+          ) : (
+            <AutomationList
+              automations={automations}
+              isOwner={isOwner}
+              onEdit={openEdit}
+              onToggle={toggle}
+              onDelete={setShowDelete}
+            />
           )}
-        </div>
-      ) : hasAutomation && (
-        <div className="space-y-3">
-          {automations.map(a => (
-            <div key={a.id} className="card p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${a.is_active ? 'bg-brand-50' : 'bg-surface-100'}`}>
-                <ActionIcon action={a.action} className="w-5 h-5 text-brand-600" />
-              </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="font-semibold text-surface-900 dark:text-white truncate">{a.name}</h3>
-                  <span className={a.is_active ? 'badge-green' : 'badge-gray'}>
-                    {a.is_active ? 'Activo' : 'Inactivo'}
-                  </span>
-                </div>
-                <p className="text-sm text-surface-500">
-                  {TRIGGER_LABELS[a.trigger] ?? a.trigger} → {ACTION_LABELS[a.action] ?? a.action}
-                </p>
-                <p className="text-xs text-surface-400 mt-0.5">
-                  {a.total_executions} ejecuciones
-                  {a.last_executed ? ` · Última: ${new Date(a.last_executed).toLocaleDateString('es-EC')}` : ''}
-                </p>
-              </div>
+          {showDelete && <DeleteModal onCancel={() => setShowDelete(null)} onConfirm={() => handleDelete(showDelete)} />}
 
-              <div className="flex items-center gap-2">
-                {isOwner && (
-                  <button onClick={() => openEdit(a)} className="btn-ghost text-sm p-2" title="Editar">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
-                )}
-                <button
-                  onClick={() => toggle(a.id, a.name)}
-                  className={`btn text-sm ${a.is_active ? 'btn-secondary' : 'btn-primary'}`}
-                  id={`toggle-automation-${a.id}`}>
-                  {a.is_active ? 'Desactivar' : 'Activar'}
-                </button>
-                {isOwner && (
-                  <button onClick={() => setShowDelete(a.id)} className="btn-ghost text-red-400 hover:text-red-600 text-sm p-2" title="Eliminar">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+          <AutomationModal
+            show={showModal}
+            editingId={editingId}
+            form={form}
+            setForm={setForm}
+            saving={saving}
+            step={step}
+            setStep={setStep}
+            stepErrors={stepErrors}
+            setStepErrors={setStepErrors}
+            programs={programs}
+            onSave={handleSave}
+            onClose={() => setShowModal(false)}
+          />
+        </>
       )}
-
-      {/* Delete confirmation */}
-      {hasAutomation && showDelete && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowDelete(null)}>
-          <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
-            <div className="w-14 h-14 mx-auto mb-4 bg-red-50 rounded-2xl flex items-center justify-center">
-              <svg className="w-7 h-7 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-            </div>
-            <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2">¿Eliminar automatización?</h3>
-            <p className="text-surface-500 text-sm mb-6">Esta acción no se puede deshacer.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowDelete(null)} className="btn-ghost flex-1 text-sm">Cancelar</button>
-              <button onClick={() => handleDelete(showDelete)} className="btn-danger flex-1 text-sm" id="confirm-delete-automation">Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create / edit modal */}
-      {hasAutomation && showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="p-6 border-b border-surface-100 flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-bold text-surface-900 dark:text-white">
-                  {editingId ? 'Editar automatización' : 'Nueva automatización'}
-                </h2>
-                <p className="text-xs text-surface-400 mt-0.5">Paso {step} de {totalSteps}</p>
-              </div>
-              <button onClick={() => setShowModal(false)} className="text-surface-400 hover:text-surface-600 text-xl">✕</button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Step indicators */}
-              <div className="flex gap-1">
-                {Array.from({ length: totalSteps }).map((_, i) => (
-                  <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < step ? 'bg-brand-500' : 'bg-surface-200'}`} />
-                ))}
-              </div>
-
-              {/* STEP 1: Name + Description */}
-              {step === 1 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="label" htmlFor="auto-name">Nombre de la automatización</label>
-                    <input id="auto-name" className={`input ${stepErrors.name ? 'border-red-500' : ''}`} placeholder="Ej: Bienvenida a nuevos clientes" required maxLength={200}
-                      value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setStepErrors({ name: false }); }} />
-                    {stepErrors.name && <p className="text-xs text-red-500 mt-1">Ingresa un nombre</p>}
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="auto-desc">Descripción (opcional)</label>
-                    <textarea id="auto-desc" className="input min-h-[80px] resize-none"
-                      placeholder="¿Qué hace esta automatización?"
-                      value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 2: Trigger + Action */}
-              {step === 2 && (
-                <div className="space-y-5">
-                  <div>
-                    <label className="label">Disparador — ¿Cuándo se activa?</label>
-                    <div className="grid grid-cols-2 gap-2 mt-1">
-                      {Object.entries(TRIGGER_LABELS).map(([key, label]) => (
-                        <button key={key} type="button"
-                          onClick={() => setForm(f => ({ ...f, trigger: key }))}
-                          className={`text-left p-3 rounded-xl border-2 transition-all text-sm
-                            ${form.trigger === key ? 'border-brand-500 bg-brand-50 shadow-glow' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
-                          <p className="font-medium text-surface-900 dark:text-white">{label}</p>
-                          <p className="text-[10px] text-surface-400 mt-0.5">{TRIGGER_DESCRIPTIONS[key]?.slice(0, 60)}...</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="label">Acción — ¿Qué se ejecuta?</label>
-                    <div className="grid grid-cols-2 gap-2 mt-1">
-                      {Object.entries(ACTION_LABELS).map(([key, label]) => (
-                        <button key={key} type="button"
-                          onClick={() => setForm(f => ({ ...f, action: key }))}
-                          className={`text-left p-3 rounded-xl border-2 transition-all text-sm
-                            ${form.action === key ? 'border-brand-500 bg-brand-50 shadow-glow' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
-                          <ActionIcon action={key} className="w-4 h-4 text-surface-600 inline-block" />
-                          <span className="font-medium text-surface-900 dark:text-white">{label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 3: Config + Cooldown */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  {/* Action config: notification title/message */}
-                  {(form.action === 'send_notification' || form.action === 'send_email' || form.action === 'send_wallet') && (
-                    <>
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <label className="label" htmlFor="action-title">Título del mensaje</label>
-                          <EmojiPickerButton
-                            onEmojiSelect={emoji => setForm(f => ({ ...f, action_config: { ...f.action_config, title: (f.action_config.title || '') + emoji } }))}
-                          />
-                        </div>
-                        <input id="action-title" className="input" placeholder="Ej: ¡Bienvenido a nuestro programa!" maxLength={200}
-                          value={(form.action_config.title as string) || ''}
-                          onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, title: e.target.value } }))} />
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <label className="label" htmlFor="action-message">Contenido del mensaje</label>
-                          <EmojiPickerButton
-                            onEmojiSelect={emoji => setForm(f => ({ ...f, action_config: { ...f.action_config, message: (f.action_config.message || '') + emoji } }))}
-                          />
-                        </div>
-                        <textarea id="action-message" className="input min-h-[80px] resize-none" maxLength={1000}
-                          placeholder="Ej: Gracias por unirte. Tu primera recompensa te espera."
-                          value={(form.action_config.message as string) || ''}
-                          onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, message: e.target.value } }))} />
-                      </div>
-
-                      {/* Wallet Platform Selector (only for send_wallet) */}
-                      {form.action === 'send_wallet' && (
-                        <div>
-                          <label className="label">Plataforma de Wallet</label>
-                          <WalletPlatformSelector
-                            value={(form.action_config.wallet_platform as 'apple' | 'google' | 'both') || 'both'}
-                            onChange={value => setForm(f => ({ ...f, action_config: { ...f.action_config, wallet_platform: value } }))}
-                          />
-                          <p className="text-[10px] text-surface-400 mt-1.5">
-                            Selecciona a qué plataforma enviar la notificación de wallet.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Wallet Notification Preview (only for send_wallet) */}
-                      {form.action === 'send_wallet' && (
-                        <div className="border border-surface-200 dark:border-surface-700 rounded-xl p-4 bg-surface-50 dark:bg-surface-900/50">
-                          <p className="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3">
-                            <svg className="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Vista previa de la notificación
-                          </p>
-                          <WalletNotificationPreview
-                            title={(form.action_config.title as string) || ''}
-                            message={(form.action_config.message as string) || ''}
-                            platform={(form.action_config.wallet_platform as 'apple' | 'google' | 'both') || 'both'}
-                          />
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Action config: issue_reward */}
-                  {form.action === 'issue_reward' && programs.length > 0 && (
-                    <div>
-                      <label className="label" htmlFor="reward-program">Programa objetivo</label>
-                      <select id="reward-program" className="input"
-                        value={(form.action_config.program_id as string) || ''}
-                        onChange={e => setForm(f => ({ ...f, action_config: { ...f.action_config, program_id: e.target.value } }))}>
-                        <option value="">Seleccionar programa</option>
-                        {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Cooldown */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="label" htmlFor="cooldown">Enfriamiento (horas)</label>
-                      <input id="cooldown" type="number" className="input" min={1}
-                        value={form.cooldown_hours}
-                        onChange={e => setForm(f => ({ ...f, cooldown_hours: parseInt(e.target.value) || 24 }))} />
-                      <p className="text-[10px] text-surface-400 mt-1">Horas mínimas entre ejecuciones por cliente</p>
-                    </div>
-                    <div>
-                      <label className="label" htmlFor="max-exec">Máx ejecuciones/día</label>
-                      <input id="max-exec" type="number" className="input" min={0}
-                        value={form.max_executions_per_day ?? ''}
-                        onChange={e => setForm(f => ({ ...f, max_executions_per_day: e.target.value ? parseInt(e.target.value) : null }))} />
-                      <p className="text-[10px] text-surface-400 mt-1">Dejar vacío = sin límite</p>
-                    </div>
-                  </div>
-
-                  {/* Summary */}
-                  <div className="p-4 rounded-xl bg-brand-50 border border-brand-200 mt-4">
-                    <p className="text-sm font-semibold text-brand-900 mb-1">Resumen</p>
-                    <p className="text-xs text-brand-700">
-                      Cuando <strong>{TRIGGER_LABELS[form.trigger]}</strong> →{' '}
-                      <strong>{ACTION_LABELS[form.action]}</strong>
-                      {form.action_config.title ? ` → "${form.action_config.title as string}"` : ''}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 border-t border-surface-100 flex gap-3 justify-between">
-              <button onClick={() => step > 1 ? setStep(step - 1) : setShowModal(false)}
-                className="btn-ghost text-sm">
-                {step > 1 ? '← Anterior' : 'Cancelar'}
-              </button>
-              {step < totalSteps ? (
-                <button onClick={() => {
-                  if (step === 1 && !form.name.trim()) { setStepErrors({ name: true }); return; }
-                  setStepErrors({ name: false });
-                  setStep(step + 1);
-                }} className="btn-primary text-sm">
-                  Siguiente →
-                </button>
-              ) : (
-                <button onClick={handleSave} disabled={saving} className="btn-primary text-sm" id="save-automation-btn">
-                  {saving ? <span className="spinner w-4 h-4" /> : (editingId ? 'Guardar cambios' : 'Crear automatización')}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      </>)}
     </div>
   );
 }

@@ -16,14 +16,14 @@ _MESSAGES_ES: dict[str, str] = {
     "BILLING_NOT_PENDING_CANCEL": "La suscripción no está pendiente de cancelación.",
     "BILLING_REACTIVATED": "Suscripción reactivada exitosamente.",
     "BILLING_PAYMENT_METHOD_ADDED": "Método de pago agregado exitosamente.",
-    "BILLING_CANNOT_REMOVE_LAST_PM": "No se puede eliminar el único método de pago mientras la suscripción esté activa.",# noqa: E501
+    "BILLING_CANNOT_REMOVE_LAST_PM": "No se puede eliminar el único método de pago mientras la suscripción esté activa.",  # noqa: E501
     "BILLING_PAYMENT_METHOD_REMOVED": "Método de pago eliminado exitosamente.",
     "BILLING_DEFAULT_PM_SET": "Método de pago predeterminado actualizado exitosamente.",
     "BILLING_INVALID_SIGNATURE": "Firma inválida.",
     "BILLING_INVALID_PAYLOAD": "Payload JSON inválido.",
     "BILLING_PAYMENT_CONFIRMATION_REQUIRED": "No se pudo confirmar el pago. La suscripción no fue activada.",
     # Plan Enforcement
-    "PLAN_LIMIT_EXCEEDED": "Has alcanzado el límite de tu plan para {resource} ({limit}). Actualiza tu plan para continuar.",# noqa: E501
+    "PLAN_LIMIT_EXCEEDED": "Has alcanzado el límite de tu plan para {resource} ({limit}). Actualiza tu plan para continuar.",  # noqa: E501
     "PLAN_FEATURE_UNAVAILABLE": "Esta función no está disponible en tu plan actual. Actualiza para acceder.",
     "PLAN_TRIAL_EXPIRED": "Tu período de prueba ha terminado. Suscríbete para continuar usando Loyallia.",
     "PLAN_UPGRADE_REQUIRED": "Se requiere un plan superior para esta funcionalidad.",
@@ -32,7 +32,7 @@ _MESSAGES_ES: dict[str, str] = {
     "ADMIN_PLAN_UPDATED": "Plan '{name}' actualizado exitosamente.",
     "ADMIN_PLAN_DEACTIVATED": "Plan desactivado exitosamente.",
     "ADMIN_PLAN_REACTIVATED": "Plan '{name}' reactivado exitosamente.",
-    "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "No se puede desactivar el plan '{name}' porque tiene {count} suscripción(es) activa(s).",# noqa: E501
+    "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "No se puede desactivar el plan '{name}' porque tiene {count} suscripción(es) activa(s).",  # noqa: E501
 }
 
 _MESSAGES_EN: dict[str, str] = {
@@ -76,7 +76,7 @@ _MESSAGES_FR: dict[str, str] = {
 
 _MESSAGES_DE: dict[str, str] = {
     "BILLING_PLAN_REQUIRED": "Ein aktives Abonnement ist erforderlich.",
-    "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "Plan '{name}' kann nicht deaktiviert werden, da er {count} aktive Abonnement(s) hat.",# noqa: E501
+    "ADMIN_PLAN_HAS_SUBSCRIPTIONS": "Plan '{name}' kann nicht deaktiviert werden, da er {count} aktive Abonnement(s) hat.",  # noqa: E501
     "PLAN_LIMIT_EXCEEDED": "Limit für {resource} ({limit}) erreicht. Upgraden Sie Ihren Plan.",
     "PLAN_FEATURE_UNAVAILABLE": "Diese Funktion ist in Ihrem aktuellen Plan nicht verfügbar.",
 }

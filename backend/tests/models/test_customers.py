@@ -35,7 +35,9 @@ class CardModelTest(TestCase):
 
     def test_get_metadata_field(self):
         t = make_tenant()
-        card = make_card(t, metadata={"stamps_required": 10, "reward_description": "Free"})
+        card = make_card(
+            t, metadata={"stamps_required": 10, "reward_description": "Free"}
+        )
         self.assertEqual(card.get_metadata_field("stamps_required"), 10)
         self.assertIsNone(card.get_metadata_field("nonexistent"))
         self.assertEqual(card.get_metadata_field("nonexistent", "default"), "default")
@@ -81,7 +83,9 @@ class CardModelTest(TestCase):
 
     def test_validate_coupon_config_invalid_type(self):
         t = make_tenant()
-        card = make_card(t, card_type=CardType.COUPON, metadata={"discount_type": "invalid"})
+        card = make_card(
+            t, card_type=CardType.COUPON, metadata={"discount_type": "invalid"}
+        )
         with self.assertRaises(ValueError):
             card.validate_coupon_config()
 

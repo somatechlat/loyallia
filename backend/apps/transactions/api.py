@@ -39,8 +39,8 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
-from apps.authentication.models import User
 from apps.audit.service import log_action
+from apps.authentication.models import User
 from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
 from common.messages import get_message
@@ -151,7 +151,9 @@ def transact(request: TenantRequest, data: ScanTransactIn):
 
     tenant = require_tenant(request)
     staff_id = (
-        str(cast(User, request.user).id) if hasattr(request, "user") and request.user else None
+        str(cast(User, request.user).id)
+        if hasattr(request, "user") and request.user
+        else None
     )
     location_id = getattr(request, "location_id", None)
 
@@ -173,11 +175,14 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     if not result.success:
         raise HttpError(
             422,
-            cast(Any, {
-                "success": False,
-                "denial_reasons": result.denial_reasons,
-                "rules_evaluated": result.rules_evaluated,
-            }),
+            cast(
+                Any,
+                {
+                    "success": False,
+                    "denial_reasons": result.denial_reasons,
+                    "rules_evaluated": result.rules_evaluated,
+                },
+            ),
         )
 
     # Async side effects
@@ -225,9 +230,10 @@ def transact(request: TenantRequest, data: ScanTransactIn):
                     id=result.transaction_id
                 )
                 cast(Any, trigger_pass_update).delay(str(txn.customer_pass.id))
-        except Exception:
+        except Exception as e:
             logging.getLogger(__name__).warning(
-                "Could not queue pass update task; transaction completes.",
+                "Could not queue pass update task; transaction completes: %s",
+                e,
                 exc_info=True,
             )
 
@@ -300,7 +306,7 @@ def search_customer(request: TenantRequest, query: str):
                         "card_type": p.card.card_type,
                         "qr_code": p.qr_code,
                     }
-                    for p in getattr(customer, "passes").all()
+                    for p in customer.passes.all()
                     if p.is_active
                 ],
             }
@@ -467,7 +473,9 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
     staff_id = (
-        str(cast(User, request.user).id) if hasattr(request, "user") and request.user else None
+        str(cast(User, request.user).id)
+        if hasattr(request, "user") and request.user
+        else None
     )
 
     command = RedemptionCommand(
@@ -486,11 +494,14 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
     if not result.success:
         raise HttpError(
             422,
-            cast(Any, {
-                "success": False,
-                "denial_reasons": result.denial_reasons,
-                "rules_evaluated": result.rules_evaluated,
-            }),
+            cast(
+                Any,
+                {
+                    "success": False,
+                    "denial_reasons": result.denial_reasons,
+                    "rules_evaluated": result.rules_evaluated,
+                },
+            ),
         )
 
     log_action(

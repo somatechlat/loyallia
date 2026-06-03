@@ -7,6 +7,7 @@ at which point a reward becomes available for redemption.
 """
 
 import logging
+
 from apps.customers.models import CustomerPass
 from apps.transactions.models import TransactionType
 from common.messages import get_message
@@ -37,7 +38,7 @@ class StampEarnStrategy(BaseRedemptionStrategy):
         return violations
 
     def _compute_mutation(
-        self, locked_pass: "CustomerPassType", context: RedemptionContext
+        self, locked_pass: "CustomerPass", context: RedemptionContext
     ) -> PassStateMutation:
         """Compute stamp accumulation and reward readiness."""
         metadata = context.card.metadata or {}
@@ -104,7 +105,7 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
         return violations
 
     def _compute_mutation(
-        self, locked_pass: "CustomerPassType", context: RedemptionContext
+        self, locked_pass: "CustomerPass", context: RedemptionContext
     ) -> PassStateMutation:
         """Compute the reward consumption and state reset."""
         if not self._is_reward_ready(locked_pass):
@@ -127,7 +128,7 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
         )
 
     @staticmethod
-    def _is_reward_ready(customer_pass: "CustomerPassType") -> bool:
+    def _is_reward_ready(customer_pass: "CustomerPass") -> bool:
         """Check whether the pass has a reward ready for redemption."""
         return (
             customer_pass.lifecycle_state == CustomerPass.LifecycleState.REWARD_READY

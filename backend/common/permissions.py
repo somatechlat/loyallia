@@ -24,6 +24,7 @@ Security (SEC):
 Called by: Every endpoint decorated with `auth=jwt_auth` or `auth=optional_jwt_auth`.
 """
 
+import logging
 from functools import wraps
 from typing import Any, cast
 
@@ -81,7 +82,8 @@ class OptionalJWTAuth(HttpBearer):
             return None
         try:
             return JWTAuth().authenticate(request, token)
-        except Exception:
+        except Exception as e:
+            logging.getLogger(__name__).debug("OptionalJWTAuth suppressed: %s", e)
             return None
 
 

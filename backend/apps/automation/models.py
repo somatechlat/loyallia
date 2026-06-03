@@ -56,50 +56,74 @@ class Automation(TimestampedModel):
     )
 
     # Basic info
-    name = models.CharField(max_length=200, verbose_name="Nombre", help_text="Name of this record.")
-    description = models.TextField(blank=True, default="", verbose_name="Descripción", help_text="Description of this record.")
+    name = models.CharField(
+        max_length=200, verbose_name="Nombre", help_text="Name of this record."
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Descripción",
+        help_text="Description of this record.",
+    )
 
     # Trigger configuration
     trigger = models.CharField(
-        max_length=30, choices=AutomationTrigger.choices, verbose_name="Disparador"
-        ,help_text="Trigger.",
+        max_length=30,
+        choices=AutomationTrigger.choices,
+        verbose_name="Disparador",
+        help_text="Trigger.",
     )
     trigger_config = models.JSONField(
-        default=dict, verbose_name="Configuración del disparador"
-        ,help_text="Trigger configuration stored as JSON.",
+        default=dict,
+        verbose_name="Configuración del disparador",
+        help_text="Trigger configuration stored as JSON.",
     )
 
     # Action configuration
     action = models.CharField(
-        max_length=30, choices=AutomationAction.choices, verbose_name="Acción"
-        ,help_text="Action performed.",
+        max_length=30,
+        choices=AutomationAction.choices,
+        verbose_name="Acción",
+        help_text="Action performed.",
     )
     action_config = models.JSONField(
-        default=dict, verbose_name="Configuración de la acción"
-        ,help_text="Action configuration stored as JSON.",
+        default=dict,
+        verbose_name="Configuración de la acción",
+        help_text="Action configuration stored as JSON.",
     )
 
     # Targeting
     target_programs = models.ManyToManyField(
-        Card, blank=True, related_name="automations", verbose_name="Programas objetivo"
-        ,help_text="Target programs.",
+        Card,
+        blank=True,
+        related_name="automations",
+        verbose_name="Programas objetivo",
+        help_text="Target programs.",
     )
     target_segments = models.JSONField(
-        default=list, verbose_name="Segmentos objetivo"
-        ,help_text="Target customer segments.",
+        default=list,
+        verbose_name="Segmentos objetivo",
+        help_text="Target customer segments.",
     )  # List of segment names
 
     # Scheduling
-    is_active = models.BooleanField(default=True, verbose_name="Activo", help_text="Whether this record is currently active.")
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Activo",
+        help_text="Whether this record is currently active.",
+    )
     schedule_config = models.JSONField(
-        default=dict, verbose_name="Configuración de horario"
-        ,help_text="Schedule configuration stored as JSON.",
+        default=dict,
+        verbose_name="Configuración de horario",
+        help_text="Schedule configuration stored as JSON.",
     )  # For scheduled automations
 
     # Limits and throttling
     max_executions_per_day = models.PositiveIntegerField(
-        null=True, blank=True, verbose_name="Ejecuciones máximas por día"
-        ,help_text="Maximum executions allowed per day.",
+        null=True,
+        blank=True,
+        verbose_name="Ejecuciones máximas por día",
+        help_text="Maximum executions allowed per day.",
     )
     cooldown_hours = models.PositiveIntegerField(
         default=24,
@@ -110,16 +134,20 @@ class Automation(TimestampedModel):
 
     # Analytics
     total_executions = models.PositiveIntegerField(
-        default=0, verbose_name="Ejecuciones totales"
-        ,help_text="Total number of executions.",
+        default=0,
+        verbose_name="Ejecuciones totales",
+        help_text="Total number of executions.",
     )
     last_executed = models.DateTimeField(
-        null=True, blank=True, verbose_name="Última ejecución"
-        ,help_text="Timestamp of the most recent execution.",
+        null=True,
+        blank=True,
+        verbose_name="Última ejecución",
+        help_text="Timestamp of the most recent execution.",
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_automations"
         verbose_name = "Automatización"
         verbose_name_plural = "Automatizaciones"
@@ -381,12 +409,13 @@ class Automation(TimestampedModel):
         # Enforce daily WhatsApp plan limit (prevents automation bypass)
         try:
             check_plan_limit(self.tenant, "whatsapp_day", write=True)
-        except Exception:
+        except Exception as e:
             import logging
 
             logging.getLogger(__name__).warning(
-                "WhatsApp automation blocked: plan limit exceeded for tenant %s",
+                "WhatsApp automation blocked: plan limit exceeded for tenant %s (%s)",
                 self.tenant.id,
+                e,
             )
             return False
 
@@ -442,37 +471,34 @@ class Automation(TimestampedModel):
             # Google Wallet
             if wallet_platform in ("google", "both"):
                 try:
-                    # First: silently PATCH object data
-                    from apps.customers.pass_engine.google_pass import (
-                        update_wallet_object,
+                    # Fire Google Wallet updates asynchronously to avoid blocking
+                    from apps.customers.tasks import (
+                        send_google_push_notification_async,
+                        update_wallet_object_async,
                     )
 
-                    gw_update = update_wallet_object(pass_obj)
-                    if gw_update.get("success"):
-                        push_sent = True
+                    update_wallet_object_async.delay(str(pass_obj.id))
+                    push_sent = True
 
-                    # Then: send visible message notification
                     from django.conf import settings
 
-                    from apps.customers.pass_engine.google_pass import (
-                        send_push_notification,
-                    )
                     from apps.tenants.models import PlatformSetting
 
                     dashboard_url = PlatformSetting.get(
                         "dashboard_url", settings.PUBLIC_BASE_URL
                     )
                     action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
-                    result = send_push_notification(
-                        pass_obj, header=title, body=message, action_url=action_url
+                    send_google_push_notification_async.delay(
+                        str(pass_obj.id),
+                        header=title,
+                        body=message,
+                        action_url=action_url,
                     )
-                    if result.get("success"):
-                        push_sent = True
                 except Exception as exc:
                     import logging
 
                     logging.getLogger(__name__).warning(
-                        "Google wallet push failed for pass %s: %s", pass_obj.id, exc
+                        "Google wallet enqueue failed for pass %s: %s", pass_obj.id, exc
                     )
 
             # Apple Wallet
@@ -603,7 +629,12 @@ class AutomationExecution(models.Model):
     Log of automation executions for audit and analytics.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Unique identifier for this record.")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique identifier for this record.",
+    )
     automation = models.ForeignKey(
         Automation,
         on_delete=models.CASCADE,
@@ -620,18 +651,28 @@ class AutomationExecution(models.Model):
     )
 
     # Execution details
-    trigger_event = models.CharField(max_length=50, verbose_name="Evento disparador", help_text="Event that triggered this execution.")
-    execution_context = models.JSONField(
-        default=dict, verbose_name="Contexto de ejecución"
-        ,help_text="Execution context stored as JSON.",
+    trigger_event = models.CharField(
+        max_length=50,
+        verbose_name="Evento disparador",
+        help_text="Event that triggered this execution.",
     )
-    success = models.BooleanField(verbose_name="Éxito", help_text="Whether the execution or operation succeeded.")
+    execution_context = models.JSONField(
+        default=dict,
+        verbose_name="Contexto de ejecución",
+        help_text="Execution context stored as JSON.",
+    )
+    success = models.BooleanField(
+        verbose_name="Éxito", help_text="Whether the execution or operation succeeded."
+    )
 
     # Timestamps
-    executed_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when this execution occurred.")
+    executed_at = models.DateTimeField(
+        auto_now_add=True, help_text="Timestamp when this execution occurred."
+    )
 
     class Meta:
         """Model metadata and database configuration."""
+
         db_table = "loyallia_automation_executions"
         verbose_name = "Ejecución de automatización"
         verbose_name_plural = "Ejecuciones de automatizaciones"

@@ -138,11 +138,11 @@ def restore_from_backup(
         )
         return {"success": all_ok, "backup_id": backup_id, "results": results}
 
-    except Exception:
-        logger.exception("restore_from_backup failed for backup %s", backup_id)
+    except Exception as e:
+        logger.exception("restore_from_backup failed for backup %s: %s", backup_id, e)
         raise
     finally:
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(OSError):
             shutil.rmtree(tmp_dir)
 
 
@@ -164,8 +164,9 @@ def execute_restore(component: str, source: str, date: str) -> dict:
 
     WARNING: Destructive operation. Overwrites live data.
     """
-    from django.conf import settings
     from pathlib import Path
+
+    from django.conf import settings
 
     project_root = Path(settings.BASE_DIR).parent
     restore_script = project_root / "deploy" / "backups" / "restore"
@@ -219,7 +220,10 @@ def validate_restore_request(data: dict) -> tuple[bool, str]:
     confirm = data.get("confirm", False)
 
     if component not in VALID_COMPONENTS:
-        return False, f"Invalid component. Must be one of: {', '.join(VALID_COMPONENTS)}"
+        return (
+            False,
+            f"Invalid component. Must be one of: {', '.join(VALID_COMPONENTS)}",
+        )
     if source not in VALID_SOURCES:
         return False, f"Invalid source. Must be one of: {', '.join(VALID_SOURCES)}"
     if not confirm:

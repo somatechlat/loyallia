@@ -30,11 +30,13 @@ router = Router()
 
 class ScanValidateIn(BaseModel):
     """Input schema for the QR validation endpoint."""
+
     qr_code: str
 
 
 class ScanTransactIn(BaseModel):
     """Input schema for the transaction endpoint."""
+
     qr_code: str
     amount: float = 0
     quantity: int = 1
@@ -47,6 +49,7 @@ class ScanTransactIn(BaseModel):
 
 class RedemptionOut(BaseModel):
     """Output schema for redemption results."""
+
     success: bool
     transaction_id: str | None = None
     transaction_type: str = ""

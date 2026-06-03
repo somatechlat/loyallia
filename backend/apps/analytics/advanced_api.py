@@ -25,12 +25,18 @@ from common.permissions import is_manager_or_owner, jwt_auth
 
 router = Router()
 
+# Constants
+CACHE_TTL_SECONDS = 300
+DEFAULT_PERIOD_DAYS = 30
+DEFAULT_TOP_BUYERS_LIMIT = 15
+NOTIFY_TOP_BUYERS_COUNT = 15
+
 
 # Revenue Breakdown
 @router.get(
     "/revenue-breakdown/", auth=jwt_auth, summary="Get revenue breakdown by source"
 )
-def get_revenue_breakdown(request, days: int = 30):
+def get_revenue_breakdown(request, days: int = DEFAULT_PERIOD_DAYS):
     """Revenue breakdown: loyalty, referral, non-loyalty. Cached 5min. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -89,13 +95,13 @@ def get_revenue_breakdown(request, days: int = 30):
         "referral_pct": (float(referral_rev) / total * 100) if total > 0 else 0,
         "non_loyalty_pct": (float(non_loyalty_rev) / total * 100) if total > 0 else 0,
     }
-    cache.set(cache_key, result, timeout=300)
+    cache.set(cache_key, result, timeout=CACHE_TTL_SECONDS)
     return result
 
 
 # Visit Metrics
 @router.get("/visits/", auth=jwt_auth, summary="Get visit metrics")
-def get_visit_metrics(request, days: int = 30):
+def get_visit_metrics(request, days: int = DEFAULT_PERIOD_DAYS):
     """Detailed visit metrics for the dashboard. Cached 5min. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -155,13 +161,13 @@ def get_visit_metrics(request, days: int = 30):
         "unregistered_visits": 0,
         "retention_rate": round(retention_rate, 1),
     }
-    cache.set(cache_key, result, timeout=300)
+    cache.set(cache_key, result, timeout=CACHE_TTL_SECONDS)
     return result
 
 
 # Top Buyers
 @router.get("/top-buyers/", auth=jwt_auth, summary="Get top buyers")
-def get_top_buyers(request, limit: int = 15, days: int = 30):
+def get_top_buyers(request, limit: int = DEFAULT_TOP_BUYERS_LIMIT, days: int = DEFAULT_PERIOD_DAYS):
     """Top N buyers by total spend. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -210,7 +216,7 @@ def notify_top_buyers(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     tenant = request.tenant
-    start_date = timezone.now() - timedelta(days=30)
+    start_date = timezone.now() - timedelta(days=DEFAULT_PERIOD_DAYS)
 
     top = (
         Customer.objects.filter(
@@ -218,7 +224,7 @@ def notify_top_buyers(request):
             passes__transactions__created_at__gte=start_date,
         )
         .annotate(period_spent=Sum("passes__transactions__amount"))
-        .order_by("-period_spent")[:15]
+        .order_by("-period_spent")[:NOTIFY_TOP_BUYERS_COUNT]
     )
 
     from apps.notifications.models import Notification, NotificationType
@@ -324,13 +330,13 @@ def get_demographics(request):
         "unknown_age_count": unknown_count,
     }
 
-    cache.set(cache_key, result, timeout=300)  # 5-minute cache
+    cache.set(cache_key, result, timeout=CACHE_TTL_SECONDS)  # 5-minute cache
     return result
 
 
 # By Program Type
 @router.get("/by-program-type/", auth=jwt_auth, summary="Get metrics by program type")
-def get_by_program_type(request, days: int = 30):
+def get_by_program_type(request, days: int = DEFAULT_PERIOD_DAYS):
     """Visits and revenue grouped by card type. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
