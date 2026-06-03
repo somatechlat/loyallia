@@ -331,7 +331,7 @@ class Command(BaseCommand):
             last1 = random.choice(EC_LASTNAMES)
             last2 = random.choice(EC_LASTNAMES)
             full_last = f"{last1} {last2}" if random.random() > 0.3 else last1
-            email_base = f"{first.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')}.{last1.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')}"# noqa: E501
+            email_base = f"{first.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')}.{last1.lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')}"  # noqa: E501
             email = f"{email_base}{i}@gmail.com"
             if email in used_emails:
                 email = f"{email_base}{i}{random.randint(10, 99)}@gmail.com"
@@ -550,31 +550,31 @@ class Command(BaseCommand):
         campaigns = [
             {
                 "title": "¡Doble de puntos este fin de semana!",
-                "message": "Visítanos en Café El Ritmo este sábado y domingo. Todas tus compras suman el doble de puntos Ritmo.",# noqa: E501
+                "message": "Visítanos en Café El Ritmo este sábado y domingo. Todas tus compras suman el doble de puntos Ritmo.",  # noqa: E501
                 "days_ago": 3,
                 "recipients": campaign_customers,
             },
             {
                 "title": "Tu café gratis te espera",
-                "message": "Vimos que no has venido en 15 días, ¡te extrañamos! Pasa por cualquier sucursal y disfruta un latte de cortesía.",# noqa: E501
+                "message": "Vimos que no has venido en 15 días, ¡te extrañamos! Pasa por cualquier sucursal y disfruta un latte de cortesía.",  # noqa: E501
                 "days_ago": 1,
                 "recipients": campaign_customers[:20],
             },
             {
                 "title": "Aniversario Café El Ritmo - 3 Años",
-                "message": "¡Estamos de aniversario! Del 1 al 7 de abril, todas las bebidas de especialidad al 2x1. Celebra con nosotros.",# noqa: E501
+                "message": "¡Estamos de aniversario! Del 1 al 7 de abril, todas las bebidas de especialidad al 2x1. Celebra con nosotros.",  # noqa: E501
                 "days_ago": 5,
                 "recipients": campaign_customers[:50],
             },
             {
                 "title": "Nuevo: Club VIP El Ritmo",
-                "message": "Únete a nuestro club VIP y obtén 15% de descuento permanente, acceso a eventos exclusivos y prioridad en fila.",# noqa: E501
+                "message": "Únete a nuestro club VIP y obtén 15% de descuento permanente, acceso a eventos exclusivos y prioridad en fila.",  # noqa: E501
                 "days_ago": 10,
                 "recipients": campaign_customers[:40],
             },
             {
                 "title": "Refiere un amigo y gana $3",
-                "message": "Invita a un amigo a Café El Ritmo. Cuando se registre, ambos reciben $3 de crédito para su próxima compra.",# noqa: E501
+                "message": "Invita a un amigo a Café El Ritmo. Cuando se registre, ambos reciben $3 de crédito para su próxima compra.",  # noqa: E501
                 "days_ago": 7,
                 "recipients": campaign_customers[:30],
             },

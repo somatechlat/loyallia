@@ -7,7 +7,7 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTH_LOGIN_SUCCESS": "Inicio de sesión exitoso.",
     "AUTH_LOGOUT_SUCCESS": "Sesión cerrada exitosamente.",
     "AUTH_INVALID_CREDENTIALS": "Correo electrónico o contraseña incorrectos.",
-    "AUTH_ACCOUNT_LOCKED": "Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta en {minutes} minutos.",# noqa: E501
+    "AUTH_ACCOUNT_LOCKED": "Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta en {minutes} minutos.",  # noqa: E501
     "AUTH_EMAIL_NOT_VERIFIED": "Por favor verifica tu correo electrónico antes de iniciar sesión.",
     "AUTH_EMAIL_VERIFIED": "Correo electrónico verificado exitosamente.",
     "AUTH_PASSWORD_RESET_SENT": "Se ha enviado un enlace de restablecimiento a {email}.",
@@ -33,7 +33,7 @@ _MESSAGES_ES: dict[str, str] = {
     "AUTH_PHONE_OTP_SENT": "Código de verificación enviado al {phone}.",
     "AUTH_PHONE_VERIFIED": "Número telefónico verificado exitosamente.",
     "AUTH_PHONE_OTP_INVALID": "El código de verificación es inválido o ha expirado.",
-    "AUTH_USER_NOT_FOUND_REGISTER": "Cuenta no encontrada. Por favor, regístrate primero para acceder o disfrutar del periodo de prueba.",# noqa: E501
+    "AUTH_USER_NOT_FOUND_REGISTER": "Cuenta no encontrada. Por favor, regístrate primero para acceder o disfrutar del periodo de prueba.",  # noqa: E501
     # Twilio Verify ()
     "VERIFY_OTP_SENT": "Código de verificación enviado via {channel}.",
     "VERIFY_OTP_FAILED": "Error al enviar código de verificación: {detail}",
@@ -56,7 +56,7 @@ _MESSAGES_EN: dict[str, str] = {
     "AUTH_LOGIN_SUCCESS": "Login successful.",
     "AUTH_LOGOUT_SUCCESS": "Logged out successfully.",
     "AUTH_INVALID_CREDENTIALS": "Invalid email or password.",
-    "AUTH_ACCOUNT_LOCKED": "Account temporarily locked due to multiple failed attempts. Try again in {minutes} minutes.",# noqa: E501
+    "AUTH_ACCOUNT_LOCKED": "Account temporarily locked due to multiple failed attempts. Try again in {minutes} minutes.",  # noqa: E501
     "AUTH_EMAIL_NOT_VERIFIED": "Please verify your email before signing in.",
     "AUTH_EMAIL_VERIFIED": "Email verified successfully.",
     "AUTH_PASSWORD_RESET_SENT": "A reset link has been sent to {email}.",

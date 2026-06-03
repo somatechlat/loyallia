@@ -20,7 +20,6 @@ import logging
 import zipfile
 from typing import Any
 
-from common.platform_config import get_platform_config
 from django.conf import settings
 
 from apps.customers.pass_engine.apple_pass_builders import (
@@ -32,6 +31,7 @@ from apps.customers.pass_engine.apple_pass_builders import (
     _hex_to_rgb,
     _resize_image,
 )
+from common.platform_config import get_platform_config
 
 logger = logging.getLogger(__name__)
 

@@ -80,9 +80,18 @@ class SubscriptionPlan(TimestampedModel):
     Plans are created via the Super Admin wizard with selectable features.
     """
 
-    name = models.CharField(max_length=100, verbose_name="Nombre del plan", help_text="Name of this record.")
-    slug = models.SlugField(max_length=50, unique=True, help_text="URL-friendly unique identifier.")
-    description = models.TextField(blank=True, default="", verbose_name="Descripción", help_text="Description of this record.")
+    name = models.CharField(
+        max_length=100, verbose_name="Nombre del plan", help_text="Name of this record."
+    )
+    slug = models.SlugField(
+        max_length=50, unique=True, help_text="URL-friendly unique identifier."
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Descripción",
+        help_text="Description of this record.",
+    )
 
     # Pricing (monthly AND annual REQ-PLAN-001)
     price_monthly = models.DecimalField(
@@ -104,22 +113,30 @@ class SubscriptionPlan(TimestampedModel):
 
     # Usage Limits (enforced by plan_enforcement.py)
     max_locations = models.PositiveIntegerField(
-        default=1, verbose_name="Máx. sucursales"
-        ,help_text="Maximum allowed locations.",
+        default=1,
+        verbose_name="Máx. sucursales",
+        help_text="Maximum allowed locations.",
     )
-    max_users = models.PositiveIntegerField(default=3, verbose_name="Máx. usuarios", help_text="Maximum allowed users.")
+    max_users = models.PositiveIntegerField(
+        default=3, verbose_name="Máx. usuarios", help_text="Maximum allowed users."
+    )
     max_customers = models.PositiveIntegerField(
-        default=500, verbose_name="Máx. clientes"
-        ,help_text="Maximum allowed customers.",
+        default=500,
+        verbose_name="Máx. clientes",
+        help_text="Maximum allowed customers.",
     )
-    max_programs = models.PositiveIntegerField(default=1, verbose_name="Máx. programas", help_text="Maximum allowed programs.")
+    max_programs = models.PositiveIntegerField(
+        default=1, verbose_name="Máx. programas", help_text="Maximum allowed programs."
+    )
     max_notifications_month = models.PositiveIntegerField(
-        default=1000, verbose_name="Máx. notificaciones/mes"
-        ,help_text="Maximum notifications per month.",
+        default=1000,
+        verbose_name="Máx. notificaciones/mes",
+        help_text="Maximum notifications per month.",
     )
     max_transactions_month = models.PositiveIntegerField(
-        default=5000, verbose_name="Máx. transacciones/mes"
-        ,help_text="Maximum transactions per month.",
+        default=5000,
+        verbose_name="Máx. transacciones/mes",
+        help_text="Maximum transactions per month.",
     )
 
     # Messaging channel quotas
@@ -191,15 +208,30 @@ class SubscriptionPlan(TimestampedModel):
         choices=Status.choices,
         default=Status.PUBLISHED,
         verbose_name="Estado",
-        help_text="draft=Borrador (solo visible en SuperAdmin), published=Publicado (visible para todos), archived=Archivado (oculto)",# noqa: E501
+        help_text="draft=Borrador (solo visible en SuperAdmin), published=Publicado (visible para todos), archived=Archivado (oculto)",  # noqa: E501
     )
-    is_active = models.BooleanField(default=True, verbose_name="Activo", help_text="Whether this record is currently active.")
-    is_featured = models.BooleanField(default=False, verbose_name="Plan recomendado", help_text="Whether this plan is highlighted as recommended.")
-    trial_days = models.PositiveIntegerField(default=5, verbose_name="Días de prueba", help_text="Number of days in the trial period.")
-    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Orden", help_text="Display order.")
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Activo",
+        help_text="Whether this record is currently active.",
+    )
+    is_featured = models.BooleanField(
+        default=False,
+        verbose_name="Plan recomendado",
+        help_text="Whether this plan is highlighted as recommended.",
+    )
+    trial_days = models.PositiveIntegerField(
+        default=5,
+        verbose_name="Días de prueba",
+        help_text="Number of days in the trial period.",
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0, verbose_name="Orden", help_text="Display order."
+    )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_subscription_plans"
         verbose_name = "Plan de Suscripción"
         verbose_name_plural = "Planes de Suscripción"
@@ -333,50 +365,68 @@ class Subscription(TimestampedModel):
 
     # Dates
     trial_start = models.DateTimeField(
-        null=True, blank=True, verbose_name="Inicio del trial"
-        ,help_text="Trial start.",
+        null=True,
+        blank=True,
+        verbose_name="Inicio del trial",
+        help_text="Trial start.",
     )
     trial_end = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fin del trial"
-        ,help_text="End date of the trial period.",
+        null=True,
+        blank=True,
+        verbose_name="Fin del trial",
+        help_text="End date of the trial period.",
     )
     current_period_start = models.DateTimeField(
-        null=True, blank=True, verbose_name="Inicio del período actual"
-        ,help_text="Start of the current billing period.",
+        null=True,
+        blank=True,
+        verbose_name="Inicio del período actual",
+        help_text="Start of the current billing period.",
     )
     current_period_end = models.DateTimeField(
-        null=True, blank=True, verbose_name="Fin del período actual"
-        ,help_text="End of the current billing period.",
+        null=True,
+        blank=True,
+        verbose_name="Fin del período actual",
+        help_text="End of the current billing period.",
     )
     cancel_at_period_end = models.BooleanField(
-        default=False, verbose_name="Cancelar al final del período"
-        ,help_text="Whether to cancel at the end of the period.",
+        default=False,
+        verbose_name="Cancelar al final del período",
+        help_text="Whether to cancel at the end of the period.",
     )
     canceled_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Cancelado en"
-        ,help_text="When the subscription was canceled.",
+        null=True,
+        blank=True,
+        verbose_name="Cancelado en",
+        help_text="When the subscription was canceled.",
     )
     trial_extended_count = models.SmallIntegerField(
-        default=0, verbose_name="Extensiones de trial"
-        ,help_text="Count or tally.",
+        default=0,
+        verbose_name="Extensiones de trial",
+        help_text="Count or tally.",
     )
 
     # Payment failure tracking
     failed_payment_count = models.SmallIntegerField(
-        default=0, verbose_name="Intentos de pago fallidos"
-        ,help_text="Number of failed payment attempts.",
+        default=0,
+        verbose_name="Intentos de pago fallidos",
+        help_text="Number of failed payment attempts.",
     )
     last_payment_error = models.TextField(
-        blank=True, default="", verbose_name="Último error de pago"
-        ,help_text="Details of the last payment failure.",
+        blank=True,
+        default="",
+        verbose_name="Último error de pago",
+        help_text="Details of the last payment failure.",
     )
     last_payment_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Último pago exitoso"
-        ,help_text="Timestamp of the last successful payment.",
+        null=True,
+        blank=True,
+        verbose_name="Último pago exitoso",
+        help_text="Timestamp of the last successful payment.",
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
+
         db_table = "loyallia_subscriptions"
         verbose_name = "Suscripción"
         verbose_name_plural = "Suscripciones"

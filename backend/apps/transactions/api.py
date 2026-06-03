@@ -29,6 +29,7 @@ Security (SEC):
 Called by: Scanner UI (React), Dashboard transaction page, Automation engine.
 """
 
+import logging
 from decimal import Decimal
 from typing import Any, cast
 
@@ -38,14 +39,15 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
-from apps.authentication.models import User
 from apps.audit.service import log_action
+from apps.authentication.models import User
 from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_staff_or_above, jwt_auth
 from common.request import TenantRequest, require_tenant
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 
@@ -149,7 +151,9 @@ def transact(request: TenantRequest, data: ScanTransactIn):
 
     tenant = require_tenant(request)
     staff_id = (
-        str(cast(User, request.user).id) if hasattr(request, "user") and request.user else None
+        str(cast(User, request.user).id)
+        if hasattr(request, "user") and request.user
+        else None
     )
     location_id = getattr(request, "location_id", None)
 
@@ -171,11 +175,14 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     if not result.success:
         raise HttpError(
             422,
-            cast(Any, {
-                "success": False,
-                "denial_reasons": result.denial_reasons,
-                "rules_evaluated": result.rules_evaluated,
-            }),
+            cast(
+                Any,
+                {
+                    "success": False,
+                    "denial_reasons": result.denial_reasons,
+                    "rules_evaluated": result.rules_evaluated,
+                },
+            ),
         )
 
     # Async side effects
@@ -298,7 +305,7 @@ def search_customer(request: TenantRequest, query: str):
                         "card_type": p.card.card_type,
                         "qr_code": p.qr_code,
                     }
-                    for p in getattr(customer, "passes").all()
+                    for p in customer.passes.all()
                     if p.is_active
                 ],
             }
@@ -465,7 +472,9 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
     staff_id = (
-        str(cast(User, request.user).id) if hasattr(request, "user") and request.user else None
+        str(cast(User, request.user).id)
+        if hasattr(request, "user") and request.user
+        else None
     )
 
     command = RedemptionCommand(
@@ -484,11 +493,14 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
     if not result.success:
         raise HttpError(
             422,
-            cast(Any, {
-                "success": False,
-                "denial_reasons": result.denial_reasons,
-                "rules_evaluated": result.rules_evaluated,
-            }),
+            cast(
+                Any,
+                {
+                    "success": False,
+                    "denial_reasons": result.denial_reasons,
+                    "rules_evaluated": result.rules_evaluated,
+                },
+            ),
         )
 
     log_action(

@@ -11,11 +11,14 @@ from apps.authentication.tokens import decode_access_token
 from apps.billing.models import PlanFeature, Subscription, SubscriptionStatus
 from apps.tenants.models import Tenant
 from apps.tenants.super_admin_api.impersonation import impersonate_tenant
-from apps.tenants.super_admin_api.integration_config import normalize_and_validate_vault_secret
+from apps.tenants.super_admin_api.integration_config import (
+    normalize_and_validate_vault_secret,
+)
 from apps.tenants.super_admin_api.plan_validation import validate_plan_config
 from apps.tenants.super_admin_api.schemas import CreateTenantWizardIn, ImpersonateIn
 from apps.tenants.super_admin_api.tenants import create_tenant
 from tests.factories import make_plan, make_user
+
 
 class SuperAdminTenantCreationTest(TestCase):
     def test_create_tenant_links_selected_subscription_plan(self):
@@ -25,7 +28,9 @@ class SuperAdminTenantCreationTest(TestCase):
             content_type="application/json",
         )
         request.user = make_user(tenant=None, role=UserRole.SUPER_ADMIN)
-        plan = make_plan(slug="enterprise-test", features=[PlanFeature.SMS_CAMPAIGNS], max_sms_day=50)
+        plan = make_plan(
+            slug="enterprise-test", features=[PlanFeature.SMS_CAMPAIGNS], max_sms_day=50
+        )
 
         payload = CreateTenantWizardIn(
             name="Plan Linked Tenant",
@@ -49,12 +54,15 @@ class SuperAdminTenantCreationTest(TestCase):
         response = create_tenant(request, payload)
 
         tenant = Tenant.objects.get(id=response.tenant_id)
-        subscription = Subscription.objects.select_related("subscription_plan").get(tenant=tenant)
+        subscription = Subscription.objects.select_related("subscription_plan").get(
+            tenant=tenant
+        )
         self.assertEqual(subscription.subscription_plan, plan)
         self.assertEqual(subscription.plan, plan.slug)
         self.assertEqual(subscription.status, SubscriptionStatus.ACTIVE)
         self.assertEqual(response.owner_email, "owner-plan-linked@example.com")
         self.assertTrue(response.temp_password)
+
 
 class PlanValidationTest(TestCase):
     def test_partial_patch_limit_without_features_uses_existing_features(self):
@@ -91,14 +99,24 @@ class PlanValidationTest(TestCase):
                 }
             )
 
+
 class BackupConfigValidationTest(TestCase):
     def test_backup_config_values_are_normalized(self):
-        self.assertEqual(normalize_and_validate_vault_secret("system_mode", "Production"), "production")
-        self.assertEqual(normalize_and_validate_vault_secret("backup_frequency", "15days"), "15days")
-        self.assertEqual(normalize_and_validate_vault_secret("backup_retention", "31"), "31")
+        self.assertEqual(
+            normalize_and_validate_vault_secret("system_mode", "Production"),
+            "production",
+        )
+        self.assertEqual(
+            normalize_and_validate_vault_secret("backup_frequency", "15days"), "15days"
+        )
+        self.assertEqual(
+            normalize_and_validate_vault_secret("backup_retention", "31"), "31"
+        )
         self.assertEqual(normalize_and_validate_vault_secret("cron_hour", "5"), "5")
         self.assertEqual(
-            normalize_and_validate_vault_secret("vault_thresholds", '{"max_secret_ttl_days": 90}'),
+            normalize_and_validate_vault_secret(
+                "vault_thresholds", '{"max_secret_ttl_days": 90}'
+            ),
             '{"max_secret_ttl_days":90}',
         )
 
@@ -113,6 +131,7 @@ class BackupConfigValidationTest(TestCase):
         for key, value in invalid_inputs:
             with self.subTest(key=key), self.assertRaises(HttpError):
                 normalize_and_validate_vault_secret(key, value)
+
 
 class SuperAdminImpersonationTest(TestCase):
     def setUp(self):
@@ -136,7 +155,9 @@ class SuperAdminImpersonationTest(TestCase):
         )
 
     def _payload(self, pin="123456"):
-        return ImpersonateIn(owner_pin=pin, justification="Support diagnosis for owner account")
+        return ImpersonateIn(
+            owner_pin=pin, justification="Support diagnosis for owner account"
+        )
 
     def test_owner_without_pin_is_rejected(self):
         with self.assertRaises(HttpError) as ctx:
@@ -148,7 +169,9 @@ class SuperAdminImpersonationTest(TestCase):
         self.owner.set_security_pin("123456")
 
         with self.assertRaises(HttpError) as ctx:
-            impersonate_tenant(self.request, str(self.tenant.id), self._payload("000000"))
+            impersonate_tenant(
+                self.request, str(self.tenant.id), self._payload("000000")
+            )
 
         self.assertEqual(ctx.exception.status_code, 403)
 
@@ -157,17 +180,23 @@ class SuperAdminImpersonationTest(TestCase):
 
         for _ in range(3):
             with self.assertRaises(HttpError):
-                impersonate_tenant(self.request, str(self.tenant.id), self._payload("000000"))
+                impersonate_tenant(
+                    self.request, str(self.tenant.id), self._payload("000000")
+                )
 
         with self.assertRaises(HttpError) as ctx:
-            impersonate_tenant(self.request, str(self.tenant.id), self._payload("123456"))
+            impersonate_tenant(
+                self.request, str(self.tenant.id), self._payload("123456")
+            )
 
         self.assertEqual(ctx.exception.status_code, 429)
 
     def test_success_returns_impersonated_owner_token(self):
         self.owner.set_security_pin("123456")
 
-        response = impersonate_tenant(self.request, str(self.tenant.id), self._payload())
+        response = impersonate_tenant(
+            self.request, str(self.tenant.id), self._payload()
+        )
         decoded = decode_access_token(response.access_token)
 
         self.assertEqual(response.impersonated_tenant_id, str(self.tenant.id))
@@ -176,6 +205,7 @@ class SuperAdminImpersonationTest(TestCase):
         self.assertEqual(decoded["tenant_id"], str(self.tenant.id))
         self.assertTrue(decoded["impersonated"])
         self.assertEqual(decoded["impersonated_by"], str(self.request.user.id))
+
 
 class FactoryResetGuardrailsTest(TestCase):
     """Factory reset and seed demo must be blocked in production and require SUPER_ADMIN."""
@@ -217,7 +247,9 @@ class FactoryResetGuardrailsTest(TestCase):
         from apps.tenants.super_admin_api.platform_reset import factory_reset_request
 
         owner = make_user(
-            tenant=Tenant.objects.create(name="Owner Tenant", slug="owner-tenant", is_active=True, country="EC"),
+            tenant=Tenant.objects.create(
+                name="Owner Tenant", slug="owner-tenant", is_active=True, country="EC"
+            ),
             role=UserRole.OWNER,
         )
         req = RequestFactory().post(
@@ -236,7 +268,12 @@ class FactoryResetGuardrailsTest(TestCase):
         from apps.tenants.super_admin_api.platform_reset import seed_demo_data
 
         owner = make_user(
-            tenant=Tenant.objects.create(name="Owner Tenant 2", slug="owner-tenant-2", is_active=True, country="EC"),
+            tenant=Tenant.objects.create(
+                name="Owner Tenant 2",
+                slug="owner-tenant-2",
+                is_active=True,
+                country="EC",
+            ),
             role=UserRole.OWNER,
         )
         req = RequestFactory().post(

@@ -87,7 +87,10 @@ def _get_wwdr_g4_cert() -> str | None:
             logger.debug("Loaded Apple WWDR G4 intermediate certificate")
             return _WWDR_G4_PEM
         else:
-            logger.warning("Failed to convert WWDR G4 cert: %s", result.stderr.decode("utf-8")[:200])
+            logger.warning(
+                "Failed to convert WWDR G4 cert: %s",
+                result.stderr.decode("utf-8")[:200],
+            )
     except Exception as exc:
         logger.warning("Could not fetch Apple WWDR G4 certificate: %s", exc)
 
@@ -123,7 +126,11 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         return False
 
     # Auto-detect sandbox from Django DEBUG setting
-    use_sandbox = sandbox if sandbox is not None else getattr(settings, "APPLE_PASS_PUSH_SANDBOX", False)
+    use_sandbox = (
+        sandbox
+        if sandbox is not None
+        else getattr(settings, "APPLE_PASS_PUSH_SANDBOX", False)
+    )
     host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
 
     url = f"{host}/3/device/{push_token}"

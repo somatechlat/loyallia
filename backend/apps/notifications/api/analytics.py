@@ -189,7 +189,11 @@ def get_campaign_recipients(
 
     recipients = [
         RecipientStatusOut(
-            customer_id=str(getattr(log, "customer_id", None)) if getattr(log, "customer_id", None) else None,
+            customer_id=(
+                str(getattr(log, "customer_id", None))
+                if getattr(log, "customer_id", None)
+                else None
+            ),
             name=log.recipient_name,
             phone=log.recipient_phone,
             email=log.recipient_email,

@@ -82,7 +82,7 @@ class TenantModelTest(TestCase):
         self.assertTrue(t.trial_end > timezone.now())
 
     def test_validate_ruc_valid(self):
- # Province 17 (Pichincha), valid 13-digit RUC
+        # Province 17 (Pichincha), valid 13-digit RUC
         validate_ruc("1790012345001")  # Should not raise
 
     def test_validate_ruc_invalid_length(self):
@@ -90,7 +90,7 @@ class TenantModelTest(TestCase):
             validate_ruc("12345")
 
     def test_validate_cedula_valid_format(self):
- # Province 01, 10 digits module-10 check may fail but format is valid
+        # Province 01, 10 digits module-10 check may fail but format is valid
         with suppress(ValidationError):
             validate_cedula("0102030405")
 
@@ -104,7 +104,9 @@ class LocationModelTest(TestCase):
 
     def test_create_location(self):
         t = make_tenant()
-        loc = Location.objects.create(tenant=t, name="Main Store", address="123 Main St", city="Quito")
+        loc = Location.objects.create(
+            tenant=t, name="Main Store", address="123 Main St", city="Quito"
+        )
         self.assertEqual(loc.name, "Main Store")
         self.assertTrue(loc.is_active or not loc.is_active)  # default True
 

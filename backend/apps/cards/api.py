@@ -7,7 +7,6 @@ import logging
 
 from django.db.models import Count, Q
 from django.http import HttpResponse
-from common.request import TenantRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -20,7 +19,7 @@ from apps.transactions.models import Enrollment
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
-from common.request import require_tenant
+from common.request import TenantRequest, require_tenant
 
 logger = logging.getLogger(__name__)
 
@@ -448,7 +447,9 @@ def delete_program(request: TenantRequest, program_id: str) -> HttpResponse:
     return HttpResponse(status=204)
 
 
-@router.get("/{program_id}/member-count/", auth=jwt_auth, summary="Contar miembros del programa")
+@router.get(
+    "/{program_id}/member-count/", auth=jwt_auth, summary="Contar miembros del programa"
+)
 def program_member_count(request: TenantRequest, program_id: str) -> dict:
     """Returns member count for a program. MANAGER+ only."""
     if not is_manager_or_owner(request):
@@ -459,7 +460,12 @@ def program_member_count(request: TenantRequest, program_id: str) -> dict:
     return {"count": total, "active_count": active}
 
 
-@router.get("/{program_id}/members/", auth=jwt_auth, response=dict, summary="Miembros del programa")
+@router.get(
+    "/{program_id}/members/",
+    auth=jwt_auth,
+    response=dict,
+    summary="Miembros del programa",
+)
 def program_members(
     request: TenantRequest,
     program_id: str,
@@ -513,7 +519,12 @@ def program_members(
     return {"items": items, "total": total}
 
 
-@router.get("/{program_id}/transactions/", auth=jwt_auth, response=dict, summary="Transacciones del programa")
+@router.get(
+    "/{program_id}/transactions/",
+    auth=jwt_auth,
+    response=dict,
+    summary="Transacciones del programa",
+)
 def program_transactions(
     request: TenantRequest,
     program_id: str,

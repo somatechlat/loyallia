@@ -135,9 +135,7 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     # Store verification SID in Redis for confirm step
     from django.core.cache import cache
 
-    cache.set(
-        f"factory_reset:sid:{user.email}", result.get("sid", ""), timeout=300
-    )
+    cache.set(f"factory_reset:sid:{user.email}", result.get("sid", ""), timeout=300)
 
     # Secondary: Email notification (always sent, regardless of Verify)
     from django.core.mail import send_mail

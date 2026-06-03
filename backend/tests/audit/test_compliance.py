@@ -12,12 +12,14 @@ from django.utils import timezone
 
 # Helpers
 
+
 def _make_tenant(**kwargs):
     from apps.tenants.models import Tenant
 
     defaults = {"name": "Test Tenant", "slug": f"test-{uuid.uuid4().hex[:8]}"}
     defaults.update(kwargs)
     return Tenant.objects.create(**defaults)
+
 
 def _make_user(tenant, **kwargs):
     from apps.authentication.models import User, UserManager
@@ -37,6 +39,7 @@ def _make_user(tenant, **kwargs):
         user.tenant = tenant
         user.save(update_fields=["tenant"])
     return user
+
 
 def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     from apps.cards.models import Card
@@ -77,6 +80,7 @@ def _make_card(tenant, card_type="stamp", metadata=None, **kwargs):
     defaults.update(kwargs)
     return Card.objects.create(tenant=tenant, **defaults)
 
+
 def _make_customer(tenant, **kwargs):
     from apps.customers.models import Customer
 
@@ -88,12 +92,15 @@ def _make_customer(tenant, **kwargs):
     defaults.update(kwargs)
     return Customer.objects.create(tenant=tenant, **defaults)
 
+
 def _make_pass(customer, card):
     from apps.customers.models import CustomerPass
 
     return CustomerPass.objects.create(customer=customer, card=card)
 
+
 #
+
 
 class AutomationMaxExecutionsPerDayTest(TestCase):
     """Verify automation enforces max_executions_per_day."""
@@ -124,7 +131,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
     def test_execution_blocked_after_max(self):
         from apps.automation.models import AutomationExecution
 
- # Create 2 executions today
+        # Create 2 executions today
         for _ in range(2):
             AutomationExecution.objects.create(
                 automation=self.automation,
@@ -133,14 +140,14 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
                 success=True,
             )
 
- # Third execution should be blocked
+        # Third execution should be blocked
         result = self.automation.execute(self.customer)
         self.assertFalse(result)
 
     def test_execution_allowed_below_max(self):
         from apps.automation.models import AutomationExecution
 
- # Create 1 execution today
+        # Create 1 execution today
         AutomationExecution.objects.create(
             automation=self.automation,
             customer=self.customer,
@@ -148,8 +155,8 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
             success=True,
         )
 
- # Real can_execute_for_customer checks cooldown (no prior execution for this customer = True)
- # Real _execute_send_notification creates a notification
+        # Real can_execute_for_customer checks cooldown (no prior execution for this customer = True)
+        # Real _execute_send_notification creates a notification
         result = self.automation.execute(self.customer)
         self.assertTrue(result)
 
@@ -158,7 +165,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
         self.automation.max_executions_per_day = None
         self.automation.save(update_fields=["max_executions_per_day"])
 
- # Real methods run without patches
+        # Real methods run without patches
         result = self.automation.execute(self.customer)
         self.assertTrue(result)
 
@@ -166,7 +173,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
         """Executions from yesterday should not count toward today's limit."""
         from apps.automation.models import AutomationExecution
 
- # Create 2 executions yesterday
+        # Create 2 executions yesterday
         yesterday = timezone.now() - timedelta(days=1)
         for _ in range(2):
             exec_obj = AutomationExecution.objects.create(
@@ -175,8 +182,10 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
                 trigger_event="customer_enrolled",
                 success=True,
             )
-            AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=yesterday)
+            AutomationExecution.objects.filter(pk=exec_obj.pk).update(
+                executed_at=yesterday
+            )
 
- # Should still be allowed today real methods run
+        # Should still be allowed today real methods run
         result = self.automation.execute(self.customer)
         self.assertTrue(result)

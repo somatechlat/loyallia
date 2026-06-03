@@ -5,8 +5,9 @@ Tests Apple Wallet PKPass generation and Google Wallet JWT signing
 using Vault test overrides with real certificate formats.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from apps.customers.pass_engine.apple_pass import (
     generate_pkpass,
@@ -16,11 +17,9 @@ from apps.customers.pass_engine.apple_pass import (
 from apps.customers.pass_engine.google_pass import (
     generate_google_wallet_url,
     get_google_wallet_diagnostics,
-    is_google_wallet_configured,
 )
-from common.vault import set_test_override, clear_test_overrides
+from common.vault import clear_test_overrides, set_test_override
 from tests.factories import make_card, make_customer, make_customer_pass, make_tenant
-
 
 # Real certificate formats for testing (self-signed, NOT production certs)
 TEST_CERT_PEM = """-----BEGIN CERTIFICATE-----
@@ -156,7 +155,10 @@ class TestAppleWalletDiagnostics:
         set_test_override("apple_wwdr_cert_pem", TEST_WWDR_PEM)
 
         # Must also set Django setting via mock since it reads at import time
-        with patch("apps.customers.pass_engine.apple_pass._check_config_ready", return_value=True):
+        with patch(
+            "apps.customers.pass_engine.apple_pass._check_config_ready",
+            return_value=True,
+        ):
             assert is_apple_wallet_configured() is True
 
 
@@ -206,8 +208,13 @@ class TestApplePassGeneration:
         set_test_override("apple_cert_key_pem", TEST_KEY_PEM)
         set_test_override("apple_wwdr_cert_pem", TEST_WWDR_PEM)
 
-        with patch("apps.customers.pass_engine.apple_pass._check_config_ready", return_value=True):
-            with patch("apps.customers.pass_engine.apple_pass._sign_manifest") as mock_sign:
+        with patch(
+            "apps.customers.pass_engine.apple_pass._check_config_ready",
+            return_value=True,
+        ):
+            with patch(
+                "apps.customers.pass_engine.apple_pass._sign_manifest"
+            ) as mock_sign:
                 mock_sign.return_value = b"FAKE_SIGNATURE"
                 result = generate_pkpass(cp)
 
@@ -224,7 +231,10 @@ class TestApplePassGeneration:
         customer = make_customer(tenant)
         cp = make_customer_pass(customer, card)
 
-        with patch("apps.customers.pass_engine.apple_pass._check_config_ready", return_value=False):
+        with patch(
+            "apps.customers.pass_engine.apple_pass._check_config_ready",
+            return_value=False,
+        ):
             result = generate_pkpass(cp)
         assert result is None
 
@@ -243,7 +253,10 @@ class TestGoogleWalletUrlGeneration:
         set_test_override("google_wallet_issuer_id", "1234567890123456789")
         set_test_override("google_service_account_json", TEST_SERVICE_ACCOUNT_JSON)
 
-        with patch("apps.customers.pass_engine.google_pass.jwt.encode", return_value="FAKE_JWT_TOKEN"):
+        with patch(
+            "apps.customers.pass_engine.google_pass.jwt.encode",
+            return_value="FAKE_JWT_TOKEN",
+        ):
             url = generate_google_wallet_url(cp, base_url="https://test.example.com")
 
         assert url is not None
@@ -260,7 +273,10 @@ class TestGoogleWalletUrlGeneration:
         customer = make_customer(tenant)
         cp = make_customer_pass(customer, card)
 
-        with patch("apps.customers.pass_engine.google_pass._load_service_account", return_value=None):
+        with patch(
+            "apps.customers.pass_engine.google_pass._load_service_account",
+            return_value=None,
+        ):
             url = generate_google_wallet_url(cp)
         assert url is None
 
@@ -272,9 +288,10 @@ class TestWalletApiEndpoints:
         """Wallet status should return 200 with availability flags."""
         # No auth required for status endpoint (it uses a real pass_id)
         # We test the endpoint structure instead of actual pass lookup
-        from apps.customers.wallet_api import get_wallet_status
-        from apps.customers.models import CustomerPass
         import uuid
+
+        from apps.customers.models import CustomerPass
+        from apps.customers.wallet_api import get_wallet_status
 
         with patch.object(CustomerPass.objects, "select_related") as mock_qs:
             mock_pass = MagicMock()
@@ -284,8 +301,14 @@ class TestWalletApiEndpoints:
             mock_pass.id = uuid.uuid4()
             mock_qs.return_value.get.return_value = mock_pass
 
-            with patch("apps.customers.pass_engine.apple_pass.is_apple_wallet_configured", return_value=True):
-                with patch("apps.customers.pass_engine.google_pass.is_google_wallet_configured", return_value=True):
+            with patch(
+                "apps.customers.pass_engine.apple_pass.is_apple_wallet_configured",
+                return_value=True,
+            ):
+                with patch(
+                    "apps.customers.pass_engine.google_pass.is_google_wallet_configured",
+                    return_value=True,
+                ):
                     result = get_wallet_status(MagicMock(), str(mock_pass.id))
 
         assert result.apple_wallet_available is True

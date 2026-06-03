@@ -23,8 +23,8 @@ from apps.notifications.models import (
     DeliveryStatus,
     WhatsAppSession,
 )
-from apps.tenants.models import Tenant
 from apps.notifications.whatsapp import client as wa_client
+from apps.tenants.models import Tenant
 from common.messages import get_message
 from common.permissions import jwt_auth
 from common.plan_enforcement import require_feature
@@ -229,9 +229,9 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                     ]
                 )
                 # Increment campaign run counter
-                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
-                    sent_count=models.F("sent_count") + 1
-                )
+                CampaignRun.objects.filter(
+                    id=getattr(log, "campaign_run_id", None)
+                ).update(sent_count=models.F("sent_count") + 1)
                 # Increment tenant WhatsApp daily counter
                 try:
                     tenant = Tenant.objects.get(id=payload.tenant_id)
@@ -248,17 +248,17 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 log.status = DeliveryStatus.DELIVERED
                 log.delivered_at = now
                 log.save(update_fields=["status", "delivered_at"])
-                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
-                    delivered_count=models.F("delivered_count") + 1
-                )
+                CampaignRun.objects.filter(
+                    id=getattr(log, "campaign_run_id", None)
+                ).update(delivered_count=models.F("delivered_count") + 1)
 
             elif payload.status == "read":
                 log.status = DeliveryStatus.READ
                 log.read_at = now
                 log.save(update_fields=["status", "read_at"])
-                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
-                    read_count=models.F("read_count") + 1
-                )
+                CampaignRun.objects.filter(
+                    id=getattr(log, "campaign_run_id", None)
+                ).update(read_count=models.F("read_count") + 1)
 
             elif payload.status == "failed":
                 log.status = DeliveryStatus.FAILED
@@ -273,9 +273,9 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                         "error_message",
                     ]
                 )
-                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
-                    failed_count=models.F("failed_count") + 1
-                )
+                CampaignRun.objects.filter(
+                    id=getattr(log, "campaign_run_id", None)
+                ).update(failed_count=models.F("failed_count") + 1)
 
         except CampaignDeliveryLog.DoesNotExist:
             logger.warning(

@@ -39,7 +39,9 @@ def slugify_business(name: str) -> str:
             if not Tenant.objects.filter(slug=candidate).exists():
                 return candidate
         except Exception:
-            logger.warning("Slug check failed for candidate %s", candidate, exc_info=True)
+            logger.warning(
+                "Slug check failed for candidate %s", candidate, exc_info=True
+            )
         candidate = f"{slug}-{counter}"
         counter += 1
     # Fallback: append UUID suffix if all attempts exhausted
