@@ -19,6 +19,13 @@ from apps.backup.services.vault import restore_vault
 
 logger = logging.getLogger(__name__)
 
+_GPG_KEY_ID_RE = re.compile(r"^[0-9A-Fa-f]{16}$|^[0-9A-Fa-f]{40}$")
+
+
+def _validate_gpg_key_id(key_id: str) -> bool:
+    """Validate GPG key ID (16 hex chars) or fingerprint (40 hex chars)."""
+    return bool(_GPG_KEY_ID_RE.match(key_id))
+
 
 def restore_from_backup(
     backup_id: str, s3_key: str, target_tenant_id: str = ""
@@ -65,6 +72,11 @@ def restore_from_backup(
             if download_path.endswith(".gpg"):
                 gpg_key_id = config.get("gpg_key_id", "")
                 if gpg_key_id:
+                    if not _validate_gpg_key_id(gpg_key_id):
+                        return {
+                            "success": False,
+                            "error": f"Invalid GPG key ID: {gpg_key_id}",
+                        }
                     subprocess.run(
                         [
                             "gpg",

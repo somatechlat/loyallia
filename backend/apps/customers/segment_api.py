@@ -59,6 +59,12 @@ _BUILTIN_SEGMENTS = {
         "filter": {"is_active": True},
         "extra": "new",
     },
+    "most_active": {
+        "name": "Más activos",
+        "description": "Top 15% de clientes por actividad (visitas y gasto)",
+        "filter": {"is_active": True},
+        "extra": "most_active",
+    },
 }
 
 
@@ -112,6 +118,12 @@ def _apply_segment_filter(queryset, segment_id: str):
         return base.filter(total_spent__gte=threshold)
     elif extra == "new":
         return base.filter(created_at__gte=timezone.now() - timedelta(days=30))
+    elif extra == "most_active":
+        count = base.count()
+        if count == 0:
+            return base.none()
+        threshold = max(1, int(count * 0.15))
+        return base.order_by("-total_visits", "-total_spent")[:threshold]
     return base
 
 
