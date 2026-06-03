@@ -10,11 +10,16 @@ import toast from 'react-hot-toast';
 /** Exact confirmation phrase required for account deletion (LOPDP Art. 18) */
 const DELETION_PHRASE = 'ACEPTO ELIMINACIÓN COMPLETA';
 
+/**
+ * Props for the DataPrivacySection component.
+ */
 interface DataPrivacySectionProps {
+  /** Role of the current user */
   userRole: string | undefined;
 }
 
 /**
+ * @description LOPDP Data Rights Section for exporting and deleting account data.
  * LYL-FR-DPR-020 / LYL-FR-DPR-025: LOPDP Data Rights Section
  * Settings sidebar — OWNER only.
  * - Export all tenant data (Art. 17/20)

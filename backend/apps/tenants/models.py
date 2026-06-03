@@ -118,13 +118,13 @@ class Tenant(TimestampedModel):
     Expanded with Ecuadorian business fields (RUC, legal name, etc.)
     """
 
-    name = models.CharField(max_length=200, verbose_name="Nombre comercial")
-    slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único")
+    name = models.CharField(max_length=200, verbose_name="Nombre comercial", help_text="Name of this record.")
+    slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug único", help_text="URL-friendly unique identifier.")
     #
     # Use effective_plan property or Subscription directly as the source of truth.
     # This field will be removed in a future migration once all reads are migrated.
-    plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL)
-    is_active = models.BooleanField(default=True)
+    plan = models.CharField(max_length=20, choices=Plan.choices, default=Plan.TRIAL, help_text="Subscription or pricing plan.")
+    is_active = models.BooleanField(default=True, help_text="Whether this record is currently active.")
 
     # Entity classification (Ecuador: natural vs jurídica)
     entity_type = models.CharField(
@@ -164,11 +164,13 @@ class Tenant(TimestampedModel):
         choices=IndustryType.choices,
         default=IndustryType.OTHER,
         verbose_name="Industria",
+        help_text="Industry or sector.",
     )
 
     # Legal Representative
     legal_rep_name = models.CharField(
         max_length=200, blank=True, default="", verbose_name="Representante legal"
+        ,help_text="Name of the legal representative.",
     )
     legal_rep_cedula = models.CharField(
         max_length=10,
@@ -176,33 +178,36 @@ class Tenant(TimestampedModel):
         default="",
         verbose_name="Cédula del representante",
         validators=[validate_cedula],
+        help_text="National ID of the legal representative.",
     )
 
     # Trial
-    trial_end = models.DateTimeField(null=True, blank=True)
+    trial_end = models.DateTimeField(null=True, blank=True, help_text="End date of the trial period.")
 
     # Branding
-    logo_url = models.URLField(blank=True, default="", max_length=2000)
-    primary_color = models.CharField(max_length=7, default="#1a1a2e")  # HEX
-    secondary_color = models.CharField(max_length=7, default="#16213e")
+    logo_url = models.URLField(blank=True, default="", max_length=2000, help_text="URL of the logo image.")
+    primary_color = models.CharField(max_length=7, default="#1a1a2e", help_text="Primary brand color in HEX.")  # HEX
+    secondary_color = models.CharField(max_length=7, default="#16213e", help_text="Secondary brand color in HEX.")
 
     # Business info
-    country = models.CharField(max_length=2, default="EC")  # ISO 3166-1 alpha-2
+    country = models.CharField(max_length=2, default="EC", help_text="Country code (ISO 3166-1 alpha-2).")  # ISO 3166-1 alpha-2
     province = models.CharField(
         max_length=30,
         choices=EcuadorProvince.choices,
         blank=True,
         default="",
         verbose_name="Provincia",
+        help_text="Province or state.",
     )
     city = models.CharField(
         max_length=100, blank=True, default="", verbose_name="Ciudad"
+        ,help_text="City name.",
     )
-    timezone = models.CharField(max_length=50, default="America/Guayaquil")
-    phone = models.CharField(max_length=20, blank=True, default="")
-    email = models.EmailField(blank=True, default="", verbose_name="Email corporativo")
-    website = models.URLField(blank=True, default="")
-    address = models.TextField(blank=True, default="")
+    timezone = models.CharField(max_length=50, default="America/Guayaquil", help_text="Timezone identifier.")
+    phone = models.CharField(max_length=20, blank=True, default="", help_text="Phone number.")
+    email = models.EmailField(blank=True, default="", verbose_name="Email corporativo", help_text="Email address.")
+    website = models.URLField(blank=True, default="", help_text="Website URL.")
+    address = models.TextField(blank=True, default="", help_text="Physical or mailing address.")
 
     # i18n tenant default language (REQ-I18N-001)
     default_language = models.CharField(
@@ -222,6 +227,7 @@ class Tenant(TimestampedModel):
     )
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        """Model metadata and database configuration."""
         db_table = "loyallia_tenants"
         verbose_name = "Negocio"
         verbose_name_plural = "Negocios"
@@ -231,6 +237,7 @@ class Tenant(TimestampedModel):
         return f"<Tenant: {self.name} ({self.effective_plan})>"
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return f"{self.name} ({self.effective_plan})"
 
     def clean(self) -> None:
@@ -386,25 +393,29 @@ class Location(TimestampedModel):
         Tenant,
         on_delete=models.CASCADE,
         related_name="locations",
+        help_text="The business this record belongs to.",
     )
-    name = models.CharField(max_length=200)
-    address = models.TextField(blank=True, default="")
-    city = models.CharField(max_length=100, blank=True, default="")
-    country = models.CharField(max_length=2, default="EC")
+    name = models.CharField(max_length=200, help_text="Name of this record.")
+    address = models.TextField(blank=True, default="", help_text="Physical or mailing address.")
+    city = models.CharField(max_length=100, blank=True, default="", help_text="City name.")
+    country = models.CharField(max_length=2, default="EC", help_text="Country code (ISO 3166-1 alpha-2).")
 
     # Geo-coordinates for geo-fencing push notifications
     latitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True
+        ,help_text="Geographic latitude.",
     )
     longitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True
+        ,help_text="Geographic longitude.",
     )
 
-    phone = models.CharField(max_length=20, blank=True, default="")
-    is_active = models.BooleanField(default=True)
-    is_primary = models.BooleanField(default=False)
+    phone = models.CharField(max_length=20, blank=True, default="", help_text="Phone number.")
+    is_active = models.BooleanField(default=True, help_text="Whether this record is currently active.")
+    is_primary = models.BooleanField(default=False, help_text="Whether this is the primary location.")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
+        """Model metadata and database configuration."""
         db_table = "loyallia_locations"
         verbose_name = "Ubicación"
         verbose_name_plural = "Ubicaciones"
@@ -414,6 +425,7 @@ class Location(TimestampedModel):
         return f"<Location: {self.tenant.name}  {self.name}>"
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return f"{self.tenant.name}  {self.name}"
 
     def clean(self) -> None:
@@ -451,9 +463,9 @@ class PlatformSetting(models.Model):
     PERF: Values are cached in Redis for 60s to avoid DB hits.
     """
 
-    key = models.CharField(max_length=100, unique=True, db_index=True)
-    value = models.TextField()
-    description = models.CharField(max_length=255, blank=True)
+    key = models.CharField(max_length=100, unique=True, db_index=True, help_text="Unique setting key.")
+    value = models.TextField(help_text="Setting value.")
+    description = models.CharField(max_length=255, blank=True, help_text="Description of this record.")
     category = models.CharField(
         max_length=50,
         default="general",
@@ -463,16 +475,19 @@ class PlatformSetting(models.Model):
         default=False,
         help_text="If True, a container restart is needed for full effect",
     )
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
+        """Model metadata and database configuration."""
         db_table = "loyallia_platform_settings"
         ordering = ["category", "key"]
 
     def __str__(self) -> str:
+        """Return a human-readable string representation."""
         return self.key
 
     def save(self, *args, **kwargs):
+        """Persist this instance to the database."""
         super().save(*args, **kwargs)
         cache.set(
             f"{_PLATFORM_SETTING_CACHE_PREFIX}:{self.key}",

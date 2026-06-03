@@ -2,14 +2,27 @@
 
 import { PlatformSetting } from './types';
 
+/**
+ * Props for the PlatformSettingsSection component.
+ */
 interface PlatformSettingsSectionProps {
+  /** List of platform settings */
   settings: PlatformSetting[];
+  /** Current form values */
   form: Record<string, string>;
+  /** Key currently being saved */
   savingKey: string | null;
+  /** Change handler for a setting */
   onChange: (key: string, value: string) => void;
+  /** Save handler for a setting */
   onSave: (key: string) => void;
 }
 
+/**
+ * @description SuperAdmin panel for viewing and editing platform-wide settings.
+ * @param {PlatformSettingsSectionProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function PlatformSettingsSection({
   settings,
   form,

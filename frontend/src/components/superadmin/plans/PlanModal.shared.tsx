@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 
+/**
+ * Data shape for a subscription plan.
+ */
 export interface PlanData {
   id: string;
   name: string;
@@ -32,6 +35,9 @@ export interface PlanData {
   sort_order: number;
 }
 
+/**
+ * Predefined feature options available for subscription plans.
+ */
 export const PREDEFINED_FEATURES = [
   { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp', icon: 'phone' },
   { id: 'sms_campaigns', label: 'Campañas de SMS', icon: 'message' },
@@ -47,6 +53,9 @@ export const PREDEFINED_FEATURES = [
   { id: 'data_export', label: 'Exportación de Datos', icon: 'upload' },
 ] as const;
 
+/**
+ * Default empty plan data for creating new plans.
+ */
 export const emptyPlan: PlanData = {
   id: '',
   name: '',
@@ -77,6 +86,13 @@ export const emptyPlan: PlanData = {
   sort_order: 0,
 };
 
+/**
+ * @description Read-only info row with label and value.
+ * @param {Object} props - Component props
+ * @param {string} props.label - Label text
+ * @param {string} props.value - Value text
+ * @returns JSX.Element
+ */
 export function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -86,6 +102,17 @@ export function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * @description Reusable form input field with label.
+ * @param {Object} props - Component props
+ * @param {string} props.label - Field label
+ * @param {string} props.value - Input value
+ * @param {(v: string) => void} props.onChange - Change handler
+ * @param {string} [props.placeholder] - Input placeholder
+ * @param {string} [props.type='text'] - Input type
+ * @param {boolean} [props.disabled] - Whether the input is disabled
+ * @returns JSX.Element
+ */
 export function FormField({
   label,
   value,
@@ -116,6 +143,13 @@ export function FormField({
   );
 }
 
+/**
+ * @description Tag input for selecting and managing plan features.
+ * @param {Object} props - Component props
+ * @param {string[]} props.features - Selected feature IDs
+ * @param {(f: string[]) => void} props.onChange - Features change handler
+ * @returns JSX.Element
+ */
 export function FeatureTagInput({ features, onChange }: { features: string[]; onChange: (f: string[]) => void }) {
   const [input, setInput] = useState('');
   const add = () => {

@@ -1,5 +1,9 @@
-const steps = ['Tipo', 'Configuración', 'Diseño', 'Revisión'];
-
+/**
+ * @description Horizontal step indicator for the program creation wizard.
+ * @param {Object} props - Component props
+ * @param {number} props.step - Current active step index
+ * @returns JSX.Element
+ */
 export default function StepBar({ step }: { step: number }) {
   return (
     <div className="flex items-center gap-2 mb-8">

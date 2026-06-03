@@ -1,10 +1,18 @@
 'use client';
 import { AlertTriangle } from '@/components/ui/LucideIcons';
+/**
+ * Props for the WalletNotificationPreview component.
+ */
 interface WalletNotificationPreviewProps {
+  /** Notification title */
   title: string;
+  /** Notification body message */
   message: string;
+  /** Target wallet platform for the preview */
   platform?: 'apple' | 'google' | 'both';
+  /** Name of the loyalty card */
   cardName?: string;
+  /** Primary color of the card */
   cardColor?: string;
 }
 
@@ -13,6 +21,11 @@ const APPLE_BODY_LIMIT = 178;
 const GOOGLE_HEADER_LIMIT = 100;
 const GOOGLE_BODY_LIMIT = 500;
 
+/**
+ * @description Side-by-side preview of wallet notifications for Apple Wallet and Google Wallet.
+ * @param {WalletNotificationPreviewProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function WalletNotificationPreview({
   title,
   message,

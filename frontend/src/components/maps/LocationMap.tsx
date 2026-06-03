@@ -15,6 +15,9 @@ const DefaultIcon = L.icon({
   popupAnchor: [1, -34],
 });
 
+/**
+ * Represents a location pin on the Leaflet map.
+ */
 interface LocationPin {
   id: string;
   name: string;
@@ -30,12 +33,23 @@ interface LocationPin {
   is_primary?: boolean;
 }
 
+/**
+ * Props for the LocationMap component.
+ */
 interface Props {
+  /** Array of location pins to display */
   locations: LocationPin[];
+  /** Optional map center coordinates */
   center?: [number, number];
+  /** Optional zoom level */
   zoom?: number;
 }
 
+/**
+ * @description Leaflet map component that renders location pins with popups.
+ * @param {Props} props - Component props
+ * @returns JSX.Element
+ */
 function LocationMapInner({ locations, center, zoom }: Props) {
   useEffect(() => {
     L.Marker.prototype.options.icon = DefaultIcon;
@@ -99,6 +113,15 @@ function LocationMapInner({ locations, center, zoom }: Props) {
   );
 }
 
-// Named + default export to ensure dynamic() resolves correctly
+/**
+ * @description Leaflet map component that renders location pins with popups.
+ * Named export for dynamic import resolution.
+ */
 export { LocationMapInner };
+
+/**
+ * @description Leaflet map component that renders location pins with popups.
+ * @param {Props} props - Component props
+ * @returns JSX.Element
+ */
 export default LocationMapInner;

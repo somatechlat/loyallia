@@ -37,8 +37,14 @@ const PROVINCES = [
 const WIZARD_STEPS = [{ n: 1, l: 'Plan' }, { n: 2, l: 'Tipo & Datos' }, { n: 3, l: 'Propietario' }, { n: 4, l: 'Sucursales' }];
 const formatProvince = (p: string) => p.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
+/**
+ * Represents a location entry in the wizard.
+ */
 type LocEntry = { name: string; address: string; city: string; latitude: number | null; longitude: number | null; is_primary: boolean; };
 
+/**
+ * Represents a subscription plan option.
+ */
 interface Plan {
   slug: string;
   name: string;
@@ -47,16 +53,26 @@ interface Plan {
   is_active: boolean;
 }
 
+/**
+ * Result returned after successful tenant creation.
+ */
 interface CreationResult {
   tenant_id?: string;
   owner_email?: string;
   temp_password?: string;
 }
 
+/**
+ * Props for the TenantWizard component.
+ */
 interface TenantWizardProps {
+  /** Whether the wizard is open */
   open: boolean;
+  /** Close handler */
   onClose: () => void;
+  /** Available subscription plans */
   plans: Plan[];
+  /** Success callback with creation result */
   onSuccess: (result: CreationResult) => void;
 }
 
@@ -76,6 +92,11 @@ const UserIcon = (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
 );
 
+/**
+ * @description Multi-step wizard for registering a new tenant with locations.
+ * @param {TenantWizardProps} props - Component props
+ * @returns JSX.Element | null
+ */
 export default function TenantWizard({ open, onClose, plans, onSuccess }: TenantWizardProps) {
   const [step, setStep] = useState(1);
   const [entityType, setEntityType] = useState<'natural'|'juridica'>('juridica');

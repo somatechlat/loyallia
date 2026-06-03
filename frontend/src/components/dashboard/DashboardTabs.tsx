@@ -5,6 +5,9 @@
 'use client';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 
+/**
+ * Metrics summarizing customer visits.
+ */
 export interface VisitMetrics {
   total_visits: number;
   unique_customers: number;
@@ -15,6 +18,9 @@ export interface VisitMetrics {
   retention_rate: number;
 }
 
+/**
+ * Revenue breakdown by customer category.
+ */
 export interface RevenueBreakdown {
   total_revenue: number;
   loyalty: number;
@@ -25,6 +31,9 @@ export interface RevenueBreakdown {
   non_loyalty_pct: number;
 }
 
+/**
+ * Campaign push notification statistics.
+ */
 export interface CampaignStats {
   total_notifications: number;
   sent: number;
@@ -34,8 +43,20 @@ export interface CampaignStats {
   click_rate: number;
 }
 
+/**
+ * Available dashboard tab identifiers.
+ */
 export type DashboardTab = 'ganancia' | 'visitas';
 
+/**
+ * @description Small KPI card with label, value, and info tooltip.
+ * @param {Object} props - Component props
+ * @param {string} props.label - KPI label
+ * @param {string | number} props.value - KPI value
+ * @param {string} props.color - Tailwind color class
+ * @param {string} props.tooltip - Tooltip explanation text
+ * @returns JSX.Element
+ */
 function KPICard({ label, value, color, tooltip }: { label: string; value: string | number; color: string; tooltip: string }) {
   return (
     <div className="bg-surface-50 dark:bg-surface-800/60 rounded-2xl p-4 border border-surface-100 dark:border-surface-700/50">
@@ -50,6 +71,13 @@ function KPICard({ label, value, color, tooltip }: { label: string; value: strin
   );
 }
 
+/**
+ * @description Ganancia (Earnings) tab content with financial KPIs.
+ * @param {Object} props - Component props
+ * @param {RevenueBreakdown | null} props.revBreakdown - Revenue breakdown data
+ * @param {VisitMetrics | null} props.visits - Visit metrics
+ * @returns JSX.Element
+ */
 export function GananciaTab({ revBreakdown, visits }: { revBreakdown: RevenueBreakdown | null; visits: VisitMetrics | null }) {
   const rev = revBreakdown;
   return (
@@ -121,6 +149,12 @@ export function GananciaTab({ revBreakdown, visits }: { revBreakdown: RevenueBre
   );
 }
 
+/**
+ * @description Visitas (Visits) tab content with visit KPIs.
+ * @param {Object} props - Component props
+ * @param {VisitMetrics | null} props.visits - Visit metrics
+ * @returns JSX.Element
+ */
 export function VisitasTab({ visits }: { visits: VisitMetrics | null }) {
   return (
     <div className="space-y-4 animate-fade-in">
@@ -174,6 +208,12 @@ export function VisitasTab({ visits }: { visits: VisitMetrics | null }) {
   );
 }
 
+/**
+ * @description Campaigns and push notification summary block.
+ * @param {Object} props - Component props
+ * @param {CampaignStats | null} props.stats - Campaign statistics
+ * @returns JSX.Element | null
+ */
 export function CampaignsBlock({ stats }: { stats: CampaignStats | null }) {
   if (!stats) return null;
   return (

@@ -5,6 +5,14 @@ import type { AppleFieldDef } from '../types';
 import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon } from '../icons';
 import { uid, getAppleFieldOptions, APPLE_GROUP_META } from './helpers';
 
+/**
+ * @description Editor for Apple Wallet PassKit field groups (header, primary, secondary, auxiliary, back).
+ * @param {Object} props - Component props
+ * @param {Record<string, AppleFieldDef[]>} props.fields - Current field groups
+ * @param {(fields: Record<string, AppleFieldDef[]>) => void} props.onChange - Fields change handler
+ * @param {string} props.cardType - Type of loyalty card
+ * @returns JSX.Element
+ */
 export default function AppleFieldEditor({
   fields, onChange, cardType,
 }: {

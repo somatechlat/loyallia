@@ -4,21 +4,41 @@ import { Integration } from './types';
 import { getDiagnosticValue, vaultFieldsFor, canEditIntegration, fileAcceptFor } from './constants';
 import { FlaskConical, DollarSign, AlertTriangle } from '@/components/ui/LucideIcons';
 
+/**
+ * Props for the IntegrationsManager component.
+ */
 interface IntegrationsManagerProps {
+  /** List of integrations */
   integrations: Integration[];
+  /** Whether integrations are loading */
   loading: boolean;
+  /** Currently edited integration key */
   editingVault: string | null;
+  /** Current vault form values */
   vaultForm: Record<string, string>;
+  /** Whether vault secrets are saving */
   savingVault: boolean;
+  /** Opens the vault editor for an integration */
   onOpenVaultEditor: (key: string) => void;
+  /** Updates a vault form field */
   onVaultFormChange: (key: string, value: string) => void;
+  /** Handles file upload for a vault field */
   onFileUpload: (fieldKey: string, file?: File) => void;
+  /** Saves a single vault secret */
   onSaveVaultSecret: (integrationKey: string, secretKey: string) => void;
+  /** Saves all vault values for an integration */
   onSaveVaultIntegration: (integrationKey: string) => void;
+  /** Enables or disables an integration */
   onSetIntegrationEnabled: (integrationKey: string, enabled: boolean) => void;
+  /** Toggles Twilio test mode */
   onToggleTwilioTestMode: (integration: Integration) => void;
 }
 
+/**
+ * @description SuperAdmin panel for managing third-party integrations and vault secrets.
+ * @param {IntegrationsManagerProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function IntegrationsManager({
   integrations,
   loading,

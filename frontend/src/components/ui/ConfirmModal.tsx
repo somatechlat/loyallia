@@ -9,18 +9,33 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
 
+/**
+ * Props for the ConfirmModal component.
+ */
 interface ConfirmModalProps {
+  /** Modal title text */
   title: string;
+  /** Modal body message */
   message: string;
+  /** Label for the confirm button */
   confirmLabel?: string;
+  /** Label for the cancel button */
   cancelLabel?: string;
+  /** Visual variant for the confirm button */
   variant?: 'danger' | 'warning' | 'default';
+  /** Callback when the user confirms */
   onConfirm: () => void;
+  /** Callback when the user cancels */
   onCancel: () => void;
   /** Whether the confirm action is in progress */
   loading?: boolean;
 }
 
+/**
+ * @description Standardized confirmation modal with focus trap and keyboard navigation.
+ * @param {ConfirmModalProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function ConfirmModal({
   title,
   message,

@@ -28,11 +28,19 @@ function SpinnerIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+/**
+ * Props for the ImageUploadField component.
+ */
 interface ImageUploadFieldProps {
+  /** Label displayed above the upload area */
   label: string;
+  /** Technical specifications shown next to the label */
   specs?: string;
+  /** Whether the field is required */
   required?: boolean;
+  /** Current image URL value */
   value: string;
+  /** Callback when the image URL changes */
   onChange: (url: string) => void;
   /** Aspect ratio class for the dropzone. Default: 'aspect-video' */
   aspectClass?: string;
@@ -41,7 +49,7 @@ interface ImageUploadFieldProps {
 }
 
 /**
- * Drag-and-drop image upload field.
+ * @description Drag-and-drop image upload field.
  * Shows a local preview IMMEDIATELY while uploading to MinIO/S3 in the background.
  * NO base64 — keeps metadata small and backend-friendly.
  */

@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
+/**
+ * Represents a program member.
+ */
 interface Member {
   id: string;
   first_name: string;
@@ -18,9 +21,15 @@ interface Member {
   pass_state: Record<string, unknown>;
 }
 
+/**
+ * Props for the ProgramMembersModal component.
+ */
 interface Props {
+  /** Program ID to load members for */
   programId: string;
+  /** Type of loyalty card */
   cardType: string;
+  /** Callback to close the modal */
   onClose: () => void;
 }
 
@@ -39,6 +48,11 @@ const TX_LABELS: Record<string, string> = {
   referral_pass: 'Referidos',
 };
 
+/**
+ * @description Modal displaying paginated, searchable program members with pass state.
+ * @param {Props} props - Component props
+ * @returns JSX.Element
+ */
 export default function ProgramMembersModal({ programId, cardType, onClose }: Props) {
   const [members, setMembers] = useState<Member[]>([]);
   const [total, setTotal] = useState(0);

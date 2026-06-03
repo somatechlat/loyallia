@@ -1,20 +1,39 @@
 'use client';
 import { AlertTriangle, Key, Mail, Flame } from '@/components/ui/LucideIcons';
 
+/**
+ * Props for the SystemOperationsPanel component.
+ */
 interface SystemOperationsPanelProps {
+  /** Whether demo data is being seeded */
   seedingDemo: boolean;
+  /** Console output from seeding */
   seedOutput: string;
+  /** Current factory reset step */
   resetStep: 'idle' | 'otp_sent' | 'confirming';
+  /** User-entered OTP for reset confirmation */
   resetOtp: string;
+  /** Whether an OTP request is in progress */
   requestingReset: boolean;
+  /** Whether reset confirmation is in progress */
   confirmingReset: boolean;
+  /** Handler to seed demo data */
   onSeedDemo: () => void;
+  /** Handler to request factory reset OTP */
   onFactoryResetRequest: () => void;
+  /** Handler to confirm factory reset */
   onFactoryResetConfirm: () => void;
+  /** OTP change handler */
   onResetOtpChange: (value: string) => void;
+  /** Handler to cancel reset */
   onCancelReset: () => void;
 }
 
+/**
+ * @description SuperAdmin panel for system operations (demo seeding and factory reset).
+ * @param {SystemOperationsPanelProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function SystemOperationsPanel({
   seedingDemo,
   seedOutput,

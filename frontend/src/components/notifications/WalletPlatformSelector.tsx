@@ -2,12 +2,23 @@
 
 import { useI18n } from '@/lib/i18n';
 
+/**
+ * Props for the WalletPlatformSelector component.
+ */
 interface WalletPlatformSelectorProps {
+  /** Currently selected platform */
   value: 'apple' | 'google' | 'both';
+  /** Callback when the platform changes */
   onChange: (value: 'apple' | 'google' | 'both') => void;
+  /** Whether the selector is disabled */
   disabled?: boolean;
 }
 
+/**
+ * @description Segmented button group to select the target wallet platform.
+ * @param {WalletPlatformSelectorProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function WalletPlatformSelector({ value, onChange, disabled }: WalletPlatformSelectorProps) {
   const { t } = useI18n();
 

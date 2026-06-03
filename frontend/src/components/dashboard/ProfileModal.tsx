@@ -10,7 +10,11 @@ const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
 };
 
+/**
+ * Props for the ProfileModal component.
+ */
 interface ProfileModalProps {
+  /** Current user data */
   user: {
     id: string;
     email: string;
@@ -20,10 +24,17 @@ interface ProfileModalProps {
     tenant_name: string;
     date_joined: string;
   };
+  /** Callback to close the modal */
   onClose: () => void;
+  /** Callback after profile is updated */
   onProfileUpdated: () => void;
 }
 
+/**
+ * @description Modal for editing user profile and changing password.
+ * @param {ProfileModalProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function ProfileModal({ user, onClose, onProfileUpdated }: ProfileModalProps) {
   const [firstName, setFirstName] = useState(user.first_name);
   const [lastName, setLastName] = useState(user.last_name);

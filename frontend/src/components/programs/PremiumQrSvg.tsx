@@ -1,4 +1,10 @@
-/* ─── Premium SVG QR Pattern (rounded-dot style) ──────────────────────── */
+/**
+ * @description Premium SVG QR-like pattern with rounded dots for visual previews.
+ * @param {Object} props - Component props
+ * @param {string} [props.color='#1a1a2e'] - Dot color
+ * @param {number} [props.size=48] - SVG size in pixels
+ * @returns JSX.Element
+ */
 export default function PremiumQrSvg({ color = '#1a1a2e', size = 48 }: { color?: string; size?: number }) {
   // Rounded-dot QR-like pattern that looks modern and premium
   const dots = [

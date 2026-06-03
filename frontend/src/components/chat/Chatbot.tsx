@@ -4,9 +4,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
+/**
+ * Represents a single chat message.
+ */
 type Message = {
+  /** Unique message identifier */
   id: string;
+  /** Role of the message sender */
   role: 'user' | 'assistant';
+  /** Message text content */
   content: string;
 };
 
@@ -169,6 +175,10 @@ const ChatMessage = React.memo(function ChatMessage({ msg }: { msg: Message }) {
   );
 });
 
+/**
+ * @description Floating AI chatbot assistant with screen context capture and markdown rendering.
+ * @returns JSX.Element
+ */
 export default function Chatbot() {
   const pathname = usePathname();
   const { user } = useAuth();

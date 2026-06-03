@@ -16,15 +16,33 @@ import { useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import type { LocationFormData } from './types';
 
+/**
+ * Props for the LocationForm component.
+ */
 interface LocationFormProps {
+  /** Current form state */
   form: LocationFormData;
+  /** State updater for form fields */
   onChange: (updater: (prev: LocationFormData) => LocationFormData) => void;
+  /** Save handler */
   onSave: () => void;
+  /** Cancel handler */
   onCancel: () => void;
+  /** Whether the form is saving */
   saving: boolean;
+  /** Whether this is a create (vs edit) form */
   isCreate: boolean;
 }
 
+/**
+ * @description Internal reusable form field for the location form.
+ * @param {Object} props - Component props
+ * @param {string} props.label - Field label
+ * @param {string} props.value - Field value
+ * @param {(v: string) => void} props.onChange - Change handler
+ * @param {string} [props.placeholder] - Input placeholder
+ * @returns JSX.Element
+ */
 function FormField({ label, value, onChange, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
@@ -40,7 +58,11 @@ function FormField({ label, value, onChange, placeholder }: {
   );
 }
 
-/** Form for creating or editing a location. */
+/**
+ * @description Form for creating or editing a location.
+ * @param {LocationFormProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function LocationForm({ form, onChange, onSave, onCancel, saving, isCreate }: LocationFormProps) {
   const firstFieldRef = useRef<HTMLInputElement>(null);
 

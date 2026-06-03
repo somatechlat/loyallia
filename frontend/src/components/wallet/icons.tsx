@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * @description Plus icon SVG.
+ * @param {Object} props - Icon props
+ * @param {string} [props.className='w-5 h-5'] - Tailwind classes
+ * @returns JSX.Element
+ */
 export function PlusIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -8,6 +14,12 @@ export function PlusIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+/**
+ * @description Trash icon SVG.
+ * @param {Object} props - Icon props
+ * @param {string} [props.className='w-5 h-5'] - Tailwind classes
+ * @returns JSX.Element
+ */
 export function TrashIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -16,6 +28,12 @@ export function TrashIcon({ className = 'w-5 h-5' }: { className?: string }) {
   );
 }
 
+/**
+ * @description Chevron up icon SVG.
+ * @param {Object} props - Icon props
+ * @param {string} [props.className='w-5 h-5'] - Tailwind classes
+ * @returns JSX.Element
+ */
 export function ChevronUpIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -24,6 +42,12 @@ export function ChevronUpIcon({ className = 'w-5 h-5' }: { className?: string })
   );
 }
 
+/**
+ * @description Chevron down icon SVG.
+ * @param {Object} props - Icon props
+ * @param {string} [props.className='w-5 h-5'] - Tailwind classes
+ * @returns JSX.Element
+ */
 export function ChevronDownIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -32,6 +56,12 @@ export function ChevronDownIcon({ className = 'w-5 h-5' }: { className?: string 
   );
 }
 
+/**
+ * @description Info icon SVG.
+ * @param {Object} props - Icon props
+ * @param {string} [props.className='w-5 h-5'] - Tailwind classes
+ * @returns JSX.Element
+ */
 export function InfoIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

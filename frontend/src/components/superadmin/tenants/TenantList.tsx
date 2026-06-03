@@ -1,3 +1,6 @@
+/**
+ * Represents a tenant (business) in the list view.
+ */
 interface Tenant {
   id: string;
   name: string;
@@ -21,10 +24,17 @@ interface Tenant {
   created_at: string;
 }
 
+/**
+ * Props for the TenantList component.
+ */
 interface TenantListProps {
+  /** Array of tenants to display */
   tenants: Tenant[];
+  /** Whether data is loading */
   loading: boolean;
+  /** Opens the registration wizard */
   onOpenWizard: () => void;
+  /** Opens the detail modal for a tenant */
   onOpenDetail: (t: Tenant) => void;
 }
 
@@ -36,6 +46,11 @@ const PlusIcon = (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
 );
 
+/**
+ * @description Table list of tenants with plan badges and action buttons.
+ * @param {TenantListProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function TenantList({ tenants, loading, onOpenWizard, onOpenDetail }: TenantListProps) {
   return (
     <div className="space-y-6">

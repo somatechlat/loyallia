@@ -1,10 +1,19 @@
 'use client';
 import { AlertCircle, CheckCircle } from '@/components/ui/LucideIcons';
 
+/**
+ * Props for the PlatformModeBanner component.
+ */
 interface PlatformModeBannerProps {
+  /** Current platform mode */
   platformMode: 'development' | 'production';
 }
 
+/**
+ * @description Banner indicating whether the platform is in development or production mode.
+ * @param {PlatformModeBannerProps} props - Component props
+ * @returns JSX.Element
+ */
 export default function PlatformModeBanner({ platformMode }: PlatformModeBannerProps) {
   return (
     <div

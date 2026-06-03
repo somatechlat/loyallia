@@ -1,5 +1,8 @@
 import { VaultField } from './types';
 
+/**
+ * Vault field definitions grouped by integration key.
+ */
 export const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
   google_wallet: [
     { key: 'google_wallet_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'], description: 'Requiere reinicio del contenedor API para activar/desactivar' },
@@ -73,6 +76,12 @@ export const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
   ],
 };
 
+/**
+ * @description Extracts a human-readable error message from an unknown error.
+ * @param {unknown} err - Error object or value
+ * @param {string} fallback - Fallback message if extraction fails
+ * @returns {string} Error message
+ */
 export const errorMessage = (err: unknown, fallback: string) => {
   if (typeof err === 'object' && err !== null && 'response' in err) {
     const response = (err as { response?: { data?: unknown } }).response;
@@ -88,6 +97,11 @@ export const errorMessage = (err: unknown, fallback: string) => {
   return err instanceof Error ? err.message : fallback;
 };
 
+/**
+ * @description Returns the appropriate file accept string for a vault field.
+ * @param {string} fieldKey - Vault field key
+ * @returns {string | undefined} File accept value
+ */
 export const fileAcceptFor = (fieldKey: string) => {
   if (fieldKey.endsWith('_json')) return '.json,application/json';
   if (fieldKey.endsWith('_pem')) return '.pem,.cer,.crt,.key,text/plain';
@@ -123,6 +137,12 @@ const DIAGNOSTIC_MAPPING: Record<string, string> = {
   ai_agent_api_key: 'api_key_present',
 };
 
+/**
+ * @description Looks up a diagnostic value for a given integration field.
+ * @param {Record<string, unknown>} diagnostics - Diagnostic data
+ * @param {string} fieldKey - Field key to look up
+ * @returns {string} Diagnostic display value
+ */
 export const getDiagnosticValue = (
   diagnostics: Record<string, unknown>,
   fieldKey: string
@@ -135,5 +155,16 @@ export const getDiagnosticValue = (
   return '';
 };
 
+/**
+ * @description Returns vault fields for a given integration key.
+ * @param {string} key - Integration key
+ * @returns {VaultField[]} Array of vault fields
+ */
 export const vaultFieldsFor = (key: string) => INTEGRATION_FIELDS[key] || [];
+
+/**
+ * @description Checks if an integration key is editable.
+ * @param {string} key - Integration key
+ * @returns {boolean} Whether the integration can be edited
+ */
 export const canEditIntegration = (key: string) => key in INTEGRATION_FIELDS;

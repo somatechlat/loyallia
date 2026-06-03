@@ -80,13 +80,23 @@ export const STAMP_ICON_CATEGORIES = [
 /** All icon names as a flat array */
 export const STAMP_ICON_NAMES = Object.keys(STAMP_ICON_PATHS);
 
+/**
+ * Props for the StampIcon component.
+ */
 interface StampIconProps {
+  /** Name of the stamp icon to render */
   name: string;
+  /** Tailwind classes for sizing */
   className?: string;
+  /** Whether to fill the icon with currentColor */
   filled?: boolean;
 }
 
-/** Renders a stamp icon by name */
+/**
+ * @description Renders a stamp icon by name.
+ * @param {StampIconProps} props - Component props
+ * @returns JSX.Element
+ */
 export function StampIcon({ name, className = 'w-6 h-6', filled = false }: StampIconProps) {
   const d = STAMP_ICON_PATHS[name] ?? STAMP_ICON_PATHS.stamp ?? '';
   return (
@@ -111,12 +121,21 @@ export function StampIcon({ name, className = 'w-6 h-6', filled = false }: Stamp
   );
 }
 
+/**
+ * Props for the StampIconPicker component.
+ */
 interface StampIconPickerProps {
+  /** Currently selected icon name */
   selected: string;
+  /** Callback when an icon is selected */
   onSelect: (icon: string) => void;
 }
 
-/** Icon picker grid with categories */
+/**
+ * @description Icon picker grid with categories.
+ * @param {StampIconPickerProps} props - Component props
+ * @returns JSX.Element
+ */
 export function StampIconPicker({ selected, onSelect }: StampIconPickerProps) {
   return (
     <div className="space-y-3">
@@ -147,4 +166,9 @@ export function StampIconPicker({ selected, onSelect }: StampIconPickerProps) {
   );
 }
 
+/**
+ * @description Renders a stamp icon by name.
+ * @param {StampIconProps} props - Component props
+ * @returns JSX.Element
+ */
 export default StampIcon;

@@ -1,5 +1,12 @@
 import { BARCODE_TYPES } from '@/components/programs/constants';
 
+/**
+ * @description SVG barcode renderer supporting QR, Aztec, PDF417, Code128, and DataMatrix.
+ * @param {Object} props - Component props
+ * @param {string} props.type - Barcode type
+ * @param {number} [props.size=48] - Render size in pixels
+ * @returns JSX.Element
+ */
 export function BarcodeSvg({ type, size = 48 }: { type: string; size?: number }) {
   if (type === 'code_128' || type === 'pdf417') {
     const h = type === 'pdf417' ? size * 0.6 : size * 0.5;
@@ -55,6 +62,13 @@ export function BarcodeSvg({ type, size = 48 }: { type: string; size?: number })
   );
 }
 
+/**
+ * @description Barcode type selector grid with visual previews.
+ * @param {Object} props - Component props
+ * @param {string} props.value - Selected barcode type
+ * @param {(v: string) => void} props.onChange - Change handler
+ * @returns JSX.Element
+ */
 export function BarcodeTypeSelector({ value, onChange }: {
   value: string;
   onChange: (v: string) => void;

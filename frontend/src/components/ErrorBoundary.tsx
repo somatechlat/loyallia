@@ -1,16 +1,31 @@
 'use client';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
+/**
+ * Props for the ErrorBoundary component.
+ */
 interface Props {
+  /** React children to render inside the boundary */
   children: ReactNode;
+  /** Optional fallback UI to show when an error is caught */
   fallback?: ReactNode;
 }
 
+/**
+ * State for the ErrorBoundary component.
+ */
 interface State {
+  /** Whether an error has been caught */
   hasError: boolean;
+  /** The captured error object */
   error: Error | null;
 }
 
+/**
+ * @description Catches JavaScript errors anywhere in its child component tree and displays a fallback UI.
+ * @param {Props} props - Component props
+ * @returns JSX.Element
+ */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);

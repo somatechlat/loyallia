@@ -2,6 +2,13 @@
 
 import type { AppleAdvancedConfig } from '../types';
 
+/**
+ * @description Advanced settings editor for Apple Wallet passes.
+ * @param {Object} props - Component props
+ * @param {AppleAdvancedConfig} props.config - Current Apple advanced configuration
+ * @param {(c: AppleAdvancedConfig) => void} props.onChange - Configuration change handler
+ * @returns JSX.Element
+ */
 export default function AppleAdvancedSettings({ config, onChange }: { config: AppleAdvancedConfig; onChange: (c: AppleAdvancedConfig) => void }) {
   const patch = (p: Partial<AppleAdvancedConfig>) => onChange({ ...config, ...p });
   return (

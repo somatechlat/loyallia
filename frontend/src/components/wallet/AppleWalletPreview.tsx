@@ -42,7 +42,11 @@ function buildContext(form: { name: string; description: string; card_type: stri
   };
 }
 
+/**
+ * Props for the AppleWalletCard component.
+ */
 interface AppleWalletCardProps {
+  /** Program form data */
   form: {
     name: string;
     description: string;
@@ -52,14 +56,25 @@ interface AppleWalletCardProps {
     strip_image_url?: string;
     discount_percentage?: string;
   };
+  /** Selected card type option */
   selectedType?: { value: string; label: string; icon: string; desc: string };
+  /** Logo image URL preview */
   logoPreview?: string | null;
+  /** Strip image URL preview */
   stripPreview?: string | null;
+  /** Selected barcode type */
   barcodeType: string;
+  /** Customer name for the preview */
   customerName?: string;
+  /** Wallet design state */
   walletDesign?: WalletDesignState;
 }
 
+/**
+ * @description Apple Wallet pass preview with dynamic fields and barcode.
+ * @param {AppleWalletCardProps} props - Component props
+ * @returns JSX.Element
+ */
 export function AppleWalletCard({
   form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign,
 }: AppleWalletCardProps) {
@@ -260,6 +275,14 @@ export function AppleWalletCard({
   );
 }
 
+/**
+ * @description Apple Wallet pass back side preview with back fields.
+ * @param {Object} props - Component props
+ * @param {Object} props.form - Program form data
+ * @param {WalletDesignState} [props.walletDesign] - Wallet design state
+ * @param {string} [props.customerName] - Customer name
+ * @returns JSX.Element
+ */
 export function AppleWalletBackCard({
   form, walletDesign, customerName,
 }: {
