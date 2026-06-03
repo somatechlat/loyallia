@@ -308,7 +308,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
               onClick={async () => {
                 try {
                   await programsApi.publish(program.id);
-                  toast.success('Programa publicado exitosamente');
+                  toast.success(t('programs.published'));
                   loadProgram();
                   setShowQrModal(true);
                 } catch (err: unknown) {
@@ -320,7 +320,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                   } else if (typeof detail === 'string') {
                     msg = detail;
                   } else {
-                    msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || 'Error al publicar programa';
+                    msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || t('programs.publishError');
                   }
                   toast.error(msg);
                 }
@@ -403,7 +403,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
               className="btn-primary w-full justify-center text-sm"
               id="copy-enroll-link"
             >
-              <svg className="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar enlace de inscripción
+              <svg className="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> {t('programs.copyLink')}
             </button>
             <a
               href={getWhatsAppShareUrl(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}
@@ -562,7 +562,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             <div className="flex justify-center">
               <img
                 src={getQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
-                alt="QR de inscripción"
+                alt={t('programs.qrAlt')}
                 className="w-56 h-56 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
               />
             </div>

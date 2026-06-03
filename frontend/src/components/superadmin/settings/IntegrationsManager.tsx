@@ -3,6 +3,7 @@
 import { Integration } from './types';
 import { getDiagnosticValue, vaultFieldsFor, canEditIntegration, fileAcceptFor } from './constants';
 import { FlaskConical, DollarSign, AlertTriangle } from '@/components/ui/LucideIcons';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Props for the IntegrationsManager component.
@@ -53,10 +54,11 @@ export default function IntegrationsManager({
   onSetIntegrationEnabled,
   onToggleTwilioTestMode,
 }: IntegrationsManagerProps) {
+  const { t } = useI18n();
   return (
     <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm p-6 space-y-4">
-      <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3">Integraciones</h2>
-      {loading && <p className="text-sm text-surface-400">Cargando integraciones...</p>}
+      <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3">{t('superadmin.settings.integrations.title')}</h2>
+      {loading && <p className="text-sm text-surface-400">{t('superadmin.settings.integrations.loading')}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {integrations.map((int) => (
           <div key={int.key} className="p-4 rounded-xl border border-surface-100 space-y-3">
@@ -85,7 +87,7 @@ export default function IntegrationsManager({
 
             {Array.isArray(int.diagnostics?.errors) && (int.diagnostics.errors as string[]).length > 0 && (
               <div className="bg-red-50 border border-red-100 rounded-lg p-3 space-y-1">
-                <p className="text-xs font-semibold text-red-700 uppercase">Errores detectados:</p>
+                <p className="text-xs font-semibold text-red-700 uppercase">{t('superadmin.settings.integrations.errorsDetected')}</p>
                 {(int.diagnostics.errors as string[]).map((err, i) => (
                   <p key={i} className="text-xs text-red-600">• {err}</p>
                 ))}
@@ -110,8 +112,9 @@ export default function IntegrationsManager({
                           : 'text-red-700'
                       }`}>
                         {int.preview_values?.twilio_use_test_mode === 'true'
-                          ? 'MODO PRUEBA (Sandbox)'
-                          : 'MODO PRODUCCIÓN (Real)'}
+                          ? t('superadmin.settings.integrations.twilio.testMode')
+                          : t('superadmin.settings.integrations.twilio.productionMode')
+                        }
                       </p>
                       <p className={`text-[10px] ${
                         int.preview_values?.twilio_use_test_mode === 'true'
@@ -119,8 +122,9 @@ export default function IntegrationsManager({
                           : 'text-red-600'
                       }`}>
                         {int.preview_values?.twilio_use_test_mode === 'true'
-                          ? 'SMS de test sin costo — seguro para desarrollo'
-                          : <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> SMS reales con costo por mensaje</span>}
+                          ? t('superadmin.settings.integrations.twilio.testDesc')
+                          : <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('superadmin.settings.integrations.twilio.productionDesc')}</span>
+                        }
                       </p>
                     </div>
                   </div>
@@ -135,10 +139,11 @@ export default function IntegrationsManager({
                     } disabled:opacity-50`}
                   >
                     {savingVault
-                      ? 'Guardando...'
+                      ? t('common.processing')
                       : int.preview_values?.twilio_use_test_mode === 'true'
-                        ? 'Desactivar Modo Prueba'
-                        : 'Activar Modo Prueba'}
+                        ? t('superadmin.settings.integrations.twilio.disableTestMode')
+                        : t('superadmin.settings.integrations.twilio.enableTestMode')
+                    }
                   </button>
                 </div>
               </div>
@@ -146,12 +151,12 @@ export default function IntegrationsManager({
 
             {int.key === 'backup_config' && int.diagnostics && (
               <div className="bg-surface-50 rounded-lg p-3 border border-surface-200 space-y-2">
-                <p className="text-xs font-bold text-surface-600 uppercase">Estado de Respaldos</p>
+                <p className="text-xs font-bold text-surface-600 uppercase">{t('superadmin.settings.integrations.backup.status')}</p>
                 <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-surface-500 border-b border-surface-200 pb-1">
-                  <span>Componente</span>
-                  <span>Último Resp.</span>
-                  <span>Antigüedad</span>
-                  <span>Tamaño</span>
+                  <span>{t('superadmin.settings.integrations.backup.component')}</span>
+                  <span>{t('superadmin.settings.integrations.backup.lastBackup')}</span>
+                  <span>{t('superadmin.settings.integrations.backup.age')}</span>
+                  <span>{t('superadmin.settings.integrations.backup.size')}</span>
                 </div>
                 {['pg', 'redis', 'vault', 'minio', 'certs', 'env'].map((comp) => {
                   const diag = (int.diagnostics as Record<string, unknown>)[comp] as Record<string, unknown> | undefined;
@@ -166,10 +171,10 @@ export default function IntegrationsManager({
                 })}
                 {int.preview_values?.system_mode && (
                   <div className="pt-2 border-t border-surface-200 flex gap-4 text-[10px] text-surface-500">
-                    <span>Modo: <strong className="text-surface-700">{int.preview_values.system_mode}</strong></span>
-                    <span>Frecuencia: <strong className="text-surface-700">{int.preview_values.backup_frequency}</strong></span>
-                    <span>Retención: <strong className="text-surface-700">{int.preview_values.backup_retention}d</strong></span>
-                    <span>Cron: <strong className="text-surface-700">{int.preview_values.cron_hour}:00</strong></span>
+                    <span>{t('superadmin.settings.integrations.mode')} <strong className="text-surface-700">{int.preview_values.system_mode}</strong></span>
+                    <span>{t('superadmin.settings.integrations.frequency')} <strong className="text-surface-700">{int.preview_values.backup_frequency}</strong></span>
+                    <span>{t('superadmin.settings.integrations.retention')} <strong className="text-surface-700">{int.preview_values.backup_retention}d</strong></span>
+                    <span>{t('superadmin.settings.integrations.cron')} <strong className="text-surface-700">{int.preview_values.cron_hour}:00</strong></span>
                   </div>
                 )}
               </div>
@@ -180,14 +185,14 @@ export default function IntegrationsManager({
                 onClick={() => onOpenVaultEditor(int.key)}
                 className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
               >
-                {editingVault === int.key ? 'Cerrar editor' : 'Configurar credenciales en Vault →'}
+                {editingVault === int.key ? t('superadmin.settings.integrations.closeEditor') : t('superadmin.settings.integrations.configureVault')}
               </button>
             )}
 
             {editingVault === int.key && (
               <div className="bg-surface-50 rounded-lg p-3 space-y-3 border border-surface-200">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold text-surface-600 uppercase">Editor de Vault — {int.name}</p>
+                  <p className="text-xs font-bold text-surface-600 uppercase">{t('superadmin.settings.integrations.vaultEditor', { name: int.name })}</p>
                   {vaultFieldsFor(int.key).some((field) => field.key.endsWith('_enabled')) && (
                     <div className="flex rounded-lg border border-surface-200 overflow-hidden">
                       <button
@@ -196,7 +201,7 @@ export default function IntegrationsManager({
                         disabled={savingVault}
                         className={`px-2.5 py-1 text-[10px] font-semibold ${int.enabled ? 'bg-green-600 text-white' : 'bg-white text-surface-500 hover:bg-green-50'}`}
                       >
-                        ON
+                        {t('superadmin.settings.integrations.on')}
                       </button>
                       <button
                         type="button"
@@ -204,7 +209,7 @@ export default function IntegrationsManager({
                         disabled={savingVault}
                         className={`px-2.5 py-1 text-[10px] font-semibold border-l border-surface-200 ${!int.enabled ? 'bg-surface-700 text-white' : 'bg-white text-surface-500 hover:bg-surface-100'}`}
                       >
-                        OFF
+                        {t('superadmin.settings.integrations.off')}
                       </button>
                     </div>
                   )}
@@ -221,7 +226,7 @@ export default function IntegrationsManager({
                           <input
                             type="file"
                             accept={fileAcceptFor(field.key)}
-                            aria-label={`Subir archivo para ${field.label}`}
+                            aria-label={`${t('common.upload')} ${field.label}`}
                             onChange={(e) => onFileUpload(field.key, e.target.files?.[0])}
                             className="block w-full text-xs text-surface-600 file:mr-3 file:rounded-lg file:border-0 file:bg-surface-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-surface-800"
                           />
@@ -230,7 +235,7 @@ export default function IntegrationsManager({
                           rows={3}
                           value={vaultForm[field.key] || ''}
                           onChange={(e) => onVaultFormChange(field.key, e.target.value)}
-                          placeholder={`Nuevo valor para ${field.label}`}
+                          placeholder={t('superadmin.settings.integrations.newValueFor', { label: field.label })}
                           className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white text-xs text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all font-mono"
                         />
                       </div>
@@ -240,7 +245,7 @@ export default function IntegrationsManager({
                         onChange={(e) => onVaultFormChange(field.key, e.target.value)}
                         className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white text-xs text-surface-800 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
                       >
-                        <option value="">Seleccionar...</option>
+                        <option value="">{t('superadmin.settings.integrations.select')}</option>
                         {field.options?.map((opt) => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
@@ -250,7 +255,7 @@ export default function IntegrationsManager({
                         type="password"
                         value={vaultForm[field.key] || ''}
                         onChange={(e) => onVaultFormChange(field.key, e.target.value)}
-                        placeholder={`Nuevo valor para ${field.label}`}
+                        placeholder={t('superadmin.settings.integrations.newValueFor', { label: field.label })}
                         className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white text-xs text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
                       />
                     ) : (
@@ -258,7 +263,7 @@ export default function IntegrationsManager({
                         type="text"
                         value={vaultForm[field.key] || ''}
                         onChange={(e) => onVaultFormChange(field.key, e.target.value)}
-                        placeholder={`Nuevo valor para ${field.label}`}
+                        placeholder={t('superadmin.settings.integrations.newValueFor', { label: field.label })}
                         className="w-full px-3 py-2 rounded-xl border border-surface-200 bg-white text-xs text-surface-800 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
                       />
                     )}
@@ -268,10 +273,10 @@ export default function IntegrationsManager({
                         disabled={savingVault || !((vaultForm[field.key] || '').length > 0)}
                         className="text-xs bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 text-white disabled:text-surface-500 px-3 py-1.5 rounded-lg font-medium transition-all"
                       >
-                        {savingVault ? 'Guardando...' : 'Guardar en Vault'}
+                        {savingVault ? t('common.processing') : t('superadmin.settings.integrations.saveToVault')}
                       </button>
                       {getDiagnosticValue(int.diagnostics as Record<string, unknown>, field.key) === 'Configurado' && (
-                        <span className="text-[10px] text-green-600 font-medium">✓ En Vault</span>
+                        <span className="text-[10px] text-green-600 font-medium">{t('superadmin.settings.integrations.inVault')}</span>
                       )}
                     </div>
                   </div>
@@ -283,7 +288,7 @@ export default function IntegrationsManager({
                     disabled={savingVault || Object.values(vaultForm).every((value) => !value.trim())}
                     className="text-xs bg-surface-900 hover:bg-surface-800 disabled:bg-surface-300 text-white disabled:text-surface-500 px-4 py-2 rounded-lg font-semibold transition-all"
                   >
-                    {savingVault ? 'Guardando...' : 'Guardar todos los valores escritos'}
+                    {savingVault ? t('common.processing') : t('superadmin.settings.integrations.saveAllValues')}
                   </button>
                 </div>
               </div>

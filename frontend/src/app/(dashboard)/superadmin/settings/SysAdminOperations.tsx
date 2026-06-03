@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 import PlatformModeBanner from '@/components/superadmin/settings/PlatformModeBanner';
 import SystemOperationsPanel from '@/components/superadmin/settings/SystemOperationsPanel';
@@ -15,6 +16,7 @@ interface SysAdminOperationsProps {
 export default function SysAdminOperations({
   mode,
 }: SysAdminOperationsProps) {
+  const { t } = useI18n();
   const [broadcastForm, setBroadcastForm] = useState({ subject: '', message: '' });
   const [sending, setSending] = useState(false);
 
@@ -29,13 +31,13 @@ export default function SysAdminOperations({
   const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    const toastId = toast.loading('Enviando a todos los propietarios...');
+    const toastId = toast.loading(t('superadmin.settings.sysadmin.broadcastLoading'));
     try {
       const { data } = await api.post('/api/v1/admin/broadcast/', broadcastForm);
-      toast.success(data.message || 'Enviado', { id: toastId });
+      toast.success(data.message || t('superadmin.settings.sysadmin.broadcastSent'), { id: toastId });
       setBroadcastForm({ subject: '', message: '' });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al enviar';
+      const msg = err instanceof Error ? err.message : t('superadmin.settings.sysadmin.broadcastError');
       toast.error(msg, { id: toastId });
     } finally {
       setSending(false);
@@ -43,44 +45,44 @@ export default function SysAdminOperations({
   };
 
   const handleSeedDemo = async () => {
-    if (!window.confirm('¿Cargar datos de demostración? Esto puede tardar unos segundos.')) return;
+    if (!window.confirm(t('superadmin.settings.sysadmin.seedDemoConfirm'))) return;
     setSeedingDemo(true);
     setSeedOutput('');
     try {
       const { data } = await superAdminApi.seedDemoData();
-      toast.success(data.message || 'Datos demo cargados');
+      toast.success(data.message || t('superadmin.settings.sysadmin.seedDemoSuccess'));
       setSeedOutput(data.output || '');
     } catch (err) {
-      toast.error(errorMessage(err, 'Error al cargar datos demo'));
+      toast.error(errorMessage(err, t('superadmin.settings.sysadmin.seedDemoError')));
     } finally {
       setSeedingDemo(false);
     }
   };
 
   const handleFactoryResetRequest = async () => {
-    if (!window.confirm('¿Solicitar código para restaurar de fábrica? Se enviará a su email y teléfono.')) return;
+    if (!window.confirm(t('superadmin.settings.sysadmin.factoryResetRequestConfirm'))) return;
     setRequestingReset(true);
     try {
       const { data } = await superAdminApi.factoryResetRequest();
-      toast.success(data.message || 'Código enviado');
+      toast.success(data.message || t('superadmin.settings.sysadmin.factoryResetCodeSent'));
       setResetStep('otp_sent');
     } catch (err) {
-      toast.error(errorMessage(err, 'Error al solicitar código'));
+      toast.error(errorMessage(err, t('superadmin.settings.sysadmin.factoryResetRequestError')));
     } finally {
       setRequestingReset(false);
     }
   };
 
   const handleFactoryResetConfirm = async () => {
-    if (!window.confirm('[ADVERTENCIA] ÚLTIMA ADVERTENCIA: ¿Restaurar el sistema a estado de fábrica? Esta acción es IRREVERSIBLE y eliminará TODOS los datos de negocios.')) return;
+    if (!window.confirm(t('superadmin.settings.sysadmin.factoryResetFinalConfirm'))) return;
     setConfirmingReset(true);
     try {
       const { data } = await superAdminApi.factoryResetConfirm(resetOtp);
-      toast.success(data.message || 'Sistema restaurado');
+      toast.success(data.message || t('superadmin.settings.sysadmin.factoryResetSuccess'));
       setResetStep('idle');
       setResetOtp('');
     } catch (err) {
-      toast.error(errorMessage(err, 'Código inválido o expirado'));
+      toast.error(errorMessage(err, t('superadmin.settings.sysadmin.factoryResetInvalidCode')));
     } finally {
       setConfirmingReset(false);
     }

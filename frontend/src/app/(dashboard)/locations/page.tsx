@@ -24,6 +24,7 @@ import { useAuth } from '@/lib/auth';
 import { UserRole } from '@/types';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useI18n } from '@/lib/i18n';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import LocationCard from '@/components/locations/LocationCard';
 import LocationForm from '@/components/locations/LocationForm';
@@ -47,6 +48,7 @@ function InfoRow({ label, value, full }: { label: string; value: string; full?: 
  * Displays location cards in a grid with map, stats, and CRUD modals.
  */
 export default function LocationsPage() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +71,11 @@ export default function LocationsPage() {
       setLocations(Array.isArray(data) ? data : data?.items || []);
     } catch (e) {
       // LYL-M-FE-021: User-friendly error message
-      toast.error('No se pudieron cargar las sucursales');
+      toast.error(t('locations.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { loadLocations(); }, [loadLocations]);
 
@@ -153,21 +155,21 @@ export default function LocationsPage() {
     try {
       if (showCreate) {
         await api.post('/api/v1/tenants/locations/', form);
-        toast.success('Sucursal creada exitosamente');
+        toast.success(t('locations.created'));
       } else if (selectedLoc) {
         await api.patch(`/api/v1/tenants/locations/${selectedLoc.id}/`, form);
-        toast.success('Sucursal actualizada');
+        toast.success(t('locations.updated'));
       }
       closeModal();
       await loadLocations();
     } catch (e: unknown) {
       // LYL-M-FE-021: User-friendly error messages
-      const msg = e instanceof Error ? e.message : 'Error al guardar la sucursal';
+      const msg = e instanceof Error ? e.message : t('locations.saveError');
       toast.error(msg);
     } finally {
       setSaving(false);
     }
-  }, [showCreate, selectedLoc, form, closeModal, loadLocations]);
+  }, [showCreate, selectedLoc, form, closeModal, loadLocations, t]);
 
   const handleDelete = useCallback(() => {
     if (!selectedLoc) return;
@@ -179,14 +181,14 @@ export default function LocationsPage() {
     setShowDeleteConfirm(false);
     try {
       await api.delete(`/api/v1/tenants/locations/${selectedLoc.id}/`);
-      toast.success('Sucursal eliminada');
+      toast.success(t('locations.deleted'));
       closeModal();
       await loadLocations();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al eliminar la sucursal';
+      const msg = e instanceof Error ? e.message : t('locations.deleteError');
       toast.error(msg);
     }
-  }, [selectedLoc, closeModal, loadLocations]);
+  }, [selectedLoc, closeModal, loadLocations, t]);
 
   /** LYL-M-FE-022: Optimistic update for toggle active state. */
   const handleToggleActive = useCallback(async (loc: LocationData) => {
@@ -200,7 +202,7 @@ export default function LocationsPage() {
 
     try {
       await api.patch(`/api/v1/tenants/locations/${loc.id}/`, { is_active: newActive });
-      toast.success(newActive ? 'Sucursal activada' : 'Sucursal desactivada');
+      toast.success(newActive ? t('locations.activated') : t('locations.deactivated'));
     } catch {
       // Revert on failure
       setLocations(prev => prev.map(l => l.id === loc.id ? { ...l, is_active: !newActive } : l));
@@ -208,9 +210,9 @@ export default function LocationsPage() {
         setSelectedLoc(prev => prev ? { ...prev, is_active: !newActive } : prev);
         setForm(f => ({ ...f, is_active: !newActive }));
       }
-      toast.error('Error al cambiar estado de la sucursal');
+      toast.error(t('locations.statusError'));
     }
-  }, [selectedLoc]);
+  }, [selectedLoc, t]);
 
     if (loading) {
     return (
@@ -239,10 +241,10 @@ export default function LocationsPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-surface-900 dark:text-surface-100 tracking-tight">Sucursales</h1>
+          <h1 className="text-3xl font-black text-surface-900 dark:text-surface-100 tracking-tight">{t('locations.title')}</h1>
           <p className="text-surface-500 dark:text-surface-400 mt-1">
-            {locations.length} ubicaciones en {cities.length} {cities.length === 1 ? 'ciudad' : 'ciudades'}
-            {primaryLoc && <span> — Principal: <strong>{primaryLoc.name}</strong></span>}
+            {t('locations.subtitle', { count: locations.length, cities: cities.length })} {cities.length === 1 ? t('locations.city') : t('locations.cities')}
+            {primaryLoc && <span> — {t('locations.primary')}: <strong>{primaryLoc.name}</strong></span>}
           </p>
         </div>
         {user?.role === UserRole.OWNER && (
@@ -251,17 +253,17 @@ export default function LocationsPage() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Nueva Sucursal
+            {t('locations.newLocation')}
           </button>
         )}
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Total', value: locations.length, color: 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400' },
-          { label: 'Activas', value: activeCount, color: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
-          { label: 'Inactivas', value: locations.length - activeCount, color: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
-          { label: 'Ciudades', value: cities.length, color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
+          { label: t('locations.stats.total'), value: locations.length, color: 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400' },
+          { label: t('locations.stats.active'), value: activeCount, color: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
+          { label: t('locations.stats.inactive'), value: locations.length - activeCount, color: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+          { label: t('locations.stats.cities'), value: cities.length, color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-surface-800 p-4 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm">
             <p className="text-xs font-medium text-surface-400 dark:text-surface-500">{s.label}</p>
@@ -274,8 +276,8 @@ export default function LocationsPage() {
         <div className="bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-surface-900 dark:text-surface-100">Mapa de Sucursales</h2>
-              <p className="text-xs text-surface-400 dark:text-surface-500">{mapPins.length} ubicaciones con GPS</p>
+              <h2 className="font-bold text-surface-900 dark:text-surface-100">{t('locations.mapTitle')}</h2>
+              <p className="text-xs text-surface-400 dark:text-surface-500">{t('locations.gpsLocations', { count: mapPins.length })}</p>
             </div>
             <span className="text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-semibold">
               {cities.join(' · ')}
@@ -301,8 +303,8 @@ export default function LocationsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <p className="text-surface-500 dark:text-surface-400">No hay sucursales registradas.</p>
-          <p className="text-surface-400 dark:text-surface-500 text-sm mt-1">Crea tu primera sucursal con el botón de arriba.</p>
+          <p className="text-surface-500 dark:text-surface-400">{t('locations.noLocations')}</p>
+          <p className="text-surface-400 dark:text-surface-500 text-sm mt-1">{t('locations.createFirstLocation')}</p>
         </div>
       )}
 
@@ -313,7 +315,7 @@ export default function LocationsPage() {
           onClick={closeModal}
           role="dialog"
           aria-modal="true"
-          aria-label={showCreate ? 'Crear nueva sucursal' : editMode ? 'Editar sucursal' : selectedLoc?.name}
+          aria-label={showCreate ? t('locations.newLocation') : editMode ? t('locations.editLocation') : selectedLoc?.name}
         >
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
@@ -331,16 +333,16 @@ export default function LocationsPage() {
             <div className="px-6 pt-5 pb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black text-surface-900 dark:text-surface-100">
-                  {showCreate ? 'Nueva Sucursal' : editMode ? 'Editar Sucursal' : selectedLoc?.name}
+                  {showCreate ? t('locations.newLocation') : editMode ? t('locations.editLocation') : selectedLoc?.name}
                 </h2>
                 {!showCreate && !editMode && selectedLoc && (
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`w-2 h-2 rounded-full ${selectedLoc.is_active ? 'bg-green-500' : 'bg-red-400'}`} />
-                    <span className="text-xs text-surface-400 dark:text-surface-500">{selectedLoc.is_active ? 'Activa' : 'Inactiva'}</span>
+                    <span className="text-xs text-surface-400 dark:text-surface-500">{selectedLoc.is_active ? t('locations.activeLocation') : t('locations.inactiveLocation')}</span>
                     {selectedLoc.is_primary && (
                       <span className="text-[10px] bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-0.5">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                        Principal
+                        {t('locations.primaryLabel')}
                       </span>
                     )}
                   </div>
@@ -349,7 +351,7 @@ export default function LocationsPage() {
               <button
                 ref={closeBtnRef}
                 onClick={closeModal}
-                aria-label="Cerrar modal"
+                aria-label={t('locations.closeModal')}
                 className="w-8 h-8 rounded-xl bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-brand-500"
               >
                 <svg className="w-4 h-4 text-surface-500 dark:text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -362,17 +364,17 @@ export default function LocationsPage() {
             {selectedLoc && !editMode && !showCreate && (
               <div className="px-6 pb-6 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <InfoRow label="Dirección" value={selectedLoc.address || '—'} full />
-                  <InfoRow label="Ciudad" value={selectedLoc.city || '—'} />
-                  <InfoRow label="País" value={selectedLoc.country === 'EC' ? '🇪🇨 Ecuador' : selectedLoc.country} />
-                  <InfoRow label="Teléfono" value={selectedLoc.phone || '—'} />
-                  <InfoRow label="Estado" value={selectedLoc.is_active ? 'Activa' : 'Inactiva'} />
+                  <InfoRow label={t('locations.address')} value={selectedLoc.address || '—'} full />
+                  <InfoRow label={t('locations.cityLabel')} value={selectedLoc.city || '—'} />
+                  <InfoRow label={t('locations.country')} value={selectedLoc.country === 'EC' ? '🇪🇨 Ecuador' : selectedLoc.country} />
+                  <InfoRow label={t('customers.phone')} value={selectedLoc.phone || '—'} />
+                  <InfoRow label={t('common.status')} value={selectedLoc.is_active ? t('locations.activeLocation') : t('locations.inactiveLocation')} />
                 </div>
 
                 {/* GPS */}
                 {selectedLoc.latitude && selectedLoc.longitude && (
                   <div className="bg-surface-50/80 dark:bg-surface-700/50 backdrop-blur-sm rounded-2xl p-4 border border-surface-200 dark:border-surface-700/50 dark:border-surface-600/50">
-                    <p className="text-xs font-semibold text-surface-500 dark:text-surface-400 mb-2">Coordenadas GPS</p>
+                    <p className="text-xs font-semibold text-surface-500 dark:text-surface-400 mb-2">{t('locations.gpsCoordinates')}</p>
                     <div className="flex items-center gap-4">
                       <span className="font-mono text-sm text-surface-700 dark:text-surface-300">{selectedLoc.latitude.toFixed(6)}</span>
                       <span className="text-surface-300 dark:text-surface-600">,</span>
@@ -383,7 +385,7 @@ export default function LocationsPage() {
                       target="_blank" rel="noopener noreferrer"
                       className="text-xs text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 font-semibold mt-2 inline-block"
                     >
-                      Abrir en Google Maps ↗
+                      {t('locations.openInMaps')}
                     </a>
                   </div>
                 )}
@@ -407,19 +409,19 @@ export default function LocationsPage() {
                       <svg className="w-4 h-4 inline-block mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg> Editar
+                      </svg> {t('common.edit')}
                     </button>
                     <button onClick={() => handleToggleActive(selectedLoc)}
-                      aria-label={selectedLoc.is_active ? 'Desactivar sucursal' : 'Activar sucursal'}
+                      aria-label={selectedLoc.is_active ? t('locations.inactiveLocation') : t('locations.activeLocation')}
                       className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                         selectedLoc.is_active
                           ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-800'
                           : 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800'
                       }`}>
-                      {selectedLoc.is_active ? 'Desactivar' : 'Activar'}
+                      {selectedLoc.is_active ? t('common.inactive') : t('common.active')}
                     </button>
                     <button onClick={handleDelete}
-                      aria-label="Eliminar sucursal"
+                      aria-label={t('locations.deleteTitle')}
                       className="px-4 py-2.5 rounded-xl font-semibold text-sm bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 transition-all">
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="3 6 5 6 21 6" />
@@ -449,9 +451,9 @@ export default function LocationsPage() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && selectedLoc && (
         <ConfirmModal
-          title="Eliminar sucursal"
-          message={`¿Eliminar "${selectedLoc.name}" permanentemente? Esta acción no se puede deshacer.`}
-          confirmLabel="Eliminar"
+          title={t('locations.deleteTitle')}
+          message={t('locations.deleteConfirm', { name: selectedLoc.name })}
+          confirmLabel={t('common.delete')}
           variant="danger"
           onConfirm={confirmDelete}
           onCancel={() => setShowDeleteConfirm(false)}

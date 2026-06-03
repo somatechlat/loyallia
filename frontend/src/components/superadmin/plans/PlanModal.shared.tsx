@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Data shape for a subscription plan.
@@ -39,18 +40,18 @@ export interface PlanData {
  * Predefined feature options available for subscription plans.
  */
 export const PREDEFINED_FEATURES = [
-  { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp', icon: 'phone' },
-  { id: 'sms_campaigns', label: 'Campañas de SMS', icon: 'message' },
-  { id: 'email_campaigns', label: 'Campañas de Email', icon: 'mail' },
-  { id: 'wallet_campaigns', label: 'Apple/Google Wallet', icon: 'wallet' },
-  { id: 'geo_fencing', label: 'Geo-Fencing', icon: 'map' },
-  { id: 'automation', label: 'Automatización', icon: 'zap' },
-  { id: 'advanced_analytics', label: 'Analítica Avanzada', icon: 'chart' },
-  { id: 'ai_assistant', label: 'Asistente IA', icon: 'bot' },
-  { id: 'agent_api', label: 'Acceso API Agente', icon: 'plug' },
-  { id: 'priority_support', label: 'Soporte Prioritario', icon: 'star' },
-  { id: 'custom_branding', label: 'Marca Personalizada', icon: 'palette' },
-  { id: 'data_export', label: 'Exportación de Datos', icon: 'upload' },
+  { id: 'whatsapp_campaigns', icon: 'phone' },
+  { id: 'sms_campaigns', icon: 'message' },
+  { id: 'email_campaigns', icon: 'mail' },
+  { id: 'wallet_campaigns', icon: 'wallet' },
+  { id: 'geo_fencing', icon: 'map' },
+  { id: 'automation', icon: 'zap' },
+  { id: 'advanced_analytics', icon: 'chart' },
+  { id: 'ai_assistant', icon: 'bot' },
+  { id: 'agent_api', icon: 'plug' },
+  { id: 'priority_support', icon: 'star' },
+  { id: 'custom_branding', icon: 'palette' },
+  { id: 'data_export', icon: 'upload' },
 ] as const;
 
 /**
@@ -151,19 +152,24 @@ export function FormField({
  * @returns JSX.Element
  */
 export function FeatureTagInput({ features, onChange }: { features: string[]; onChange: (f: string[]) => void }) {
+  const { t } = useI18n();
   const [input, setInput] = useState('');
   const add = () => {
     if (input && !features.includes(input)) onChange([...features, input]);
     setInput('');
   };
   const remove = (i: number) => onChange(features.filter((_, j) => j !== i));
-  const availableFeatures = PREDEFINED_FEATURES.filter((f) => !features.includes(f.id));
+  const predefinedFeatures = PREDEFINED_FEATURES.map((f) => ({
+    id: f.id,
+    label: t(`superadmin.planFeatures.${f.id}`),
+  }));
+  const availableFeatures = predefinedFeatures.filter((f) => !features.includes(f.id));
 
   return (
     <div>
       <div className="flex flex-wrap gap-1.5 mb-2">
         {features.map((f, i) => {
-          const preset = PREDEFINED_FEATURES.find((p) => p.id === f);
+          const preset = predefinedFeatures.find((p) => p.id === f);
           const label = preset ? preset.label : f;
           return (
             <span key={i} className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 text-xs font-medium px-2.5 py-1 rounded-lg border border-brand-200">
@@ -176,7 +182,7 @@ export function FeatureTagInput({ features, onChange }: { features: string[]; on
             </span>
           );
         })}
-        {features.length === 0 && <span className="text-xs text-surface-300 italic">Sin características adicionales</span>}
+        {features.length === 0 && <span className="text-xs text-surface-300 italic">{t('superadmin.plans.modal.noExtraFeatures')}</span>}
       </div>
       <div className="flex gap-2">
         <select
@@ -184,13 +190,13 @@ export function FeatureTagInput({ features, onChange }: { features: string[]; on
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
         >
-          <option value="">Seleccionar característica...</option>
+          <option value="">{t('superadmin.plans.modal.selectFeature')}</option>
           {availableFeatures.map((f) => (
             <option key={f.id} value={f.id}>{f.label}</option>
           ))}
         </select>
         <button type="button" onClick={add} disabled={!input} className="px-3 py-2 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-200 text-white disabled:text-surface-400 rounded-xl text-sm font-semibold transition-all">
-          Agregar
+          {t('superadmin.plans.modal.addFeature')}
         </button>
       </div>
     </div>

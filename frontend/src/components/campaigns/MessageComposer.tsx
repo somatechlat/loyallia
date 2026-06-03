@@ -163,7 +163,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
                 onClick={() => onChange({ imageUrl: '' })}
                 className="text-red-500 text-xs hover:text-red-600"
               >
-                {t('common.remove')}
+                {t('campaigns.remove')}
               </button>
             )}
           </div>

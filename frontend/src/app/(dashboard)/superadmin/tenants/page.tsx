@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import centralizedApi from '@/lib/api';
 import TenantList from '@/components/superadmin/tenants/TenantList';
 import TenantWizard from '@/components/superadmin/tenants/TenantWizard';
@@ -55,6 +56,7 @@ interface CreationResult {
 }
 
 export default function SuperAdminTenants() {
+  const { t } = useI18n();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,13 +80,13 @@ export default function SuperAdminTenants() {
       {/* Creation Result */}
       {creationResult && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-brand-900 mb-2">Negocio creado correctamente</h3>
+          <h3 className="text-lg font-bold text-brand-900 mb-2">{t('superadmin.tenants.tenantCreated')}</h3>
           <div className="bg-white dark:bg-surface-900 rounded-xl p-4 border border-brand-100 font-mono text-sm space-y-2">
-            <p><span className="font-bold text-surface-500">Tenant ID:</span> {creationResult.tenant_id}</p>
-            <p><span className="font-bold text-surface-500">Email Owner:</span> {creationResult.owner_email}</p>
-            <p><span className="font-bold text-surface-500">Password Temporal:</span> <span className="bg-brand-100 text-brand-800 px-2 py-0.5 rounded">{creationResult.temp_password}</span></p>
+            <p><span className="font-bold text-surface-500">{t('superadmin.tenants.tenantId')}</span> {creationResult.tenant_id}</p>
+            <p><span className="font-bold text-surface-500">{t('superadmin.tenants.emailOwner')}</span> {creationResult.owner_email}</p>
+            <p><span className="font-bold text-surface-500">{t('superadmin.tenants.tempPassword')}</span> <span className="bg-brand-100 text-brand-800 px-2 py-0.5 rounded">{creationResult.temp_password}</span></p>
           </div>
-          <button onClick={() => setCreationResult(null)} className="mt-3 text-sm text-brand-600 hover:text-brand-800 font-medium">Cerrar</button>
+          <button onClick={() => setCreationResult(null)} className="mt-3 text-sm text-brand-600 hover:text-brand-800 font-medium">{t('common.close')}</button>
         </div>
       )}
 

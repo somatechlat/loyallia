@@ -25,25 +25,25 @@ export default function UsageBanner({ hasEmail, hasWhatsApp, hasWallet, hasSMS, 
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${hasEmail ? "bg-blue-500" : "bg-surface-300"}`} />
               <span className={hasEmail ? "" : "opacity-50"}>
-                <b>Email:</b> {hasEmail ? `${planUsage.emails_this_month ?? 0}/${planLimits.emails_month ?? 0}` : t("campaigns.notAvailable")}
+                <b>{t("campaigns.email")}:</b> {hasEmail ? `${planUsage.emails_this_month ?? 0}/${planLimits.emails_month ?? 0}` : t("campaigns.notAvailable")}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${hasWallet ? "bg-purple-500" : "bg-surface-300"}`} />
               <span className={hasWallet ? "" : "opacity-50"}>
-                <b>Wallet:</b> {hasWallet ? t("campaigns.unlimited") : t("campaigns.notAvailable")}
+                <b>{t("campaigns.wallet")}:</b> {hasWallet ? t("campaigns.unlimited") : t("campaigns.notAvailable")}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${hasWhatsApp ? "bg-emerald-500" : "bg-surface-300"}`} />
               <span className={hasWhatsApp ? "" : "opacity-50"}>
-                <b>WhatsApp:</b> {hasWhatsApp ? `${planUsage.whatsapp_today ?? 0}/${planLimits.whatsapp_day ?? 0}` : t("campaigns.notAvailable")}
+                <b>{t("campaigns.whatsapp")}:</b> {hasWhatsApp ? `${planUsage.whatsapp_today ?? 0}/${planLimits.whatsapp_day ?? 0}` : t("campaigns.notAvailable")}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${hasSMS ? "bg-orange-500" : "bg-surface-300"}`} />
               <span className={hasSMS ? "" : "opacity-50"}>
-                <b>SMS:</b> {hasSMS ? `${planUsage.sms_today ?? 0}/${planLimits.sms_day ?? 0}` : t("campaigns.notAvailable")}
+                <b>{t("campaigns.sms")}:</b> {hasSMS ? `${planUsage.sms_today ?? 0}/${planLimits.sms_day ?? 0}` : t("campaigns.notAvailable")}
               </span>
             </div>
           </div>

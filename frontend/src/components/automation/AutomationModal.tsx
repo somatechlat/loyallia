@@ -3,6 +3,7 @@ import WalletPlatformSelector from "@/components/notifications/WalletPlatformSel
 import WalletNotificationPreview from "@/components/notifications/WalletNotificationPreview";
 import ActionIcon from "./ActionIcon";
 import { TRIGGER_LABELS, TRIGGER_DESCRIPTIONS, ACTION_LABELS } from "@/lib/automationConstants";
+import { useI18n } from "@/lib/i18n";
 import type { AutomationForm, ProgramOption } from "@/hooks/useAutomations";
 
 interface AutomationModalProps {
@@ -35,6 +36,7 @@ export default function AutomationModal({
   onClose,
 }: AutomationModalProps) {
   if (!show) return null;
+  const { t } = useI18n();
   const totalSteps = 3;
 
   return (
@@ -46,10 +48,10 @@ export default function AutomationModal({
         <div className="p-6 border-b border-surface-100 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-bold text-surface-900 dark:text-white">
-              {editingId ? "Editar automatización" : "Nueva automatización"}
+              {editingId ? t("automation.modal.title.edit") : t("automation.modal.title.new")}
             </h2>
             <p className="text-xs text-surface-400 mt-0.5">
-              Paso {step} de {totalSteps}
+              {t("automation.modal.step", { step, totalSteps })}
             </p>
           </div>
           <button onClick={onClose} className="text-surface-400 hover:text-surface-600 text-xl">
@@ -68,12 +70,12 @@ export default function AutomationModal({
             <div className="space-y-4">
               <div>
                 <label className="label" htmlFor="auto-name">
-                  Nombre de la automatización
+                  {t("automation.modal.label.name")}
                 </label>
                 <input
                   id="auto-name"
                   className={`input ${stepErrors.name ? "border-red-500" : ""}`}
-                  placeholder="Ej: Bienvenida a nuevos clientes"
+                  placeholder={t("automation.modal.placeholder.name")}
                   required
                   maxLength={200}
                   value={form.name}
@@ -82,16 +84,16 @@ export default function AutomationModal({
                     setStepErrors({ name: false });
                   }}
                 />
-                {stepErrors.name && <p className="text-xs text-red-500 mt-1">Ingresa un nombre</p>}
+                {stepErrors.name && <p className="text-xs text-red-500 mt-1">{t("automation.modal.validation.nameRequired")}</p>}
               </div>
               <div>
                 <label className="label" htmlFor="auto-desc">
-                  Descripción (opcional)
+                  {t("automation.modal.label.description")}
                 </label>
                 <textarea
                   id="auto-desc"
                   className="input min-h-[80px] resize-none"
-                  placeholder="¿Qué hace esta automatización?"
+                  placeholder={t("automation.modal.placeholder.description")}
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
@@ -102,7 +104,7 @@ export default function AutomationModal({
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <label className="label">Disparador — ¿Cuándo se activa?</label>
+                <label className="label">{t("automation.modal.label.trigger")}</label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   {Object.entries(TRIGGER_LABELS).map(([key, label]) => (
                     <button
@@ -119,7 +121,7 @@ export default function AutomationModal({
                 </div>
               </div>
               <div>
-                <label className="label">Acción — ¿Qué se ejecuta?</label>
+                <label className="label">{t("automation.modal.label.action")}</label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   {Object.entries(ACTION_LABELS).map(([key, label]) => (
                     <button
@@ -145,7 +147,7 @@ export default function AutomationModal({
                   <div>
                     <div className="flex items-center justify-between">
                       <label className="label" htmlFor="action-title">
-                        Título del mensaje
+                        {t("automation.modal.label.messageTitle")}
                       </label>
                       <EmojiPickerButton
                         onEmojiSelect={(emoji) =>
@@ -156,7 +158,7 @@ export default function AutomationModal({
                     <input
                       id="action-title"
                       className="input"
-                      placeholder="Ej: ¡Bienvenido a nuestro programa!"
+                      placeholder={t("automation.modal.placeholder.messageTitle")}
                       maxLength={200}
                       value={(form.action_config.title as string) || ""}
                       onChange={(e) =>
@@ -167,7 +169,7 @@ export default function AutomationModal({
                   <div>
                     <div className="flex items-center justify-between">
                       <label className="label" htmlFor="action-message">
-                        Contenido del mensaje
+                        {t("automation.modal.label.messageContent")}
                       </label>
                       <EmojiPickerButton
                         onEmojiSelect={(emoji) =>
@@ -179,7 +181,7 @@ export default function AutomationModal({
                       id="action-message"
                       className="input min-h-[80px] resize-none"
                       maxLength={1000}
-                      placeholder="Ej: Gracias por unirte. Tu primera recompensa te espera."
+                      placeholder={t("automation.modal.placeholder.messageContent")}
                       value={(form.action_config.message as string) || ""}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, action_config: { ...f.action_config, message: e.target.value } }))
@@ -189,12 +191,12 @@ export default function AutomationModal({
 
                   {form.action === "send_wallet" && (
                     <div>
-                      <label className="label">Plataforma de Wallet</label>
+                      <label className="label">{t("automation.modal.label.walletPlatform")}</label>
                       <WalletPlatformSelector
                         value={(form.action_config.wallet_platform as "apple" | "google" | "both") || "both"}
                         onChange={(value) => setForm((f) => ({ ...f, action_config: { ...f.action_config, wallet_platform: value } }))}
                       />
-                      <p className="text-[10px] text-surface-400 mt-1.5">Selecciona a qué plataforma enviar la notificación de wallet.</p>
+                      <p className="text-[10px] text-surface-400 mt-1.5">{t("automation.modal.help.walletPlatform")}</p>
                     </div>
                   )}
 
@@ -205,7 +207,7 @@ export default function AutomationModal({
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
-                        Vista previa de la notificación
+                        {t("automation.modal.label.notificationPreview")}
                       </p>
                       <WalletNotificationPreview
                         title={(form.action_config.title as string) || ""}
@@ -220,7 +222,7 @@ export default function AutomationModal({
               {form.action === "issue_reward" && programs.length > 0 && (
                 <div>
                   <label className="label" htmlFor="reward-program">
-                    Programa objetivo
+                    {t("automation.modal.label.targetProgram")}
                   </label>
                   <select
                     id="reward-program"
@@ -228,7 +230,7 @@ export default function AutomationModal({
                     value={(form.action_config.program_id as string) || ""}
                     onChange={(e) => setForm((f) => ({ ...f, action_config: { ...f.action_config, program_id: e.target.value } }))}
                   >
-                    <option value="">Seleccionar programa</option>
+                    <option value="">{t("automation.modal.placeholder.selectProgram")}</option>
                     {programs.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -241,7 +243,7 @@ export default function AutomationModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label" htmlFor="cooldown">
-                    Enfriamiento (horas)
+                    {t("automation.modal.label.cooldown")}
                   </label>
                   <input
                     id="cooldown"
@@ -251,11 +253,11 @@ export default function AutomationModal({
                     value={form.cooldown_hours}
                     onChange={(e) => setForm((f) => ({ ...f, cooldown_hours: parseInt(e.target.value) || 24 }))}
                   />
-                  <p className="text-[10px] text-surface-400 mt-1">Horas mínimas entre ejecuciones por cliente</p>
+                  <p className="text-[10px] text-surface-400 mt-1">{t("automation.modal.help.cooldown")}</p>
                 </div>
                 <div>
                   <label className="label" htmlFor="max-exec">
-                    Máx ejecuciones/día
+                    {t("automation.modal.label.maxExecutions")}
                   </label>
                   <input
                     id="max-exec"
@@ -267,14 +269,14 @@ export default function AutomationModal({
                       setForm((f) => ({ ...f, max_executions_per_day: e.target.value ? parseInt(e.target.value) : null }))
                     }
                   />
-                  <p className="text-[10px] text-surface-400 mt-1">Dejar vacío = sin límite</p>
+                  <p className="text-[10px] text-surface-400 mt-1">{t("automation.modal.help.maxExecutions")}</p>
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-brand-50 border border-brand-200 mt-4">
-                <p className="text-sm font-semibold text-brand-900 mb-1">Resumen</p>
+                <p className="text-sm font-semibold text-brand-900 mb-1">{t("automation.modal.label.summary")}</p>
                 <p className="text-xs text-brand-700">
-                  Cuando <strong>{TRIGGER_LABELS[form.trigger]}</strong> → <strong>{ACTION_LABELS[form.action]}</strong>
+                  {t("automation.modal.summary.when")} <strong>{TRIGGER_LABELS[form.trigger]}</strong> → <strong>{ACTION_LABELS[form.action]}</strong>
                   {form.action_config.title ? ` → "${form.action_config.title as string}"` : ""}
                 </p>
               </div>
@@ -287,7 +289,7 @@ export default function AutomationModal({
             onClick={() => (step > 1 ? setStep(step - 1) : onClose())}
             className="btn-ghost text-sm"
           >
-            {step > 1 ? "← Anterior" : "Cancelar"}
+            {step > 1 ? t("automation.modal.button.previous") : t("common.cancel")}
           </button>
           {step < totalSteps ? (
             <button
@@ -301,11 +303,11 @@ export default function AutomationModal({
               }}
               className="btn-primary text-sm"
             >
-              Siguiente →
+              {t("automation.modal.button.next")}
             </button>
           ) : (
             <button onClick={onSave} disabled={saving} className="btn-primary text-sm" id="save-automation-btn">
-              {saving ? <span className="spinner w-4 h-4" /> : editingId ? "Guardar cambios" : "Crear automatización"}
+              {saving ? <span className="spinner w-4 h-4" /> : editingId ? t("common.save") : t("automation.modal.button.create")}
             </button>
           )}
         </div>

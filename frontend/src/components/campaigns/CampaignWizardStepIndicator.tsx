@@ -1,9 +1,12 @@
+import { useI18n } from '@/lib/i18n';
+
 interface CampaignWizardStepIndicatorProps {
   steps: string[];
   currentStep: number;
 }
 
 export default function CampaignWizardStepIndicator({ steps, currentStep }: CampaignWizardStepIndicatorProps) {
+  useI18n();
   return (
     <div className="flex items-center gap-2">
       {steps.map((label, i) => (

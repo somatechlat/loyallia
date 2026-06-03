@@ -311,10 +311,10 @@ export default function CampaignWizard({
           <div className="flex items-center gap-3 text-sm">
             <span className="text-surface-500">{t('campaigns.summary')}:</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs font-medium">
-              {formData.channel === 'email' && '💌 Email'}
-              {formData.channel === 'wallet' && '📱 Wallet'}
-              {formData.channel === 'whatsapp' && '💬 WhatsApp'}
-              {formData.channel === 'sms' && '📨 SMS'}
+              {formData.channel === 'email' && '💌 ' + t('campaigns.email')}
+              {formData.channel === 'wallet' && '📱 ' + t('campaigns.wallet')}
+              {formData.channel === 'whatsapp' && '💬 ' + t('campaigns.whatsapp')}
+              {formData.channel === 'sms' && '📨 ' + t('campaigns.sms')}
             </span>
             {step >= 1 && (
               <>
@@ -330,9 +330,9 @@ export default function CampaignWizard({
               <>
                 <span className="text-surface-300">→</span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium">
-                  {formData.audience.walletPlatform === 'apple' && '🍎 Apple'}
-                  {formData.audience.walletPlatform === 'google' && '🤖 Google'}
-                  {formData.audience.walletPlatform === 'both' && '✓ Todos'}
+                  {formData.audience.walletPlatform === 'apple' && '🍎 ' + t('campaigns.platformApple')}
+                  {formData.audience.walletPlatform === 'google' && '🤖 ' + t('campaigns.platformGoogle')}
+                  {formData.audience.walletPlatform === 'both' && '✓ ' + t('campaigns.platformAll')}
                 </span>
               </>
             )}
@@ -450,7 +450,7 @@ export default function CampaignWizard({
                 disabled={!canProceed() || isSubmitting}
                 className="btn-primary px-6"
               >
-                {t('common.continue')} →
+                {t('campaigns.continue')} →
               </button>
             ) : (
               <>

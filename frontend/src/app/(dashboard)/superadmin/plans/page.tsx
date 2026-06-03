@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { superAdminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import PlanModal, { type PlanData } from '@/components/superadmin/plans/PlanModal';
 
 export default function SuperAdminPlans() {
+  const { t } = useI18n();
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<PlanData | null>(null);
@@ -16,12 +18,12 @@ export default function SuperAdminPlans() {
       const { data } = await superAdminApi.plans();
       setPlans(data);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al cargar planes';
+      const msg = e instanceof Error ? e.message : t('superadmin.plans.toast.saveError');
       toast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchPlans();
@@ -64,10 +66,10 @@ export default function SuperAdminPlans() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black text-surface-900 dark:text-white tracking-tight">
-            Planes de Suscripción
+            {t('superadmin.plans.title')}
           </h1>
           <p className="text-surface-500 mt-1">
-            {published.length} publicados · {drafts.length} borradores · {archived.length} archivados
+            {t('superadmin.plans.countSummary', { published: published.length, drafts: drafts.length, archived: archived.length })}
           </p>
         </div>
         <button
@@ -77,7 +79,7 @@ export default function SuperAdminPlans() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Nuevo Plan
+          {t('superadmin.plans.newPlan')}
         </button>
       </div>
 
@@ -86,11 +88,11 @@ export default function SuperAdminPlans() {
         <section>
           <h2 className="text-sm font-bold text-surface-500 uppercase tracking-wider mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500" />
-            Publicados
+            {t('superadmin.plans.published')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {published.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} onClick={() => openDetail(plan)} />
+              <PlanCard key={plan.id} plan={plan} onClick={() => openDetail(plan)} t={t} />
             ))}
           </div>
         </section>
@@ -101,11 +103,11 @@ export default function SuperAdminPlans() {
         <section>
           <h2 className="text-sm font-bold text-surface-500 uppercase tracking-wider mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            Borradores
+            {t('superadmin.plans.drafts')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {drafts.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} onClick={() => openDetail(plan)} />
+              <PlanCard key={plan.id} plan={plan} onClick={() => openDetail(plan)} t={t} />
             ))}
           </div>
         </section>
@@ -116,7 +118,7 @@ export default function SuperAdminPlans() {
         <section>
           <h2 className="text-sm font-bold text-surface-500 uppercase tracking-wider mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-surface-400" />
-            Archivados
+            {t('superadmin.plans.archived')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {archived.map((plan) => (
@@ -127,7 +129,7 @@ export default function SuperAdminPlans() {
               >
                 <p className="font-bold text-surface-600">{plan.name}</p>
                 <p className="text-sm text-surface-400">
-                  ${plan.price_monthly}/mes — Archivado
+                  ${plan.price_monthly}{t('superadmin.plans.perMonth')} — {t('superadmin.plans.status.archived')}
                 </p>
               </div>
             ))}
@@ -145,13 +147,28 @@ export default function SuperAdminPlans() {
   );
 }
 
-function PlanCard({ plan, onClick }: { plan: PlanData; onClick: () => void }) {
+function PlanCard({ plan, onClick, t }: { plan: PlanData; onClick: () => void; t: (key: string, vars?: Record<string, string | number>) => string }) {
   const statusConfig = {
-    published: { label: 'Publicado', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', dot: 'bg-green-500' },
-    draft: { label: 'Borrador', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
-    archived: { label: 'Archivado', color: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400', dot: 'bg-surface-400' },
+    published: { label: t('superadmin.plans.status.published'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', dot: 'bg-green-500' },
+    draft: { label: t('superadmin.plans.status.draft'), color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
+    archived: { label: t('superadmin.plans.status.archived'), color: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-400', dot: 'bg-surface-400' },
   };
   const status = statusConfig[plan.status] || statusConfig.published;
+
+  const featureLabels: Record<string, string> = {
+    whatsapp_campaigns: t('superadmin.planFeatures.whatsapp_campaigns'),
+    sms_campaigns: t('superadmin.planFeatures.sms_campaigns'),
+    email_campaigns: t('superadmin.planFeatures.email_campaigns'),
+    wallet_campaigns: t('superadmin.planFeatures.wallet_campaigns'),
+    geo_fencing: t('superadmin.planFeatures.geo_fencing'),
+    automation: t('superadmin.planFeatures.automation'),
+    advanced_analytics: t('superadmin.planFeatures.advanced_analytics'),
+    ai_assistant: t('superadmin.planFeatures.ai_assistant'),
+    agent_api: t('superadmin.planFeatures.agent_api'),
+    priority_support: t('superadmin.planFeatures.priority_support'),
+    custom_branding: t('superadmin.planFeatures.custom_branding'),
+    data_export: t('superadmin.planFeatures.data_export'),
+  };
 
   return (
     <div
@@ -164,7 +181,7 @@ function PlanCard({ plan, onClick }: { plan: PlanData; onClick: () => void }) {
       <div className="flex items-start justify-between mb-2">
         {plan.is_featured && (
           <span className="self-start bg-gradient-to-r from-brand-500 to-purple-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full">
-            RECOMENDADO
+            {t('superadmin.plans.recommended')}
           </span>
         )}
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto ${status.color}`}>
@@ -176,35 +193,21 @@ function PlanCard({ plan, onClick }: { plan: PlanData; onClick: () => void }) {
         {plan.name}
       </h3>
       <p className="text-sm text-surface-500 mt-1 mb-4 line-clamp-2">
-        {plan.description || 'Sin descripción'}
+        {plan.description || t('superadmin.plans.noDescription')}
       </p>
       <div className="mb-4">
         <span className="text-4xl font-black text-surface-900 dark:text-white">
           ${plan.price_monthly}
         </span>
-        <span className="text-surface-500 text-sm">/mes</span>
-        <p className="text-xs text-surface-400 mt-0.5">o ${plan.price_annual}/año</p>
+        <span className="text-surface-500 text-sm">{t('superadmin.plans.perMonth')}</span>
+        <p className="text-xs text-surface-400 mt-0.5">${plan.price_annual}{t('superadmin.plans.perYear')}</p>
       </div>
       <div className="border-t border-surface-100 pt-4 space-y-2 flex-1">
         <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">
-          Incluye:
+          {t('superadmin.plans.includes')}
         </p>
         {(plan.features || []).slice(0, 5).map((f, i) => {
-          const preset = [
-            { id: 'whatsapp_campaigns', label: 'Campañas de WhatsApp' },
-            { id: 'sms_campaigns', label: 'Campañas de SMS' },
-            { id: 'email_campaigns', label: 'Campañas de Email' },
-            { id: 'wallet_campaigns', label: 'Apple/Google Wallet' },
-            { id: 'geo_fencing', label: 'Geo-Fencing' },
-            { id: 'automation', label: 'Automatización' },
-            { id: 'advanced_analytics', label: 'Analítica Avanzada' },
-            { id: 'ai_assistant', label: 'Asistente IA' },
-            { id: 'agent_api', label: 'Acceso API Agente' },
-            { id: 'priority_support', label: 'Soporte Prioritario' },
-            { id: 'custom_branding', label: 'Marca Personalizada' },
-            { id: 'data_export', label: 'Exportación de Datos' },
-          ].find((p) => p.id === f);
-          const label = preset ? preset.label : f;
+          const label = featureLabels[f] || f;
           return (
             <div key={i} className="flex items-center gap-2 text-sm text-surface-700">
               <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -216,19 +219,19 @@ function PlanCard({ plan, onClick }: { plan: PlanData; onClick: () => void }) {
         })}
       </div>
       <div className="mt-4 pt-4 border-t border-surface-100 grid grid-cols-2 gap-2 text-xs text-surface-400">
-        <p>{plan.max_locations} sucursales</p>
-        <p>{plan.max_users} usuarios</p>
-        <p>{plan.max_customers.toLocaleString()} clientes</p>
-        <p>{plan.trial_days}d prueba</p>
+        <p>{plan.max_locations} {t('superadmin.plans.branches')}</p>
+        <p>{plan.max_users} {t('superadmin.plans.users')}</p>
+        <p>{plan.max_customers.toLocaleString()} {t('superadmin.plans.customers')}</p>
+        <p>{plan.trial_days}{t('superadmin.plans.trialDaysShort')}</p>
         {plan.max_whatsapp_day > 0 && (
-          <p className="text-green-500 flex items-center gap-1"><svg className="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> {plan.max_whatsapp_day} WA/día</p>
+          <p className="text-green-500 flex items-center gap-1"><svg className="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> {plan.max_whatsapp_day} {t('superadmin.plans.whatsappPerDay')}</p>
         )}
         {plan.max_emails_month > 0 && (
-          <p className="text-blue-500 flex items-center gap-1"><svg className="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> {plan.max_emails_month.toLocaleString()} emails/mes</p>
+          <p className="text-blue-500 flex items-center gap-1"><svg className="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> {plan.max_emails_month.toLocaleString()} {t('superadmin.plans.emailsPerMonth')}</p>
         )}
       </div>
       <div className="mt-3 pt-3 border-t border-surface-100 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-        <span className="text-xs text-brand-500 font-semibold">Editar plan →</span>
+        <span className="text-xs text-brand-500 font-semibold">{t('superadmin.plans.editPlanArrow')}</span>
       </div>
     </div>
   );

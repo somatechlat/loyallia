@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 import PlatformSettingsSection from '@/components/superadmin/settings/PlatformSettingsSection';
 import { PlatformSetting } from '@/components/superadmin/settings/types';
@@ -17,6 +18,7 @@ export default function PlatformSettings({
   mode,
   onRefresh,
 }: PlatformSettingsProps) {
+  const { t } = useI18n();
   const [settingForm, setSettingForm] = useState<Record<string, string>>({});
   const [savingSetting, setSavingSetting] = useState<string | null>(null);
 
@@ -33,10 +35,10 @@ export default function PlatformSettings({
     setSavingSetting(key);
     try {
       const { data } = await api.put(`/api/v1/admin/platform/settings/${key}/`, { value });
-      toast.success(data.message || `Setting '${key}' updated`);
+      toast.success(data.message || t('superadmin.settings.platform.settingUpdated', { key }));
       onRefresh();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : `Error updating ${key}`;
+      const msg = err instanceof Error ? err.message : t('superadmin.settings.platform.updateError', { key });
       toast.error(msg);
     } finally {
       setSavingSetting(null);
