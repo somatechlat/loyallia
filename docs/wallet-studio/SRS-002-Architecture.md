@@ -193,6 +193,31 @@ interface BarcodeLayer extends CanvasLayer {
   showOnFront: boolean;
   showOnBack: boolean;
 }
+
+// Back Content Interfaces (NEW)
+interface BackField {
+  id: string;
+  label: string;
+  value: string;
+  isLink: boolean;
+  linkUrl?: string;
+  linkType?: 'web' | 'email' | 'phone' | 'custom';
+  order: number;
+}
+
+interface BackLink {
+  id: string;
+  type: 'website' | 'phone' | 'email' | 'instagram' | 'facebook' | 'custom';
+  url: string;
+  label: string;
+  icon?: string;
+}
+
+interface DetailImage {
+  id: string;
+  sourceUrl: string;
+  description: string;
+}
 ```
 
 ### 4.2 Complete Studio State
@@ -203,6 +228,19 @@ interface WalletPassStudioState {
   
   // Canvas Layers (unified, platform-agnostic)
   layers: (ImageLayer | TextLayer | BarcodeLayer)[];
+
+  // Back / Reverse Content (NEW — unified, platform-specific rendering)
+  backContent: {
+    fields: BackField[];
+    links: BackLink[];
+    appLink?: {
+      appleUrl?: string;
+      googleAndroidAppId?: string;
+      googleIosAppUrl?: string;
+      googleWebUrl?: string;
+    };
+    detailImages?: DetailImage[];
+  };
   
   // Shared Configuration
   colors: {
@@ -217,6 +255,19 @@ interface WalletPassStudioState {
   programDescription: string;
   cardType: string;
   
+  // Back / Reverse Content (NEW — unified, platform-specific rendering)
+  backContent: {
+    fields: BackField[];        // Apple backFields / Google textModulesData
+    links: BackLink[];          // Quick links (both platforms)
+    appLink?: {
+      appleUrl?: string;        // appLaunchURL
+      googleAndroidAppId?: string;
+      googleIosAppUrl?: string;
+      googleWebUrl?: string;
+    };
+    detailImages?: DetailImage[]; // Google-only: images in details view
+  };
+
   // Platform Config (auto-generated from layers)
   platform: {
     apple: {
@@ -232,6 +283,7 @@ interface WalletPassStudioState {
     google: {
       passType: 'LoyaltyClass' | 'OfferClass' | 'GiftCardClass';
       cardTemplateOverride: { cardRowTemplateInfos: GoogleFieldRow[] };
+      detailsTemplateOverride: { detailsItemInfos: GoogleDetailItem[] }; // NEW
       images: { programLogo; heroImage; wideLogo; imageModule };
       reviewStatus: 'UNDER_REVIEW' | 'approved' | 'rejected';
       allowMultipleUsers: 'ONE_USER_ALL_DEVICES' | 'ONE_USER_ONE_DEVICE' | 'MULTIPLE_USERS';
@@ -250,10 +302,11 @@ interface WalletPassStudioState {
     selectedLayerId: string | null;
     zoom: number;
     visiblePlatforms: ('apple' | 'google')[];
-    activeTab: 'templates' | 'images' | 'content' | 'barcode' | 'colors' | 'advanced';
+    activeTab: 'templates' | 'images' | 'content' | 'barcode' | 'colors' | 'advanced' | 'back'; // NEW: 'back' tab
     showGrid: boolean;
     snapToGrid: boolean;
     gridSize: number;
+    showBack: boolean; // NEW: front/back flip toggle
   };
   
   // Template Info
@@ -317,6 +370,12 @@ function migrateWalletDesignState_v1_to_v2(
       apple: buildAppleConfig(old),
       google: buildGoogleConfig(old),
     },
+    backContent: {
+      fields: convertOldFieldsToBackFields(old),  // NEW: migrate old back content
+      links: old.links || [],
+      appLink: old.appLaunchURL ? { appleUrl: old.appLaunchURL } : undefined,
+      detailImages: [],
+    },
     locations: old.locations,
     beacons: old.beacons,
     links: old.links,
@@ -328,6 +387,7 @@ function migrateWalletDesignState_v1_to_v2(
       showGrid: false,
       snapToGrid: true,
       gridSize: 10,
+      showBack: false,  // NEW
     },
     isModified: false,
   };
@@ -373,14 +433,18 @@ User uploads ONE high-resolution image (PNG/JPG, min 1200px width)
 
 ```typescript
 const DESIGN_QUALITY_CHECKS = [
-  { id: 'logo_uploaded',        weight: 0.15, check: hasLogo },
-  { id: 'logo_dimensions',      weight: 0.10, check: logoMeetsMinSize },
-  { id: 'contrast_ratio',       weight: 0.20, check: contrastRatio },
-  { id: 'barcode_configured',   weight: 0.10, check: hasBarcode },
-  { id: 'required_fields',      weight: 0.15, check: hasRequiredFields },
-  { id: 'hero_image',           weight: 0.10, check: hasHeroImage },
-  { id: 'image_aspect_ratios',  weight: 0.10, check: correctAspectRatios },
-  { id: 'back_fields',          weight: 0.05, check: hasBackFields },
+  { id: 'logo_uploaded',        weight: 0.13, check: hasLogo },
+  { id: 'logo_dimensions',      weight: 0.09, check: logoMeetsMinSize },
+  { id: 'contrast_ratio',       weight: 0.18, check: contrastRatio },
+  { id: 'barcode_configured',   weight: 0.09, check: hasBarcode },
+  { id: 'required_fields',      weight: 0.13, check: hasRequiredFields },
+  { id: 'hero_image',           weight: 0.09, check: hasHeroImage },
+  { id: 'image_aspect_ratios',  weight: 0.09, check: correctAspectRatios },
+  { id: 'has_back_fields',      weight: 0.05, check: hasBackFields },        // NEW
+  { id: 'has_terms',            weight: 0.03, check: hasTermsField },        // NEW
+  { id: 'has_contact_info',     weight: 0.03, check: hasContactField },     // NEW
+  { id: 'has_program_rules',    weight: 0.02, check: hasRulesField },       // NEW
+  { id: 'back_content_length',  weight: 0.02, check: backContentNotEmpty }, // NEW
   { id: 'dual_platform',        weight: 0.05, check: bothPlatforms },
 ];
 

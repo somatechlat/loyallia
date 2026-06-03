@@ -27,7 +27,7 @@ def list_offsite_backups() -> list[OffsiteBackupOut]:
     minio_script = project_root / "deploy" / "backups" / "lib" / "minio-client.sh"
 
     if not minio_script.exists():
-        raise RuntimeError("MinIO client script not found")
+        raise RuntimeError(get_message("BACKUP_MINIO_SCRIPT_NOT_FOUND"))
 
     try:
         result = subprocess.run(

@@ -33,6 +33,7 @@ _MESSAGES_ES: dict[str, str] = {
     # SuperAdmin
     "ADMIN_WA_OVERRIDE_REMOVED": "Override removido  usando límite del plan.",
     "ADMIN_WA_OVERRIDE_SET": "Override WA establecido: {limit} msgs/día.",
+    "CAMPAIGN_SCHEDULED_SUCCESS": "Campaña programada exitosamente.",
 }
 
 _MESSAGES_EN: dict[str, str] = {
@@ -66,6 +67,7 @@ _MESSAGES_EN: dict[str, str] = {
     # SuperAdmin
     "ADMIN_WA_OVERRIDE_REMOVED": "Override removed  using plan default.",
     "ADMIN_WA_OVERRIDE_SET": "WA override set: {limit} msgs/day.",
+    "CAMPAIGN_SCHEDULED_SUCCESS": "Campaign scheduled successfully.",
 }
 
 _MESSAGES_FR: dict[str, str] = {}

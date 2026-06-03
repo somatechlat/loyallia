@@ -272,7 +272,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         )
         return {
             "success": True,
-            "message": "Campaign scheduled successfully",
+            "message": get_message("CAMPAIGN_SCHEDULED_SUCCESS"),
             "scheduled_at": data.scheduled_at,
         }
 

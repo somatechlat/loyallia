@@ -205,7 +205,7 @@ class Transaction(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(amount__gte=0) | models.Q(amount__isnull=True),
+                condition=models.Q(amount__gte=0) | models.Q(amount__isnull=True),
                 name="check_transaction_amount_non_negative",
             ),
         ]

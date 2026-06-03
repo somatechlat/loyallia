@@ -14,6 +14,8 @@ from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 
+from common.messages import get_message
+
 from apps.audit.models import AuditAction, AuditLog
 from apps.audit.schemas import (
     ActionBreakdownSchema,
@@ -70,7 +72,7 @@ def list_audit_logs(
         else:
             qs = qs.none()
     elif not is_sa:
-        raise HttpError(403, "Permiso denegado")
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     if action:
         qs = qs.filter(action=action)

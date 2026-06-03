@@ -237,6 +237,16 @@ class SubscriptionPlan(TimestampedModel):
         verbose_name = "Plan de Suscripción"
         verbose_name_plural = "Planes de Suscripción"
         ordering = ["sort_order", "price_monthly"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(price_monthly__gte=0),
+                name="check_plan_price_monthly_non_negative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price_annual__gte=0),
+                name="check_plan_price_annual_non_negative",
+            ),
+        ]
 
     def __repr__(self) -> str:
         return f"<SubscriptionPlan: {self.name} ${self.price_monthly}/mes>"
