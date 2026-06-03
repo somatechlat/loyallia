@@ -63,7 +63,7 @@ class Transaction(models.Model):
     # Who performed the transaction
     staff = models.ForeignKey(
         User,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="transactions",
@@ -72,7 +72,7 @@ class Transaction(models.Model):
     )
     location = models.ForeignKey(
         Location,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="transactions",

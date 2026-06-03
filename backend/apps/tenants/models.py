@@ -545,6 +545,7 @@ class PlatformSetting(models.Model):
         default=False,
         help_text="If True, a container restart is needed for full effect",
     )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, help_text="Timestamp for created.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:

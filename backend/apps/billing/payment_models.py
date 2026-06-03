@@ -283,6 +283,10 @@ class WebhookEvent(models.Model):
     """
     Records processed webhook events for idempotency and replay protection.
     Prevents duplicate processing of the same webhook payload.
+
+    NOTE: This is an intentional global table (no tenant FK). Webhook events
+    are processed by the platform-level payment gateway and must be deduplicated
+    across all tenants to prevent replay attacks.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
