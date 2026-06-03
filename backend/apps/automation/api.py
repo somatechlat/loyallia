@@ -3,6 +3,8 @@ Loyallia Automation API router
 Campaign automation and workflow management.
 """
 
+import logging
+
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -23,6 +25,8 @@ from common.plan_enforcement import (
     check_plan_limit,
     require_active_subscription,
 )
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -187,6 +191,26 @@ def create_automation(request, data: CreateAutomationSchema):
     automation.target_segments = data.target_segments
     automation.save()
 
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.CREATE,
+            resource_type="automation",
+            resource_id=str(automation.id),
+            tenant_id=str(request.tenant.id),
+            details={
+                "name": automation.name,
+                "trigger": automation.trigger,
+                "action": automation.action,
+            },
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit automation creation: %s", e, exc_info=True)
+
     return {
         "id": str(automation.id),
         "message": get_message("AUTOMATION_CREATED", name=automation.name),
@@ -251,6 +275,22 @@ def update_automation(request, automation_id: str, data: UpdateAutomationSchema)
     if update_fields:
         automation.save(update_fields=update_fields)
 
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="automation",
+            resource_id=str(automation.id),
+            tenant_id=str(request.tenant.id),
+            details={"updated_fields": update_fields},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit automation update: %s", e, exc_info=True)
+
     return {"message": get_message("AUTOMATION_UPDATED")}
 
 
@@ -270,7 +310,25 @@ def delete_automation(request, automation_id: str):
             Automation, name=automation_id, tenant=request.tenant
         )
 
+    automation_id_str = str(automation.id)
+    automation_name = automation.name
     automation.delete()
+
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.DELETE,
+            resource_type="automation",
+            resource_id=automation_id_str,
+            tenant_id=str(request.tenant.id),
+            details={"name": automation_name},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit automation deletion: %s", e, exc_info=True)
 
     # Return 204 No Content
     from django.http import HttpResponse
@@ -288,6 +346,22 @@ def toggle_automation(request, automation_id: str):
 
     automation.is_active = not automation.is_active
     automation.save(update_fields=["is_active"])
+
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="automation",
+            resource_id=str(automation.id),
+            tenant_id=str(request.tenant.id),
+            details={"is_active": automation.is_active},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit automation toggle: %s", e, exc_info=True)
 
     status_key = "AUTOMATION_ENABLED" if automation.is_active else "AUTOMATION_DISABLED"
     return {"message": get_message(status_key, name=automation.name)}
@@ -317,6 +391,27 @@ def execute_automation_manually(request, automation_id: str, customer_id: str):
         execution_context={"manual": True},
         success=success,
     )
+
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.CREATE,
+            resource_type="automation_execution",
+            resource_id=str(automation.id),
+            tenant_id=str(request.tenant.id),
+            details={
+                "automation_name": automation.name,
+                "customer_id": customer_id,
+                "success": success,
+                "trigger_event": "manual_execution",
+            },
+            status=AuditStatus.SUCCESS if success else AuditStatus.FAILED,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit automation execution: %s", e, exc_info=True)
 
     return {
         "success": success,

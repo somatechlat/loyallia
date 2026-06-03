@@ -5,6 +5,7 @@ Scanner endpoints that use the RedemptionGateway directly.
 Mounted at /scanner/v2/ as the canonical scanner API.
 """
 
+import logging
 from decimal import Decimal
 from typing import Literal
 
@@ -20,6 +21,8 @@ from common.permissions import is_staff_or_above, jwt_auth
 from common.rate_limit import rate_limit
 
 from .command import RedemptionCommand
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -143,6 +146,29 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
 
     gateway = RedemptionGateway()
     result = gateway.process(command, tenant)
+
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.CREATE if result.success else AuditAction.UPDATE,
+            resource_type="redemption",
+            resource_id=result.transaction_id or "",
+            tenant_id=str(tenant.id),
+            details={
+                "qr_code": data.qr_code,
+                "intent": data.intent,
+                "amount": data.amount,
+                "success": result.success,
+                "denial_reasons": result.denial_reasons if not result.success else [],
+                "reward_earned": result.reward_earned,
+            },
+            status=AuditStatus.SUCCESS if result.success else AuditStatus.FAILED,
+        )
+    except Exception as e:
+        logger.warning("Failed to audit redemption transaction: %s", e, exc_info=True)
 
     if not result.success:
         # Return 422 with denial details so the scanner UI can show reasons
