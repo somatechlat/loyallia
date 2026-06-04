@@ -4,6 +4,8 @@ Tests for check_plan_limit, check_feature_access, get_tenant_limits,
 get_current_usage, and all enforcement decorators.
 """
 
+import json
+
 from django.test import RequestFactory, TestCase
 from ninja.errors import HttpError
 
@@ -216,7 +218,7 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
         result = view(request)
         self.assertEqual(result, "ok")
 
-    def test_raises_402_when_suspended(self):
+    def test_returns_402_json_when_suspended(self):
         t = make_tenant()
         make_subscription(t, status=SubscriptionStatus.SUSPENDED)
         request = RequestFactory().get("/")
@@ -226,11 +228,11 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
         def view(req):
             return "ok"
 
-        with self.assertRaises(HttpError) as ctx:
-            view(request)
-        self.assertEqual(ctx.exception.status_code, 402)
+        result = view(request)
+        self.assertEqual(result.status_code, 402)
+        self.assertIn("error", json.loads(result.content))
 
-    def test_raises_402_when_no_subscription(self):
+    def test_returns_402_json_when_no_subscription(self):
         t = make_tenant()
         request = RequestFactory().get("/")
         request.tenant = t
@@ -239,9 +241,9 @@ class RequireActiveSubscriptionDecoratorTest(TestCase):
         def view(req):
             return "ok"
 
-        with self.assertRaises(HttpError) as ctx:
-            view(request)
-        self.assertEqual(ctx.exception.status_code, 402)
+        result = view(request)
+        self.assertEqual(result.status_code, 402)
+        self.assertIn("error", json.loads(result.content))
 
     def test_passes_with_trial(self):
         t = make_tenant()
@@ -277,7 +279,7 @@ class EnforceLimitDecoratorTest(TestCase):
         result = view(request)
         self.assertEqual(result, "ok")
 
-    def test_raises_403_when_at_limit(self):
+    def test_returns_403_json_when_at_limit(self):
         plan = make_plan(max_customers=1)
         t = make_tenant()
         make_subscription(t, plan=plan)
@@ -289,9 +291,9 @@ class EnforceLimitDecoratorTest(TestCase):
         def view(req):
             return "ok"
 
-        with self.assertRaises(HttpError) as ctx:
-            view(request)
-        self.assertEqual(ctx.exception.status_code, 403)
+        result = view(request)
+        self.assertEqual(result.status_code, 403)
+        self.assertIn("error", json.loads(result.content))
 
 
 class RequireFeatureDecoratorTest(TestCase):
@@ -311,7 +313,7 @@ class RequireFeatureDecoratorTest(TestCase):
         result = view(request)
         self.assertEqual(result, "ok")
 
-    def test_raises_403_when_feature_unavailable(self):
+    def test_returns_403_json_when_feature_unavailable(self):
         plan = make_plan(features=["automation"])
         t = make_tenant()
         make_subscription(t, plan=plan)
@@ -322,6 +324,6 @@ class RequireFeatureDecoratorTest(TestCase):
         def view(req):
             return "ok"
 
-        with self.assertRaises(HttpError) as ctx:
-            view(request)
-        self.assertEqual(ctx.exception.status_code, 403)
+        result = view(request)
+        self.assertEqual(result.status_code, 403)
+        self.assertIn("error", json.loads(result.content))

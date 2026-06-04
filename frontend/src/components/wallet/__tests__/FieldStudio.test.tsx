@@ -3,8 +3,9 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { FieldStudio } from '@/components/wallet/studio/FieldStudio';
 import type { UnifiedField } from '@/components/wallet/types/unified-state';
 
@@ -27,14 +28,17 @@ function createMockField(overrides: Partial<UnifiedField> = {}): UnifiedField {
 }
 
 describe('FieldStudio', () => {
+  const updates: Array<UnifiedField[] | ((prev: UnifiedField[]) => UnifiedField[])> = [];
   const baseProps = {
-    fields: [],
+    fields: [] as UnifiedField[],
     cardType: 'stamp' as const,
-    onUpdateFields: vi.fn(),
+    onUpdateFields: (update: UnifiedField[] | ((prev: UnifiedField[]) => UnifiedField[])) => {
+      updates.push(update);
+    },
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    updates.length = 0;
   });
 
   afterEach(() => {
@@ -42,7 +46,11 @@ describe('FieldStudio', () => {
   });
 
   it('renders limit indicators for all groups', () => {
-    render(<FieldStudio {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText('Field Limits')).toBeDefined();
     // Group labels appear in both limit indicators and group headers
     expect(screen.getAllByText('Encabezado').length).toBeGreaterThanOrEqual(1);
@@ -58,14 +66,22 @@ describe('FieldStudio', () => {
       createMockField({ id: 'f2', label: 'Primary 1', fieldGroup: 'primary', order: 0 }),
       createMockField({ id: 'f3', label: 'Secondary 1', fieldGroup: 'secondary', order: 0 }),
     ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
     expect(screen.getByText('Header 1')).toBeDefined();
     expect(screen.getByText('Primary 1')).toBeDefined();
     expect(screen.getByText('Secondary 1')).toBeDefined();
   });
 
   it('shows empty state for groups without fields', () => {
-    render(<FieldStudio {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getAllByText('No fields in this group').length).toBeGreaterThan(0);
   });
 
@@ -74,7 +90,11 @@ describe('FieldStudio', () => {
       createMockField({ id: 'f1', fieldGroup: 'header', order: 0 }),
       createMockField({ id: 'f2', fieldGroup: 'header', order: 1 }),
     ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
     expect(screen.getByText('2 / 3')).toBeDefined();
   });
 
@@ -82,43 +102,63 @@ describe('FieldStudio', () => {
     const fields: UnifiedField[] = [
       createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header', showOnApple: true }),
     ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
     const appleBtn = screen.getByLabelText('Visible on Apple Wallet');
     fireEvent.click(appleBtn);
-    expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
+    expect(updates.length).toBe(1);
   });
 
   it('toggles Google visibility when google button clicked', () => {
     const fields: UnifiedField[] = [
       createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header', showOnGoogle: true }),
     ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
     const googleBtn = screen.getByLabelText('Visible on Google Wallet');
     fireEvent.click(googleBtn);
-    expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
+    expect(updates.length).toBe(1);
   });
 
   it('deletes a field when delete button clicked', () => {
     const fields: UnifiedField[] = [
       createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header' }),
     ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
     const deleteBtn = screen.getByLabelText('Delete field');
     fireEvent.click(deleteBtn);
-    expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
+    expect(updates.length).toBe(1);
   });
 
   it('opens quick add form when add button clicked', () => {
-    render(<FieldStudio {...baseProps} />);
-    const addBtn = screen.getAllByLabelText(/Add field to/)[0]!;
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} />
+      </I18nProvider>
+    );
+    const addBtn = screen.getAllByLabelText(/Add Field/)[0]!;
     fireEvent.click(addBtn);
     expect(screen.getByPlaceholderText('Label')).toBeDefined();
     expect(screen.getByPlaceholderText('Value')).toBeDefined();
   });
 
   it('adds a field via quick add', async () => {
-    render(<FieldStudio {...baseProps} />);
-    const addBtn = screen.getAllByLabelText(/Add field to/)[0]!;
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} />
+      </I18nProvider>
+    );
+    const addBtn = screen.getAllByLabelText(/Add Field/)[0]!;
     fireEvent.click(addBtn);
 
     const labelInput = screen.getByPlaceholderText('Label');
@@ -132,13 +172,17 @@ describe('FieldStudio', () => {
     fireEvent.click(addFieldBtns[0]!);
 
     await waitFor(() => {
-      expect(baseProps.onUpdateFields).toHaveBeenCalled();
+      expect(updates.length).toBeGreaterThan(0);
     });
   });
 
   it('opens full editor when "Open Editor" clicked', () => {
-    render(<FieldStudio {...baseProps} />);
-    const addBtn = screen.getAllByLabelText(/Add field to/)[0]!;
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} />
+      </I18nProvider>
+    );
+    const addBtn = screen.getAllByLabelText(/Add Field/)[0]!;
     fireEvent.click(addBtn);
     const openEditorBtn = screen.getByText('Open Editor');
     fireEvent.click(openEditorBtn);
@@ -149,14 +193,22 @@ describe('FieldStudio', () => {
     const fields: UnifiedField[] = [
       createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header' }),
     ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
-    const card = screen.getByRole('button', { name: /Field Field 1/ });
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
+    const card = screen.getByRole('button', { name: /Label Field 1/ });
     fireEvent.click(card);
     expect(screen.getByRole('dialog')).toBeDefined();
   });
 
   it('renders global add field button', () => {
-    render(<FieldStudio {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText('Add Field')).toBeDefined();
   });
 
@@ -164,8 +216,12 @@ describe('FieldStudio', () => {
     const fields: UnifiedField[] = Array.from({ length: 3 }, (_, i) =>
       createMockField({ id: `f${i}`, fieldGroup: 'header', order: i })
     );
-    render(<FieldStudio {...baseProps} fields={fields} />);
-    const addButtons = screen.getAllByLabelText(/Add field to/);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
+    const addButtons = screen.getAllByLabelText(/Add Field/);
     // Header group add button should not exist when at capacity (3/3)
     // But other groups still have add buttons
     expect(addButtons.length).toBeLessThan(5);
@@ -180,7 +236,11 @@ describe('FieldStudio', () => {
         notifications: { appleChangeMessage: 'Updated to %@' },
       }),
     ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
+    render(
+      <I18nProvider>
+        <FieldStudio {...baseProps} fields={fields} />
+      </I18nProvider>
+    );
     expect(screen.getByLabelText('Notifications configured')).toBeDefined();
   });
 });

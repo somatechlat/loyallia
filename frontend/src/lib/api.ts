@@ -219,7 +219,7 @@ export const customersApi = {
   list: (params?: Record<string, unknown>) => api.get('/api/v1/customers/', { params }),
   get: (id: string) => api.get(`/api/v1/customers/${id}/`),
   create: (data: Record<string, unknown>) => api.post('/api/v1/customers/', data),
-  update: (id: string, data: object) => api.patch(`/api/v1/customers/${id}/`, data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/api/v1/customers/${id}/`, data),
   delete: (id: string) => api.delete(`/api/v1/customers/${id}/`),
   importCsv: (formData: FormData) => api.post('/api/v1/customers/import/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -274,8 +274,8 @@ export const whatsappApi = {
 export const automationApi = {
   list: () => api.get('/api/v1/automation/'),
   get: (id: string) => api.get(`/api/v1/automation/${id}/`),
-  create: (data: object) => api.post('/api/v1/automation/', data),
-  update: (id: string, data: object) => api.put(`/api/v1/automation/${id}/`, data),
+  create: (data: Record<string, unknown>) => api.post('/api/v1/automation/', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/api/v1/automation/${id}/`, data),
   delete: (id: string) => api.delete(`/api/v1/automation/${id}/`),
   toggle: (id: string) => api.post(`/api/v1/automation/${id}/toggle/`),
   execute: (id: string, customerId: string) => api.post(`/api/v1/automation/${id}/execute/?customer_id=${customerId}`),
@@ -327,6 +327,26 @@ export const mediaApi = {
 /** Notification campaign creation endpoints. */
 export const campaignsApi = {
   create: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
+};
+
+/** AI assistant endpoints for Wallet Pass Studio. */
+export const aiApi = {
+  generateTemplate: (data: {
+    description: string;
+    card_type: string;
+    industry: string;
+    language?: string;
+  }) => api.post('/api/v1/ai/generate-template/', data),
+  suggestColors: (data: {
+    description: string;
+    industry: string;
+  }) => api.post('/api/v1/ai/suggest-colors/', data),
+  critiqueDesign: (data: {
+    design_data: Record<string, unknown>;
+  }) => api.post('/api/v1/ai/critique-design/', data),
+  suggestStampIcons: (data: {
+    business_type: string;
+  }) => api.post('/api/v1/ai/suggest-stamp-icons/', data),
 };
 
 /** Scanner validation and transaction endpoints. */

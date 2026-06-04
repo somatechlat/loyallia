@@ -6,13 +6,13 @@ Tests for:
   2. i18n message codes for SMS/Data Export/AI
 
 SECURITY: Twilio credentials are SYSTEM secrets stored in Vault.
-No fake credentials. Tests skip if Vault credentials are unavailable.
+No fake credentials. Tests use real Vault state.
 """
 
 from django.test import TestCase
 
 from common.messages import get_message
-from common.vault import get_secret
+from common.vault import clear_test_overrides, get_secret, set_test_override
 
 
 def _get_twilio_test_credentials():
@@ -37,25 +37,33 @@ def _get_twilio_test_credentials():
 class SMSClientAvailabilityTest(TestCase):
     """Tests for is_sms_available() with real Vault state."""
 
+    def setUp(self):
+        # Ensure test mode is enabled so test credentials are used
+        clear_test_overrides()
+        set_test_override("twilio_use_test_mode", "true")
+
+    def tearDown(self):
+        clear_test_overrides()
+
     def test_available_when_credentials_present(self):
         """If Vault has Twilio credentials, SMS is available."""
         from apps.notifications.sms.client import is_sms_available
 
-        creds = _get_twilio_test_credentials()
-        if not creds:
-            self.skipTest("Twilio credentials not available in Vault")
         self.assertTrue(is_sms_available())
 
 
 class SMSClientSendTest(TestCase):
     """Tests for send_sms() function with real Twilio client."""
 
+    def setUp(self):
+        clear_test_overrides()
+        set_test_override("twilio_use_test_mode", "true")
+
+    def tearDown(self):
+        clear_test_overrides()
+
     def test_send_sms_with_real_client(self):
         """Send SMS using real Twilio client with Vault credentials."""
-        creds = _get_twilio_test_credentials()
-        if not creds:
-            self.skipTest("Twilio credentials not available in Vault")
-
         from apps.notifications.sms.client import send_sms
 
         result = send_sms(phone="+593991234567", message="Hello from Loyallia!")
@@ -74,11 +82,14 @@ class SMSClientSendTest(TestCase):
 class SMSClientBulkTest(TestCase):
     """Tests for send_sms_bulk() function."""
 
-    def test_bulk_send_mixed_results(self):
-        creds = _get_twilio_test_credentials()
-        if not creds:
-            self.skipTest("Twilio credentials not available in Vault")
+    def setUp(self):
+        clear_test_overrides()
+        set_test_override("twilio_use_test_mode", "true")
 
+    def tearDown(self):
+        clear_test_overrides()
+
+    def test_bulk_send_mixed_results(self):
         from apps.notifications.sms.client import send_sms_bulk
 
         recipients = [

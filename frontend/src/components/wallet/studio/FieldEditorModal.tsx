@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { LockedFeature } from '@/components/shared/LockedFeature';
 import type { UnifiedField, FieldGroup, CardType } from '@/components/wallet/types/unified-state';
 import { FIELD_GROUP_METADATA } from '@/components/wallet/constants';
 import { validateField, canAddFieldToGroup } from '@/components/wallet/utils/field-validation';
@@ -56,6 +58,7 @@ export function FieldEditorModal({
   allFields,
 }: FieldEditorModalProps) {
   const { t } = useI18n();
+  const plan = usePlanFeatures();
   const [draft, setDraft] = useState<UnifiedField>(field);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -342,11 +345,23 @@ export function FieldEditorModal({
             </div>
           </div>
 
-          {/* Notifications */}
-          <NotificationConfigPanel
-            notifications={draft.notifications}
-            onChange={(notifications) => updateDraft({ notifications })}
-          />
+          {/* Notifications — gated by plan */}
+          {plan.wallet_advanced_fields ? (
+            <NotificationConfigPanel
+              notifications={draft.notifications}
+              onChange={(notifications) => updateDraft({ notifications })}
+            />
+          ) : (
+            <div className="border border-neutral-200 dark:border-neutral-700 rounded-lg p-4">
+              <LockedFeature
+                featureName="Notificaciones avanzadas de campos"
+                requiredPlan="Profesional o superior"
+                onUpgrade={() => {
+                  /* TODO: open upgrade modal */
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}
