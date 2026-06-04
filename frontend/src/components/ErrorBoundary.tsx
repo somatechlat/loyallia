@@ -1,5 +1,6 @@
 'use client';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { I18nContext } from '@/lib/i18n';
 
 /**
  * Props for the ErrorBoundary component.
@@ -27,6 +28,9 @@ interface State {
  * @returns JSX.Element
  */
 export class ErrorBoundary extends Component<Props, State> {
+  static contextType = I18nContext;
+  declare context: React.ContextType<typeof I18nContext>;
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -42,16 +46,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const { t } = this.context || { t: (k: string) => k };
       return this.props.fallback || (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
-            <p className="text-gray-600 mb-6">An unexpected error occurred. Please try refreshing the page.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('errorBoundary.title')}</h2>
+            <p className="text-gray-600 mb-6">{t('errorBoundary.description')}</p>
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Refresh Page
+              {t('errorBoundary.refreshButton')}
             </button>
           </div>
         </div>

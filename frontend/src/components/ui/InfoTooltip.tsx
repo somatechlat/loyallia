@@ -35,7 +35,7 @@ export default function InfoTooltip({ explanation, label }: InfoTooltipProps) {
         onClick={() => setOpen((o) => !o)}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        aria-label={label ? `Info: ${t(label)}` : t("Información")}
+        aria-label={label ? `Info: ${t(label)}` : t("common.information")}
       >
         i
       </button>

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { uploadFile } from '@/lib/upload';
+import { useI18n } from '@/lib/i18n';
 
 function TrashIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
@@ -62,6 +63,7 @@ export default function ImageUploadField({
   aspectClass = 'aspect-video',
   compact = false,
 }: ImageUploadFieldProps) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -145,7 +147,7 @@ export default function ImageUploadField({
     <div className="space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-semibold text-surface-700 dark:text-surface-200">{label}</span>
-        {required && <span className="text-xs bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded">Obligatorio</span>}
+        {required && <span className="text-xs bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded">{t('common.required')}</span>}
         {specs && <span className="text-xs text-surface-500 dark:text-surface-400 ml-auto font-mono">{specs}</span>}
       </div>
 
@@ -165,7 +167,7 @@ export default function ImageUploadField({
         {uploading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <SpinnerIcon className="w-8 h-8 text-brand-500" />
-            <span className="text-xs text-surface-500 dark:text-surface-400">Subiendo...</span>
+            <span className="text-xs text-surface-500 dark:text-surface-400">{t('common.uploading')}</span>
           </div>
         ) : displayUrl ? (
           <img src={displayUrl} alt={label} className="w-full h-full object-contain" />
@@ -173,7 +175,7 @@ export default function ImageUploadField({
           <>
             <ImageIcon className="w-8 h-8 text-surface-400 dark:text-surface-500" />
             <span className="text-xs text-surface-500 dark:text-surface-400 text-center">
-              Haz click o arrastra una imagen
+              {t('imageUpload.prompt')}
               {specs && <><br /><span className="font-mono">{specs}</span></>}
             </span>
           </>
@@ -189,7 +191,7 @@ export default function ImageUploadField({
             className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 flex items-center gap-1"
             type="button"
           >
-            <TrashIcon className="w-3 h-3" /> Eliminar
+            <TrashIcon className="w-3 h-3" /> {t('common.delete')}
           </button>
         </div>
       )}

@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * @description Displays a cookie consent banner for LOPDP compliance.
  * @returns JSX.Element | null
  */
 export default function CookieConsent() {
+  const { t } = useI18n();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -39,35 +41,29 @@ export default function CookieConsent() {
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="text-sm text-surface-600 dark:text-surface-300 leading-relaxed max-w-4xl">
           <p className="font-bold text-surface-900 dark:text-white mb-1">
-            Políticas de Privacidad y Cookies
+            {t('cookieConsent.title')}
           </p>
-          Utilizamos cookies esenciales y tecnologías similares para garantizar
-          el funcionamiento de la plataforma, gestionar sesiones de usuario y
-          analizar tráfico anónimo. Al continuar utilizando Loyallia, usted
-          otorga su <strong>consentimiento expreso e inequívoco</strong> bajo la
-          Ley Orgánica de Protección de Datos Personales (LOPDP) de Ecuador.
-          Puede revisar nuestra{" "}
+          {t('cookieConsent.body')}{" "}
           <Link
             href="/legal/privacy"
             className="text-brand-600 dark:text-brand-400 hover:underline"
           >
-            Política de Privacidad
+            {t('cookieConsent.privacyPolicy')}
           </Link>{" "}
-          y nuestros{" "}
+          &{" "}
           <Link
             href="/legal/terms"
             className="text-brand-600 dark:text-brand-400 hover:underline"
           >
-            Términos de Servicio
-          </Link>{" "}
-          para más información sobre cómo manejamos sus datos.
+            {t('cookieConsent.termsOfService')}
+          </Link>.
         </div>
         <div className="flex-shrink-0 w-full md:w-auto">
           <button
             onClick={handleAccept}
             className="w-full md:w-auto px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-md transition-colors"
           >
-            Aceptar Todo
+            {t('cookieConsent.acceptAll')}
           </button>
         </div>
       </div>
