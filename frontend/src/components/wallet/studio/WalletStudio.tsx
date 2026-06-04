@@ -3,6 +3,8 @@
  *
  * Composes the toolbar, canvas, and sidebar into a unified layout.
  * Wraps state management with undo/redo and auto-save.
+ * Adds mobile responsiveness, keyboard shortcuts, session recovery,
+ * and error boundaries per Phase 9.
  */
 
 'use client';
@@ -11,13 +13,20 @@ import React from 'react';
 import { useWalletStudio } from '@/hooks/useWalletStudio';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useSessionRecovery, persistSessionState } from '@/hooks/useSessionRecovery';
 import { useI18n } from '@/lib/i18n';
+import { useDesignScore } from '@/hooks/useDesignScore';
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
-import { AIChatModal } from './AIChatModal';
+import { TemplateGallery } from './TemplateGallery';
 import { SaveTemplateModal } from './SaveTemplateModal';
-import type { WalletPassStudioState, CardTypeConfig } from '@/components/wallet/types/unified-state';
+import { AIChatModal } from './AIChatModal';
+import { MobileBottomSheet } from './MobileBottomSheet';
+import { ErrorBoundary } from './ErrorBoundary';
+import type { WalletPassStudioState, CardTypeConfig, PlatformView } from '@/components/wallet/types/unified-state';
+import type { WalletTemplate } from '@/components/wallet/types/templates';
 import type { AIVariation } from '@/hooks/useAI';
 
 export interface WalletStudioProps {
@@ -29,8 +38,7 @@ export interface WalletStudioProps {
 export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
-  const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
-  const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
+  const designScoreResult = useDesignScore(studio.state);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
     studio.state,
     { maxHistory: 50 }
@@ -150,22 +158,122 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
     [setUndoableState]
   );
 
+  const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = React.useState(false);
+  const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Session recovery
+  const sessionRecovery = useSessionRecovery();
+
+  // Persist session state for crash recovery
+  React.useEffect(() => {
+    const handleBeforeUnload = () => {
+      persistSessionState(displayState);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [displayState]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onUndo: undo,
+    onRedo: redo,
+    onSave: () => handleSave(),
+    onExport: handleExport,
+    onAIOpen: () => setIsAIModalOpen(true),
+    onToggleBack: () => wrappedUpdateUI({ showBack: !displayState.ui.showBack }),
+    onZoomIn: () => wrappedUpdateUI({ zoom: Math.min((displayState.ui.zoom ?? 1) + 0.1, 2) }),
+    onZoomOut: () => wrappedUpdateUI({ zoom: Math.max((displayState.ui.zoom ?? 1) - 0.1, 0.5) }),
+    onResetZoom: () => wrappedUpdateUI({ zoom: 1 }),
+    onEscape: () => {
+      setIsTemplateGalleryOpen(false);
+      setIsSaveTemplateModalOpen(false);
+      setIsAIModalOpen(false);
+      setIsBottomSheetOpen(false);
+      studio.setSelectedFieldId(null);
+    },
+    onDuplicate: () => {
+      if (studio.selectedFieldId) studio.duplicateField(studio.selectedFieldId);
+    },
+    onDelete: () => {
+      if (studio.selectedFieldId) studio.deleteField(studio.selectedFieldId);
+    },
+    onNudge: (direction, amount) => {
+      if (studio.selectedFieldId) studio.nudgeField(studio.selectedFieldId, direction, amount);
+    },
+    onToggleGrid: () => wrappedUpdateUI({ showGrid: !displayState.ui.showGrid }),
+    onNextField: () => {
+      const focusable = Array.from(document.querySelectorAll<HTMLElement>(
+        '[data-field-id], [data-tab-button], input, textarea, select, button'
+      )).filter((el) => el.tabIndex >= -1 && !el.disabled && el.offsetParent !== null);
+      const active = document.activeElement as HTMLElement | null;
+      const idx = focusable.indexOf(active ?? document.body);
+      const next = focusable[(idx + 1) % focusable.length];
+      next?.focus();
+    },
+    onPrevField: () => {
+      const focusable = Array.from(document.querySelectorAll<HTMLElement>(
+        '[data-field-id], [data-tab-button], input, textarea, select, button'
+      )).filter((el) => el.tabIndex >= -1 && !el.disabled && el.offsetParent !== null);
+      const active = document.activeElement as HTMLElement | null;
+      const idx = focusable.indexOf(active ?? document.body);
+      const prev = focusable[(idx - 1 + focusable.length) % focusable.length];
+      prev?.focus();
+    },
+  });
+
+  // Swipe detection for mobile platform switching
+  const touchStartXRef = React.useRef(0);
+  const handleTouchStart = React.useCallback((e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? 0;
+  }, []);
+
+  const handleTouchEnd = React.useCallback(
+    (e: React.TouchEvent) => {
+      if (!isMobile) return;
+      const endX = e.changedTouches[0]?.clientX ?? 0;
+      const deltaX = endX - touchStartXRef.current;
+      const threshold = 50;
+      if (Math.abs(deltaX) < threshold) return;
+
+      const nextView: PlatformView = deltaX > 0 ? 'apple' : 'google';
+      wrappedUpdateUI({ platformView: nextView });
+    },
+    [isMobile, wrappedUpdateUI]
+  );
+
   const handleSave = React.useCallback(() => {
     onSave?.(displayState);
-  }, [onSave, displayState]);
+    sessionRecovery.clearRecovery();
+  }, [onSave, displayState, sessionRecovery]);
 
   const handleSaveAsTemplate = React.useCallback(() => {
     setIsSaveTemplateModalOpen(true);
   }, []);
 
-  const handleSaveTemplateSubmit = React.useCallback(
+  const handleConfirmSaveTemplate = React.useCallback(
     (name: string, description: string) => {
-      onSaveAsTemplate?.({ ...displayState, name, description } as WalletPassStudioState);
+      setIsSaveTemplateModalOpen(false);
+      onSaveAsTemplate?.(displayState);
+      sessionRecovery.clearRecovery();
+      // eslint-disable-next-line no-console
+      console.log('Template saved:', { name, description });
     },
-    [onSaveAsTemplate, displayState]
+    [onSaveAsTemplate, displayState, sessionRecovery]
   );
 
   const handleAIGenerate = React.useCallback(() => {
+    setIsTemplateGalleryOpen(false);
     setIsAIModalOpen(true);
   }, []);
 
@@ -197,9 +305,31 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
   }, []);
 
   const handleOpenTemplates = React.useCallback(() => {
-    // Placeholder for template gallery — will be wired in a later phase
-    // eslint-disable-next-line no-console
-    console.log('Open templates triggered');
+    setIsTemplateGalleryOpen(true);
+  }, []);
+
+  const handleSelectTemplate = React.useCallback(
+    (template: WalletTemplate) => {
+      setUndoableState((prev: WalletPassStudioState) => ({
+        ...prev,
+        name: template.name,
+        cardType: template.cardType,
+        industry: template.industry,
+        colors: template.colors,
+        cardTypeConfig: template.cardTypeConfig as CardTypeConfig,
+        barcode: template.barcode,
+        backContent: template.backContent,
+        apple: { ...prev.apple, ...template.apple },
+        google: { ...prev.google, ...template.google },
+        ui: { ...prev.ui, appliedTemplateId: template.id, isModified: true },
+      }));
+      setIsTemplateGalleryOpen(false);
+    },
+    [setUndoableState]
+  );
+
+  const handleCreateBlank = React.useCallback(() => {
+    setIsTemplateGalleryOpen(false);
   }, []);
 
   // Auto-save hook
@@ -209,70 +339,159 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
     enabled: true,
   });
 
-  return (
-    <div className="flex flex-col h-full bg-neutral-50 dark:bg-neutral-950">
-      <StudioToolbar
-        onUndo={undo}
-        onRedo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        platformView={displayState.ui.platformView}
-        onPlatformViewChange={(view) => wrappedUpdateUI({ platformView: view })}
-        zoom={displayState.ui.zoom}
-        onZoomChange={(z) => wrappedUpdateUI({ zoom: z })}
-        showBack={displayState.ui.showBack}
-        onToggleBack={() => wrappedUpdateUI({ showBack: !displayState.ui.showBack })}
-        designScore={undefined}
-        onOpenTemplates={handleOpenTemplates}
-        onSave={handleSave}
-        onSaveAsTemplate={handleSaveAsTemplate}
-        onExport={handleExport}
-        onAIGenerate={handleAIGenerate}
-        isModified={displayState.ui.isModified}
-      />
+  // On mobile, force single preview when view is 'both'
+  const effectivePlatformView: PlatformView =
+    isMobile && displayState.ui.platformView === 'both' ? 'apple' : displayState.ui.platformView;
 
-      <div className="flex-1 flex overflow-hidden">
-        <StudioCanvas
-          state={displayState}
+  const handleRecoverSession = React.useCallback(() => {
+    const recovered = sessionRecovery.recover();
+    if (recovered) {
+      setUndoableState((prev) => ({
+        ...prev,
+        ...recovered,
+        ui: { ...prev.ui, ...recovered.ui, isModified: true },
+      }));
+    }
+    sessionRecovery.clearRecovery();
+  }, [sessionRecovery, setUndoableState]);
+
+  return (
+    <ErrorBoundary>
+      <div className="flex flex-col h-full bg-neutral-50 dark:bg-neutral-950">
+        {/* Recovery banner */}
+        {sessionRecovery.hasRecovery && (
+          <div className="flex items-center justify-between px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm">
+            <span>Se detectó una sesión anterior sin guardar.</span>
+            <button
+              type="button"
+              onClick={handleRecoverSession}
+              className="px-3 py-1 rounded-md bg-amber-100 dark:bg-amber-800 hover:bg-amber-200 dark:hover:bg-amber-700 font-medium text-xs"
+              data-testid="recovery-recover-btn"
+            >
+              Recuperar
+            </button>
+          </div>
+        )}
+
+        <StudioToolbar
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
           platformView={displayState.ui.platformView}
+          onPlatformViewChange={(view) => wrappedUpdateUI({ platformView: view })}
+          zoom={displayState.ui.zoom}
+          onZoomChange={(z) => wrappedUpdateUI({ zoom: z })}
           showBack={displayState.ui.showBack}
+          onToggleBack={() => wrappedUpdateUI({ showBack: !displayState.ui.showBack })}
+          designScore={designScoreResult.score}
+          onOpenTemplates={handleOpenTemplates}
+          onSave={handleSave}
+          onSaveAsTemplate={handleSaveAsTemplate}
+          onExport={handleExport}
+          onAIGenerate={handleAIGenerate}
+          isModified={displayState.ui.isModified}
         />
-        <StudioSidebar
-          state={displayState}
-          updateColors={wrappedUpdateColors}
-          updateImages={wrappedUpdateImages}
-          updateFields={wrappedUpdateFields}
-          updateBarcode={wrappedUpdateBarcode}
-          updateBackContent={wrappedUpdateBackContent}
-          updateCardTypeConfig={wrappedUpdateCardTypeConfig}
-          updateAppleConfig={wrappedUpdateAppleConfig}
-          updateGoogleConfig={wrappedUpdateGoogleConfig}
-          updateUI={wrappedUpdateUI}
+
+        <div className="flex-1 flex overflow-hidden">
+          <div
+            className="flex-1 flex overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <StudioCanvas
+              state={displayState}
+              platformView={effectivePlatformView}
+              showBack={displayState.ui.showBack}
+            />
+          </div>
+
+          {/* Sidebar — hidden on mobile, narrower on tablet */}
+          <div className="hidden md:flex flex-shrink-0 md:w-[280px] lg:w-[360px]">
+            <StudioSidebar
+              state={displayState}
+              updateColors={wrappedUpdateColors}
+              updateImages={wrappedUpdateImages}
+              updateFields={wrappedUpdateFields}
+              updateBarcode={wrappedUpdateBarcode}
+              updateBackContent={wrappedUpdateBackContent}
+              updateCardTypeConfig={wrappedUpdateCardTypeConfig}
+              updateAppleConfig={wrappedUpdateAppleConfig}
+              updateGoogleConfig={wrappedUpdateGoogleConfig}
+              updateUI={wrappedUpdateUI}
+            />
+          </div>
+        </div>
+
+        {/* Auto-save indicator */}
+        {autoSave.lastSaved && (
+          <div className="absolute bottom-3 right-3 md:right-[292px] lg:right-[372px] z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
+            {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
+          </div>
+        )}
+
+        {/* Mobile floating button */}
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setIsBottomSheetOpen(true)}
+            className="fixed bottom-4 right-4 z-40 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            aria-label="Open editor"
+            data-testid="mobile-sheet-toggle"
+          >
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </button>
+        )}
+
+        {/* Mobile bottom sheet */}
+        <MobileBottomSheet
+          isOpen={isBottomSheetOpen}
+          onClose={() => setIsBottomSheetOpen(false)}
+          title="Editor"
+        >
+          <StudioSidebar
+            state={displayState}
+            updateColors={wrappedUpdateColors}
+            updateImages={wrappedUpdateImages}
+            updateFields={wrappedUpdateFields}
+            updateBarcode={wrappedUpdateBarcode}
+            updateBackContent={wrappedUpdateBackContent}
+            updateCardTypeConfig={wrappedUpdateCardTypeConfig}
+            updateAppleConfig={wrappedUpdateAppleConfig}
+            updateGoogleConfig={wrappedUpdateGoogleConfig}
+            updateUI={wrappedUpdateUI}
+          />
+        </MobileBottomSheet>
+
+        {/* Template Gallery */}
+        <TemplateGallery
+          isOpen={isTemplateGalleryOpen}
+          onClose={() => setIsTemplateGalleryOpen(false)}
+          onSelectTemplate={handleSelectTemplate}
+          onCreateBlank={handleCreateBlank}
+          onAIGenerate={handleAIGenerate}
+        />
+
+        {/* Save Template Modal */}
+        <SaveTemplateModal
+          isOpen={isSaveTemplateModalOpen}
+          onClose={() => setIsSaveTemplateModalOpen(false)}
+          onSave={handleConfirmSaveTemplate}
+          defaultName={displayState.name}
+        />
+
+        {/* AI Design Assistant Modal */}
+        <AIChatModal
+          isOpen={isAIModalOpen}
+          onClose={handleCloseAIModal}
+          onApplyTemplate={handleApplyTemplate}
+          initialCardType={displayState.cardType}
+          initialIndustry={displayState.industry}
         />
       </div>
-
-      {/* Auto-save indicator */}
-      {autoSave.lastSaved && (
-        <div className="absolute bottom-3 right-[372px] z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
-          {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
-        </div>
-      )}
-
-      {/* AI Design Assistant Modal */}
-      <AIChatModal
-        isOpen={isAIModalOpen}
-        onClose={handleCloseAIModal}
-        onApplyTemplate={handleApplyTemplate}
-        initialCardType={displayState.cardType}
-        initialIndustry={displayState.industry}
-      />
-
-      {/* Save Template Modal */}
-      <SaveTemplateModal
-        isOpen={isSaveTemplateModalOpen}
-        onClose={() => setIsSaveTemplateModalOpen(false)}
-        onSave={handleSaveTemplateSubmit}
-      />
-    </div>
+    </ErrorBoundary>
   );
 }

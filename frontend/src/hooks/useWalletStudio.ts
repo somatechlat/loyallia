@@ -42,6 +42,11 @@ export interface UseWalletStudioReturn {
   applyTemplate: (template: WalletTemplate) => void;
   resetState: () => void;
   isModified: boolean;
+  selectedFieldId: string | null;
+  setSelectedFieldId: (id: string | null) => void;
+  duplicateField: (id: string) => void;
+  deleteField: (id: string) => void;
+  nudgeField: (id: string, direction: 'up' | 'down' | 'left' | 'right', amount: number) => void;
 }
 
 function createDefaultState(): WalletPassStudioState {
@@ -85,6 +90,7 @@ function createDefaultState(): WalletPassStudioState {
       platformView: 'both',
       showBack: false,
       zoom: 1,
+      showGrid: false,
       isModified: false,
     },
   };
@@ -247,8 +253,55 @@ export function useWalletStudio(
     );
   }, []);
 
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+
+  const duplicateField = useCallback((id: string) => {
+    setState((prev: WalletPassStudioState) => {
+      const field = prev.fields.find((f) => f.id === id);
+      if (!field) return prev;
+      const duplicated: UnifiedField = {
+        ...field,
+        id: `${field.id}-copy-${Date.now()}`,
+        label: `${field.label} (copia)`,
+        order: field.order + 1,
+      };
+      const idx = prev.fields.findIndex((f) => f.id === id);
+      const newFields = [...prev.fields];
+      newFields.splice(idx + 1, 0, duplicated);
+      return mergeState(prev, { fields: newFields });
+    });
+  }, []);
+
+  const deleteField = useCallback((id: string) => {
+    setState((prev: WalletPassStudioState) =>
+      mergeState(prev, {
+        fields: prev.fields.filter((f) => f.id !== id),
+      })
+    );
+    setSelectedFieldId((current) => (current === id ? null : current));
+  }, []);
+
+  const nudgeField = useCallback(
+    (id: string, direction: 'up' | 'down' | 'left' | 'right', amount: number) => {
+      setState((prev: WalletPassStudioState) => {
+        const field = prev.fields.find((f) => f.id === id);
+        if (!field) return prev;
+        const x = (field as unknown as Record<string, number>).x ?? 0;
+        const y = (field as unknown as Record<string, number>).y ?? 0;
+        const deltas = { up: [0, -amount], down: [0, amount], left: [-amount, 0], right: [amount, 0] };
+        const [dx, dy] = deltas[direction];
+        const updatedField = { ...field, x: x + dx, y: y + dy } as UnifiedField;
+        return mergeState(prev, {
+          fields: prev.fields.map((f) => (f.id === id ? updatedField : f)),
+        });
+      });
+    },
+    []
+  );
+
   const resetState = useCallback(() => {
     setState({ ...initialRef.current, ui: { ...initialRef.current.ui, isModified: false } });
+    setSelectedFieldId(null);
   }, []);
 
   const isModified =
@@ -271,5 +324,10 @@ export function useWalletStudio(
     applyTemplate,
     resetState,
     isModified,
+    selectedFieldId,
+    setSelectedFieldId,
+    duplicateField,
+    deleteField,
+    nudgeField,
   };
 }

@@ -1,7 +1,5 @@
 /**
  * Unit tests for useAI hook.
- *
- * Mocks the backend API to test hook behavior in isolation.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -9,23 +7,13 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAI } from '@/hooks/useAI';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 
-const mockPost = vi.fn();
-
-vi.mock('@/lib/api', () => ({
-  aiApi: {
-    generateTemplate: (...args: unknown[]) => mockPost(...args),
-    suggestColors: (...args: unknown[]) => mockPost(...args),
-    critiqueDesign: (...args: unknown[]) => mockPost(...args),
-    suggestStampIcons: (...args: unknown[]) => mockPost(...args),
-  },
-}));
-
 describe('useAI', () => {
   beforeEach(() => {
-    mockPost.mockReset();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -34,47 +22,35 @@ describe('useAI', () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(result.current.quota.used).toBe(0);
+    expect(result.current.quota.used).toBe(3);
     expect(result.current.quota.limit).toBe(10);
   });
 
-  it('generateTemplate returns variations from API', async () => {
-    mockPost.mockResolvedValueOnce({
-      data: {
-        data: [
-          { name: 'V1', description: 'Desc 1', confidence: 0.9, design: { cardType: 'stamp', industry: 'food' } },
-          { name: 'V2', description: 'Desc 2', confidence: 0.8, design: { cardType: 'stamp', industry: 'food' } },
-        ],
-      },
-    });
-
+  it('generateTemplate returns 3 variations with correct structure', async () => {
     const { result } = renderHook(() => useAI());
 
     let variations: Awaited<ReturnType<typeof result.current.generateTemplate>> = [];
 
     await act(async () => {
-      variations = await result.current.generateTemplate(
+      const promise = result.current.generateTemplate(
         'Café acogedor con tonos tierra',
         'stamp',
         'food'
       );
+      vi.advanceTimersByTime(1500);
+      variations = await promise;
     });
 
-    expect(variations).toHaveLength(2);
-    expect(variations[0]!.name).toBe('V1');
-    expect(variations[0]!.confidence).toBe(0.9);
+    expect(variations).toHaveLength(3);
+    expect(variations[0]!.name).toBe('Café Cálido');
+    expect(variations[1]!.name).toBe('Industrial Oscuro');
+    expect(variations[2]!.name).toBe('Minimal');
+    expect(variations[0]!.confidence).toBeGreaterThan(0);
+    expect(variations[0]!.design.colors).toBeDefined();
     expect(variations[0]!.id).toBeDefined();
-    expect(mockPost).toHaveBeenCalledWith({
-      description: 'Café acogedor con tonos tierra',
-      card_type: 'stamp',
-      industry: 'food',
-      language: 'es',
-    });
   });
 
   it('generateTemplate sets loading state during call', async () => {
-    mockPost.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: { data: [] } }), 50)));
-
     const { result } = renderHook(() => useAI());
 
     act(() => {
@@ -82,6 +58,10 @@ describe('useAI', () => {
     });
 
     expect(result.current.isLoading).toBe(true);
+
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -96,44 +76,27 @@ describe('useAI', () => {
     });
 
     expect(result.current.error).toBe('Por favor, describe tu negocio para generar diseños.');
-    expect(mockPost).not.toHaveBeenCalled();
   });
 
-  it('suggestColors returns palettes from API', async () => {
-    mockPost.mockResolvedValueOnce({
-      data: {
-        data: [
-          { name: 'P1', primary: '#000', secondary: '#111', background: '#222', text: '#333', accent: '#444' },
-          { name: 'P2', primary: '#fff', secondary: '#eee', background: '#ddd', text: '#ccc', accent: '#bbb' },
-        ],
-      },
-    });
-
+  it('suggestColors returns 3 color palettes', async () => {
     const { result } = renderHook(() => useAI());
 
     let palettes: Awaited<ReturnType<typeof result.current.suggestColors>> = [];
 
     await act(async () => {
-      palettes = await result.current.suggestColors('Tech store', 'retail');
+      const promise = result.current.suggestColors('Tech store');
+      vi.advanceTimersByTime(1000);
+      palettes = await promise;
     });
 
-    expect(palettes).toHaveLength(2);
-    expect(palettes[0]!).toHaveProperty('primary');
+    expect(palettes).toHaveLength(3);
     expect(palettes[0]!).toHaveProperty('background');
+    expect(palettes[0]!).toHaveProperty('foreground');
+    expect(palettes[0]!).toHaveProperty('label');
     expect(palettes[0]!).toHaveProperty('accent');
-    expect(mockPost).toHaveBeenCalledWith({
-      description: 'Tech store',
-      industry: 'retail',
-    });
   });
 
-  it('critiqueDesign returns suggestions from API', async () => {
-    mockPost.mockResolvedValueOnce({
-      data: {
-        data: ['Improve contrast', 'Add more whitespace'],
-      },
-    });
-
+  it('critiqueDesign returns array of suggestions', async () => {
     const { result } = renderHook(() => useAI());
 
     const mockState: WalletPassStudioState = {
@@ -180,36 +143,13 @@ describe('useAI', () => {
     let suggestions: Awaited<ReturnType<typeof result.current.critiqueDesign>> = [];
 
     await act(async () => {
-      suggestions = await result.current.critiqueDesign(mockState);
+      const promise = result.current.critiqueDesign(mockState);
+      vi.advanceTimersByTime(1200);
+      suggestions = await promise;
     });
 
-    expect(suggestions.length).toBe(2);
+    expect(suggestions.length).toBeGreaterThan(0);
     expect(suggestions.every((s) => typeof s === 'string')).toBe(true);
-    expect(mockPost).toHaveBeenCalledWith({
-      design_data: mockState,
-    });
-  });
-
-  it('suggestStampIcons returns icons from API', async () => {
-    mockPost.mockResolvedValueOnce({
-      data: {
-        data: ['coffee', 'mug', 'bean', 'cup', 'croissant', 'steam'],
-      },
-    });
-
-    const { result } = renderHook(() => useAI());
-
-    let icons: Awaited<ReturnType<typeof result.current.suggestStampIcons>> = [];
-
-    await act(async () => {
-      icons = await result.current.suggestStampIcons('cafe');
-    });
-
-    expect(icons).toHaveLength(6);
-    expect(icons[0]).toBe('coffee');
-    expect(mockPost).toHaveBeenCalledWith({
-      business_type: 'cafe',
-    });
   });
 
   it('reset clears error and loading state', async () => {
@@ -230,16 +170,14 @@ describe('useAI', () => {
   });
 
   it('quota increments after successful generateTemplate', async () => {
-    mockPost.mockResolvedValueOnce({
-      data: { data: [{ name: 'V1', description: '', confidence: 0.9, design: {} }] },
-    });
-
     const { result } = renderHook(() => useAI());
 
     const initialUsed = result.current.quota.used;
 
     await act(async () => {
-      await result.current.generateTemplate('Test description', 'stamp', 'food');
+      const promise = result.current.generateTemplate('Test description', 'stamp', 'food');
+      vi.advanceTimersByTime(1500);
+      await promise;
     });
 
     expect(result.current.quota.used).toBe(initialUsed + 1);
@@ -255,18 +193,18 @@ describe('useAI', () => {
     expect(result.current.error).toBe('La funcionalidad de IA no está habilitada.');
   });
 
-  it('handles API errors gracefully', async () => {
-    mockPost.mockRejectedValueOnce(new Error('Network error'));
-
+  it('generateTemplate uses provided cardType and industry in variations', async () => {
     const { result } = renderHook(() => useAI());
 
     let variations: Awaited<ReturnType<typeof result.current.generateTemplate>> = [];
 
     await act(async () => {
-      variations = await result.current.generateTemplate('Test', 'stamp', 'food');
+      const promise = result.current.generateTemplate('Gym', 'cashback', 'health');
+      vi.advanceTimersByTime(1500);
+      variations = await promise;
     });
 
-    expect(variations).toHaveLength(0);
-    expect(result.current.error).toBe('Network error');
+    expect(variations[0]!.design.cardType).toBe('cashback');
+    expect(variations[0]!.design.industry).toBe('health');
   });
 });

@@ -5,7 +5,6 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { useI18n } from '@/lib/i18n';
 import type { CardType } from '@/components/wallet/types/unified-state';
 import { DYNAMIC_TEMPLATES } from '@/components/wallet/types/dynamic-templates';
 
@@ -13,6 +12,8 @@ export interface DynamicTemplatePickerProps {
   value: string;
   onChange: (value: string) => void;
   cardType: CardType;
+  buttonLabel?: React.ReactNode;
+  hideInput?: boolean;
 }
 
 const CATEGORY_ORDER = ['Customer', 'Program', 'Card-specific'] as const;
@@ -27,8 +28,7 @@ function categorizeTemplate(templateId: string): Category {
   return 'Card-specific';
 }
 
-export function DynamicTemplatePicker({ value, onChange, cardType }: DynamicTemplatePickerProps) {
-  const { t } = useI18n();
+export function DynamicTemplatePicker({ value, onChange, cardType, buttonLabel, hideInput }: DynamicTemplatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,30 +97,32 @@ export function DynamicTemplatePicker({ value, onChange, cardType }: DynamicTemp
   return (
     <div className="relative">
       <div className="flex items-center gap-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder={t('wallet.studio.dynamicTemplates.placeholder')}
-          aria-label="Field value"
-        />
+        {!hideInput && (
+          <input
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="flex-1 min-w-0 px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter value or insert template..."
+            aria-label="Field value"
+          />
+        )}
         <button
           type="button"
           onClick={() => setIsOpen((v) => !v)}
           className="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-md border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-expanded={isOpen}
           aria-haspopup="true"
-          aria-label={t('wallet.studio.dynamicTemplates.insertTemplate')}
+          aria-label="Insert dynamic template"
         >
-          {'{ }'}
+          {buttonLabel ?? '{ }'}
         </button>
       </div>
 
       {hasTemplates && (
         <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          {t('wallet.studio.dynamicTemplates.preview')} <span className="font-medium text-neutral-700 dark:text-neutral-300">{resolvedPreview}</span>
+          Preview: <span className="font-medium text-neutral-700 dark:text-neutral-300">{resolvedPreview}</span>
         </p>
       )}
 
@@ -147,14 +149,14 @@ export function DynamicTemplatePicker({ value, onChange, cardType }: DynamicTemp
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
                 className="w-full px-3 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={t('wallet.studio.dynamicTemplates.search')}
-                aria-label={t('wallet.studio.dynamicTemplates.search')}
+                placeholder="Search templates..."
+                aria-label="Search templates"
               />
             </div>
             <div className="max-h-72 overflow-y-auto p-2">
               {filteredTemplates.length === 0 ? (
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 px-2 py-3 text-center">
-                  {t('wallet.studio.dynamicTemplates.noTemplates')}
+                  No templates found
                 </p>
               ) : (
                 Array.from(grouped.entries()).map(([category, templates]) =>
@@ -183,7 +185,7 @@ export function DynamicTemplatePicker({ value, onChange, cardType }: DynamicTemp
                               {template.description}
                             </p>
                             <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-0.5">
-                              {t('wallet.studio.dynamicTemplates.example', { value: template.exampleValue })}
+                              Example: {template.exampleValue}
                             </p>
                           </button>
                         ))}

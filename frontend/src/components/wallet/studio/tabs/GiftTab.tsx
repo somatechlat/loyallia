@@ -7,7 +7,6 @@
 import React, { useCallback } from 'react';
 import type { GiftCertificateCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
-import { useI18n } from '@/lib/i18n';
 
 export interface GiftTabProps {
   config: GiftCertificateCardConfig;
@@ -17,8 +16,6 @@ export interface GiftTabProps {
 const OCCASIONS = ['Cumpleaños', 'Navidad', 'Aniversario', 'Gracias', 'San Valentín', 'Graduación'];
 
 function GiftBoxPreview({ config }: { config: GiftCertificateCardConfig }) {
-  const { t } = useI18n();
-
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 flex flex-col items-center gap-3">
       <div
@@ -35,7 +32,7 @@ function GiftBoxPreview({ config }: { config: GiftCertificateCardConfig }) {
       </div>
       <div className="text-center">
         <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-          {t('wallet.studio.gift.giftCard')}
+          Tarjeta de Regalo
         </p>
         {config.denominations.length > 0 && (
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
@@ -53,8 +50,6 @@ function GiftBoxPreview({ config }: { config: GiftCertificateCardConfig }) {
 }
 
 export function GiftTab({ config, onChange }: GiftTabProps) {
-  const { t } = useI18n();
-
   const handleNumberChange = useCallback(
     (field: keyof GiftCertificateCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value);
@@ -88,13 +83,13 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        {t('wallet.studio.gift.title')}
+        Configuración de Tarjeta Regalo
       </h3>
 
       {/* Denominations */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.gift.denominations')}
+          Denominaciones
         </label>
         <div className="flex flex-wrap gap-1.5">
           {config.denominations.map((denom, i) => (
@@ -130,7 +125,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
                 }
               }
             }}
-            placeholder={t('wallet.studio.gift.amountPlaceholder')}
+            placeholder="Monto"
             className="flex-1 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="denomination-input"
           />
@@ -154,7 +149,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
       {/* Expiry days */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.gift.expiryDays')}
+          Días de expiración
         </label>
         <input
           type="number"
@@ -169,7 +164,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
       {/* Box graphic */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.gift.boxGraphic')}
+          Gráfico de caja
         </label>
         <IconPicker
           value={config.boxGraphic}
@@ -181,7 +176,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
       {/* Ribbon color */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.gift.ribbonColor')}
+          Color de listón
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -198,7 +193,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
       {/* Occasion */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.gift.occasion')}
+          Ocasión
         </label>
         <select
           value={config.occasion ?? ''}
@@ -206,7 +201,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="occasion-select"
         >
-          <option value="">{t('wallet.studio.gift.selectOccasion')}</option>
+          <option value="">Seleccionar…</option>
           {OCCASIONS.map((occ) => (
             <option key={occ} value={occ}>
               {occ}
@@ -218,7 +213,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.gift.preview')}
+          Vista previa
         </label>
         <GiftBoxPreview config={config} />
       </div>

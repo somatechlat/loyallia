@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { CardType, Industry, BarcodeFormat, FieldGroup } from '@/components/wallet/types/index';
+import type { CardType, Industry, BarcodeFormat, FieldGroup } from '@/components/wallet/types';
 import {
   CARD_TYPE_METADATA,
   INDUSTRY_METADATA,

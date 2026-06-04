@@ -6,7 +6,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { useI18n } from '@/lib/i18n';
 import type { WalletColors } from '@/components/wallet/types/unified-state';
 import { COLOR_PRESETS } from '@/components/wallet/constants';
 import { hexToRgb, rgbToHex, hexToHsl, hslToHex, autoForeground, isValidHex, normalizeHex } from '@/components/wallet/utils/colors';
@@ -25,14 +24,12 @@ interface ColorFieldConfig {
   description: string;
 }
 
-function getColorFields(t: (key: string) => string): ColorFieldConfig[] {
-  return [
-    { key: 'background', label: t('wallet.studio.colors.background'), description: t('wallet.studio.colors.backgroundDesc') },
-    { key: 'foreground', label: t('wallet.studio.colors.foreground'), description: t('wallet.studio.colors.foregroundDesc') },
-    { key: 'label', label: t('wallet.studio.colors.labels'), description: t('wallet.studio.colors.labelDesc') },
-    { key: 'accent', label: t('wallet.studio.colors.accent'), description: t('wallet.studio.colors.accentDesc') },
-  ];
-}
+const COLOR_FIELDS: ColorFieldConfig[] = [
+  { key: 'background', label: 'Fondo', description: 'Color de fondo de la tarjeta' },
+  { key: 'foreground', label: 'Texto', description: 'Color del texto principal' },
+  { key: 'label', label: 'Etiquetas', description: 'Color de las etiquetas de campo' },
+  { key: 'accent', label: 'Acento', description: 'Color de acento y elementos destacados' },
+];
 
 function CopyIcon({ className }: { className?: string }) {
   return (
@@ -96,7 +93,6 @@ function ColorInput({
   onChange: (color: string) => void;
   showAutoForeground?: () => void;
 }) {
-  const { t } = useI18n();
   const [hexInput, setHexInput] = useState(value.toUpperCase());
   const [copied, setCopied] = useState(false);
 
@@ -146,10 +142,10 @@ function ColorInput({
             type="button"
             onClick={showAutoForeground}
             className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-[11px] font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-            title={t('wallet.studio.colors.autoForeground')}
+            title="Sugerir color de texto legible"
           >
             <WandIcon className="w-3 h-3" />
-            {t('wallet.studio.colors.auto')}
+            Auto
           </button>
         )}
       </div>
@@ -161,7 +157,7 @@ function ColorInput({
             value={normalizeHex(value)}
             onChange={(e) => onChange(e.target.value.toUpperCase())}
             className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 cursor-pointer p-0 overflow-hidden"
-            aria-label={t('wallet.studio.colors.colorPicker', { label: config.label })}
+            aria-label={`Selector de color ${config.label}`}
           />
         </div>
         <div className="flex-1 min-w-0 space-y-1">
@@ -171,6 +167,7 @@ function ColorInput({
               value={hexInput}
               onChange={handleHexChange}
               onBlur={handleBlur}
+              data-testid="hex-input"
               className={`flex-1 px-2.5 py-1.5 rounded-md border text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 isValid
                   ? 'border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100'
@@ -182,8 +179,8 @@ function ColorInput({
               type="button"
               onClick={handleCopy}
               className="p-1.5 rounded-md text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              aria-label={t('wallet.studio.colors.copyColor')}
-              title={t('wallet.studio.colors.copyColor')}
+              aria-label="Copiar color"
+              title="Copiar color"
             >
               {copied ? <CheckIcon className="w-3.5 h-3.5 text-green-600" /> : <CopyIcon className="w-3.5 h-3.5" />}
             </button>
@@ -196,9 +193,7 @@ function ColorInput({
 }
 
 export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
-  const { t } = useI18n();
   const [hoveredPreset, setHoveredPreset] = useState<string | null>(null);
-  const colorFields = useMemo(() => getColorFields(t), [t]);
 
   const handleColorChange = useCallback(
     (key: ColorKey) => (color: string) => {
@@ -230,13 +225,13 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{t('wallet.studio.colors.title')}</h3>
+      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Configuración de Colores</h3>
 
       {/* Contrast Check */}
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-            {t('wallet.studio.colors.contrast')}
+            Contraste
           </span>
           <ContrastBadge level={wcagLevel} />
         </div>
@@ -253,10 +248,10 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {wcagLevel === 'AAA'
-                ? t('wallet.studio.colors.contrastAAA')
+                ? 'Excelente legibilidad para todo tipo de texto.'
                 : wcagLevel === 'AA'
-                ? t('wallet.studio.colors.contrastAA')
-                : t('wallet.studio.colors.contrastFail')}
+                ? 'Buena legibilidad para texto normal.'
+                : 'El contraste es insuficiente. Considera ajustar los colores.'}
             </p>
           </div>
         </div>
@@ -264,7 +259,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
 
       {/* Color Inputs */}
       <div className="space-y-5">
-        {colorFields.map((field) => (
+        {COLOR_FIELDS.map((field) => (
           <ColorInput
             key={field.key}
             config={field}
@@ -278,7 +273,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
       {/* Quick Color Presets */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.colors.presets')}
+          Presets rápidos
         </label>
         <div className="grid grid-cols-5 gap-2">
           {COLOR_PRESETS.map((preset) => (
@@ -288,6 +283,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
               onClick={() => handleApplyPreset(preset)}
               onMouseEnter={() => setHoveredPreset(preset.name)}
               onMouseLeave={() => setHoveredPreset(null)}
+              data-testid="color-preset"
               className="relative group flex flex-col items-center gap-1.5 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
               title={preset.name}
             >
@@ -308,7 +304,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
       {/* Color Harmony */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.colors.harmony')}
+          Armonía de color
         </label>
         <div className="grid grid-cols-3 gap-2">
           <button
@@ -317,7 +313,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
             className="flex flex-col items-center gap-1 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
           >
             <div className="w-8 h-8 rounded-full border border-neutral-200 dark:border-neutral-700" style={{ backgroundColor: harmony.analogous[0] }} />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">{t('wallet.studio.colors.analogousPlus')}</span>
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Análogo +</span>
           </button>
           <button
             type="button"
@@ -325,7 +321,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
             className="flex flex-col items-center gap-1 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
           >
             <div className="w-8 h-8 rounded-full border border-neutral-200 dark:border-neutral-700" style={{ backgroundColor: harmony.analogous[1] }} />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">{t('wallet.studio.colors.analogousMinus')}</span>
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Análogo −</span>
           </button>
           <button
             type="button"
@@ -333,7 +329,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
             className="flex flex-col items-center gap-1 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
           >
             <div className="w-8 h-8 rounded-full border border-neutral-200 dark:border-neutral-700" style={{ backgroundColor: harmony.complementary }} />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">{t('wallet.studio.colors.complementary')}</span>
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Complementario</span>
           </button>
         </div>
       </div>
@@ -341,27 +337,27 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
       {/* Live Preview */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.colors.preview')}
+          Vista previa
         </label>
         <div
           className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 space-y-3 shadow-sm"
           style={{ backgroundColor: colors.background }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold" style={{ color: colors.label }}>{t('wallet.preview.program')}</span>
+            <span className="text-xs font-semibold" style={{ color: colors.label }}>PROGRAMA</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.accent, color: colors.background }}>
-              {t('wallet.preview.vip')}
+              VIP
             </span>
           </div>
           <div>
-            <p className="text-lg font-bold" style={{ color: colors.foreground }}>{t('wallet.preview.loyalliaRewards')}</p>
-            <p className="text-sm mt-0.5" style={{ color: colors.label }}>{t('wallet.preview.stampDescription')}</p>
+            <p className="text-lg font-bold" style={{ color: colors.foreground }}>Loyallia Rewards</p>
+            <p className="text-sm mt-0.5" style={{ color: colors.label }}>Acumula sellos y gana recompensas</p>
           </div>
           <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: colors.label + '33' }}>
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: colors.accent, color: colors.background }}>
               5
             </div>
-            <p className="text-xs" style={{ color: colors.foreground }}>{t('wallet.preview.stampStatus', { current: 5, total: 10 })}</p>
+            <p className="text-xs" style={{ color: colors.foreground }}>Sello 5 de 10</p>
           </div>
         </div>
       </div>

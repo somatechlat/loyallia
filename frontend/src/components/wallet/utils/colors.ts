@@ -103,9 +103,9 @@ export function hexToHsl(hex: string): Hsl {
   }
 
   return {
-    h: Math.round(h * 360),
-    s: Math.round(s * 100),
-    l: Math.round(l * 100),
+    h: h * 360,
+    s: s * 100,
+    l: l * 100,
   };
 }
 
@@ -167,8 +167,13 @@ export function autoForeground(backgroundHex: string): string {
   const blackLum = getLuminance('#000000');
   const whiteLum = getLuminance('#FFFFFF');
 
-  const blackContrast = (Math.max(bgLum, blackLum) + 0.05) / (Math.min(bgLum, blackLum) + 0.05);
-  const whiteContrast = (Math.max(bgLum, whiteLum) + 0.05) / (Math.min(bgLum, whiteLum) + 0.05);
+  const lighter = Math.max(bgLum, blackLum);
+  const darker = Math.min(bgLum, blackLum);
+  const blackContrast = (lighter + 0.05) / (darker + 0.05);
+
+  const lighter2 = Math.max(bgLum, whiteLum);
+  const darker2 = Math.min(bgLum, whiteLum);
+  const whiteContrast = (lighter2 + 0.05) / (darker2 + 0.05);
 
   return blackContrast > whiteContrast ? '#000000' : '#FFFFFF';
 }

@@ -3,13 +3,49 @@
  */
 
 import React from 'react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { I18nProvider } from '@/lib/i18n';
 import { SmartImageUpload } from '@/components/wallet/studio/SmartImageUpload';
-import type { ImageAsset } from '@/components/wallet/types/unified-state';
 
-function createMockFile(name: string, type: string, sizeBytes: number): File {
+// Mock the upload service
+vi.mock('@/components/wallet/services/imageUpload', () => ({
+  uploadWalletImage: vi.fn(),
+}));
+
+import { uploadWalletImage } from '@/components/wallet/services/imageUpload';
+
+const mockedUploadWalletImage = vi.mocked(uploadWalletImage);
+
+beforeEach(() => {
+  vi.stubGlobal('URL', {
+    createObjectURL: vi.fn(() => 'blob:mock-url'),
+    revokeObjectURL: vi.fn(),
+  });
+  vi.stubGlobal('Image', class MockImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = 200;
+    naturalHeight = 200;
+    set src(value: string) {
+      this._src = value;
+      setTimeout(() => this.onload?.(), 0);
+    }
+    get src() { return this._src; }
+    private _src = '';
+  });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+  vi.unstubAllGlobals();
+});
+
+function createMockFile(
+  name: string,
+  type: string,
+  sizeBytes: number
+): File {
   const blob = new Blob(['x'.repeat(sizeBytes)], { type });
   return new File([blob], name, { type });
 }
@@ -37,54 +73,31 @@ function setFilesOnInput(input: HTMLInputElement, files: File[]) {
 }
 
 describe('SmartImageUpload', () => {
-  afterEach(() => {
-    cleanup();
-  });
+  const baseProps = {
+    label: 'Test Image',
+    recommendedSize: { width: 100, height: 100 },
+    applePreviewShape: 'circle' as const,
+    googlePreviewShape: 'rect' as const,
+    onChange: vi.fn(),
+  };
 
   it('renders upload zone when no image', () => {
-    render(
-      <I18nProvider>
-        <SmartImageUpload
-          label="Test Image"
-          recommendedSize={{ width: 100, height: 100 }}
-          applePreviewShape="circle"
-          googlePreviewShape="rect"
-          onChange={() => {}}
-        />
-      </I18nProvider>
-    );
+    render(<SmartImageUpload {...baseProps} />);
     expect(screen.getByText('Test Image')).toBeDefined();
-    expect(screen.getByText('wallet.studio.upload.clickOrDrag')).toBeDefined();
+    expect(screen.getByText('Haz click o arrastra una imagen')).toBeDefined();
   });
 
   it('shows description when provided', () => {
-    render(
-      <I18nProvider>
-        <SmartImageUpload
-          label="Test Image"
-          description="A helpful description"
-          recommendedSize={{ width: 100, height: 100 }}
-          applePreviewShape="circle"
-          googlePreviewShape="rect"
-          onChange={() => {}}
-        />
-      </I18nProvider>
-    );
+    render(<SmartImageUpload {...baseProps} description="A helpful description" />);
     expect(screen.getByText('A helpful description')).toBeDefined();
   });
 
   it('shows preview when image provided', () => {
     render(
-      <I18nProvider>
-        <SmartImageUpload
-          label="Test Image"
-          recommendedSize={{ width: 100, height: 100 }}
-          applePreviewShape="circle"
-          googlePreviewShape="rect"
-          value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
-          onChange={() => {}}
-        />
-      </I18nProvider>
+      <SmartImageUpload
+        {...baseProps}
+        value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
+      />
     );
     const img = screen.getByAltText('Test Image') as HTMLImageElement;
     expect(img).toBeDefined();
@@ -92,89 +105,82 @@ describe('SmartImageUpload', () => {
   });
 
   it('validates file type and rejects .exe', async () => {
-    let errorMessage: string | undefined;
-    render(
-      <I18nProvider>
-        <SmartImageUpload
-          label="Test Image"
-          recommendedSize={{ width: 100, height: 100 }}
-          applePreviewShape="circle"
-          googlePreviewShape="rect"
-          onChange={() => {}}
-          onError={(msg) => { errorMessage = msg; }}
-        />
-      </I18nProvider>
-    );
+    const onError = vi.fn();
+    render(<SmartImageUpload {...baseProps} onError={onError} />);
 
     const file = createMockFile('malware.exe', 'application/x-msdownload', 1024);
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     setFilesOnInput(input, [file]);
 
     await waitFor(() => {
-      expect(screen.getByText('wallet.studio.upload.invalidFormat')).toBeDefined();
+      expect(screen.getByText(/Formato no válido/)).toBeDefined();
     });
-    expect(errorMessage).toBe('wallet.studio.upload.invalidFormat');
+    expect(onError).toHaveBeenCalled();
   });
 
   it('validates file size and shows error for oversized file', async () => {
-    let errorMessage: string | undefined;
-    render(
-      <I18nProvider>
-        <SmartImageUpload
-          label="Test Image"
-          recommendedSize={{ width: 100, height: 100 }}
-          applePreviewShape="circle"
-          googlePreviewShape="rect"
-          maxSizeMB={1}
-          onChange={() => {}}
-          onError={(msg) => { errorMessage = msg; }}
-        />
-      </I18nProvider>
-    );
+    const onError = vi.fn();
+    render(<SmartImageUpload {...baseProps} maxSizeMB={1} onError={onError} />);
 
     const file = createMockFile('big.png', 'image/png', 2 * 1024 * 1024); // 2MB
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     setFilesOnInput(input, [file]);
 
     await waitFor(() => {
-      expect(screen.getByText('wallet.studio.upload.fileTooBig')).toBeDefined();
+      expect(screen.getByText(/excede 1MB/)).toBeDefined();
     });
-    expect(errorMessage).toBe('wallet.studio.upload.fileTooBig');
+    expect(onError).toHaveBeenCalled();
+  });
+
+  it('calls onChange with ImageAsset after upload', async () => {
+    const onChange = vi.fn();
+    mockedUploadWalletImage.mockResolvedValueOnce({
+      url: 'https://cdn.example.com/uploaded.png',
+      width: 200,
+      height: 200,
+    });
+
+    render(<SmartImageUpload {...baseProps} onChange={onChange} />);
+
+    const file = createMockFile('photo.png', 'image/png', 1024);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    setFilesOnInput(input, [file]);
+
+    await waitFor(() => {
+      expect(mockedUploadWalletImage).toHaveBeenCalledWith(file, 'logo');
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith({
+        url: 'https://cdn.example.com/uploaded.png',
+        width: 200,
+        height: 200,
+      });
+    });
   });
 
   it('calls onChange with undefined on remove', () => {
-    let lastChange: ImageAsset | undefined = { url: 'x', width: 1, height: 1 };
+    const onChange = vi.fn();
     render(
-      <I18nProvider>
-        <SmartImageUpload
-          label="Test Image"
-          recommendedSize={{ width: 100, height: 100 }}
-          applePreviewShape="circle"
-          googlePreviewShape="rect"
-          value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
-          onChange={(asset) => { lastChange = asset; }}
-        />
-      </I18nProvider>
+      <SmartImageUpload
+        {...baseProps}
+        value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
+        onChange={onChange}
+      />
     );
 
-    const removeBtn = screen.getByTitle('wallet.studio.upload.delete');
+    const removeBtn = screen.getByTitle('Eliminar imagen');
     fireEvent.click(removeBtn);
 
-    expect(lastChange).toBeUndefined();
+    expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
   it('shows Apple and Google previews when image is loaded', () => {
     render(
-      <I18nProvider>
-        <SmartImageUpload
-          label="Test Image"
-          recommendedSize={{ width: 100, height: 100 }}
-          applePreviewShape="circle"
-          googlePreviewShape="rect"
-          value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
-          onChange={() => {}}
-        />
-      </I18nProvider>
+      <SmartImageUpload
+        {...baseProps}
+        value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
+      />
     );
 
     expect(screen.getByText('Apple')).toBeDefined();
@@ -185,5 +191,21 @@ describe('SmartImageUpload', () => {
 
     expect(applePreview).toBeDefined();
     expect(googlePreview).toBeDefined();
+  });
+
+  it('shows loading state during upload', async () => {
+    mockedUploadWalletImage.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve({ url: 'https://example.com/x.png', width: 10, height: 10 }), 100))
+    );
+
+    render(<SmartImageUpload {...baseProps} />);
+
+    const file = createMockFile('photo.png', 'image/png', 1024);
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    setFilesOnInput(input, [file]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Subiendo...')).toBeDefined();
+    });
   });
 });

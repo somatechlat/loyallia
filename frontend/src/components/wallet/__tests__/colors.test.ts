@@ -12,17 +12,6 @@ import {
   autoForeground,
 } from '../utils/colors';
 
-/** Compare two hex colors allowing ±2 per channel rounding误差 from HSL float math. */
-function hexCloseTo(a: string, b: string): boolean {
-  const ra = hexToRgb(a);
-  const rb = hexToRgb(b);
-  return (
-    Math.abs(ra.r - rb.r) <= 2 &&
-    Math.abs(ra.g - rb.g) <= 2 &&
-    Math.abs(ra.b - rb.b) <= 2
-  );
-}
-
 describe('isValidHex', () => {
   it('accepts 6-digit hex', () => {
     expect(isValidHex('#FFFFFF')).toBe(true);
@@ -97,8 +86,8 @@ describe('hexToHsl / hslToHex round-trip', () => {
     for (const color of colors) {
       const hsl = hexToHsl(color);
       const back = hslToHex(hsl.h, hsl.s, hsl.l);
-      // Allow small rounding differences from HSL float math
-      expect(hexCloseTo(back, color)).toBe(true);
+      // Allow small rounding differences
+      expect(back).toBe(color);
     }
   });
 });

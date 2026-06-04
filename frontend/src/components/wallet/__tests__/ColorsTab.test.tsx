@@ -3,9 +3,8 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@/lib/i18n';
 import { ColorsTab } from '@/components/wallet/studio/ColorsTab';
 import type { WalletColors } from '@/components/wallet/types/unified-state';
 
@@ -19,21 +18,14 @@ function createMockColors(overrides: Partial<WalletColors> = {}): WalletColors {
   };
 }
 
-function renderWithI18n(ui: React.ReactElement) {
-  return render(<I18nProvider>{ui}</I18nProvider>);
-}
-
 describe('ColorsTab', () => {
-  let calls: Array<Partial<WalletColors>> = [];
-  const onUpdateColors = (update: Partial<WalletColors>) => { calls.push(update); };
-
   const baseProps = {
     colors: createMockColors(),
-    onUpdateColors,
+    onUpdateColors: vi.fn(),
   };
 
   beforeEach(() => {
-    calls = [];
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -41,119 +33,108 @@ describe('ColorsTab', () => {
   });
 
   it('renders all 4 color input labels', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    expect(screen.getByText('Background')).toBeDefined();
-    expect(screen.getByText('Text')).toBeDefined();
-    expect(screen.getByText('Labels')).toBeDefined();
-    expect(screen.getByText('Accent')).toBeDefined();
+    render(<ColorsTab {...baseProps} />);
+    expect(screen.getByText('Fondo')).toBeDefined();
+    expect(screen.getByText('Texto')).toBeDefined();
+    expect(screen.getByText('Etiquetas')).toBeDefined();
+    expect(screen.getByText('Acento')).toBeDefined();
   });
 
   it('renders contrast section', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    expect(screen.getByText('Contrast')).toBeDefined();
+    render(<ColorsTab {...baseProps} />);
+    expect(screen.getByText(/contraste/i)).toBeDefined();
   });
 
   it('shows correct WCAG badge for high contrast', () => {
-    renderWithI18n(<ColorsTab {...baseProps} colors={createMockColors({ background: '#000000', foreground: '#FFFFFF' })} />);
+    render(<ColorsTab {...baseProps} colors={createMockColors({ background: '#000000', foreground: '#FFFFFF' })} />);
     expect(screen.getByText('AAA')).toBeDefined();
   });
 
   it('shows FAIL badge for low contrast', () => {
-    renderWithI18n(<ColorsTab {...baseProps} colors={createMockColors({ background: '#EEEEEE', foreground: '#FFFFFF' })} />);
+    render(<ColorsTab {...baseProps} colors={createMockColors({ background: '#EEEEEE', foreground: '#FFFFFF' })} />);
     expect(screen.getByText('FAIL')).toBeDefined();
   });
 
   it('color picker change updates state', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
+    render(<ColorsTab {...baseProps} />);
     const pickers = document.querySelectorAll('input[type="color"]');
     expect(pickers.length).toBe(4);
     fireEvent.change(pickers[0]!, { target: { value: '#FF0000' } });
-    expect(calls).toContainEqual({ background: '#FF0000' });
+    expect(baseProps.onUpdateColors).toHaveBeenCalledWith({ background: '#FF0000' });
   });
 
   it('hex text input updates state on valid hex', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    const hexInputs = screen.getAllByDisplayValue(/#[0-9A-F]{6}/i);
-    expect(hexInputs.length).toBeGreaterThan(0);
+    render(<ColorsTab {...baseProps} />);
+    const hexInputs = screen.getAllByTestId('hex-input');
+    expect(hexInputs.length).toBe(4);
     fireEvent.change(hexInputs[0]!, { target: { value: '#FF5733' } });
-    expect(calls).toContainEqual({ background: '#FF5733' });
+    expect(baseProps.onUpdateColors).toHaveBeenCalledWith({ background: '#FF5733' });
   });
 
   it('shows invalid state on bad hex input', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    const hexInputs = screen.getAllByDisplayValue(/#[0-9A-F]{6}/i);
-    // hexInputs[0] is the color picker, hexInputs[1] is the text input
-    const textInput = hexInputs[1]!;
-    fireEvent.change(textInput, { target: { value: '#GGG' } });
-    expect(calls.length).toBe(0);
-    // Should have red border styling (we verify by checking the input still has invalid value)
-    expect(textInput).toHaveProperty('value', '#GGG');
+    render(<ColorsTab {...baseProps} />);
+    const hexInputs = screen.getAllByTestId('hex-input');
+    fireEvent.change(hexInputs[0]!, { target: { value: '#GGG' } });
+    expect(baseProps.onUpdateColors).not.toHaveBeenCalled();
+    expect(hexInputs[0]!).toHaveProperty('value', '#GGG');
   });
 
   it('preset swatches are rendered', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    const presetButtons = document.querySelectorAll('button[title]');
+    render(<ColorsTab {...baseProps} />);
+    const presetButtons = screen.getAllByTestId('color-preset');
     expect(presetButtons.length).toBeGreaterThan(0);
   });
 
   it('clicking preset applies all 4 colors', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    const presetSection = screen.getByText('Quick presets').parentElement;
-    const presetButtons = presetSection!.querySelectorAll('button');
-    expect(presetButtons.length).toBeGreaterThan(0);
+    render(<ColorsTab {...baseProps} />);
+    const presetButtons = screen.getAllByTestId('color-preset');
     fireEvent.click(presetButtons[0]!);
-    expect(calls).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          background: expect.any(String),
-          foreground: expect.any(String),
-          label: expect.any(String),
-          accent: expect.any(String),
-        }),
-      ])
+    expect(baseProps.onUpdateColors).toHaveBeenCalledWith(
+      expect.objectContaining({
+        background: expect.any(String),
+        foreground: expect.any(String),
+        label: expect.any(String),
+        accent: expect.any(String),
+      })
     );
   });
 
   it('auto-foreground button updates foreground color', () => {
-    renderWithI18n(<ColorsTab {...baseProps} colors={createMockColors({ background: '#FFFFFF', foreground: '#000000' })} />);
-    const autoBtn = screen.getByRole('button', { name: /Auto/i });
+    render(<ColorsTab {...baseProps} colors={createMockColors({ background: '#FFFFFF', foreground: '#000000' })} />);
+    const autoBtn = screen.getByRole('button', { name: /auto/i });
     fireEvent.click(autoBtn);
-    expect(calls).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          foreground: expect.any(String),
-        }),
-      ])
+    expect(baseProps.onUpdateColors).toHaveBeenCalledWith(
+      expect.objectContaining({
+        foreground: expect.any(String),
+      })
     );
   });
 
   it('renders color harmony buttons', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    expect(screen.getByText('Analogous +')).toBeDefined();
-    expect(screen.getByText('Analogous −')).toBeDefined();
-    expect(screen.getByText('Complementary')).toBeDefined();
+    render(<ColorsTab {...baseProps} />);
+    expect(screen.getByText('Análogo +')).toBeDefined();
+    expect(screen.getByText('Análogo −')).toBeDefined();
+    expect(screen.getByText('Complementario')).toBeDefined();
   });
 
   it('clicking harmony button updates accent color', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    const compBtn = screen.getByText('Complementary');
+    render(<ColorsTab {...baseProps} />);
+    const compBtn = screen.getByText('Complementario');
     fireEvent.click(compBtn);
-    expect(calls).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ accent: expect.any(String) }),
-      ])
+    expect(baseProps.onUpdateColors).toHaveBeenCalledWith(
+      expect.objectContaining({ accent: expect.any(String) })
     );
   });
 
   it('renders live preview card', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    expect(screen.getByText('Preview')).toBeDefined();
+    render(<ColorsTab {...baseProps} />);
+    expect(screen.getByText(/vista previa/i)).toBeDefined();
     expect(screen.getByText('Loyallia Rewards')).toBeDefined();
   });
 
   it('copy buttons exist for each color', () => {
-    renderWithI18n(<ColorsTab {...baseProps} />);
-    const copyButtons = screen.getAllByLabelText(/Copy color/i);
+    render(<ColorsTab {...baseProps} />);
+    const copyButtons = screen.getAllByLabelText(/copiar color/i);
     expect(copyButtons.length).toBe(4);
   });
 });

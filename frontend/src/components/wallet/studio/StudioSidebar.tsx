@@ -14,8 +14,10 @@ import { FieldStudio } from './FieldStudio';
 import { BarcodeTab } from './BarcodeTab';
 import { ColorsTab } from './ColorsTab';
 import { CardTypeTab } from './CardTypeTab';
-import { useDesignScore } from '@/hooks/useDesignScore';
+import { BackDesignTab } from './BackDesignTab';
+import { AdvancedTab } from './AdvancedTab';
 import { DesignScore } from './DesignScore';
+import { useDesignScore } from '@/hooks/useDesignScore';
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -253,43 +255,6 @@ function getCardTypeTabConfig(cardType: WalletPassStudioState['cardType']): { la
   }
 }
 
-/* ── Placeholder tabs ────────────────────────────────────────────── */
-
-function BackDesignTabPlaceholder() {
-  return (
-    <div className="p-4 text-sm text-neutral-500 dark:text-neutral-400">
-      BackDesignTab — implementado en FIX-8
-    </div>
-  );
-}
-
-function AdvancedTabPlaceholder() {
-  return (
-    <div className="p-4 text-sm text-neutral-500 dark:text-neutral-400">
-      AdvancedTab — implementado en FIX-8
-    </div>
-  );
-}
-
-/* ── Design Score sub-component ──────────────────────────────────── */
-
-function StudioSidebarDesignScore({
-  state,
-  updateUI,
-}: {
-  state: WalletPassStudioState;
-  updateUI: (ui: Partial<WalletPassStudioState['ui']>) => void;
-}) {
-  const designScore = useDesignScore(state);
-
-  return (
-    <DesignScore
-      result={designScore}
-      onViewDetails={() => updateUI({ activeTab: 'advanced' })}
-    />
-  );
-}
-
 /* ── Component ───────────────────────────────────────────────────── */
 
 export function StudioSidebar({
@@ -306,6 +271,7 @@ export function StudioSidebar({
 }: StudioSidebarProps) {
   const activeTab = state.ui.activeTab;
   const cardTypeConfig = getCardTypeTabConfig(state.cardType);
+  const designScore = useDesignScore(state);
 
   // Build ordered tab list: images, cardType, fields, back, barcode, colors, advanced
   const allTabs: TabConfig[] = [
@@ -319,7 +285,7 @@ export function StudioSidebar({
   ];
 
   return (
-    <aside className="w-[360px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800">
+    <aside className="w-full md:w-[280px] lg:w-[360px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800">
       {/* Tab strip */}
       <div className="flex border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
         {allTabs.map((tab) => {
@@ -362,11 +328,17 @@ export function StudioSidebar({
           <FieldStudio
             fields={state.fields}
             cardType={state.cardType}
+            barcodeFormat={state.barcode.format}
             onUpdateFields={updateFields}
           />
         )}
         {activeTab === 'back' && (
-          <BackDesignTabPlaceholder />
+          <BackDesignTab
+            backContent={state.backContent}
+            onUpdateBackContent={_updateBackContent}
+            appleConfig={state.apple}
+            googleConfig={state.google}
+          />
         )}
         {activeTab === 'barcode' && (
           <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />
@@ -375,12 +347,16 @@ export function StudioSidebar({
           <ColorsTab colors={state.colors} onUpdateColors={updateColors} />
         )}
         {activeTab === 'advanced' && (
-          <AdvancedTabPlaceholder />
+          <AdvancedTab
+            appleConfig={state.apple}
+            googleConfig={state.google}
+            onUpdateAppleConfig={_updateAppleConfig}
+            onUpdateGoogleConfig={_updateGoogleConfig}
+          />
         )}
       </div>
 
-      {/* Design Score — sticky footer */}
-      <StudioSidebarDesignScore state={state} updateUI={updateUI} />
+      <DesignScore result={designScore} />
     </aside>
   );
 }

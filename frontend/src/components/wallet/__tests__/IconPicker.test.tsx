@@ -3,70 +3,59 @@
  */
 
 import React from 'react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { I18nProvider } from '@/lib/i18n';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
 
 describe('IconPicker', () => {
+  const baseProps = {
+    value: '',
+    onChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   afterEach(() => {
     cleanup();
   });
 
   it('renders trigger button with placeholder text when no value selected', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} />
-      </I18nProvider>
-    );
-    expect(screen.getByText('Select icon…')).toBeDefined();
+    render(<IconPicker {...baseProps} />);
+    expect(screen.getByText('Seleccionar icono…')).toBeDefined();
   });
 
   it('opens modal when trigger is clicked', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
     expect(screen.getByTestId('icon-picker-modal')).toBeDefined();
-    expect(screen.getByText('Select Icon')).toBeDefined();
+    expect(screen.getByText('Seleccionar Icono')).toBeDefined();
   });
 
   it('closes modal when close button is clicked', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
     expect(screen.getByTestId('icon-picker-modal')).toBeDefined();
 
-    const closeBtn = screen.getByLabelText('Close');
+    const closeBtn = screen.getByLabelText('Cerrar');
     fireEvent.click(closeBtn);
     expect(screen.queryByTestId('icon-picker-modal')).toBeNull();
   });
 
   it('filters icons by category when category tab is clicked', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const foodTab = screen.getByTestId('category-tab-food');
     fireEvent.click(foodTab);
 
+    // Should show food icons and not show icons from other categories
     expect(screen.queryByTestId('icon-option-coffee')).toBeDefined();
   });
 
   it('filters icons by search query', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const searchInput = screen.getByTestId('icon-picker-search');
@@ -76,29 +65,17 @@ describe('IconPicker', () => {
   });
 
   it('calls onChange with icon id when icon is selected', () => {
-    let selectedId = '';
-    render(
-      <I18nProvider>
-        <IconPicker
-          value=""
-          onChange={(id) => { selectedId = id; }}
-        />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const iconOption = screen.getByTestId('icon-option-coffee');
     fireEvent.click(iconOption);
 
-    expect(selectedId).toBe('coffee');
+    expect(baseProps.onChange).toHaveBeenCalledWith('coffee');
   });
 
   it('closes modal after selecting an icon', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const iconOption = screen.getByTestId('icon-option-coffee');
@@ -108,45 +85,31 @@ describe('IconPicker', () => {
   });
 
   it('shows selected icon name in trigger when value is set', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="coffee" onChange={() => {}} />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} value="coffee" />);
     expect(screen.getByText('Coffee')).toBeDefined();
   });
 
   it('respects initial category prop', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} category="stamp" />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} category="stamp" />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
+    // The stamp tab should be pre-selected logic is handled on open
+    // Modal should show stamp category icons
     expect(screen.queryByTestId('icon-option-stamp-circle')).toBeDefined();
   });
 
   it('shows upload hint when allowUpload is true', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} allowUpload />
-      </I18nProvider>
-    );
-    expect(screen.getByText(/File upload available in advanced settings./)).toBeDefined();
+    render(<IconPicker {...baseProps} allowUpload />);
+    expect(screen.getByText(/Subida de archivos disponible en configuración avanzada./)).toBeDefined();
   });
 
   it('shows no results message when search yields nothing', () => {
-    render(
-      <I18nProvider>
-        <IconPicker value="" onChange={() => {}} />
-      </I18nProvider>
-    );
+    render(<IconPicker {...baseProps} />);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const searchInput = screen.getByTestId('icon-picker-search');
     fireEvent.change(searchInput, { target: { value: 'xyznonexistent' } });
 
-    expect(screen.getByText('No icons found.')).toBeDefined();
+    expect(screen.getByText('No se encontraron iconos.')).toBeDefined();
   });
 });
