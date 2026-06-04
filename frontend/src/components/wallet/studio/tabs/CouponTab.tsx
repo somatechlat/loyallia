@@ -6,7 +6,6 @@
 
 import React, { useCallback } from 'react';
 import type { CouponCardConfig } from '@/components/wallet/types/card-type-config';
-import { IconPicker } from '@/components/wallet/studio/IconPicker';
 
 export interface CouponTabProps {
   config: CouponCardConfig;

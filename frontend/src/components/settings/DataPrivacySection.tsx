@@ -6,9 +6,7 @@ import api from '@/lib/api';
 import { UserRole } from '@/types';
 import { APP_CONFIG } from '@/lib/constants';
 import toast from 'react-hot-toast';
-
-/** Exact confirmation phrase required for account deletion (LOPDP Art. 18) */
-const DELETION_PHRASE = 'ACEPTO ELIMINACIÓN COMPLETA';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Props for the DataPrivacySection component.
@@ -26,17 +24,19 @@ interface DataPrivacySectionProps {
  * - Delete account with confirmation (Art. 18)
  */
 export default function DataPrivacySection({ userRole }: DataPrivacySectionProps) {
+  const { t } = useI18n();
   const [exporting, setExporting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePhrase, setDeletePhrase] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const DELETION_PHRASE = t('settings.privacy.deletionPhrase');
 
   if (userRole !== UserRole.OWNER) return null;
 
   const handleExportData = async () => {
     setExporting(true);
-    const toastId = toast.loading('Generando exportación de datos...');
+    const toastId = toast.loading(t('settings.privacy.exportLoading'));
     try {
       const response = await api.get('/api/v1/tenants/data-export/', {
         responseType: 'blob',
@@ -51,9 +51,9 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success('Datos exportados exitosamente', { id: toastId });
+      toast.success(t('settings.privacy.exportSuccess'), { id: toastId });
     } catch {
-      toast.error('Error al exportar datos', { id: toastId });
+      toast.error(t('settings.privacy.exportError'), { id: toastId });
     } finally {
       setExporting(false);
     }
@@ -61,15 +61,15 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
 
   const handleDeleteAccount = async () => {
     if (deletePhrase !== DELETION_PHRASE) {
-      toast.error(`Frase incorrecta. Escriba exactamente: ${DELETION_PHRASE}`);
+      toast.error(t('settings.privacy.phraseMismatchError'));
       return;
     }
     if (!deletePassword) {
-      toast.error('Ingrese su contraseña actual');
+      toast.error(t('settings.privacy.passwordRequiredError'));
       return;
     }
     setDeleting(true);
-    const toastId = toast.loading('Procesando eliminación de cuenta...');
+    const toastId = toast.loading(t('settings.privacy.deleteLoading'));
     try {
       const response = await api.post('/api/v1/tenants/delete-account/', {
         confirmation_phrase: deletePhrase,
@@ -87,7 +87,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success('Tu cuenta será eliminada en 24 horas. Se descargó una copia de todos tus datos.', { id: toastId, duration: 10000 });
+      toast.success(t('settings.privacy.deleteSuccess'), { id: toastId, duration: 10000 });
       setShowDeleteModal(false);
 
       // Clear auth cookies immediately so token refresh cannot re-authenticate
@@ -102,7 +102,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
       const detail =
         (err as { response?: { data?: { detail?: string; message?: string } } })?.response?.data?.detail ||
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Error al procesar la eliminación';
+        t('settings.privacy.deleteProcessError');
       toast.error(detail, { id: toastId });
     } finally {
       setDeleting(false);
@@ -111,8 +111,8 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
 
   return (
     <div className="card p-5">
-      <h3 className="font-semibold text-surface-900 dark:text-white mb-1">Datos y Privacidad</h3>
-      <p className="text-xs text-surface-400 mb-4">LOPDP — Ley de Protección de Datos (Ecuador)</p>
+      <h3 className="font-semibold text-surface-900 dark:text-white mb-1">{t('settings.privacy.sectionTitle')}</h3>
+      <p className="text-xs text-surface-400 mb-4">{t('settings.privacy.lopdpLabel')}</p>
 
       <div className="space-y-3">
         {/* Export All Data — LYL-FR-DPR-020 */}
@@ -123,13 +123,13 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
           id="export-all-data-btn"
         >
           {exporting ? (
-            <><span className="spinner w-4 h-4" /> Exportando...</>
+            <><span className="spinner w-4 h-4" /> {t('settings.privacy.exportingButton')}</>
           ) : (
-            <>📦 Exportar Todos Mis Datos</>
+            <>📦 {t('settings.privacy.exportAllDataButton')}</>
           )}
         </button>
         <p className="text-[10px] text-surface-400 leading-tight">
-          Art. 17/20: Descarga un ZIP con todos tus datos en formato JSON y CSV.
+          {t('settings.privacy.exportArticleLabel')}
         </p>
 
         {/* Delete Account — LYL-FR-DPR-025 */}
@@ -139,10 +139,10 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
             className="w-full text-sm px-4 py-2 rounded-lg border border-red-300 dark:border-red-500/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-medium"
             id="delete-account-btn"
           >
-            🗑️ Eliminar Mi Cuenta
+            🗑️ {t('settings.privacy.deleteAccountButton')}
           </button>
           <p className="text-[10px] text-surface-400 leading-tight mt-2">
-            Art. 18: Eliminación permanente de todos los datos después de 24 horas.
+            {t('settings.privacy.deleteArticleLabel')}
           </p>
         </div>
       </div>
@@ -155,27 +155,27 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
                 <svg className="w-5 h-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/></svg>
               </div>
-              <h3 className="font-semibold text-red-600 text-lg">Eliminar Cuenta Permanentemente</h3>
+              <h3 className="font-semibold text-red-600 text-lg">{t('settings.privacy.deleteModalTitle')}</h3>
             </div>
 
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-2 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Esta acción es IRREVERSIBLE</p>
+              <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-2 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {t('settings.privacy.irreversibleWarning')}</p>
               <ul className="text-xs text-red-600/80 dark:text-red-400/80 space-y-1 list-disc list-inside">
-                <li>Todos tus clientes y sus pases serán eliminados</li>
-                <li>Programas de fidelidad, transacciones, campañas</li>
-                <li>Suscripciones, facturas, métodos de pago</li>
-                <li>Usuarios del equipo y toda la configuración</li>
-                <li>La eliminación se ejecutará en 24 horas</li>
+                <li>{t('settings.privacy.deleteConsequence1')}</li>
+                <li>{t('settings.privacy.deleteConsequence2')}</li>
+                <li>{t('settings.privacy.deleteConsequence3')}</li>
+                <li>{t('settings.privacy.deleteConsequence4')}</li>
+                <li>{t('settings.privacy.deleteConsequence5')}</li>
               </ul>
             </div>
 
             <p className="text-xs text-surface-500">
-              Se generará un archivo ZIP con todos tus datos antes de la eliminación (cumplimiento LOPDP Art. 17).
+              {t('settings.privacy.preDeleteZipNotice')}
             </p>
 
             <div>
               <label className="label text-xs" htmlFor="delete-phrase">
-                Escribe exactamente: <strong className="text-red-500">{DELETION_PHRASE}</strong>
+                {t('settings.privacy.typeExactlyLabel')} <strong className="text-red-500">{DELETION_PHRASE}</strong>
               </label>
               <input
                 id="delete-phrase"
@@ -189,7 +189,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
             </div>
 
             <div>
-              <label className="label text-xs" htmlFor="delete-password">Contraseña actual</label>
+              <label className="label text-xs" htmlFor="delete-password">{t('settings.privacy.currentPasswordLabel')}</label>
               <input
                 id="delete-password"
                 type="password"
@@ -207,7 +207,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
                 className="btn-ghost text-sm flex-1"
                 id="cancel-delete-btn"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -216,7 +216,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
                 className="flex-1 text-sm px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 id="confirm-delete-btn"
               >
-                {deleting ? <span className="spinner w-4 h-4" /> : 'Eliminar Permanentemente'}
+                {deleting ? <span className="spinner w-4 h-4" /> : t('settings.privacy.confirmDeleteButton')}
               </button>
             </div>
           </div>
