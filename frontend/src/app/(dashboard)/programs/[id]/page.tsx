@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
 import { stripLocalMinioUrl } from '@/lib/url-utils';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import WalletDesigner from '@/components/programs/WalletDesigner';
+import { WalletStudioIntegration } from '@/components/programs/WalletStudioIntegration';
 import {
   type WalletDesignState,
   defaultWalletDesignState,
@@ -467,7 +467,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           {/* Full Wallet Designer */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <div className="space-y-6">
-              <WalletDesigner
+              <WalletStudioIntegration
                 cardType={program.card_type}
                 state={walletDesign}
                 onChange={setWalletDesign}

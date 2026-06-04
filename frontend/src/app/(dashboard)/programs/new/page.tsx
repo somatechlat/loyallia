@@ -14,7 +14,7 @@ import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
-import WalletDesigner from '@/components/programs/WalletDesigner';
+import { WalletStudioIntegration } from '@/components/programs/WalletStudioIntegration';
 import { type WalletDesignState, defaultWalletDesignState } from '@/components/wallet/types';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 import StepBar from '@/components/programs/new/StepBar';
@@ -419,7 +419,7 @@ export default function NewProgramPage() {
             </div>
 
             {/* Wallet Designer — Full visual customization */}
-            <WalletDesigner
+            <WalletStudioIntegration
               cardType={form.card_type}
               state={walletDesign}
               onChange={setWalletDesign}
