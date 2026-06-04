@@ -33,6 +33,8 @@ export interface CashbackCardConfig {
   cashbackPercentage: number;
   minimumPurchase: number;
   creditExpiryDays: number;
+  /** Tier name label */
+  tierName?: string;
   /** Visual customization: coin icon URL */
   coinIcon: string;
   /** Visual customization: tier badge graphic URL */
@@ -66,6 +68,10 @@ export interface AffiliateCardConfig {
   benefitsDescription: string;
   /** Visual customization: partner logo image URL */
   partnerLogoUrl?: string;
+  /** Visual customization: referral chain icon URL */
+  referralChainIcon?: string;
+  /** Visual customization: ambassador badge icon URL */
+  ambassadorBadge?: string;
   /** Visual customization: badge accent color */
   badgeColor: string;
   /** Visual customization: banner text for referral section */
@@ -83,6 +89,8 @@ export interface DiscountCardConfig {
   tierBadgeIcons: string[];
   /** Visual customization: progress bar accent color */
   progressBarColor: string;
+  /** Visual customization: percentage display style */
+  percentageDisplayStyle?: 'compact' | 'expanded' | 'badge';
   /** Visual customization: banner text for discount section */
   discountBannerText: string;
 }
@@ -95,6 +103,8 @@ export interface GiftCertificateCardConfig {
   boxGraphic: string;
   /** Visual customization: ribbon accent color */
   ribbonColor: string;
+  /** Occasion for the gift */
+  occasion?: string;
   /** Visual customization: denomination badge style or text */
   denominationBadge: string;
 }
@@ -121,10 +131,16 @@ export interface CorporateDiscountCardConfig {
   employeeIdRequired: boolean;
   /** Visual customization: company logo image URL */
   companyLogoUrl?: string;
+  /** Visual customization: building icon URL */
+  buildingIcon?: string;
+  /** Visual customization: department badge icon URL */
+  departmentBadge?: string;
   /** Visual customization: badge visual style */
   badgeStyle: 'corporate' | 'standard' | 'minimal';
   /** Visual customization: ID badge accent color */
   idBadgeColor: string;
+  /** Show security seal */
+  securitySeal?: boolean;
 }
 
 export interface ReferralPassCardConfig {
@@ -133,6 +149,8 @@ export interface ReferralPassCardConfig {
   refereeReward: string;
   maxReferralsPerCustomer: number;
   referralCodePattern: string;
+  /** Visual customization: referral icon URL */
+  referralIcon?: string;
   /** Visual customization: share button color */
   shareButtonColor: string;
   /** Visual customization: reward badge icon URL */
@@ -152,6 +170,8 @@ export interface MultipassCardConfig {
   punchIcon: string;
   /** Visual customization: style of the bundle badge */
   bundleBadgeStyle: 'numeric' | 'visual' | 'minimal';
+  /** Visual customization: used/remaining indicator style */
+  indicatorStyle?: 'numeric' | 'visual' | 'minimal';
 }
 
 export type CardTypeConfig =

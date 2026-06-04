@@ -101,7 +101,7 @@ export default function Tooltip({
         ref={iconRef}
         role="button"
         tabIndex={0}
-        aria-label={t("Ayuda")}
+        aria-label={t("common.help")}
         className="inline-flex items-center justify-center rounded-full border border-surface-300 dark:border-surface-600 text-surface-400 dark:text-surface-500 hover:text-brand-500 hover:border-brand-400 dark:hover:text-brand-400 dark:hover:border-brand-500 cursor-help transition-colors duration-150 flex-shrink-0 select-none"
         style={{ width: size, height: size, fontSize: size * 0.6 }}
         onMouseEnter={() => setVisible(true)}

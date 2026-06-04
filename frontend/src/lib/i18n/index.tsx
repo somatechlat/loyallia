@@ -64,7 +64,7 @@ interface I18nContextValue {
   supportedLocales: SupportedLocale[];
 }
 
-const I18nContext = createContext<I18nContextValue>({
+export const I18nContext = createContext<I18nContextValue>({
   locale: DEFAULT_LOCALE,
   setLocale: () => {},
   t: (key: string) => key,

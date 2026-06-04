@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n';
 
 const COMMON_EMOJIS = [
   '🎉', '🎁', '💰', '🔥', '⭐', '🎂', '🎊', '💎', '🚀', '❤️',
@@ -24,6 +25,7 @@ interface EmojiPickerButtonProps {
  * @returns JSX.Element
  */
 export default function EmojiPickerButton({ onEmojiSelect, className = '' }: EmojiPickerButtonProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -55,8 +57,8 @@ export default function EmojiPickerButton({ onEmojiSelect, className = '' }: Emo
         type="button"
         onClick={() => setOpen(v => !v)}
         className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors text-lg ${className}`}
-        title="Insertar emoji"
-        aria-label="Insertar emoji"
+        title={t('common.insertEmoji')}
+        aria-label={t('common.insertEmoji')}
         aria-expanded={open}
       >
         😊
