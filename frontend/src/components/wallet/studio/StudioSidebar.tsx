@@ -12,6 +12,8 @@ import type { WalletPassStudioState, WalletColors, WalletImages, BarcodeConfig, 
 import { STUDIO_TABS } from '@/components/wallet/constants';
 import { ImagesTab } from './ImagesTab';
 import { FieldStudio } from './FieldStudio';
+import { BarcodeTab } from './BarcodeTab';
+import { ColorsTab } from './ColorsTab';
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -150,7 +152,13 @@ export function StudioSidebar({
             onUpdateFields={_updateFields}
           />
         )}
-        {activeTab !== 'images' && activeTab !== 'fields' && (
+        {activeTab === 'barcode' && (
+          <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />
+        )}
+        {activeTab === 'colors' && (
+          <ColorsTab colors={state.colors} onUpdateColors={updateColors} />
+        )}
+        {activeTab !== 'images' && activeTab !== 'fields' && activeTab !== 'barcode' && activeTab !== 'colors' && (
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
               {STUDIO_TABS.find((t) => t.id === activeTab)?.label ?? 'Panel'}
