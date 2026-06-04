@@ -7,6 +7,7 @@
 import React, { useCallback, useMemo } from 'react';
 import type { CashbackCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { useI18n } from '@/lib/i18n';
 
 export interface CashbackTabProps {
   config: CashbackCardConfig;
@@ -57,6 +58,8 @@ function ProgressRingPreview({ percentage, color }: { percentage: number; color:
 }
 
 export function CashbackTab({ config, onChange }: CashbackTabProps) {
+  const { t } = useI18n();
+
   const handleNumberChange = useCallback(
     (field: keyof CashbackCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value);
@@ -81,13 +84,13 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Cashback
+        {t('wallet.studio.cashback.title')}
       </h3>
 
       {/* Cashback percentage */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Porcentaje de cashback
+          {t('wallet.studio.cashback.percentage')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -115,7 +118,7 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {/* Minimum purchase */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Compra mínima
+          {t('wallet.studio.cashback.minPurchase')}
         </label>
         <input
           type="number"
@@ -130,7 +133,7 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {/* Credit expiry days */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Días de expiración del crédito
+          {t('wallet.studio.cashback.creditExpiry')}
         </label>
         <input
           type="number"
@@ -145,13 +148,13 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {/* Tier name */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Nombre del nivel
+          {t('wallet.studio.cashback.tierName')}
         </label>
         <input
           type="text"
           value={config.tierName ?? ''}
           onChange={handleTextChange('tierName')}
-          placeholder="Ej: Oro"
+          placeholder={t('wallet.studio.cashback.tierNamePlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="tier-name-input"
         />
@@ -160,7 +163,7 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {/* Tier badge */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Insignia de nivel
+          {t('wallet.studio.cashback.tierBadge')}
         </label>
         <IconPicker
           value={config.tierBadge}
@@ -172,7 +175,7 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {/* Progress ring color */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Color del anillo de progreso
+          {t('wallet.studio.cashback.progressRingColor')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -189,7 +192,7 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {/* Coin icon */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Icono de moneda
+          {t('wallet.studio.cashback.coinIcon')}
         </label>
         <IconPicker
           value={config.coinIcon}
@@ -201,7 +204,7 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+          {t('wallet.studio.cashback.preview')}
         </label>
         <ProgressRingPreview percentage={percentage} color={config.progressRingColor} />
       </div>

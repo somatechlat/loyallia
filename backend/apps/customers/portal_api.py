@@ -26,7 +26,7 @@ from apps.customers.portal_auth import (
     create_customer_access_token,
     portal_auth,
 )
-from common.messages import get_message
+from common.messages import get_message, get_message_for_request
 from common.rate_limit import check_rate_limit
 from apps.customers.services.portal_email import send_portal_password_email
 
@@ -186,7 +186,7 @@ def generate_portal_password(
         # Return same message as non-existent email to prevent enumeration
         return GeneratePasswordOut(
             success=True,
-            message="Si tu correo está registrado, recibirás una contraseña temporal.",
+            message=get_message_for_request("PORTAL_PASSWORD_SENT", request),
         )
 
     # Verify this email exists in at least one customer record
@@ -195,7 +195,7 @@ def generate_portal_password(
         # Return same message to prevent email enumeration
         return GeneratePasswordOut(
             success=True,
-            message="Si tu correo está registrado, recibirás una contraseña temporal.",
+            message=get_message_for_request("PORTAL_PASSWORD_SENT", request),
         )
 
     account, _ = CustomerPortalAccount.objects.get_or_create(
@@ -213,12 +213,12 @@ def generate_portal_password(
         logger.error("Failed to send portal password email: %s", e)
         return GeneratePasswordOut(
             success=False,
-            message="No se pudo enviar el correo. Intenta más tarde.",
+            message=get_message_for_request("EMAIL_SEND_ERROR", request),
         )
 
     return GeneratePasswordOut(
         success=True,
-        message="Si tu correo está registrado, recibirás una contraseña temporal.",
+        message=get_message_for_request("PORTAL_PASSWORD_SENT", request),
     )
 
 
@@ -247,7 +247,7 @@ def portal_login(request: HttpRequest, data: PortalLoginIn) -> PortalLoginOut:
         success=True,
         access_token=access_token,
         refresh_token=refresh_token,
-        message="Bienvenido a tu portal de cliente.",
+        message=get_message_for_request("AUTH_LOGIN_SUCCESS", request),
     )
 
 
@@ -313,7 +313,7 @@ def disenroll_from_pass(request: HttpRequest, pass_id: str) -> PortalDisenrollOu
 
     return PortalDisenrollOut(
         success=True,
-        message=get_message("PASS_DISENROLLED"),
+        message=get_message_for_request("PASS_DISENROLLED", request),
     )
 
 
@@ -374,7 +374,7 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
             .isoformat(),
             "accounts": customer_data,
         },
-        message="Datos exportados correctamente.",
+        message=get_message_for_request("PORTAL_DATA_EXPORTED", request),
     )
 
 
@@ -442,7 +442,7 @@ def delete_my_data(
 
     return PortalDeleteDataOut(
         success=True,
-        message="Tus datos personales han sido eliminados.",
+        message=get_message_for_request("PORTAL_DATA_DELETED", request),
     )
 
 
@@ -465,7 +465,12 @@ def delete_my_account(
 
     expected = "ACEPTO ELIMINAR MI CUENTA"
     if data.confirmation_phrase.strip().upper() != expected:
-        raise HttpError(400, f"Debes escribir exactamente: {expected}")
+        raise HttpError(
+            400,
+            get_message_for_request(
+                "PORTAL_CONFIRMATION_PHRASE_REQUIRED", request, phrase=expected
+            ),
+        )
 
     customer_email = portal_customer.email
     with transaction.atomic():
@@ -496,5 +501,5 @@ def delete_my_account(
 
     return PortalDeleteAccountOut(
         success=True,
-        message="Tu cuenta ha sido eliminada permanentemente.",
+        message=get_message_for_request("ACCOUNT_DELETION_COMPLETED", request),
     )

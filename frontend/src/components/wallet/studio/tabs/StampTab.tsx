@@ -8,20 +8,12 @@ import React, { useCallback } from 'react';
 import type { StampCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
 import { StampGrid } from '@/components/wallet/studio/StampGrid';
+import { useI18n } from '@/lib/i18n';
 
 export interface StampTabProps {
   config: StampCardConfig;
   onChange: (config: Partial<StampCardConfig>) => void;
 }
-
-const SHAPE_OPTIONS: Array<{ value: StampCardConfig['stampShape']; label: string }> = [
-  { value: 'circle', label: 'Círculo' },
-  { value: 'square', label: 'Cuadrado' },
-  { value: 'star', label: 'Estrella' },
-  { value: 'heart', label: 'Corazón' },
-  { value: 'diamond', label: 'Diamante' },
-  { value: 'hexagon', label: 'Hexágono' },
-];
 
 function ShapePreview({ shape, color }: { shape: StampCardConfig['stampShape']; color: string }) {
   const paths: Record<StampCardConfig['stampShape'], string> = {
@@ -40,6 +32,17 @@ function ShapePreview({ shape, color }: { shape: StampCardConfig['stampShape']; 
 }
 
 export function StampTab({ config, onChange }: StampTabProps) {
+  const { t } = useI18n();
+
+  const SHAPE_OPTIONS: Array<{ value: StampCardConfig['stampShape']; label: string }> = [
+    { value: 'circle', label: t('wallet.studio.stamp.circle') },
+    { value: 'square', label: t('wallet.studio.stamp.square') },
+    { value: 'star', label: t('wallet.studio.stamp.star') },
+    { value: 'heart', label: t('wallet.studio.stamp.heart') },
+    { value: 'diamond', label: t('wallet.studio.stamp.diamond') },
+    { value: 'hexagon', label: t('wallet.studio.stamp.hexagon') },
+  ];
+
   const handleNumberChange = useCallback(
     (field: keyof StampCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseInt(e.target.value, 10);
@@ -81,13 +84,13 @@ export function StampTab({ config, onChange }: StampTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Sellos
+        {t('wallet.studio.stamp.title')}
       </h3>
 
       {/* Stamps required */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Sellos necesarios
+          {t('wallet.studio.stamp.stampsRequired')}
         </label>
         <input
           type="number"
@@ -103,13 +106,13 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Reward description */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Descripción de recompensa
+          {t('wallet.studio.stamp.rewardDescription')}
         </label>
         <input
           type="text"
           value={config.rewardDescription}
           onChange={handleTextChange('rewardDescription')}
-          placeholder="Ej: Café gratis"
+          placeholder={t('wallet.studio.stamp.rewardPlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="reward-description-input"
         />
@@ -118,7 +121,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Stamp shape */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Forma del sello
+          {t('wallet.studio.stamp.shape')}
         </label>
         <div className="grid grid-cols-3 gap-2">
           {SHAPE_OPTIONS.map((opt) => (
@@ -143,7 +146,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Stamp icon */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Icono del sello
+          {t('wallet.studio.stamp.stampIcon')}
         </label>
         <IconPicker
           value={config.stampFilledIcon}
@@ -155,7 +158,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Stamp color */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Color del sello
+          {t('wallet.studio.stamp.stampColor')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -172,7 +175,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Grid layout */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Disposición
+          {t('wallet.studio.stamp.layout')}
         </label>
         <div className="flex gap-2">
           <button
@@ -185,7 +188,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
             }`}
             data-testid="layout-grid"
           >
-            Cuadrícula
+            {t('wallet.studio.stamp.grid')}
           </button>
           <button
             type="button"
@@ -197,7 +200,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
             }`}
             data-testid="layout-linear"
           >
-            Lineal
+            {t('wallet.studio.stamp.linear')}
           </button>
         </div>
       </div>
@@ -205,7 +208,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Stamp type */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Tipo de sello
+          {t('wallet.studio.stamp.stampType')}
         </label>
         <div className="flex gap-2">
           <button
@@ -218,7 +221,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
             }`}
             data-testid="stamp-type-visit"
           >
-            Visita
+            {t('wallet.studio.stamp.visit')}
           </button>
           <button
             type="button"
@@ -230,7 +233,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
             }`}
             data-testid="stamp-type-consumption"
           >
-            Consumo
+            {t('wallet.studio.stamp.consumption')}
           </button>
         </div>
       </div>
@@ -239,7 +242,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {config.stampType === 'consumption' && (
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-            Consumo por sello
+            {t('wallet.studio.stamp.consumptionPerStamp')}
           </label>
           <input
             type="number"
@@ -255,7 +258,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Daily stamp limit */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Límite diario de sellos
+          {t('wallet.studio.stamp.dailyLimit')}
         </label>
         <input
           type="number"
@@ -271,7 +274,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Birthday stamps */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Sellos de cumpleaños
+          {t('wallet.studio.stamp.birthdayStamps')}
         </label>
         <input
           type="number"
@@ -287,7 +290,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+          {t('wallet.studio.stamp.preview')}
         </label>
         <StampGrid
           stampsRequired={config.stampsRequired}

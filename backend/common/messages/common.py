@@ -9,6 +9,9 @@ _MESSAGES_ES: dict[str, str] = {
     # Generic
     "NOT_FOUND": "Recurso no encontrado.",
     "VALIDATION_ERROR": "Error de validación: {detail}",
+    "VALIDATION_NAME_REQUIRED": "El nombre no puede estar vacío.",
+    "VALIDATION_INVALID_GENDER": "El género debe ser M, F u O.",
+    "VALIDATION_FILE_TOO_LARGE": "El archivo es demasiado grande (máx {max_mb}MB).",
     "SERVER_ERROR": "Error interno del servidor. Por favor intenta nuevamente.",
     "RATE_LIMITED": "Demasiadas solicitudes. Por favor espera antes de intentar nuevamente.",
     # Tenant
@@ -148,6 +151,11 @@ _MESSAGES_ES: dict[str, str] = {
     "DATA_EXPORT_EMAIL_BODY": "<p>Hola,</p><p>Tu solicitud de exportación de datos (Art. 17 LOPDP) ha sido completada.</p><p>Puedes descargar el archivo aquí: <a href='{download_url}'>Descargar Datos</a></p><p>Este enlace expirará por razones de seguridad.</p>",  # noqa: E501
     "DATA_EXPORT_ERROR_SUBJECT": "Error en exportación de datos / Data export error",
     "DATA_EXPORT_ERROR_BODY": "<p>Ocurrió un error al procesar tu solicitud de exportación de datos. Por favor, intenta nuevamente más tarde o contacta a soporte.</p>",  # noqa: E501
+    # Portal
+    "PORTAL_PASSWORD_SENT": "Si tu correo está registrado, recibirás una contraseña temporal.",
+    "PORTAL_DATA_EXPORTED": "Datos exportados correctamente.",
+    "PORTAL_DATA_DELETED": "Tus datos personales han sido eliminados.",
+    "PORTAL_CONFIRMATION_PHRASE_REQUIRED": "Debes escribir exactamente: {phrase}",
     # AI Assistant
     "AI_ASSISTANT_UNAVAILABLE": "El asistente de IA no está disponible en este momento. Intente más tarde.",
     "AI_ASSISTANT_NOT_CONFIGURED": "El asistente de IA no está configurado. Configure la clave API en Vault.",
@@ -170,12 +178,18 @@ _MESSAGES_ES: dict[str, str] = {
     "BACKUP_CLEANUP_FAILED": "Error al iniciar la limpieza: {detail}",
     "BACKUP_SETTINGS_UPDATED": "Configuración de respaldo actualizada.",
     "BACKUP_FREQUENCY_INVALID": "Frecuencia inválida. Use: hourly, daily, weekly, disabled.",
+    # Validation
+    "VALIDATION_INVALID_DATETIME": "Formato de fecha inválido. Use ISO 8601.",
+    "VALIDATION_FUTURE_DATETIME": "La fecha debe ser en el futuro.",
 }
 
 _MESSAGES_EN: dict[str, str] = {
     # Generic
     "NOT_FOUND": "Resource not found.",
     "VALIDATION_ERROR": "Validation error: {detail}",
+    "VALIDATION_NAME_REQUIRED": "Name cannot be empty.",
+    "VALIDATION_INVALID_GENDER": "Gender must be M, F, or O.",
+    "VALIDATION_FILE_TOO_LARGE": "File is too large (max {max_mb}MB).",
     "SERVER_ERROR": "Internal server error. Please try again.",
     "RATE_LIMITED": "Too many requests. Please wait before trying again.",
     # Tenant
@@ -314,6 +328,11 @@ _MESSAGES_EN: dict[str, str] = {
     "DATA_EXPORT_EMAIL_BODY": "<p>Hello,</p><p>Your data export request (Art. 17 LOPDP) has been completed.</p><p>You can download the file here: <a href='{download_url}'>Download Data</a></p><p>This link will expire for security reasons.</p>",  # noqa: E501
     "DATA_EXPORT_ERROR_SUBJECT": "Data export error / Error en exportación de datos",
     "DATA_EXPORT_ERROR_BODY": "<p>An error occurred while processing your data export request. Please try again later or contact support.</p>",  # noqa: E501
+    # Portal
+    "PORTAL_PASSWORD_SENT": "If your email is registered, you will receive a temporary password.",
+    "PORTAL_DATA_EXPORTED": "Data exported successfully.",
+    "PORTAL_DATA_DELETED": "Your personal data has been deleted.",
+    "PORTAL_CONFIRMATION_PHRASE_REQUIRED": "You must type exactly: {phrase}",
     # AI Assistant
     "AI_ASSISTANT_UNAVAILABLE": "AI assistant is not available at this time. Please try later.",
     "AI_ASSISTANT_NOT_CONFIGURED": "AI assistant is not configured. Set the API key in Vault.",
@@ -336,6 +355,9 @@ _MESSAGES_EN: dict[str, str] = {
     "BACKUP_CLEANUP_FAILED": "Failed to start cleanup: {detail}",
     "BACKUP_SETTINGS_UPDATED": "Backup settings updated.",
     "BACKUP_FREQUENCY_INVALID": "Invalid frequency. Use: hourly, daily, weekly, disabled.",
+    # Validation
+    "VALIDATION_INVALID_DATETIME": "Invalid datetime format. Use ISO 8601.",
+    "VALIDATION_FUTURE_DATETIME": "Date must be in the future.",
 }
 
 _MESSAGES_FR: dict[str, str] = {
@@ -480,6 +502,15 @@ _MESSAGES_FR: dict[str, str] = {
     "TRANSACTION_STAMP_ADDED": '{count} stamp(s) added. Total: {current}/{required}.',
     "USER_NOT_FOUND": 'User not found.',
     "VALIDATION_ERROR": 'Validation error: {detail}',
+    "VALIDATION_NAME_REQUIRED": 'Name cannot be empty.',
+    "VALIDATION_INVALID_GENDER": 'Gender must be M, F, or O.',
+    "VALIDATION_FILE_TOO_LARGE": 'File is too large (max {max_mb}MB).',
+    "PORTAL_CONFIRMATION_PHRASE_REQUIRED": 'You must type exactly: {phrase}',
+    "PORTAL_DATA_DELETED": 'Your personal data has been deleted.',
+    "PORTAL_DATA_EXPORTED": 'Data exported successfully.',
+    "PORTAL_PASSWORD_SENT": 'If your email is registered, you will receive a temporary password.',
+    "VALIDATION_FUTURE_DATETIME": 'Date must be in the future.',
+    "VALIDATION_INVALID_DATETIME": 'Invalid datetime format. Use ISO 8601.',
 }
 
 _MESSAGES_DE: dict[str, str] = {
@@ -624,4 +655,13 @@ _MESSAGES_DE: dict[str, str] = {
     "TRANSACTION_STAMP_ADDED": '{count} stamp(s) added. Total: {current}/{required}.',
     "USER_NOT_FOUND": 'User not found.',
     "VALIDATION_ERROR": 'Validation error: {detail}',
+    "VALIDATION_NAME_REQUIRED": 'Name cannot be empty.',
+    "VALIDATION_INVALID_GENDER": 'Gender must be M, F, or O.',
+    "VALIDATION_FILE_TOO_LARGE": 'File is too large (max {max_mb}MB).',
+    "PORTAL_CONFIRMATION_PHRASE_REQUIRED": 'You must type exactly: {phrase}',
+    "PORTAL_DATA_DELETED": 'Your personal data has been deleted.',
+    "PORTAL_DATA_EXPORTED": 'Data exported successfully.',
+    "PORTAL_PASSWORD_SENT": 'If your email is registered, you will receive a temporary password.',
+    "VALIDATION_FUTURE_DATETIME": 'Date must be in the future.',
+    "VALIDATION_INVALID_DATETIME": 'Invalid datetime format. Use ISO 8601.',
 }

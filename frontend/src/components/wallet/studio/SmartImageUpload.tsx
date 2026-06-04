@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { ImageAsset } from '@/components/wallet/types/unified-state';
 import { uploadWalletImage } from '@/components/wallet/services/imageUpload';
 
@@ -98,7 +99,8 @@ function validateFile(
   file: File,
   accept: string,
   maxSizeMB: number,
-  recommendedSize: { width: number; height: number }
+  recommendedSize: { width: number; height: number },
+  t: (key: string, vars?: Record<string, string | number>) => string
 ): { valid: boolean; error?: string; warning?: string } {
   const allowed = accept.split(',').map((e) => e.trim().toLowerCase());
   const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
@@ -109,14 +111,14 @@ function validateFile(
     allowed.some((a) => mime.includes(a.replace('.', '')));
 
   if (!isAllowed) {
-    return { valid: false, error: `Formato no válido. Usa: ${accept}` };
+    return { valid: false, error: t('wallet.studio.upload.invalidFormat', { accept }) };
   }
 
   const maxBytes = maxSizeMB * 1024 * 1024;
   if (file.size > maxBytes) {
     return {
       valid: false,
-      error: `El archivo excede ${maxSizeMB}MB`,
+      error: t('wallet.studio.upload.fileTooBig', { maxSize: maxSizeMB }),
     };
   }
 
@@ -147,6 +149,7 @@ export function SmartImageUpload({
   const [warning, setWarning] = useState<string | null>(null);
   const [actualDimensions, setActualDimensions] = useState<{ width: number; height: number } | null>(null);
   const blobUrlsRef = useRef<Set<string>>(new Set());
+  const { t } = useI18n();
 
   const displayUrl = value?.url || localPreview || '';
 
@@ -185,7 +188,12 @@ export function SmartImageUpload({
         img.naturalHeight < recommendedSize.height
       ) {
         setWarning(
-          `Dimensiones recomendadas: ${recommendedSize.width}x${recommendedSize.height}px. Tu imagen es ${img.naturalWidth}x${img.naturalHeight}px.`
+          t('wallet.studio.upload.dimensionsRecommended', {
+            width: recommendedSize.width,
+            height: recommendedSize.height,
+            actualW: img.naturalWidth,
+            actualH: img.naturalHeight,
+          })
         );
       } else {
         setWarning(null);
@@ -201,14 +209,14 @@ export function SmartImageUpload({
     };
 
     img.src = objectUrl;
-  }, [recommendedSize]);
+  }, [recommendedSize, t]);
 
   const handleFile = useCallback(async (file: File, type: 'logo' | 'hero' | 'icon') => {
     setError(null);
-    const validation = validateFile(file, accept, maxSizeMB, recommendedSize);
+    const validation = validateFile(file, accept, maxSizeMB, recommendedSize, t);
     if (!validation.valid) {
-      setError(validation.error || 'Archivo no válido');
-      onError?.(validation.error || 'Archivo no válido');
+      setError(validation.error || t('wallet.studio.upload.invalidFile'));
+      onError?.(validation.error || t('wallet.studio.upload.invalidFile'));
       return;
     }
 
@@ -230,7 +238,7 @@ export function SmartImageUpload({
       const asset = await uploadWalletImage(file, type);
       onChange(asset);
     } catch (err: any) {
-      const msg = err?.message || 'Error al subir la imagen';
+      const msg = err?.message || t('wallet.studio.upload.uploadError');
       setError(msg);
       onError?.(msg);
     } finally {
@@ -300,7 +308,7 @@ export function SmartImageUpload({
             type="button"
             onClick={handleClear}
             className="p-1.5 rounded-md text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-            title="Eliminar imagen"
+            title={t('wallet.studio.upload.delete')}
           >
             <TrashIcon className="w-4 h-4" />
           </button>
@@ -332,7 +340,7 @@ export function SmartImageUpload({
         {uploading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-50/80 dark:bg-neutral-800/80 z-10">
             <SpinnerIcon className="w-8 h-8 text-blue-500" />
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Subiendo...</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('wallet.studio.upload.uploading')}</span>
           </div>
         ) : null}
 
@@ -346,10 +354,10 @@ export function SmartImageUpload({
           <>
             <ImageIcon className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
             <span className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
-              Haz click o arrastra una imagen
+              {t('wallet.studio.upload.clickOrDrag')}
             </span>
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono text-center">
-              {accept} · Máx {maxSizeMB}MB
+              {accept} · {t('wallet.studio.upload.maxSize')} {maxSizeMB}MB
             </span>
           </>
         )}
@@ -416,7 +424,7 @@ export function SmartImageUpload({
       {/* Specs footer */}
       {!isImageLoaded && (
         <p className="text-[10px] text-neutral-400 dark:text-neutral-500 text-center">
-          Recomendado: {recommendedSize.width}x{recommendedSize.height}px
+          {t('wallet.studio.upload.recommended')}: {recommendedSize.width}x{recommendedSize.height}{t('wallet.studio.upload.px')}
         </p>
       )}
     </div>

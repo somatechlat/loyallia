@@ -8,6 +8,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import { PlatformToggle } from './PlatformToggle';
 import type { PlatformView } from '@/components/wallet/types/unified-state';
 import { Save, Palette } from '@/components/ui/LucideIcons';
@@ -117,6 +118,7 @@ export function StudioToolbar({
   onAIGenerate,
   isModified,
 }: StudioToolbarProps) {
+  const { t } = useI18n();
   const [showSaveMenu, setShowSaveMenu] = React.useState(false);
   const saveMenuRef = React.useRef<HTMLDivElement>(null);
 
@@ -141,7 +143,7 @@ export function StudioToolbar({
           onClick={onUndo}
           disabled={!canUndo}
           className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          title="Deshacer"
+          title={t('wallet.studio.toolbar.undo')}
         >
           <UndoIcon className="w-4 h-4" />
         </button>
@@ -150,7 +152,7 @@ export function StudioToolbar({
           onClick={onRedo}
           disabled={!canRedo}
           className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          title="Rehacer"
+          title={t('wallet.studio.toolbar.redo')}
         >
           <RedoIcon className="w-4 h-4" />
         </button>
@@ -169,7 +171,7 @@ export function StudioToolbar({
           type="button"
           onClick={() => onZoomChange(Math.max(0.5, zoom - 0.1))}
           className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          title="Alejar"
+          title={t('wallet.studio.toolbar.zoomOut')}
         >
           <MinusIcon className="w-4 h-4" />
         </button>
@@ -180,7 +182,7 @@ export function StudioToolbar({
           type="button"
           onClick={() => onZoomChange(Math.min(2, zoom + 0.1))}
           className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          title="Acercar"
+          title={t('wallet.studio.toolbar.zoomIn')}
         >
           <PlusIcon className="w-4 h-4" />
         </button>
@@ -195,7 +197,7 @@ export function StudioToolbar({
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
       >
         <Palette className="w-4 h-4" />
-        <span className="hidden sm:inline">Plantillas</span>
+        <span className="hidden sm:inline">{t('wallet.studio.toolbar.templates')}</span>
       </button>
 
       {/* Save dropdown */}
@@ -206,7 +208,7 @@ export function StudioToolbar({
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
         >
           <Save className="w-4 h-4" />
-          <span>Guardar</span>
+          <span>{t('common.save')}</span>
           {isModified && <span className="w-1.5 h-1.5 rounded-full bg-white/80" />}
           <ChevronDownIcon className="w-3 h-3 opacity-70" />
         </button>
@@ -221,7 +223,7 @@ export function StudioToolbar({
               }}
               className="w-full px-4 py-2 text-left text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
-              Guardar cambios
+              {t('wallet.studio.toolbar.saveChanges')}
             </button>
             <button
               type="button"
@@ -231,7 +233,7 @@ export function StudioToolbar({
               }}
               className="w-full px-4 py-2 text-left text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
-              Guardar como plantilla
+              {t('wallet.studio.toolbar.saveAsTemplate')}
             </button>
           </div>
         )}
@@ -246,10 +248,10 @@ export function StudioToolbar({
             ? 'bg-neutral-800 text-white dark:bg-white dark:text-neutral-900'
             : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
         }`}
-        title={showBack ? 'Ver frente' : 'Ver reverso'}
+        title={showBack ? t('wallet.studio.toolbar.viewFront') : t('wallet.studio.toolbar.viewBack')}
       >
         <FlipIcon className="w-4 h-4" />
-        <span className="hidden sm:inline">{showBack ? 'Reverso' : 'Frente'}</span>
+        <span className="hidden sm:inline">{showBack ? t('wallet.studio.toolbar.back') : t('wallet.studio.toolbar.front')}</span>
       </button>
 
       {/* Design score */}
@@ -265,7 +267,7 @@ export function StudioToolbar({
                   : 'linear-gradient(135deg, #ef4444, #dc2626)',
             color: 'white',
           }}
-          title={`Puntuación de diseño: ${designScore}`}
+          title={t('wallet.studio.toolbar.designScore', { score: designScore })}
         >
           {designScore}
         </div>
@@ -281,7 +283,7 @@ export function StudioToolbar({
         }}
       >
         <SparklesIcon className="w-4 h-4" />
-        <span className="hidden sm:inline">Diseñar con IA</span>
+        <span className="hidden sm:inline">{t('wallet.studio.toolbar.aiDesign')}</span>
       </button>
     </header>
   );

@@ -6,25 +6,12 @@
 
 import React, { useCallback } from 'react';
 import type { CouponCardConfig } from '@/components/wallet/types/card-type-config';
+import { useI18n } from '@/lib/i18n';
 
 export interface CouponTabProps {
   config: CouponCardConfig;
   onChange: (config: Partial<CouponCardConfig>) => void;
 }
-
-const CUT_LINE_OPTIONS: Array<{ value: CouponCardConfig['cutLineStyle']; label: string }> = [
-  { value: 'dashed', label: 'Discontinua' },
-  { value: 'dotted', label: 'Punteada' },
-  { value: 'solid', label: 'Sólida' },
-  { value: 'zigzag', label: 'Zigzag' },
-];
-
-const BADGE_STYLE_OPTIONS: Array<{ value: CouponCardConfig['discountBadgeStyle']; label: string }> = [
-  { value: 'pill', label: 'Píldora' },
-  { value: 'banner', label: 'Banner' },
-  { value: 'circle', label: 'Círculo' },
-  { value: 'tag', label: 'Etiqueta' },
-];
 
 function CutLinePreview({ style }: { style: CouponCardConfig['cutLineStyle'] }) {
   const dashArray = {
@@ -65,6 +52,7 @@ function CutLinePreview({ style }: { style: CouponCardConfig['cutLineStyle'] }) 
 }
 
 function CouponPreview({ config }: { config: CouponCardConfig }) {
+  const { t } = useI18n();
   const discountLabel = config.discountType === 'percentage' ? `${config.discountValue}%` : `$${config.discountValue}`;
 
   return (
@@ -81,7 +69,7 @@ function CouponPreview({ config }: { config: CouponCardConfig }) {
                   : 'rounded-full'
           } bg-blue-600 text-white`}
         >
-          {discountLabel} OFF
+          {discountLabel} {t('wallet.studio.coupon.off')}
         </span>
         {config.offerTag && (
           <span className="text-[10px] text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 rounded">
@@ -90,7 +78,7 @@ function CouponPreview({ config }: { config: CouponCardConfig }) {
         )}
       </div>
       <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
-        {config.couponDescription || 'Descripción del cupón'}
+        {config.couponDescription || t('wallet.studio.coupon.noDescription')}
       </p>
       {config.specialPromotionText && (
         <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -101,16 +89,32 @@ function CouponPreview({ config }: { config: CouponCardConfig }) {
       <div className="flex items-center justify-between text-[10px] text-neutral-500 dark:text-neutral-400">
         <span>
           {typeof config.couponExpiry === 'number'
-            ? `Vence en ${config.couponExpiry} días`
-            : 'Sin vencimiento'}
+            ? t('wallet.studio.coupon.expiresIn', { days: config.couponExpiry })
+            : t('wallet.studio.coupon.noExpiry')}
         </span>
-        <span>Límite: {config.usageLimitPerCustomer} por cliente</span>
+        <span>{t('wallet.studio.coupon.limitPerCustomer', { limit: config.usageLimitPerCustomer })}</span>
       </div>
     </div>
   );
 }
 
 export function CouponTab({ config, onChange }: CouponTabProps) {
+  const { t } = useI18n();
+
+  const CUT_LINE_OPTIONS: Array<{ value: CouponCardConfig['cutLineStyle']; label: string }> = [
+    { value: 'dashed', label: t('wallet.studio.coupon.dashed') },
+    { value: 'dotted', label: t('wallet.studio.coupon.dotted') },
+    { value: 'solid', label: t('wallet.studio.coupon.solid') },
+    { value: 'zigzag', label: t('wallet.studio.coupon.zigzag') },
+  ];
+
+  const BADGE_STYLE_OPTIONS: Array<{ value: CouponCardConfig['discountBadgeStyle']; label: string }> = [
+    { value: 'pill', label: t('wallet.studio.coupon.pill') },
+    { value: 'banner', label: t('wallet.studio.coupon.banner') },
+    { value: 'circle', label: t('wallet.studio.coupon.circle') },
+    { value: 'tag', label: t('wallet.studio.coupon.tag') },
+  ];
+
   const handleNumberChange = useCallback(
     (field: keyof CouponCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value);
@@ -138,13 +142,13 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Cupón
+        {t('wallet.studio.coupon.title')}
       </h3>
 
       {/* Discount type */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Tipo de descuento
+          {t('wallet.studio.coupon.discountType')}
         </label>
         <div className="flex gap-2">
           <button
@@ -157,7 +161,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             }`}
             data-testid="discount-type-percentage"
           >
-            Porcentaje
+            {t('wallet.studio.coupon.percentage')}
           </button>
           <button
             type="button"
@@ -169,7 +173,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             }`}
             data-testid="discount-type-fixed"
           >
-            Monto fijo
+            {t('wallet.studio.coupon.fixedAmount')}
           </button>
         </div>
       </div>
@@ -177,7 +181,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Discount value */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Valor del descuento
+          {t('wallet.studio.coupon.discountValue')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -198,7 +202,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Usage limit */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Límite de uso por cliente
+          {t('wallet.studio.coupon.usageLimit')}
         </label>
         <input
           type="number"
@@ -214,7 +218,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Coupon description */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Descripción del cupón
+          {t('wallet.studio.coupon.description')}
         </label>
         <textarea
           value={config.couponDescription}
@@ -228,13 +232,13 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Special promotion text */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Texto promocional especial
+          {t('wallet.studio.coupon.promoText')}
         </label>
         <input
           type="text"
           value={config.specialPromotionText}
           onChange={handleTextChange('specialPromotionText')}
-          placeholder="Ej: ¡Solo por tiempo limitado!"
+          placeholder={t('wallet.studio.coupon.promoPlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="promotion-text-input"
         />
@@ -243,7 +247,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Expiry */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vencimiento
+          {t('wallet.studio.coupon.expiry')}
         </label>
         <div className="flex gap-2">
           <button
@@ -256,7 +260,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             }`}
             data-testid="expiry-unlimited"
           >
-            Ilimitado
+            {t('wallet.studio.coupon.unlimited')}
           </button>
           <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700">
             <input
@@ -269,11 +273,11 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
                   onChange({ couponExpiry: value });
                 }
               }}
-              placeholder="Días"
+              placeholder={t('wallet.studio.coupon.daysPlaceholder')}
               className="w-full text-sm text-neutral-800 dark:text-neutral-100 bg-transparent focus:outline-none"
               data-testid="expiry-days-input"
             />
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">días</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{t('wallet.studio.coupon.days')}</span>
           </div>
         </div>
       </div>
@@ -281,7 +285,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Cut line style */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Estilo de línea de corte
+          {t('wallet.studio.coupon.cutLineStyle')}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {CUT_LINE_OPTIONS.map((opt) => (
@@ -306,7 +310,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Discount badge style */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Estilo de insignia de descuento
+          {t('wallet.studio.coupon.badgeStyle')}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {BADGE_STYLE_OPTIONS.map((opt) => (
@@ -330,13 +334,13 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Offer tag */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Etiqueta de oferta
+          {t('wallet.studio.coupon.offerTag')}
         </label>
         <input
           type="text"
           value={config.offerTag}
           onChange={handleTextChange('offerTag')}
-          placeholder="Ej: FLASH SALE"
+          placeholder={t('wallet.studio.coupon.offerPlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="offer-tag-input"
         />
@@ -345,7 +349,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+          {t('wallet.studio.coupon.preview')}
         </label>
         <CouponPreview config={config} />
       </div>

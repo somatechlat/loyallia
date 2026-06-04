@@ -9,6 +9,7 @@
  * @param setMeta - State setter for metadata
  */
 import React, { useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import Tooltip from '@/components/ui/Tooltip';
 import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
 import ImageUploadField from '@/components/ui/ImageUploadField';
@@ -20,6 +21,7 @@ import type { ConfigProps } from './types';
  * @returns JSX.Element
  */
 const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigProps) {
+  const { t } = useI18n();
   const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
@@ -27,14 +29,14 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {/* Discount Type Selection */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <label className="label mb-0">Tipo de descuento</label>
-          <Tooltip text="Crea un cupón para ofrecer beneficios directos a tus clientes. Elige el tipo de descuento que mejor se adapte a tu estrategia." />
+          <label className="label mb-0">{t('programs.couponConfig.discountType')}</label>
+          <Tooltip text={t('programs.couponConfig.discountTypeTooltip')} />
         </div>
         <div className="grid grid-cols-1 gap-2">
           {[
-            { value: 'fixed_amount', label: 'Descuento de valor fijo', tooltip: 'Define un monto fijo que se descontará del total de la compra del cliente.' },
-            { value: 'percentage', label: 'Descuento porcentual', tooltip: 'Aplica un porcentaje de descuento sobre el total de la compra del cliente.' },
-            { value: 'special_promotion', label: 'Promoción especial', tooltip: 'Escribe el beneficio exacto que recibirá el cliente, como 2x1 o producto gratis.' },
+            { value: 'fixed_amount', label: t('programs.couponConfig.fixedAmount'), tooltip: t('programs.couponConfig.fixedAmountTooltip') },
+            { value: 'percentage', label: t('programs.couponConfig.percentage'), tooltip: t('programs.couponConfig.percentageTooltip') },
+            { value: 'special_promotion', label: t('programs.couponConfig.specialPromotion'), tooltip: t('programs.couponConfig.specialPromotionTooltip') },
           ].map(opt => (
             <label key={opt.value} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
               meta.discount_type === opt.value
@@ -55,8 +57,8 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {meta.discount_type === 'fixed_amount' && (
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <label className="label mb-0">Monto del descuento</label>
-            <Tooltip text="Ingresa el valor en dólares que deseas descontar." />
+            <label className="label mb-0">{t('programs.couponConfig.discountAmount')}</label>
+            <Tooltip text={t('programs.couponConfig.discountAmountTooltip')} />
           </div>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500 font-bold">$</span>
@@ -74,8 +76,8 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {meta.discount_type === 'percentage' && (
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <label className="label mb-0">Porcentaje de descuento</label>
-            <Tooltip text="Ingresa el porcentaje de descuento (entre 1 y 100)." />
+            <label className="label mb-0">{t('programs.couponConfig.discountPercentage')}</label>
+            <Tooltip text={t('programs.couponConfig.discountPercentageTooltip')} />
           </div>
           <div className="relative">
             <input type="number" min={1} max={100} step={0.01} className="input pr-8" placeholder="15"
@@ -93,14 +95,14 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {meta.discount_type === 'special_promotion' && (
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <label className="label mb-0">Descripción de la promoción</label>
-            <Tooltip text="Describe la promoción tal como la verá el cliente." />
+            <label className="label mb-0">{t('programs.couponConfig.promotionDescription')}</label>
+            <Tooltip text={t('programs.couponConfig.promotionDescriptionTooltip')} />
           </div>
-          <input type="text" className="input" placeholder="Ej: 2x1 en cervezas artesanales" maxLength={100}
+          <input type="text" className="input" placeholder={t('programs.couponConfig.promotionPlaceholder')} maxLength={100}
             value={meta.special_promotion_text as string ?? ''}
             onChange={e => set('special_promotion_text', e.target.value)} required />
           <p className="text-xs text-surface-400 mt-1 text-right">
-            {(meta.special_promotion_text as string ?? '').length}/100 caracteres
+            {(meta.special_promotion_text as string ?? '').length}/100 {t('common.characters')}
           </p>
         </div>
       )}
@@ -111,20 +113,20 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
           <svg className="w-4 h-4 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 18l6-6-6-6" />
           </svg>
-          ¿Cuál es la diferencia entre monto fijo y porcentual?
+          {t('programs.couponConfig.differenceTitle')}
         </summary>
         <div className="mt-2 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl text-xs text-surface-600 dark:text-surface-300 space-y-2">
-          <p><strong className="text-surface-900 dark:text-white">Monto fijo:</strong> El valor que especifiques será el valor monetario exacto que obsequiarás a tu cliente.</p>
-          <p><strong className="text-surface-900 dark:text-white">Porcentual:</strong> El descuento será calculado a partir del consumo que tenga el cliente.</p>
-          <p><strong className="text-surface-900 dark:text-white">Promoción especial:</strong> Texto libre para promociones como &quot;2x1&quot;, &quot;Postre gratis&quot;, o &quot;Bebida de cortesía&quot;.</p>
+          <p><strong className="text-surface-900 dark:text-white">{t('programs.couponConfig.fixedAmount')}:</strong> {t('programs.couponConfig.fixedAmountDesc')}</p>
+          <p><strong className="text-surface-900 dark:text-white">{t('programs.couponConfig.percentage')}:</strong> {t('programs.couponConfig.percentageDesc')}</p>
+          <p><strong className="text-surface-900 dark:text-white">{t('programs.couponConfig.specialPromotion')}:</strong> {t('programs.couponConfig.specialPromotionDesc')}</p>
         </div>
       </details>
 
       {/* Dates */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <label className="label mb-0">Vigencia del cupón</label>
-          <Tooltip text="Define desde cuándo y hasta cuándo el cupón estará disponible para los clientes." />
+          <label className="label mb-0">{t('programs.couponConfig.couponExpiry')}</label>
+          <Tooltip text={t('programs.couponConfig.couponExpiryTooltip')} />
         </div>
         <div className="space-y-2">
           {(['unlimited', 'dates'] as const).map(expiryType => (
@@ -137,7 +139,7 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
                 checked={meta.coupon_expiry === expiryType || (!meta.coupon_expiry && expiryType === 'unlimited')}
                 onChange={() => set('coupon_expiry', expiryType)} className="accent-brand-500" />
               <span className="text-sm text-surface-900 dark:text-white font-medium">
-                {expiryType === 'unlimited' ? 'Ilimitado (no vence)' : 'Fechas específicas'}
+                {expiryType === 'unlimited' ? t('common.unlimited') : t('programs.couponConfig.specificDates')}
               </span>
             </label>
           ))}
@@ -145,17 +147,17 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
         {meta.coupon_expiry === 'dates' && (
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div>
-              <label className="label">Fecha de inicio</label>
+              <label className="label">{t('common.startDate')}</label>
               <input type="date" className="input" value={meta.coupon_start_date as string ?? ''} required
                 onChange={e => set('coupon_start_date', e.target.value)} />
             </div>
             <div>
-              <label className="label">Fecha de fin</label>
+              <label className="label">{t('common.endDate')}</label>
               <input type="date" className="input" value={meta.coupon_end_date as string ?? ''} required
                 min={meta.coupon_start_date as string ?? ''}
                 onChange={e => set('coupon_end_date', e.target.value)} />
               {Boolean(meta.coupon_end_date && meta.coupon_start_date && (meta.coupon_end_date as string) < (meta.coupon_start_date as string)) && (
-                <p className="text-xs text-red-500 mt-1">La fecha de fin no puede ser anterior a la fecha de inicio</p>
+                <p className="text-xs text-red-500 mt-1">{t('programs.couponConfig.endDateBeforeStart')}</p>
               )}
             </div>
           </div>
@@ -164,14 +166,14 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
 
       {/* Uses per customer */}
       <div>
-        <label className="label">Usos máximos por cliente</label>
+        <label className="label">{t('programs.couponConfig.maxUsesPerCustomer')}</label>
         <input type="number" min={1} className="input" value={meta.usage_limit_per_customer as number ?? 1}
           onChange={e => set('usage_limit_per_customer', parseInt(e.target.value) || 1)} />
       </div>
 
       {/* Coupon Description */}
       <div>
-        <label className="label">Descripción del cupón</label>
+        <label className="label">{t('programs.couponConfig.couponDescription')}</label>
         <input type="text" className="input" value={meta.coupon_description as string ?? ''}
           onChange={e => set('coupon_description', e.target.value)} />
       </div>
@@ -179,12 +181,12 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {/* Coupon Image */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <label className="label mb-0">Imagen del cupón</label>
-          <Tooltip text="Sube una imagen que represente el cupón. Se mostrará en la tarjeta de wallet del cliente." />
+          <label className="label mb-0">{t('programs.couponConfig.couponImage')}</label>
+          <Tooltip text={t('programs.couponConfig.couponImageTooltip')} />
         </div>
         <ImageUploadField
-          label="Imagen del cupón"
-          specs="JPG/PNG, máx 5MB"
+          label={t('programs.couponConfig.couponImage')}
+          specs={t('programs.couponConfig.imageSpecs')}
           value={(meta.coupon_image_url as string) || ''}
           onChange={url => set('coupon_image_url', url)}
           compact
@@ -194,39 +196,39 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {/* Push Notification Module */}
       <div className="border-t border-surface-200 dark:border-surface-700 pt-5 mt-5">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-sm font-bold text-surface-900 dark:text-white">Notificación automática al guardar el cupón</h3>
-          <Tooltip text="Define el título y mensaje que recibirá el cliente cuando guarde este cupón en su wallet." />
+          <h3 className="text-sm font-bold text-surface-900 dark:text-white">{t('programs.couponConfig.pushNotificationTitle')}</h3>
+          <Tooltip text={t('programs.couponConfig.pushNotificationTooltip')} />
         </div>
         <p className="text-xs text-surface-500 mb-3">
-          Permite definir un mensaje de notificación push que el cliente recibirá automáticamente cuando agregue o descargue el cupón en su wallet.
+          {t('programs.couponConfig.pushNotificationDescription')}
         </p>
         <div className="mb-3">
           <div className="flex items-center justify-between">
-            <label className="label">Título de la notificación</label>
+            <label className="label">{t('programs.couponConfig.notificationTitle')}</label>
             <EmojiPickerButton
               onEmojiSelect={emoji => set('push_title', ((meta.push_title as string) || '') + emoji)}
             />
           </div>
-          <input type="text" className="input" placeholder="¡Tu cupón está listo!" maxLength={60}
+          <input type="text" className="input" placeholder={t('programs.couponConfig.notificationTitlePlaceholder')} maxLength={60}
             value={meta.push_title as string ?? ''}
             onChange={e => set('push_title', e.target.value)} />
           <span className="text-[10px] text-surface-400 mt-0.5 block">{(meta.push_title as string ?? '').length}/60</span>
         </div>
         <div className="relative">
           <div className="flex items-center justify-between mb-1">
-            <label className="label mb-0">Mensaje de la notificación</label>
+            <label className="label mb-0">{t('programs.couponConfig.notificationMessage')}</label>
             <EmojiPickerButton
               onEmojiSelect={emoji => set('push_message', ((meta.push_message as string) || '') + emoji)}
             />
           </div>
           <textarea className="input min-h-[80px] resize-none"
-            placeholder="Tu cupón ya está activo. Disfruta $5 de descuento en tu próxima compra 🍕"
+            placeholder={t('programs.couponConfig.notificationMessagePlaceholder')}
             maxLength={178} value={meta.push_message as string ?? ''}
             onChange={e => set('push_message', e.target.value)} />
           <div className="flex items-center justify-between mt-1">
             <div className="flex items-center gap-1">
-              <Tooltip text="Este mensaje se enviará automáticamente una sola vez cuando el cliente active el cupón." />
-              <span className="text-[10px] text-surface-400">Este campo es opcional</span>
+              <Tooltip text={t('programs.couponConfig.messageSentOnceTooltip')} />
+              <span className="text-[10px] text-surface-400">{t('common.optional')}</span>
             </div>
             <span className={`text-xs font-mono ${
               (meta.push_message as string ?? '').length > 160 ? 'text-amber-500' : 'text-surface-400'
@@ -240,9 +242,9 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
             checked={!!meta.push_expiry_reminder}
             onChange={e => set('push_expiry_reminder', e.target.checked)} />
           <label htmlFor="push_expiry_reminder" className="text-sm text-surface-700 dark:text-surface-300">
-            Enviar recordatorio push antes de que expire el cupón
+            {t('programs.couponConfig.expiryReminder')}
           </label>
-          <Tooltip text="Se enviará un push de recordatorio 24 horas antes de que el cupón expire." />
+          <Tooltip text={t('programs.couponConfig.expiryReminderTooltip')} />
         </div>
       </div>
     </div>

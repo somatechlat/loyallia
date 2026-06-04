@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { UnifiedField, FieldGroup, CardType } from '@/components/wallet/types/unified-state';
 import { FIELD_GROUP_METADATA } from '@/components/wallet/constants';
 import { validateField, canAddFieldToGroup } from '@/components/wallet/utils/field-validation';
@@ -54,6 +55,7 @@ export function FieldEditorModal({
   cardType,
   allFields,
 }: FieldEditorModalProps) {
+  const { t } = useI18n();
   const [draft, setDraft] = useState<UnifiedField>(field);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -74,17 +76,17 @@ export function FieldEditorModal({
     const newErrors: Record<string, string> = {};
 
     if (!draft.label.trim()) {
-      newErrors.label = 'Label is required';
+      newErrors.label = t('common.required');
     }
     if (!draft.value.trim()) {
-      newErrors.value = 'Value is required';
+      newErrors.value = t('common.required');
     }
 
     // Check group limits if group changed
     if (draft.fieldGroup !== field.fieldGroup) {
       const otherFields = allFields.filter((f) => f.id !== field.id);
       if (!canAddFieldToGroup(otherFields, draft.fieldGroup, cardType)) {
-        newErrors.fieldGroup = `${FIELD_GROUP_METADATA[draft.fieldGroup].label} group is at capacity`;
+        newErrors.fieldGroup = `${FIELD_GROUP_METADATA[draft.fieldGroup].label} ${t('wallet.studio.fields.full')}`;
       }
     }
 
@@ -98,7 +100,7 @@ export function FieldEditorModal({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [draft, field, allFields, cardType]);
+  }, [draft, field, allFields, cardType, t]);
 
   const handleSave = useCallback(() => {
     if (validate()) {
@@ -150,13 +152,13 @@ export function FieldEditorModal({
             id="field-editor-title"
             className="text-lg font-semibold text-neutral-900 dark:text-neutral-100"
           >
-            Edit Field
+            {t('wallet.studio.fields.editField')}
           </h2>
           <button
             type="button"
             onClick={onClose}
             className="p-1 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6 6 18" />
@@ -170,7 +172,7 @@ export function FieldEditorModal({
           {/* Label */}
           <div className="space-y-1">
             <label htmlFor="field-label" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Label
+              {t('wallet.studio.fields.label')}
             </label>
             <input
               id="field-label"
@@ -178,7 +180,7 @@ export function FieldEditorModal({
               value={draft.label}
               onChange={(e) => updateDraft({ label: e.target.value })}
               className={`w-full px-3 py-2 text-sm rounded-md border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.label ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-700'}`}
-              placeholder="e.g. Points Balance"
+              placeholder={t('wallet.studio.fields.placeholderLabel')}
             />
             {errors.label && <p className="text-xs text-red-500">{errors.label}</p>}
           </div>
@@ -186,7 +188,7 @@ export function FieldEditorModal({
           {/* Value */}
           <div className="space-y-1">
             <label htmlFor="field-value" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Value
+              {t('wallet.studio.fields.value')}
             </label>
             {draft.isDynamic ? (
               <DynamicTemplatePicker
@@ -201,7 +203,7 @@ export function FieldEditorModal({
                 value={draft.value}
                 onChange={(e) => updateDraft({ value: e.target.value })}
                 className={`w-full px-3 py-2 text-sm rounded-md border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.value ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-700'}`}
-                placeholder="e.g. 1,250"
+                placeholder={t('wallet.studio.fields.placeholderValue')}
               />
             )}
             {errors.value && <p className="text-xs text-red-500">{errors.value}</p>}
@@ -210,7 +212,7 @@ export function FieldEditorModal({
           {/* Field Group */}
           <div className="space-y-1">
             <label htmlFor="field-group" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Field Group
+              {t('wallet.studio.fields.fieldGroup')}
             </label>
             <select
               id="field-group"
@@ -221,7 +223,7 @@ export function FieldEditorModal({
               {groupOptions.map(({ group, canMove }) => (
                 <option key={group} value={group} disabled={!canMove}>
                   {FIELD_GROUP_METADATA[group].label}
-                  {!canMove && group !== field.fieldGroup ? ' (full)' : ''}
+                  {!canMove && group !== field.fieldGroup ? ` (${t('wallet.studio.fields.full')})` : ''}
                 </option>
               ))}
             </select>
@@ -237,7 +239,7 @@ export function FieldEditorModal({
                 onChange={(e) => updateDraft({ showOnApple: e.target.checked })}
                 className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-neutral-700 dark:text-neutral-300">Show on Apple</span>
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{t('wallet.studio.fields.showOnApple')}</span>
             </label>
             <label className="inline-flex items-center gap-2 cursor-pointer">
               <input
@@ -246,7 +248,7 @@ export function FieldEditorModal({
                 onChange={(e) => updateDraft({ showOnGoogle: e.target.checked })}
                 className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-neutral-700 dark:text-neutral-300">Show on Google</span>
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{t('wallet.studio.fields.showOnGoogle')}</span>
             </label>
             <label className="inline-flex items-center gap-2 cursor-pointer">
               <input
@@ -255,7 +257,7 @@ export function FieldEditorModal({
                 onChange={(e) => updateDraft({ isDynamic: e.target.checked })}
                 className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-neutral-700 dark:text-neutral-300">Is Dynamic</span>
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{t('wallet.studio.fields.isDynamic')}</span>
             </label>
             <label className="inline-flex items-center gap-2 cursor-pointer">
               <input
@@ -264,18 +266,18 @@ export function FieldEditorModal({
                 onChange={(e) => updateDraft({ formatting: { ...draft.formatting, isLink: e.target.checked } })}
                 className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-neutral-700 dark:text-neutral-300">Link Detection</span>
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{t('wallet.studio.fields.linkDetection')}</span>
             </label>
           </div>
 
           {/* Apple Options */}
           <div className="border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Apple Options</h3>
+            <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{t('wallet.studio.fields.appleOptions')}</h3>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label htmlFor="apple-alignment" className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  Text Alignment
+                  {t('wallet.studio.fields.textAlignment')}
                 </label>
                 <select
                   id="apple-alignment"
@@ -283,7 +285,7 @@ export function FieldEditorModal({
                   onChange={(e) => updateDraft({ appleOptions: { ...draft.appleOptions, textAlignment: (e.target.value || undefined) as typeof draft.appleOptions.textAlignment } })}
                   className="w-full px-2 py-1.5 text-xs rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Default</option>
+                  <option value="">{t('wallet.studio.fields.default')}</option>
                   {TEXT_ALIGNMENTS.map((a) => (
                     <option key={a.value} value={a.value}>{a.label}</option>
                   ))}
@@ -292,7 +294,7 @@ export function FieldEditorModal({
 
               <div className="space-y-1">
                 <label htmlFor="apple-date-style" className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  Date Style
+                  {t('wallet.studio.fields.dateStyle')}
                 </label>
                 <select
                   id="apple-date-style"
@@ -300,7 +302,7 @@ export function FieldEditorModal({
                   onChange={(e) => updateDraft({ appleOptions: { ...draft.appleOptions, dateStyle: (e.target.value || undefined) as typeof draft.appleOptions.dateStyle } })}
                   className="w-full px-2 py-1.5 text-xs rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Default</option>
+                  <option value="">{t('wallet.studio.fields.default')}</option>
                   {DATE_STYLES.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
@@ -309,7 +311,7 @@ export function FieldEditorModal({
 
               <div className="space-y-1">
                 <label htmlFor="apple-number-style" className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  Number Style
+                  {t('wallet.studio.fields.numberStyle')}
                 </label>
                 <select
                   id="apple-number-style"
@@ -317,7 +319,7 @@ export function FieldEditorModal({
                   onChange={(e) => updateDraft({ appleOptions: { ...draft.appleOptions, numberStyle: (e.target.value || undefined) as typeof draft.appleOptions.numberStyle } })}
                   className="w-full px-2 py-1.5 text-xs rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Default</option>
+                  <option value="">{t('wallet.studio.fields.default')}</option>
                   {NUMBER_STYLES.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
@@ -326,7 +328,7 @@ export function FieldEditorModal({
 
               <div className="space-y-1">
                 <label htmlFor="apple-currency" className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  Currency Code
+                  {t('wallet.studio.fields.currencyCode')}
                 </label>
                 <input
                   id="apple-currency"
@@ -352,20 +354,20 @@ export function FieldEditorModal({
           <div>
             {showDeleteConfirm ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-red-600 dark:text-red-400">Confirm delete?</span>
+                <span className="text-xs text-red-600 dark:text-red-400">{t('wallet.studio.fields.deleteConfirm')}</span>
                 <button
                   type="button"
                   onClick={handleDelete}
                   className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
-                  Yes, delete
+                  {t('wallet.studio.fields.yesDelete')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
                   className="px-3 py-1.5 text-xs font-medium rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             ) : (
@@ -381,7 +383,7 @@ export function FieldEditorModal({
                   <line x1="10" x2="10" y1="11" y2="17" />
                   <line x1="14" x2="14" y1="11" y2="17" />
                 </svg>
-                Delete
+                {t('common.delete')}
               </button>
             )}
           </div>
@@ -392,14 +394,14 @@ export function FieldEditorModal({
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="button"
               onClick={handleSave}
               className="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              Save
+              {t('common.saveChanges')}
             </button>
           </div>
         </div>

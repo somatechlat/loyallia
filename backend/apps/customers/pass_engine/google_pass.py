@@ -28,6 +28,7 @@ from apps.customers.pass_engine.builders import (
     _resolve_gw_type,
 )
 
+from common.messages import get_message
 logger = logging.getLogger(__name__)
 
 
@@ -79,13 +80,13 @@ def get_google_wallet_diagnostics() -> dict:
     )
     if not diagnostics["issuer_id_present"]:
         diagnostics["errors"].append(
-            "Missing or dummy GOOGLE_WALLET_ISSUER_ID in Vault"
+            get_message("WALLET_DIAG_MISSING_ISSUER_ID")
         )
 
     sa_json_str = get_secret("google_service_account_json", default="")
     diagnostics["service_account_present"] = bool(sa_json_str)
     if not diagnostics["service_account_present"]:
-        diagnostics["errors"].append("Missing GOOGLE_SERVICE_ACCOUNT_JSON in Vault")
+        diagnostics["errors"].append(get_message("WALLET_DIAG_MISSING_SERVICE_ACCOUNT"))
         return diagnostics
 
     try:
@@ -93,7 +94,7 @@ def get_google_wallet_diagnostics() -> dict:
         diagnostics["service_account_valid_json"] = True
     except json.JSONDecodeError as exc:
         diagnostics["errors"].append(
-            f"GOOGLE_SERVICE_ACCOUNT_JSON is invalid JSON: {exc}"
+            get_message("WALLET_DIAG_INVALID_JSON", detail=str(exc))
         )
         return diagnostics
 
@@ -109,7 +110,7 @@ def get_google_wallet_diagnostics() -> dict:
         if not has_client_email:
             missing.append("client_email")
         diagnostics["errors"].append(
-            f"GOOGLE_SERVICE_ACCOUNT_JSON missing fields: {', '.join(missing)}"
+            get_message("WALLET_DIAG_MISSING_FIELDS", fields=", ".join(missing))
         )
 
     return diagnostics
@@ -240,14 +241,14 @@ def send_push_notification(
 
     if not sa_data or not issuer_id:
         logger.warning("Google Wallet credentials not configured")
-        return {"success": False, "error": "Google Wallet credentials not configured"}
+        return {"success": False, "error": get_message("PASS_GOOGLE_NOT_CONFIGURED")}
 
     access_token = _get_access_token()
     if not access_token:
         logger.error("Failed to get access token for Google Wallet API")
         return {
             "success": False,
-            "error": "Failed to authenticate with Google Wallet API",
+            "error": get_message("WALLET_GOOGLE_AUTH_FAILED"),
         }
 
     card = customer_pass.card
@@ -265,7 +266,7 @@ def send_push_notification(
 
     message_body = body
     if action_url:
-        message_body = f'{body} <a href="{action_url}">Ver mas</a>'
+        message_body = f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
 
     message_id = f"msg_{int(time.time())}"
     message_payload = {
@@ -317,11 +318,11 @@ def update_loyalty_class(card, base_url: str = "") -> dict:
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
     if not sa_data or not issuer_id:
-        return {"success": False, "error": "Google Wallet not configured"}
+        return {"success": False, "error": get_message("PASS_GOOGLE_NOT_CONFIGURED")}
 
     access_token = _get_access_token()
     if not access_token:
-        return {"success": False, "error": "Auth failed"}
+        return {"success": False, "error": get_message("WALLET_AUTH_FAILED")}
 
     from common.platform_config import get_platform_config
 
@@ -396,11 +397,11 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
     if not sa_data or not issuer_id:
-        return {"success": False, "error": "Google Wallet not configured"}
+        return {"success": False, "error": get_message("PASS_GOOGLE_NOT_CONFIGURED")}
 
     access_token = _get_access_token()
     if not access_token:
-        return {"success": False, "error": "Auth failed"}
+        return {"success": False, "error": get_message("WALLET_AUTH_FAILED")}
 
     from common.platform_config import get_platform_config
 
@@ -478,11 +479,11 @@ def delete_wallet_class(card) -> dict:
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
     if not sa_data or not issuer_id:
-        return {"success": False, "error": "Google Wallet not configured"}
+        return {"success": False, "error": get_message("PASS_GOOGLE_NOT_CONFIGURED")}
 
     access_token = _get_access_token()
     if not access_token:
-        return {"success": False, "error": "Auth failed"}
+        return {"success": False, "error": get_message("WALLET_AUTH_FAILED")}
 
     gw_type = _resolve_gw_type(card.card_type)
     if gw_type == "offer":
@@ -522,11 +523,11 @@ def send_push_notification_to_class(
     sa_data = _load_service_account()
     issuer_id = _get_issuer_id()
     if not sa_data or not issuer_id:
-        return {"success": False, "error": "Google Wallet not configured"}
+        return {"success": False, "error": get_message("PASS_GOOGLE_NOT_CONFIGURED")}
 
     access_token = _get_access_token()
     if not access_token:
-        return {"success": False, "error": "Auth failed"}
+        return {"success": False, "error": get_message("WALLET_AUTH_FAILED")}
 
     gw_type = _resolve_gw_type(card.card_type)
     if gw_type == "offer":
@@ -541,7 +542,7 @@ def send_push_notification_to_class(
 
     message_body = body
     if action_url:
-        message_body = f'{body} <a href="{action_url}">Ver mas</a>'
+        message_body = f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
 
     message_payload = {
         "message": {

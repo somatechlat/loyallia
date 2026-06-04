@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { UserRole } from '@/types';
+import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 
 /**
@@ -27,20 +28,6 @@ interface AuditLogSectionProps {
   userRole: string | undefined;
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  CREATE: 'Crear',
-  READ: 'Leer',
-  UPDATE: 'Actualizar',
-  DELETE: 'Eliminar',
-  EXPORT: 'Exportar',
-  IMPORT: 'Importar',
-  IMPERSONATE: 'Suplantación',
-  LOGIN: 'Inicio de sesión',
-  LOGOUT: 'Cierre de sesión',
-  API_ACCESS: 'Acceso API',
-  FACTORY_RESET: 'Restauración de fábrica',
-  SEED_DEMO: 'Carga de datos demo',
-};
 
 const STATUS_COLORS: Record<string, string> = {
   success: 'text-green-600 bg-green-50 dark:bg-green-900/20',
@@ -58,6 +45,23 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
 
+  const { t } = useI18n();
+
+  const ACTION_LABELS: Record<string, string> = {
+    CREATE: t('audit.actions.create'),
+    READ: t('audit.actions.read'),
+    UPDATE: t('audit.actions.update'),
+    DELETE: t('audit.actions.delete'),
+    EXPORT: t('audit.actions.export'),
+    IMPORT: t('audit.actions.import'),
+    IMPERSONATE: t('audit.actions.impersonate'),
+    LOGIN: t('audit.actions.login'),
+    LOGOUT: t('audit.actions.logout'),
+    API_ACCESS: t('audit.actions.apiAccess'),
+    FACTORY_RESET: t('audit.actions.factoryReset'),
+    SEED_DEMO: t('audit.actions.seedDemo'),
+  };
+
   useEffect(() => {
     if (userRole !== UserRole.OWNER) {
       setLoading(false);
@@ -69,7 +73,7 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
         const { data } = await api.get('/api/v1/audit/');
         setEntries(data.entries || []);
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : 'Error al cargar auditoría';
+        const msg = e instanceof Error ? e.message : t('audit.loadError');
         toast.error(msg);
       } finally {
         setLoading(false);
@@ -85,15 +89,15 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
     <div className="card p-5">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="font-semibold text-surface-900 dark:text-white">Registro de Auditoría</h3>
-          <p className="text-xs text-surface-400">Últimos eventos de tu negocio</p>
+          <h3 className="font-semibold text-surface-900 dark:text-white">{t('audit.sectionTitle')}</h3>
+          <p className="text-xs text-surface-400">{t('audit.sectionSubtitle')}</p>
         </div>
         {entries.length > 5 && (
           <button
             onClick={() => setShowAll(!showAll)}
             className="text-xs text-brand-500 hover:text-brand-600 font-medium"
           >
-            {showAll ? 'Mostrar menos' : `Ver todos (${entries.length})`}
+            {showAll ? t('common.showLess') : `${t('audit.viewAll')} (${entries.length})`}
           </button>
         )}
       </div>
@@ -105,7 +109,7 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
           ))}
         </div>
       ) : entries.length === 0 ? (
-        <p className="text-sm text-surface-400 text-center py-4">No hay eventos registrados</p>
+        <p className="text-sm text-surface-400 text-center py-4">{t('audit.emptyState')}</p>
       ) : (
         <div className="space-y-1.5">
           {visible.map((entry) => (
@@ -126,7 +130,7 @@ export default function AuditLogSection({ userRole }: AuditLogSectionProps) {
                 )}
               </span>
               <span className="text-[10px] text-surface-400 whitespace-nowrap">
-                {new Date(entry.created_at).toLocaleDateString('es-EC', {
+                {new Date(entry.created_at).toLocaleDateString(navigator.language, {
                   day: '2-digit',
                   month: 'short',
                   hour: '2-digit',

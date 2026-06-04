@@ -14,6 +14,7 @@
  */
 import { useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useI18n } from '@/lib/i18n';
 import type { LocationFormData } from './types';
 
 /**
@@ -64,6 +65,7 @@ function FormField({ label, value, onChange, placeholder }: {
  * @returns JSX.Element
  */
 export default function LocationForm({ form, onChange, onSave, onCancel, saving, isCreate }: LocationFormProps) {
+  const { t } = useI18n();
   const firstFieldRef = useRef<HTMLInputElement>(null);
 
   // Focus first field on mount (LYL-M-FE-029: focus management)
@@ -75,7 +77,7 @@ export default function LocationForm({ form, onChange, onSave, onCancel, saving,
   return (
     <div className="px-6 pb-6 space-y-3">
       <div>
-        <label className="text-xs font-semibold text-surface-500 dark:text-surface-400 mb-1 block">Nombre</label>
+        <label className="text-xs font-semibold text-surface-500 dark:text-surface-400 mb-1 block">{t('locations.form.nameLabel')}</label>
         <input
           ref={firstFieldRef as React.RefObject<HTMLInputElement>}
           type="text"
@@ -85,10 +87,10 @@ export default function LocationForm({ form, onChange, onSave, onCancel, saving,
           className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-600 bg-white/60 dark:bg-surface-800/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-200 placeholder:text-surface-300 dark:placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
         />
       </div>
-      <FormField label="Dirección" value={form.address} onChange={v => onChange(f => ({ ...f, address: v }))} placeholder="Av. 9 de Octubre 424" />
+      <FormField label={t('locations.form.addressLabel')} value={form.address} onChange={v => onChange(f => ({ ...f, address: v }))} placeholder="Av. 9 de Octubre 424" />
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Ciudad" value={form.city} onChange={v => onChange(f => ({ ...f, city: v }))} placeholder="Guayaquil" />
-        <FormField label="Teléfono" value={form.phone} onChange={v => onChange(f => ({ ...f, phone: v }))} placeholder="+593 4 268 3200" />
+        <FormField label={t('locations.form.phoneLabel')} value={form.phone} onChange={v => onChange(f => ({ ...f, phone: v }))} placeholder="+593 4 268 3200" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Latitud" value={form.latitude?.toString() || ''} onChange={v => {
@@ -129,11 +131,11 @@ export default function LocationForm({ form, onChange, onSave, onCancel, saving,
       <div className="flex gap-2 pt-3">
         <button onClick={onSave} disabled={saving || !form.name.trim()}
           className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 dark:disabled:bg-surface-600 disabled:cursor-not-allowed text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200 dark:shadow-none">
-          {saving ? 'Guardando...' : isCreate ? 'Crear Sucursal' : 'Guardar Cambios'}
+          {saving ? t('common.saving') : isCreate ? t('common.create') : t('common.save')}
         </button>
         <button onClick={onCancel}
           className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-600 transition-all">
-          Cancelar
+          {t('common.cancel')}
         </button>
       </div>
     </div>

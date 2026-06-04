@@ -1,98 +1,101 @@
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import { APPLE_PASS_STYLES, CardTypeIcon, adjustColor } from './constants';
 import type { WalletDesignState } from '@/components/wallet/types';
 
 /* ── Type-specific visual content for hover preview ─────────────────── */
-const TYPE_VISUALS: Record<string, { title: string; headerLabel: string; headerValue: string; detail: string; visual: React.ReactNode }> = {
-  stamp: {
-    title: 'Tarjeta de Sellos',
-    headerLabel: 'SELLOS',
-    headerValue: '3/10',
-    detail: 'Compra 10, obtén 1 gratis',
-    visual: (
-      <div className="flex flex-wrap gap-1 mt-1">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className={`w-4 h-4 rounded-full border-[1.5px] ${i < 3 ? 'bg-amber-400 border-amber-500' : 'bg-white/10 border-white/20'}`} />
-        ))}
-      </div>
-    ),
-  },
-  cashback: {
-    title: 'Cashback / Puntos',
-    headerLabel: 'CRÉDITO',
-    headerValue: '$12.50',
-    detail: '5% de devolución por compra',
-    visual: <p className="text-2xl font-black mt-1 text-emerald-400">5%</p>,
-  },
-  coupon: {
-    title: 'Cupón de Descuento',
-    headerLabel: 'OFERTA',
-    headerValue: '$10',
-    detail: 'Descuento en tu próxima compra',
-    visual: <p className="text-2xl font-black mt-1 text-amber-300">-$10</p>,
-  },
-  affiliate: {
-    title: 'Afiliación',
-    headerLabel: 'ESTADO',
-    headerValue: 'ACTIVO',
-    detail: 'Recibe promociones exclusivas',
-    visual: <p className="text-xl font-bold mt-1 text-blue-300">★ Miembro</p>,
-  },
-  discount: {
-    title: 'Descuento por Niveles',
-    headerLabel: 'NIVEL',
-    headerValue: 'ORO',
-    detail: 'Bronce 5% → Plata 10% → Oro 15%',
-    visual: (
-      <div className="flex gap-1 mt-1">
-        {['5%', '10%', '15%'].map(v => (
-          <span key={v} className="px-1.5 py-0.5 bg-white/15 rounded-full text-[8px] font-bold">{v}</span>
-        ))}
-      </div>
-    ),
-  },
-  gift_certificate: {
-    title: 'Certificado de Regalo',
-    headerLabel: 'SALDO',
-    headerValue: '$25',
-    detail: 'Regala una experiencia',
-    visual: <p className="text-2xl font-black mt-1 text-pink-300">$25</p>,
-  },
-  vip_membership: {
-    title: 'Membresía VIP',
-    headerLabel: 'MEMBRESÍA',
-    headerValue: 'VIP',
-    detail: 'Club exclusivo con beneficios',
-    visual: <p className="text-xl font-black mt-1 text-yellow-300">VIP</p>,
-  },
-  corporate_discount: {
-    title: 'Descuento Corporativo',
-    headerLabel: 'EMPRESA',
-    headerValue: 'CORP',
-    detail: 'Descuento especial empresarial',
-    visual: <p className="text-xl font-bold mt-1 text-blue-200">15% Corp</p>,
-  },
-  referral_pass: {
-    title: 'Programa de Referidos',
-    headerLabel: 'REFERIDOS',
-    headerValue: '3',
-    detail: 'Invita amigos y gana',
-    visual: <p className="text-xl font-bold mt-1 text-green-300">3 invitados</p>,
-  },
-  multipass: {
-    title: 'Multipase Prepagado',
-    headerLabel: 'RESTANTES',
-    headerValue: '7/10',
-    detail: '10 visitas por $25',
-    visual: (
-      <div className="flex gap-0.5 mt-1">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className={`w-3 h-6 rounded-sm ${i < 7 ? 'bg-cyan-400' : 'bg-white/10'}`} />
-        ))}
-      </div>
-    ),
-  },
-};
+function useTypeVisuals(t: (key: string) => string): Record<string, { title: string; headerLabel: string; headerValue: string; detail: string; visual: React.ReactNode }> {
+  return {
+    stamp: {
+      title: t('portal.cardTypes.stamp'),
+      headerLabel: t('programs.walletPreview.stamps'),
+      headerValue: '3/10',
+      detail: t('programs.walletPreview.stampDetail'),
+      visual: (
+        <div className="flex flex-wrap gap-1 mt-1">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className={`w-4 h-4 rounded-full border-[1.5px] ${i < 3 ? 'bg-amber-400 border-amber-500' : 'bg-white/10 border-white/20'}`} />
+          ))}
+        </div>
+      ),
+    },
+    cashback: {
+      title: t('portal.cardTypes.cashback'),
+      headerLabel: t('programs.walletPreview.credit'),
+      headerValue: '$12.50',
+      detail: t('programs.walletPreview.cashbackDetail'),
+      visual: <p className="text-2xl font-black mt-1 text-emerald-400">5%</p>,
+    },
+    coupon: {
+      title: t('portal.cardTypes.coupon'),
+      headerLabel: t('programs.walletPreview.offer'),
+      headerValue: '$10',
+      detail: t('programs.walletPreview.couponDetail'),
+      visual: <p className="text-2xl font-black mt-1 text-amber-300">-$10</p>,
+    },
+    affiliate: {
+      title: t('programs.cardTypes.affiliate'),
+      headerLabel: t('programs.walletPreview.status'),
+      headerValue: t('common.active').toUpperCase(),
+      detail: t('programs.walletPreview.affiliateDetail'),
+      visual: <p className="text-xl font-bold mt-1 text-blue-300">★ {t('programs.walletPreview.member')}</p>,
+    },
+    discount: {
+      title: t('portal.cardTypes.discount'),
+      headerLabel: t('programs.walletPreview.level'),
+      headerValue: t('programs.walletPreview.gold'),
+      detail: t('programs.walletPreview.discountDetail'),
+      visual: (
+        <div className="flex gap-1 mt-1">
+          {['5%', '10%', '15%'].map(v => (
+            <span key={v} className="px-1.5 py-0.5 bg-white/15 rounded-full text-[8px] font-bold">{v}</span>
+          ))}
+        </div>
+      ),
+    },
+    gift_certificate: {
+      title: t('portal.cardTypes.gift_certificate'),
+      headerLabel: t('programs.walletPreview.balance'),
+      headerValue: '$25',
+      detail: t('programs.walletPreview.giftDetail'),
+      visual: <p className="text-2xl font-black mt-1 text-pink-300">$25</p>,
+    },
+    vip_membership: {
+      title: t('portal.cardTypes.vip_membership'),
+      headerLabel: t('programs.walletPreview.membership'),
+      headerValue: 'VIP',
+      detail: t('programs.walletPreview.vipDetail'),
+      visual: <p className="text-xl font-black mt-1 text-yellow-300">VIP</p>,
+    },
+    corporate_discount: {
+      title: t('programs.cardTypes.corporate_discount'),
+      headerLabel: t('programs.walletPreview.company'),
+      headerValue: 'CORP',
+      detail: t('programs.walletPreview.corporateDetail'),
+      visual: <p className="text-xl font-bold mt-1 text-blue-200">15% Corp</p>,
+    },
+    referral_pass: {
+      title: t('portal.cardTypes.referral_pass'),
+      headerLabel: t('programs.walletPreview.referrals'),
+      headerValue: '3',
+      detail: t('programs.walletPreview.referralDetail'),
+      visual: <p className="text-xl font-bold mt-1 text-green-300">3 {t('programs.walletPreview.invited')}</p>,
+    },
+    multipass: {
+      title: t('portal.cardTypes.multipass'),
+      headerLabel: t('programs.walletPreview.remaining'),
+      headerValue: '7/10',
+      detail: t('programs.walletPreview.multipassDetail'),
+      visual: (
+        <div className="flex gap-0.5 mt-1">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className={`w-3 h-6 rounded-sm ${i < 7 ? 'bg-cyan-400' : 'bg-white/10'}`} />
+          ))}
+        </div>
+      ),
+    },
+  };
+}
 
 /* ── Icon resolver for card types ───────────────────────────────────── */
 function resolveIcon(type: string) {
@@ -116,6 +119,8 @@ function resolveIcon(type: string) {
  * @returns JSX.Element | null
  */
 function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesign?: WalletDesignState }) {
+  const { t } = useI18n();
+  const TYPE_VISUALS = useTypeVisuals(t);
   const cfg = TYPE_VISUALS[type] ?? TYPE_VISUALS.stamp;
   if (!cfg) return null;
   const passStyle = APPLE_PASS_STYLES[type] || 'generic';
@@ -199,7 +204,7 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
                 )}
                 <div className="flex-1 min-w-0 pt-0.5">
                   <p className="text-[7px] font-bold uppercase tracking-[0.12em] opacity-40">
-                    {passStyle === 'coupon' ? 'CUPÓN' : passStyle === 'storeCard' ? 'TARJETA' : 'PASE'}
+                    {passStyle === 'coupon' ? t('programs.walletPreview.coupon') : passStyle === 'storeCard' ? t('programs.walletPreview.card') : t('programs.walletPreview.pass')}
                   </p>
                   <p className="text-[10px] font-bold truncate leading-tight">{cfg.title}</p>
                 </div>
@@ -218,11 +223,11 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
               {/* Fields */}
               <div className="px-2.5 pb-1.5 flex justify-between">
                 <div>
-                  <p className="text-[5px] font-semibold uppercase opacity-30">CLIENTE</p>
-                  <p className="text-[8px] font-bold opacity-80">Cliente</p>
+                  <p className="text-[5px] font-semibold uppercase opacity-30">{t('customers.customer')}</p>
+                  <p className="text-[8px] font-bold opacity-80">{t('scanner.defaults.customerName')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[5px] font-semibold uppercase opacity-30">DESDE</p>
+                  <p className="text-[5px] font-semibold uppercase opacity-30">{t('programs.walletPreview.since')}</p>
                   <p className="text-[8px] font-bold opacity-80">2024</p>
                 </div>
               </div>

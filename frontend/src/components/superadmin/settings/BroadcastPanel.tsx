@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n';
+
 /**
  * Props for the BroadcastPanel component.
  */
@@ -31,30 +33,31 @@ export default function BroadcastPanel({
   onMessageChange,
   onSubmit,
 }: BroadcastPanelProps) {
+  const { t } = useI18n();
   return (
     <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm p-6">
-      <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3 mb-4">Anuncio Global (Broadcast)</h2>
-      <p className="text-sm text-surface-500 mb-4">Envía un email a todos los propietarios de negocios registrados en la plataforma.</p>
+      <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3 mb-4">{t('superadmin.settings.broadcastTitle')}</h2>
+      <p className="text-sm text-surface-500 mb-4">{t('superadmin.settings.broadcastDesc')}</p>
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-surface-700 mb-1">Asunto</label>
+          <label className="block text-sm font-medium text-surface-700 mb-1">{t('superadmin.settings.broadcastSubject')}</label>
           <input
             type="text"
             className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 text-sm"
             value={subject}
             onChange={(e) => onSubjectChange(e.target.value)}
-            placeholder="Mantenimiento programado..."
+            placeholder={t('superadmin.settings.broadcastSubjectPlaceholder')}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-surface-700 mb-1">Mensaje</label>
+          <label className="block text-sm font-medium text-surface-700 mb-1">{t('superadmin.settings.broadcastMessage')}</label>
           <textarea
             rows={4}
             className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 text-sm"
             value={message}
             onChange={(e) => onMessageChange(e.target.value)}
-            placeholder="Escribe el mensaje aquí..."
+            placeholder={t('superadmin.settings.broadcastMessagePlaceholder')}
             required
           />
         </div>
@@ -63,7 +66,7 @@ export default function BroadcastPanel({
           disabled={sending}
           className="bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
         >
-          {sending ? 'Enviando...' : 'Enviar a todos los propietarios'}
+          {sending ? t('common.sending') : t('superadmin.settings.broadcastSubmit')}
         </button>
       </form>
     </div>

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Represents a single chat message.
@@ -16,32 +17,36 @@ type Message = {
   content: string;
 };
 
-const PAGE_LABELS: Record<string, string> = {
-  '/': 'Dashboard', '/programs': 'Programas', '/customers': 'Clientes',
-  '/analytics': 'Analytics', '/automation': 'Automatizaciones',
-  '/campaigns': 'Campañas', '/billing': 'Facturación', '/settings': 'Configuración',
-};
-
-const QUICK_HINTS: Record<string, string[]> = {
-  '/': ['¿Cómo mejorar la retención?', '¿Qué significan estos números?', 'Explícame las tendencias'],
-  '/programs': ['¿Qué programa me conviene?', '¿Cómo crear un programa VIP?'],
-  '/customers': ['¿Cómo segmentar clientes?', '¿Cómo recuperar inactivos?'],
-  '/analytics': ['¿Qué KPIs debo monitorear?', 'Explícame la tasa de canje'],
-  '/automation': ['¿Qué automatización crear?', 'Sugiere reglas para mi negocio'],
-  '/campaigns': ['¿Cuándo enviar una campaña?', '¿Cómo escribir un buen mensaje?'],
-  '/billing': ['¿Qué incluye mi plan?', '¿Cómo cambiar de plan?'],
-  '/settings': ['¿Cómo cambiar mi contraseña?', '¿Cómo personalizar la marca?'],
-};
-
-function getLabel(p: string): string {
-  if (PAGE_LABELS[p]) return PAGE_LABELS[p];
+function getLabel(p: string, t: (key: string, vars?: Record<string, string | number>) => string): string {
+  const labels: Record<string, string> = {
+    '/': t('nav.dashboard'),
+    '/programs': t('nav.programs'),
+    '/customers': t('nav.customers'),
+    '/analytics': t('nav.analytics'),
+    '/automation': t('nav.automation'),
+    '/campaigns': t('chatbot.pageLabel.campaigns'),
+    '/billing': t('nav.billing'),
+    '/settings': t('nav.settings'),
+  };
+  if (labels[p]) return labels[p];
   const prefix = '/' + p.split('/').filter(Boolean)[0];
-  return PAGE_LABELS[prefix] || 'Loyallia';
+  return labels[prefix] || 'Loyallia';
 }
-function getHints(p: string): string[] {
-  if (QUICK_HINTS[p]) return QUICK_HINTS[p];
+
+function getHints(p: string, t: (key: string, vars?: Record<string, string | number>) => string): string[] {
+  const hints: Record<string, string[]> = {
+    '/': [t('chatbot.hints.retention'), t('chatbot.hints.numbers'), t('chatbot.hints.trends')],
+    '/programs': [t('chatbot.hints.whichProgram'), t('chatbot.hints.vipProgram')],
+    '/customers': [t('chatbot.hints.segment'), t('chatbot.hints.recover')],
+    '/analytics': [t('chatbot.hints.kpis'), t('chatbot.hints.redemptionRate')],
+    '/automation': [t('chatbot.hints.whichAutomation'), t('chatbot.hints.suggestRules')],
+    '/campaigns': [t('chatbot.hints.whenCampaign'), t('chatbot.hints.goodMessage')],
+    '/billing': [t('chatbot.hints.planIncludes'), t('chatbot.hints.changePlan')],
+    '/settings': [t('chatbot.hints.changePassword'), t('chatbot.hints.branding')],
+  };
+  if (hints[p]) return hints[p];
   const prefix = '/' + p.split('/').filter(Boolean)[0];
-  return QUICK_HINTS[prefix] || [];
+  return hints[prefix] || [];
 }
 
 /** Mask PII patterns (emails, phone numbers, IDs, credit cards) from text — SEC-015 fix */
@@ -64,13 +69,13 @@ function maskPII(text: string): string {
 }
 
 /** Capture visible text from main content area at ask-time — sanitized for PII */
-function captureScreenContext(): string {
+function captureScreenContext(t: (key: string, vars?: Record<string, string | number>) => string): string {
   const main = document.querySelector('main');
   if (!main) return '';
   const raw = main.innerText || '';
   const cleaned = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\n');
   const sanitized = maskPII(cleaned);
-  return sanitized.length > 3000 ? sanitized.slice(0, 3000) + '\n[...truncado]' : sanitized;
+  return sanitized.length > 3000 ? sanitized.slice(0, 3000) + '\n' + t('chatbot.truncated') : sanitized;
 }
 
 /** Render markdown-like content: **bold**, `code`, line breaks, bullet lists */
@@ -154,12 +159,12 @@ function processInline(text: string) {
 }
 
 /** Memoized chat message component (PERF-010) */
-const ChatMessage = React.memo(function ChatMessage({ msg }: { msg: Message }) {
+const ChatMessage = React.memo(function ChatMessage({ msg, t }: { msg: Message; t: (key: string, vars?: Record<string, string | number>) => string }) {
   return (
     <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       {msg.role === 'assistant' && (
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold mr-2 mt-1 flex-shrink-0 shadow-sm">
-          AI
+          {t('chatbot.aiLabel')}
         </div>
       )}
       <div
@@ -182,15 +187,16 @@ const ChatMessage = React.memo(function ChatMessage({ msg }: { msg: Message }) {
 export default function Chatbot() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const pageLabel = getLabel(pathname);
-  const hints = getHints(pathname);
+  const { t } = useI18n();
+  const pageLabel = getLabel(pathname, t);
+  const hints = getHints(pathname, t);
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'initial',
       role: 'assistant',
-      content: '¡Hola! Soy el **Asistente Loyallia**.\n\nPregúntame lo que quieras sobre los datos que ves en pantalla. Puedo ayudarte con:\n- Interpretar métricas y gráficos\n- Sugerencias para tu negocio\n- Cómo usar cada función de la plataforma',
+      content: t('chatbot.welcomeMessage'),
     },
   ]);
   const [input, setInput] = useState('');
@@ -232,18 +238,22 @@ export default function Chatbot() {
 
     try {
       setIsCapturingContext(true);
-      const screenText = captureScreenContext();
+      const screenText = captureScreenContext(t);
       setIsCapturingContext(false);
       const contextEnrichedMessage = [
-        `=== CONTEXTO DE PANTALLA ===`,
-        `Página: ${pageLabel} | URL: ${pathname}`,
-        `Usuario: ${user?.full_name || 'N/A'} | Rol: ${user?.role || 'N/A'} | Negocio: ${user?.tenant_name || 'N/A'}`,
-        ``,
-        `--- DATOS VISIBLES EN PANTALLA ---`,
+        t('chatbot.context.header'),
+        t('chatbot.context.page', { pageLabel, pathname }),
+        t('chatbot.context.user', {
+          fullName: user?.full_name || t('common.unknown'),
+          role: user?.role || t('common.unknown'),
+          tenantName: user?.tenant_name || t('common.unknown'),
+        }),
+        '',
+        t('chatbot.context.visibleData'),
         screenText,
-        `--- FIN DE DATOS ---`,
-        ``,
-        `Pregunta del usuario: ${userMessage}`,
+        t('chatbot.context.endData'),
+        '',
+        t('chatbot.context.userQuestion', { userMessage }),
       ].join('\n');
 
       abortRef.current = new AbortController();
@@ -264,13 +274,13 @@ export default function Chatbot() {
       } else {
         setMessages((prev) => [
           ...prev,
-          { id: nextId(), role: 'assistant', content: 'Lo siento, ocurrió un error al procesar tu solicitud.' },
+          { id: nextId(), role: 'assistant', content: t('chatbot.errorProcessing') },
         ]);
       }
     } catch {
       setMessages((prev) => [
         ...prev,
-        { id: nextId(), role: 'assistant', content: 'Lo siento, hubo un problema de conexión.' },
+        { id: nextId(), role: 'assistant', content: t('chatbot.errorConnection') },
       ]);
     } finally {
       setIsLoading(false);
@@ -286,7 +296,7 @@ export default function Chatbot() {
         shadow-xl hover:shadow-2xl flex items-center justify-center transition-all duration-300 z-40 
         hover:scale-110 active:scale-95
         ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
-        aria-label="Abrir asistente inteligente"
+        aria-label={t('chatbot.openAssistant')}
         id="chatbot-toggle"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,7 +308,7 @@ export default function Chatbot() {
       {/* Chat Window — 2.5x bigger */}
       <div
         role="dialog"
-        aria-label="Asistente de chat"
+        aria-label={t('chatbot.chatAssistant')}
         aria-modal="false"
         className={`fixed bottom-4 right-4 w-[560px] h-[780px] bg-white dark:bg-surface-900 rounded-3xl shadow-2xl flex flex-col z-50 transition-all duration-300 origin-bottom-right border border-surface-200 dark:border-surface-700/80 dark:border-white/[0.06]
         ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
@@ -308,10 +318,10 @@ export default function Chatbot() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-100 bg-gradient-to-r from-brand-600 to-purple-600 rounded-t-3xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white font-bold text-sm shadow-inner">
-              AI
+              {t('chatbot.aiLabel')}
             </div>
             <div>
-              <h3 className="font-bold text-white text-sm">Asistente Loyallia</h3>
+              <h3 className="font-bold text-white text-sm">{t('chatbot.title')}</h3>
               <p className="text-[11px] text-white/70 flex items-center gap-1.5">
                 <span className="w-2 h-2 bg-emerald-400 rounded-full inline-block shadow-sm" />
                 {pageLabel}
@@ -332,18 +342,18 @@ export default function Chatbot() {
         {/* Messages */}
         <div className="flex-1 px-5 py-4 overflow-y-auto bg-gradient-to-b from-surface-50 to-white dark:from-surface-950 dark:to-surface-900 space-y-4">
           {messages.map((msg) => (
-            <ChatMessage key={msg.id} msg={msg} />
+            <ChatMessage key={msg.id} msg={msg} t={t} />
           ))}
           {isLoading && (
             <div className="flex justify-start">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold mr-2 mt-1 flex-shrink-0">
-                AI
+                {t('chatbot.aiLabel')}
               </div>
               <div className="bg-white dark:bg-surface-900 text-surface-500 border border-surface-150 rounded-2xl rounded-tl-md px-5 py-4 shadow-sm flex gap-2 items-center">
                 <span className="w-2.5 h-2.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2.5 h-2.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2.5 h-2.5 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                <span className="text-xs text-surface-400 ml-2">Pensando...</span>
+                <span className="text-xs text-surface-400 ml-2">{t('chatbot.thinking')}</span>
               </div>
             </div>
           )}
@@ -371,7 +381,7 @@ export default function Chatbot() {
           {isCapturingContext && (
             <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-700">
               <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-              Capturando contexto de pantalla (datos sensibles enmascarados)...
+              {t('chatbot.capturingContext')}
             </div>
           )}
           <form onSubmit={handleSubmit} className="flex gap-3">
@@ -379,7 +389,7 @@ export default function Chatbot() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pregunta sobre lo que ves en pantalla..."
+              placeholder={t('chatbot.inputPlaceholder')}
               disabled={isLoading}
               ref={chatInputRef}
               className="flex-1 bg-surface-50 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all focus:bg-white dark:bg-surface-900"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n';
 import {
   CARD_TYPES,
   APPLE_PASS_STYLES,
@@ -25,6 +26,7 @@ function PlatformToggle({ platform, onChange }: {
   platform: 'apple' | 'google';
   onChange: (p: 'apple' | 'google') => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex justify-center mb-4">
       <div className="inline-flex bg-surface-200 dark:bg-surface-700 rounded-full p-1.5 gap-1">
@@ -38,7 +40,7 @@ function PlatformToggle({ platform, onChange }: {
           id="toggle-apple"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          Apple Wallet
+          {t('wallet.appleWallet')}
         </button>
         <button
           type="button"
@@ -50,7 +52,7 @@ function PlatformToggle({ platform, onChange }: {
           id="toggle-google"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C6.477 2 1.545 6.932 1.545 13s4.932 11 11 11c6.068 0 11-4.932 11-11 0-.73-.074-1.44-.213-2.128H12.545z"/></svg>
-          Google Wallet
+          {t('wallet.googleWallet')}
         </button>
       </div>
     </div>
@@ -90,14 +92,15 @@ export function WalletProviderSelector({
   onAppleConfigChange: (config: AppleWalletFeatureConfig) => void;
   cardType: string;
 }) {
+  const { t } = useI18n();
   const applePassStyle = APPLE_PASS_STYLES[cardType] || 'generic';
 
   return (
     <div className="card p-6 space-y-4">
       <div>
-        <h2 className="text-base font-bold text-surface-900 dark:text-white">Billetera digital</h2>
+        <h2 className="text-base font-bold text-surface-900 dark:text-white">{t('programs.walletCardPreview.digitalWallet')}</h2>
         <p className="text-sm text-surface-500">
-          Selecciona la plataforma principal para esta tarjeta. La vista previa y la entrega publica seguiran esta seleccion.
+          {t('programs.walletCardPreview.walletDescription')}
         </p>
       </div>
 
@@ -112,8 +115,8 @@ export function WalletProviderSelector({
           }`}
           id="wallet-provider-apple"
         >
-          <span className="block text-sm font-bold text-surface-900 dark:text-white">Apple Wallet</span>
-          <span className="block text-xs text-surface-500 mt-1">PKPass firmado para iPhone y Apple Wallet.</span>
+          <span className="block text-sm font-bold text-surface-900 dark:text-white">{t('wallet.appleWallet')}</span>
+          <span className="block text-xs text-surface-500 mt-1">{t('programs.walletCardPreview.appleWalletDesc')}</span>
         </button>
         <button
           type="button"
@@ -125,8 +128,8 @@ export function WalletProviderSelector({
           }`}
           id="wallet-provider-google"
         >
-          <span className="block text-sm font-bold text-surface-900 dark:text-white">Google Wallet</span>
-          <span className="block text-xs text-surface-500 mt-1">Usa el flujo Google Wallet existente sin cambios.</span>
+          <span className="block text-sm font-bold text-surface-900 dark:text-white">{t('wallet.googleWallet')}</span>
+          <span className="block text-xs text-surface-500 mt-1">{t('programs.walletCardPreview.googleWalletDesc')}</span>
         </button>
       </div>
 
@@ -134,8 +137,8 @@ export function WalletProviderSelector({
         <div className="rounded-xl border border-surface-200 dark:border-surface-700 p-4 space-y-3 bg-surface-50 dark:bg-surface-900/40">
           <div className="flex justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold text-surface-900 dark:text-white">Estilo Apple Pass</p>
-              <p className="text-xs text-surface-500">Derivado del tipo de programa: <span className="font-mono text-brand-600">{applePassStyle}</span></p>
+              <p className="text-xs font-semibold text-surface-900 dark:text-white">{t('programs.walletCardPreview.applePassStyle')}</p>
+              <p className="text-xs text-surface-500">{t('programs.walletCardPreview.derivedFromType')}: <span className="font-mono text-brand-600">{applePassStyle}</span></p>
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 bg-brand-100 dark:bg-brand-900/30 rounded-full px-2 py-1 h-fit">
               PKPass
@@ -143,18 +146,18 @@ export function WalletProviderSelector({
           </div>
 
           <div className="text-xs text-surface-500 bg-surface-100 dark:bg-surface-800 rounded-lg p-2.5">
-            <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">Imagen:</p>
+            <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">{t('common.image')}:</p>
             {APPLE_IMAGE_SUPPORT[applePassStyle]?.strip
-              ? <p><span className="font-medium">strip.png</span> — imagen panorámica (375x123pt). Visible en iPhone.</p>
-              : <p><span className="font-medium">thumbnail.png</span> — miniatura (90x90pt). Visible en iPhone.</p>
+              ? <p><span className="font-medium">strip.png</span> — {t('programs.walletCardPreview.stripImageDesc')}</p>
+              : <p><span className="font-medium">thumbnail.png</span> — {t('programs.walletCardPreview.thumbnailImageDesc')}</p>
             }
-            <p className="mt-1 opacity-70">Apple Watch: las imagenes no se muestran.</p>
+            <p className="mt-1 opacity-70">{t('programs.walletCardPreview.appleWatchNoImages')}</p>
           </div>
 
           <label className="flex items-start justify-between gap-4">
             <span>
-              <span className="block text-xs font-semibold text-surface-800 dark:text-surface-100">Activar NFC Apple</span>
-              <span className="block text-xs text-surface-500">Solo funciona si Apple aprobo NFC y la clave publica NFC esta en Vault.</span>
+              <span className="block text-xs font-semibold text-surface-800 dark:text-surface-100">{t('programs.walletCardPreview.enableAppleNfc')}</span>
+              <span className="block text-xs text-surface-500">{t('programs.walletCardPreview.nfcRequiresApproval')}</span>
             </span>
             <input
               type="checkbox"
@@ -167,8 +170,8 @@ export function WalletProviderSelector({
 
           <label className={`flex items-start justify-between gap-4 ${!appleConfig.nfc_enabled ? 'opacity-50' : ''}`}>
             <span>
-              <span className="block text-xs font-semibold text-surface-800 dark:text-surface-100">Requerir autenticacion para NFC</span>
-              <span className="block text-xs text-surface-500">Solicita Face ID, Touch ID o codigo antes de presentar NFC.</span>
+              <span className="block text-xs font-semibold text-surface-800 dark:text-surface-100">{t('programs.walletCardPreview.requireNfcAuth')}</span>
+              <span className="block text-xs text-surface-500">{t('programs.walletCardPreview.nfcAuthDesc')}</span>
             </span>
             <input
               type="checkbox"
@@ -186,10 +189,10 @@ export function WalletProviderSelector({
         <div className="rounded-xl border border-surface-200 dark:border-surface-700 p-4 space-y-3 bg-surface-50 dark:bg-surface-900/40">
           <div className="flex justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold text-surface-900 dark:text-white">Tipo Google Wallet</p>
+              <p className="text-xs font-semibold text-surface-900 dark:text-white">{t('programs.walletCardPreview.googleWalletType')}</p>
               <p className="text-xs text-surface-500">
                 <span className="font-mono text-brand-600">{GOOGLE_WALLET_TYPES[cardType]?.type || 'LoyaltyClass'}</span>
-                {' — '}{GOOGLE_WALLET_TYPES[cardType]?.label || 'Programa'}
+                {' — '}{t(`programs.cardTypes.${GOOGLE_WALLET_TYPES[cardType]?.type === 'LoyaltyClass' ? 'stamp' : GOOGLE_WALLET_TYPES[cardType]?.type === 'OfferClass' ? 'coupon' : GOOGLE_WALLET_TYPES[cardType]?.type === 'GiftCardClass' ? 'gift_certificate' : 'stamp'}`) || GOOGLE_WALLET_TYPES[cardType]?.label || t('programs.walletCardPreview.program')}
               </p>
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-green-600 bg-green-100 dark:bg-green-900/30 rounded-full px-2 py-1 h-fit">
@@ -197,9 +200,9 @@ export function WalletProviderSelector({
             </span>
           </div>
           <div className="text-xs text-surface-500 bg-surface-100 dark:bg-surface-800 rounded-lg p-2.5">
-            <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">Hero Image:</p>
-            <p>Imagen de ancho completo soportada en todos los tipos Google.</p>
-            <p className="mt-1">Layout: <span className="font-mono">cardTemplateOverride</span> con filas de 1-3 campos.</p>
+            <p className="font-semibold text-surface-700 dark:text-surface-300 mb-1">{t('programs.walletCardPreview.heroImage')}:</p>
+            <p>{t('programs.walletCardPreview.googleHeroSupported')}</p>
+            <p className="mt-1">{t('programs.walletCardPreview.layout')}: <span className="font-mono">cardTemplateOverride</span> {t('programs.walletCardPreview.withRows')}</p>
           </div>
         </div>
       )}
@@ -267,6 +270,7 @@ export default function WalletCardPreview({
   customerName?: string;
   walletDesign?: WalletDesignState;
 }) {
+  const { t } = useI18n();
   const [platform, setPlatform] = useState(walletPlatform);
 
   useEffect(() => {
@@ -309,7 +313,7 @@ export default function WalletCardPreview({
             className="mt-3 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-medium text-surface-300 transition-colors border border-white/10"
             type="button"
           >
-            {showAppleBack ? '← Frente de tarjeta' : 'Reverso tarjeta →'}
+            {showAppleBack ? t('programs.walletCardPreview.frontCard') : t('programs.walletCardPreview.backCard')}
           </button>
         </div>
       ) : (
@@ -324,7 +328,7 @@ export default function WalletCardPreview({
         />
       )}
       <p className="text-center text-xs text-surface-400 mt-4 font-medium">
-        Vista previa — {platform === 'apple' ? 'Apple Wallet' : 'Google Wallet'}
+        {t('programs.walletCardPreview.preview')} — {platform === 'apple' ? t('wallet.appleWallet') : t('wallet.googleWallet')}
       </p>
     </div>
   );

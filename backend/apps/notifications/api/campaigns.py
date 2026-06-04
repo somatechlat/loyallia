@@ -14,7 +14,7 @@ from apps.notifications.services.dispatch import (
     dispatch_campaign_immediately,
     schedule_campaign_dispatch,
 )
-from common.messages import get_message
+from common.messages import get_message, get_message_for_request
 from common.permissions import is_owner, jwt_auth
 from common.plan_enforcement import (
     check_feature_access,
@@ -173,17 +173,16 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         except ValueError:
             raise HttpError(
                 400,
-                get_message(
-                    "VALIDATION_ERROR",
-                    detail="Invalid scheduled_at format. Use ISO 8601.",
+                get_message_for_request(
+                    "VALIDATION_INVALID_DATETIME", request
                 ),
             )
 
         if scheduled_time < timezone.now():
             raise HttpError(
                 400,
-                get_message(
-                    "VALIDATION_ERROR", detail="scheduled_at must be in the future."
+                get_message_for_request(
+                    "VALIDATION_FUTURE_DATETIME", request
                 ),
             )
 
@@ -256,9 +255,8 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
     else:
         raise HttpError(
             400,
-            get_message(
-                "VALIDATION_ERROR",
-                detail="Canal no válido. Usa 'email', 'wallet', 'whatsapp' o 'sms'.",
+            get_message_for_request(
+                "CAMPAIGN_INVALID_CHANNEL", request
             ),
         )
 

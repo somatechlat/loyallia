@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import {
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
@@ -85,6 +86,7 @@ export interface WalletDesignerProps {
  * @returns JSX.Element
  */
 export default function WalletDesigner({ cardType, state, onChange, provider }: WalletDesignerProps) {
+  const { t } = useI18n();
   const passStyle = APPLE_PASS_STYLES[cardType] || 'storeCard';
   const appleSupportsStrip = APPLE_IMAGE_SUPPORT[passStyle]?.strip ?? false;
   const googleType = GOOGLE_WALLET_TYPES[cardType]?.type || 'LoyaltyClass';
@@ -100,40 +102,40 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
           <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2.5 flex items-start gap-2">
             <InfoIcon className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Estilo de pase: <span className="font-mono">{passStyle}</span></p>
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">{t('programs.walletDesigner.passStyle')}: <span className="font-mono">{passStyle}</span></p>
               <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
                 {appleSupportsStrip
-                  ? 'Este estilo usa la imagen panorámica (strip.png) en la parte superior.'
-                  : 'Este estilo usa una miniatura (thumbnail.png) en la parte superior derecha.'}
+                  ? t('programs.walletDesigner.stripStyle')
+                  : t('programs.walletDesigner.thumbnailStyle')}
               </p>
             </div>
           </div>
 
-          <AccordionSection title="Imágenes" defaultOpen>
+          <AccordionSection title={t('programs.walletDesigner.images')} defaultOpen>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUploadField
-                label="Logo"
+                label={t('programs.walletDesigner.logo')}
                 specs="160×50pt (320×100px @2x)"
                 required={true}
                 value={state.appleLogoUrl}
                 onChange={v => patch({ appleLogoUrl: v })}
               />
               <ImageUploadField
-                label="Logo @2x"
+                label={t('programs.walletDesigner.logo2x')}
                 specs="160×50pt (320×100px @2x)"
                 required={true}
                 value={state.appleLogo2xUrl}
                 onChange={v => patch({ appleLogo2xUrl: v })}
               />
               <ImageUploadField
-                label="Ícono"
+                label={t('programs.walletDesigner.icon')}
                 specs="29×29pt (58×58px @2x)"
                 required={true}
                 value={state.appleIconUrl}
                 onChange={v => patch({ appleIconUrl: v })}
               />
               <ImageUploadField
-                label="Ícono @2x"
+                label={t('programs.walletDesigner.icon2x')}
                 specs="29×29pt (58×58px @2x)"
                 required={true}
                 value={state.appleIcon2xUrl}
@@ -142,14 +144,14 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
               {appleSupportsStrip ? (
                 <>
                   <ImageUploadField
-                    label="Strip"
+                    label={t('programs.walletDesigner.strip')}
                     specs="375×123pt (750×246px @2x) — solo storeCard/coupon"
                     required={false}
                     value={state.appleStripUrl}
                     onChange={v => patch({ appleStripUrl: v })}
                   />
                   <ImageUploadField
-                    label="Strip @2x"
+                    label={t('programs.walletDesigner.strip2x')}
                     specs="375×123pt (750×246px @2x) — solo storeCard/coupon"
                     required={false}
                     value={state.appleStrip2xUrl}
@@ -159,14 +161,14 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
               ) : (
                 <>
                   <ImageUploadField
-                    label="Thumbnail"
+                    label={t('programs.walletDesigner.thumbnail')}
                     specs="90×90pt (180×180px @2x) — solo generic"
                     required={false}
                     value={state.appleThumbnailUrl}
                     onChange={v => patch({ appleThumbnailUrl: v })}
                   />
                   <ImageUploadField
-                    label="Thumbnail @2x"
+                    label={t('programs.walletDesigner.thumbnail2x')}
                     specs="90×90pt (180×180px @2x) — solo generic"
                     required={false}
                     value={state.appleThumbnail2xUrl}
@@ -177,7 +179,7 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
             </div>
           </AccordionSection>
 
-          <AccordionSection title="Diseño de campos" defaultOpen>
+          <AccordionSection title={t('programs.walletDesigner.fieldDesign')} defaultOpen>
             <AppleFieldEditor
               fields={state.appleFields}
               onChange={v => patch({ appleFields: v })}
@@ -185,7 +187,7 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
             />
           </AccordionSection>
 
-          <AccordionSection title="NFC y funciones avanzadas">
+          <AccordionSection title={t('programs.walletDesigner.nfcTitle')}>
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
                 <input
@@ -194,7 +196,7 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
                   onChange={e => patch({ appleNfc: { ...state.appleNfc, nfc_enabled: e.target.checked } })}
                   className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700"
                 />
-                Activar NFC (Near Field Communication)
+                {t('programs.walletDesigner.enableNfc')}
               </label>
               {state.appleNfc.nfc_enabled && (
                 <label className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300 pl-6">
@@ -204,13 +206,13 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
                     onChange={e => patch({ appleNfc: { ...state.appleNfc, nfc_requires_authentication: e.target.checked } })}
                     className="rounded border-surface-300 dark:border-surface-600 text-brand-600 focus:ring-brand-500 bg-white dark:bg-surface-700"
                   />
-                  Requerir autenticación para usar NFC
+                  {t('programs.walletDesigner.requireNfcAuth')}
                 </label>
               )}
             </div>
           </AccordionSection>
 
-          <AccordionSection title="Parámetros avanzados">
+          <AccordionSection title={t('programs.walletDesigner.advancedParams')}>
             <AppleAdvancedSettings config={state.appleAdvanced} onChange={v => patch({ appleAdvanced: v })} />
           </AccordionSection>
         </div>
@@ -221,38 +223,38 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
           <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-3 py-2.5 flex items-start gap-2">
             <InfoIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">Tipo de clase: <span className="font-mono">{googleType}</span></p>
+              <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">{t('programs.walletDesigner.classType')}: <span className="font-mono">{googleType}</span></p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                Google Wallet usa <span className="font-mono">cardTemplateOverride</span> con filas de campos personalizables.
+                {t('programs.walletDesigner.googleUses')} <span className="font-mono">cardTemplateOverride</span> {t('programs.walletDesigner.withCustomRows')}
               </p>
             </div>
           </div>
 
-          <AccordionSection title="Imágenes" defaultOpen>
+          <AccordionSection title={t('programs.walletDesigner.images')} defaultOpen>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ImageUploadField
-                label="Logo del programa"
+                label={t('programs.walletDesigner.programLogo')}
                 specs="660×660px"
                 required={true}
                 value={state.googleProgramLogoUrl}
                 onChange={v => patch({ googleProgramLogoUrl: v })}
               />
               <ImageUploadField
-                label="Imagen Hero"
+                label={t('programs.walletDesigner.heroImage')}
                 specs="1032×336px"
                 required={false}
                 value={state.googleHeroImageUrl}
                 onChange={v => patch({ googleHeroImageUrl: v })}
               />
               <ImageUploadField
-                label="Logo ancho"
+                label={t('programs.walletDesigner.wideLogo')}
                 specs="1032×150px"
                 required={false}
                 value={state.googleWideLogoUrl}
                 onChange={v => patch({ googleWideLogoUrl: v })}
               />
               <ImageUploadField
-                label="Imagen adicional"
+                label={t('programs.walletDesigner.additionalImage')}
                 specs="660×660px"
                 required={false}
                 value={state.googleImageModuleUrl}
@@ -261,11 +263,11 @@ export default function WalletDesigner({ cardType, state, onChange, provider }: 
             </div>
           </AccordionSection>
 
-          <AccordionSection title="Configuración de filas (cardTemplateOverride)" defaultOpen>
+          <AccordionSection title={t('programs.walletDesigner.rowConfig')} defaultOpen>
             <GoogleRowBuilder rows={state.googleRows} onChange={v => patch({ googleRows: v })} cardType={cardType} />
           </AccordionSection>
 
-          <AccordionSection title="Parámetros avanzados">
+          <AccordionSection title={t('programs.walletDesigner.advancedParams')}>
             <GoogleAdvancedSettings config={state.googleAdvanced} onChange={v => patch({ googleAdvanced: v })} />
           </AccordionSection>
         </div>

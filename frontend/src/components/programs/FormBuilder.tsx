@@ -5,6 +5,7 @@
  */
 'use client';
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import Tooltip from '@/components/ui/Tooltip';
 
 /**
@@ -31,20 +32,22 @@ interface FormBuilderProps {
   onChange: (fields: FormField[]) => void;
 }
 
-const FIELD_TYPE_LABELS: Record<FormField['type'], string> = {
-  text: 'Texto',
-  email: 'Correo electrónico',
-  tel: 'Teléfono',
-  date: 'Fecha',
-  select: 'Selección',
-  number: 'Número',
+const FIELD_TYPE_LABEL_KEYS: Record<FormField['type'], string> = {
+  text: 'programs.formBuilder.fieldTypes.text',
+  email: 'programs.formBuilder.fieldTypes.email',
+  tel: 'programs.formBuilder.fieldTypes.tel',
+  date: 'programs.formBuilder.fieldTypes.date',
+  select: 'programs.formBuilder.fieldTypes.select',
+  number: 'programs.formBuilder.fieldTypes.number',
 };
 
-const DEFAULT_FIELDS: FormField[] = [
-  { id: 'name', type: 'text', label: 'Nombre completo', placeholder: 'María García', required: true, unique: false },
-  { id: 'email', type: 'email', label: 'Correo electrónico', placeholder: 'cliente@email.com', required: true, unique: true },
-  { id: 'phone', type: 'tel', label: 'Teléfono', placeholder: '+593 99 123 4567', required: false, unique: false, country_code: true },
-];
+function getDefaultFields(t: (key: string) => string): FormField[] {
+  return [
+    { id: 'name', type: 'text', label: t('programs.formBuilder.defaultFields.name'), placeholder: t('programs.formBuilder.defaultFields.namePlaceholder'), required: true, unique: false },
+    { id: 'email', type: 'email', label: t('programs.formBuilder.defaultFields.email'), placeholder: t('programs.formBuilder.defaultFields.emailPlaceholder'), required: true, unique: true },
+    { id: 'phone', type: 'tel', label: t('programs.formBuilder.defaultFields.phone'), placeholder: t('programs.formBuilder.defaultFields.phonePlaceholder'), required: false, unique: false, country_code: true },
+  ];
+}
 
 function generateId() {
   return `field_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -56,15 +59,17 @@ function generateId() {
  * @returns JSX.Element
  */
 export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
+  const { t } = useI18n();
   const [expandedField, setExpandedField] = useState<string | null>(null);
 
-  const currentFields = fields.length > 0 ? fields : DEFAULT_FIELDS;
+  const defaultFields = getDefaultFields(t);
+  const currentFields = fields.length > 0 ? fields : defaultFields;
 
   const addField = () => {
     const newField: FormField = {
       id: generateId(),
       type: 'text',
-      label: 'Nuevo campo',
+      label: t('programs.formBuilder.newField'),
       placeholder: '',
       required: false,
       unique: false,
@@ -104,11 +109,11 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-surface-900 dark:text-white">Formulario de inscripción</h3>
-          <Tooltip text="Configura los campos que los clientes deberán completar al inscribirse en este programa." />
+          <h3 className="text-sm font-bold text-surface-900 dark:text-white">{t('programs.formBuilder.title')}</h3>
+          <Tooltip text={t('programs.formBuilder.tooltip')} />
         </div>
         <button type="button" className="btn-secondary text-xs px-3 py-1.5" onClick={addField}>
-          + Agregar campo
+          + {t('programs.formBuilder.addField')}
         </button>
       </div>
 
@@ -130,7 +135,7 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
 
               {/* Type badge */}
               <span className="text-[10px] uppercase tracking-wider font-semibold text-surface-500 bg-surface-100 dark:bg-surface-700 px-2 py-0.5 rounded">
-                {FIELD_TYPE_LABELS[field.type]}
+                {t(FIELD_TYPE_LABEL_KEYS[field.type])}
               </span>
 
               {/* Label */}
@@ -138,9 +143,9 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
 
               {/* Badges */}
               <div className="flex items-center gap-1.5">
-                {field.required && <span className="badge-red text-[9px]">Req</span>}
-                {field.unique && <span className="badge-blue text-[9px]">Único</span>}
-                {field.type === 'tel' && field.country_code && <span className="badge-green text-[9px]">+Cód</span>}
+                {field.required && <span className="badge-red text-[9px]">{t('common.required')}</span>}
+                {field.unique && <span className="badge-blue text-[9px]">{t('programs.formBuilder.unique')}</span>}
+                {field.type === 'tel' && field.country_code && <span className="badge-green text-[9px]">+{t('common.code')}</span>}
               </div>
 
               {/* Delete */}
@@ -148,7 +153,7 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
                 className={`transition-colors text-sm ${field.required ? 'text-surface-300 cursor-not-allowed' : 'text-surface-400 hover:text-red-500'}`}
                 onClick={e => { e.stopPropagation(); removeField(field.id); }}
                 disabled={field.required || currentFields.length <= 1}
-                title={field.required ? 'Campo obligatorio — no se puede eliminar' : 'Eliminar campo'}>
+                title={field.required ? t('programs.formBuilder.requiredFieldCannotDelete') : t('common.delete')}>
                 ✕
               </button>
 
@@ -161,22 +166,22 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
               <div className="p-4 space-y-3 border-t border-surface-200 dark:border-surface-700 animate-fade-in">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label">Etiqueta</label>
+                    <label className="label">{t('programs.formBuilder.label')}</label>
                     <input type="text" className="input text-sm" value={field.label}
                       onChange={e => updateField(field.id, { label: e.target.value })} />
                   </div>
                   <div>
-                    <label className="label">Tipo de campo</label>
+                    <label className="label">{t('programs.formBuilder.fieldType')}</label>
                     <select className="input text-sm" value={field.type}
                       onChange={e => updateField(field.id, { type: e.target.value as FormField['type'] })}>
-                      {Object.entries(FIELD_TYPE_LABELS).map(([v, l]) => (
-                        <option key={v} value={v}>{l}</option>
+                      {Object.entries(FIELD_TYPE_LABEL_KEYS).map(([v, l]) => (
+                        <option key={v} value={v}>{t(l)}</option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="label">Placeholder</label>
+                  <label className="label">{t('programs.formBuilder.placeholder')}</label>
                   <input type="text" className="input text-sm" value={field.placeholder}
                     onChange={e => updateField(field.id, { placeholder: e.target.value })} />
                 </div>
@@ -184,24 +189,24 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
                       checked={field.required} onChange={e => updateField(field.id, { required: e.target.checked })} />
-                    <span className="text-sm text-surface-700 dark:text-surface-300">Obligatorio</span>
+                    <span className="text-sm text-surface-700 dark:text-surface-300">{t('common.required')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
                       checked={field.unique} onChange={e => updateField(field.id, { unique: e.target.checked })} />
-                    <span className="text-sm text-surface-700 dark:text-surface-300">Valor único</span>
+                    <span className="text-sm text-surface-700 dark:text-surface-300">{t('programs.formBuilder.uniqueValue')}</span>
                   </label>
                   {field.type === 'tel' && (
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
                         checked={!!field.country_code} onChange={e => updateField(field.id, { country_code: e.target.checked })} />
-                      <span className="text-sm text-surface-700 dark:text-surface-300">Código de país</span>
+                      <span className="text-sm text-surface-700 dark:text-surface-300">{t('programs.formBuilder.countryCode')}</span>
                     </label>
                   )}
                 </div>
                 {field.type === 'select' && (
                   <div>
-                    <label className="label">Opciones (una por línea)</label>
+                    <label className="label">{t('programs.formBuilder.options')}</label>
                     <textarea className="input text-sm min-h-[60px]" value={(field.options ?? []).join('\n')}
                       onChange={e => updateField(field.id, { options: e.target.value.split('\n').filter(Boolean) })} />
                   </div>
@@ -213,7 +218,7 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
       </div>
 
       <p className="text-xs text-surface-400 text-center">
-        {currentFields.length} campo{currentFields.length !== 1 ? 's' : ''} configurado{currentFields.length !== 1 ? 's' : ''}
+        {currentFields.length} {t('programs.formBuilder.fieldCount', { count: currentFields.length })}
       </p>
     </div>
   );
@@ -222,4 +227,4 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
 /**
  * Default form fields for enrollment (name, email, phone).
  */
-export { DEFAULT_FIELDS };
+export { getDefaultFields };

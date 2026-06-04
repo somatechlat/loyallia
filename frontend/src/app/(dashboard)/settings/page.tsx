@@ -17,18 +17,18 @@ interface TenantProfile {
   trial_days_remaining: number;
 }
 
-const TIMEZONES = [
-  { value: 'America/Guayaquil', label: 'Ecuador (GMT-5)' },
-  { value: 'America/Bogota', label: 'Colombia (GMT-5)' },
-  { value: 'America/Lima', label: 'Peru (GMT-5)' },
-  { value: 'America/Mexico_City', label: 'Mexico (GMT-6)' },
-  { value: 'America/New_York', label: 'USA Eastern (GMT-5)' },
-  { value: 'America/Los_Angeles', label: 'USA Pacific (GMT-8)' },
-  { value: 'Europe/Madrid', label: 'Spain (GMT+1)' },
-];
-
 export default function SettingsPage() {
   const { t } = useI18n();
+
+  const TIMEZONES = [
+    { value: 'America/Guayaquil', label: t('timezones.americaGuayaquil') },
+    { value: 'America/Bogota', label: t('timezones.americaBogota') },
+    { value: 'America/Lima', label: t('timezones.americaLima') },
+    { value: 'America/Mexico_City', label: t('timezones.americaMexicoCity') },
+    { value: 'America/New_York', label: t('timezones.americaNewYork') },
+    { value: 'America/Los_Angeles', label: t('timezones.americaLosAngeles') },
+    { value: 'Europe/Madrid', label: t('timezones.europeMadrid') },
+  ];
   const { user } = useAuth();
   const [tenant, setTenant] = useState<TenantProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -170,19 +170,19 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className="label" htmlFor="biz-phone">{t('settings.phone')}</label>
-                <input id="biz-phone" type="tel" className={`input ${formErrors.phone ? 'border-red-500' : ''}`} value={form.phone} placeholder="+593 999 999 999" maxLength={50}
+                <input id="biz-phone" type="tel" className={`input ${formErrors.phone ? 'border-red-500' : ''}`} value={form.phone} placeholder={t('settings.placeholders.phone')} maxLength={50}
                   onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setFormErrors(err => ({ ...err, phone: false })); }} />
                 {formErrors.phone && <p className="text-xs text-red-500 mt-1">{t('settings.phoneInvalid')}</p>}
               </div>
               <div>
                 <label className="label" htmlFor="biz-website">{t('settings.website')}</label>
-                <input id="biz-website" type="url" className={`input ${formErrors.website ? 'border-red-500' : ''}`} value={form.website} placeholder="https://minegocio.com" maxLength={200}
+                <input id="biz-website" type="url" className={`input ${formErrors.website ? 'border-red-500' : ''}`} value={form.website} placeholder={t('settings.placeholders.website')} maxLength={200}
                   onChange={e => { setForm(f => ({ ...f, website: e.target.value })); setFormErrors(err => ({ ...err, website: false })); }} />
                 {formErrors.website && <p className="text-xs text-red-500 mt-1">{t('settings.urlInvalid')}</p>}
               </div>
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="biz-address">{t('settings.address')}</label>
-                <input id="biz-address" className="input" value={form.address} placeholder="Av. Principal y Calle 1" maxLength={200}
+                <input id="biz-address" className="input" value={form.address} placeholder={t('settings.placeholders.address')} maxLength={200}
                   onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
               </div>
               <div>
@@ -274,7 +274,7 @@ export default function SettingsPage() {
             <div className="p-4 rounded-xl border border-surface-200 dark:border-surface-700 flex items-center gap-4 bg-surface-50">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg"
                 style={{ backgroundColor: form.primary_color }}>
-                {form.name?.[0] || 'L'}
+                {form.name?.[0] || t('settings.brandPreview.fallbackInitial')}
               </div>
               <div>
                 <p className="font-semibold text-surface-900 dark:text-white">{form.name || t('settings.yourBusiness')}</p>
@@ -318,7 +318,7 @@ export default function SettingsPage() {
                   <span className="badge-purple capitalize">{tenant.plan}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-surface-500">Slug</span>
+                  <span className="text-surface-500">{t('settings.planInfo.slugLabel')}</span>
                   <span className="font-mono text-xs text-surface-600">{tenant.slug}</span>
                 </div>
                 {tenant.trial_days_remaining > 0 && (

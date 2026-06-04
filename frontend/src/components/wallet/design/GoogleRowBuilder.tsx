@@ -4,6 +4,7 @@ import { GOOGLE_ROW_TYPES, GOOGLE_PREDEFINED_FIELDS } from '@/components/program
 import type { GoogleFieldRow, GoogleFieldItem } from '../types';
 import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, InfoIcon } from '../icons';
 import { uid, getGoogleFieldOptions } from './helpers';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * @description Visual builder for Google Wallet cardTemplateOverride rows.
@@ -14,6 +15,7 @@ import { uid, getGoogleFieldOptions } from './helpers';
  * @returns JSX.Element
  */
 export default function GoogleRowBuilder({ rows, onChange, cardType }: { rows: GoogleFieldRow[]; onChange: (rows: GoogleFieldRow[]) => void; cardType: string }) {
+  const { t } = useI18n();
   const fieldOptions = getGoogleFieldOptions(cardType);
 
   const addRow = (type: 'oneItem' | 'twoItems' | 'threeItems') => {
@@ -48,21 +50,21 @@ export default function GoogleRowBuilder({ rows, onChange, cardType }: { rows: G
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">Configuración de filas</h4>
-        <span className="text-xs text-surface-400 dark:text-surface-500">{rows.length} fila(s)</span>
+        <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('wallet.studio.fields.title')}</h4>
+        <span className="text-xs text-surface-400 dark:text-surface-500">{rows.length} {t('wallet.studio.fields.fieldGroup')}</span>
       </div>
 
       {rows.length === 0 && (
         <div className="rounded-lg border border-dashed border-surface-200 dark:border-surface-600 p-4 text-center">
           <InfoIcon className="w-6 h-6 text-surface-300 dark:text-surface-500 mx-auto mb-1" />
-          <p className="text-xs text-surface-400 dark:text-surface-500">Sin filas configuradas. Añade filas usando los botones de abajo.</p>
+          <p className="text-xs text-surface-400 dark:text-surface-500">{t('wallet.studio.fields.noFields')}</p>
         </div>
       )}
 
       {rows.map((row, rIdx) => (
         <div key={row.id} className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 bg-surface-50 dark:bg-surface-800 border-b border-surface-100 dark:border-surface-700">
-            <span className="text-xs font-semibold text-surface-600 dark:text-surface-300">Fila {rIdx + 1}</span>
+            <span className="text-xs font-semibold text-surface-600 dark:text-surface-300">{t('wallet.studio.fields.fieldGroup')} {rIdx + 1}</span>
             <span className="text-xs text-surface-500 dark:text-surface-400 px-2 py-0.5 bg-surface-100 dark:bg-surface-700 rounded">
               {GOOGLE_ROW_TYPES.find(t => t.value === row.type)?.label}
             </span>
@@ -75,7 +77,7 @@ export default function GoogleRowBuilder({ rows, onChange, cardType }: { rows: G
           <div className="p-3 grid gap-3" style={{ gridTemplateColumns: `repeat(${row.type === 'oneItem' ? 1 : row.type === 'twoItems' ? 2 : 3}, 1fr)` }}>
             {row.items.map((item, iIdx) => (
               <div key={item.id} className="space-y-2">
-                <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Campo {iIdx + 1}</label>
+                <label className="text-xs font-medium text-surface-600 dark:text-surface-300">{t('wallet.studio.fields.label')} {iIdx + 1}</label>
                 <select
                   value={item.fieldPath}
                   onChange={e => {
@@ -90,7 +92,7 @@ export default function GoogleRowBuilder({ rows, onChange, cardType }: { rows: G
                   }}
                   className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 >
-                  <option value="">Selecciona un campo...</option>
+                  <option value="">{t('wallet.studio.iconPicker.selectIcon')}</option>
                   {fieldOptions.map(f => (
                     <option key={f.fieldPath} value={f.fieldPath}>{f.label}</option>
                   ))}
@@ -98,7 +100,7 @@ export default function GoogleRowBuilder({ rows, onChange, cardType }: { rows: G
                 {item.fieldPath === 'custom' && (
                   <input
                     type="text"
-                    placeholder="Ruta del campo (ej: object.customField)"
+                    placeholder={t('wallet.studio.barcode.messagePlaceholder')}
                     value={item.label}
                     onChange={e => updateItem(row.id, item.id, { label: e.target.value, fieldPath: e.target.value })}
                     className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
@@ -106,7 +108,7 @@ export default function GoogleRowBuilder({ rows, onChange, cardType }: { rows: G
                 )}
                 <input
                   type="text"
-                  placeholder="Etiqueta"
+                  placeholder={t('wallet.studio.coupon.tag')}
                   value={item.displayName}
                   onChange={e => updateItem(row.id, item.id, { displayName: e.target.value })}
                   className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"

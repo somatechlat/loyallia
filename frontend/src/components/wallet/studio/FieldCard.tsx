@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { UnifiedField } from '@/components/wallet/types/unified-state';
 
 export interface FieldCardProps {
@@ -24,6 +25,7 @@ export function FieldCard({
   onDelete,
   hasNotification,
 }: FieldCardProps) {
+  const { t } = useI18n();
   const [isHovered, setIsHovered] = useState(false);
 
   const truncatedValue =
@@ -43,7 +45,7 @@ export function FieldCard({
           onClick();
         }
       }}
-      aria-label={`Field ${field.label}: ${truncatedValue}`}
+      aria-label={`${t('wallet.studio.fields.label')} ${field.label}: ${truncatedValue}`}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', field.id);
@@ -53,7 +55,7 @@ export function FieldCard({
       {/* Drag handle */}
       <div
         className="flex-shrink-0 text-neutral-300 dark:text-neutral-600 cursor-grab active:cursor-grabbing"
-        aria-label="Drag to reorder"
+        aria-label={t('wallet.studio.fields.moveUp')}
         role="button"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
@@ -76,12 +78,12 @@ export function FieldCard({
           </span>
           {field.isDynamic && (
             <code className="text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1 rounded">
-              dynamic
+              {t('wallet.studio.fields.dynamic')}
             </code>
           )}
         </div>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-          {truncatedValue || <span className="italic">No value</span>}
+          {truncatedValue || <span className="italic">{t('wallet.studio.fields.noValue')}</span>}
         </p>
       </div>
 
@@ -99,8 +101,8 @@ export function FieldCard({
               ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-700'
               : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-400'
           }`}
-          title={field.showOnApple ? 'Visible on Apple' : 'Hidden on Apple'}
-          aria-label={field.showOnApple ? 'Visible on Apple Wallet' : 'Hidden on Apple Wallet'}
+          title={field.showOnApple ? t('wallet.studio.fields.visibleOnApple') : t('wallet.studio.fields.hiddenOnApple')}
+          aria-label={field.showOnApple ? t('wallet.studio.fields.visibleOnApple') : t('wallet.studio.fields.hiddenOnApple')}
           aria-pressed={field.showOnApple}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -121,8 +123,8 @@ export function FieldCard({
               ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-700'
               : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-400'
           }`}
-          title={field.showOnGoogle ? 'Visible on Google' : 'Hidden on Google'}
-          aria-label={field.showOnGoogle ? 'Visible on Google Wallet' : 'Hidden on Google Wallet'}
+          title={field.showOnGoogle ? t('wallet.studio.fields.visibleOnGoogle') : t('wallet.studio.fields.hiddenOnGoogle')}
+          aria-label={field.showOnGoogle ? t('wallet.studio.fields.visibleOnGoogle') : t('wallet.studio.fields.hiddenOnGoogle')}
           aria-pressed={field.showOnGoogle}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -139,7 +141,7 @@ export function FieldCard({
         {/* Notification bell */}
         <div
           className={`p-1 ${hasNotification ? 'text-blue-500' : 'text-neutral-300 dark:text-neutral-600'}`}
-          aria-label={hasNotification ? 'Notifications configured' : 'No notifications'}
+          aria-label={hasNotification ? t('wallet.studio.fields.notificationsConfigured') : t('wallet.studio.fields.noNotifications')}
         >
           <svg
             className="w-4 h-4"
@@ -165,8 +167,8 @@ export function FieldCard({
           className={`p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}
-          aria-label="Delete field"
-          title="Delete field"
+          aria-label={t('wallet.studio.fields.deleteField')}
+          title={t('wallet.studio.fields.deleteField')}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 6h18" />

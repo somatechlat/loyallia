@@ -1,5 +1,6 @@
 'use client';
 import { AlertCircle, CheckCircle } from '@/components/ui/LucideIcons';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Props for the PlatformModeBanner component.
@@ -15,6 +16,7 @@ interface PlatformModeBannerProps {
  * @returns JSX.Element
  */
 export default function PlatformModeBanner({ platformMode }: PlatformModeBannerProps) {
+  const { t } = useI18n();
   return (
     <div
       className={`rounded-2xl border p-5 ${
@@ -37,7 +39,7 @@ export default function PlatformModeBanner({ platformMode }: PlatformModeBannerP
                 : 'text-emerald-800 dark:text-emerald-300'
             }`}
           >
-            {platformMode === 'development' ? 'MODO DESARROLLO' : 'MODO PRODUCCIÓN'}
+            {platformMode === 'development' ? t('superadmin.settings.platformMode.development') : t('superadmin.settings.platformMode.production')}
           </p>
           <p
             className={`text-xs ${
@@ -47,8 +49,8 @@ export default function PlatformModeBanner({ platformMode }: PlatformModeBannerP
             }`}
           >
             {platformMode === 'development'
-              ? 'Twilio sandbox · Respaldos cada 15 días · Seguro para pruebas'
-              : 'Twilio real · Respaldos diarios · Operaciones con costo real'}
+              ? t('superadmin.settings.platformMode.developmentDesc')
+              : t('superadmin.settings.platformMode.productionDesc')}
           </p>
         </div>
       </div>

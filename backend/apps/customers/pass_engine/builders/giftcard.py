@@ -14,6 +14,7 @@ from .base import (
     _get_issuer_id,
     _resolve_url,
 )
+from common.messages import get_message
 from .images import _build_class_images
 
 
@@ -63,8 +64,8 @@ def _build_gift_card_object(
     google_images = _get_google_images(card)
 
     text_modules = [
-        {"header": "Negocio", "body": tenant.name},
-        {"header": "Tarjeta", "body": card.name},
+        {"header": get_message("WALLET_LABEL_BUSINESS"), "body": tenant.name},
+        {"header": get_message("WALLET_LABEL_CARD"), "body": card.name},
     ]
 
     obj = {
@@ -91,7 +92,7 @@ def _build_gift_card_object(
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {
-                "defaultValue": {"language": "es", "value": "Banner de " + card.name}
+                "defaultValue": {"language": "es", "value": get_message("WALLET_BANNER_OF", name=card.name)}
             },
         }
 
@@ -110,7 +111,7 @@ def _build_gift_card_object(
                     "contentDescription": {
                         "defaultValue": {
                             "language": "es",
-                            "value": "Recompensa del programa",
+                            "value": get_message("WALLET_PROGRAM_REWARD"),
                         }
                     },
                 },

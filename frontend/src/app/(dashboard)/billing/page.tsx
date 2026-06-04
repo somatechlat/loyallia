@@ -70,23 +70,23 @@ export default function BillingPage() {
     programs:      { label: t('nav.programs'), icon: <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> },
     users:         { label: t('team.title'), icon: <Users className="w-3.5 h-3.5" /> },
     locations:     { label: t('locations.title'), icon: <MapPin className="w-3.5 h-3.5" /> },
-    notifications_month: { label: t('nav.notifications') + '/mes', icon: <Bell className="w-3.5 h-3.5" /> },
-    transactions_month:  { label: t('nav.transactions') + '/mes', icon: <CreditCard className="w-3.5 h-3.5" /> },
-    emails_month:  { label: 'Emails/mes', icon: <Mail className="w-3.5 h-3.5" /> },
-    sms_day:       { label: 'SMS/día', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-    whatsapp_day:  { label: 'WhatsApp/día', icon: <Smartphone className="w-3.5 h-3.5" /> },
-    wallet_pushes_month: { label: 'Wallet pushes/mes', icon: <Wallet className="w-3.5 h-3.5" /> },
+    notifications_month: { label: t('nav.notifications') + t('billing.perMonthSuffix'), icon: <Bell className="w-3.5 h-3.5" /> },
+    transactions_month:  { label: t('nav.transactions') + t('billing.perMonthSuffix'), icon: <CreditCard className="w-3.5 h-3.5" /> },
+    emails_month:  { label: t('billing.emailsPerMonth'), icon: <Mail className="w-3.5 h-3.5" /> },
+    sms_day:       { label: t('billing.smsPerDay'), icon: <MessageSquare className="w-3.5 h-3.5" /> },
+    whatsapp_day:  { label: t('billing.whatsappPerDay'), icon: <Smartphone className="w-3.5 h-3.5" /> },
+    wallet_pushes_month: { label: t('billing.walletPushesPerMonth'), icon: <Wallet className="w-3.5 h-3.5" /> },
     automations:   { label: t('nav.automation'), icon: <Zap className="w-3.5 h-3.5" /> },
-    automation_executions_day: { label: 'Ejec. automatización/día', icon: <Settings className="w-3.5 h-3.5" /> },
-    ai_queries_month: { label: 'Consultas IA/mes', icon: <Bot className="w-3.5 h-3.5" /> },
-    api_calls_day: { label: 'Llamadas API/día', icon: <Link2 className="w-3.5 h-3.5" /> },
-    exports_month: { label: t('common.export') + '/mes', icon: <Upload className="w-3.5 h-3.5" /> },
+    automation_executions_day: { label: t('billing.automationExecutionsPerDay'), icon: <Settings className="w-3.5 h-3.5" /> },
+    ai_queries_month: { label: t('billing.aiQueriesPerMonth'), icon: <Bot className="w-3.5 h-3.5" /> },
+    api_calls_day: { label: t('billing.apiCallsPerDay'), icon: <Link2 className="w-3.5 h-3.5" /> },
+    exports_month: { label: t('common.export') + t('billing.perMonthSuffix'), icon: <Upload className="w-3.5 h-3.5" /> },
     enrollments:   { label: t('programs.enrollments'), icon: <Users className="w-3.5 h-3.5" /> },
     notifications: { label: t('nav.notifications'), icon: <Bell className="w-3.5 h-3.5" /> },
     team_members:  { label: t('team.table.name'), icon: <Users className="w-3.5 h-3.5" /> },
     transactions:  { label: t('nav.transactions'), icon: <CreditCard className="w-3.5 h-3.5" /> },
     campaigns:     { label: t('campaigns.title'), icon: <Mail className="w-3.5 h-3.5" /> },
-    api_calls:     { label: 'Llamadas API', icon: <Link2 className="w-3.5 h-3.5" /> },
+    api_calls:     { label: t('billing.apiCalls'), icon: <Link2 className="w-3.5 h-3.5" /> },
   };
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function BillingPage() {
   const statusInfo = STATUS_COLORS[sub?.status ?? ''] ?? STATUS_COLORS['active'] ?? { bg: 'bg-gray-100', text: 'text-gray-700', label: sub?.status ?? t('common.unknown') };
   const planSlug = sub?.plan_slug || sub?.plan || '';
   const PlanIconComponent = PLAN_ICON_COMPONENTS[planSlug] ?? BuildingIcon;
-  const planLabel = sub?.plan_name || PLAN_LABELS[planSlug] || planSlug || 'Plan';
+  const planLabel = sub?.plan_name || PLAN_LABELS[planSlug] || planSlug || t('billing.fallbackPlanName');
 
   return (
     <div className="space-y-6" id="billing-view">
@@ -204,9 +204,9 @@ export default function BillingPage() {
             <thead>
               <tr className="border-b border-surface-200 dark:border-surface-700">
                 <th className="text-left py-3 px-4 font-semibold text-surface-500">{t('billing.feature')}</th>
-                <th className="text-center py-3 px-4 font-semibold text-surface-500">Starter</th>
-                <th className="text-center py-3 px-4 font-semibold text-brand-600">Professional</th>
-                <th className="text-center py-3 px-4 font-semibold text-surface-500">Enterprise</th>
+                <th className="text-center py-3 px-4 font-semibold text-surface-500">{t('billing.planNames.starter')}</th>
+                <th className="text-center py-3 px-4 font-semibold text-brand-600">{t('billing.planNames.professional')}</th>
+                <th className="text-center py-3 px-4 font-semibold text-surface-500">{t('billing.planNames.enterprise')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
