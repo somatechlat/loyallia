@@ -5,7 +5,7 @@ import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
 import { migrateV1ToV2 } from '@/components/wallet/migrations/v1-to-v2';
 import { migrateV2ToV1 } from '@/components/wallet/migrations/v2-to-v1';
 import type { WalletDesignState } from '@/components/wallet/types-v1';
-import type { WalletPassStudioState } from '@/components/wallet/types';
+import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 
 export interface WalletStudioIntegrationProps {
   cardType: string;
@@ -14,7 +14,7 @@ export interface WalletStudioIntegrationProps {
   provider: 'apple' | 'google';
 }
 
-export function WalletStudioIntegration({ cardType, state, onChange }: WalletStudioIntegrationProps) {
+export function WalletStudioIntegration({ cardType: _cardType, state, onChange, provider: _provider }: WalletStudioIntegrationProps) {
   const v2State = useMemo(() => migrateV1ToV2(state), [state]);
 
   const handleSave = useCallback((studioState: WalletPassStudioState) => {

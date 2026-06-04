@@ -12,7 +12,7 @@ import { WalletStudioIntegration } from '@/components/programs/WalletStudioInteg
 import {
   type WalletDesignState,
   defaultWalletDesignState,
-} from '@/components/wallet/types';
+} from '@/components/wallet/types-v1';
 import {
   parseWalletDesignFromMetadata,
   buildWalletDesignMetadata,

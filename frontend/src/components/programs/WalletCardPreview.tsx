@@ -6,7 +6,7 @@ import {
   GOOGLE_WALLET_TYPES,
   APPLE_IMAGE_SUPPORT,
 } from './constants';
-import type { WalletDesignState } from '@/components/wallet/types';
+import type { WalletDesignState } from '@/components/wallet/types-v1';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 

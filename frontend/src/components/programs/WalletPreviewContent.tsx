@@ -1,7 +1,7 @@
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import { APPLE_PASS_STYLES, CardTypeIcon, adjustColor } from './constants';
-import type { WalletDesignState } from '@/components/wallet/types';
+import type { WalletDesignState } from '@/components/wallet/types-v1';
 
 /* ── Type-specific visual content for hover preview ─────────────────── */
 function useTypeVisuals(t: (key: string) => string): Record<string, { title: string; headerLabel: string; headerValue: string; detail: string; visual: React.ReactNode }> {
