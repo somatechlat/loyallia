@@ -15,8 +15,10 @@ import { authApi } from '@/lib/api';
 import { UserRole } from '@/types';
 import { useGoogleScript } from '@/lib/useGoogleScript';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
+import { useI18n } from '@/lib/i18n';
 
 export default function LoginPage() {
+  const { t } = useI18n();
   const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -67,7 +69,7 @@ export default function LoginPage() {
       const msg = err instanceof Error && 'response' in err
         ? (err as unknown as { response?: { data?: { error?: string } } }).response?.data?.error
         : undefined;
-      toast.error(msg || 'Error al iniciar sesión con Google');
+      toast.error(msg || t('auth.login.googleError'));
     } finally {
       setGoogleLoading(false);
     }
@@ -95,7 +97,7 @@ export default function LoginPage() {
       const msg = err instanceof Error && 'response' in err
         ? (err as unknown as { response?: { data?: { detail?: string } } }).response?.data?.detail
         : undefined;
-      const errorMsg = msg || 'Credenciales incorrectas';
+      const errorMsg = msg || t('auth.login.credentialsError');
       setError('root', { message: errorMsg });
       toast.error(errorMsg);
     } finally {
@@ -106,8 +108,8 @@ export default function LoginPage() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
       <div>
-        <h2 className="text-xl font-bold text-surface-900 dark:text-white">Iniciar sesión</h2>
-        <p className="text-surface-500 text-sm mt-1">Accede a tu panel de administración</p>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white">{t('auth.login.title')}</h2>
+        <p className="text-surface-500 text-sm mt-1">{t('auth.login.subtitle')}</p>
       </div>
 
       {/* Google OAuth Button */}
@@ -126,7 +128,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-surface-200 dark:border-surface-700" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white dark:bg-surface-900 px-4 text-surface-400">o con tu correo</span>
+              <span className="bg-white dark:bg-surface-900 px-4 text-surface-400">{t('auth.login.divider')}</span>
             </div>
           </div>
         </>
@@ -134,12 +136,12 @@ export default function LoginPage() {
 
       {/* LYL-M-FE-032: Inline validation feedback */}
       <div>
-        <label className="label" htmlFor="email">Correo electrónico</label>
+        <label className="label" htmlFor="email">{t('auth.login.emailLabel')}</label>
         <input
           id="email"
           type="email"
           className={`input ${errors.email ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-          placeholder="tu@negocio.com"
+          placeholder={t('auth.login.emailPlaceholder')}
           autoComplete="email"
           aria-invalid={!!errors.email}
           aria-describedby={errors.email ? 'email-error' : undefined}
@@ -156,13 +158,13 @@ export default function LoginPage() {
       </div>
 
       <div>
-        <label className="label" htmlFor="password">Contraseña</label>
+        <label className="label" htmlFor="password">{t('auth.login.passwordLabel')}</label>
         <div className="relative">
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
             className={`input pr-10 ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-            placeholder="••••••••"
+            placeholder={t('auth.login.passwordPlaceholder')}
             autoComplete="current-password"
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? 'password-error' : undefined}
@@ -170,7 +172,7 @@ export default function LoginPage() {
           />
           <button type="button" onClick={() => setShowPassword(!showPassword)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
-            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+            aria-label={showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}>
             {showPassword ? (
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
             ) : (
@@ -188,7 +190,7 @@ export default function LoginPage() {
         )}
         <div className="text-right mt-1">
           <Link href="/forgot-password" className="text-xs text-brand-500 hover:underline">
-            ¿Olvidaste tu contraseña?
+            {t('auth.login.forgotPasswordLink')}
           </Link>
         </div>
       </div>
@@ -200,11 +202,11 @@ export default function LoginPage() {
       )}
 
       <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading} id="login-btn">
-        {loading ? <span className="spinner w-4 h-4" /> : 'Iniciar sesión'}
+        {loading ? <span className="spinner w-4 h-4" /> : t('auth.login.submitButton')}
       </button>
       <p className="text-center text-sm text-surface-500">
-        ¿No tienes cuenta?{' '}
-        <Link href="/register" className="text-brand-500 font-medium hover:underline">Regístrate gratis</Link>
+        {t('auth.login.noAccount')}{' '}
+        <Link href="/register" className="text-brand-500 font-medium hover:underline">{t('auth.login.registerLink')}</Link>
       </p>
     </form>
   );
