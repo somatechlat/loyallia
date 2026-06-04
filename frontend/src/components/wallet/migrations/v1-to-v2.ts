@@ -18,7 +18,7 @@ import type {
   GoogleSpecificConfig,
   PassStyle,
   GooglePassType,
-} from '../types';
+} from '../types/index';
 import { DEFAULT_COLORS, DEFAULT_BARCODE, CARD_TYPE_METADATA } from '../constants';
 import { getDefaultCardTypeConfig } from '../types/card-type-config';
 

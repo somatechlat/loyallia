@@ -2,7 +2,7 @@
  * Field validation utilities for the Wallet Pass Studio.
  */
 
-import type { UnifiedField, FieldGroup, CardType } from '../types';
+import type { UnifiedField, FieldGroup, CardType } from '../types/index';
 import { CARD_TYPE_METADATA } from '../constants';
 import { DYNAMIC_TEMPLATES } from '../types/dynamic-templates';
 

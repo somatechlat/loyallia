@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { GOOGLE_DEVICE_SHARING_OPTIONS } from '@/components/programs/constants';
-import type { GoogleAdvancedConfig } from '../types';
+import type { GoogleAdvancedConfig } from '../types-v1-definitions';
 import { PlusIcon, TrashIcon } from '../icons';
 import { useI18n } from '@/lib/i18n';
 
