@@ -1,5 +1,5 @@
 /**
- * Unit tests for FieldStudio component.
+ * Unit tests for FieldStudio component — inline expanded editing (SRS-003 Section 8.3).
  */
 
 import React from 'react';
@@ -28,7 +28,7 @@ function createMockField(overrides: Partial<UnifiedField> = {}): UnifiedField {
 
 describe('FieldStudio', () => {
   const baseProps = {
-    fields: [],
+    fields: [] as UnifiedField[],
     cardType: 'stamp' as const,
     onUpdateFields: vi.fn(),
   };
@@ -41,146 +41,163 @@ describe('FieldStudio', () => {
     cleanup();
   });
 
-  it('renders limit indicators for all groups', () => {
+  it('renders all 5 group panels with correct titles', () => {
     render(<FieldStudio {...baseProps} />);
-    expect(screen.getByText('Field Limits')).toBeDefined();
-    // Group labels appear in both limit indicators and group headers
-    expect(screen.getAllByText('Encabezado').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Primario').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Secundario').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Auxiliar').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Reverso').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('🏷️ CAMPOS DE CABECERA — Máximo 3')).toBeDefined();
+    expect(screen.getByText('⭐ CAMPO PRINCIPAL — 1 campo grande y prominente')).toBeDefined();
+    expect(screen.getByText('📋 CAMPOS SECUNDARIOS — Hasta 4 (2 en Apple si barcode rect.)')).toBeDefined();
+    expect(screen.getByText('🔍 CAMPOS AUXILIARES — Hasta 4 (2 en Apple si barcode rect.)')).toBeDefined();
+    expect(screen.getByText('📄 DETALLES / TRASERO — Sin límite')).toBeDefined();
   });
 
-  it('groups fields correctly', () => {
-    const fields: UnifiedField[] = [
-      createMockField({ id: 'f1', label: 'Header 1', fieldGroup: 'header', order: 0 }),
-      createMockField({ id: 'f2', label: 'Primary 1', fieldGroup: 'primary', order: 0 }),
-      createMockField({ id: 'f3', label: 'Secondary 1', fieldGroup: 'secondary', order: 0 }),
-    ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
-    expect(screen.getByText('Header 1')).toBeDefined();
-    expect(screen.getByText('Primary 1')).toBeDefined();
-    expect(screen.getByText('Secondary 1')).toBeDefined();
-  });
-
-  it('shows empty state for groups without fields', () => {
+  it('shows subtitle for header group', () => {
     render(<FieldStudio {...baseProps} />);
-    expect(screen.getAllByText('No fields in this group').length).toBeGreaterThan(0);
+    expect(screen.getByText('(Visibles incluso cuando el pase está en pila)')).toBeDefined();
   });
 
-  it('shows correct count in group headers', () => {
-    const fields: UnifiedField[] = [
-      createMockField({ id: 'f1', fieldGroup: 'header', order: 0 }),
-      createMockField({ id: 'f2', fieldGroup: 'header', order: 1 }),
-    ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
-    expect(screen.getByText('2 / 3')).toBeDefined();
+  it('shows add buttons with remaining count for groups under limit', () => {
+    render(<FieldStudio {...baseProps} />);
+    const addBtn = screen.getByLabelText('Añadir campo a 🏷️ CAMPOS DE CABECERA — Máximo 3');
+    expect(addBtn).toBeDefined();
+    expect(addBtn.textContent).toContain('Añadir campo de cabecera');
+    expect(addBtn.textContent).toContain('restantes');
   });
 
-  it('toggles Apple visibility when apple button clicked', () => {
+  it('header fields are expanded inline', () => {
     const fields: UnifiedField[] = [
-      createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header', showOnApple: true }),
+      createMockField({ id: 'f1', fieldGroup: 'header', label: 'Header Field' }),
     ];
     render(<FieldStudio {...baseProps} fields={fields} />);
-    const appleBtn = screen.getByLabelText('Visible on Apple Wallet');
-    fireEvent.click(appleBtn);
+    expect(screen.getByText('Etiqueta:')).toBeDefined();
+    expect(screen.getByText('Valor:')).toBeDefined();
+    expect(screen.getByDisplayValue('Header Field')).toBeDefined();
+  });
+
+  it('primary field shows alignment selector', () => {
+    const fields: UnifiedField[] = [
+      createMockField({ id: 'f1', fieldGroup: 'primary', label: 'Primary Field' }),
+    ];
+    render(<FieldStudio {...baseProps} fields={fields} />);
+    expect(screen.getByText('Alineación:')).toBeDefined();
+    expect(screen.getByText('Izquierda')).toBeDefined();
+    expect(screen.getByText('Centro')).toBeDefined();
+    expect(screen.getByText('Derecha')).toBeDefined();
+  });
+
+  it('secondary fields start compact', () => {
+    const fields: UnifiedField[] = [
+      createMockField({ id: 'f1', fieldGroup: 'secondary', label: 'Sec Field', value: 'Sec Value' }),
+    ];
+    render(<FieldStudio {...baseProps} fields={fields} />);
+    expect(screen.getByText('Sec Field')).toBeDefined();
+    expect(screen.getByText('Sec Value')).toBeDefined();
+    expect(screen.queryByText('Etiqueta:')).toBeNull();
+  });
+
+  it('clicking compact field expands it', () => {
+    const fields: UnifiedField[] = [
+      createMockField({ id: 'f1', fieldGroup: 'secondary', label: 'Sec Field', value: 'Sec Value' }),
+    ];
+    render(<FieldStudio {...baseProps} fields={fields} />);
+    const compactRow = screen.getByRole('button', { name: /Field Sec Field: Sec Value/ });
+    fireEvent.click(compactRow);
+    expect(screen.getByText('Etiqueta:')).toBeDefined();
+    expect(screen.getByText('Valor:')).toBeDefined();
+  });
+
+  it('adding a field via group button works', () => {
+    render(<FieldStudio {...baseProps} />);
+    const addBtn = screen.getByLabelText('Añadir campo a 🏷️ CAMPOS DE CABECERA — Máximo 3');
+    fireEvent.click(addBtn);
     expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
   });
 
-  it('toggles Google visibility when google button clicked', () => {
+  it('deleting a field removes it', () => {
     const fields: UnifiedField[] = [
-      createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header', showOnGoogle: true }),
-    ];
-    render(<FieldStudio {...baseProps} fields={fields} />);
-    const googleBtn = screen.getByLabelText('Visible on Google Wallet');
-    fireEvent.click(googleBtn);
-    expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
-  });
-
-  it('deletes a field when delete button clicked', () => {
-    const fields: UnifiedField[] = [
-      createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header' }),
+      createMockField({ id: 'f1', fieldGroup: 'header', label: 'Header Field' }),
     ];
     render(<FieldStudio {...baseProps} fields={fields} />);
     const deleteBtn = screen.getByLabelText('Delete field');
     fireEvent.click(deleteBtn);
     expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
+    const updater = baseProps.onUpdateFields.mock.calls[0]![0] as (prev: UnifiedField[]) => UnifiedField[];
+    const result = updater(fields);
+    expect(result).toHaveLength(0);
   });
 
-  it('opens quick add form when add button clicked', () => {
-    render(<FieldStudio {...baseProps} />);
-    const addBtn = screen.getAllByLabelText(/Add field to/)[0]!;
-    fireEvent.click(addBtn);
-    expect(screen.getByPlaceholderText('Label')).toBeDefined();
-    expect(screen.getByPlaceholderText('Value')).toBeDefined();
-  });
-
-  it('adds a field via quick add', async () => {
-    render(<FieldStudio {...baseProps} />);
-    const addBtn = screen.getAllByLabelText(/Add field to/)[0]!;
-    fireEvent.click(addBtn);
-
-    const labelInput = screen.getByPlaceholderText('Label');
-    const valueInput = screen.getByPlaceholderText('Value');
-    fireEvent.change(labelInput, { target: { value: 'New Field' } });
-    fireEvent.change(valueInput, { target: { value: 'New Value' } });
-
-    // Use getAllByText because there's also a global "Add Field" button
-    const addFieldBtns = screen.getAllByText('Add Field');
-    // The quick-add form button is the first one (in the opened form)
-    fireEvent.click(addFieldBtns[0]!);
-
-    await waitFor(() => {
-      expect(baseProps.onUpdateFields).toHaveBeenCalled();
-    });
-  });
-
-  it('opens full editor when "Open Editor" clicked', () => {
-    render(<FieldStudio {...baseProps} />);
-    const addBtn = screen.getAllByLabelText(/Add field to/)[0]!;
-    fireEvent.click(addBtn);
-    const openEditorBtn = screen.getByText('Open Editor');
-    fireEvent.click(openEditorBtn);
-    expect(screen.getByRole('dialog')).toBeDefined();
-  });
-
-  it('shows field editor modal when field card clicked', () => {
+  it('platform toggles update field', () => {
     const fields: UnifiedField[] = [
-      createMockField({ id: 'f1', label: 'Field 1', fieldGroup: 'header' }),
+      createMockField({ id: 'f1', fieldGroup: 'header', label: 'Header Field', showOnApple: true }),
     ];
     render(<FieldStudio {...baseProps} fields={fields} />);
-    const card = screen.getByRole('button', { name: /Field Field 1/ });
-    fireEvent.click(card);
-    expect(screen.getByRole('dialog')).toBeDefined();
+    const appleBtn = screen.getByLabelText('Visible on Apple Wallet');
+    fireEvent.click(appleBtn);
+    expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
+    const updater = baseProps.onUpdateFields.mock.calls[0]![0] as (prev: UnifiedField[]) => UnifiedField[];
+    const result = updater(fields);
+    expect(result[0]!.showOnApple).toBe(false);
   });
 
-  it('renders global add field button', () => {
-    render(<FieldStudio {...baseProps} />);
-    expect(screen.getByText('Add Field')).toBeDefined();
+  it('dynamic checkbox toggles isDynamic', () => {
+    const fields: UnifiedField[] = [
+      createMockField({ id: 'f1', fieldGroup: 'header', label: 'Header Field', isDynamic: false }),
+    ];
+    render(<FieldStudio {...baseProps} fields={fields} />);
+    const dynamicCheckbox = screen.getByLabelText('Dinámico');
+    fireEvent.click(dynamicCheckbox);
+    expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
+    const updater = baseProps.onUpdateFields.mock.calls[0]![0] as (prev: UnifiedField[]) => UnifiedField[];
+    const result = updater(fields);
+    expect(result[0]!.isDynamic).toBe(true);
   });
 
-  it('disables add button when group is at capacity', () => {
+  it('template picker inserts template into value', async () => {
+    const fields: UnifiedField[] = [
+      createMockField({ id: 'f1', fieldGroup: 'header', label: 'Header Field', value: '' }),
+    ];
+    render(<FieldStudio {...baseProps} fields={fields} />);
+    const templateBtn = screen.getByLabelText('Insert dynamic template');
+    fireEvent.click(templateBtn);
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Dynamic template picker' })).toBeDefined();
+    });
+    const templateOption = screen.getByText('Customer Name');
+    fireEvent.click(templateOption);
+    expect(baseProps.onUpdateFields).toHaveBeenCalled();
+    const updater = baseProps.onUpdateFields.mock.calls[0]![0] as (prev: UnifiedField[]) => UnifiedField[];
+    const result = updater(fields);
+    expect(result[0]!.value).toContain('{customer_name}');
+  });
+
+  it('limit indicator prevents adding beyond max', () => {
     const fields: UnifiedField[] = Array.from({ length: 3 }, (_, i) =>
       createMockField({ id: `f${i}`, fieldGroup: 'header', order: i })
     );
     render(<FieldStudio {...baseProps} fields={fields} />);
-    const addButtons = screen.getAllByLabelText(/Add field to/);
-    // Header group add button should not exist when at capacity (3/3)
-    // But other groups still have add buttons
-    expect(addButtons.length).toBeLessThan(5);
+    expect(screen.queryByLabelText('Añadir campo a 🏷️ CAMPOS DE CABECERA — Máximo 3')).toBeNull();
   });
 
-  it('shows notification bell for fields with notifications', () => {
+  it('reorder buttons move fields', () => {
     const fields: UnifiedField[] = [
-      createMockField({
-        id: 'f1',
-        label: 'Field 1',
-        fieldGroup: 'header',
-        notifications: { appleChangeMessage: 'Updated to %@' },
-      }),
+      createMockField({ id: 'f1', fieldGroup: 'header', order: 0, label: 'First' }),
+      createMockField({ id: 'f2', fieldGroup: 'header', order: 1, label: 'Second' }),
     ];
     render(<FieldStudio {...baseProps} fields={fields} />);
-    expect(screen.getByLabelText('Notifications configured')).toBeDefined();
+    const moveUpBtns = screen.getAllByLabelText('Move up');
+    fireEvent.click(moveUpBtns[0]!);
+    expect(baseProps.onUpdateFields).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows empty state for groups without fields', () => {
+    render(<FieldStudio {...baseProps} />);
+    expect(screen.getAllByText('No hay campos en este grupo').length).toBeGreaterThan(0);
+  });
+
+  it('primary field shows notification toggle', () => {
+    const fields: UnifiedField[] = [
+      createMockField({ id: 'f1', fieldGroup: 'primary', label: 'Primary Field' }),
+    ];
+    render(<FieldStudio {...baseProps} fields={fields} />);
+    expect(screen.getByText('Enviar notificación:')).toBeDefined();
   });
 });
