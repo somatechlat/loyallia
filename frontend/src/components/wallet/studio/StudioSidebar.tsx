@@ -11,6 +11,7 @@ import React from 'react';
 import type { WalletPassStudioState, WalletColors, WalletImages, BarcodeConfig, BackContent, CardTypeConfig, AppleSpecificConfig, GoogleSpecificConfig, UnifiedField } from '@/components/wallet/types/unified-state';
 import { STUDIO_TABS } from '@/components/wallet/constants';
 import { ImagesTab } from './ImagesTab';
+import { FieldStudio } from './FieldStudio';
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -142,7 +143,14 @@ export function StudioSidebar({
         {activeTab === 'images' && (
           <ImagesTab images={state.images} onUpdateImages={_updateImages} />
         )}
-        {activeTab !== 'images' && (
+        {activeTab === 'fields' && (
+          <FieldStudio
+            fields={state.fields}
+            cardType={state.cardType}
+            onUpdateFields={_updateFields}
+          />
+        )}
+        {activeTab !== 'images' && activeTab !== 'fields' && (
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
               {STUDIO_TABS.find((t) => t.id === activeTab)?.label ?? 'Panel'}
