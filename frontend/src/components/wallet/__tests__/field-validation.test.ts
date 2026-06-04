@@ -54,7 +54,7 @@ describe('validateFieldGroupLimits', () => {
     const header = result.find((r) => r.group === 'header');
     expect(header).toBeDefined();
     expect(header!.current).toBe(1);
-    expect(header!.max).toBe(1);
+    expect(header!.max).toBe(3);
     expect(header!.isValid).toBe(true);
 
     const primary = result.find((r) => r.group === 'primary');
@@ -63,7 +63,7 @@ describe('validateFieldGroupLimits', () => {
 
     const secondary = result.find((r) => r.group === 'secondary');
     expect(secondary!.current).toBe(2);
-    expect(secondary!.max).toBe(2);
+    expect(secondary!.max).toBe(4);
     expect(secondary!.isValid).toBe(true);
 
     const auxiliary = result.find((r) => r.group === 'auxiliary');
@@ -75,13 +75,15 @@ describe('validateFieldGroupLimits', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 'h1', fieldGroup: 'header' }),
       makeField({ id: 'h2', fieldGroup: 'header' }),
+      makeField({ id: 'h3', fieldGroup: 'header' }),
+      makeField({ id: 'h4', fieldGroup: 'header' }),
     ];
     const result = validateFieldGroupLimits(fields, 'stamp');
 
     const header = result.find((r) => r.group === 'header');
     expect(header!.isValid).toBe(false);
-    expect(header!.current).toBe(2);
-    expect(header!.max).toBe(1);
+    expect(header!.current).toBe(4);
+    expect(header!.max).toBe(3);
   });
 });
 
@@ -94,12 +96,14 @@ describe('canAddFieldToGroup', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 'h1', fieldGroup: 'header' }),
     ];
-    expect(canAddFieldToGroup(fields, 'header', 'stamp')).toBe(false); // stamp maxHeaderFields = 1
+    expect(canAddFieldToGroup(fields, 'header', 'stamp')).toBe(true); // stamp maxHeaderFields = 3
   });
 
   it('returns false when limit reached', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 'h1', fieldGroup: 'header' }),
+      makeField({ id: 'h2', fieldGroup: 'header' }),
+      makeField({ id: 'h3', fieldGroup: 'header' }),
     ];
     expect(canAddFieldToGroup(fields, 'header', 'stamp')).toBe(false);
   });
@@ -131,20 +135,22 @@ describe('getRemainingSlots', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 'h1', fieldGroup: 'header' }),
     ];
-    expect(getRemainingSlots(fields, 'header', 'stamp')).toBe(0); // 1/1 used
+    expect(getRemainingSlots(fields, 'header', 'stamp')).toBe(2); // 1/3 used
   });
 
   it('returns correct remaining number for secondary', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 's1', fieldGroup: 'secondary' }),
     ];
-    expect(getRemainingSlots(fields, 'secondary', 'stamp')).toBe(1); // 1/2 used
+    expect(getRemainingSlots(fields, 'secondary', 'stamp')).toBe(3); // 1/4 used
   });
 
   it('returns 0 when over limit (saturates at 0)', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 'h1', fieldGroup: 'header' }),
       makeField({ id: 'h2', fieldGroup: 'header' }),
+      makeField({ id: 'h3', fieldGroup: 'header' }),
+      makeField({ id: 'h4', fieldGroup: 'header' }),
     ];
     expect(getRemainingSlots(fields, 'header', 'stamp')).toBe(0);
   });
@@ -285,6 +291,8 @@ describe('validateFields', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 'h1', fieldGroup: 'header' }),
       makeField({ id: 'h2', fieldGroup: 'header' }),
+      makeField({ id: 'h3', fieldGroup: 'header' }),
+      makeField({ id: 'h4', fieldGroup: 'header' }),
     ];
     const errors = validateFields(fields, 'stamp');
 

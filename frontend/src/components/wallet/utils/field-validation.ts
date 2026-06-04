@@ -6,6 +6,38 @@ import type { UnifiedField, FieldGroup, CardType } from '../types';
 import { CARD_TYPE_METADATA } from '../constants';
 import { DYNAMIC_TEMPLATES } from '../types/dynamic-templates';
 
+/* Barcode formats that reduce field space on Apple Wallet */
+const RECTANGULAR_BARCODE_FORMATS = new Set(['PDF417', 'CODE128']);
+
+/** Card types affected by rectangular barcode field reduction */
+const BARCODE_AFFECTED_CARD_TYPES = new Set<CardType>([
+  'coupon',
+  'gift_certificate',
+  'affiliate',
+  'vip_membership',
+  'corporate_discount',
+  'referral_pass',
+  'multipass',
+]);
+
+/**
+ * Determine if the current configuration triggers the combined
+ * secondary + auxiliary limit reduction.
+ *
+ * Per SRS-010 §2.1: Coupons, Store Cards, and Generic with square
+ * barcode = max 4 combined secondary + auxiliary.
+ */
+function isRectangularBarcodeConstrained(
+  cardType: CardType,
+  barcodeFormat?: string
+): boolean {
+  if (!barcodeFormat) return false;
+  return (
+    BARCODE_AFFECTED_CARD_TYPES.has(cardType) &&
+    RECTANGULAR_BARCODE_FORMATS.has(barcodeFormat)
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -88,16 +120,26 @@ export function validateField(field: UnifiedField): FieldValidationError[] {
 /*  Group limit validation                                             */
 /* ------------------------------------------------------------------ */
 
+export interface CombinedLimitWarning {
+  groups: FieldGroup[];
+  current: number;
+  max: number;
+  message: string;
+}
+
 /**
  * Validate field group limits for a given card type.
+ * Also checks combined secondary+auxiliary limit when rectangular
+ * barcode is used with affected card types.
  */
 export function validateFieldGroupLimits(
   fields: UnifiedField[],
-  cardType: CardType
+  cardType: CardType,
+  barcodeFormat?: string
 ): FieldGroupValidation[] {
   const groups: FieldGroup[] = ['header', 'primary', 'secondary', 'auxiliary', 'back'];
 
-  return groups.map((group) => {
+  const results = groups.map((group) => {
     const current = countFieldsInGroup(fields, group);
     const max = getMaxForGroup(cardType, group);
     return {
@@ -107,32 +149,108 @@ export function validateFieldGroupLimits(
       isValid: current <= max,
     };
   });
+
+  // Check combined secondary + auxiliary limit for rectangular barcodes
+  if (isRectangularBarcodeConstrained(cardType, barcodeFormat)) {
+    const secCount = countFieldsInGroup(fields, 'secondary');
+    const auxCount = countFieldsInGroup(fields, 'auxiliary');
+    const combined = secCount + auxCount;
+    const combinedMax = 4;
+
+    if (combined > combinedMax) {
+      results.push({
+        group: 'secondary' as FieldGroup,
+        current: combined,
+        max: combinedMax,
+        isValid: false,
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Get a combined limit warning if applicable.
+ */
+export function getCombinedLimitWarning(
+  fields: UnifiedField[],
+  cardType: CardType,
+  barcodeFormat?: string
+): CombinedLimitWarning | null {
+  if (!isRectangularBarcodeConstrained(cardType, barcodeFormat)) return null;
+
+  const secCount = countFieldsInGroup(fields, 'secondary');
+  const auxCount = countFieldsInGroup(fields, 'auxiliary');
+  const combined = secCount + auxCount;
+  const combinedMax = 4;
+
+  if (combined >= combinedMax) {
+    return {
+      groups: ['secondary', 'auxiliary'],
+      current: combined,
+      max: combinedMax,
+      message: `Con barcode rectangular: máximo ${combinedMax} campos combinados (secundarios + auxiliares). Actual: ${combined}.`,
+    };
+  }
+  return null;
 }
 
 /**
  * Check if adding a field to a group would exceed limits.
+ * Accounts for combined secondary+auxiliary limit when rectangular barcode is used.
  */
 export function canAddFieldToGroup(
   fields: UnifiedField[],
   group: FieldGroup,
-  cardType: CardType
+  cardType: CardType,
+  barcodeFormat?: string
 ): boolean {
   const current = countFieldsInGroup(fields, group);
   const max = getMaxForGroup(cardType, group);
-  return current < max;
+
+  if (current >= max) return false;
+
+  // Combined secondary + auxiliary check for rectangular barcodes
+  if (
+    isRectangularBarcodeConstrained(cardType, barcodeFormat) &&
+    (group === 'secondary' || group === 'auxiliary')
+  ) {
+    const secCount = countFieldsInGroup(fields, 'secondary');
+    const auxCount = countFieldsInGroup(fields, 'auxiliary');
+    const combined = secCount + auxCount;
+    if (combined >= 4) return false;
+  }
+
+  return true;
 }
 
 /**
  * Get remaining slots for a field group.
+ * Accounts for combined secondary+auxiliary limit when rectangular barcode is used.
  */
 export function getRemainingSlots(
   fields: UnifiedField[],
   group: FieldGroup,
-  cardType: CardType
+  cardType: CardType,
+  barcodeFormat?: string
 ): number {
   const current = countFieldsInGroup(fields, group);
   const max = getMaxForGroup(cardType, group);
-  return Math.max(0, max - current);
+  const baseRemaining = Math.max(0, max - current);
+
+  // Combined secondary + auxiliary check for rectangular barcodes
+  if (
+    isRectangularBarcodeConstrained(cardType, barcodeFormat) &&
+    (group === 'secondary' || group === 'auxiliary')
+  ) {
+    const secCount = countFieldsInGroup(fields, 'secondary');
+    const auxCount = countFieldsInGroup(fields, 'auxiliary');
+    const combinedRemaining = Math.max(0, 4 - (secCount + auxCount));
+    return Math.min(baseRemaining, combinedRemaining);
+  }
+
+  return baseRemaining;
 }
 
 /* ------------------------------------------------------------------ */

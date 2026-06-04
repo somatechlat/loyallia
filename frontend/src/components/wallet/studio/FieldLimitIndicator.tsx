@@ -36,15 +36,16 @@ function getTextColor(percentage: number, isOverLimit: boolean): string {
 }
 
 export function FieldLimitIndicator({ group, current, max }: FieldLimitIndicatorProps) {
-  const percentage = max > 0 ? Math.min((current / max) * 100, 100) : 0;
-  const isOverLimit = current > max;
+  const isUnlimited = max === Infinity || max >= 999;
+  const percentage = isUnlimited ? 0 : max > 0 ? Math.min((current / max) * 100, 100) : 0;
+  const isOverLimit = !isUnlimited && current > max;
   const meta = FIELD_GROUP_METADATA[group];
 
   return (
     <div
       className="flex items-center gap-3"
       role="region"
-      aria-label={`${meta.label} field usage: ${current} of ${max}`}
+      aria-label={`${meta.label} field usage: ${current} of ${isUnlimited ? 'unlimited' : max}`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
@@ -52,20 +53,22 @@ export function FieldLimitIndicator({ group, current, max }: FieldLimitIndicator
             {meta.label}
           </span>
           <span className={`text-xs font-semibold tabular-nums ${getTextColor(percentage, isOverLimit)}`}>
-            {current} / {max}
+            {current} {isUnlimited ? '' : `/ ${max}`}
           </span>
         </div>
-        <div className={`h-2 w-full rounded-full overflow-hidden ${getBackgroundColor(percentage, isOverLimit)}`}>
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${getBarColor(percentage, isOverLimit)}`}
-            style={{ width: `${percentage}%` }}
-            role="progressbar"
-            aria-valuenow={current}
-            aria-valuemin={0}
-            aria-valuemax={max}
-            aria-label={`${meta.label} usage`}
-          />
-        </div>
+        {!isUnlimited && (
+          <div className={`h-2 w-full rounded-full overflow-hidden ${getBackgroundColor(percentage, isOverLimit)}`}>
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${getBarColor(percentage, isOverLimit)}`}
+              style={{ width: `${percentage}%` }}
+              role="progressbar"
+              aria-valuenow={current}
+              aria-valuemin={0}
+              aria-valuemax={max}
+              aria-label={`${meta.label} usage`}
+            />
+          </div>
+        )}
       </div>
       {isOverLimit && (
         <div className="flex-shrink-0" aria-label="Over limit warning">
