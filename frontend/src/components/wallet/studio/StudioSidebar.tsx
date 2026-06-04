@@ -251,24 +251,6 @@ function getCardTypeTabConfig(cardType: WalletPassStudioState['cardType']): { la
   }
 }
 
-/* ── Placeholder tabs ────────────────────────────────────────────── */
-
-function BackDesignTabPlaceholder() {
-  return (
-    <div className="p-4 text-sm text-neutral-500 dark:text-neutral-400">
-      BackDesignTab — implementado en FIX-8
-    </div>
-  );
-}
-
-function AdvancedTabPlaceholder() {
-  return (
-    <div className="p-4 text-sm text-neutral-500 dark:text-neutral-400">
-      AdvancedTab — implementado en FIX-8
-    </div>
-  );
-}
-
 /* ── Component ───────────────────────────────────────────────────── */
 
 export function StudioSidebar({
@@ -344,18 +326,14 @@ export function StudioSidebar({
             onUpdateFields={updateFields}
           />
         )}
-        {activeTab === 'back' && (
-          <BackDesignTabPlaceholder />
-        )}
+        {activeTab === 'back' && <div className="p-4 text-sm text-neutral-500">Reverso — implementado en FIX-8</div>}
         {activeTab === 'barcode' && (
           <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />
         )}
         {activeTab === 'colors' && (
           <ColorsTab colors={state.colors} onUpdateColors={updateColors} />
         )}
-        {activeTab === 'advanced' && (
-          <AdvancedTabPlaceholder />
-        )}
+        {activeTab === 'advanced' && <div className="p-4 text-sm text-neutral-500">Avanzado — implementado en FIX-8</div>}
       </div>
     </aside>
   );
