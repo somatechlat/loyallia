@@ -9,6 +9,11 @@ import {
   isV1State,
   isV2State,
 } from '../migrations/v1-to-v2';
+import {
+  migrateV2ToV1,
+  mapUnifiedToAppleFields,
+  mapUnifiedToGoogleRows,
+} from '../migrations/v2-to-v1';
 import { defaultWalletDesignState } from '../types-v1';
 
 /* ------------------------------------------------------------------ */
@@ -329,5 +334,123 @@ describe('advanced config migration', () => {
       url: 'mailto:support@example.com',
       type: 'email',
     });
+  });
+});
+
+describe('migrateV2ToV1 round-trip', () => {
+  it('preserves key fields through v1 → v2 → v1', () => {
+    const v2 = migrateV1ToV2(sampleV1Apple);
+    const v1 = migrateV2ToV1(v2);
+
+    expect(v1.appleLogoUrl).toBe(sampleV1Apple.appleLogoUrl);
+    expect(v1.appleStripUrl).toBe(sampleV1Apple.appleStripUrl);
+    expect(v1.appleThumbnailUrl).toBe(sampleV1Apple.appleThumbnailUrl);
+    expect(v1.appleIconUrl).toBe(sampleV1Apple.appleIconUrl);
+    expect(v1.locations).toHaveLength(sampleV1Apple.locations.length);
+    expect(v1.beacons).toHaveLength(sampleV1Apple.beacons.length);
+    expect(v1.links).toHaveLength(sampleV1Apple.links.length);
+    expect(v1.homepageUri).toBe('https://example.com');
+  });
+});
+
+describe('migrateV2ToV1 images', () => {
+  it('maps v2 images back to v1 URLs correctly', () => {
+    const v2 = migrateV1ToV2(sampleV1Apple);
+    const v1 = migrateV2ToV1(v2);
+
+    expect(v1.appleLogoUrl).toBe('https://example.com/apple-logo.png');
+    expect(v1.appleLogo2xUrl).toBe('https://example.com/apple-logo@2x.png');
+    expect(v1.appleStripUrl).toBe('https://example.com/strip.png');
+    expect(v1.appleStrip2xUrl).toBe('https://example.com/strip@2x.png');
+    expect(v1.appleThumbnailUrl).toBe('https://example.com/thumb.png');
+    expect(v1.appleThumbnail2xUrl).toBe('https://example.com/thumb@2x.png');
+    expect(v1.appleIconUrl).toBe('https://example.com/icon.png');
+    expect(v1.appleIcon2xUrl).toBe('https://example.com/icon@2x.png');
+    expect(v1.googleProgramLogoUrl).toBe('https://example.com/apple-logo.png');
+  });
+
+  it('maps Google design images back to v1 URLs correctly', () => {
+    const v2 = migrateV1ToV2(sampleV1Google);
+    const v1 = migrateV2ToV1(v2);
+
+    expect(v1.googleHeroImageUrl).toBe('https://example.com/hero.png');
+    expect(v1.googleWideLogoUrl).toBe('https://example.com/wide-logo.png');
+    expect(v1.googleImageModuleUrl).toBe('https://example.com/image-module.png');
+    expect(v1.googleProgramLogoUrl).toBe('https://example.com/google-logo.png');
+  });
+});
+
+describe('migrateV2ToV1 appleFields', () => {
+  it('maps unified fields back to appleFields by group', () => {
+    const v2 = migrateV1ToV2(sampleV1Apple);
+    const v1 = migrateV2ToV1(v2);
+
+    expect(v1.appleFields.headerFields).toHaveLength(1);
+    expect(v1.appleFields.headerFields[0]).toMatchObject({
+      key: 'h1',
+      label: 'Tier',
+      value: 'Gold',
+      changeMessage: 'Changed to %@',
+    });
+
+    expect(v1.appleFields.primaryFields).toHaveLength(1);
+    expect(v1.appleFields.primaryFields[0]).toMatchObject({
+      key: 'p1',
+      label: 'Balance',
+      value: '50 pts',
+      textAlignment: 'PKTextAlignmentCenter',
+    });
+
+    expect(v1.appleFields.secondaryFields).toHaveLength(1);
+    expect(v1.appleFields.auxiliaryFields).toHaveLength(1);
+    expect(v1.appleFields.backFields).toHaveLength(1);
+  });
+});
+
+describe('migrateV2ToV1 googleRows', () => {
+  it('maps unified fields back to googleRows preserving field paths', () => {
+    const v2 = migrateV1ToV2(sampleV1Google);
+    const v1 = migrateV2ToV1(v2);
+
+    // v1→v2 collapses first two rows into secondary group, so v2→v1
+    // reconstructs a single secondary row containing all three items.
+    expect(v1.googleRows).toHaveLength(1);
+
+    const row = v1.googleRows[0];
+    expect(row.type).toBe('threeItems');
+    expect(row.items[0]).toMatchObject({
+      id: 'g1',
+      fieldPath: 'object.textModulesData["offer"]',
+      label: 'Offer',
+      displayName: 'Offer',
+    });
+    expect(row.items[1]).toMatchObject({
+      id: 'g2',
+      fieldPath: 'object.textModulesData["valid"]',
+      label: 'Valid Until',
+    });
+    expect(row.items[2]).toMatchObject({
+      id: 'g3',
+      fieldPath: 'object.textModulesData["code"]',
+      label: 'Code',
+    });
+  });
+});
+
+describe('mapUnifiedToAppleFields', () => {
+  it('returns empty arrays for all groups when no apple fields exist', () => {
+    const fields = mapUnifiedToAppleFields([]);
+    expect(fields.headerFields).toHaveLength(0);
+    expect(fields.primaryFields).toHaveLength(0);
+    expect(fields.secondaryFields).toHaveLength(0);
+    expect(fields.auxiliaryFields).toHaveLength(0);
+    expect(fields.backFields).toHaveLength(0);
+  });
+});
+
+describe('mapUnifiedToGoogleRows', () => {
+  it('returns empty array when no google fields exist', () => {
+    const rows = mapUnifiedToGoogleRows([]);
+    expect(rows).toHaveLength(0);
   });
 });
