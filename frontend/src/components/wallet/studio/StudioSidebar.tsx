@@ -285,7 +285,7 @@ export function StudioSidebar({
   ];
 
   return (
-    <aside className="w-[360px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800">
+    <aside className="w-full md:w-[280px] lg:w-[360px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800">
       {/* Tab strip */}
       <div className="flex border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
         {allTabs.map((tab) => {
