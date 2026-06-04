@@ -182,6 +182,7 @@ export function migrateAppleFields(v1: WalletDesignState): UnifiedField[] {
     const fieldGroup = APPLE_GROUP_MAP[groupKey] ?? 'auxiliary';
     for (let i = 0; i < groupFields.length; i++) {
       const f = groupFields[i];
+      if (!f) continue;
       fields.push({
         id: f.key || `${groupKey}-${i}`,
         label: f.label ?? '',
