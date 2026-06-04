@@ -17,8 +17,10 @@ import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
 import { TemplateGallery } from './TemplateGallery';
 import { SaveTemplateModal } from './SaveTemplateModal';
+import { AIChatModal } from './AIChatModal';
 import type { WalletPassStudioState, CardTypeConfig } from '@/components/wallet/types/unified-state';
 import type { WalletTemplate } from '@/components/wallet/types/templates';
+import type { AIVariation } from '@/hooks/useAI';
 
 export interface WalletStudioProps {
   initialState?: Partial<WalletPassStudioState>;
@@ -150,6 +152,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
 
   const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = React.useState(false);
   const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
 
   const handleSave = React.useCallback(() => {
     onSave?.(displayState);
@@ -171,9 +174,28 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
 
   const handleAIGenerate = React.useCallback(() => {
     setIsTemplateGalleryOpen(false);
-    // Placeholder for AI generation — will be wired in a later phase
-    // eslint-disable-next-line no-console
-    console.log('AI Generate triggered');
+    setIsAIModalOpen(true);
+  }, []);
+
+  const handleApplyTemplate = React.useCallback(
+    (variation: AIVariation) => {
+      setUndoableState((prev: WalletPassStudioState) => ({
+        ...prev,
+        ...(variation.design.cardType && { cardType: variation.design.cardType }),
+        ...(variation.design.industry && { industry: variation.design.industry }),
+        ...(variation.design.colors && { colors: { ...prev.colors, ...variation.design.colors } }),
+        ...(variation.design.name && { name: variation.design.name }),
+        ui: {
+          ...prev.ui,
+          isModified: true,
+        },
+      }));
+    },
+    [setUndoableState]
+  );
+
+  const handleCloseAIModal = React.useCallback(() => {
+    setIsAIModalOpen(false);
   }, []);
 
   const handleExport = React.useCallback(() => {
@@ -281,6 +303,15 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
         onClose={() => setIsSaveTemplateModalOpen(false)}
         onSave={handleConfirmSaveTemplate}
         defaultName={displayState.name}
+      />
+
+      {/* AI Design Assistant Modal */}
+      <AIChatModal
+        isOpen={isAIModalOpen}
+        onClose={handleCloseAIModal}
+        onApplyTemplate={handleApplyTemplate}
+        initialCardType={displayState.cardType}
+        initialIndustry={displayState.industry}
       />
     </div>
   );
