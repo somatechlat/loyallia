@@ -157,8 +157,8 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
         raise HttpError(
             413,
             get_message(
-                "VALIDATION_ERROR",
-                detail=f"El archivo es demasiado grande (máx {max_mb}MB).",
+                "VALIDATION_FILE_TOO_LARGE",
+                max_mb=max_mb,
             ),
         )
 

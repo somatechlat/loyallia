@@ -48,6 +48,20 @@ export const CARD_TYPES = [
   { value: 'multipass',          label: 'Multipase Prepagado',         icon: 'refresh', desc: 'Sellos prepagados en paquete' },
 ];
 
+/** Translation key mappings for CARD_TYPES (use with t() in components). */
+export const CARD_TYPE_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  stamp:              { labelKey: 'portal.cardTypes.stamp',           descKey: 'programs.cardTypeDescs.stamp' },
+  cashback:           { labelKey: 'programs.cardTypes.cashback',      descKey: 'programs.cardTypeDescs.cashback' },
+  coupon:             { labelKey: 'portal.cardTypes.coupon',          descKey: 'programs.cardTypeDescs.coupon' },
+  affiliate:          { labelKey: 'programs.cardTypes.affiliate',     descKey: 'programs.cardTypeDescs.affiliate' },
+  discount:           { labelKey: 'portal.cardTypes.discount',        descKey: 'programs.cardTypeDescs.discount' },
+  gift_certificate:   { labelKey: 'portal.cardTypes.gift_certificate', descKey: 'programs.cardTypeDescs.gift_certificate' },
+  vip_membership:     { labelKey: 'portal.cardTypes.vip_membership',  descKey: 'programs.cardTypeDescs.vip_membership' },
+  corporate_discount: { labelKey: 'programs.cardTypes.corporate_discount', descKey: 'programs.cardTypeDescs.corporate_discount' },
+  referral_pass:      { labelKey: 'portal.cardTypes.referral_pass',   descKey: 'programs.cardTypeDescs.referral_pass' },
+  multipass:          { labelKey: 'portal.cardTypes.multipass',       descKey: 'programs.cardTypeDescs.multipass' },
+};
+
 /* ─── Design Templates ──────────────────────────────────────────── */
 export const DESIGN_TEMPLATES = [
   { id: 'midnight',  name: 'Medianoche',     bg: '#1A1A2E', text: '#FFFFFF', accent: '#E2E8F0' },
@@ -63,6 +77,22 @@ export const DESIGN_TEMPLATES = [
   { id: 'cherry',    name: 'Cereza',         bg: '#BE123C', text: '#FFFFFF', accent: '#FFE4E6' },
   { id: 'custom',    name: 'Personalizado',  bg: '', text: '', accent: '' },
 ];
+
+/** Translation key mappings for DESIGN_TEMPLATES (use with t() in components). */
+export const DESIGN_TEMPLATE_NAME_KEYS: Record<string, string> = {
+  midnight: 'programs.design.midnight',
+  ocean: 'programs.design.ocean',
+  sunset: 'programs.design.sunset',
+  forest: 'programs.design.forest',
+  royal: 'programs.design.royal',
+  rose: 'programs.design.rose',
+  gold: 'programs.design.gold',
+  arctic: 'programs.design.arctic',
+  slate: 'programs.design.slate',
+  emerald: 'programs.design.emerald',
+  cherry: 'programs.design.cherry',
+  custom: 'programs.design.custom',
+};
 
 /* ─── Default metadata per card type ──────────────────────────────── */
 export function defaultMeta(type: string): Record<string, unknown> {
@@ -126,6 +156,15 @@ export const BARCODE_TYPES = [
   },
 ];
 
+/** Translation key mappings for BARCODE_TYPES (use with t() in components). */
+export const BARCODE_TYPE_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  qr_code:    { labelKey: 'programs.barcodeTypes.qrCode',    descKey: 'programs.barcodeTypes.qrCodeDesc' },
+  aztec:      { labelKey: 'programs.barcodeTypes.aztec',     descKey: 'programs.barcodeTypes.aztecDesc' },
+  pdf417:     { labelKey: 'programs.barcodeTypes.pdf417',    descKey: 'programs.barcodeTypes.pdf417Desc' },
+  code_128:   { labelKey: 'programs.barcodeTypes.code128',   descKey: 'programs.barcodeTypes.code128Desc' },
+  data_matrix:{ labelKey: 'programs.barcodeTypes.dataMatrix', descKey: 'programs.barcodeTypes.dataMatrixDesc' },
+};
+
 /* ─── Apple Pass Style per Card Type ──────────────────────────────── */
 export const APPLE_PASS_STYLES: Record<string, string> = {
   stamp: 'storeCard',
@@ -154,6 +193,20 @@ export const GOOGLE_WALLET_TYPES: Record<string, { type: string; label: string }
   multipass:          { type: 'LoyaltyClass',  label: 'Multipase' },
 };
 
+/** Translation key mappings for GOOGLE_WALLET_TYPES (use with t() in components). */
+export const GOOGLE_WALLET_TYPE_LABEL_KEYS: Record<string, string> = {
+  stamp:              'programs.walletTypes.loyalty',
+  cashback:           'programs.walletTypes.cashback',
+  coupon:             'programs.walletTypes.offer',
+  discount:           'programs.walletTypes.offer',
+  affiliate:          'programs.walletTypes.loyalty',
+  gift_certificate:   'programs.walletTypes.giftCard',
+  vip_membership:     'programs.walletTypes.loyalty',
+  corporate_discount: 'programs.walletTypes.offer',
+  referral_pass:      'programs.walletTypes.offer',
+  multipass:          'programs.walletTypes.multipass',
+};
+
 /* ─── Apple Image Support per Pass Style (per official Apple docs) ── */
 export const APPLE_IMAGE_SUPPORT: Record<string, { strip: boolean; thumbnail: boolean }> = {
   storeCard: { strip: true,  thumbnail: false },
@@ -177,6 +230,18 @@ export const APPLE_IMAGE_SPECS = {
   thumbnail2x:{ pt: '90×90', px: '180×180', px2x: '180×180', label: 'Thumbnail @2x', required: false, desc: 'Retina display' },
 } as const;
 
+/** Translation key mappings for APPLE_IMAGE_SPECS (use with t() in components). */
+export const APPLE_IMAGE_SPEC_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  icon:      { labelKey: 'programs.walletPreview.icon',      descKey: 'programs.imageSpecs.iconDesc' },
+  icon2x:    { labelKey: 'programs.walletPreview.icon2x',    descKey: 'programs.imageSpecs.icon2xDesc' },
+  logo:      { labelKey: 'programs.walletPreview.logo',      descKey: 'programs.imageSpecs.logoDesc' },
+  logo2x:    { labelKey: 'programs.walletPreview.logo2x',    descKey: 'programs.imageSpecs.logo2xDesc' },
+  strip:     { labelKey: 'programs.walletPreview.strip',     descKey: 'programs.imageSpecs.stripDesc' },
+  strip2x:   { labelKey: 'programs.walletPreview.strip2x',   descKey: 'programs.imageSpecs.strip2xDesc' },
+  thumbnail: { labelKey: 'programs.walletPreview.thumbnail', descKey: 'programs.imageSpecs.thumbnailDesc' },
+  thumbnail2x:{ labelKey: 'programs.walletPreview.thumbnail2x', descKey: 'programs.imageSpecs.thumbnail2xDesc' },
+};
+
 /** Google Wallet image dimensions (per Google Wallet API docs) */
 export const GOOGLE_IMAGE_SPECS = {
   programLogo: { px: '660×660', label: 'Logo del programa', required: true, desc: 'Logo cuadrado visible en la tarjeta' },
@@ -185,12 +250,27 @@ export const GOOGLE_IMAGE_SPECS = {
   imageModule: { px: '660×660', label: 'Imagen adicional', required: false, desc: 'Imagen adicional en detalles de la tarjeta' },
 } as const;
 
+/** Translation key mappings for GOOGLE_IMAGE_SPECS (use with t() in components). */
+export const GOOGLE_IMAGE_SPEC_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  programLogo: { labelKey: 'programs.walletDesigner.programLogo', descKey: 'programs.imageSpecs.programLogoDesc' },
+  heroImage:   { labelKey: 'programs.walletDesigner.heroImage',   descKey: 'programs.imageSpecs.heroImageDesc' },
+  wideLogo:    { labelKey: 'programs.walletDesigner.wideLogo',    descKey: 'programs.imageSpecs.wideLogoDesc' },
+  imageModule: { labelKey: 'programs.walletDesigner.additionalImage', descKey: 'programs.imageSpecs.imageModuleDesc' },
+};
+
 /** Google Wallet cardTemplateOverride row types */
 export const GOOGLE_ROW_TYPES = [
   { value: 'oneItem', label: '1 campo', desc: 'Un solo campo por fila (máximo ancho)' },
   { value: 'twoItems', label: '2 campos', desc: 'Dos campos por fila (divididos 50/50)' },
   { value: 'threeItems', label: '3 campos', desc: 'Tres campos por fila (divididos 33/33/33)' },
 ] as const;
+
+/** Translation key mappings for GOOGLE_ROW_TYPES (use with t() in components). */
+export const GOOGLE_ROW_TYPE_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  oneItem:    { labelKey: 'programs.googleRowTypes.oneItem',    descKey: 'programs.googleRowTypes.oneItemDesc' },
+  twoItems:   { labelKey: 'programs.googleRowTypes.twoItems',   descKey: 'programs.googleRowTypes.twoItemsDesc' },
+  threeItems: { labelKey: 'programs.googleRowTypes.threeItems', descKey: 'programs.googleRowTypes.threeItemsDesc' },
+};
 
 /** Predefined Google Wallet field paths for cardTemplateOverride */
 export const GOOGLE_PREDEFINED_FIELDS = [
@@ -205,6 +285,19 @@ export const GOOGLE_PREDEFINED_FIELDS = [
   { path: 'class.issuerName', label: 'Nombre del negocio', source: 'class' },
 ] as const;
 
+/** Translation key mappings for GOOGLE_PREDEFINED_FIELDS (use with t() in components). */
+export const GOOGLE_PREDEFINED_FIELD_LABEL_KEYS: Record<string, string> = {
+  'object.accountName': 'programs.googlePredefinedFields.customerName',
+  'object.loyaltyPoints.label': 'programs.googlePredefinedFields.pointsLabel',
+  'object.loyaltyPoints.balance': 'programs.googlePredefinedFields.pointsBalance',
+  'object.secondaryLoyaltyPoints.label': 'programs.googlePredefinedFields.secondaryLabel',
+  'object.secondaryLoyaltyPoints.balance': 'programs.googlePredefinedFields.secondaryBalance',
+  'class.rewardsTierLabel': 'programs.googlePredefinedFields.tierLabel',
+  'class.rewardsTier': 'programs.googlePredefinedFields.currentTier',
+  'class.programName': 'programs.googlePredefinedFields.programName',
+  'class.issuerName': 'programs.googlePredefinedFields.businessName',
+};
+
 /** Apple PassKit field groups */
 export const APPLE_FIELD_GROUPS = [
   { key: 'headerFields', label: 'Campos de cabecera', desc: 'Pequeños campos en la parte superior (1-3 campos)', max: 3 },
@@ -213,6 +306,15 @@ export const APPLE_FIELD_GROUPS = [
   { key: 'auxiliaryFields', label: 'Campos auxiliares', desc: 'Campos más pequeños debajo de los secundarios (1-4 campos)', max: 4 },
   { key: 'backFields', label: 'Campos traseros', desc: 'Campos en la parte de atrás de la tarjeta (ilimitados)', max: 99 },
 ] as const;
+
+/** Translation key mappings for APPLE_FIELD_GROUPS (use with t() in components). */
+export const APPLE_FIELD_GROUP_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  headerFields:    { labelKey: 'programs.appleFieldGroups.headerFields',    descKey: 'programs.appleFieldGroups.headerFieldsDesc' },
+  primaryFields:   { labelKey: 'programs.appleFieldGroups.primaryFields',   descKey: 'programs.appleFieldGroups.primaryFieldsDesc' },
+  secondaryFields: { labelKey: 'programs.appleFieldGroups.secondaryFields', descKey: 'programs.appleFieldGroups.secondaryFieldsDesc' },
+  auxiliaryFields: { labelKey: 'programs.appleFieldGroups.auxiliaryFields', descKey: 'programs.appleFieldGroups.auxiliaryFieldsDesc' },
+  backFields:      { labelKey: 'programs.appleFieldGroups.backFields',      descKey: 'programs.appleFieldGroups.backFieldsDesc' },
+};
 
 /** Default Apple field templates per card type (Spanish labels) */
 export const APPLE_DEFAULT_FIELDS: Record<string, Record<string, Array<{key: string; label: string; value: string}>>> = {
@@ -300,6 +402,78 @@ export const APPLE_DEFAULT_FIELDS: Record<string, Record<string, Array<{key: str
   },
 };
 
+/** Translation key mappings for APPLE_DEFAULT_FIELDS labels (use with t() in components). */
+export const APPLE_DEFAULT_FIELD_LABEL_KEYS: Record<string, Record<string, string>> = {
+  stamp: {
+    SELLOS: 'programs.walletPreview.stamps',
+    RECOMPENSA: 'programs.walletPreview.reward',
+    PROGRESO: 'programs.walletPreview.progress',
+    Cliente: 'scanner.defaults.customerName',
+    Programa: 'programs.walletPreview.program',
+    Descripción: 'programs.description',
+  },
+  cashback: {
+    CRÉDITO: 'programs.walletPreview.credit',
+    PROGRAMA: 'programs.walletPreview.program',
+    '% CASHBACK': 'programs.walletPreview.cashbackPercent',
+    CLIENTE: 'scanner.defaults.customerName',
+    Descripción: 'programs.description',
+  },
+  coupon: {
+    OFERTA: 'programs.walletPreview.offer',
+    DESCUENTO: 'programs.walletPreview.discount',
+    CLIENTE: 'scanner.defaults.customerName',
+    Descripción: 'programs.description',
+  },
+  vip_membership: {
+    MEMBRESÍA: 'programs.walletPreview.membership',
+    MIEMBRO: 'programs.walletPreview.member',
+    CLUB: 'programs.walletPreview.club',
+    Beneficios: 'programs.walletPreview.benefits',
+  },
+  gift_certificate: {
+    SALDO: 'programs.walletPreview.balance',
+    CERTIFICADO: 'programs.walletPreview.certificate',
+    BENEFICIARIO: 'programs.walletPreview.recipient',
+    'Expira en': 'programs.walletPreview.expiresIn',
+    Descripción: 'programs.description',
+  },
+  discount: {
+    NIVEL: 'programs.walletPreview.level',
+    DESCUENTO: 'programs.walletPreview.discount',
+    CLIENTE: 'scanner.defaults.customerName',
+    PROGRAMA: 'programs.walletPreview.program',
+    'Niveles de descuento': 'programs.metaLabels.tiers',
+    Descripción: 'programs.description',
+  },
+  referral_pass: {
+    REFERIDOS: 'programs.walletPreview.referrals',
+    'TU CÓDIGO': 'programs.walletPreview.yourCode',
+    EMBAJADOR: 'programs.walletPreview.ambassador',
+    'Cómo funciona': 'programs.walletPreview.howItWorks',
+  },
+  affiliate: {
+    PROGRAMA: 'programs.walletPreview.program',
+    AFILIADO: 'programs.walletPreview.affiliate',
+    CÓDIGO: 'programs.walletPreview.code',
+    'MIEMBRO DESDE': 'programs.walletPreview.memberSince',
+    Beneficios: 'programs.walletPreview.benefits',
+  },
+  corporate_discount: {
+    DESCUENTO: 'programs.walletPreview.discount',
+    EMPRESA: 'programs.walletPreview.company',
+    EMPLEADO: 'programs.walletPreview.employee',
+    Condiciones: 'programs.walletPreview.terms',
+  },
+  multipass: {
+    'USOS RESTANTES': 'programs.walletPreview.remainingUses',
+    MULTIPASE: 'programs.walletPreview.multipass',
+    CLIENTE: 'scanner.defaults.customerName',
+    'Precio del paquete': 'programs.walletPreview.bundlePrice',
+    Descripción: 'programs.description',
+  },
+};
+
 /** Human-friendly field value presets for Apple/Google Wallet fields */
 export const FIELD_VALUE_PRESETS = [
   { label: 'Texto personalizado', value: '' },
@@ -319,9 +493,35 @@ export const FIELD_VALUE_PRESETS = [
   { label: 'Descripción del programa', value: '{description}' },
 ] as const;
 
+/** Translation key mappings for FIELD_VALUE_PRESETS (use with t() in components). */
+export const FIELD_VALUE_PRESET_LABEL_KEYS: Record<string, string> = {
+  '': 'programs.fieldPresets.customText',
+  '{customer_name}': 'programs.fieldPresets.customerName',
+  '{program_name}': 'programs.fieldPresets.programName',
+  '{stamp_count}/{stamps_required}': 'programs.fieldPresets.stamps',
+  '${cashback_balance}': 'programs.fieldPresets.cashbackBalance',
+  '{cashback_percentage}%': 'programs.fieldPresets.cashbackPercent',
+  '{loyalty_points}': 'programs.fieldPresets.loyaltyPoints',
+  '{membership_tier}': 'programs.fieldPresets.membershipTier',
+  '{discount_percentage}%': 'programs.fieldPresets.discountPercent',
+  '{referral_code}': 'programs.fieldPresets.referralCode',
+  '{multipass_remaining}/{bundle_size}': 'programs.fieldPresets.multipassUses',
+  '${gift_balance}': 'programs.fieldPresets.giftBalance',
+  '{enrolled_date}': 'programs.fieldPresets.enrolledDate',
+  '{issuer_name}': 'programs.fieldPresets.businessName',
+  '{description}': 'programs.fieldPresets.programDescription',
+};
+
 /** Google Wallet multipleDevicesAndHoldersAllowedStatus options */
 export const GOOGLE_DEVICE_SHARING_OPTIONS = [
   { value: 'ONE_USER_ALL_DEVICES', label: 'Un usuario, todos sus dispositivos', desc: 'El mismo usuario puede tener la tarjeta en múltiples dispositivos' },
   { value: 'ONE_USER_ONE_DEVICE', label: 'Un usuario, un dispositivo', desc: 'Solo un dispositivo por usuario' },
   { value: 'MULTIPLE_USERS', label: 'Múltiples usuarios', desc: 'La tarjeta puede ser compartida entre usuarios' },
 ] as const;
+
+/** Translation key mappings for GOOGLE_DEVICE_SHARING_OPTIONS (use with t() in components). */
+export const GOOGLE_DEVICE_SHARING_OPTION_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
+  ONE_USER_ALL_DEVICES: { labelKey: 'programs.deviceSharing.oneUserAllDevices', descKey: 'programs.deviceSharing.oneUserAllDevicesDesc' },
+  ONE_USER_ONE_DEVICE:  { labelKey: 'programs.deviceSharing.oneUserOneDevice',  descKey: 'programs.deviceSharing.oneUserOneDeviceDesc' },
+  MULTIPLE_USERS:       { labelKey: 'programs.deviceSharing.multipleUsers',     descKey: 'programs.deviceSharing.multipleUsersDesc' },
+};

@@ -7,7 +7,7 @@ from ninja.errors import HttpError
 from apps.customers.models import Customer
 from apps.notifications.models import Notification, NotificationType
 from apps.notifications.service import NotificationService
-from common.messages import get_message
+from common.messages import get_message, get_message_for_request
 from common.permissions import is_owner, jwt_auth
 
 from .base import SendNotificationSchema, router
@@ -37,7 +37,7 @@ def send_notification(request, customer_id: str, data: SendNotificationSchema):
     return {
         "success": success,
         "notification_id": str(notification.id),
-        "message": "Notification sent" if success else "Failed to send notification",
+        "message": get_message_for_request("NOTIFICATION_SENT", request) if success else get_message_for_request("NOTIFICATION_SEND_FAILED", request),
     }
 
 

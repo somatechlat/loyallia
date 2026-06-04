@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 
 from apps.notifications.models import Notification
-from common.messages import get_message
+from common.messages import get_message, get_message_for_request
 from common.permissions import jwt_auth
 
 from .base import _get_customer_or_403, router
@@ -69,7 +69,7 @@ def mark_notification_read(request, notification_id: str):
     notification = get_object_or_404(Notification, id=notification_id, customer=customer)
     notification.mark_as_read()
 
-    return {"success": True, "message": "Notification marked as read"}
+    return {"success": True, "message": get_message_for_request("NOTIFICATION_MARKED_READ", request)}
 
 
 @router.post(
@@ -83,7 +83,7 @@ def mark_notification_clicked(request, notification_id: str):
     notification = get_object_or_404(Notification, id=notification_id, customer=customer)
     notification.mark_as_clicked()
 
-    return {"success": True, "message": "Notification action recorded"}
+    return {"success": True, "message": get_message_for_request("NOTIFICATION_ACTION_RECORDED", request)}
 
 
 @router.delete(

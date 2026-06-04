@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { UnifiedField, FieldGroup, CardType } from '@/components/wallet/types/unified-state';
 import { FIELD_GROUP_METADATA } from '@/components/wallet/constants';
 import { validateFieldGroupLimits, canAddFieldToGroup } from '@/components/wallet/utils/field-validation';
@@ -38,6 +39,7 @@ function createEmptyField(group: FieldGroup, order: number): UnifiedField {
 }
 
 export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioProps) {
+  const { t } = useI18n();
   const [editingField, setEditingField] = useState<UnifiedField | null>(null);
   const [addingToGroup, setAddingToGroup] = useState<FieldGroup | null>(null);
   const [quickAddLabel, setQuickAddLabel] = useState('');
@@ -109,13 +111,13 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
         const newField: UnifiedField = {
           ...field,
           id: `field-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          label: `${field.label} (copy)`,
+          label: `${field.label} (${t('wallet.studio.fields.duplicateField')})`,
           order: groupFields.length,
         };
         return [...prev, newField];
       });
     },
-    [onUpdateFields, cardType]
+    [onUpdateFields, cardType, t]
   );
 
   const handleAddField = useCallback(
@@ -126,7 +128,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
       const newField = createEmptyField(group, groupFields.length);
 
       if (quickAddLabel.trim() || quickAddValue.trim()) {
-        newField.label = quickAddLabel.trim() || 'New Field';
+        newField.label = quickAddLabel.trim() || t('wallet.studio.fields.addField');
         newField.value = quickAddValue.trim();
         onUpdateFields((prev) => [...prev, newField]);
         setQuickAddLabel('');
@@ -138,7 +140,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
         setAddingToGroup(null);
       }
     },
-    [fields, cardType, quickAddLabel, quickAddValue, onUpdateFields]
+    [fields, cardType, quickAddLabel, quickAddValue, onUpdateFields, t]
   );
 
   const handleDragOver = useCallback(
@@ -247,7 +249,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
       {/* Limit indicators */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-          Field Limits
+          {t('wallet.studio.fields.title')}
         </h3>
         <div className="grid gap-2">
           {groupValidations.map((validation) => (
@@ -296,9 +298,9 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                     type="button"
                     onClick={() => setAddingToGroup(group)}
                     className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-0.5"
-                    aria-label={`Add field to ${FIELD_GROUP_METADATA[group].label}`}
+                    aria-label={`${t('wallet.studio.fields.addField')} ${FIELD_GROUP_METADATA[group].label}`}
                   >
-                    + Add
+                    + {t('wallet.studio.fields.add')}
                   </button>
                 )}
               </div>
@@ -311,7 +313,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                       type="text"
                       value={quickAddLabel}
                       onChange={(e) => setQuickAddLabel(e.target.value)}
-                      placeholder="Label"
+                      placeholder={t('wallet.studio.fields.label')}
                       className="flex-1 min-w-0 px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       autoFocus
                     />
@@ -319,7 +321,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                       type="text"
                       value={quickAddValue}
                       onChange={(e) => setQuickAddValue(e.target.value)}
-                      placeholder="Value"
+                      placeholder={t('wallet.studio.fields.value')}
                       className="flex-1 min-w-0 px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -329,7 +331,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                       onClick={() => handleAddField(group)}
                       className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      Add Field
+                      {t('wallet.studio.fields.addField')}
                     </button>
                     <button
                       type="button"
@@ -340,7 +342,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                       }}
                       className="px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       type="button"
@@ -354,7 +356,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                       }}
                       className="px-3 py-1.5 text-xs font-medium rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      Open Editor
+                      {t('wallet.studio.fields.openEditor')}
                     </button>
                   </div>
                 </div>
@@ -364,7 +366,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
               <div className="p-2 space-y-1.5 min-h-[48px]">
                 {groupFields.length === 0 ? (
                   <div className="text-center py-6 text-sm text-neutral-400 dark:text-neutral-500">
-                    No fields in this group
+                    {t('wallet.studio.fields.noFields')}
                   </div>
                 ) : (
                   groupFields.map((field, index) => (
@@ -390,7 +392,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                               handleReorder(field.id, 'up');
                             }}
                             className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            aria-label="Move up"
+                            aria-label={t('wallet.studio.fields.moveUp')}
                           >
                             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="m18 15-6-6-6 6" />
@@ -405,7 +407,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                               handleReorder(field.id, 'down');
                             }}
                             className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            aria-label="Move down"
+                            aria-label={t('wallet.studio.fields.moveDown')}
                           >
                             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="m6 9 6 6 6-6" />
@@ -421,8 +423,8 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                           handleDuplicateField(field);
                         }}
                         className="absolute left-1 top-1/2 -translate-y-1/2 p-1 rounded text-neutral-300 hover:text-neutral-500 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 opacity-0 hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-opacity"
-                        aria-label="Duplicate field"
-                        title="Duplicate field"
+                        aria-label={t('wallet.studio.fields.duplicateField')}
+                        title={t('wallet.studio.fields.duplicateField')}
                       >
                         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
@@ -449,7 +451,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
             <path d="M5 12h14" />
             <path d="M12 5v14" />
           </svg>
-          Add Field
+          {t('wallet.studio.fields.addField')}
         </button>
       </div>
 

@@ -16,6 +16,7 @@ from .base import (
     _get_issuer_id,
     _resolve_url,
 )
+from common.messages import get_message
 from .images import _build_class_images
 
 
@@ -54,7 +55,7 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     payload["textModulesData"] = [
         {
             "header": "",
-            "body": "Powered by Loyallia Intelligent Rewards",
+            "body": get_message("WALLET_POWERED_BY"),
             "id": "loyallia_branding",
         }
     ]
@@ -65,12 +66,12 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
                     "BRAND_HOME_URL",
                     default=getattr(settings, "PUBLIC_BASE_URL", "") or "",
                 ),
-                "description": "Powered by Loyallia",
+                "description": get_message("WALLET_LINK_DESCRIPTION"),
                 "id": "loyallia_link",
             },
             {
                 "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",  # noqa: E501
-                "description": "Inscribete aqui",
+                "description": get_message("WALLET_ENROLL_HERE"),
                 "id": "enroll_link",
             },
         ]
@@ -113,11 +114,11 @@ def _build_loyalty_object(
         },
         "smartTapRedemptionValue": customer_pass.qr_code,
         "textModulesData": [
-            {"header": "Establecimiento", "body": tenant.name, "id": "tenant_name"},
-            {"header": "Programa", "body": card.name, "id": "program_name"},
+            {"header": get_message("WALLET_LABEL_ESTABLISHMENT"), "body": tenant.name, "id": "tenant_name"},
+            {"header": get_message("WALLET_LABEL_PROGRAM"), "body": card.name, "id": "program_name"},
             {
                 "header": "",
-                "body": "Powered by Loyallia Intelligent Rewards",
+                "body": get_message("WALLET_POWERED_BY"),
                 "id": "loyallia_branding",
             },
         ],
@@ -128,12 +129,12 @@ def _build_loyalty_object(
                         "BRAND_HOME_URL",
                         default=getattr(settings, "PUBLIC_BASE_URL", "") or "",
                     ),
-                    "description": "Powered by Loyallia",
+                    "description": get_message("WALLET_LINK_DESCRIPTION"),
                     "id": "loyallia_link",
                 },
                 {
                     "uri": f"{PlatformSetting.get('ENROLL_BASE_URL', default=getattr(settings, 'PUBLIC_BASE_URL', '') or '')}/enroll/{card.id}",  # noqa: E501
-                    "description": "Tu Tarjeta Digital",
+                    "description": get_message("WALLET_YOUR_DIGITAL_CARD"),
                     "id": "enroll_link",
                 },
             ]
@@ -144,7 +145,7 @@ def _build_loyalty_object(
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {
-                "defaultValue": {"language": "es", "value": "Banner de " + card.name}
+                "defaultValue": {"language": "es", "value": get_message("WALLET_BANNER_OF", name=card.name)}
             },
         }
 
@@ -163,7 +164,7 @@ def _build_loyalty_object(
                     "contentDescription": {
                         "defaultValue": {
                             "language": "es",
-                            "value": "Recompensa del programa",
+                            "value": get_message("WALLET_PROGRAM_REWARD"),
                         }
                     },
                 },
@@ -174,7 +175,7 @@ def _build_loyalty_object(
     if card.card_type == "cashback":
         pct = metadata.get("cashback_percentage", 10)
         obj["secondaryLoyaltyPoints"] = {
-            "label": "Tasa de cashback",
+            "label": get_message("WALLET_CASHBACK_RATE_LABEL"),
             "balance": {"string": f"{pct}%"},
         }
 
@@ -189,30 +190,30 @@ def _build_points_for_type(card, customer_pass) -> dict:
 
     if card.card_type == "stamp":
         current = customer_pass.stamp_count_val
-        return {"label": "Sellos", "balance": {"int": current}}
+        return {"label": get_message("WALLET_LABEL_STAMPS"), "balance": {"int": current}}
     elif card.card_type == "multipass":
         remaining = customer_pass.multipass_remaining_val or 0
         bundle_size = metadata.get("bundle_size", 10)
         return {
-            "label": "Usos",
+            "label": get_message("WALLET_LABEL_USES"),
             "balance": {"string": f"{remaining} / {bundle_size}"},
         }
     elif card.card_type == "cashback":
         balance = str(customer_pass.cashback_balance_val)
         return {
-            "label": "Crédito",
+            "label": get_message("WALLET_LABEL_CREDIT"),
             "balance": {"string": f"${balance}"},
         }
     elif card.card_type == "vip_membership":
         return {
-            "label": "Membresia",
+            "label": get_message("WALLET_LABEL_MEMBERSHIP"),
             "balance": {"string": pass_data.get("membership_tier", "VIP")},
         }
     elif card.card_type == "referral_pass":
         # WARNING: Unreachable — referral_pass maps to offer, not loyalty
         return {
-            "label": "Referidos",
+            "label": get_message("WALLET_LABEL_REFERRALS"),
             "balance": {"int": customer_pass.referral_count_val},
         }
     else:
-        return {"label": "Puntos", "balance": {"int": 0}}
+        return {"label": get_message("WALLET_LABEL_POINTS"), "balance": {"int": 0}}

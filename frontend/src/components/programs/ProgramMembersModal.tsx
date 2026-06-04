@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -35,25 +36,13 @@ interface Props {
 
 const LIMIT = 25;
 
-const TX_LABELS: Record<string, string> = {
-  stamp: 'Sellos',
-  cashback: 'Saldo',
-  coupon: 'Cupón usado',
-  gift_certificate: 'Saldo regalo',
-  vip_membership: 'Membresía',
-  multipass: 'Usos restantes',
-  discount: 'Descuento',
-  affiliate: 'Afiliación',
-  corporate_discount: 'Corp.',
-  referral_pass: 'Referidos',
-};
-
 /**
  * @description Modal displaying paginated, searchable program members with pass state.
  * @param {Props} props - Component props
  * @returns JSX.Element
  */
 export default function ProgramMembersModal({ programId, cardType, onClose }: Props) {
+  const { t } = useI18n();
   const [members, setMembers] = useState<Member[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -71,11 +60,11 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
       setMembers(data.items);
       setTotal(data.total);
     } catch {
-      toast.error('Error al cargar miembros');
+      toast.error(t('programs.members.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [programId, search, offset]);
+  }, [programId, search, offset, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -89,19 +78,19 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
     const ps = m.pass_state;
     switch (cardType) {
       case 'stamp':
-        return `${ps.stamp_count ?? 0} sellos`;
+        return t('programs.members.stampCount', { count: Number(ps.stamp_count ?? 0) });
       case 'cashback':
         return `$${ps.cashback_balance ?? '0.00'}`;
       case 'coupon':
-        return ps.coupon_used ? 'Canjeado' : 'Activo';
+        return ps.coupon_used ? t('programs.members.redeemed') : t('common.active');
       case 'gift_certificate':
         return `$${ps.gift_balance ?? '0.00'}`;
       case 'multipass':
-        return `${ps.multipass_remaining ?? 0} usos`;
+        return t('programs.members.usesRemaining', { count: Number(ps.multipass_remaining ?? 0) });
       case 'vip_membership':
-        return ps.reward_ready ? 'Recompensa lista' : 'Activo';
+        return ps.reward_ready ? t('programs.members.rewardReady') : t('common.active');
       default:
-        return 'Activo';
+        return t('common.active');
     }
   };
 
@@ -114,10 +103,10 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-surface-200 dark:border-surface-700">
           <div>
-            <h3 className="text-lg font-bold text-surface-900 dark:text-white">Miembros Activos</h3>
-            <p className="text-sm text-surface-500">{total} miembro{total !== 1 ? 's' : ''} inscrito{total !== 1 ? 's' : ''}</p>
+            <h3 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.activeMembers')}</h3>
+            <p className="text-sm text-surface-500">{total} {t('programs.members.memberCount', { count: total })}</p>
           </div>
-          <button onClick={onClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 p-1">
+          <button onClick={onClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 p-1" aria-label={t('common.close')}>
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -128,14 +117,14 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Buscar por nombre, email o teléfono..."
+                placeholder={t('customers.searchPlaceholder')}
                 className="input w-full pr-10"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
               <svg className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-surface-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             </div>
-            <button type="submit" className="btn-secondary text-sm">Buscar</button>
+            <button type="submit" className="btn-secondary text-sm">{t('common.search')}</button>
           </form>
         </div>
 
@@ -144,23 +133,23 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
           {loading && members.length === 0 ? (
             <div className="p-8 text-center">
               <div className="spinner w-6 h-6 mx-auto mb-2" />
-              <p className="text-sm text-surface-500">Cargando miembros...</p>
+              <p className="text-sm text-surface-500">{t('common.loading')}</p>
             </div>
           ) : members.length === 0 ? (
             <div className="p-8 text-center text-surface-500">
-              <p>No se encontraron miembros</p>
+              <p>{t('customers.noCustomersFound')}</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-surface-50 dark:bg-surface-800 sticky top-0">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Cliente</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Contacto</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{TX_LABELS[cardType] || 'Estado'}</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Visitas</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Gasto total</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Última visita</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Estado</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('customers.customer')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('common.contact')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('common.status')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('customers.visits')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('customers.totalSpent')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('customers.lastVisit')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('common.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
@@ -185,9 +174,9 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
                     </td>
                     <td className="px-4 py-3">
                       {m.is_active ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Activo</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{t('common.active')}</span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400">Inactivo</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400">{t('common.inactive')}</span>
                       )}
                     </td>
                   </tr>
@@ -201,7 +190,7 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
         {total > LIMIT && (
           <div className="flex items-center justify-between p-4 border-t border-surface-200 dark:border-surface-700">
             <p className="text-sm text-surface-500">
-              Mostrando {offset + 1}–{Math.min(offset + LIMIT, total)} de {total}
+              {t('customers.showing', { start: offset + 1, end: Math.min(offset + LIMIT, total), total })}
             </p>
             <div className="flex gap-2">
               <button
@@ -209,14 +198,14 @@ export default function ProgramMembersModal({ programId, cardType, onClose }: Pr
                 disabled={offset === 0}
                 className="btn-secondary text-sm disabled:opacity-40"
               >
-                Anterior
+                {t('common.previous')}
               </button>
               <button
                 onClick={() => setOffset(o => o + LIMIT)}
                 disabled={offset + LIMIT >= total}
                 className="btn-secondary text-sm disabled:opacity-40"
               >
-                Siguiente
+                {t('common.next')}
               </button>
             </div>
           </div>

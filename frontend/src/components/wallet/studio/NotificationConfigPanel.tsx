@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { FieldNotifications } from '@/components/wallet/types/unified-state';
 
 export interface NotificationConfigPanelProps {
@@ -13,6 +14,7 @@ export interface NotificationConfigPanelProps {
 }
 
 export function NotificationConfigPanel({ notifications, onChange }: NotificationConfigPanelProps) {
+  const { t } = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const hasApple = Boolean(notifications.appleChangeMessage);
@@ -22,14 +24,14 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
   const handleToggleApple = (enabled: boolean) => {
     onChange({
       ...notifications,
-      appleChangeMessage: enabled ? notifications.appleChangeMessage ?? 'Tu saldo es ahora %@ puntos' : undefined,
+      appleChangeMessage: enabled ? notifications.appleChangeMessage ?? t('wallet.studio.notifications.applePlaceholder') : undefined,
     });
   };
 
   const handleToggleGoogle = (enabled: boolean) => {
     onChange({
       ...notifications,
-      googleMessage: enabled ? notifications.googleMessage ?? 'Tu tarjeta ha sido actualizada' : undefined,
+      googleMessage: enabled ? notifications.googleMessage ?? t('wallet.studio.notifications.googlePlaceholder') : undefined,
     });
   };
 
@@ -56,11 +58,11 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
             <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
           </svg>
           <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-            Notifications
+            {t('wallet.studio.notifications.title')}
           </span>
           {isActive && (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-              Active
+              {t('wallet.studio.notifications.active')}
             </span>
           )}
         </div>
@@ -82,14 +84,14 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
           {/* Apple Change Message */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Apple Change Message</span>
+              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('wallet.studio.notifications.appleChangeMessage')}</span>
               <label className="inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasApple}
                   onChange={(e) => handleToggleApple(e.target.checked)}
                   className="sr-only peer"
-                  aria-label="Enable Apple change message"
+                  aria-label={t('wallet.studio.notifications.enableAppleMessage')}
                 />
                 <div className="relative w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
               </label>
@@ -101,14 +103,14 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                   value={notifications.appleChangeMessage ?? ''}
                   onChange={(e) => onChange({ ...notifications, appleChangeMessage: e.target.value })}
                   className="w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Tu saldo es ahora %@ puntos"
+                  placeholder={t('wallet.studio.notifications.applePlaceholder')}
                   aria-label="Apple change message"
                 />
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Use <code className="text-xs bg-neutral-100 dark:bg-neutral-800 px-1 rounded">%@</code> as a placeholder for the new value.
+                  {t('wallet.studio.notifications.appleHint')}
                 </p>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                  Example: &quot;Tu saldo es ahora %@ puntos&quot; → &quot;Tu saldo es ahora 1,250 puntos&quot;
+                  {t('wallet.studio.notifications.appleExample')}
                 </p>
               </div>
             )}
@@ -117,14 +119,14 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
           {/* Google Messages */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Google Message</span>
+              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('wallet.studio.notifications.googleMessage')}</span>
               <label className="inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasGoogle}
                   onChange={(e) => handleToggleGoogle(e.target.checked)}
                   className="sr-only peer"
-                  aria-label="Enable Google message"
+                  aria-label={t('wallet.studio.notifications.enableGoogleMessage')}
                 />
                 <div className="relative w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
               </label>
@@ -136,11 +138,11 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                   value={notifications.googleMessage ?? ''}
                   onChange={(e) => onChange({ ...notifications, googleMessage: e.target.value })}
                   className="w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Message text..."
+                  placeholder={t('wallet.studio.notifications.googlePlaceholder')}
                   aria-label="Google message"
                 />
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  This message will be shown when the field value changes on Google Wallet.
+                  {t('wallet.studio.notifications.googleHint')}
                 </p>
               </div>
             )}

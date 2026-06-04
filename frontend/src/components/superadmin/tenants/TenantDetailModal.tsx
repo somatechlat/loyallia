@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import { useI18n } from '@/lib/i18n';
 import centralizedApi from '@/lib/api';
 
 const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), { ssr: false });
@@ -86,26 +87,13 @@ const IC = {
   arrow: <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
 };
 
-const INDUSTRIES = [
-  { value: 'food_beverage', label: 'Alimentos y Bebidas' },
-  { value: 'retail', label: 'Comercio Minorista' },
-  { value: 'fashion', label: 'Moda y Textiles' },
-  { value: 'health_beauty', label: 'Salud y Belleza' },
-  { value: 'entertainment', label: 'Entretenimiento' },
-  { value: 'services', label: 'Servicios Profesionales' },
-  { value: 'education', label: 'Educación' },
-  { value: 'automotive', label: 'Automotriz' },
-  { value: 'hospitality', label: 'Hotelería y Turismo' },
-  { value: 'technology', label: 'Tecnología' },
-  { value: 'other', label: 'Otro' },
-];
-
 /**
  * @description SuperAdmin modal with tabs for tenant info, locations, and actions.
  * @param {TenantDetailModalProps} props - Component props
  * @returns JSX.Element | null
  */
 export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantDetailModalProps) {
+  const { t } = useI18n();
   const [dtTab, setDtTab] = useState<'info'|'locs'|'actions'>('info');
   const [dtEdit, setDtEdit] = useState(false);
   const [dtForm, setDtForm] = useState<Partial<Tenant>>({});
@@ -121,6 +109,20 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteConfirmPhrase, setDeleteConfirmPhrase] = useState('');
   const [deletingTenant, setDeletingTenant] = useState(false);
+
+  const INDUSTRIES = [
+    { value: 'food_beverage', label: t('superadmin.industries.food_beverage') },
+    { value: 'retail', label: t('superadmin.industries.retail') },
+    { value: 'fashion', label: t('superadmin.industries.fashion') },
+    { value: 'health_beauty', label: t('superadmin.industries.health_beauty') },
+    { value: 'entertainment', label: t('superadmin.industries.entertainment') },
+    { value: 'services', label: t('superadmin.industries.services') },
+    { value: 'education', label: t('superadmin.industries.education') },
+    { value: 'automotive', label: t('superadmin.industries.automotive') },
+    { value: 'hospitality', label: t('superadmin.industries.hospitality') },
+    { value: 'technology', label: t('superadmin.industries.technology') },
+    { value: 'other', label: t('superadmin.industries.other') },
+  ];
 
   useEffect(() => {
     if (!tenant) {
@@ -160,13 +162,13 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
 
   const saveDetail = async () => {
     setDtSaving(true);
-    try { await api(`/tenants/${tenant.id}/`, { method: 'PATCH', body: JSON.stringify(dtForm) }); toast.success('Negocio actualizado'); onClose(); onUpdate(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); } finally { setDtSaving(false); }
+    try { await api(`/tenants/${tenant.id}/`, { method: 'PATCH', body: JSON.stringify(dtForm) }); toast.success(t('superadmin.tenants.detail.toast.updated')); onClose(); onUpdate(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : t('superadmin.settings.toast.saveError')); } finally { setDtSaving(false); }
   };
-  const doSuspend = async () => { if (!confirm(`¿Suspender "${tenant.name}"?`)) return; await api(`/tenants/${tenant.id}/suspend/`, { method: 'POST' }); toast.success('Suspendido'); onClose(); onUpdate(); };
-  const doReactivate = async () => { await api(`/tenants/${tenant.id}/reactivate/`, { method: 'POST' }); toast.success('Reactivado'); onClose(); onUpdate(); };
+  const doSuspend = async () => { if (!confirm(t('superadmin.tenants.detail.suspendConfirm', { name: tenant.name }))) return; await api(`/tenants/${tenant.id}/suspend/`, { method: 'POST' }); toast.success(t('superadmin.tenants.detail.toast.suspended')); onClose(); onUpdate(); };
+  const doReactivate = async () => { await api(`/tenants/${tenant.id}/reactivate/`, { method: 'POST' }); toast.success(t('superadmin.tenants.detail.toast.reactivated')); onClose(); onUpdate(); };
   const openDeleteConfirm = () => {
     if (deleteJustification.trim().length < 10) {
-      toast.error('Ingresa una justificación de al menos 10 caracteres');
+      toast.error(t('superadmin.tenants.detail.toast.justificationRequired'));
       return;
     }
     setDeleteConfirmPhrase('');
@@ -175,22 +177,22 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
   const doDelete = async () => {
     const justification = deleteJustification.trim();
     if (justification.length < 10) {
-      toast.error('Ingresa una justificación de al menos 10 caracteres');
+      toast.error(t('superadmin.tenants.detail.toast.justificationRequired'));
       return;
     }
     if (deleteConfirmPhrase !== 'ELIMINAR') {
-      toast.error('Frase de confirmación incorrecta. No se eliminó el negocio.');
+      toast.error(t('superadmin.tenants.detail.toast.wrongConfirmPhrase'));
       return;
     }
     const tenantName = tenant.name;
     setDeletingTenant(true);
     try {
       await api(`/tenants/${tenant.id}/`, { method: 'DELETE', body: JSON.stringify({ justification }) });
-      toast.success(`"${tenantName}" fue eliminado permanentemente`);
+      toast.success(t('superadmin.tenants.detail.toast.deleted', { name: tenantName }));
       onClose();
       onUpdate();
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'No se pudo eliminar el negocio';
+      const message = e instanceof Error ? e.message : t('superadmin.tenants.detail.toast.deleteError');
       toast.error(message);
     } finally {
       setDeletingTenant(false);
@@ -200,14 +202,14 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
     const ownerPin = impersonationPin.replace(/\D/g, '');
     const justification = impersonationJustification.trim();
     if (ownerPin.length !== 6) {
-      toast.error('Ingresa el PIN de 6 dígitos del propietario');
+      toast.error(t('superadmin.tenants.detail.toast.pinRequired'));
       return;
     }
     if (justification.length < 10) {
-      toast.error('Ingresa una justificación de soporte');
+      toast.error(t('superadmin.tenants.detail.toast.supportJustificationRequired'));
       return;
     }
-    if (!confirm(`¿Impersonar a "${tenant.name}"? Podrás volver al panel de admin.`)) return;
+    if (!confirm(t('superadmin.tenants.detail.toast.impersonateConfirm', { name: tenant.name }))) return;
 
     setImpersonating(true);
     try {
@@ -224,7 +226,7 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
         window.location.href = '/';
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al impersonar';
+      const msg = e instanceof Error ? e.message : t('superadmin.tenants.detail.toast.impersonateError');
       toast.error(msg);
       sessionStorage.removeItem('superadmin_token');
       sessionStorage.removeItem('impersonation_started_at');
@@ -238,12 +240,12 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
     try {
       if (editLoc === 'new') {
         await api(`/tenants/${tenant.id}/locations/`, { method: 'POST', body: JSON.stringify(locForm) });
-        toast.success('Sucursal creada');
+        toast.success(t('superadmin.tenants.detail.toast.locationCreated'));
       }
       setEditLoc(null);
       const { data } = await api(`/tenants/${tenant.id}/locations/`);
       setDtLocs(data);
-    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Error'); }
+    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : t('superadmin.settings.toast.saveError')); }
   };
 
   return (
@@ -256,16 +258,16 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
             <h2 className="text-xl font-black text-surface-900 dark:text-white">{tenant.name}</h2>
             <div className="flex items-center gap-2 mt-1">
               <span className={`w-2 h-2 rounded-full ${tenant.is_active?'bg-green-500':'bg-red-400'}`} />
-              <span className="text-xs text-surface-400">{tenant.is_active?'Activo':'Suspendido'}</span>
+              <span className="text-xs text-surface-400">{tenant.is_active ? t('common.active') : t('common.inactive')}</span>
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${tenant.plan==='full'?'bg-brand-100 text-brand-700':tenant.plan==='trial'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700'}`}>{tenant.plan.toUpperCase()}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-surface-100 text-surface-600">{tenant.entity_type === 'natural' ? 'Persona Natural' : 'Jurídica'}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-surface-100 text-surface-600">{tenant.entity_type === 'natural' ? t('superadmin.tenants.wizard.naturalPerson') : t('superadmin.tenants.wizard.legalEntity')}</span>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface-100 hover:bg-surface-200 flex items-center justify-center">{IC.x}</button>
         </div>
         {/* Tabs */}
         <div className="px-6 flex gap-1 border-b border-surface-200 dark:border-surface-700/50 flex-shrink-0">
-          {([['info', IC.info, 'Información'], ['locs', IC.pin, 'Sucursales'], ['actions', IC.bolt, 'Acciones']] as const).map(([key, icon, label]) => (
+          {([['info', IC.info, t('superadmin.tenants.detail.tabs.info')], ['locs', IC.pin, t('superadmin.tenants.detail.tabs.locations')], ['actions', IC.bolt, t('superadmin.tenants.detail.tabs.actions')]] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => { setDtTab(key); setDtEdit(false); setEditLoc(null); }}
               className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${dtTab===key?'border-brand-500 text-brand-600':'border-transparent text-surface-400 hover:text-surface-600'}`}>{icon}{label}</button>
           ))}
@@ -276,32 +278,32 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
           {dtTab === 'info' && !dtEdit && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <DRow l="Razón Social" v={tenant.legal_name||'—'} full /><DRow l={tenant.entity_type==='natural'?'Cédula':'RUC'} v={tenant.ruc || tenant.cedula || '—'} mono />
-                <DRow l="Industria" v={(tenant.industry||'—').replace(/_/g,' ')} /><DRow l="Provincia" v={(tenant.province||'—').replace(/_/g,' ')} />
-                <DRow l="Ciudad" v={tenant.city||'—'} /><DRow l="Email" v={tenant.email||'—'} />
-                <DRow l="Teléfono" v={tenant.phone||'—'} /><DRow l="País" v="Ecuador" />
+                <DRow l={t('superadmin.tenants.detail.info.legalName')} v={tenant.legal_name||'—'} full /><DRow l={tenant.entity_type==='natural' ? t('superadmin.tenants.detail.info.idCard') : t('superadmin.tenants.detail.info.ruc')} v={tenant.ruc || tenant.cedula || '—'} mono />
+                <DRow l={t('superadmin.tenants.detail.info.industry')} v={(tenant.industry||'—').replace(/_/g,' ')} /><DRow l={t('superadmin.tenants.detail.info.province')} v={(tenant.province||'—').replace(/_/g,' ')} />
+                <DRow l={t('superadmin.tenants.detail.info.city')} v={tenant.city||'—'} /><DRow l={t('superadmin.tenants.detail.info.email')} v={tenant.email||'—'} />
+                <DRow l={t('superadmin.tenants.detail.info.phone')} v={tenant.phone||'—'} /><DRow l={t('superadmin.tenants.detail.info.country')} v={t('superadmin.tenants.detail.info.countryValue')} />
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <StatBox v={tenant.user_count ?? 0} l="Usuarios" /><StatBox v={tenant.location_count ?? 0} l="Sucursales" /><StatBox v={tenant.trial_days_remaining ?? 0} l="Días Trial" />
+                <StatBox v={tenant.user_count ?? 0} l={t('superadmin.tenants.detail.info.users')} /><StatBox v={tenant.location_count ?? 0} l={t('superadmin.tenants.detail.info.branches')} /><StatBox v={tenant.trial_days_remaining ?? 0} l={t('superadmin.tenants.detail.info.trialDays')} />
               </div>
-              <div className="bg-surface-50/80 rounded-xl p-3"><p className="text-[10px] font-semibold text-surface-400 uppercase">Registrado</p><p className="text-sm text-surface-700">{new Date(tenant.created_at).toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
-              <button onClick={() => setDtEdit(true)} className="w-full bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200 flex items-center justify-center gap-2">{IC.edit} Editar Información</button>
+              <div className="bg-surface-50/80 rounded-xl p-3"><p className="text-[10px] font-semibold text-surface-400 uppercase">{t('superadmin.tenants.detail.info.registered')}</p><p className="text-sm text-surface-700">{new Date(tenant.created_at).toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
+              <button onClick={() => setDtEdit(true)} className="w-full bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200 flex items-center justify-center gap-2">{IC.edit} {t('superadmin.tenants.detail.editInfo')}</button>
             </div>
           )}
           {dtTab === 'info' && dtEdit && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <EF l="Nombre Comercial" v={dtForm.name || ''} c={v => setDtForm(f => ({...f, name: v}))} />
-                <EF l="Razón Social" v={dtForm.legal_name || ''} c={v => setDtForm(f => ({...f, legal_name: v}))} />
-                <EF l="RUC" v={dtForm.ruc || ''} c={v => setDtForm(f => ({...f, ruc: v.replace(/\D/g,'')}))} />
-                <div><label className="text-xs font-semibold text-surface-500 mb-1 block">Industria</label><select value={dtForm.industry || ''} onChange={e => setDtForm(f => ({...f, industry: e.target.value}))} className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm">{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
-                <EF l="Ciudad" v={dtForm.city || ''} c={v => setDtForm(f => ({...f, city: v}))} />
-                <EF l="Teléfono" v={dtForm.phone || ''} c={v => setDtForm(f => ({...f, phone: v}))} />
+                <EF l={t('superadmin.tenants.detail.editForm.tradeName')} v={dtForm.name || ''} c={v => setDtForm(f => ({...f, name: v}))} />
+                <EF l={t('superadmin.tenants.detail.editForm.legalName')} v={dtForm.legal_name || ''} c={v => setDtForm(f => ({...f, legal_name: v}))} />
+                <EF l={t('superadmin.tenants.detail.editForm.ruc')} v={dtForm.ruc || ''} c={v => setDtForm(f => ({...f, ruc: v.replace(/\D/g,'')}))} />
+                <div><label className="text-xs font-semibold text-surface-500 mb-1 block">{t('superadmin.tenants.detail.editForm.industry')}</label><select value={dtForm.industry || ''} onChange={e => setDtForm(f => ({...f, industry: e.target.value}))} className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm">{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
+                <EF l={t('superadmin.tenants.detail.editForm.city')} v={dtForm.city || ''} c={v => setDtForm(f => ({...f, city: v}))} />
+                <EF l={t('superadmin.tenants.detail.editForm.phone')} v={dtForm.phone || ''} c={v => setDtForm(f => ({...f, phone: v}))} />
               </div>
-              <EF l="Email Corporativo" v={dtForm.email || ''} c={v => setDtForm(f => ({...f, email: v}))} />
+              <EF l={t('superadmin.tenants.detail.editForm.email')} v={dtForm.email || ''} c={v => setDtForm(f => ({...f, email: v}))} />
               <div className="flex gap-2 pt-3">
-                <button onClick={saveDetail} disabled={dtSaving} className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 text-white py-2.5 rounded-xl font-semibold text-sm">{dtSaving ? 'Guardando...' : 'Guardar Cambios'}</button>
-                <button onClick={() => setDtEdit(false)} className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-surface-100 text-surface-600 hover:bg-surface-200">Cancelar</button>
+                <button onClick={saveDetail} disabled={dtSaving} className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-surface-300 text-white py-2.5 rounded-xl font-semibold text-sm">{dtSaving ? t('superadmin.tenants.detail.saving') : t('superadmin.tenants.detail.save')}</button>
+                <button onClick={() => setDtEdit(false)} className="px-5 py-2.5 rounded-xl font-semibold text-sm bg-surface-100 text-surface-600 hover:bg-surface-200">{t('superadmin.tenants.detail.cancel')}</button>
               </div>
             </div>
           )}
@@ -310,8 +312,8 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
           {dtTab === 'locs' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-surface-500">{dtLocs.length} sucursales registradas</p>
-                <button onClick={openLocNew} className="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">{IC.plus} Agregar</button>
+                <p className="text-sm text-surface-500">{t('superadmin.tenants.detail.locationsCount', { count: dtLocs.length })}</p>
+                <button onClick={openLocNew} className="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">{IC.plus} {t('superadmin.tenants.detail.newLocation')}</button>
               </div>
               {dtLocs.filter(l => l.latitude && l.longitude).length > 0 && (
                 <div className="h-[200px] rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700/50">
@@ -327,26 +329,26 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${loc.is_active?'bg-green-500':'bg-red-400'}`} />
                         <div className="min-w-0">
                           <p className="font-semibold text-sm text-surface-900 dark:text-white group-hover:text-brand-600 truncate">{loc.name}{loc.is_primary && <span className="ml-1.5 text-brand-500">{IC.star}</span>}</p>
-                          <p className="text-xs text-surface-400 truncate">{loc.address||loc.city||'Sin dirección'}</p>
+                          <p className="text-xs text-surface-400 truncate">{loc.address || loc.city || t('superadmin.tenants.detail.noAddress')}</p>
                         </div>
                       </div>
                       <span className="text-brand-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">{IC.arrow}</span>
                     </div>
                   ))}
-                  {dtLocs.length === 0 && !dtLocsLoading && <p className="text-sm text-surface-400 text-center py-8">No hay sucursales registradas</p>}
+                  {dtLocs.length === 0 && !dtLocsLoading && <p className="text-sm text-surface-400 text-center py-8">{t('superadmin.tenants.detail.noLocations')}</p>}
                 </div>
               )}
               {editLoc && (
                 <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-brand-200 shadow-lg space-y-3">
-                  <h4 className="font-bold text-surface-900 dark:text-white text-sm">{editLoc === 'new' ? 'Nueva Sucursal' : `Editar: ${editLoc?.name}`}</h4>
+                  <h4 className="font-bold text-surface-900 dark:text-white text-sm">{editLoc === 'new' ? t('superadmin.tenants.detail.newLocation') : t('superadmin.tenants.detail.editLocation', { name: editLoc?.name })}</h4>
                   <div className="grid grid-cols-2 gap-3">
-                    <EF l="Nombre" v={locForm.name || ''} c={v => setLocForm(f => ({...f, name: v}))} />
-                    <EF l="Ciudad" v={locForm.city || ''} c={v => setLocForm(f => ({...f, city: v}))} />
-                    <EF l="Dirección" v={locForm.address || ''} c={v => setLocForm(f => ({...f, address: v}))} />
-                    <EF l="Teléfono" v={locForm.phone || ''} c={v => setLocForm(f => ({...f, phone: v}))} />
+                    <EF l={t('superadmin.tenants.detail.locationForm.name')} v={locForm.name || ''} c={v => setLocForm(f => ({...f, name: v}))} />
+                    <EF l={t('superadmin.tenants.detail.editForm.city')} v={locForm.city || ''} c={v => setLocForm(f => ({...f, city: v}))} />
+                    <EF l={t('superadmin.tenants.detail.locationForm.address')} v={locForm.address || ''} c={v => setLocForm(f => ({...f, address: v}))} />
+                    <EF l={t('superadmin.tenants.detail.locationForm.phone')} v={locForm.phone || ''} c={v => setLocForm(f => ({...f, phone: v}))} />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-surface-500 mb-1 block">Ubicación en el Mapa</label>
+                    <label className="text-xs font-semibold text-surface-500 mb-1 block">{t('superadmin.tenants.detail.locationForm.mapLocation')}</label>
                     <LocationPicker
                       lat={locForm.latitude ?? null}
                       lng={locForm.longitude ?? null}
@@ -356,8 +358,8 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={saveLoc} className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-2 rounded-xl font-semibold text-sm">{editLoc==='new'?'Crear':'Guardar'}</button>
-                    <button onClick={() => setEditLoc(null)} className="px-4 py-2 rounded-xl text-sm bg-surface-100 text-surface-600 hover:bg-surface-200">Cancelar</button>
+                    <button onClick={saveLoc} className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-2 rounded-xl font-semibold text-sm">{editLoc === 'new' ? t('superadmin.tenants.detail.create') : t('superadmin.tenants.detail.save')}</button>
+                    <button onClick={() => setEditLoc(null)} className="px-4 py-2 rounded-xl text-sm bg-surface-100 text-surface-600 hover:bg-surface-200">{t('superadmin.tenants.detail.cancel')}</button>
                   </div>
                 </div>
               )}
@@ -368,35 +370,35 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
           {dtTab === 'actions' && (
             <div className="space-y-4">
               <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
-                <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">Estado del Negocio</h4>
-                <p className="text-xs text-surface-500 mb-3">{tenant.is_active ? 'El negocio está activo y operativo.' : 'El negocio está suspendido.'}</p>
+                <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">{t('superadmin.tenants.detail.businessStatus')}</h4>
+                <p className="text-xs text-surface-500 mb-3">{tenant.is_active ? t('superadmin.tenants.detail.activeDesc') : t('superadmin.tenants.detail.suspendedDesc')}</p>
                 {tenant.is_active ? (
-                  <button onClick={doSuspend} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.pause} Suspender Negocio</button>
+                  <button onClick={doSuspend} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.pause} {t('superadmin.tenants.detail.suspendBusiness')}</button>
                 ) : (
-                  <button onClick={doReactivate} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.play} Reactivar Negocio</button>
+                  <button onClick={doReactivate} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.play} {t('superadmin.tenants.detail.reactivateBusiness')}</button>
                 )}
               </div>
               <div className="bg-red-50 rounded-xl p-4 border border-red-200 dark:border-red-900/30">
-                <h4 className="font-bold text-red-900 dark:text-red-200 text-sm mb-2">Zona Peligrosa</h4>
-                <p className="text-xs text-red-600 dark:text-red-400 mb-3">Elimina permanentemente este negocio y todos sus datos. Esta acción no se puede deshacer.</p>
+                <h4 className="font-bold text-red-900 dark:text-red-200 text-sm mb-2">{t('superadmin.tenants.detail.dangerZone')}</h4>
+                <p className="text-xs text-red-600 dark:text-red-400 mb-3">{t('superadmin.tenants.detail.deleteDesc')}</p>
                 <div className="mb-3">
-                  <label htmlFor="delete-justification" className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1 block">Justificación (mínimo 10 caracteres)</label>
+                  <label htmlFor="delete-justification" className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1 block">{t('superadmin.tenants.detail.justification')}</label>
                   <input
                     id="delete-justification"
                     value={deleteJustification}
                     onChange={e => setDeleteJustification(e.target.value)}
-                    placeholder="Solicitud del propietario para eliminar cuenta"
+                    placeholder={t('superadmin.tenants.detail.justificationPlaceholder')}
                     className="w-full px-3 py-2 rounded-xl border border-red-200 dark:border-red-800 bg-white/60 backdrop-blur-sm text-sm text-red-900 dark:text-red-100"
                   />
                 </div>
-                <button onClick={openDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.x} Eliminar Permanentemente</button>
+                <button onClick={openDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.x} {t('superadmin.tenants.detail.deletePermanently')}</button>
               </div>
               <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
-                <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">Impersonar</h4>
-                <p className="text-xs text-surface-500 mb-3">Iniciar sesión como el propietario de este negocio para soporte.</p>
+                <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-2">{t('superadmin.tenants.detail.impersonate')}</h4>
+                <p className="text-xs text-surface-500 mb-3">{t('superadmin.tenants.detail.impersonateDesc')}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label htmlFor="impersonation-owner-pin" className="text-xs font-semibold text-surface-500 mb-1 block">PIN del propietario</label>
+                    <label htmlFor="impersonation-owner-pin" className="text-xs font-semibold text-surface-500 mb-1 block">{t('superadmin.tenants.detail.ownerPin')}</label>
                     <input
                       id="impersonation-owner-pin"
                       value={impersonationPin}
@@ -408,12 +410,12 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
                     />
                   </div>
                   <div>
-                    <label htmlFor="impersonation-justification" className="text-xs font-semibold text-surface-500 mb-1 block">Justificación</label>
+                    <label htmlFor="impersonation-justification" className="text-xs font-semibold text-surface-500 mb-1 block">{t('superadmin.tenants.detail.supportJustification')}</label>
                     <input
                       id="impersonation-justification"
                       value={impersonationJustification}
                       onChange={e => setImpersonationJustification(e.target.value)}
-                      placeholder="Soporte solicitado por el propietario"
+                      placeholder={t('superadmin.tenants.detail.supportJustificationPlaceholder')}
                       className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm"
                     />
                   </div>
@@ -423,13 +425,13 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
                   disabled={impersonating}
                   className="bg-purple-500 hover:bg-purple-600 disabled:opacity-60 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
                 >
-                  {IC.key} {impersonating ? 'Impersonando...' : 'Impersonar Propietario'}
+                  {IC.key} {impersonating ? t('superadmin.tenants.detail.impersonating') : t('superadmin.tenants.detail.impersonateOwner')}
                 </button>
               </div>
               <div className="bg-surface-50/80 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
-                <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-1">Información Técnica</h4>
+                <h4 className="font-bold text-surface-900 dark:text-white text-sm mb-1">{t('superadmin.tenants.detail.techInfo')}</h4>
                 <div className="text-xs font-mono text-surface-500 space-y-1 mt-2">
-                  <p>ID: {tenant.id}</p><p>Slug: {tenant.slug || '—'}</p><p>Creado: {tenant.created_at}</p>
+                  <p>{t('superadmin.tenants.detail.techId')}: {tenant.id}</p><p>{t('superadmin.tenants.detail.techSlug')}: {tenant.slug || '—'}</p><p>{t('superadmin.tenants.detail.techCreated')}: {tenant.created_at}</p>
                 </div>
               </div>
             </div>
@@ -440,16 +442,16 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
             <div className="absolute inset-0 bg-surface-950/55 backdrop-blur-sm" onClick={() => !deletingTenant && setDeleteConfirmOpen(false)} />
             <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-surface-900 border border-red-200 dark:border-red-900/50 shadow-2xl p-5">
               <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center mb-3">{IC.x}</div>
-              <h3 className="text-lg font-black text-surface-900 dark:text-white">Eliminar permanentemente</h3>
+              <h3 className="text-lg font-black text-surface-900 dark:text-white">{t('superadmin.tenants.detail.deleteConfirmTitle')}</h3>
               <p className="text-sm text-surface-600 dark:text-surface-300 mt-2">
-                Se eliminará <span className="font-semibold">{tenant.name}</span> y sus datos asociados. Esta acción no se puede deshacer.
+                {t('superadmin.tenants.detail.deleteConfirmDesc', { name: tenant.name })}
               </p>
               <div className="mt-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 p-3">
-                <p className="text-xs font-semibold text-red-800 dark:text-red-200">Justificación</p>
+                <p className="text-xs font-semibold text-red-800 dark:text-red-200">{t('superadmin.tenants.detail.justificationLabel')}</p>
                 <p className="text-xs text-red-700 dark:text-red-300 mt-1">{deleteJustification}</p>
               </div>
               <label htmlFor="delete-confirm-phrase" className="text-xs font-semibold text-surface-500 mt-4 mb-1 block">
-                Escribe ELIMINAR para confirmar
+                {t('superadmin.tenants.detail.confirmPhraseLabel')}
               </label>
               <input
                 id="delete-confirm-phrase"
@@ -465,14 +467,14 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
                   disabled={deletingTenant}
                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-surface-100 text-surface-700 hover:bg-surface-200 disabled:opacity-60"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={doDelete}
                   disabled={deletingTenant || deleteConfirmPhrase !== 'ELIMINAR'}
                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white"
                 >
-                  {deletingTenant ? 'Eliminando...' : 'Eliminar definitivamente'}
+                  {deletingTenant ? t('superadmin.tenants.detail.deleting') : t('superadmin.tenants.detail.deleteConfirmButton')}
                 </button>
               </div>
             </div>

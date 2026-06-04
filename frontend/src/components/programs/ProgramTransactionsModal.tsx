@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -53,6 +54,7 @@ const TYPE_COLORS: Record<string, string> = {
  * @returns JSX.Element
  */
 export default function ProgramTransactionsModal({ programId, onClose }: Props) {
+  const { t } = useI18n();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -68,11 +70,11 @@ export default function ProgramTransactionsModal({ programId, onClose }: Props) 
       setTransactions(data.items);
       setTotal(data.total);
     } catch {
-      toast.error('Error al cargar transacciones');
+      toast.error(t('programs.transactions.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [programId, offset]);
+  }, [programId, offset, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -90,10 +92,10 @@ export default function ProgramTransactionsModal({ programId, onClose }: Props) 
   const extraInfo = (tx: Transaction) => {
     const parts: string[] = [];
     if (tx.amount) { const amt = parseFloat(tx.amount); parts.push(`$${!isNaN(amt) ? amt.toFixed(2) : '0.00'}`); }
-    if (tx.quantity) parts.push(`Cant: ${tx.quantity}`);
+    if (tx.quantity) parts.push(`${t('programs.transactions.quantity')}: ${tx.quantity}`);
     const td = tx.transaction_data;
-    if (td.new_balance) parts.push(`Nuevo saldo: ${td.new_balance}`);
-    if (td.reward_earned) parts.push('🎉 Recompensa!');
+    if (td.new_balance) parts.push(`${t('programs.transactions.newBalance')}: ${td.new_balance}`);
+    if (td.reward_earned) parts.push(t('programs.transactions.rewardEarned'));
     return parts.join(' · ');
   };
 
@@ -106,10 +108,10 @@ export default function ProgramTransactionsModal({ programId, onClose }: Props) 
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-surface-200 dark:border-surface-700">
           <div>
-            <h3 className="text-lg font-bold text-surface-900 dark:text-white">Recompensas Canjeadas</h3>
-            <p className="text-sm text-surface-500">{total} transaccione{total !== 1 ? 's' : ''}</p>
+            <h3 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.rewardsRedeemed')}</h3>
+            <p className="text-sm text-surface-500">{total} {t('programs.transactions.transactionCount', { count: total })}</p>
           </div>
-          <button onClick={onClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 p-1">
+          <button onClick={onClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 p-1" aria-label={t('common.close')}>
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -119,23 +121,23 @@ export default function ProgramTransactionsModal({ programId, onClose }: Props) 
           {loading && transactions.length === 0 ? (
             <div className="p-8 text-center">
               <div className="spinner w-6 h-6 mx-auto mb-2" />
-              <p className="text-sm text-surface-500">Cargando transacciones...</p>
+              <p className="text-sm text-surface-500">{t('common.loading')}</p>
             </div>
           ) : transactions.length === 0 ? (
             <div className="p-8 text-center text-surface-500">
-              <p>No hay transacciones registradas</p>
-              <p className="text-sm mt-1">Las transacciones aparecerán cuando el personal escanee códigos QR</p>
+              <p>{t('programs.transactions.noTransactions')}</p>
+              <p className="text-sm mt-1">{t('programs.transactions.scanHint')}</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-surface-50 dark:bg-surface-800 sticky top-0">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Fecha</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Cliente</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Tipo</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Detalles</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Personal</th>
-                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">Sucursal</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('common.date')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('customers.customer')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('common.type')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('common.details')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('team.table.name')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-surface-700 dark:text-surface-300">{t('locations.title')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
@@ -173,7 +175,7 @@ export default function ProgramTransactionsModal({ programId, onClose }: Props) 
         {total > LIMIT && (
           <div className="flex items-center justify-between p-4 border-t border-surface-200 dark:border-surface-700">
             <p className="text-sm text-surface-500">
-              Mostrando {offset + 1}–{Math.min(offset + LIMIT, total)} de {total}
+              {t('customers.showing', { start: offset + 1, end: Math.min(offset + LIMIT, total), total })}
             </p>
             <div className="flex gap-2">
               <button
@@ -181,14 +183,14 @@ export default function ProgramTransactionsModal({ programId, onClose }: Props) 
                 disabled={offset === 0}
                 className="btn-secondary text-sm disabled:opacity-40"
               >
-                Anterior
+                {t('common.previous')}
               </button>
               <button
                 onClick={() => setOffset(o => o + LIMIT)}
                 disabled={offset + LIMIT >= total}
                 className="btn-secondary text-sm disabled:opacity-40"
               >
-                Siguiente
+                {t('common.next')}
               </button>
             </div>
           </div>

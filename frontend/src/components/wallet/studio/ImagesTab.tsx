@@ -8,6 +8,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { WalletImages } from '@/components/wallet/types/unified-state';
 import { SmartImageUpload } from './SmartImageUpload';
 
@@ -54,6 +55,7 @@ function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
 /* ------------------------------------------------------------------ */
 
 export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
+  const { t } = useI18n();
   const imageCount = [
     images.logo,
     images.strip,
@@ -68,7 +70,7 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
       {/* Header with count */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-          Imágenes del pase
+          {t('wallet.studio.images.title')}
         </h3>
         <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
           {imageCount}/{maxImages}
@@ -77,8 +79,8 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
 
       {/* Logo upload */}
       <SmartImageUpload
-        label="Logo del programa"
-        description="Se muestra en la parte superior de la tarjeta"
+        label={t('wallet.studio.upload.programLogo')}
+        description={t('wallet.studio.upload.programLogoDesc')}
         recommendedSize={{ width: 160, height: 160 }}
         applePreviewShape="circle"
         googlePreviewShape="circle"
@@ -88,8 +90,8 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
 
       {/* Hero / Strip upload */}
       <SmartImageUpload
-        label="Imagen principal"
-        description="Fondo o imagen destacada de la tarjeta"
+        label={t('wallet.studio.upload.heroImage')}
+        description={t('wallet.studio.upload.heroImageDesc')}
         recommendedSize={{ width: 1125, height: 432 }}
         applePreviewShape="rect"
         googlePreviewShape="rect"
@@ -104,8 +106,8 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
 
       {/* Icon upload */}
       <SmartImageUpload
-        label="Icono"
-        description="Icono pequeño para notificaciones"
+        label={t('wallet.studio.upload.icon')}
+        description={t('wallet.studio.upload.iconDesc')}
         recommendedSize={{ width: 90, height: 90 }}
         applePreviewShape="circle"
         googlePreviewShape="circle"
@@ -116,7 +118,7 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
       {/* Platform-specific tips */}
       <div className="space-y-3 pt-2 border-t border-neutral-200 dark:border-neutral-800">
         <h4 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Recomendaciones por plataforma
+          {t('wallet.studio.images.recommendations')}
         </h4>
 
         <div className="space-y-2">
@@ -124,10 +126,10 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
             <AppleIcon className="w-4 h-4 text-neutral-600 dark:text-neutral-300 flex-shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <p className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
-                Apple Wallet
+                {t('wallet.studio.images.apple')}
               </p>
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                Logo: 160×160px PNG. Strip: 1125×432px para tarjetas storeCard y coupon.
+                {t('wallet.studio.images.appleDesc')}
               </p>
             </div>
           </div>
@@ -136,11 +138,10 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
             <GoogleIcon className="w-4 h-4 text-neutral-600 dark:text-neutral-300 flex-shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <p className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
-                Google Wallet
+                {t('wallet.studio.images.google')}
               </p>
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                Hero image: 1032×336px. Logo circular en la parte superior.
-                Formatos: PNG o JPG.
+                {t('wallet.studio.images.googleDesc')}
               </p>
             </div>
           </div>
@@ -151,8 +152,7 @@ export function ImagesTab({ images, onUpdateImages }: ImagesTabProps) {
       <div className="flex items-start gap-2 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/10">
         <InfoIcon className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
         <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
-          Las imágenes se optimizan automáticamente para cada plataforma.
-          Se recomienda subir imágenes de alta calidad para obtener mejores resultados.
+          {t('wallet.studio.images.autoOptimize')}
         </p>
       </div>
     </div>

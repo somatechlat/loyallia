@@ -1,4 +1,5 @@
 import { BARCODE_TYPES } from '@/components/programs/constants';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * @description SVG barcode renderer supporting QR, Aztec, PDF417, Code128, and DataMatrix.
@@ -73,10 +74,11 @@ export function BarcodeTypeSelector({ value, onChange }: {
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="card p-6 space-y-4">
-      <h2 className="text-base font-bold text-surface-900 dark:text-white">Tipo de código</h2>
-      <p className="text-sm text-surface-500">Selecciona el tipo de código que se mostrará en la tarjeta digital del cliente.</p>
+      <h2 className="text-base font-bold text-surface-900 dark:text-white">{t('wallet.studio.barcode.title')}</h2>
+      <p className="text-sm text-surface-500">{t('wallet.studio.barcode.bothSupported')}</p>
       <div className="grid grid-cols-5 gap-2">
         {BARCODE_TYPES.map(bt => (
           <button

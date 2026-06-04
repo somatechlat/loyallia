@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { getIconById } from '@/components/wallet/icon-library';
 
 export interface StampGridProps {
@@ -128,10 +129,12 @@ export function StampGrid({
     return 'grid-cols-5';
   }, [stampsRequired, layout]);
 
+  const { t } = useI18n();
+
   if (slots.length === 0) {
     return (
       <div className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-4">
-        Sin sellos configurados
+        {t('wallet.studio.stamp.noStamps')}
       </div>
     );
   }

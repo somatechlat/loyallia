@@ -4,9 +4,12 @@
  * @param {number} props.step - Current active step index
  * @returns JSX.Element
  */
-const steps = ['Tipo', 'Configurar', 'Diseño', 'Revisar'];
+import { useI18n } from '@/lib/i18n';
 
 export default function StepBar({ step }: { step: number }) {
+  const { t } = useI18n();
+  const steps = [t('programs.step.type'), t('programs.step.configure'), t('programs.step.design'), t('programs.step.review')];
+
   return (
     <div className="flex items-center gap-2 mb-8">
       {steps.map((label, i) => (

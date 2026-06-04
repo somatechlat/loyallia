@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { BarcodeConfig, BarcodeFormat } from '@/components/wallet/types/unified-state';
 import { BARCODE_FORMAT_METADATA } from '@/components/wallet/constants';
 import { BarcodeSvg } from '@/components/wallet/BarcodeRenderer';
@@ -87,11 +88,12 @@ function CopyIcon({ className }: { className?: string }) {
 }
 
 export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
+  const { t } = useI18n();
   const [isFormatOpen, setIsFormatOpen] = useState(false);
 
   const svgType = useMemo(() => formatToBarcodeSvgType(barcode.format), [barcode.format]);
   const meta = BARCODE_FORMAT_METADATA[barcode.format];
-  const example = useMemo(() => generateExample(barcode.message || '{customer_id}-{program_id}-{timestamp}'), [barcode.message]);
+  const example = useMemo(() => generateExample(barcode.message || t('wallet.studio.barcode.messagePlaceholder')), [barcode.message, t]);
 
   const handleFormatSelect = useCallback(
     (format: BarcodeFormat) => {
@@ -131,12 +133,12 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Configuración de Código</h3>
+      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{t('wallet.studio.barcode.title')}</h3>
 
       {/* Format Selector */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Formato
+          {t('wallet.studio.barcode.format')}
         </label>
         <div className="relative">
           <button
@@ -207,7 +209,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
           <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
             <span className="text-base leading-none mt-0.5" role="img" aria-label="Apple warning">🍎</span>
             <p className="text-xs text-red-700 dark:text-red-300">
-              Este formato no es compatible con Apple Wallet. Los usuarios de iPhone no verán el código.
+              {t('wallet.studio.barcode.appleUnsupported')}
             </p>
           </div>
         )}
@@ -215,7 +217,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
           <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
             <span className="text-base leading-none mt-0.5" role="img" aria-label="Google warning">🤖</span>
             <p className="text-xs text-red-700 dark:text-red-300">
-              Este formato no es compatible con Google Wallet. Los usuarios de Android no verán el código.
+              {t('wallet.studio.barcode.googleUnsupported')}
             </p>
           </div>
         )}
@@ -224,7 +226,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
             <AppleIcon className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5" />
             <GoogleIcon className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5" />
             <p className="text-xs text-green-700 dark:text-green-300">
-              Compatible con Apple Wallet y Google Wallet.
+              {t('wallet.studio.barcode.bothSupported')}
             </p>
           </div>
         )}
@@ -233,25 +235,25 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
       {/* Message Input */}
       <div className="space-y-2">
         <label htmlFor="barcode-message" className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Mensaje
+          {t('wallet.studio.barcode.message')}
         </label>
         <input
           id="barcode-message"
           type="text"
           value={barcode.message}
           onChange={(e) => onUpdateBarcode({ message: e.target.value })}
-          placeholder="{customer_id}-{program_id}-{timestamp}"
+          placeholder={t('wallet.studio.barcode.messagePlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          Patrón recomendado: <code className="px-1 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[11px]">{'{customer_id}'}-{'{program_id}'}-{'{timestamp}'}</code>
+          {t('wallet.studio.barcode.messageHint')} <code className="px-1 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[11px]">{t('wallet.studio.barcode.messagePlaceholder')}</code>
         </p>
       </div>
 
       {/* Data Builder Helper */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Insertar Variables
+          {t('wallet.studio.barcode.insertVariables')}
         </label>
         <div className="flex flex-wrap gap-2">
           {PLACEHOLDERS.map((ph) => (
@@ -267,15 +269,15 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
         </div>
         <div className="flex items-start gap-2 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-800 p-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Ejemplo generado</p>
+            <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">{t('wallet.studio.barcode.generatedExample')}</p>
             <code className="block text-xs text-neutral-700 dark:text-neutral-300 font-mono truncate">{example}</code>
           </div>
           <button
             type="button"
             onClick={copyExample}
             className="p-1.5 rounded-md text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-            aria-label="Copiar ejemplo"
-            title="Copiar ejemplo"
+            aria-label={t('wallet.studio.barcode.copyExample')}
+            title={t('wallet.studio.barcode.copyExample')}
           >
             <CopyIcon className="w-3.5 h-3.5" />
           </button>
@@ -285,7 +287,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
       {/* Message Encoding */}
       <div className="space-y-2">
         <label htmlFor="barcode-encoding" className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Codificación
+          {t('wallet.studio.barcode.encoding')}
         </label>
         <select
           id="barcode-encoding"
@@ -304,14 +306,14 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
       {/* Alt Text */}
       <div className="space-y-2">
         <label htmlFor="barcode-alt-text" className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Texto alternativo (opcional)
+          {t('wallet.studio.barcode.altText')}
         </label>
         <input
           id="barcode-alt-text"
           type="text"
           value={barcode.altText ?? ''}
           onChange={(e) => onUpdateBarcode({ altText: e.target.value || undefined })}
-          placeholder="Texto mostrado debajo del código"
+          placeholder={t('wallet.studio.barcode.altTextPlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
@@ -319,7 +321,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
       {/* Barcode Preview */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+          {t('wallet.studio.barcode.preview')}
         </label>
         <div className="flex flex-col items-center gap-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-800/50 p-6">
           <div className="flex items-center justify-center w-40 h-40 bg-white rounded-lg border border-neutral-100 dark:border-neutral-700">
@@ -330,7 +332,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
           )}
           <div className="text-center">
             <p className="text-[11px] text-neutral-400 dark:text-neutral-500 font-mono truncate max-w-[280px]">
-              {barcode.message || '{customer_id}-{program_id}-{timestamp}'}
+              {barcode.message || t('wallet.studio.barcode.messagePlaceholder')}
             </p>
           </div>
         </div>

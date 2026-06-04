@@ -13,6 +13,7 @@
  * @param meta - Current program metadata
  * @param setMeta - State setter for metadata
  */
+import { useI18n } from '@/lib/i18n';
 import type { ConfigProps } from '@/components/programs/configs';
 import {
   StampConfig,
@@ -46,11 +47,12 @@ const TYPE_COMPONENTS: Record<string, React.ComponentType<ConfigProps>> = {
  * @returns JSX.Element
  */
 function TypeConfig({ type, meta, setMeta }: { type: string } & ConfigProps) {
+  const { t } = useI18n();
   const Component = TYPE_COMPONENTS[type];
   if (!Component) {
     return (
       <div className="card p-8 text-center">
-        <p className="text-surface-500">Este tipo de tarjeta no requiere configuración adicional.</p>
+        <p className="text-surface-500">{t('programs.noConfigNeeded')}</p>
       </div>
     );
   }

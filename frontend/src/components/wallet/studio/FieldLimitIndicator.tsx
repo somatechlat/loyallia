@@ -5,6 +5,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { FieldGroup } from '@/components/wallet/types/unified-state';
 import { FIELD_GROUP_METADATA } from '@/components/wallet/constants';
 
@@ -36,6 +37,7 @@ function getTextColor(percentage: number, isOverLimit: boolean): string {
 }
 
 export function FieldLimitIndicator({ group, current, max }: FieldLimitIndicatorProps) {
+  const { t } = useI18n();
   const percentage = max > 0 ? Math.min((current / max) * 100, 100) : 0;
   const isOverLimit = current > max;
   const meta = FIELD_GROUP_METADATA[group];
@@ -44,7 +46,7 @@ export function FieldLimitIndicator({ group, current, max }: FieldLimitIndicator
     <div
       className="flex items-center gap-3"
       role="region"
-      aria-label={`${meta.label} field usage: ${current} of ${max}`}
+      aria-label={`${meta.label} ${t('wallet.studio.fields.title')}: ${current} / ${max}`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
@@ -63,12 +65,12 @@ export function FieldLimitIndicator({ group, current, max }: FieldLimitIndicator
             aria-valuenow={current}
             aria-valuemin={0}
             aria-valuemax={max}
-            aria-label={`${meta.label} usage`}
+            aria-label={`${meta.label} ${t('wallet.studio.fields.title')}`}
           />
         </div>
       </div>
       {isOverLimit && (
-        <div className="flex-shrink-0" aria-label="Over limit warning">
+        <div className="flex-shrink-0" aria-label={t('wallet.studio.fields.full')}>
           <svg
             className="w-4 h-4 text-red-500"
             viewBox="0 0 24 24"

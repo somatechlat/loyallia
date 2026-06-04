@@ -9,6 +9,7 @@
  * @param setMeta - State setter for metadata
  */
 import React, { useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import Tooltip from '@/components/ui/Tooltip';
 import type { ConfigProps } from './types';
 
@@ -18,6 +19,7 @@ import type { ConfigProps } from './types';
  * @returns JSX.Element
  */
 const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigProps) {
+  const { t } = useI18n();
   const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
 
   return (
@@ -25,8 +27,8 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
       {/* Stamp Type Selector */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <label className="label mb-0">Tipo de sello</label>
-          <Tooltip text="Elige cómo tus clientes ganarán sellos: por cada visita individual o basado en el consumo monetario." />
+          <label className="label mb-0">{t('programs.stampConfig.stampType')}</label>
+          <Tooltip text={t('programs.stampConfig.stampTypeTooltip')} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {(['visit', 'consumption'] as const).map(stampType => (
@@ -40,15 +42,15 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
                   checked={(meta.stamp_type ?? 'visit') === stampType}
                   onChange={() => set('stamp_type', stampType)} className="accent-brand-500" />
                 <span className="font-semibold text-sm text-surface-900 dark:text-white">
-                  {stampType === 'visit' ? 'Otorgar sello por visita' : 'Otorgar sello por consumo'}
+                  {stampType === 'visit' ? t('programs.stampConfig.visitMode') : t('programs.stampConfig.consumptionMode')}
                 </span>
                 <Tooltip text={stampType === 'visit'
-                  ? 'Por cada consumo que tenga tu cliente, independientemente del monto, se le otorgará un sello.'
-                  : 'Tú decides cuánto consumo equivale a un sello. Es obligatorio poner la equivalencia.'
+                  ? t('programs.stampConfig.visitTooltip')
+                  : t('programs.stampConfig.consumptionTooltip')
                 } />
               </div>
               <p className="text-xs text-surface-500 ml-5">
-                {stampType === 'visit' ? '1 visita = 1 sello' : '$X consumo = 1 sello'}
+                {stampType === 'visit' ? t('programs.stampConfig.visitExample') : t('programs.stampConfig.consumptionExample')}
               </p>
             </label>
           ))}
@@ -56,13 +58,13 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
         {/* Consumption Equivalence */}
         {meta.stamp_type === 'consumption' && (
           <div className="mt-3 p-4 bg-surface-50 dark:bg-surface-800 rounded-xl">
-            <label className="label">Equivalencia consumo-sello</label>
+            <label className="label">{t('programs.stampConfig.consumptionEquivalence')}</label>
             <div className="flex items-center gap-2">
               <span className="font-bold text-surface-500">$</span>
               <input type="number" min={1} step={0.01} className="input w-24"
                 value={meta.consumption_per_stamp as number ?? 10}
                 onChange={e => set('consumption_per_stamp', parseFloat(e.target.value) || 10)} />
-              <span className="text-sm text-surface-600 dark:text-surface-400">dólares en consumo equivale a 1 sello</span>
+              <span className="text-sm text-surface-600 dark:text-surface-400">{t('programs.stampConfig.consumptionHint')}</span>
             </div>
           </div>
         )}
@@ -71,8 +73,8 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
       {/* Stamps Required */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <label className="label mb-0">Sellos requeridos para la recompensa</label>
-          <Tooltip text="Cantidad total de sellos que el cliente debe acumular para obtener su recompensa." />
+          <label className="label mb-0">{t('programs.stampConfig.stampsRequired')}</label>
+          <Tooltip text={t('programs.stampConfig.stampsRequiredTooltip')} />
         </div>
         <input type="number" min={1} max={99} className="input" value={meta.stamps_required as number ?? 10}
           onChange={e => set('stamps_required', parseInt(e.target.value) || 10)} />
@@ -81,18 +83,18 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
       {/* Reward Description */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <label className="label mb-0">Descripción de la recompensa</label>
-          <Tooltip text="El premio que obtendrá el cliente al completar todos los sellos." />
+          <label className="label mb-0">{t('programs.stampConfig.rewardDescription')}</label>
+          <Tooltip text={t('programs.stampConfig.rewardDescriptionTooltip')} />
         </div>
-        <input type="text" className="input" placeholder="Ej: Plato a la carta gratis" value={meta.reward_description as string ?? ''}
+        <input type="text" className="input" placeholder={t('programs.stampConfig.rewardPlaceholder')} value={meta.reward_description as string ?? ''}
           onChange={e => set('reward_description', e.target.value)} />
       </div>
 
       {/* Expiry Options */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <label className="label mb-0">Vigencia de la tarjeta</label>
-          <Tooltip text="Define si la tarjeta tiene vencimiento o es ilimitada. Si es ilimitada, se reinicia al completar todos los sellos." />
+          <label className="label mb-0">{t('programs.stampConfig.cardExpiry')}</label>
+          <Tooltip text={t('programs.stampConfig.cardExpiryTooltip')} />
         </div>
         <div className="space-y-2">
           {(['unlimited', 'period'] as const).map(expiryType => (
@@ -105,10 +107,10 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
                 checked={(meta.stamp_expiry ?? 'unlimited') === expiryType}
                 onChange={() => set('stamp_expiry', expiryType)} className="accent-brand-500" />
               <span className="text-sm text-surface-900 dark:text-white font-medium">
-                {expiryType === 'unlimited' ? 'Ilimitado' : 'Por periodo de tiempo'}
+                {expiryType === 'unlimited' ? t('common.unlimited') : t('programs.stampConfig.period')}
               </span>
               {expiryType === 'unlimited' && (
-                <Tooltip text="La tarjeta no tiene fecha de vencimiento. Al completar los sellos, se reinicia de nuevo a 0." />
+                <Tooltip text={t('programs.stampConfig.unlimitedTooltip')} />
               )}
             </label>
           ))}
@@ -116,12 +118,12 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
         {meta.stamp_expiry === 'period' && (
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div>
-              <label className="label">Fecha de inicio</label>
+              <label className="label">{t('common.startDate')}</label>
               <input type="date" className="input" value={meta.stamp_start_date as string ?? ''}
                 onChange={e => set('stamp_start_date', e.target.value)} />
             </div>
             <div>
-              <label className="label">Fecha de fin</label>
+              <label className="label">{t('common.endDate')}</label>
               <input type="date" className="input" value={meta.stamp_end_date as string ?? ''}
                 min={meta.stamp_start_date as string ?? ''}
                 onChange={e => set('stamp_end_date', e.target.value)} />
@@ -133,9 +135,9 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
       {/* Additional Config */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { key: 'stamps_at_issue', label: 'Sellos al emitir', tooltip: 'Cantidad de sellos de bonificación que se otorgan cuando el cliente agrega la tarjeta a su wallet.', min: 0, max: 10, default: 0 },
-          { key: 'daily_stamp_limit', label: 'Límite por día', tooltip: 'Cantidad máxima de sellos que un cliente puede ganar en un solo día.', min: 1, max: 99, default: 5 },
-          { key: 'birthday_stamps', label: 'Sellos cumpleaños', tooltip: 'Sellos extra que se otorgan al cliente el día de su cumpleaños. Requiere fecha de nacimiento en el formulario de registro.', min: 0, max: 10, default: 0 },
+          { key: 'stamps_at_issue', label: t('programs.stampConfig.stampsAtIssue'), tooltip: t('programs.stampConfig.stampsAtIssueTooltip'), min: 0, max: 10, default: 0 },
+          { key: 'daily_stamp_limit', label: t('programs.stampConfig.dailyLimit'), tooltip: t('programs.stampConfig.dailyLimitTooltip'), min: 1, max: 99, default: 5 },
+          { key: 'birthday_stamps', label: t('programs.stampConfig.birthdayStamps'), tooltip: t('programs.stampConfig.birthdayStampsTooltip'), min: 0, max: 10, default: 0 },
         ].map(field => (
           <div key={field.key}>
             <div className="flex items-center gap-2 mb-1">

@@ -477,5 +477,12 @@
   "common.noData": "No data",
   "common.processing": "Processing...",
   "common.sending": "Sending...",
-  "common.deleting": "Deleting..."
+  "common.deleting": "Deleting...",
+  "wallet.studio.fields.alignNatural": "Natural",
+  "wallet.studio.fields.alignLeft": "Left",
+  "wallet.studio.fields.alignCenter": "Center",
+  "wallet.studio.fields.alignRight": "Right",
+  "wallet.studio.advanced.nfcMessage": "NFC Message (requires NFC enabled)",
+  "wallet.studio.advanced.nfcPlaceholder": "Text that appears when scanning with NFC",
+  "wallet.studio.advanced.expirationDate": "Expiration date"
 }

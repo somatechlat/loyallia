@@ -10,6 +10,7 @@ from django.conf import settings
 
 from apps.tenants.models import PlatformSetting
 
+from common.messages import get_message
 logger = logging.getLogger(__name__)
 
 # Google Wallet API barcode type mapping (ref: developers.google.com/wallet/generic/rest/v1/Barcode)
@@ -45,18 +46,18 @@ def _get_issuer_id() -> str:
 def _map_card_type_to_style(card_type: str) -> dict:
     """Map Loyallia card type to Google Wallet loyalty program fields."""
     styles = {
-        "stamp": {"programName": "Tarjeta de Sellos"},
-        "cashback": {"programName": "Programa de Cashback"},
-        "coupon": {"programName": "Cupon de Descuento"},
-        "vip_membership": {"programName": "Membresia VIP"},
-        "gift_certificate": {"programName": "Certificado de Regalo"},
-        "referral_pass": {"programName": "Programa de Referidos"},
-        "discount": {"programName": "Tarjeta de Descuento"},
-        "corporate_discount": {"programName": "Descuento Corporativo"},
-        "multipass": {"programName": "Multipase"},
-        "affiliate": {"programName": "Tarjeta de Afiliacion"},
+        "stamp": {"programName": get_message("WALLET_PROGRAM_STAMP")},
+        "cashback": {"programName": get_message("WALLET_PROGRAM_CASHBACK")},
+        "coupon": {"programName": get_message("WALLET_PROGRAM_COUPON")},
+        "vip_membership": {"programName": get_message("WALLET_PROGRAM_VIP")},
+        "gift_certificate": {"programName": get_message("WALLET_PROGRAM_GIFT")},
+        "referral_pass": {"programName": get_message("WALLET_PROGRAM_REFERRAL")},
+        "discount": {"programName": get_message("WALLET_PROGRAM_DISCOUNT")},
+        "corporate_discount": {"programName": get_message("WALLET_PROGRAM_CORPORATE")},
+        "multipass": {"programName": get_message("WALLET_PROGRAM_MULTIPASS")},
+        "affiliate": {"programName": get_message("WALLET_PROGRAM_AFFILIATE")},
     }
-    return styles.get(card_type, {"programName": "Programa de Lealtad"})
+    return styles.get(card_type, {"programName": get_message("WALLET_PROGRAM_LOYALTY")})
 
 
 def _resolve_gw_type(card_type: str) -> str:

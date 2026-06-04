@@ -7,6 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr, field_validator
 
 from apps.authentication.models import User, UserRole
+from common.messages import get_message
 
 
 class RegisterIn(BaseModel):
@@ -25,7 +26,7 @@ class RegisterIn(BaseModel):
     def password_strength(cls, v: str) -> str:
         """Ensure password has at least 8 characters."""
         if len(v) < 8:
-            raise ValueError("La contrasena debe tener al menos 8 caracteres.")
+            raise ValueError(get_message("AUTH_PASSWORD_MIN_LENGTH_8"))
         return v
 
     @field_validator("business_name")
@@ -34,7 +35,7 @@ class RegisterIn(BaseModel):
         """Ensure business name is not empty after stripping."""
         v = v.strip()
         if not v:
-            raise ValueError("El nombre del negocio es obligatorio.")
+            raise ValueError(get_message("AUTH_BUSINESS_NAME_REQUIRED"))
         return v
 
 
@@ -106,7 +107,7 @@ class InviteIn(BaseModel):
         """Ensure the invited role is either MANAGER or STAFF."""
         allowed = {UserRole.MANAGER, UserRole.STAFF}
         if v not in allowed:
-            raise ValueError(f"Rol invalido. Permitidos: {', '.join(allowed)}")
+            raise ValueError(get_message("AUTH_INVALID_ROLE", allowed=", ".join(allowed)))
         return v
 
 
@@ -169,7 +170,7 @@ class ResetPasswordIn(BaseModel):
     def password_min_length(cls, v: str) -> str:
         """Ensure the new password has at least 6 characters."""
         if len(v) < 6:
-            raise ValueError("La contrasena debe tener al menos 6 caracteres")
+            raise ValueError(get_message("AUTH_PASSWORD_MIN_LENGTH_6"))
         return v
 
 
@@ -195,9 +196,7 @@ class PhoneVerifyRequestIn(BaseModel):
         v = v.strip()
         # Accept E.164 format: +[country_code][number], 8-15 digits
         if not re.match(r"^\+[1-9]\d{7,14}$", v):
-            raise ValueError(
-                "Formato inválido. Usa formato internacional: +593991234567"
-            )
+            raise ValueError(get_message("AUTH_PHONE_INVALID_FORMAT"))
         return v
 
 

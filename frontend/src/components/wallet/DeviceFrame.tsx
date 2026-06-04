@@ -4,7 +4,10 @@
  * @param {React.ReactNode} props.children - Content to render inside the frame
  * @returns JSX.Element
  */
+import { useI18n } from '@/lib/i18n';
+
 export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 562 }}>
       {/* Outer bezel with titanium gradient */}
@@ -44,7 +47,7 @@ export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
 
           {/* Wallet header label */}
           <div className="px-4 pt-3 pb-1 z-10 shrink-0">
-            <p className="text-[9px] text-white text-opacity-25 font-semibold tracking-widest uppercase">Wallet</p>
+            <p className="text-[9px] text-white text-opacity-25 font-semibold tracking-widest uppercase">{t('wallet.preview.wallet')}</p>
           </div>
 
           {/* Content (pass card) */}
@@ -69,6 +72,7 @@ export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
  * @returns JSX.Element
  */
 export function Pixel7Frame({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 540 }}>
       {/* Outer bezel */}
@@ -100,7 +104,7 @@ export function Pixel7Frame({ children }: { children: React.ReactNode }) {
           {/* Google Wallet header */}
           <div className="px-3.5 py-1.5 flex items-center gap-1.5 z-10 shrink-0">
             <svg className="w-4 h-4 text-white opacity-30" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-            <span className="text-[10px] text-white opacity-30 font-medium">Google Wallet</span>
+            <span className="text-[10px] text-white opacity-30 font-medium">{t('wallet.preview.googleWallet')}</span>
           </div>
 
           {/* Content */}

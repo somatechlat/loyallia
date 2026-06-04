@@ -7,18 +7,12 @@
 import React, { useCallback } from 'react';
 import type { VipMembershipCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { useI18n } from '@/lib/i18n';
 
 export interface VIPTabProps {
   config: VipMembershipCardConfig;
   onChange: (config: Partial<VipMembershipCardConfig>) => void;
 }
-
-const BADGE_STYLES: Array<{ value: VipMembershipCardConfig['memberBadgeStyle']; label: string; color: string }> = [
-  { value: 'gold', label: 'Oro', color: '#FFD700' },
-  { value: 'silver', label: 'Plata', color: '#C0C0C0' },
-  { value: 'platinum', label: 'Platino', color: '#E5E4E2' },
-  { value: 'bronze', label: 'Bronce', color: '#CD7F32' },
-];
 
 const COMMON_PERKS = [
   'Acceso prioritario',
@@ -29,6 +23,13 @@ const COMMON_PERKS = [
   'Eventos exclusivos',
   'Ampliación de garantía',
 ];
+
+const BADGE_COLORS: Record<string, string> = {
+  gold: '#FFD700',
+  silver: '#C0C0C0',
+  platinum: '#E5E4E2',
+  bronze: '#CD7F32',
+};
 
 function CrownIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
@@ -48,7 +49,8 @@ function CrownIcon({ className, style }: { className?: string; style?: React.CSS
 }
 
 function VIPPreview({ config }: { config: VipMembershipCardConfig }) {
-  const badgeColor = BADGE_STYLES.find((b) => b.value === config.memberBadgeStyle)?.color ?? '#FFD700';
+  const { t } = useI18n();
+  const badgeColor = BADGE_COLORS[config.memberBadgeStyle] ?? '#FFD700';
 
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-3">
@@ -61,14 +63,14 @@ function VIPPreview({ config }: { config: VipMembershipCardConfig }) {
         </div>
         <div>
           <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-            {config.membershipName || 'Membresía VIP'}
+            {config.membershipName || t('wallet.studio.vip.defaultName')}
           </p>
           <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
             {config.validityPeriod === 'lifetime'
-              ? 'Vitalicia'
+              ? t('wallet.studio.vip.lifetimeLabel')
               : config.validityPeriod === 'annual'
-                ? `$${config.annualFee}/año`
-                : `$${config.monthlyFee}/mes`}
+                ? t('wallet.studio.vip.annualLabel', { fee: config.annualFee })
+                : t('wallet.studio.vip.monthlyLabel', { fee: config.monthlyFee })}
           </p>
         </div>
       </div>
@@ -84,7 +86,7 @@ function VIPPreview({ config }: { config: VipMembershipCardConfig }) {
           ))}
           {config.perks.length > 3 && (
             <li className="text-[10px] text-neutral-400 dark:text-neutral-500">
-              +{config.perks.length - 3} más
+              {t('wallet.studio.vip.morePerks', { count: config.perks.length - 3 })}
             </li>
           )}
         </ul>
@@ -94,6 +96,15 @@ function VIPPreview({ config }: { config: VipMembershipCardConfig }) {
 }
 
 export function VIPTab({ config, onChange }: VIPTabProps) {
+  const { t } = useI18n();
+
+  const BADGE_STYLES = [
+    { value: 'gold' as const, label: t('wallet.studio.vip.badgeGold'), color: BADGE_COLORS.gold },
+    { value: 'silver' as const, label: t('wallet.studio.vip.badgeSilver'), color: BADGE_COLORS.silver },
+    { value: 'platinum' as const, label: t('wallet.studio.vip.badgePlatinum'), color: BADGE_COLORS.platinum },
+    { value: 'bronze' as const, label: t('wallet.studio.vip.badgeBronze'), color: BADGE_COLORS.bronze },
+  ];
+
   const handleNumberChange = useCallback(
     (field: keyof VipMembershipCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value);
@@ -141,19 +152,19 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Membresía VIP
+        {t('wallet.studio.vip.title')}
       </h3>
 
       {/* Membership name */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Nombre de la membresía
+          {t('wallet.studio.vip.membershipName')}
         </label>
         <input
           type="text"
           value={config.membershipName}
           onChange={handleTextChange('membershipName')}
-          placeholder="Ej: Club Premium"
+          placeholder={t('wallet.studio.vip.namePlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="membership-name-input"
         />
@@ -162,7 +173,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Monthly fee */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Cuota mensual
+          {t('wallet.studio.vip.monthlyFee')}
         </label>
         <input
           type="number"
@@ -177,7 +188,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Annual fee */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Cuota anual
+          {t('wallet.studio.vip.annualFee')}
         </label>
         <input
           type="number"
@@ -192,7 +203,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Validity period */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Periodo de validez
+          {t('wallet.studio.vip.validityPeriod')}
         </label>
         <div className="grid grid-cols-3 gap-2">
           {(['monthly', 'annual', 'lifetime'] as const).map((period) => (
@@ -207,7 +218,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
               }`}
               data-testid={`validity-${period}`}
             >
-              {period === 'monthly' ? 'Mensual' : period === 'annual' ? 'Anual' : 'Vitalicia'}
+              {period === 'monthly' ? t('wallet.studio.vip.monthly') : period === 'annual' ? t('wallet.studio.vip.annual') : t('wallet.studio.vip.lifetime')}
             </button>
           ))}
         </div>
@@ -216,7 +227,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Perks */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Beneficios
+          {t('wallet.studio.vip.perks')}
         </label>
         <div className="flex flex-wrap gap-1.5">
           {config.perks.map((perk, i) => (
@@ -248,7 +259,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
                 setCustomPerk('');
               }
             }}
-            placeholder="Agregar beneficio…"
+            placeholder={t('wallet.studio.vip.addPerk')}
             className="flex-1 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="custom-perk-input"
           />
@@ -271,7 +282,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Common perks checklist */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Beneficios comunes
+          {t('wallet.studio.vip.commonPerks')}
         </label>
         <div className="space-y-1">
           {COMMON_PERKS.map((perk) => {
@@ -304,7 +315,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Crown icon */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Icono de corona
+          {t('wallet.studio.vip.crownIcon')}
         </label>
         <IconPicker
           value={config.crownIcon}
@@ -316,7 +327,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Member badge style */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Estilo de insignia de miembro
+          {t('wallet.studio.vip.badgeStyle')}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {BADGE_STYLES.map((opt) => (
@@ -341,7 +352,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+          {t('wallet.studio.vip.preview')}
         </label>
         <VIPPreview config={config} />
       </div>

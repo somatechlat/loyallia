@@ -3,6 +3,7 @@
 from django.shortcuts import get_object_or_404
 
 from apps.notifications.models import PushDevice
+from common.messages import get_message, get_message_for_request
 from common.permissions import jwt_auth
 
 from .base import PushDeviceSchema, _get_customer_or_403, router
@@ -32,7 +33,7 @@ def register_device(request, data: PushDeviceSchema):
 
     return {
         "success": True,
-        "message": "Device registered successfully",
+        "message": get_message_for_request("DEVICE_REGISTERED", request),
         "device_id": str(device.id),
     }
 
@@ -45,7 +46,7 @@ def unregister_device(request, device_id: str):
     device.is_active = False
     device.save()
 
-    return {"success": True, "message": "Device unregistered"}
+    return {"success": True, "message": get_message_for_request("DEVICE_UNREGISTERED", request)}
 
 
 @router.get("/devices/", auth=jwt_auth, summary="List registered devices")

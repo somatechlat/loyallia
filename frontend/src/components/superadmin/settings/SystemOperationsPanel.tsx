@@ -1,5 +1,6 @@
 'use client';
 import { AlertTriangle, Key, Mail, Flame } from '@/components/ui/LucideIcons';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Props for the SystemOperationsPanel component.
@@ -47,18 +48,19 @@ export default function SystemOperationsPanel({
   onResetOtpChange,
   onCancelReset,
 }: SystemOperationsPanelProps) {
+  const { t } = useI18n();
   return (
     <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-sm p-6 space-y-6">
-      <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3">Operaciones del Sistema</h2>
+      <h2 className="text-lg font-bold text-surface-900 dark:text-white border-b border-surface-100 pb-3">{t('superadmin.settings.sysadmin.operationsTitle')}</h2>
 
       {/* Seed Demo Data */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-5 border border-blue-200 dark:border-blue-800">
         <div className="flex items-start gap-3 mb-3">
           <span className="text-2xl">📦</span>
           <div>
-            <h3 className="font-semibold text-surface-900 dark:text-white">Datos de Demostración</h3>
+            <h3 className="font-semibold text-surface-900 dark:text-white">{t('superadmin.settings.sysadmin.demoDataTitle')}</h3>
             <p className="text-sm text-surface-500 mt-1">
-              Carga datos de ejemplo (negocios, clientes, transacciones) para demostración del sistema.
+              {t('superadmin.settings.sysadmin.demoDataDesc')}
             </p>
           </div>
         </div>
@@ -68,7 +70,7 @@ export default function SystemOperationsPanel({
           onClick={onSeedDemo}
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
         >
-          {seedingDemo ? 'Cargando datos...' : '📦 Cargar Datos Demo'}
+          {seedingDemo ? t('common.loading') : '📦 ' + t('superadmin.settings.sysadmin.loadDemoData')}
         </button>
         {seedOutput && (
           <pre className="mt-3 bg-surface-100 dark:bg-surface-800 rounded-lg p-3 text-xs text-surface-600 dark:text-surface-400 max-h-40 overflow-auto whitespace-pre-wrap">
@@ -82,11 +84,9 @@ export default function SystemOperationsPanel({
         <div className="flex items-start gap-3 mb-3">
           <AlertTriangle className="w-6 h-6 text-red-500" />
           <div>
-            <h3 className="font-semibold text-red-700 dark:text-red-400">Restaurar de Fábrica</h3>
+            <h3 className="font-semibold text-red-700 dark:text-red-400">{t('superadmin.settings.sysadmin.factoryResetTitle')}</h3>
             <p className="text-sm text-surface-500 mt-1">
-              Elimina <strong>TODOS</strong> los datos de tenants, clientes y transacciones.
-              El sistema regresa a estado inicial con solo el SysAdmin y planes.
-              Se requiere un código de verificación enviado a su email/teléfono.
+              {t('superadmin.settings.sysadmin.factoryResetDesc')}
             </p>
           </div>
         </div>
@@ -98,14 +98,14 @@ export default function SystemOperationsPanel({
             onClick={onFactoryResetRequest}
             className="bg-red-600 hover:bg-red-700 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
           >
-            {requestingReset ? 'Enviando código...' : <span className="flex items-center gap-1"><Key className="w-3.5 h-3.5" /> Solicitar Código de Verificación</span>}
+            {requestingReset ? t('common.sending') : <span className="flex items-center gap-1"><Key className="w-3.5 h-3.5" /> {t('superadmin.settings.sysadmin.requestResetCode')}</span>}
           </button>
         )}
 
         {resetStep === 'otp_sent' && (
           <div className="space-y-3">
             <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-              <Mail className="w-3.5 h-3.5 inline mr-1" />Código enviado a su email (y SMS si está configurado). Ingrese el código de 6 dígitos:
+              <Mail className="w-3.5 h-3.5 inline mr-1" />{t('superadmin.settings.sysadmin.otpSent')}
             </p>
             <div className="flex gap-3 items-center flex-wrap">
               <input
@@ -124,13 +124,13 @@ export default function SystemOperationsPanel({
                 onClick={onFactoryResetConfirm}
                 className="bg-red-700 hover:bg-red-800 disabled:bg-surface-300 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all"
               >
-                {confirmingReset ? 'Procesando...' : <span className="flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> Confirmar Restauración</span>}
+                {confirmingReset ? t('common.processing') : <span className="flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> {t('superadmin.settings.sysadmin.confirmReset')}</span>}
               </button>
               <button
                 onClick={onCancelReset}
                 className="text-surface-500 hover:text-surface-700 text-sm underline"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
             </div>
           </div>

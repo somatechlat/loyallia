@@ -6,25 +6,22 @@
 
 import React, { useCallback } from 'react';
 import type { DiscountCardConfig } from '@/components/wallet/types/card-type-config';
+import { useI18n } from '@/lib/i18n';
 
 export interface DiscountTabProps {
   config: DiscountCardConfig;
   onChange: (config: Partial<DiscountCardConfig>) => void;
 }
 
-const DISPLAY_STYLES: Array<{ value: NonNullable<DiscountCardConfig['percentageDisplayStyle']>; label: string }> = [
-  { value: 'compact', label: 'Compacto' },
-  { value: 'expanded', label: 'Expandido' },
-  { value: 'badge', label: 'Insignia' },
-];
-
 function DiscountPreview({ config }: { config: DiscountCardConfig }) {
+  const { t } = useI18n();
+
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-3">
-      <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Niveles de Descuento</p>
+      <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{t('wallet.studio.discount.levelsTitle')}</p>
       {config.tiers.length === 0 ? (
         <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center py-2">
-          Sin niveles configurados
+          {t('wallet.studio.discount.noLevels')}
         </p>
       ) : (
         <div className="space-y-2">
@@ -47,7 +44,7 @@ function DiscountPreview({ config }: { config: DiscountCardConfig }) {
                   </p>
                   {!isCompact && (
                     <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
-                      Desde ${tier.threshold}
+                      {t('wallet.studio.discount.fromThreshold', { threshold: tier.threshold })}
                     </p>
                   )}
                 </div>
@@ -70,6 +67,14 @@ function DiscountPreview({ config }: { config: DiscountCardConfig }) {
 }
 
 export function DiscountTab({ config, onChange }: DiscountTabProps) {
+  const { t } = useI18n();
+
+  const DISPLAY_STYLES: Array<{ value: NonNullable<DiscountCardConfig['percentageDisplayStyle']>; label: string }> = [
+    { value: 'compact', label: t('wallet.studio.discount.compact') },
+    { value: 'expanded', label: t('wallet.studio.discount.expanded') },
+    { value: 'badge', label: t('wallet.studio.discount.badge') },
+  ];
+
   const addTier = useCallback(() => {
     const next = [
       ...config.tiers,
@@ -98,13 +103,13 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Descuentos por Niveles
+        {t('wallet.studio.discount.title')}
       </h3>
 
       {/* Tiers */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Niveles
+          {t('wallet.studio.discount.levels')}
         </label>
         {config.tiers.map((tier, i) => (
           <div
@@ -116,7 +121,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
               type="text"
               value={tier.tierName}
               onChange={(e) => updateTier(i, 'tierName', e.target.value)}
-              placeholder="Nombre"
+              placeholder={t('wallet.studio.discount.tierName')}
               className="flex-1 min-w-0 px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               data-testid={`tier-name-${i}`}
             />
@@ -130,7 +135,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
                   updateTier(i, 'threshold', value);
                 }
               }}
-              placeholder="Desde $"
+              placeholder={t('wallet.studio.discount.threshold')}
               className="w-20 px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               data-testid={`tier-threshold-${i}`}
             />
@@ -145,7 +150,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
                   updateTier(i, 'discountPercentage', value);
                 }
               }}
-              placeholder="%"
+              placeholder={t('wallet.studio.discount.percentage')}
               className="w-16 px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
               data-testid={`tier-percentage-${i}`}
             />
@@ -153,7 +158,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
               type="button"
               onClick={() => removeTier(i)}
               className="p-1 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              aria-label="Eliminar nivel"
+              aria-label={t('wallet.studio.discount.deleteLevel')}
               data-testid={`remove-tier-${i}`}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -169,14 +174,14 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
           className="w-full px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
           data-testid="add-tier-btn"
         >
-          + Agregar nivel
+          {t('wallet.studio.discount.addLevel')}
         </button>
       </div>
 
       {/* Tier indicator ring color */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Color de indicador de nivel
+          {t('wallet.studio.discount.tierColor')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -193,7 +198,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
       {/* Percentage display style */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Estilo de visualización de porcentaje
+          {t('wallet.studio.discount.displayStyle')}
         </label>
         <div className="grid grid-cols-3 gap-2">
           {DISPLAY_STYLES.map((opt) => (
@@ -217,7 +222,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+          {t('wallet.studio.discount.preview')}
         </label>
         <DiscountPreview config={config} />
       </div>

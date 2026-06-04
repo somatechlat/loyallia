@@ -2,43 +2,44 @@ import type { WalletDesignState } from './types';
 import { IPhone15ProFrame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, APPLE_PASS_STYLES } from '@/components/programs/constants';
+import { useI18n } from '@/lib/i18n';
 
 function resolveTemplate(value: string, ctx: Record<string, string>): string {
   return value.replace(/\{(\w+)\}/g, (_, key) => ctx[key] ?? `{${key}}`);
 }
 
-function buildContext(form: { name: string; description: string; card_type: string }, customerName?: string): Record<string, string> {
+function buildContext(form: { name: string; description: string; card_type: string }, customerName: string | undefined, t: (key: string) => string): Record<string, string> {
   return {
-    customer_name: customerName || 'Cliente',
-    program_name: form.name || 'Programa',
+    customer_name: customerName || t('wallet.preview.customer'),
+    program_name: form.name || t('wallet.preview.programName'),
     description: form.description || '',
     stamp_count: '0',
     stamps_required: '10',
-    reward_description: 'Recompensa especial',
+    reward_description: t('wallet.preview.reward'),
     cashback_balance: '0.00',
     cashback_percentage: '5',
-    membership_tier: 'Club VIP',
+    membership_tier: t('wallet.studio.vip.defaultName'),
     referral_code: 'REF-XXXX',
     referrals_made: '0',
     discount_percentage: '5',
-    discount_tier: 'Bronce',
+    discount_tier: t('wallet.studio.vip.badgeBronze'),
     gift_balance: '0.00',
     affiliate_code: 'AFIL-001',
     enrolled_date: '01/01/2025',
-    benefits: 'Beneficios exclusivos',
-    company_name: 'Empresa',
+    benefits: t('wallet.studio.vip.perks'),
+    company_name: t('wallet.preview.company'),
     corporate_discount: '10',
     coupon_usage: '0 / 1',
-    coupon_end_date: '31/12/2026',
-    coupon_terms: 'Términos y condiciones',
-    referrer_reward: 'Recompensa especial',
+    coupon_end_date: t('wallet.preview.validUntilDate'),
+    coupon_terms: t('wallet.preview.terms'),
+    referrer_reward: t('wallet.preview.reward'),
     multipass_remaining: '10',
     bundle_size: '10',
     bundle_price: '25.00',
     stamp_display: '0 / 10',
-    perks: 'Acceso prioritario',
+    perks: t('wallet.studio.vip.perks'),
     expiry_days: '365',
-    tiers_list: 'Bronce 5%, Plata 10%, Oro 15%',
+    tiers_list: `${t('wallet.studio.vip.badgeBronze')} 5%, ${t('wallet.studio.vip.badgeSilver')} 10%, ${t('wallet.studio.vip.badgeGold')} 15%`,
   };
 }
 
@@ -78,6 +79,7 @@ interface AppleWalletCardProps {
 export function AppleWalletCard({
   form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign,
 }: AppleWalletCardProps) {
+  const { t } = useI18n();
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const passStyle = APPLE_PASS_STYLES[form.card_type] || 'generic';
@@ -85,7 +87,7 @@ export function AppleWalletCard({
   const hasStrip = heroImage && (passStyle === 'storeCard' || passStyle === 'coupon');
   const isCoupon = passStyle === 'coupon';
   const isGeneric = passStyle === 'generic';
-  const ctx = buildContext(form, customerName);
+  const ctx = buildContext(form, customerName, t);
 
   const appleFields = walletDesign?.appleFields;
   const headerFields = appleFields?.headerFields?.length ? appleFields.headerFields : undefined;
@@ -95,32 +97,32 @@ export function AppleWalletCard({
   const backFields = appleFields?.backFields?.length ? appleFields.backFields : undefined;
 
   const defaultPrimary: { label: string; value: string } = {
-    stamp:             { label: 'Sellos acumulados', value: '0 / 10' },
-    cashback:          { label: 'Saldo disponible', value: '$0.00' },
-    coupon:            { label: form.description || 'Descuento especial', value: form.discount_percentage ? `${form.discount_percentage}% OFF` : '20% OFF' },
-    vip_membership:    { label: 'Membresía', value: 'Club VIP' },
-    referral_pass:     { label: 'Tu código de referido', value: 'REF-XXXX' },
-    discount:          { label: 'Descuento actual', value: '5%' },
-    gift_certificate:  { label: 'Saldo del regalo', value: '$0.00' },
-    affiliate:         { label: 'Programa', value: form.name || 'Afiliación' },
-    corporate_discount:{ label: 'Descuento corporativo', value: '0%' },
-    multipass:         { label: 'Usos restantes', value: '10' },
+    stamp:             { label: t('wallet.preview.stampAccumulated'), value: '0 / 10' },
+    cashback:          { label: t('wallet.preview.availableBalance'), value: '$0.00' },
+    coupon:            { label: form.description || t('wallet.preview.specialDiscount'), value: form.discount_percentage ? `${form.discount_percentage}% ${t('wallet.studio.coupon.off')}` : `20% ${t('wallet.studio.coupon.off')}` },
+    vip_membership:    { label: t('wallet.preview.membership'), value: t('wallet.studio.vip.defaultName') },
+    referral_pass:     { label: t('wallet.preview.referralCode'), value: 'REF-XXXX' },
+    discount:          { label: t('wallet.preview.currentDiscount'), value: '5%' },
+    gift_certificate:  { label: t('wallet.preview.giftBalance'), value: '$0.00' },
+    affiliate:         { label: t('wallet.preview.affiliateProgram'), value: form.name || t('programs.cardTypes.affiliate') },
+    corporate_discount:{ label: t('wallet.preview.corporateDiscount'), value: '0%' },
+    multipass:         { label: t('wallet.preview.remainingUses'), value: '10' },
   }[form.card_type] || { label: '', value: '—' };
 
   const defaultAux: Array<{ label: string; value: string }> = [
-    { label: 'CLIENTE', value: customerName || 'Cliente' },
-    { label: 'VÁLIDO HASTA', value: '31/12/2026' },
+    { label: t('wallet.preview.customer'), value: customerName || t('wallet.preview.customer') },
+    { label: t('wallet.preview.validUntil'), value: t('wallet.preview.validUntilDate') },
   ];
 
   const defaultHeaderValue: Record<string, string> = {
-    stamp: '0/10', cashback: '$0.00', coupon: 'Cupón', vip_membership: 'VIP',
-    referral_pass: '0', discount: 'Bronce', gift_certificate: '$0',
+    stamp: '0/10', cashback: '$0.00', coupon: t('portal.cardTypes.coupon'), vip_membership: t('wallet.preview.vip'),
+    referral_pass: '0', discount: t('wallet.studio.vip.badgeBronze'), gift_certificate: '$0',
     affiliate: form.name?.slice(0, 6) || '—', corporate_discount: '0%', multipass: '10/10',
   };
   const defaultHeaderLabel: Record<string, string> = {
-    stamp: 'SELLOS', cashback: 'CREDITO', coupon: 'OFERTA', vip_membership: 'MEMBRESIA',
-    referral_pass: 'REFERIDOS', discount: 'NIVEL', gift_certificate: 'SALDO',
-    affiliate: 'PROGRAMA', corporate_discount: 'DESC.', multipass: 'USOS',
+    stamp: t('wallet.preview.defaultHeader.stamp'), cashback: t('wallet.preview.defaultHeader.cashback'), coupon: t('wallet.preview.defaultHeader.coupon'), vip_membership: t('wallet.preview.defaultHeader.vip'),
+    referral_pass: t('wallet.preview.defaultHeader.referral'), discount: t('wallet.preview.defaultHeader.discount'), gift_certificate: t('wallet.preview.defaultHeader.gift'),
+    affiliate: t('wallet.preview.defaultHeader.affiliate'), corporate_discount: t('wallet.preview.defaultHeader.corporate'), multipass: t('wallet.preview.defaultHeader.multipass'),
   };
 
   const auxItems: Array<{ label: string; value: string }> = auxiliaryFields || defaultAux;
@@ -146,7 +148,7 @@ export function AppleWalletCard({
         {/* Strip image */}
         {hasStrip && (
           <div className="relative w-full shrink-0" style={{ aspectRatio: '375/123' }}>
-            <img src={heroImage} alt="Strip" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
           </div>
         )}
@@ -158,7 +160,7 @@ export function AppleWalletCard({
             <div className="shrink-0 w-[60px] h-[22px] rounded overflow-hidden border border-white/10 shadow-sm bg-white/5 flex items-center justify-center">
               <img
                 src={walletDesign?.appleLogoUrl || walletDesign?.appleLogo2xUrl || logoPreview!}
-                alt="Logo"
+                alt={t('wallet.studio.images.logo')}
                 className="w-full h-full object-contain"
               />
             </div>
@@ -170,7 +172,7 @@ export function AppleWalletCard({
 
           {/* Program name */}
           <div className="flex-1 min-w-0 pt-0.5">
-            <p className="text-[10px] font-bold truncate leading-tight">{form.name || 'Nombre del Programa'}</p>
+            <p className="text-[10px] font-bold truncate leading-tight">{form.name || t('wallet.preview.programName')}</p>
           </div>
 
           {/* Header fields — right aligned */}
@@ -196,7 +198,7 @@ export function AppleWalletCard({
           {isGeneric && (walletDesign?.appleThumbnailUrl || walletDesign?.appleThumbnail2xUrl || heroImage) && (
             <img
               src={walletDesign?.appleThumbnailUrl || walletDesign?.appleThumbnail2xUrl || heroImage}
-              alt="Thumbnail"
+              alt={t('wallet.studio.images.icon')}
               className="w-9 h-9 rounded object-cover border border-white/10 shadow-sm shrink-0"
             />
           )}
@@ -259,7 +261,7 @@ export function AppleWalletCard({
         {/* ── BACK FIELDS ── */}
         {backFields && backFields.length > 0 && (
           <div className="px-3 pb-3 pt-1 border-t border-white/10 shrink-0">
-            <p className="text-[6px] font-semibold uppercase tracking-widest opacity-25 mb-1.5">Detalles traseros</p>
+            <p className="text-[6px] font-semibold uppercase tracking-widest opacity-25 mb-1.5">{t('wallet.preview.backFieldsTitle')}</p>
             <div className="space-y-1">
               {backFields.slice(0, 6).map((f, i) => (
                 <div key={f.key || i} className="flex justify-between gap-2">
@@ -290,10 +292,11 @@ export function AppleWalletBackCard({
   walletDesign?: WalletDesignState;
   customerName?: string;
 }) {
+  const { t } = useI18n();
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const backFields = walletDesign?.appleFields?.backFields;
-  const ctx = buildContext(form, customerName);
+  const ctx = buildContext(form, customerName, t);
 
   return (
     <IPhone15ProFrame>
@@ -307,8 +310,8 @@ export function AppleWalletBackCard({
       >
         {/* Title bar */}
         <div className="px-3 py-2.5 flex items-center justify-between shrink-0 border-b border-white/10">
-          <span className="text-[10px] font-bold opacity-40">Información</span>
-          <span className="text-[10px] font-semibold opacity-60">Listo</span>
+          <span className="text-[10px] font-bold opacity-40">{t('wallet.preview.info')}</span>
+          <span className="text-[10px] font-semibold opacity-60">{t('wallet.preview.ready')}</span>
         </div>
 
         {/* Back fields scrollable area */}
@@ -324,7 +327,7 @@ export function AppleWalletBackCard({
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-center">
-              <p className="text-[10px] opacity-30">Sin información adicional.<br/>Añade campos traseros en el editor.</p>
+              <p className="text-[10px] opacity-30">{t('wallet.preview.noBackFields')}</p>
             </div>
           )}
         </div>

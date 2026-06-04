@@ -7,6 +7,7 @@
 import React, { useCallback } from 'react';
 import type { ReferralPassCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { useI18n } from '@/lib/i18n';
 
 export interface ReferralTabProps {
   config: ReferralPassCardConfig;
@@ -14,6 +15,8 @@ export interface ReferralTabProps {
 }
 
 function ReferralPreview({ config }: { config: ReferralPassCardConfig }) {
+  const { t } = useI18n();
+
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-3">
       <div className="flex items-center justify-center">
@@ -34,7 +37,7 @@ function ReferralPreview({ config }: { config: ReferralPassCardConfig }) {
         {config.referrerReward && (
           <div className="text-center">
             <p className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-              Recompensa del referidor
+              {t('wallet.studio.referral.referrerRewardLabel')}
             </p>
             <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
               {config.referrerReward}
@@ -44,7 +47,7 @@ function ReferralPreview({ config }: { config: ReferralPassCardConfig }) {
         {config.refereeReward && (
           <div className="text-center">
             <p className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-              Recompensa del referido
+              {t('wallet.studio.referral.refereeRewardLabel')}
             </p>
             <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
               {config.refereeReward}
@@ -52,7 +55,7 @@ function ReferralPreview({ config }: { config: ReferralPassCardConfig }) {
           </div>
         )}
         <div className="flex items-center justify-center gap-2 text-[10px] text-neutral-500 dark:text-neutral-400">
-          <span>Máx. {config.maxReferralsPerCustomer} referidos</span>
+          <span>{t('wallet.studio.referral.maxReferralsLabel', { max: config.maxReferralsPerCustomer })}</span>
           {config.referralCodePattern && (
             <span className="font-mono bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded">
               {config.referralCodePattern}
@@ -65,6 +68,8 @@ function ReferralPreview({ config }: { config: ReferralPassCardConfig }) {
 }
 
 export function ReferralTab({ config, onChange }: ReferralTabProps) {
+  const { t } = useI18n();
+
   const handleNumberChange = useCallback(
     (field: keyof ReferralPassCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value);
@@ -85,19 +90,19 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Pase de Referido
+        {t('wallet.studio.referral.title')}
       </h3>
 
       {/* Referrer reward */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Recompensa del referidor
+          {t('wallet.studio.referral.referrerReward')}
         </label>
         <input
           type="text"
           value={config.referrerReward}
           onChange={handleTextChange('referrerReward')}
-          placeholder="Ej: $10 de crédito"
+          placeholder={t('wallet.studio.referral.referrerPlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="referrer-reward-input"
         />
@@ -106,13 +111,13 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
       {/* Referee reward */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Recompensa del referido
+          {t('wallet.studio.referral.refereeReward')}
         </label>
         <input
           type="text"
           value={config.refereeReward}
           onChange={handleTextChange('refereeReward')}
-          placeholder="Ej: 20% de descuento"
+          placeholder={t('wallet.studio.referral.refereePlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="referee-reward-input"
         />
@@ -121,7 +126,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
       {/* Max referrals */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Máximo de referidos por cliente
+          {t('wallet.studio.referral.maxReferrals')}
         </label>
         <input
           type="number"
@@ -137,13 +142,13 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
       {/* Referral code pattern */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Patrón de código de referido
+          {t('wallet.studio.referral.codePattern')}
         </label>
         <input
           type="text"
           value={config.referralCodePattern}
           onChange={handleTextChange('referralCodePattern')}
-          placeholder="Ej: REF-{name}-{number}"
+          placeholder={t('wallet.studio.referral.codePlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="referral-code-input"
         />
@@ -152,7 +157,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
       {/* Share button color */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Color del botón de compartir
+          {t('wallet.studio.referral.shareButtonColor')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -169,7 +174,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
       {/* Referral icon */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Icono de referido
+          {t('wallet.studio.referral.referralIcon')}
         </label>
         <IconPicker
           value={config.referralIcon ?? ''}
@@ -181,7 +186,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
       {/* Gift/reward icon */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Icono de regalo/recompensa
+          {t('wallet.studio.referral.rewardIcon')}
         </label>
         <IconPicker
           value={config.rewardBadgeIcon}
@@ -193,7 +198,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+          {t('wallet.studio.referral.preview')}
         </label>
         <ReferralPreview config={config} />
       </div>

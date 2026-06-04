@@ -11,6 +11,7 @@ import React from 'react';
 import { useWalletStudio } from '@/hooks/useWalletStudio';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useI18n } from '@/lib/i18n';
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
@@ -23,6 +24,7 @@ export interface WalletStudioProps {
 }
 
 export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletStudioProps) {
+  const { t } = useI18n();
   const studio = useWalletStudio(initialState);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
     studio.state,
@@ -214,7 +216,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
       {/* Auto-save indicator */}
       {autoSave.lastSaved && (
         <div className="absolute bottom-3 right-[372px] z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
-          Guardado: {autoSave.lastSaved.toLocaleTimeString()}
+          {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
         </div>
       )}
     </div>

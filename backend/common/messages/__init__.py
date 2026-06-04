@@ -29,7 +29,7 @@ from typing import Any
 
 from django.conf import settings
 
-from . import auth, billing, campaigns, common
+from . import auth, billing, campaigns, common, wallet
 
 # SUPPORTED LANGUAGES
 SUPPORTED_LANGUAGES = ("es", "en", "fr", "de")
@@ -42,24 +42,28 @@ _MESSAGES_ES.update(auth._MESSAGES_ES)
 _MESSAGES_ES.update(billing._MESSAGES_ES)
 _MESSAGES_ES.update(campaigns._MESSAGES_ES)
 _MESSAGES_ES.update(common._MESSAGES_ES)
+_MESSAGES_ES.update(wallet._MESSAGES_ES)
 
 _MESSAGES_EN: dict[str, str] = {}
 _MESSAGES_EN.update(auth._MESSAGES_EN)
 _MESSAGES_EN.update(billing._MESSAGES_EN)
 _MESSAGES_EN.update(campaigns._MESSAGES_EN)
 _MESSAGES_EN.update(common._MESSAGES_EN)
+_MESSAGES_EN.update(wallet._MESSAGES_EN)
 
 _MESSAGES_FR: dict[str, str] = {}
 _MESSAGES_FR.update(auth._MESSAGES_FR)
 _MESSAGES_FR.update(billing._MESSAGES_FR)
 _MESSAGES_FR.update(campaigns._MESSAGES_FR)
 _MESSAGES_FR.update(common._MESSAGES_FR)
+_MESSAGES_FR.update(wallet._MESSAGES_FR)
 
 _MESSAGES_DE: dict[str, str] = {}
 _MESSAGES_DE.update(auth._MESSAGES_DE)
 _MESSAGES_DE.update(billing._MESSAGES_DE)
 _MESSAGES_DE.update(campaigns._MESSAGES_DE)
 _MESSAGES_DE.update(common._MESSAGES_DE)
+_MESSAGES_DE.update(wallet._MESSAGES_DE)
 
 
 # CATALOG REGISTRY

@@ -55,7 +55,7 @@ from apps.billing.services import (
     reactivate_subscription as reactivate_subscription_service,
 )
 from apps.tenants.models import PlatformSetting
-from common.messages import get_message
+from common.messages import get_message, get_message_for_request
 from common.permissions import jwt_auth, require_role
 from common.plan_enforcement import get_current_usage, resolve_limit, usage_pct
 from common.request import require_tenant
@@ -64,12 +64,12 @@ logger = logging.getLogger("loyallia.billing")
 
 router = Router()
 
-SUBSCRIPTION_STATUS_LABELS = {
-    SubscriptionStatus.TRIALING: "Período de prueba",
-    SubscriptionStatus.ACTIVE: "Activo",
-    SubscriptionStatus.PAST_DUE: "Pago pendiente",
-    SubscriptionStatus.SUSPENDED: "Suspendido",
-    SubscriptionStatus.CANCELED: "Cancelado",
+SUBSCRIPTION_STATUS_CODES = {
+    SubscriptionStatus.TRIALING: "BILLING_STATUS_TRIALING",
+    SubscriptionStatus.ACTIVE: "BILLING_STATUS_ACTIVE",
+    SubscriptionStatus.PAST_DUE: "BILLING_STATUS_PAST_DUE",
+    SubscriptionStatus.SUSPENDED: "BILLING_STATUS_SUSPENDED",
+    SubscriptionStatus.CANCELED: "BILLING_STATUS_CANCELED",
 }
 
 # Plans (DB-driven REQ-PLAN-001)
@@ -172,8 +172,11 @@ def get_subscription(request: HttpRequest):
         "plan_slug": plan.slug if plan else subscription.plan,
         "billing_cycle": subscription.billing_cycle,
         "status": subscription.status,
-        "status_display": SUBSCRIPTION_STATUS_LABELS.get(
-            subscription.status, subscription.status
+        "status_display": get_message_for_request(
+            SUBSCRIPTION_STATUS_CODES.get(
+                subscription.status, subscription.status
+            ),
+            request,
         ),
         "is_access_allowed": subscription.is_access_allowed,
         "trial_start": (

@@ -7,6 +7,7 @@ Used by apple_pass.py  not imported directly from outside pass_engine.
 import io
 import logging
 
+from common.messages import get_message
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +38,7 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
     metadata = card.metadata or {}
     total_stamps = metadata.get("stamps_required", metadata.get("total_stamps", 6))
     current_stamps = customer_pass.stamp_count_val
-    reward = metadata.get("reward_description", "Recompensa")
+    reward = metadata.get("reward_description", get_message("WALLET_REWARD_DEFAULT"))
     stamps_display = "⬛" * current_stamps + "⬜" * (total_stamps - current_stamps)
     enrolled_date = ""
     if customer_pass.enrolled_at:
@@ -111,39 +112,39 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     if card.card_type == "stamp":
         total = metadata.get("total_stamps", 6)
         current = customer_pass.stamp_count_val
-        reward = metadata.get("reward_description", "Recompensa")
+        reward = metadata.get("reward_description", get_message("WALLET_REWARD_DEFAULT"))
         stamps_display = "\u2b1b" * current + "\u2b1c" * (total - current)
         return {
             "headerFields": [
                 {
                     "key": "stamps",
-                    "label": "SELLOS",
+                    "label": get_message("WALLET_LABEL_STAMPS"),
                     "value": f"{current}/{total}",
-                    "changeMessage": "¡Nuevo sello! Ahora tienes %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_STAMP"),
                 }
             ],
             "primaryFields": [
-                {"key": "reward", "label": "RECOMPENSA", "value": reward}
+                {"key": "reward", "label": get_message("WALLET_LABEL_REWARD"), "value": reward}
             ],
             "secondaryFields": [
-                {"key": "progress", "label": "PROGRESO", "value": stamps_display}
+                {"key": "progress", "label": get_message("WALLET_LABEL_PROGRESS"), "value": stamps_display}
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
-                {"key": "name", "label": "Cliente", "value": customer_name},
-                {"key": "program", "label": "Programa", "value": card.name},
+                {"key": "name", "label": get_message("WALLET_LABEL_CUSTOMER"), "value": customer_name},
+                {"key": "program", "label": get_message("WALLET_LABEL_PROGRAM"), "value": card.name},
                 {
                     "key": "desc",
-                    "label": "Descripcion",
+                    "label": get_message("WALLET_LABEL_DESCRIPTION"),
                     "value": card.description or "",
-                    "changeMessage": "Términos actualizados",
+                    "changeMessage": get_message("WALLET_TERMS_UPDATED"),
                 },
             ],
         }
@@ -155,32 +156,32 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "headerFields": [
                 {
                     "key": "balance",
-                    "label": "CREDITO",
+                    "label": get_message("WALLET_LABEL_CREDIT"),
                     "value": f"${balance}",
                     "currencyCode": metadata.get("currency", "USD"),
                 }
             ],
             "primaryFields": [
-                {"key": "program", "label": "PROGRAMA", "value": card.name}
+                {"key": "program", "label": get_message("WALLET_LABEL_PROGRAM"), "value": card.name}
             ],
             "secondaryFields": [
-                {"key": "rate", "label": "% CASHBACK", "value": f"{pct}%"},
-                {"key": "customer", "label": "CLIENTE", "value": customer_name},
+                {"key": "rate", "label": get_message("WALLET_LABEL_CASHBACK_RATE"), "value": f"{pct}%"},
+                {"key": "customer", "label": get_message("WALLET_LABEL_CLIENT"), "value": customer_name},
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "desc",
-                    "label": "Descripcion",
+                    "label": get_message("WALLET_LABEL_DESCRIPTION"),
                     "value": card.description or "",
-                    "changeMessage": "Detalles actualizados",
+                    "changeMessage": get_message("WALLET_DETAILS_UPDATED"),
                 }
             ],
         }
@@ -191,31 +192,31 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "headerFields": [
                 {
                     "key": "tier",
-                    "label": "MEMBRESIA",
+                    "label": get_message("WALLET_LABEL_MEMBERSHIP"),
                     "value": tier.upper(),
-                    "changeMessage": "Membresía actualizada: %@",
+                    "changeMessage": get_message("WALLET_MEMBERSHIP_UPDATED"),
                 }
             ],
             "primaryFields": [
-                {"key": "name", "label": "MIEMBRO", "value": customer_name}
+                {"key": "name", "label": get_message("WALLET_LABEL_MEMBER"), "value": customer_name}
             ],
             "secondaryFields": [
-                {"key": "program", "label": "CLUB", "value": card.name}
+                {"key": "program", "label": get_message("WALLET_LABEL_CLUB"), "value": card.name}
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "perks",
-                    "label": "Beneficios",
+                    "label": get_message("WALLET_LABEL_BENEFITS"),
                     "value": ", ".join(metadata.get("perks", [])),
-                    "changeMessage": "Beneficios actualizados: %@",
+                    "changeMessage": get_message("WALLET_BENEFITS_UPDATED"),
                 }
             ],
         }
@@ -225,33 +226,33 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "headerFields": [
                 {
                     "key": "offer",
-                    "label": "OFERTA",
+                    "label": get_message("WALLET_LABEL_OFFER"),
                     "value": card.name,
-                    "changeMessage": "¡Nueva oferta! %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_OFFER"),
                 }
             ],
             "primaryFields": [
                 {
                     "key": "discount",
-                    "label": "DESCUENTO",
-                    "value": card.description or "Descuento especial",
+                    "label": get_message("WALLET_LABEL_DISCOUNT"),
+                    "value": card.description or get_message("WALLET_DISCOUNT_SPECIAL"),
                 }
             ],
             "secondaryFields": [
-                {"key": "customer", "label": "CLIENTE", "value": customer_name}
+                {"key": "customer", "label": get_message("WALLET_LABEL_CLIENT"), "value": customer_name}
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "expiry",
-                    "label": "Válido hasta",
+                    "label": get_message("WALLET_LABEL_EXPIRY"),
                     "value": str(
                         metadata.get(
                             "coupon_end_date", pass_data.get("expiry_date", "")
@@ -260,7 +261,7 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 },
                 {
                     "key": "usage_limit",
-                    "label": "Límite de usos",
+                    "label": get_message("WALLET_LABEL_USAGE_LIMIT"),
                     "value": str(
                         metadata.get(
                             "usage_limit", metadata.get("usage_limit_per_customer", 1)
@@ -269,13 +270,13 @@ def _build_fields_for_type(card, customer_pass) -> dict:
                 },
                 {
                     "key": "terms",
-                    "label": "Términos",
+                    "label": get_message("WALLET_LABEL_TERMS"),
                     "value": card.description or metadata.get("coupon_description", ""),
                 },
                 {
                     "key": "status",
-                    "label": "Estado",
-                    "value": f"{customer_pass.coupon_redemption_count} usados",
+                    "label": get_message("WALLET_LABEL_STATUS"),
+                    "value": get_message("WALLET_USED_COUNT", count=customer_pass.coupon_redemption_count),
                 },
             ],
         }
@@ -285,26 +286,26 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         ref_code = customer.referral_code or customer_pass.qr_code or "N/A"
         return {
             "headerFields": [
-                {"key": "refs", "label": "REFERIDOS", "value": str(referrals)}
+                {"key": "refs", "label": get_message("WALLET_LABEL_REFERRALS"), "value": str(referrals)}
             ],
-            "primaryFields": [{"key": "code", "label": "TU CODIGO", "value": ref_code}],
+            "primaryFields": [{"key": "code", "label": get_message("WALLET_LABEL_YOUR_CODE"), "value": ref_code}],
             "secondaryFields": [
-                {"key": "customer", "label": "EMBAJADOR", "value": customer_name}
+                {"key": "customer", "label": get_message("WALLET_LABEL_AMBASSADOR"), "value": customer_name}
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "desc",
-                    "label": "Como funciona",
+                    "label": get_message("WALLET_HOW_IT_WORKS"),
                     "value": card.description or "",
-                    "changeMessage": "Información actualizada",
+                    "changeMessage": get_message("WALLET_INFO_UPDATED"),
                 }
             ],
         }
@@ -327,44 +328,44 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "headerFields": [
                 {
                     "key": "tier",
-                    "label": "NIVEL",
-                    "value": current_tier.upper() or "BÁSICO",
+                    "label": get_message("WALLET_LABEL_TIER"),
+                    "value": current_tier.upper() or get_message("WALLET_LABEL_BASIC"),
                 }
             ],
             "primaryFields": [
                 {
                     "key": "discount",
-                    "label": "DESCUENTO",
+                    "label": get_message("WALLET_LABEL_DISCOUNT"),
                     "value": f"{current_discount}%",
                 }
             ],
             "secondaryFields": [
-                {"key": "customer", "label": "CLIENTE", "value": customer_name},
-                {"key": "program", "label": "PROGRAMA", "value": card.name},
+                {"key": "customer", "label": get_message("WALLET_LABEL_CLIENT"), "value": customer_name},
+                {"key": "program", "label": get_message("WALLET_LABEL_PROGRAM"), "value": card.name},
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "tiers_info",
-                    "label": "Niveles de descuento",
+                    "label": get_message("WALLET_LABEL_TIER_DISCOUNTS"),
                     "value": "\n".join(
                         f"{t.get('tier_name', '?')}: {t.get('discount_percentage', 0)}% "
                         f"(umbral: ${t.get('threshold', 0)})"
                         for t in tiers
                     )
-                    or "Sin niveles configurados",
-                    "changeMessage": "Niveles actualizados",
+                    or get_message("WALLET_NO_TIERS"),
+                    "changeMessage": get_message("WALLET_TIERS_UPDATED"),
                 },
                 {
                     "key": "desc",
-                    "label": "Descripcion",
+                    "label": get_message("WALLET_LABEL_DESCRIPTION"),
                     "value": card.description or "",
                 },
             ],
@@ -378,35 +379,35 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         affiliate_code = customer_pass.qr_code or pass_data.get("affiliate_code", "N/A")
         return {
             "headerFields": [
-                {"key": "program", "label": "PROGRAMA", "value": card.name}
+                {"key": "program", "label": get_message("WALLET_LABEL_PROGRAM"), "value": card.name}
             ],
             "primaryFields": [
-                {"key": "member", "label": "AFILIADO", "value": customer_name}
+                {"key": "member", "label": get_message("WALLET_LABEL_AFFILIATE"), "value": customer_name}
             ],
             "secondaryFields": [
-                {"key": "code", "label": "CÓDIGO", "value": affiliate_code},
+                {"key": "code", "label": get_message("WALLET_LABEL_CODE"), "value": affiliate_code},
                 {
                     "key": "since",
-                    "label": "MIEMBRO DESDE",
+                    "label": get_message("WALLET_LABEL_MEMBER_SINCE"),
                     "value": member_since or "",
                 },
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "benefits",
-                    "label": "Beneficios",
+                    "label": get_message("WALLET_LABEL_BENEFITS"),
                     "value": ", ".join(metadata.get("benefits", []))
                     or card.description
                     or "",
-                    "changeMessage": "Beneficios actualizados: %@",
+                    "changeMessage": get_message("WALLET_BENEFITS_UPDATED"),
                 },
             ],
         }
@@ -420,35 +421,35 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "headerFields": [
                 {
                     "key": "balance",
-                    "label": "SALDO",
+                    "label": get_message("WALLET_LABEL_BALANCE"),
                     "value": f"${balance}",
                     "currencyCode": currency,
                 }
             ],
             "primaryFields": [
-                {"key": "program", "label": "CERTIFICADO", "value": card.name}
+                {"key": "program", "label": get_message("WALLET_LABEL_CERTIFICATE"), "value": card.name}
             ],
             "secondaryFields": [
-                {"key": "recipient", "label": "BENEFICIARIO", "value": customer_name},
+                {"key": "recipient", "label": get_message("WALLET_LABEL_BENEFICIARY"), "value": customer_name},
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "expiry",
-                    "label": "Expira en",
-                    "value": f"{metadata.get('expiry_days', 365)} días desde la emisión",
-                    "changeMessage": "Vigencia actualizada: %@",
+                    "label": get_message("WALLET_LABEL_EXPIRY"),
+                    "value": get_message("WALLET_EXPIRY_DAYS", days=metadata.get("expiry_days", 365)),
+                    "changeMessage": get_message("WALLET_VALIDITY_UPDATED"),
                 },
                 {
                     "key": "desc",
-                    "label": "Descripcion",
+                    "label": get_message("WALLET_LABEL_DESCRIPTION"),
                     "value": card.description or "",
                 },
             ],
@@ -461,26 +462,26 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         company = pass_data.get("company_name", metadata.get("company_name", card.name))
         return {
             "headerFields": [
-                {"key": "discount", "label": "DESCUENTO", "value": f"{discount_pct}%"}
+                {"key": "discount", "label": get_message("WALLET_LABEL_DISCOUNT"), "value": f"{discount_pct}%"}
             ],
-            "primaryFields": [{"key": "company", "label": "EMPRESA", "value": company}],
+            "primaryFields": [{"key": "company", "label": get_message("WALLET_LABEL_COMPANY"), "value": company}],
             "secondaryFields": [
-                {"key": "employee", "label": "EMPLEADO", "value": customer_name},
+                {"key": "employee", "label": get_message("WALLET_LABEL_EMPLOYEE"), "value": customer_name},
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "desc",
-                    "label": "Condiciones",
+                    "label": get_message("WALLET_CONDITIONS"),
                     "value": card.description or "",
-                    "changeMessage": "Condiciones actualizadas",
+                    "changeMessage": get_message("WALLET_CONDITIONS_UPDATED"),
                 },
             ],
         }
@@ -494,35 +495,35 @@ def _build_fields_for_type(card, customer_pass) -> dict:
             "headerFields": [
                 {
                     "key": "remaining",
-                    "label": "USOS RESTANTES",
+                    "label": get_message("WALLET_LABEL_REMAINING_USES"),
                     "value": f"{remaining}/{bundle_size}",
-                    "changeMessage": "Usos restantes: %@",
+                    "changeMessage": get_message("WALLET_REMAINING_USES_CHANGE"),
                 }
             ],
             "primaryFields": [
-                {"key": "bundle", "label": "MULTIPASE", "value": card.name}
+                {"key": "bundle", "label": get_message("WALLET_LABEL_MULTIPASS"), "value": card.name}
             ],
             "secondaryFields": [
-                {"key": "customer", "label": "CLIENTE", "value": customer_name},
+                {"key": "customer", "label": get_message("WALLET_LABEL_CLIENT"), "value": customer_name},
             ],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "price",
-                    "label": "Precio del paquete",
+                    "label": get_message("WALLET_LABEL_BUNDLE_PRICE"),
                     "value": f"${metadata.get('bundle_price', '')}",
-                    "changeMessage": "Precio actualizado: %@",
+                    "changeMessage": get_message("WALLET_PRICE_UPDATED"),
                 },
                 {
                     "key": "desc",
-                    "label": "Descripcion",
+                    "label": get_message("WALLET_LABEL_DESCRIPTION"),
                     "value": card.description or "",
                 },
             ],
@@ -532,26 +533,26 @@ def _build_fields_for_type(card, customer_pass) -> dict:
         # Fallback for any future/unknown card types
         return {
             "headerFields": [
-                {"key": "program", "label": "PROGRAMA", "value": card.name}
+                {"key": "program", "label": get_message("WALLET_LABEL_PROGRAM"), "value": card.name}
             ],
             "primaryFields": [
-                {"key": "customer", "label": "CLIENTE", "value": customer_name}
+                {"key": "customer", "label": get_message("WALLET_LABEL_CLIENT"), "value": customer_name}
             ],
             "secondaryFields": [],
             "auxiliaryFields": [
                 {
                     "key": "last_message",
-                    "label": "MENSAJE",
+                    "label": get_message("WALLET_LABEL_MESSAGE"),
                     "value": "",
-                    "changeMessage": "Nuevo mensaje: %@",
+                    "changeMessage": get_message("WALLET_CHANGE_NEW_MESSAGE"),
                 }
             ],
             "backFields": [
                 {
                     "key": "desc",
-                    "label": "Descripcion",
+                    "label": get_message("WALLET_LABEL_DESCRIPTION"),
                     "value": card.description or "",
-                    "changeMessage": "Detalles actualizados",
+                    "changeMessage": get_message("WALLET_DETAILS_UPDATED"),
                 }
             ],
         }
@@ -580,7 +581,7 @@ def _build_locations(card) -> list:
                     {
                         "latitude": float(loc.latitude),
                         "longitude": float(loc.longitude),
-                        "relevantText": f"Estas cerca de {loc.name}!",
+                        "relevantText": get_message("WALLET_NEAR_LOCATION", name=loc.name),
                     }
                 )
         except (ValueError, TypeError):

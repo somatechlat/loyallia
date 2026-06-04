@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 import { programsApi } from '@/lib/api';
 import { uploadFile } from '@/lib/upload';
@@ -25,18 +26,18 @@ export interface ProgramData {
 }
 
 const DESIGN_TEMPLATES = [
-  { id: 'midnight',  name: 'Medianoche',    bg: '#1A1A2E', text: '#FFFFFF' },
-  { id: 'ocean',     name: 'Océano',        bg: '#0F3460', text: '#FFFFFF' },
-  { id: 'sunset',    name: 'Atardecer',     bg: '#FF6B35', text: '#FFFFFF' },
-  { id: 'forest',    name: 'Bosque',        bg: '#0F766E', text: '#FFFFFF' },
-  { id: 'royal',     name: 'Realeza',       bg: '#4C1D95', text: '#FFFFFF' },
-  { id: 'rose',      name: 'Rosa',          bg: '#9F1239', text: '#FFFFFF' },
-  { id: 'gold',      name: 'Dorado',        bg: '#78350F', text: '#F9D923' },
-  { id: 'arctic',    name: 'Ártico',        bg: '#1E40AF', text: '#FFFFFF' },
-  { id: 'slate',     name: 'Pizarra',       bg: '#334155', text: '#F8FAFC' },
-  { id: 'emerald',   name: 'Esmeralda',     bg: '#065F46', text: '#FFFFFF' },
-  { id: 'cherry',    name: 'Cereza',        bg: '#BE123C', text: '#FFFFFF' },
-  { id: 'custom',    name: 'Personalizado', bg: '',        text: '' },
+  { id: 'midnight',  nameKey: 'programs.design.midnight',    bg: '#1A1A2E', text: '#FFFFFF' },
+  { id: 'ocean',     nameKey: 'programs.design.ocean',        bg: '#0F3460', text: '#FFFFFF' },
+  { id: 'sunset',    nameKey: 'programs.design.sunset',       bg: '#FF6B35', text: '#FFFFFF' },
+  { id: 'forest',    nameKey: 'programs.design.forest',       bg: '#0F766E', text: '#FFFFFF' },
+  { id: 'royal',     nameKey: 'programs.design.royal',        bg: '#4C1D95', text: '#FFFFFF' },
+  { id: 'rose',      nameKey: 'programs.design.rose',         bg: '#9F1239', text: '#FFFFFF' },
+  { id: 'gold',      nameKey: 'programs.design.gold',         bg: '#78350F', text: '#F9D923' },
+  { id: 'arctic',    nameKey: 'programs.design.arctic',       bg: '#1E40AF', text: '#FFFFFF' },
+  { id: 'slate',     nameKey: 'programs.design.slate',        bg: '#334155', text: '#F8FAFC' },
+  { id: 'emerald',   nameKey: 'programs.design.emerald',      bg: '#065F46', text: '#FFFFFF' },
+  { id: 'cherry',    nameKey: 'programs.design.cherry',       bg: '#BE123C', text: '#FFFFFF' },
+  { id: 'custom',    nameKey: 'programs.design.custom',       bg: '',        text: '' },
 ];
 
 /**
@@ -49,6 +50,7 @@ const DESIGN_TEMPLATES = [
  * @returns JSX.Element
  */
 export default function EditProgramModal({ id, program, onClose, onSaved }: { id: string; program: ProgramData; onClose: () => void; onSaved: () => void }) {
+  const { t } = useI18n();
   const [editForm, setEditForm] = useState({
     name: program.name || '',
     description: program.description || '',
@@ -75,7 +77,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
     if (url) {
       setEditForm(f => ({ ...f, logo_url: url }));
       setLogoPreview(url);
-      toast.success('Logo subido');
+      toast.success(t('settings.logoUploadSuccess'));
     }
     setLogoUploading(false);
   };
@@ -89,7 +91,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
     const url = await uploadFile(file);
     if (url) {
       setEditForm(f => ({ ...f, [field]: url }));
-      toast.success('Imagen subida');
+      toast.success(t('programs.edit.imageUploaded'));
     }
   };
 
@@ -105,9 +107,9 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
     setEditSaving(true);
     try {
       await programsApi.update(id, editForm);
-      toast.success('Programa actualizado y sincronizado con Google Wallet');
+      toast.success(t('programs.updated'));
       onSaved();
-    } catch { toast.error('Error al actualizar el programa'); }
+    } catch { toast.error(t('programs.updateError')); }
     finally { setEditSaving(false); }
   };
 
@@ -131,12 +133,13 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
         <div className="flex items-center justify-between px-8 py-4 border-b border-slate-200/60 bg-white/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <h2 className="text-lg font-bold text-slate-800 tracking-tight">Editar Programa</h2>
+            <h2 className="text-lg font-bold text-slate-800 tracking-tight">{t('programs.edit.title')}</h2>
             <span className="text-xs text-slate-400 font-mono bg-slate-100 px-2 py-0.5 rounded-md">{id.slice(0, 8)}</span>
           </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-all"
+            aria-label={t('common.close')}
           >✕</button>
         </div>
 
@@ -146,30 +149,30 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
 
           <div className="col-span-4 p-6 border-r border-slate-100 flex flex-col gap-4 bg-white/40">
             <div>
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Nombre del programa</label>
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">{t('programs.programName')}</label>
               <input
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border ${errors.name ? 'border-red-500' : 'border-slate-200'} text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm`}
                 value={editForm.name}
                 onChange={e => { setEditForm(f => ({ ...f, name: e.target.value })); setErrors(err => ({ ...err, name: false })); }}
-                placeholder="Ej: Café Frecuente"
+                placeholder={t('programs.edit.namePlaceholder')}
                 id="edit-name"
                 maxLength={200}
               />
-              {errors.name && <p className="text-xs text-red-500 mt-1">Nombre requerido</p>}
+              {errors.name && <p className="text-xs text-red-500 mt-1">{t('settings.nameRequired')}</p>}
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Descripción</label>
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">{t('programs.description')}</label>
               <textarea
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-surface-900 border ${errors.desc ? 'border-red-500' : 'border-slate-200'} text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all shadow-sm`}
                 rows={2}
                 value={editForm.description}
                 onChange={e => { setEditForm(f => ({ ...f, description: e.target.value })); setErrors(err => ({ ...err, desc: false })); }}
-                placeholder="Describe los beneficios de tu programa..."
+                placeholder={t('programs.edit.descriptionPlaceholder')}
                 id="edit-desc"
                 maxLength={1000}
               />
-              {errors.desc && <p className="text-xs text-red-500 mt-1">Máximo 1000 caracteres</p>}
+              {errors.desc && <p className="text-xs text-red-500 mt-1">{t('programs.edit.maxChars')}</p>}
             </div>
 
             {/* Logo */}
@@ -187,25 +190,25 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
                 )}
               </button>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-700 font-medium">{logoPreview ? 'Logo cargado ✓' : 'Logo del programa'}</p>
-                <p className="text-[10px] text-slate-400">PNG, JPG, SVG • 256×256px</p>
+                <p className="text-xs text-slate-700 font-medium">{logoPreview ? t('settings.logoLoaded') + ' ✓' : t('settings.businessLogo')}</p>
+                <p className="text-[10px] text-slate-400">{t('settings.logoFormat')}</p>
                 {logoUploading && (
                   <div className="flex items-center gap-1 mt-0.5">
                     <span className="w-3 h-3 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
-                    <span className="text-[10px] text-indigo-500">Subiendo...</span>
+                    <span className="text-[10px] text-indigo-500">{t('common.uploading')}</span>
                   </div>
                 )}
               </div>
               {logoPreview && (
                 <button type="button" onClick={() => { setLogoPreview(null); setEditForm(f => ({ ...f, logo_url: '' })); }}
-                  className="text-red-400 hover:text-red-600 text-xs transition-colors">✕</button>
+                  className="text-red-400 hover:text-red-600 text-xs transition-colors">{t('common.delete')}</button>
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
 
             {/* Hero image */}
             <div>
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Imagen Hero / Banner</label>
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">{t('programs.edit.heroImage')}</label>
               {editForm.strip_image_url && (
                 <div className="relative mb-2 rounded-xl overflow-hidden h-16 bg-slate-50 border border-slate-100">
                   <img src={editForm.strip_image_url} alt="Hero" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
@@ -216,42 +219,42 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
               <div className="flex gap-2">
                 <input
                   className={`flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border ${errors.heroUrl ? 'border-red-500' : 'border-slate-200'} text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm`}
-                  placeholder="https://... URL de imagen"
+                  placeholder="https://..."
                   type="url"
                   value={editForm.strip_image_url}
                   onChange={e => { setEditForm(f => ({ ...f, strip_image_url: e.target.value })); setErrors(err => ({ ...err, heroUrl: false })); }}
                   id="edit-hero-url"
                 />
                 <button type="button" onClick={() => heroFileRef.current?.click()}
-                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs border border-slate-200 transition-all font-medium" id="upload-hero-btn">Subir</button>
+                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs border border-slate-200 transition-all font-medium" id="upload-hero-btn">{t('common.upload')}</button>
               </div>
-              {errors.heroUrl && <p className="text-xs text-red-500 mt-1">URL inválida</p>}
+              {errors.heroUrl && <p className="text-xs text-red-500 mt-1">{t('settings.urlInvalid')}</p>}
               <input ref={heroFileRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'strip_image_url')} />
             </div>
 
             {/* Icon */}
             <div>
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Ícono de recompensa</label>
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">{t('programs.edit.rewardIcon')}</label>
               <div className="flex gap-2">
                 <input
                   className={`flex-1 px-3 py-2 rounded-xl bg-white dark:bg-surface-900 border ${errors.iconUrl ? 'border-red-500' : 'border-slate-200'} text-slate-700 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm`}
-                  placeholder="https://... URL del ícono"
+                  placeholder="https://..."
                   type="url"
                   value={editForm.icon_url}
                   onChange={e => { setEditForm(f => ({ ...f, icon_url: e.target.value })); setErrors(err => ({ ...err, iconUrl: false })); }}
                   id="edit-icon-url"
                 />
                 <button type="button" onClick={() => iconFileRef.current?.click()}
-                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs border border-slate-200 transition-all font-medium" id="upload-icon-btn">Subir</button>
+                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs border border-slate-200 transition-all font-medium" id="upload-icon-btn">{t('common.upload')}</button>
               </div>
-              {errors.iconUrl && <p className="text-xs text-red-500 mt-1">URL inválida</p>}
+              {errors.iconUrl && <p className="text-xs text-red-500 mt-1">{t('settings.urlInvalid')}</p>}
               <input ref={iconFileRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'icon_url')} />
             </div>
 
             {editForm.icon_url && (
               <div className="flex items-center gap-2">
                 <img src={editForm.icon_url} alt="Icon" className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-sm" onError={e => (e.currentTarget.style.display = 'none')} />
-                <span className="text-[10px] text-slate-400">Ícono actual</span>
+                <span className="text-[10px] text-slate-400">{t('programs.edit.currentIcon')}</span>
               </div>
             )}
           </div>
@@ -259,27 +262,27 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
 
           <div className="col-span-3 p-6 border-r border-slate-100 flex flex-col gap-4 bg-white/30">
             <div>
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Plantillas de diseño</label>
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 block">{t('programs.edit.designTemplates')}</label>
               <div className="grid grid-cols-4 gap-1.5">
-                {DESIGN_TEMPLATES.map(t => (
+                {DESIGN_TEMPLATES.map(templ => (
                   <button
-                    key={t.id}
+                    key={templ.id}
                     type="button"
                     onClick={() => {
-                      setSelectedTemplate(t.id);
-                      if (t.id !== 'custom') setEditForm(f => ({ ...f, background_color: t.bg, text_color: t.text }));
+                      setSelectedTemplate(templ.id);
+                      if (templ.id !== 'custom') setEditForm(f => ({ ...f, background_color: templ.bg, text_color: templ.text }));
                     }}
                     className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl border transition-all
-                      ${selectedTemplate === t.id
+                      ${selectedTemplate === templ.id
                         ? 'border-indigo-400 bg-indigo-50 shadow-sm ring-1 ring-indigo-200'
                         : 'border-slate-200 hover:border-slate-300 bg-white dark:bg-surface-900 hover:bg-slate-50'}`}
                   >
-                    {t.id === 'custom' ? (
+                    {templ.id === 'custom' ? (
                       <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400" />
                     ) : (
-                      <div className="w-6 h-6 rounded-lg border border-slate-200" style={{ backgroundColor: t.bg }} />
+                      <div className="w-6 h-6 rounded-lg border border-slate-200" style={{ backgroundColor: templ.bg }} />
                     )}
-                    <span className="text-[8px] text-slate-500 font-medium leading-tight">{t.name}</span>
+                    <span className="text-[8px] text-slate-500 font-medium leading-tight">{t(templ.nameKey)}</span>
                   </button>
                 ))}
               </div>
@@ -288,11 +291,11 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
             {/* Color pickers */}
             <div className="p-3 rounded-xl bg-white dark:bg-surface-900 border border-slate-200 shadow-sm">
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                {selectedTemplate === 'custom' ? 'Colores personalizados' : 'Colores del tema'}
+                {selectedTemplate === 'custom' ? t('programs.edit.customColors') : t('programs.edit.themeColors')}
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 mb-1 block font-medium">Fondo</label>
+                  <label className="text-[10px] text-slate-500 mb-1 block font-medium">{t('programs.backgroundColor')}</label>
                   <div className="flex items-center gap-2">
                     <input type="color" className="w-8 h-7 rounded-lg cursor-pointer border border-slate-200"
                       value={editForm.background_color} onChange={e => setEditForm(f => ({ ...f, background_color: e.target.value }))} />
@@ -300,7 +303,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 mb-1 block font-medium">Texto</label>
+                  <label className="text-[10px] text-slate-500 mb-1 block font-medium">{t('programs.textColor')}</label>
                   <div className="flex items-center gap-2">
                     <input type="color" className="w-8 h-7 rounded-lg cursor-pointer border border-slate-200"
                       value={editForm.text_color} onChange={e => setEditForm(f => ({ ...f, text_color: e.target.value }))} />
@@ -312,16 +315,16 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
 
             {/* Info tip */}
             <div className="mt-auto p-3 rounded-xl bg-indigo-50 border border-indigo-100">
-              <p className="text-[10px] text-indigo-600 font-medium mb-1">Consejo</p>
+              <p className="text-[10px] text-indigo-600 font-medium mb-1">{t('common.tip')}</p>
               <p className="text-[10px] text-indigo-500/70 leading-relaxed">
-                Los cambios se sincronizan automáticamente con Google Wallet. Todos los clientes verán el nuevo diseño.
+                {t('programs.edit.syncTip')}
               </p>
             </div>
           </div>
 
 
           <div className="col-span-5 p-6 flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100/50">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-4">Vista previa en vivo</p>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-4">{t('programs.edit.livePreview')}</p>
 
             {/* Phone frame */}
             <div className="relative w-full max-w-[280px] mx-auto">
@@ -359,19 +362,19 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-[7px] font-bold uppercase tracking-widest opacity-50">Programa de Fidelidad</p>
-                          <p className="text-sm font-bold leading-tight truncate drop-shadow">{editForm.name || 'Nombre del Programa'}</p>
+                          <p className="text-[7px] font-bold uppercase tracking-widest opacity-50">{t('programs.edit.loyaltyProgram')}</p>
+                          <p className="text-sm font-bold leading-tight truncate drop-shadow">{editForm.name || t('programs.edit.programNamePlaceholder')}</p>
                         </div>
                       </div>
 
                       <div className="relative z-10 mb-2">
-                        <p className="text-[9px] opacity-60 line-clamp-2">{editForm.description || 'Descripción del programa'}</p>
+                        <p className="text-[9px] opacity-60 line-clamp-2">{editForm.description || t('programs.edit.programDescriptionPlaceholder')}</p>
                       </div>
 
                       <div className="relative z-10 flex items-end justify-between mt-auto">
                         <div>
-                          <p className="text-[7px] uppercase tracking-wider opacity-40 font-semibold">Cliente</p>
-                          <p className="text-xs font-bold opacity-90">Cliente</p>
+                          <p className="text-[7px] uppercase tracking-wider opacity-40 font-semibold">{t('scanner.defaults.customerName')}</p>
+                          <p className="text-xs font-bold opacity-90">{t('scanner.defaults.customerName')}</p>
                         </div>
                         <div className="bg-[#ffffff]/95 rounded-xl p-1 shadow-lg">
                           <PremiumQrSvg color={editForm.background_color || '#1a1a2e'} size={50} />
@@ -386,11 +389,11 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
               </div>
             </div>
 
-            <p className="mt-4 text-[10px] text-slate-400 text-center">Apple Wallet / Google Wallet</p>
+            <p className="mt-4 text-[10px] text-slate-400 text-center">{t('wallet.appleWallet')} / {t('wallet.googleWallet')}</p>
 
             {editForm.icon_url && (
               <div className="mt-3 flex flex-col items-center gap-1">
-                <p className="text-[9px] text-slate-400 uppercase tracking-wider">Ícono del pase</p>
+                <p className="text-[9px] text-slate-400 uppercase tracking-wider">{t('programs.edit.passIcon')}</p>
                 <img src={editForm.icon_url} alt="Icon" className="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow" onError={e => (e.currentTarget.style.display = 'none')} />
               </div>
             )}
@@ -403,7 +406,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
           <div className="flex gap-3">
             <button onClick={onClose}
               className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium border border-slate-200 transition-all">
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleEditSave}
@@ -411,7 +414,7 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
               className="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20"
               id="save-edit-program"
             >
-              {editSaving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" /> : '✓ Guardar cambios'}
+              {editSaving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" /> : `✓ ${t('common.save')}`}
             </button>
           </div>
         </div>
@@ -419,4 +422,3 @@ export default function EditProgramModal({ id, program, onClose, onSaved }: { id
     </div>
   );
 }
-

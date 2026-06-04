@@ -4,6 +4,7 @@ import { APPLE_FIELD_GROUPS } from '@/components/programs/constants';
 import type { AppleFieldDef } from '../types';
 import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon } from '../icons';
 import { uid, getAppleFieldOptions, APPLE_GROUP_META } from './helpers';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * @description Editor for Apple Wallet PassKit field groups (header, primary, secondary, auxiliary, back).
@@ -20,6 +21,7 @@ export default function AppleFieldEditor({
   onChange: (fields: Record<string, AppleFieldDef[]>) => void;
   cardType: string;
 }) {
+  const { t } = useI18n();
   const options = getAppleFieldOptions(cardType);
 
   const updateGroup = (groupKey: string, groupFields: AppleFieldDef[]) => {
@@ -76,7 +78,7 @@ export default function AppleFieldEditor({
                     <div className="flex gap-3 items-start">
                       <div className="flex-1 space-y-3 min-w-0">
                         <div className="space-y-1">
-                          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Información a mostrar</label>
+                          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">{t('wallet.preview.info')}</label>
                           <select
                             value={showCustomInput ? 'custom' : f.value}
                             onChange={e => {
@@ -90,7 +92,7 @@ export default function AppleFieldEditor({
                             }}
                             className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                           >
-                            <option value="">Selecciona una opción...</option>
+                            <option value="">{t('wallet.studio.iconPicker.selectIcon')}</option>
                             {options.map(o => (
                               <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
@@ -99,10 +101,10 @@ export default function AppleFieldEditor({
 
                         {showCustomInput && (
                           <div className="space-y-1">
-                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Texto personalizado</label>
+                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">{t('wallet.studio.dynamicTemplates.placeholder')}</label>
                             <input
                               type="text"
-                              placeholder="Escribe el texto que quieres mostrar"
+                              placeholder={t('wallet.studio.dynamicTemplates.placeholder')}
                               value={f.value}
                               onChange={e => {
                                 const updated = [...groupFields];
@@ -115,10 +117,10 @@ export default function AppleFieldEditor({
                         )}
 
                         <div className="space-y-1">
-                          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Etiqueta visible</label>
+                          <label className="text-xs font-medium text-surface-600 dark:text-surface-300">{t('wallet.studio.fields.label')}</label>
                           <input
                             type="text"
-                            placeholder="Ej: CLIENTE, RECOMPENSA, SELLOS"
+                            placeholder={t('wallet.studio.fields.placeholderLabel')}
                             value={f.label}
                             onChange={e => {
                               const updated = [...groupFields];
@@ -131,7 +133,7 @@ export default function AppleFieldEditor({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Alineación</label>
+                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">{t('wallet.studio.fields.textAlignment')}</label>
                             <select
                               value={f.textAlignment}
                               onChange={e => {
@@ -141,17 +143,17 @@ export default function AppleFieldEditor({
                               }}
                               className="w-full text-sm rounded-lg border border-surface-200 dark:border-surface-600 px-2.5 py-2 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                             >
-                              <option value="PKTextAlignmentNatural">Natural</option>
-                              <option value="PKTextAlignmentLeft">Izquierda</option>
-                              <option value="PKTextAlignmentCenter">Centro</option>
-                              <option value="PKTextAlignmentRight">Derecha</option>
+                              <option value="PKTextAlignmentNatural">{t('wallet.studio.fields.alignNatural')}</option>
+                              <option value="PKTextAlignmentLeft">{t('wallet.studio.fields.alignLeft')}</option>
+                              <option value="PKTextAlignmentCenter">{t('wallet.studio.fields.alignCenter')}</option>
+                              <option value="PKTextAlignmentRight">{t('wallet.studio.fields.alignRight')}</option>
                             </select>
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">Mensaje de cambio</label>
+                            <label className="text-xs font-medium text-surface-600 dark:text-surface-300">{t('wallet.studio.notifications.appleChangeMessage')}</label>
                             <input
                               type="text"
-                              placeholder="Opcional"
+                              placeholder={t('wallet.studio.dynamicTemplates.placeholder')}
                               value={f.changeMessage || ''}
                               onChange={e => {
                                 const updated = [...groupFields];
@@ -174,14 +176,14 @@ export default function AppleFieldEditor({
                 );
               })}
               {groupFields.length === 0 && (
-                <p className="text-xs text-surface-400 dark:text-surface-500 italic">Sin campos configurados.</p>
+                <p className="text-xs text-surface-400 dark:text-surface-500 italic">{t('wallet.studio.fields.noFields')}</p>
               )}
               <button
                 onClick={() => addField(group.key)}
                 disabled={groupFields.length >= group.max}
                 className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-surface-300 dark:border-surface-600 text-xs font-medium text-surface-500 dark:text-surface-400 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-all disabled:opacity-40"
               >
-                <PlusIcon className="w-3.5 h-3.5" /> Añadir campo
+                <PlusIcon className="w-3.5 h-3.5" /> {t('wallet.studio.fields.addField')}
               </button>
             </div>
           </div>

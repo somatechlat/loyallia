@@ -5,6 +5,7 @@ Loyallia Customer API Schemas (Pydantic models)
 from pydantic import BaseModel, EmailStr, field_validator
 
 from apps.customers.models import Customer, CustomerPass
+from common.messages import get_message
 
 
 class CustomerCreateIn(BaseModel):
@@ -23,14 +24,14 @@ class CustomerCreateIn(BaseModel):
     @classmethod
     def validate_name(cls, v: str) -> str:
         if len(v.strip()) < 1:
-            raise ValueError("Name cannot be empty")
+            raise ValueError(get_message("VALIDATION_NAME_REQUIRED"))
         return v.strip()
 
     @field_validator("gender")
     @classmethod
     def validate_gender(cls, v: str) -> str:
         if v and v not in ["M", "F", "O"]:
-            raise ValueError("Gender must be M, F, or O")
+            raise ValueError(get_message("VALIDATION_INVALID_GENDER"))
         return v
 
 
@@ -47,7 +48,7 @@ class CustomerUpdateIn(BaseModel):
     @classmethod
     def validate_name(cls, v: str | None) -> str | None:
         if v is not None and len(v.strip()) < 1:
-            raise ValueError("Name cannot be empty")
+            raise ValueError(get_message("VALIDATION_NAME_REQUIRED"))
         return v.strip() if v else v
 
 
