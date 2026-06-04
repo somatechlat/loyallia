@@ -14,6 +14,8 @@ import { FieldStudio } from './FieldStudio';
 import { BarcodeTab } from './BarcodeTab';
 import { ColorsTab } from './ColorsTab';
 import { CardTypeTab } from './CardTypeTab';
+import { BackDesignTab } from './BackDesignTab';
+import { AdvancedTab } from './AdvancedTab';
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -326,14 +328,28 @@ export function StudioSidebar({
             onUpdateFields={updateFields}
           />
         )}
-        {activeTab === 'back' && <div className="p-4 text-sm text-neutral-500">Reverso — implementado en FIX-8</div>}
+        {activeTab === 'back' && (
+          <BackDesignTab
+            backContent={state.backContent}
+            onUpdateBackContent={_updateBackContent}
+            appleConfig={state.apple}
+            googleConfig={state.google}
+          />
+        )}
         {activeTab === 'barcode' && (
           <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />
         )}
         {activeTab === 'colors' && (
           <ColorsTab colors={state.colors} onUpdateColors={updateColors} />
         )}
-        {activeTab === 'advanced' && <div className="p-4 text-sm text-neutral-500">Avanzado — implementado en FIX-8</div>}
+        {activeTab === 'advanced' && (
+          <AdvancedTab
+            appleConfig={state.apple}
+            googleConfig={state.google}
+            onUpdateAppleConfig={_updateAppleConfig}
+            onUpdateGoogleConfig={_updateGoogleConfig}
+          />
+        )}
       </div>
     </aside>
   );
