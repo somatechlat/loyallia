@@ -15,7 +15,10 @@ import { useI18n } from '@/lib/i18n';
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
+import { TemplateGallery } from './TemplateGallery';
+import { SaveTemplateModal } from './SaveTemplateModal';
 import type { WalletPassStudioState, CardTypeConfig } from '@/components/wallet/types/unified-state';
+import type { WalletTemplate } from '@/components/wallet/types/templates';
 
 export interface WalletStudioProps {
   initialState?: Partial<WalletPassStudioState>;
@@ -145,15 +148,29 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
     [setUndoableState]
   );
 
+  const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = React.useState(false);
+  const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
+
   const handleSave = React.useCallback(() => {
     onSave?.(displayState);
   }, [onSave, displayState]);
 
   const handleSaveAsTemplate = React.useCallback(() => {
-    onSaveAsTemplate?.(displayState);
-  }, [onSaveAsTemplate, displayState]);
+    setIsSaveTemplateModalOpen(true);
+  }, []);
+
+  const handleConfirmSaveTemplate = React.useCallback(
+    (name: string, description: string) => {
+      setIsSaveTemplateModalOpen(false);
+      onSaveAsTemplate?.(displayState);
+      // eslint-disable-next-line no-console
+      console.log('Template saved:', { name, description });
+    },
+    [onSaveAsTemplate, displayState]
+  );
 
   const handleAIGenerate = React.useCallback(() => {
+    setIsTemplateGalleryOpen(false);
     // Placeholder for AI generation — will be wired in a later phase
     // eslint-disable-next-line no-console
     console.log('AI Generate triggered');
@@ -166,9 +183,31 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
   }, []);
 
   const handleOpenTemplates = React.useCallback(() => {
-    // Placeholder for template gallery — will be wired in a later phase
-    // eslint-disable-next-line no-console
-    console.log('Open templates triggered');
+    setIsTemplateGalleryOpen(true);
+  }, []);
+
+  const handleSelectTemplate = React.useCallback(
+    (template: WalletTemplate) => {
+      setUndoableState((prev: WalletPassStudioState) => ({
+        ...prev,
+        name: template.name,
+        cardType: template.cardType,
+        industry: template.industry,
+        colors: template.colors,
+        cardTypeConfig: template.cardTypeConfig as CardTypeConfig,
+        barcode: template.barcode,
+        backContent: template.backContent,
+        apple: { ...prev.apple, ...template.apple },
+        google: { ...prev.google, ...template.google },
+        ui: { ...prev.ui, appliedTemplateId: template.id, isModified: true },
+      }));
+      setIsTemplateGalleryOpen(false);
+    },
+    [setUndoableState]
+  );
+
+  const handleCreateBlank = React.useCallback(() => {
+    setIsTemplateGalleryOpen(false);
   }, []);
 
   // Auto-save hook
@@ -226,6 +265,23 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
           {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
         </div>
       )}
+
+      {/* Template Gallery */}
+      <TemplateGallery
+        isOpen={isTemplateGalleryOpen}
+        onClose={() => setIsTemplateGalleryOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
+        onCreateBlank={handleCreateBlank}
+        onAIGenerate={handleAIGenerate}
+      />
+
+      {/* Save Template Modal */}
+      <SaveTemplateModal
+        isOpen={isSaveTemplateModalOpen}
+        onClose={() => setIsSaveTemplateModalOpen(false)}
+        onSave={handleConfirmSaveTemplate}
+        defaultName={displayState.name}
+      />
     </div>
   );
 }

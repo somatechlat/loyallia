@@ -172,6 +172,7 @@ export function StudioToolbar({
   designScore,
   onOpenTemplates,
   onSave,
+  onSaveAsTemplate,
   onExport,
   onAIGenerate,
   isModified,
@@ -297,6 +298,20 @@ export function StudioToolbar({
             <span>Guardar</span>
             {isModified && <span className="w-1.5 h-1.5 rounded-full bg-white/80" />}
           </button>
+
+          {/* Guardar como plantilla */}
+          {onSaveAsTemplate && (
+            <button
+              type="button"
+              onClick={onSaveAsTemplate}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              title="Guardar como plantilla"
+              data-testid="toolbar-save-template-btn"
+            >
+              <span>💾</span>
+              <span className="hidden md:inline">Guardar como plantilla</span>
+            </button>
+          )}
 
           {/* Exportar */}
           {onExport && (
