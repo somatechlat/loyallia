@@ -15,7 +15,10 @@ import { useI18n } from '@/lib/i18n';
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
+import { AIChatModal } from './AIChatModal';
+import { SaveTemplateModal } from './SaveTemplateModal';
 import type { WalletPassStudioState, CardTypeConfig } from '@/components/wallet/types/unified-state';
+import type { AIVariation } from '@/hooks/useAI';
 
 export interface WalletStudioProps {
   initialState?: Partial<WalletPassStudioState>;
@@ -26,6 +29,8 @@ export interface WalletStudioProps {
 export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
+  const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
+  const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
     studio.state,
     { maxHistory: 50 }
@@ -150,13 +155,45 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
   }, [onSave, displayState]);
 
   const handleSaveAsTemplate = React.useCallback(() => {
-    onSaveAsTemplate?.(displayState);
-  }, [onSaveAsTemplate, displayState]);
+    setIsSaveTemplateModalOpen(true);
+  }, []);
+
+  const handleSaveTemplateSubmit = React.useCallback(
+    (name: string, description: string) => {
+      onSaveAsTemplate?.({ ...displayState, name, description } as WalletPassStudioState);
+    },
+    [onSaveAsTemplate, displayState]
+  );
 
   const handleAIGenerate = React.useCallback(() => {
-    // Placeholder for AI generation — will be wired in a later phase
+    setIsAIModalOpen(true);
+  }, []);
+
+  const handleApplyTemplate = React.useCallback(
+    (variation: AIVariation) => {
+      setUndoableState((prev: WalletPassStudioState) => ({
+        ...prev,
+        ...(variation.design.cardType && { cardType: variation.design.cardType }),
+        ...(variation.design.industry && { industry: variation.design.industry }),
+        ...(variation.design.colors && { colors: { ...prev.colors, ...variation.design.colors } }),
+        ...(variation.design.name && { name: variation.design.name }),
+        ui: {
+          ...prev.ui,
+          isModified: true,
+        },
+      }));
+    },
+    [setUndoableState]
+  );
+
+  const handleCloseAIModal = React.useCallback(() => {
+    setIsAIModalOpen(false);
+  }, []);
+
+  const handleExport = React.useCallback(() => {
+    // Placeholder for export — will be wired in a later phase
     // eslint-disable-next-line no-console
-    console.log('AI Generate triggered');
+    console.log('Export triggered');
   }, []);
 
   const handleOpenTemplates = React.useCallback(() => {
@@ -189,6 +226,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
         onOpenTemplates={handleOpenTemplates}
         onSave={handleSave}
         onSaveAsTemplate={handleSaveAsTemplate}
+        onExport={handleExport}
         onAIGenerate={handleAIGenerate}
         isModified={displayState.ui.isModified}
       />
@@ -219,6 +257,22 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
           {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
         </div>
       )}
+
+      {/* AI Design Assistant Modal */}
+      <AIChatModal
+        isOpen={isAIModalOpen}
+        onClose={handleCloseAIModal}
+        onApplyTemplate={handleApplyTemplate}
+        initialCardType={displayState.cardType}
+        initialIndustry={displayState.industry}
+      />
+
+      {/* Save Template Modal */}
+      <SaveTemplateModal
+        isOpen={isSaveTemplateModalOpen}
+        onClose={() => setIsSaveTemplateModalOpen(false)}
+        onSave={handleSaveTemplateSubmit}
+      />
     </div>
   );
 }

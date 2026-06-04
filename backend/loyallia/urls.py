@@ -9,7 +9,7 @@ Mounts:
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from ninja import NinjaAPI
 
 from apps.api.router import api  # Django Ninja instance
@@ -30,6 +30,8 @@ apple_wallet_api.add_router("", apple_wallet_router)
 urlpatterns = [
     # Django Admin (super-admin access)
     path("django-admin/", admin.site.urls),
+    # AI endpoints (standard Django views, mounted before Ninja to avoid shadowing)
+    path("api/v1/ai/", include("apps.ai.urls")),
     # Ninja API v1 all REST endpoints
     path("api/v1/", api.urls),
     # Apple Wallet Web Service per Apple PassKit spec, these endpoints must

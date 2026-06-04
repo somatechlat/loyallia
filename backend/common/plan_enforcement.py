@@ -39,7 +39,7 @@ import logging
 import types
 from collections.abc import Callable
 
-from django.http import HttpRequest
+from django.http import HttpRequest, JsonResponse
 from django.utils import timezone
 from ninja.errors import HttpError
 
@@ -127,6 +127,9 @@ def get_current_usage(tenant, resource: str) -> int:
         ),
         "api_calls_day": lambda: _count_api_calls_today(tenant),
         "exports_month": lambda: _count_exports_month(tenant, month_start),
+        "wallet_templates": lambda: _count_wallet_templates(tenant),
+        "wallet_pass_updates_month": lambda: _count_wallet_pass_updates_month(tenant),
+        "wallet_ai_designs_month": lambda: _count_wallet_ai_designs_month(tenant),
     }
 
     counter = usage_map.get(resource)
@@ -267,6 +270,64 @@ def _count_exports_month(tenant, month_start) -> int:
     ).count()
 
 
+def _count_wallet_templates(tenant) -> int:
+    """Count wallet pass templates for a tenant.
+
+    PERF: Single COUNT query on WalletTemplate.
+    """
+    from django.db import ProgrammingError
+
+    try:
+        from apps.wallet.models import WalletTemplate
+
+        return WalletTemplate.objects.filter(tenant=tenant).count()
+    except (ImportError, ProgrammingError):
+        logger.warning("WalletTemplate model unavailable; returning usage=0.")
+        return 0
+
+
+def _count_wallet_pass_updates_month(tenant) -> int:
+    """Count wallet pass updates this month.
+
+    PERF: Single COUNT query on WalletPass filtered by updated_at.
+    """
+    from django.db import ProgrammingError
+
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    try:
+        from apps.wallet.models import WalletPass
+
+        return WalletPass.objects.filter(
+            tenant=tenant,
+            updated_at__gte=month_start,
+        ).count()
+    except (ImportError, ProgrammingError):
+        logger.warning("WalletPass model unavailable; returning usage=0.")
+        return 0
+
+
+def _count_wallet_ai_designs_month(tenant) -> int:
+    """Count AI-generated wallet designs this month.
+
+    PERF: Single COUNT query on WalletAIDesignLog filtered by tenant + date.
+    """
+    from django.db import ProgrammingError
+
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    try:
+        from apps.wallet.models import WalletAIDesignLog
+
+        return WalletAIDesignLog.objects.filter(
+            tenant=tenant,
+            created_at__gte=month_start,
+        ).count()
+    except (ImportError, ProgrammingError):
+        logger.warning("WalletAIDesignLog model unavailable; returning usage=0.")
+        return 0
+
+
 # CHECK FUNCTIONS
 
 
@@ -332,6 +393,15 @@ def check_feature_access(tenant, feature: str) -> None:
 # DECORATORS
 
 
+def _django_json_response_from_http_error(exc: HttpError):
+    """Convert a Ninja HttpError to a Django JsonResponse.
+
+    Used when decorators are applied to standard Django views (not Ninja routers).
+    Ninja views handle HttpError natively via exception handlers.
+    """
+    return JsonResponse({"error": exc.message}, status=exc.status_code)
+
+
 def _ninja_safe_wrap(func, wrapper):
     """Wrap a function preserving Ninja-compatible signature inspection.
 
@@ -373,7 +443,9 @@ def require_active_subscription(func):
         tenant = require_tenant(request)
         subscription = Subscription.objects.filter(tenant=tenant).first()
         if not subscription or not subscription.is_access_allowed:
-            raise HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
+            return _django_json_response_from_http_error(
+                HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
+            )
         return func(request, *args, **kwargs)
 
     return _ninja_safe_wrap(func, wrapper)
@@ -388,7 +460,10 @@ def enforce_limit(resource: str):
 
     def decorator(func):
         def wrapper(request: HttpRequest, *args, **kwargs):
-            check_plan_limit(require_tenant(request), resource, write=True)
+            try:
+                check_plan_limit(require_tenant(request), resource, write=True)
+            except HttpError as exc:
+                return _django_json_response_from_http_error(exc)
             return func(request, *args, **kwargs)
 
         return _ninja_safe_wrap(func, wrapper)
@@ -405,7 +480,10 @@ def require_feature(feature: str):
 
     def decorator(func):
         def wrapper(request: HttpRequest, *args, **kwargs):
-            check_feature_access(require_tenant(request), feature)
+            try:
+                check_feature_access(require_tenant(request), feature)
+            except HttpError as exc:
+                return _django_json_response_from_http_error(exc)
             return func(request, *args, **kwargs)
 
         return _ninja_safe_wrap(func, wrapper)

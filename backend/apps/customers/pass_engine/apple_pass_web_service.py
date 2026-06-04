@@ -361,6 +361,11 @@ def get_updated_pass(
         )
         return HttpResponse(status=500)
 
+    # Mark this pass as having an Apple Wallet version
+    if not customer_pass.apple_pass_id:
+        customer_pass.apple_pass_id = serial_number
+        customer_pass.save(update_fields=["apple_pass_id"])
+
     response = HttpResponse(
         pkpass_bytes,
         content_type="application/vnd.apple.pkpass",

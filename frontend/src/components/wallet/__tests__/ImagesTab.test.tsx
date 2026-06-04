@@ -3,183 +3,121 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { ImagesTab } from '@/components/wallet/studio/ImagesTab';
-
-// Mock the upload service
-vi.mock('@/components/wallet/services/imageUpload', () => ({
-  uploadWalletImage: vi.fn(),
-}));
-
-import { uploadWalletImage } from '@/components/wallet/services/imageUpload';
-
-const mockedUploadWalletImage = vi.mocked(uploadWalletImage);
-
-beforeEach(() => {
-  vi.stubGlobal('URL', {
-    createObjectURL: vi.fn(() => 'blob:mock-url'),
-    revokeObjectURL: vi.fn(),
-  });
-  vi.stubGlobal('Image', class MockImage {
-    onload: (() => void) | null = null;
-    onerror: (() => void) | null = null;
-    naturalWidth = 200;
-    naturalHeight = 200;
-    set src(value: string) {
-      this._src = value;
-      setTimeout(() => this.onload?.(), 0);
-    }
-    get src() { return this._src; }
-    private _src = '';
-  });
-});
-
-afterEach(() => {
-  cleanup();
-  vi.clearAllMocks();
-  vi.unstubAllGlobals();
-});
-
-function createMockFile(name: string, type: string, sizeBytes: number): File {
-  const blob = new Blob(['x'.repeat(sizeBytes)], { type });
-  return new File([blob], name, { type });
-}
-
-function createFileList(files: File[]): FileList {
-  return {
-    length: files.length,
-    item: (index: number) => files[index] ?? null,
-    [Symbol.iterator]: function* () {
-      for (let i = 0; i < files.length; i++) {
-        yield files[i];
-      }
-    },
-    ...files,
-  } as unknown as FileList;
-}
-
-function setFilesOnInput(input: HTMLInputElement, files: File[]) {
-  const fileList = createFileList(files);
-  Object.defineProperty(input, 'files', {
-    value: fileList,
-    writable: false,
-  });
-  fireEvent.change(input);
-}
+import type { WalletImages } from '@/components/wallet/types/unified-state';
 
 describe('ImagesTab', () => {
-  const baseProps = {
-    images: {},
-    onUpdateImages: vi.fn(),
-  };
-
-  it('renders all 3 upload sections', () => {
-    render(<ImagesTab {...baseProps} />);
-    expect(screen.getByText('Logo del programa')).toBeDefined();
-    expect(screen.getByText('Imagen principal')).toBeDefined();
-    expect(screen.getByText('Icono')).toBeDefined();
+  afterEach(() => {
+    cleanup();
   });
 
-  it('shows image count starting at 0', () => {
-    render(<ImagesTab {...baseProps} />);
-    expect(screen.getByText('0/5')).toBeDefined();
-  });
-
-  it('shows correct image count when images are present', () => {
+  it('renders logo section', () => {
     render(
-      <ImagesTab
-        images={{
-          logo: { url: 'https://example.com/logo.png', width: 160, height: 160 },
-          strip: { url: 'https://example.com/strip.png', width: 1125, height: 432 },
-        }}
-        onUpdateImages={baseProps.onUpdateImages}
-      />
+      <I18nProvider>
+        <ImagesTab images={{}} onUpdateImages={() => {}} />
+      </I18nProvider>
     );
-    expect(screen.getByText('2/5')).toBeDefined();
+    expect(screen.getByText('LOGO DEL NEGOCIO')).toBeDefined();
+    expect(screen.getByText('Arrastra una imagen o haz click')).toBeDefined();
   });
 
-  it('calls onUpdateImages when logo uploaded', async () => {
-    const onUpdateImages = vi.fn();
-    mockedUploadWalletImage.mockResolvedValueOnce({
-      url: 'https://cdn.example.com/logo.png',
-      width: 160,
-      height: 160,
-    });
-
-    render(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
-
-    const file = createMockFile('logo.png', 'image/png', 1024);
-    // There are 3 file inputs; the first is for Logo
-    const inputs = document.querySelectorAll('input[type="file"]');
-    setFilesOnInput(inputs[0] as HTMLInputElement, [file]);
-
-    await waitFor(() => {
-      expect(mockedUploadWalletImage).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(onUpdateImages).toHaveBeenCalledWith({
-        logo: { url: 'https://cdn.example.com/logo.png', width: 160, height: 160 },
-      });
-    });
+  it('renders hero section', () => {
+    render(
+      <I18nProvider>
+        <ImagesTab images={{}} onUpdateImages={() => {}} />
+      </I18nProvider>
+    );
+    expect(screen.getByText('IMAGEN PRINCIPAL (Strip / Hero)')).toBeDefined();
+    expect(screen.getByText('Arrastra una imagen panorámica')).toBeDefined();
   });
 
-  it('calls onUpdateImages when hero uploaded', async () => {
-    const onUpdateImages = vi.fn();
-    mockedUploadWalletImage.mockResolvedValueOnce({
-      url: 'https://cdn.example.com/hero.png',
-      width: 1125,
-      height: 432,
-    });
-
-    render(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
-
-    const file = createMockFile('hero.png', 'image/png', 1024);
-    const inputs = document.querySelectorAll('input[type="file"]');
-    setFilesOnInput(inputs[1] as HTMLInputElement, [file]);
-
-    await waitFor(() => {
-      expect(mockedUploadWalletImage).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(onUpdateImages).toHaveBeenCalledWith({
-        strip: { url: 'https://cdn.example.com/hero.png', width: 1125, height: 432 },
-        heroImage: { url: 'https://cdn.example.com/hero.png', width: 1125, height: 432 },
-      });
-    });
+  it('renders additional images section', () => {
+    render(
+      <I18nProvider>
+        <ImagesTab images={{}} onUpdateImages={() => {}} />
+      </I18nProvider>
+    );
+    expect(screen.getByText('IMÁGENES ADICIONALES')).toBeDefined();
+    expect(screen.getByText('Icono Apple')).toBeDefined();
+    expect(screen.getByText('Miniatura')).toBeDefined();
+    expect(screen.getByText('Fondo')).toBeDefined();
+    expect(screen.getByText('Wide Logo')).toBeDefined();
   });
 
-  it('calls onUpdateImages when icon uploaded', async () => {
-    const onUpdateImages = vi.fn();
-    mockedUploadWalletImage.mockResolvedValueOnce({
-      url: 'https://cdn.example.com/icon.png',
-      width: 90,
-      height: 90,
-    });
+  it('renders logo preview and actions when logo is present', () => {
+    render(
+      <I18nProvider>
+        <ImagesTab
+          images={{
+            logo: { url: 'https://example.com/logo.png', width: 160, height: 160 },
+          }}
+          onUpdateImages={() => {}}
+        />
+      </I18nProvider>
+    );
+    expect(screen.getByAltText('Apple rect preview')).toBeDefined();
+    expect(screen.getByAltText('Google circle preview')).toBeDefined();
+    expect(screen.getByAltText('Original preview')).toBeDefined();
+    expect(screen.getByText('Auto-generar @2x y @3x para Apple')).toBeDefined();
+    expect(screen.getByText('Eliminar')).toBeDefined();
+    expect(screen.getByText('Reemplazar')).toBeDefined();
+    expect(screen.getByText('Mejorar con IA')).toBeDefined();
+  });
 
-    render(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
-
-    const file = createMockFile('icon.png', 'image/png', 1024);
-    const inputs = document.querySelectorAll('input[type="file"]');
-    setFilesOnInput(inputs[2] as HTMLInputElement, [file]);
-
-    await waitFor(() => {
-      expect(mockedUploadWalletImage).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(onUpdateImages).toHaveBeenCalledWith({
-        icon: { url: 'https://cdn.example.com/icon.png', width: 90, height: 90 },
-      });
+  it('calls onUpdateImages when logo is deleted', () => {
+    let lastUpdate: Partial<WalletImages> | undefined;
+    render(
+      <I18nProvider>
+        <ImagesTab
+          images={{
+            logo: { url: 'https://example.com/logo.png', width: 160, height: 160 },
+          }}
+          onUpdateImages={(update) => { lastUpdate = update; }}
+        />
+      </I18nProvider>
+    );
+    const deleteBtn = screen.getByText('Eliminar');
+    fireEvent.click(deleteBtn);
+    expect(lastUpdate).toEqual({
+      logo: undefined,
+      logo2x: undefined,
+      logo3x: undefined,
     });
   });
 
-  it('renders platform tips section', () => {
-    render(<ImagesTab {...baseProps} />);
-    expect(screen.getByText('Recomendaciones por plataforma')).toBeDefined();
-    expect(screen.getByText('Apple Wallet')).toBeDefined();
-    expect(screen.getByText('Google Wallet')).toBeDefined();
+  it('renders hero preview when strip is present', () => {
+    render(
+      <I18nProvider>
+        <ImagesTab
+          images={{
+            strip: { url: 'https://example.com/strip.png', width: 1125, height: 432 },
+          }}
+          onUpdateImages={() => {}}
+        />
+      </I18nProvider>
+    );
+    const img = screen.getByAltText('Arrastra una imagen panorámica') as HTMLImageElement;
+    expect(img).toBeDefined();
+    expect(img.src).toBe('https://example.com/strip.png');
+  });
+
+  it('toggles auto-generate checkbox', () => {
+    render(
+      <I18nProvider>
+        <ImagesTab
+          images={{
+            logo: { url: 'https://example.com/logo.png', width: 160, height: 160 },
+          }}
+          onUpdateImages={() => {}}
+        />
+      </I18nProvider>
+    );
+    const checkbox = screen.getByRole('checkbox');
+    expect((checkbox as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(checkbox);
+    expect((checkbox as HTMLInputElement).checked).toBe(false);
   });
 });

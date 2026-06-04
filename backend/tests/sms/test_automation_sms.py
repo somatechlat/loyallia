@@ -94,8 +94,6 @@ class AutomationSendSMSTest(TestCase):
         clear_test_overrides()
 
     def test_send_sms_action_success_attempt(self):
-        if not self.creds:
-            self.skipTest("Twilio credentials not available in Vault")
         auto = make_automation(
             self.tenant,
             action=AutomationAction.SEND_SMS,

@@ -445,6 +445,9 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
         )
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Object patched: %s", object_id)
+            if not customer_pass.google_pass_id:
+                customer_pass.google_pass_id = object_id
+                customer_pass.save(update_fields=["google_pass_id"])
             return {"success": True, "action": "patch", "object_id": object_id}
         if patch_resp.status_code == 404:
             # Object doesn't exist yet create it
@@ -454,6 +457,9 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
             )
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Object created: %s", object_id)
+                if not customer_pass.google_pass_id:
+                    customer_pass.google_pass_id = object_id
+                    customer_pass.save(update_fields=["google_pass_id"])
                 return {"success": True, "action": "create", "object_id": object_id}
             logger.error(
                 "Failed to create Google Wallet Object %s: %s",

@@ -213,6 +213,24 @@ RATE_LIMIT_RULES = [
         30,
         60,
     ),  # 30 Agent API calls per minute per user (LLM token cost protection)
+    (
+        "/api/v1/ai/",
+        "user",
+        10,
+        60,
+    ),  # 10 AI requests per minute per user
+    (
+        "/api/v1/wallet/studio/templates/",
+        "user",
+        30,
+        60,
+    ),  # 30 template ops per minute per user
+    (
+        "/api/v1/wallet/studio/generate/",
+        "user",
+        20,
+        60,
+    ),  # 20 generate ops per minute per user
     ("/api/v1/", "ip", 200, 60),  # 200 general API requests per minute per IP
 ]
 

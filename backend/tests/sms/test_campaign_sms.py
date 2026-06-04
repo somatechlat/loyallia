@@ -75,9 +75,6 @@ class SMSCampaignTaskTest(TestCase):
             set_test_override("twilio_from_number", self.creds["from"])
 
     def test_campaign_attempts_to_send_to_customers(self):
-        if not self.creds:
-            self.skipTest("Twilio credentials not available in Vault")
-
         from apps.notifications.sms.tasks import send_sms_campaign
 
         tenant = make_tenant()
@@ -96,9 +93,6 @@ class SMSCampaignTaskTest(TestCase):
         self.assertIn("campaign_run_id", result)
 
     def test_campaign_creates_campaign_run(self):
-        if not self.creds:
-            self.skipTest("Twilio credentials not available in Vault")
-
         from apps.notifications.models import CampaignRun
         from apps.notifications.sms.tasks import send_sms_campaign
 

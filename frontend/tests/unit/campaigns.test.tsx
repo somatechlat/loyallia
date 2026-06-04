@@ -1,85 +1,77 @@
 /**
  * Unit tests for campaign wizard components.
  * Tests: CustomerPicker, ProgramSelector, PlatformSelector
+ * NO mocks — all tests use real components and real code paths.
  */
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
-// Mock useI18n to return keys as-is
-vi.mock('@/lib/i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, vars?: Record<string, string | number>) => {
-      let result = key;
-      if (vars) {
-        for (const [k, v] of Object.entries(vars)) {
-          result += ` ${k}=${v}`;
-        }
-      }
-      return result;
-    },
-    locale: 'es',
-  }),
-}));
-
+import { I18nProvider } from '@/lib/i18n';
 import CustomerPicker from '@/components/campaigns/CustomerPicker';
 import ProgramSelector from '@/components/campaigns/ProgramSelector';
 import PlatformSelector from '@/components/campaigns/PlatformSelector';
+
+const Wrapper = ({ children }: { children: React.ReactNode }) => (
+  <I18nProvider>{children}</I18nProvider>
+);
 
 afterEach(() => {
   cleanup();
 });
 
 describe('CustomerPicker', () => {
-  const mockCustomers = [
+  const customers = [
     { id: '1', first_name: 'Juan', last_name: 'Perez', email: 'juan@test.com', phone: '0999999999' },
     { id: '2', first_name: 'Maria', last_name: 'Gomez', email: 'maria@test.com', phone: '' },
   ];
 
   const baseProps = {
-    customers: mockCustomers,
+    customers,
     selectedIds: [] as string[],
     total: 2,
     offset: 0,
     loading: false,
     search: '',
     mode: 'select' as const,
-    onSearchChange: vi.fn(),
-    onOffsetChange: vi.fn(),
-    onToggle: vi.fn(),
-    onToggleAll: vi.fn(),
+    onSearchChange: () => {},
+    onOffsetChange: () => {},
+    onToggle: () => {},
+    onToggleAll: () => {},
   };
 
   it('renders customer list', () => {
-    render(<CustomerPicker {...baseProps} />);
+    render(<Wrapper><CustomerPicker {...baseProps} /></Wrapper>);
     expect(screen.getByText('Juan Perez')).toBeDefined();
     expect(screen.getByText('Maria Gomez')).toBeDefined();
   });
 
   it('checks all rows when toggle all is clicked', () => {
-    const onToggleAll = vi.fn();
-    render(<CustomerPicker {...baseProps} onToggleAll={onToggleAll} />);
+    let toggleAllCalled = false;
+    const onToggleAll = () => { toggleAllCalled = true; };
+    render(<Wrapper><CustomerPicker {...baseProps} onToggleAll={onToggleAll} /></Wrapper>);
     const checkbox = screen.getAllByRole('checkbox')[0];
     fireEvent.click(checkbox);
-    expect(onToggleAll).toHaveBeenCalled();
+    expect(toggleAllCalled).toBe(true);
   });
 
   it('shows loading state', () => {
-    render(<CustomerPicker {...baseProps} loading={true} customers={[]} />);
-    expect(screen.getByText('common.loading')).toBeDefined();
+    render(<Wrapper><CustomerPicker {...baseProps} loading={true} customers={[]} /></Wrapper>);
+    expect(screen.getByText('Loading...')).toBeDefined();
   });
 
   it('shows empty state when no customers', () => {
-    render(<CustomerPicker {...baseProps} customers={[]} total={0} />);
-    expect(screen.getByText('campaigns.noCustomers')).toBeDefined();
+    render(<Wrapper><CustomerPicker {...baseProps} customers={[]} total={0} /></Wrapper>);
+    expect(screen.getByText('No customers found')).toBeDefined();
   });
 
   it('calls onToggle when individual row is clicked', () => {
-    const onToggle = vi.fn();
-    render(<CustomerPicker {...baseProps} onToggle={onToggle} />);
+    let toggledId = '';
+    const onToggle = (id: string) => { toggledId = id; };
+    render(<Wrapper><CustomerPicker {...baseProps} onToggle={onToggle} /></Wrapper>);
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[1]);
-    expect(onToggle).toHaveBeenCalledWith('1');
+    expect(toggledId).toBe('1');
   });
 });
 
@@ -99,39 +91,40 @@ describe('ProgramSelector', () => {
     programCounts: counts,
     selectedId: '',
     isWallet: true,
-    onSelect: vi.fn(),
+    onSelect: () => {},
   };
 
   it('renders program cards', () => {
-    render(<ProgramSelector {...baseProps} />);
+    render(<Wrapper><ProgramSelector {...baseProps} /></Wrapper>);
     const cards = screen.getAllByText('Programa A');
     expect(cards.length).toBeGreaterThan(0);
     expect(screen.getAllByText('Programa B').length).toBeGreaterThan(0);
   });
 
   it('has search input', () => {
-    render(<ProgramSelector {...baseProps} />);
-    const inputs = screen.getAllByPlaceholderText('campaigns.searchProgram');
+    render(<Wrapper><ProgramSelector {...baseProps} /></Wrapper>);
+    const inputs = screen.getAllByPlaceholderText('Search program...');
     expect(inputs.length).toBeGreaterThan(0);
   });
 
   it('calls onSelect when program card clicked', () => {
-    const onSelect = vi.fn();
-    render(<ProgramSelector {...baseProps} onSelect={onSelect} />);
+    let selectedId = '';
+    const onSelect = (id: string) => { selectedId = id; };
+    render(<Wrapper><ProgramSelector {...baseProps} onSelect={onSelect} /></Wrapper>);
     const cards = screen.getAllByText('Programa A');
     fireEvent.click(cards[0]);
-    expect(onSelect).toHaveBeenCalledWith('p1');
+    expect(selectedId).toBe('p1');
   });
 
   it('shows wallet platform breakdown when isWallet=true', () => {
-    render(<ProgramSelector {...baseProps} />);
+    render(<Wrapper><ProgramSelector {...baseProps} /></Wrapper>);
     const texts = screen.getAllByText(/40/);
     expect(texts.length).toBeGreaterThan(0);
   });
 
   it('shows all programs option', () => {
-    render(<ProgramSelector {...baseProps} />);
-    const options = screen.getAllByText('campaigns.allPrograms');
+    render(<Wrapper><ProgramSelector {...baseProps} /></Wrapper>);
+    const options = screen.getAllByText('All programs');
     expect(options.length).toBeGreaterThan(0);
   });
 });
@@ -145,33 +138,34 @@ describe('PlatformSelector', () => {
     programCounts: counts,
     selectedPlatform: 'both' as const,
     selectedProgramId: 'p1',
-    onSelect: vi.fn(),
+    onSelect: () => {},
   };
 
   it('renders three platform options', () => {
-    render(<PlatformSelector {...baseProps} />);
-    expect(screen.getAllByText('wallet.both').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('wallet.appleWallet').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('wallet.googleWallet').length).toBeGreaterThan(0);
+    render(<Wrapper><PlatformSelector {...baseProps} /></Wrapper>);
+    expect(screen.getAllByText('Both').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Apple Wallet').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Google Wallet').length).toBeGreaterThan(0);
   });
 
   it('calls onSelect with platform key', () => {
-    const onSelect = vi.fn();
-    render(<PlatformSelector {...baseProps} onSelect={onSelect} />);
-    const apple = screen.getAllByText('wallet.appleWallet');
+    let selectedPlatform = '';
+    const onSelect = (platform: string) => { selectedPlatform = platform; };
+    render(<Wrapper><PlatformSelector {...baseProps} onSelect={onSelect} /></Wrapper>);
+    const apple = screen.getAllByText('Apple Wallet');
     fireEvent.click(apple[0]);
-    expect(onSelect).toHaveBeenCalledWith('apple');
+    expect(selectedPlatform).toBe('apple');
   });
 
   it('shows counts for selected program', () => {
-    render(<PlatformSelector {...baseProps} />);
+    render(<Wrapper><PlatformSelector {...baseProps} /></Wrapper>);
     expect(screen.getAllByText(/40/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/60/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/100/).length).toBeGreaterThan(0);
   });
 
   it('hides counts when program is all', () => {
-    render(<PlatformSelector {...baseProps} selectedProgramId="all" />);
+    render(<Wrapper><PlatformSelector {...baseProps} selectedProgramId="all" /></Wrapper>);
     const bothCount = screen.queryAllByText(/👥 100/);
     expect(bothCount.length).toBe(0);
   });

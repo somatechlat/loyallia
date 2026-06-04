@@ -6,6 +6,7 @@ Ecuadorian business fields for SRI compliance.
 
 from __future__ import annotations
 
+import logging
 import re
 from contextlib import suppress
 
@@ -15,6 +16,8 @@ from django.db import models
 from django.utils import timezone
 
 from common.models import TimestampedModel
+
+logger = logging.getLogger(__name__)
 
 # VALIDATORS Ecuadorian Identity Documents
 
@@ -570,7 +573,7 @@ class PlatformSetting(models.Model):
     @classmethod
     def set(
         cls, key: str, value: str, description: str = "", category: str = "general"
-    ) -> "PlatformSetting":
+    ) -> PlatformSetting:
         """Set a setting value, updating both DB and cache.
 
         Returns the created or updated PlatformSetting instance.

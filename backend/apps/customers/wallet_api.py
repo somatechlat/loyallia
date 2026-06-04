@@ -177,6 +177,11 @@ def download_apple_pass(request, pass_id: str):
         # Cache for 24 hours (it will auto-invalidate if last_updated changes)
         cache.set(cache_key, pkpass_bytes, timeout=86400)
 
+    # Mark this pass as having an Apple Wallet version
+    if not customer_pass.apple_pass_id:
+        customer_pass.apple_pass_id = str(customer_pass.id)
+        customer_pass.save(update_fields=["apple_pass_id"])
+
     response = HttpResponse(
         pkpass_bytes,
         content_type="application/vnd.apple.pkpass",

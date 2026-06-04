@@ -3,8 +3,9 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { FieldCard } from '@/components/wallet/studio/FieldCard';
 import type { UnifiedField } from '@/components/wallet/types/unified-state';
 
@@ -27,84 +28,138 @@ function createMockField(overrides: Partial<UnifiedField> = {}): UnifiedField {
 }
 
 describe('FieldCard', () => {
+  const calls = {
+    onClick: 0,
+    onToggleApple: 0,
+    onToggleGoogle: 0,
+    onDelete: 0,
+  };
+
   const baseProps = {
-    onClick: vi.fn(),
-    onToggleApple: vi.fn(),
-    onToggleGoogle: vi.fn(),
-    onDelete: vi.fn(),
+    onClick: () => { calls.onClick++; },
+    onToggleApple: () => { calls.onToggleApple++; },
+    onToggleGoogle: () => { calls.onToggleGoogle++; },
+    onDelete: () => { calls.onDelete++; },
     hasNotification: false,
   };
 
   afterEach(() => {
     cleanup();
-    vi.clearAllMocks();
+    calls.onClick = 0;
+    calls.onToggleApple = 0;
+    calls.onToggleGoogle = 0;
+    calls.onDelete = 0;
   });
 
   it('renders label and value', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField()} {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText('Test Label')).toBeDefined();
     expect(screen.getByText('Test Value')).toBeDefined();
   });
 
   it('truncates long values', () => {
     const longValue = 'a'.repeat(50);
-    render(<FieldCard field={createMockField({ value: longValue })} {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField({ value: longValue })} {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText(longValue.slice(0, 40) + '…')).toBeDefined();
   });
 
   it('shows dynamic badge when field is dynamic', () => {
-    render(<FieldCard field={createMockField({ isDynamic: true })} {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField({ isDynamic: true })} {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText('dynamic')).toBeDefined();
   });
 
   it('calls onClick when card is clicked', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    const card = screen.getByRole('button', { name: /Field Test Label/ });
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField()} {...baseProps} />
+      </I18nProvider>
+    );
+    const card = screen.getByRole('button', { name: /Label Test Label/ });
     fireEvent.click(card);
-    expect(baseProps.onClick).toHaveBeenCalledTimes(1);
+    expect(calls.onClick).toBe(1);
   });
 
   it('calls onClick when Enter is pressed', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    const card = screen.getByRole('button', { name: /Field Test Label/ });
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField()} {...baseProps} />
+      </I18nProvider>
+    );
+    const card = screen.getByRole('button', { name: /Label Test Label/ });
     fireEvent.keyDown(card, { key: 'Enter' });
-    expect(baseProps.onClick).toHaveBeenCalledTimes(1);
+    expect(calls.onClick).toBe(1);
   });
 
   it('toggles Apple visibility when apple button clicked', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField()} {...baseProps} />
+      </I18nProvider>
+    );
     const appleBtn = screen.getByLabelText('Visible on Apple Wallet');
     fireEvent.click(appleBtn);
-    expect(baseProps.onToggleApple).toHaveBeenCalledTimes(1);
+    expect(calls.onToggleApple).toBe(1);
   });
 
   it('toggles Google visibility when google button clicked', () => {
-    render(<FieldCard field={createMockField({ showOnGoogle: true })} {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField({ showOnGoogle: true })} {...baseProps} />
+      </I18nProvider>
+    );
     const googleBtn = screen.getByLabelText('Visible on Google Wallet');
     fireEvent.click(googleBtn);
-    expect(baseProps.onToggleGoogle).toHaveBeenCalledTimes(1);
+    expect(calls.onToggleGoogle).toBe(1);
   });
 
   it('shows notification bell when hasNotification is true', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} hasNotification={true} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField()} {...baseProps} hasNotification={true} />
+      </I18nProvider>
+    );
     expect(screen.getByLabelText('Notifications configured')).toBeDefined();
   });
 
   it('calls onDelete when delete button clicked', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField()} {...baseProps} />
+      </I18nProvider>
+    );
     const deleteBtn = screen.getByLabelText('Delete field');
     fireEvent.click(deleteBtn);
-    expect(baseProps.onDelete).toHaveBeenCalledTimes(1);
+    expect(calls.onDelete).toBe(1);
   });
 
   it('shows "No value" placeholder when value is empty', () => {
-    render(<FieldCard field={createMockField({ value: '' })} {...baseProps} />);
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField({ value: '' })} {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText('No value')).toBeDefined();
   });
 
   it('has draggable attribute', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    const card = screen.getByRole('button', { name: /Field Test Label/ });
+    render(
+      <I18nProvider>
+        <FieldCard field={createMockField()} {...baseProps} />
+      </I18nProvider>
+    );
+    const card = screen.getByRole('button', { name: /Label Test Label/ });
     expect(card.getAttribute('draggable')).toBe('true');
   });
 });

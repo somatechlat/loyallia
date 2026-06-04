@@ -63,6 +63,7 @@ LOCAL_APPS = [
     "apps.api.apps.ApiConfig",
     "apps.backup.apps.BackupConfig",
     "apps.redemption.apps.RedemptionConfig",
+    "apps.ai.apps.AIConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -84,6 +85,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.tenants.middleware.TenantMiddleware",  # Tenant resolution from JWT
+    "apps.ai.middleware.AIRateLimitMiddleware",  # AI endpoint rate limiting (hourly/daily)
     "common.middleware.AuditUserMiddleware",  # Audit user tracking for created_by/updated_by
 ]
 
@@ -466,6 +468,19 @@ GOOGLE_OAUTH_REDIRECT_URI = config(
 
 APP_URL = config("APP_URL", default="http://localhost")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
+
+# AI CONFIGURATION (Wallet Pass Studio)
+# Provider-agnostic settings loaded from Vault; editable via PlatformSetting.
+
+AI_API_KEY = get_secret("ai_api_key", default="")
+AI_API_BASE_URL = get_secret("ai_api_base_url", default="https://api.groq.com/openai/v1")
+AI_MODEL = get_secret("ai_model", default="openai/gpt-oss-120b")
+_ai_max_tokens = get_secret("AI_MAX_TOKENS", default="4096")
+AI_MAX_TOKENS = int(_ai_max_tokens) if _ai_max_tokens else 4096
+AI_TEMPERATURE = config("AI_TEMPERATURE", default=0.7, cast=float)
+_ai_timeout = get_secret("AI_TIMEOUT_SECONDS", default="30")
+AI_TIMEOUT_SECONDS = int(_ai_timeout) if _ai_timeout else 30
+AI_ENABLED = bool(AI_API_KEY)
 
 # SENTRY Error Tracking (B-013)
 

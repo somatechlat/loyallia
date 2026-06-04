@@ -39,6 +39,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.9.0",
+    "@testing-library/dom": "^10.4.1",
     "@types/leaflet": "^1.9.21",
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.7",

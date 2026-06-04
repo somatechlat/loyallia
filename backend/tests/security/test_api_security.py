@@ -101,12 +101,8 @@ class TestSSRFProtection(TestCase):
 
     def test_valid_public_url_passes(self):
         """Public URLs should pass validation."""
-        # This test may fail without network skip if DNS fails
-        try:
-            result = validate_external_url("https://example.com/image.png")
-            self.assertEqual(result, "https://example.com/image.png")
-        except SSRFError:
-            self.skipTest("DNS resolution unavailable in test environment")
+        result = validate_external_url("https://example.com/image.png")
+        self.assertEqual(result, "https://example.com/image.png")
 
     def test_loopback_ip_blocked(self):
         """127.0.0.1 should be blocked."""

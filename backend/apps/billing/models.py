@@ -34,6 +34,9 @@ TRIAL_LIMITS = {
     "ai_queries_month": 500,
     "api_calls_day": 1000,
     "exports_month": 10,
+    "wallet_templates": 5,
+    "wallet_pass_updates_month": 50,
+    "wallet_ai_designs_month": 20,
 }
 
 
@@ -54,6 +57,9 @@ class PlanFeature:
     EMAIL_CAMPAIGNS = "email_campaigns"
     WALLET_CAMPAIGNS = "wallet_campaigns"
     SMS_CAMPAIGNS = "sms_campaigns"
+    WALLET_PASS_STUDIO = "wallet_pass_studio"
+    WALLET_CUSTOM_TEMPLATES = "wallet_custom_templates"
+    WALLET_ADVANCED_FIELDS = "wallet_advanced_fields"
 
     ALL_FEATURES = [
         GEO_FENCING,
@@ -68,6 +74,9 @@ class PlanFeature:
         EMAIL_CAMPAIGNS,
         WALLET_CAMPAIGNS,
         SMS_CAMPAIGNS,
+        WALLET_PASS_STUDIO,
+        WALLET_CUSTOM_TEMPLATES,
+        WALLET_ADVANCED_FIELDS,
     ]
 
 
@@ -189,6 +198,16 @@ class SubscriptionPlan(TimestampedModel):
         default=5,
         verbose_name="Máx. exportaciones/mes",
         help_text="Monthly data export quota. CPU-intensive Celery task.",
+    )
+    max_wallet_templates = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. plantillas wallet",
+        help_text="Maximum wallet pass templates a tenant can create. 0=disabled.",
+    )
+    max_wallet_pass_updates_month = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Máx. actualizaciones wallet/mes",
+        help_text="Monthly wallet pass update quota. 0=disabled.",
     )
 
     # Feature Flags (selectable in admin REQ-PLAN-003)
@@ -320,6 +339,9 @@ class SubscriptionPlan(TimestampedModel):
             "ai_queries_month": self.max_ai_queries_month,
             "api_calls_day": self.max_api_calls_day,
             "exports_month": self.max_exports_month,
+            "wallet_templates": self.max_wallet_templates,
+            "wallet_pass_updates_month": self.max_wallet_pass_updates_month,
+            "wallet_ai_designs_month": self.max_ai_queries_month,  # Shares AI query budget
         }
 
 

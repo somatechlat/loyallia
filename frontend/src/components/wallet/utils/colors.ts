@@ -167,8 +167,8 @@ export function autoForeground(backgroundHex: string): string {
   const blackLum = getLuminance('#000000');
   const whiteLum = getLuminance('#FFFFFF');
 
-  const blackContrast = (whiteLum + 0.05) / (bgLum + 0.05);
-  const whiteContrast = (bgLum + 0.05) / (blackLum + 0.05);
+  const blackContrast = (Math.max(bgLum, blackLum) + 0.05) / (Math.min(bgLum, blackLum) + 0.05);
+  const whiteContrast = (Math.max(bgLum, whiteLum) + 0.05) / (Math.min(bgLum, whiteLum) + 0.05);
 
   return blackContrast > whiteContrast ? '#000000' : '#FFFFFF';
 }
