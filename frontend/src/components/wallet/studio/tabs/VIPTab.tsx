@@ -30,10 +30,11 @@ const COMMON_PERKS = [
   'Ampliación de garantía',
 ];
 
-function CrownIcon({ className }: { className?: string }) {
+function CrownIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <svg
       className={className}
+      style={style}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
