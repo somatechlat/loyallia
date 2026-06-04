@@ -17,6 +17,12 @@ export interface KeyboardShortcutsConfig {
   onZoomOut?: () => void;
   onResetZoom?: () => void;
   onEscape?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  onNudge?: (direction: 'up' | 'down' | 'left' | 'right', amount: number) => void;
+  onToggleGrid?: () => void;
+  onNextField?: () => void;
+  onPrevField?: () => void;
 }
 
 export function useKeyboardShortcuts(config: KeyboardShortcutsConfig): void {
@@ -87,6 +93,48 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig): void {
       if (key.toLowerCase() === 'b' && !mod) {
         event.preventDefault();
         config.onToggleBack?.();
+        return;
+      }
+
+      if (mod && key.toLowerCase() === 'd') {
+        event.preventDefault();
+        config.onDuplicate?.();
+        return;
+      }
+
+      if (key === 'Delete' || key === 'Backspace') {
+        event.preventDefault();
+        config.onDelete?.();
+        return;
+      }
+
+      if (mod && key.toLowerCase() === 'g') {
+        event.preventDefault();
+        config.onToggleGrid?.();
+        return;
+      }
+
+      if (key === 'Tab') {
+        event.preventDefault();
+        if (shiftKey) {
+          config.onPrevField?.();
+        } else {
+          config.onNextField?.();
+        }
+        return;
+      }
+
+      // Nudge: arrow keys (with optional Shift for 10px)
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+        event.preventDefault();
+        const directionMap: Record<string, 'up' | 'down' | 'left' | 'right'> = {
+          ArrowUp: 'up',
+          ArrowDown: 'down',
+          ArrowLeft: 'left',
+          ArrowRight: 'right',
+        };
+        const amount = shiftKey ? 10 : 1;
+        config.onNudge?.(directionMap[key], amount);
         return;
       }
 

@@ -198,6 +198,35 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
       setIsSaveTemplateModalOpen(false);
       setIsAIModalOpen(false);
       setIsBottomSheetOpen(false);
+      studio.setSelectedFieldId(null);
+    },
+    onDuplicate: () => {
+      if (studio.selectedFieldId) studio.duplicateField(studio.selectedFieldId);
+    },
+    onDelete: () => {
+      if (studio.selectedFieldId) studio.deleteField(studio.selectedFieldId);
+    },
+    onNudge: (direction, amount) => {
+      if (studio.selectedFieldId) studio.nudgeField(studio.selectedFieldId, direction, amount);
+    },
+    onToggleGrid: () => wrappedUpdateUI({ showGrid: !displayState.ui.showGrid }),
+    onNextField: () => {
+      const focusable = Array.from(document.querySelectorAll<HTMLElement>(
+        '[data-field-id], [data-tab-button], input, textarea, select, button'
+      )).filter((el) => el.tabIndex >= -1 && !el.disabled && el.offsetParent !== null);
+      const active = document.activeElement as HTMLElement | null;
+      const idx = focusable.indexOf(active ?? document.body);
+      const next = focusable[(idx + 1) % focusable.length];
+      next?.focus();
+    },
+    onPrevField: () => {
+      const focusable = Array.from(document.querySelectorAll<HTMLElement>(
+        '[data-field-id], [data-tab-button], input, textarea, select, button'
+      )).filter((el) => el.tabIndex >= -1 && !el.disabled && el.offsetParent !== null);
+      const active = document.activeElement as HTMLElement | null;
+      const idx = focusable.indexOf(active ?? document.body);
+      const prev = focusable[(idx - 1 + focusable.length) % focusable.length];
+      prev?.focus();
     },
   });
 
