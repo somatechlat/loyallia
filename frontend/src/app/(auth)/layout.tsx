@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
   const { user, loading } = useAuth();
   const router = useRouter();
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function AuthLayout({
             Loyallia
           </h1>
           <p className="text-white/70 mt-1 text-sm">
-            Plataforma de Fidelización Digital
+            {t("auth.layout.tagline")}
           </p>
         </div>
         <div className="card p-8 shadow-2xl !overflow-visible">{children}</div>
@@ -42,19 +44,19 @@ export default function AuthLayout({
               href="/legal/terms"
               className="hover:text-white transition-colors"
             >
-              Términos de Servicio
+              {t("auth.layout.terms")}
             </Link>
             <span>|</span>
             <Link
               href="/legal/privacy"
               className="hover:text-white transition-colors"
             >
-              Política de Privacidad
+              {t("auth.layout.privacy")}
             </Link>
           </p>
           <p className="text-[10px] text-white/30 tracking-wide leading-relaxed">
             <span className="font-semibold text-white/50">Loyallia</span> ·
-            Intelligent Rewards
+            {t("auth.layout.subTagline")}
             <br />
             {process.env.NEXT_PUBLIC_PARTNER_URL && (
               <a
@@ -63,7 +65,7 @@ export default function AuthLayout({
                 rel="noopener noreferrer"
                 className="text-[9px] opacity-60 hover:opacity-100 transition-opacity"
               >
-                powered by Yachaq.ai
+                {t("auth.layout.poweredBy")}
               </a>
             )}
           </p>

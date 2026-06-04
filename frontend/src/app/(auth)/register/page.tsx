@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useGoogleScript } from '@/lib/useGoogleScript';
+import { useI18n } from '@/lib/i18n';
 import { registerSchema, type RegisterFormData } from '@/lib/validations';
 
 const COUNTRY_CODES = [
@@ -73,6 +74,7 @@ function FormField({
 }
 
 export default function RegisterPage() {
+  const { t } = useI18n();
   const { loginWithGoogle } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -164,19 +166,19 @@ export default function RegisterPage() {
 
   const completeGoogleRegistration = async () => {
     if (!googleBizName.trim()) {
-      toast.error('Ingresa el nombre de tu negocio');
+      toast.error(t('auth.register.toast.googleBizNameRequired'));
       return;
     }
     setGoogleLoading(true);
     try {
       await loginWithGoogle(googleCredential, googleBizName.trim());
-      toast.success('¡Cuenta creada con Google!');
+      toast.success(t('auth.register.toast.googleSuccess'));
       router.replace('/');
     } catch (err: unknown) {
       const msg = err instanceof Error && 'response' in err
         ? (err as unknown as { response?: { data?: { error?: string } } }).response?.data?.error
         : undefined;
-      toast.error(msg || 'Error al registrarse con Google');
+      toast.error(msg || t('auth.register.toast.googleError'));
     } finally {
       setGoogleLoading(false);
     }
@@ -184,7 +186,7 @@ export default function RegisterPage() {
 
   const handleSendOtp = async () => {
     if (!fullPhone) {
-      toast.error('Ingresa tu número de teléfono primero');
+      toast.error(t('auth.register.toast.phoneRequired'));
       return;
     }
     setVerifyLoading(true);
@@ -194,15 +196,15 @@ export default function RegisterPage() {
       if (resp.data.success) {
         setVerifyStep('sent');
         setVerifySid(resp.data.sid);
-        toast.success('Código enviado. Revisa tu teléfono.');
+        toast.success(t('auth.register.toast.codeSent'));
       } else {
-        setVerifyError(resp.data.message || 'Error al enviar código');
+        setVerifyError(resp.data.message || t('auth.register.toast.sendCodeError'));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error && 'response' in err
         ? (err as unknown as { response?: { data?: { message?: string } } }).response?.data?.message
         : undefined;
-      setVerifyError(msg || 'Error al enviar código');
+      setVerifyError(msg || t('auth.register.toast.sendCodeError'));
     } finally {
       setVerifyLoading(false);
     }
@@ -210,7 +212,7 @@ export default function RegisterPage() {
 
   const handleCheckOtp = async () => {
     if (!otpInput || otpInput.length < 4) {
-      toast.error('Ingresa el código completo');
+      toast.error(t('auth.register.toast.otpIncomplete'));
       return;
     }
     setVerifyLoading(true);
@@ -220,15 +222,15 @@ export default function RegisterPage() {
       if (resp.data.valid) {
         setPhoneVerified(true);
         setVerifyStep('verified');
-        toast.success('¡Teléfono verificado!');
+        toast.success(t('auth.register.toast.phoneVerified'));
       } else {
-        setVerifyError(resp.data.message || 'Código inválido');
+        setVerifyError(resp.data.message || t('auth.register.toast.otpInvalid'));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error && 'response' in err
         ? (err as unknown as { response?: { data?: { message?: string } } }).response?.data?.message
         : undefined;
-      setVerifyError(msg || 'Error al verificar código');
+      setVerifyError(msg || t('auth.register.toast.verifyError'));
     } finally {
       setVerifyLoading(false);
     }
@@ -237,7 +239,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormData) => {
     // Require phone verification if phone is provided
     if (fullPhone && !phoneVerified) {
-      toast.error('Verifica tu teléfono antes de continuar');
+      toast.error(t('auth.register.toast.phoneNotVerified'));
       return;
     }
 
@@ -249,7 +251,7 @@ export default function RegisterPage() {
         phone_verification_sid: verifySid,
       };
       await authApi.register(submitData);
-      toast.success('¡Cuenta creada! Redirigiendo al inicio de sesión...');
+      toast.success(t('auth.register.toast.registerSuccess'));
       setTimeout(() => router.push('/login'), 1500);
     } catch (err: unknown) {
       const errData = err instanceof Error && 'response' in err
@@ -261,7 +263,7 @@ export default function RegisterPage() {
           : Object.values(errData).flat().join(' ');
         toast.error(msg);
       } else {
-        toast.error('Error al registrarse. Inténtalo de nuevo.');
+        toast.error(t('auth.register.toast.registerError'));
       }
     } finally {
       setLoading(false);
@@ -273,24 +275,24 @@ export default function RegisterPage() {
     return (
       <div className="space-y-5">
         <div>
-          <h2 className="text-xl font-bold text-surface-900 dark:text-white">Un paso más</h2>
+          <h2 className="text-xl font-bold text-surface-900 dark:text-white">{t('auth.register.googleStepTitle')}</h2>
           <p className="text-surface-500 text-sm mt-1">
-            Tu cuenta de Google fue verificada. Ahora ingresa el nombre de tu negocio para completar el registro.
+            {t('auth.register.googleStepSubtitle')}
           </p>
         </div>
         <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Cuenta de Google verificada</p>
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t('auth.register.googleVerified')}</p>
           </div>
         </div>
         <div>
-          <label className="label" htmlFor="google-biz-name">Nombre del negocio</label>
+          <label className="label" htmlFor="google-biz-name">{t('auth.register.googleBizNameLabel')}</label>
           <input
             id="google-biz-name"
             type="text"
             className="input"
-            placeholder="Mi Negocio S.A."
+            placeholder={t('auth.register.googleBizNamePlaceholder')}
             value={googleBizName}
             onChange={e => setGoogleBizName(e.target.value)}
             autoFocus
@@ -304,14 +306,14 @@ export default function RegisterPage() {
           disabled={googleLoading}
           id="google-register-complete-btn"
         >
-          {googleLoading ? <span className="spinner w-4 h-4" /> : <span className="flex items-center gap-1"><Rocket className="w-4 h-4" /> Crear cuenta gratis</span>}
+          {googleLoading ? <span className="spinner w-4 h-4" /> : <span className="flex items-center gap-1"><Rocket className="w-4 h-4" /> {t('auth.register.googleSubmitButton')}</span>}
         </button>
         <button
           type="button"
           onClick={() => { setShowGoogleBizName(false); setGoogleCredential(''); }}
           className="btn-secondary w-full justify-center"
         >
-          Volver
+          {t('auth.register.backButton')}
         </button>
       </div>
     );
@@ -320,8 +322,8 @@ export default function RegisterPage() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div>
-        <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">Crear cuenta gratuita</h2>
-        <p className="text-surface-500 text-sm mt-1">5 días de prueba sin tarjeta de crédito</p>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">{t('auth.register.title')}</h2>
+        <p className="text-surface-500 text-sm mt-1">{t('auth.register.subtitle')}</p>
       </div>
 
       {googleEnabled && (
@@ -339,18 +341,18 @@ export default function RegisterPage() {
               <div className="w-full border-t border-surface-200 dark:border-surface-700" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white dark:bg-surface-900 px-4 text-surface-400">o con tu correo</span>
+              <span className="bg-white dark:bg-surface-900 px-4 text-surface-400">{t('auth.register.divider')}</span>
             </div>
           </div>
         </>
       )}
 
-      <FormField label="Nombre del negocio" htmlFor="register-business_name" error={errors.business_name?.message}>
+      <FormField label={t('auth.register.businessNameLabel')} htmlFor="register-business_name" error={errors.business_name?.message}>
         <input
           id="register-business_name"
           type="text"
           className={`input ${errors.business_name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-          placeholder="Mi Negocio S.A."
+          placeholder={t('auth.register.businessNamePlaceholder')}
           autoComplete="organization"
           aria-invalid={!!errors.business_name}
           {...register('business_name')}
@@ -358,23 +360,23 @@ export default function RegisterPage() {
       </FormField>
 
       <div className="grid grid-cols-2 gap-4">
-        <FormField label="Nombre" htmlFor="register-first_name" error={errors.first_name?.message}>
+        <FormField label={t('auth.register.firstNameLabel')} htmlFor="register-first_name" error={errors.first_name?.message}>
           <input
             id="register-first_name"
             type="text"
             className={`input ${errors.first_name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-            placeholder="Juan"
+            placeholder={t('auth.register.firstNamePlaceholder')}
             autoComplete="given-name"
             aria-invalid={!!errors.first_name}
             {...register('first_name')}
           />
         </FormField>
-        <FormField label="Apellido" htmlFor="register-last_name" error={errors.last_name?.message}>
+        <FormField label={t('auth.register.lastNameLabel')} htmlFor="register-last_name" error={errors.last_name?.message}>
           <input
             id="register-last_name"
             type="text"
             className={`input ${errors.last_name ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-            placeholder="Pérez"
+            placeholder={t('auth.register.lastNamePlaceholder')}
             autoComplete="family-name"
             aria-invalid={!!errors.last_name}
             {...register('last_name')}
@@ -382,32 +384,32 @@ export default function RegisterPage() {
         </FormField>
       </div>
 
-      <FormField label="Correo electrónico" htmlFor="register-email" error={errors.email?.message}>
+      <FormField label={t('auth.register.emailLabel')} htmlFor="register-email" error={errors.email?.message}>
         <input
           id="register-email"
           type="email"
           className={`input ${errors.email ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-          placeholder="tu@negocio.com"
+          placeholder={t('auth.register.emailPlaceholder')}
           autoComplete="email"
           aria-invalid={!!errors.email}
           {...register('email')}
         />
       </FormField>
 
-      <FormField label="Contraseña" htmlFor="register-password" error={errors.password?.message}>
+      <FormField label={t('auth.register.passwordLabel')} htmlFor="register-password" error={errors.password?.message}>
         <div className="relative">
           <input
             id="register-password"
             type={showPassword ? 'text' : 'password'}
             className={`input pr-10 ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-            placeholder="••••••••"
+            placeholder={t('auth.register.passwordPlaceholder')}
             autoComplete="new-password"
             aria-invalid={!!errors.password}
             {...register('password')}
           />
           <button type="button" onClick={() => setShowPassword(!showPassword)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
-            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+            aria-label={showPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}>
             {showPassword ? (
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
             ) : (
@@ -419,7 +421,7 @@ export default function RegisterPage() {
 
       {/* Phone with country prefix selector + Verification */}
       <div>
-        <label className="label" htmlFor="register-phone_number">Teléfono <span className="text-red-400">*</span></label>
+        <label className="label" htmlFor="register-phone_number">{t('auth.register.phoneLabel')} <span className="text-red-400">*</span></label>
         <div className="flex gap-2">
           <div className="relative" ref={countryRef}>
             <button
@@ -432,7 +434,7 @@ export default function RegisterPage() {
               }}
               aria-haspopup="listbox"
               aria-expanded={showCountryDropdown}
-              aria-label={`Código de país: ${COUNTRY_CODES.find(c => c.code === countryCode)?.country} ${countryCode}`}
+              aria-label={`${t('auth.register.phoneCountryCodeLabel')}${COUNTRY_CODES.find(c => c.code === countryCode)?.country} ${countryCode}`}
               id="country-code-btn"
             >
               <span>{COUNTRY_CODES.find(c => c.code === countryCode)?.flag}</span>
@@ -441,12 +443,12 @@ export default function RegisterPage() {
             </button>
             {showCountryDropdown && (
               <div className="absolute top-full left-0 mt-1 w-60 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-hidden flex flex-col"
-                role="listbox" aria-label="Seleccionar código de país" id="country-listbox">
+                role="listbox" aria-label={t('auth.register.phoneCountryAriaLabel')} id="country-listbox">
                 <div className="p-2 border-b border-surface-100 dark:border-surface-700">
                   <input
                     type="text"
                     className="input text-xs py-1.5"
-                    placeholder="Buscar país..."
+                    placeholder={t('auth.register.phoneSearchPlaceholder')}
                     value={phoneSearch}
                     onChange={e => { setPhoneSearch(e.target.value); setHighlightedIndex(-1); }}
                     onKeyDown={(e) => {
@@ -455,7 +457,7 @@ export default function RegisterPage() {
                     }}
                     autoFocus
                     id="country-search"
-                    aria-label="Buscar país"
+                    aria-label={t('auth.register.phoneSearchAriaLabel')}
                     aria-controls="country-listbox"
                   />
                 </div>
@@ -485,7 +487,7 @@ export default function RegisterPage() {
             id="register-phone_number"
             type="tel"
             className="input flex-1"
-            placeholder="991234567"
+            placeholder={t('auth.register.phonePlaceholder')}
             autoComplete="tel"
             {...register('phone_number')}
             disabled={phoneVerified}
@@ -504,19 +506,19 @@ export default function RegisterPage() {
               disabled={verifyLoading || !fullPhone || phoneVerified}
               className="btn-secondary w-full justify-center text-sm py-2"
             >
-              {verifyLoading ? <span className="spinner w-3 h-3" /> : <span className="flex items-center gap-1"><Smartphone className="w-3 h-3" /> Verificar teléfono</span>}
+              {verifyLoading ? <span className="spinner w-3 h-3" /> : <span className="flex items-center gap-1"><Smartphone className="w-3 h-3" /> {t('auth.register.phone.verifyButton')}</span>}
             </button>
           )}
 
           {verifyStep === 'sent' && !phoneVerified && (
             <div className="space-y-2">
-              <p className="text-xs text-surface-500">Ingresa el código de 6 dígitos enviado a tu teléfono</p>
+              <p className="text-xs text-surface-500">{t('auth.register.phone.otpDescription')}</p>
               <div className="flex gap-2">
                 <input
                   type="text"
                   inputMode="numeric"
                   maxLength={10}
-                  placeholder="123456"
+                  placeholder={t('auth.register.phone.otpPlaceholder')}
                   className="input flex-1 text-center tracking-widest font-mono"
                   value={otpInput}
                   onChange={e => setOtpInput(e.target.value.replace(/\D/g, ''))}
@@ -527,7 +529,7 @@ export default function RegisterPage() {
                   disabled={verifyLoading || otpInput.length < 4}
                   className="btn-primary px-4"
                 >
-                  {verifyLoading ? <span className="spinner w-3 h-3" /> : 'Verificar'}
+                  {verifyLoading ? <span className="spinner w-3 h-3" /> : t('auth.register.phone.verifyOtpButton')}
                 </button>
               </div>
               <div className="flex gap-2">
@@ -537,14 +539,14 @@ export default function RegisterPage() {
                   disabled={verifyLoading}
                   className="text-xs text-brand-500 hover:underline"
                 >
-                  Reenviar código
+                  {t('auth.register.phone.resendCode')}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setVerifyStep('idle'); setOtpInput(''); setVerifyError(''); }}
                   className="text-xs text-surface-400 hover:underline"
                 >
-                  Cancelar
+                  {t('auth.register.phone.cancel')}
                 </button>
               </div>
             </div>
@@ -553,7 +555,7 @@ export default function RegisterPage() {
           {phoneVerified && (
             <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-xl text-sm">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-              <span className="font-medium">Teléfono verificado</span>
+              <span className="font-medium">{t('auth.register.phone.verified')}</span>
             </div>
           )}
 
@@ -564,11 +566,11 @@ export default function RegisterPage() {
       </div>
 
       <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading} id="register-btn">
-        {loading ? <span className="spinner w-4 h-4" /> : 'Crear cuenta gratis'}
+        {loading ? <span className="spinner w-4 h-4" /> : t('auth.register.submitButton')}
       </button>
       <p className="text-center text-sm text-surface-500">
-        ¿Ya tienes cuenta?{' '}
-        <Link href="/login" className="text-brand-500 font-medium hover:underline">Inicia sesión</Link>
+        {t('auth.register.hasAccount')}{' '}
+        <Link href="/login" className="text-brand-500 font-medium hover:underline">{t('auth.register.loginLink')}</Link>
       </p>
     </form>
   );
