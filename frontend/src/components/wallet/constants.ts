@@ -14,17 +14,13 @@ import type {
   GooglePassType,
   WalletColors,
   BarcodeConfig,
-  BackContentDefaults,
   BackContent,
 } from './types';
+import { defaultBackContentDefaults } from './types/back-content';
 
 /* ------------------------------------------------------------------ */
 /*  Card Type Metadata                                                */
 /* ------------------------------------------------------------------ */
-
-function emptyBackContent(): BackContent {
-  return { fields: [], links: [], detailImages: [] };
-}
 
 export const CARD_TYPE_METADATA: Record<
   CardType,
@@ -59,7 +55,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: true,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.stamp,
     visualElements: ['stamp_grid', 'progress_ring', 'reward_badge'],
   },
   cashback: {
@@ -75,7 +71,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: true,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.cashback,
     visualElements: ['progress_ring', 'coin_stack', 'tier_badge'],
   },
   coupon: {
@@ -91,7 +87,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: true,
     supportsThumbnail: false,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.coupon,
     visualElements: ['cut_line', 'discount_badge', 'offer_tag'],
   },
   affiliate: {
@@ -107,7 +103,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: false,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.affiliate,
     visualElements: ['referral_badge', 'partner_logo', 'qr_code'],
   },
   discount: {
@@ -123,7 +119,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: true,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.discount,
     visualElements: ['tier_progress_bar', 'tier_badges', 'discount_banner'],
   },
   gift_certificate: {
@@ -139,7 +135,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: true,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.gift_certificate,
     visualElements: ['gift_box', 'ribbon', 'denomination_badge'],
   },
   vip_membership: {
@@ -156,7 +152,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: true,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.vip_membership,
     visualElements: ['crown', 'member_badge', 'benefits_list'],
   },
   corporate_discount: {
@@ -172,7 +168,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: false,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.corporate_discount,
     visualElements: ['id_badge', 'company_logo', 'corporate_banner'],
   },
   referral_pass: {
@@ -188,7 +184,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: false,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.referral_pass,
     visualElements: ['share_button', 'reward_badge', 'friend_avatar'],
   },
   multipass: {
@@ -204,7 +200,7 @@ export const CARD_TYPE_METADATA: Record<
     maxBackFields: Infinity,
     supportsStripImage: true,
     supportsThumbnail: true,
-    defaultBackContent: emptyBackContent(),
+    defaultBackContent: defaultBackContentDefaults.multipass,
     visualElements: ['ticket_bundle', 'punch_grid', 'session_counter'],
   },
 } as const;
@@ -727,15 +723,4 @@ export const DEFAULT_BARCODE: BarcodeConfig = {
 /*  Default Back Content per Card Type                                */
 /* ------------------------------------------------------------------ */
 
-export const DEFAULT_BACK_CONTENT_DEFAULTS: BackContentDefaults = {
-  stamp: emptyBackContent(),
-  cashback: emptyBackContent(),
-  coupon: emptyBackContent(),
-  affiliate: emptyBackContent(),
-  discount: emptyBackContent(),
-  gift_certificate: emptyBackContent(),
-  vip_membership: emptyBackContent(),
-  corporate_discount: emptyBackContent(),
-  referral_pass: emptyBackContent(),
-  multipass: emptyBackContent(),
-};
+export { defaultBackContentDefaults as DEFAULT_BACK_CONTENT_DEFAULTS };
