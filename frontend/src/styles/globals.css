@@ -597,3 +597,14 @@
 .dark .bg-amber-100 { background-color: var(--theme-dark-amber-bg-strong) !important; }
 .dark .text-amber-600 { color: var(--theme-dark-amber-text) !important; }
 .dark .text-amber-700 { color: var(--theme-dark-amber-text-strong) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AI Button pulse animation (SRS-003 Section 6)
+   ═══════════════════════════════════════════════════════════════════════ */
+.animate-ai-pulse {
+  animation: aiPulse 2s ease-in-out infinite;
+}
+@keyframes aiPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+}
