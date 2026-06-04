@@ -16,6 +16,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSessionRecovery, persistSessionState } from '@/hooks/useSessionRecovery';
 import { useI18n } from '@/lib/i18n';
+import { useDesignScore } from '@/hooks/useDesignScore';
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
@@ -37,6 +38,7 @@ export interface WalletStudioProps {
 export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
+  const designScoreResult = useDesignScore(studio.state);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
     studio.state,
     { maxHistory: 50 }
@@ -382,7 +384,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
           onZoomChange={(z) => wrappedUpdateUI({ zoom: z })}
           showBack={displayState.ui.showBack}
           onToggleBack={() => wrappedUpdateUI({ showBack: !displayState.ui.showBack })}
-          designScore={undefined}
+          designScore={designScoreResult.score}
           onOpenTemplates={handleOpenTemplates}
           onSave={handleSave}
           onSaveAsTemplate={handleSaveAsTemplate}
