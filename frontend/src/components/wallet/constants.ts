@@ -15,7 +15,7 @@ import type {
   WalletColors,
   BarcodeConfig,
   BackContent,
-} from './types';
+} from './types/index';
 import { defaultBackContentDefaults } from './types/back-content';
 
 /* ------------------------------------------------------------------ */

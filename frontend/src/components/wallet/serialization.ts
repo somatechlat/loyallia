@@ -7,7 +7,7 @@ import {
   type GoogleFieldRow,
   type AppleFieldDef,
   defaultWalletDesignState,
-} from './types';
+} from './types-v1-definitions';
 
 function stripTempUrl(url: string | undefined): string {
   return stripLocalMinioUrl(url);
