@@ -12,6 +12,8 @@ export interface DynamicTemplatePickerProps {
   value: string;
   onChange: (value: string) => void;
   cardType: CardType;
+  buttonLabel?: React.ReactNode;
+  hideInput?: boolean;
 }
 
 const CATEGORY_ORDER = ['Customer', 'Program', 'Card-specific'] as const;
@@ -26,7 +28,7 @@ function categorizeTemplate(templateId: string): Category {
   return 'Card-specific';
 }
 
-export function DynamicTemplatePicker({ value, onChange, cardType }: DynamicTemplatePickerProps) {
+export function DynamicTemplatePicker({ value, onChange, cardType, buttonLabel, hideInput }: DynamicTemplatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -95,15 +97,17 @@ export function DynamicTemplatePicker({ value, onChange, cardType }: DynamicTemp
   return (
     <div className="relative">
       <div className="flex items-center gap-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter value or insert template..."
-          aria-label="Field value"
-        />
+        {!hideInput && (
+          <input
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="flex-1 min-w-0 px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter value or insert template..."
+            aria-label="Field value"
+          />
+        )}
         <button
           type="button"
           onClick={() => setIsOpen((v) => !v)}
@@ -112,7 +116,7 @@ export function DynamicTemplatePicker({ value, onChange, cardType }: DynamicTemp
           aria-haspopup="true"
           aria-label="Insert dynamic template"
         >
-          {'{ }'}
+          {buttonLabel ?? '{ }'}
         </button>
       </div>
 
