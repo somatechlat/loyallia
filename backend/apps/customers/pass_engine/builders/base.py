@@ -316,8 +316,6 @@ def _apply_google_advanced_to_object(card, payload: dict) -> None:
         return
     if advanced.get("messages") and isinstance(advanced["messages"], list):
         payload.setdefault("messages", []).extend(advanced["messages"])
-    if advanced.get("notifyPreference"):
-        payload["notifyPreference"] = advanced["notifyPreference"]
     _apply_links_module_uris(advanced, payload)
 
 
