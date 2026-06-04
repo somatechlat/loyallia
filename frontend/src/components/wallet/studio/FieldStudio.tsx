@@ -10,13 +10,15 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { LockedFeature } from './LockedFeature';
+import { FieldLimitIndicator } from './FieldLimitIndicator';
 import type { UnifiedField, FieldGroup, CardType } from '@/components/wallet/types/unified-state';
-import { validateFieldGroupLimits, canAddFieldToGroup } from '@/components/wallet/utils/field-validation';
+import { validateFieldGroupLimits, canAddFieldToGroup, getCombinedLimitWarning } from '@/components/wallet/utils/field-validation';
 import { FieldCard } from './FieldCard';
 
 export interface FieldStudioProps {
   fields: UnifiedField[];
   cardType: CardType;
+  barcodeFormat?: string;
   onUpdateFields: (fields: UnifiedField[] | ((prev: UnifiedField[]) => UnifiedField[])) => void;
 }
 
@@ -95,13 +97,18 @@ function ArrowDownIcon({ className }: { className?: string }) {
 
 /* ── Component ────────────────────────────────────────────────────── */
 
-export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioProps) {
+export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }: FieldStudioProps) {
   const planFeatures = usePlanFeatures();
   const [dragOverGroup, setDragOverGroup] = useState<FieldGroup | null>(null);
 
   const groupValidations = useMemo(
-    () => validateFieldGroupLimits(fields, cardType),
-    [fields, cardType]
+    () => validateFieldGroupLimits(fields, cardType, barcodeFormat),
+    [fields, cardType, barcodeFormat]
+  );
+
+  const combinedWarning = useMemo(
+    () => getCombinedLimitWarning(fields, cardType, barcodeFormat),
+    [fields, cardType, barcodeFormat]
   );
 
   const fieldsByGroup = useMemo(() => {
@@ -132,12 +139,12 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
   const handleAddField = useCallback(
     (group: FieldGroup) => {
       const groupFields = fields.filter((f) => f.fieldGroup === group);
-      if (!canAddFieldToGroup(fields, group, cardType)) return;
+      if (!canAddFieldToGroup(fields, group, cardType, barcodeFormat)) return;
 
       const newField = createEmptyField(group, groupFields.length);
       onUpdateFields((prev) => [...prev, newField]);
     },
-    [fields, cardType, onUpdateFields]
+    [fields, cardType, barcodeFormat, onUpdateFields]
   );
 
   /* ── Drag & drop ────────────────────────────────────────────────── */
@@ -256,6 +263,11 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
           <div className="h-12" />
         </LockedFeature>
       )}
+      {combinedWarning && (
+        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300">
+          ⚠️ {combinedWarning.message}
+        </div>
+      )}
       {FIELD_GROUPS.map((group) => {
         const groupFields = fieldsByGroup.get(group) ?? [];
         const validation = groupValidations.find((v) => v.group === group);
@@ -276,14 +288,23 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
             onDrop={(e) => handleDrop(e, group)}
           >
             {/* Group header */}
-            <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-t-lg border-b border-neutral-200 dark:border-neutral-700">
-              <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-                {GROUP_TITLES[group].title}
-              </h4>
-              {GROUP_TITLES[group].subtitle && (
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  {GROUP_TITLES[group].subtitle}
-                </p>
+            <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-t-lg border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+                  {GROUP_TITLES[group].title}
+                </h4>
+                {GROUP_TITLES[group].subtitle && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    {GROUP_TITLES[group].subtitle}
+                  </p>
+                )}
+              </div>
+              {validation && (
+                <FieldLimitIndicator
+                  group={group}
+                  current={validation.current}
+                  max={validation.max}
+                />
               )}
             </div>
 

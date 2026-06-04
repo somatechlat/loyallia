@@ -328,6 +328,7 @@ export function StudioSidebar({
           <FieldStudio
             fields={state.fields}
             cardType={state.cardType}
+            barcodeFormat={state.barcode.format}
             onUpdateFields={updateFields}
           />
         )}
