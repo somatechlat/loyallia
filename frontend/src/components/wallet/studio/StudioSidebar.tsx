@@ -10,6 +10,7 @@
 import React from 'react';
 import type { WalletPassStudioState, WalletColors, WalletImages, BarcodeConfig, BackContent, CardTypeConfig, AppleSpecificConfig, GoogleSpecificConfig, UnifiedField } from '@/components/wallet/types/unified-state';
 import { STUDIO_TABS } from '@/components/wallet/constants';
+import { ImagesTab } from './ImagesTab';
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -138,55 +139,60 @@ export function StudioSidebar({
 
       {/* Tab content area */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-            {STUDIO_TABS.find((t) => t.id === activeTab)?.label ?? 'Panel'}
-          </h3>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Contenido de la pestaña <strong className="text-neutral-700 dark:text-neutral-300">{STUDIO_TABS.find((t) => t.id === activeTab)?.label}</strong> se implementará en la siguiente fase.
-          </p>
+        {activeTab === 'images' && (
+          <ImagesTab images={state.images} onUpdateImages={_updateImages} />
+        )}
+        {activeTab !== 'images' && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+              {STUDIO_TABS.find((t) => t.id === activeTab)?.label ?? 'Panel'}
+            </h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Contenido de la pestaña <strong className="text-neutral-700 dark:text-neutral-300">{STUDIO_TABS.find((t) => t.id === activeTab)?.label}</strong> se implementará en la siguiente fase.
+            </p>
 
-          {/* Debug info for active tab context */}
-          <div className="mt-6 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800">
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">
-              Tab: {activeTab}
-            </p>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono mt-1">
-              CardType: {state.cardType}
-            </p>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono mt-1">
-              Industry: {state.industry}
-            </p>
-          </div>
+            {/* Debug info for active tab context */}
+            <div className="mt-6 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800">
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">
+                Tab: {activeTab}
+              </p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono mt-1">
+                CardType: {state.cardType}
+              </p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono mt-1">
+                Industry: {state.industry}
+              </p>
+            </div>
 
-          {/* Temporary preview of updater functions being available */}
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-              Acciones rápidas
-            </p>
-            <button
-              type="button"
-              onClick={() => updateColors({ accent: '#3B82F6' })}
-              className="w-full px-3 py-2 text-xs text-left rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-            >
-              Restaurar color de acento
-            </button>
-            <button
-              type="button"
-              onClick={() => updateBarcode({ format: 'QR_CODE' })}
-              className="w-full px-3 py-2 text-xs text-left rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-            >
-              Establecer código QR
-            </button>
-            <button
-              type="button"
-              onClick={() => updateBackContent({ fields: [] })}
-              className="w-full px-3 py-2 text-xs text-left rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-            >
-              Limpiar contenido trasero
-            </button>
+            {/* Temporary preview of updater functions being available */}
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                Acciones rápidas
+              </p>
+              <button
+                type="button"
+                onClick={() => updateColors({ accent: '#3B82F6' })}
+                className="w-full px-3 py-2 text-xs text-left rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Restaurar color de acento
+              </button>
+              <button
+                type="button"
+                onClick={() => updateBarcode({ format: 'QR_CODE' })}
+                className="w-full px-3 py-2 text-xs text-left rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Establecer código QR
+              </button>
+              <button
+                type="button"
+                onClick={() => updateBackContent({ fields: [] })}
+                className="w-full px-3 py-2 text-xs text-left rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Limpiar contenido trasero
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );
