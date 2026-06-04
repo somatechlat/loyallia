@@ -10,6 +10,7 @@
 'use client';
 
 import React from 'react';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import type { PlatformView } from '@/components/wallet/types/unified-state';
 
 export interface StudioToolbarProps {
@@ -177,6 +178,7 @@ export function StudioToolbar({
   onAIGenerate,
   isModified,
 }: StudioToolbarProps) {
+  const planFeatures = usePlanFeatures();
   const scoreColorClass = typeof designScore === 'number' ? getScoreColorClass(designScore) : null;
 
   const PLATFORM_OPTIONS: Array<{ value: PlatformView; label: string; icon: React.FC<{ className?: string }> }> = [
@@ -378,10 +380,15 @@ export function StudioToolbar({
           <button
             type="button"
             onClick={onAIGenerate}
-            className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite]"
+            disabled={!planFeatures.hasAIAssistant}
+            className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite] disabled:opacity-40 disabled:cursor-not-allowed disabled:animate-none"
+            title={planFeatures.hasAIAssistant ? 'Diseñar con IA' : 'Disponible en plan Profesional'}
           >
             <SparklesIcon className="w-4 h-4" />
             <span>Diseñar con IA</span>
+            {!planFeatures.hasAIAssistant && (
+              <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">PRO</span>
+            )}
           </button>
         </div>
       </header>

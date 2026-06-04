@@ -213,6 +213,30 @@ RATE_LIMIT_RULES = [
         30,
         60,
     ),  # 30 Agent API calls per minute per user (LLM token cost protection)
+    (
+        "/api/v1/ai/generate-template",
+        "user",
+        10,
+        60,
+    ),  # 10 AI template generations per minute per user (LLM cost protection)
+    (
+        "/api/v1/ai/suggest-colors",
+        "user",
+        15,
+        60,
+    ),  # 15 AI color suggestions per minute per user
+    (
+        "/api/v1/ai/critique-design",
+        "user",
+        15,
+        60,
+    ),  # 15 AI design critiques per minute per user
+    (
+        "/api/v1/ai/",
+        "user",
+        20,
+        60,
+    ),  # 20 general AI endpoint calls per minute per user (catch-all)
     ("/api/v1/", "ip", 200, 60),  # 200 general API requests per minute per IP
 ]
 

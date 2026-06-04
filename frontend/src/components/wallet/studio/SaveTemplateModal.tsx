@@ -7,6 +7,9 @@
 'use client';
 
 import React from 'react';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { LockedFeature } from './LockedFeature';
+import { LimitReached } from './LimitReached';
 
 export interface SaveTemplateModalProps {
   isOpen: boolean;
@@ -39,6 +42,7 @@ function SaveIcon({ className }: { className?: string }) {
 /* ── Component ───────────────────────────────────────────────────── */
 
 export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }: SaveTemplateModalProps) {
+  const planFeatures = usePlanFeatures();
   const [name, setName] = React.useState(defaultName);
   const [description, setDescription] = React.useState('');
 
@@ -51,7 +55,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim()) {
+    if (name.trim() && planFeatures.hasCustomTemplates && !planFeatures.isAtTemplateLimit) {
       onSave(name.trim(), description.trim());
     }
   };
@@ -92,6 +96,24 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {!planFeatures.hasCustomTemplates && (
+            <LockedFeature
+              featureName="Plantillas personalizadas"
+              requiredPlan="Profesional"
+              isLocked={!planFeatures.hasCustomTemplates}
+            >
+              <div />
+            </LockedFeature>
+          )}
+
+          {planFeatures.isAtTemplateLimit && (
+            <LimitReached
+              resourceName="plantillas personalizadas"
+              used={planFeatures.walletTemplatesUsed}
+              limit={planFeatures.walletTemplatesLimit}
+            />
+          )}
+
           <div>
             <label htmlFor="template-name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
               Nombre
@@ -102,7 +124,8 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Mi plantilla personalizada"
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+              disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
+              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="template-name-input"
               autoFocus
             />
@@ -118,7 +141,8 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe esta plantilla..."
               rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none"
+              disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
+              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="template-description-input"
             />
           </div>
@@ -135,7 +159,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
             </button>
             <button
               type="submit"
-              disabled={!name.trim()}
+              disabled={!name.trim() || !planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               data-testid="template-save-btn"
             >
