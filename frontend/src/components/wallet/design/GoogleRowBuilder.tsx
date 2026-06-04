@@ -1,7 +1,7 @@
 'use client';
 
 import { GOOGLE_ROW_TYPES, GOOGLE_PREDEFINED_FIELDS } from '@/components/programs/constants';
-import type { GoogleFieldRow, GoogleFieldItem } from '../types';
+import type { GoogleFieldRow, GoogleFieldItem } from '../types-v1-definitions';
 import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, InfoIcon } from '../icons';
 import { uid, getGoogleFieldOptions } from './helpers';
 import { useI18n } from '@/lib/i18n';

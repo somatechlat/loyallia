@@ -1,6 +1,6 @@
 'use client';
 
-import type { AppleAdvancedConfig } from '../types';
+import type { AppleAdvancedConfig } from '../types-v1-definitions';
 import { useI18n } from '@/lib/i18n';
 
 /**

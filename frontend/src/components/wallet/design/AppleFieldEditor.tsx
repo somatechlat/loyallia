@@ -1,7 +1,7 @@
 'use client';
 
 import { APPLE_FIELD_GROUPS } from '@/components/programs/constants';
-import type { AppleFieldDef } from '../types';
+import type { AppleFieldDef } from '../types-v1-definitions';
 import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon } from '../icons';
 import { uid, getAppleFieldOptions, APPLE_GROUP_META } from './helpers';
 import { useI18n } from '@/lib/i18n';

@@ -2,7 +2,7 @@
  * v2 → v1 reverse migration for Wallet Pass Studio state.
  */
 
-import type { WalletPassStudioState } from '../types';
+import type { WalletPassStudioState } from '../types-v1-definitions';
 import type {
   WalletDesignState,
   AppleFieldDef,

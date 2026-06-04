@@ -8,7 +8,7 @@ import type {
   UnifiedField,
   WalletPassStudioState,
   FieldGroup,
-} from '../types';
+} from '../types/index';
 import { FIELD_GROUP_TO_APPLE, FIELD_GROUP_TO_GOOGLE } from '../constants';
 
 /* ------------------------------------------------------------------ */
