@@ -10,9 +10,7 @@
 'use client';
 
 import React from 'react';
-import { PlatformToggle } from './PlatformToggle';
 import type { PlatformView } from '@/components/wallet/types/unified-state';
-import { Palette, Save } from '@/components/ui/LucideIcons';
 
 export interface StudioToolbarProps {
   onUndo: () => void;
@@ -29,7 +27,7 @@ export interface StudioToolbarProps {
   onOpenTemplates: () => void;
   onSave: () => void;
   onSaveAsTemplate?: () => void;
-  onExport: () => void;
+  onExport?: () => void;
   onAIGenerate: () => void;
   isModified: boolean;
 }
@@ -93,19 +91,69 @@ function DownloadIcon({ className }: { className?: string }) {
   );
 }
 
+function PaletteIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" />
+      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+      <circle cx="10.5" cy="16.5" r=".5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function SaveIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  );
+}
+
+function AppleLogo({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+
+function GoogleLogo({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path fill="#EA4335" d="M12 5.04c1.67 0 3.17.58 4.35 1.71l3.25-3.26C17.51 1.18 14.96 0 12 0 7.39 0 3.37 2.6 1.4 6.38l3.77 2.92C6.26 6.3 8.92 5.04 12 5.04z" />
+      <path fill="#4285F4" d="M23.5 12.23c0-.86-.08-1.69-.22-2.48H12v4.7h6.45c-.28 1.48-1.1 2.73-2.34 3.57l3.78 2.93c2.2-2.03 3.61-5.02 3.61-8.72z" />
+      <path fill="#FBBC05" d="M5.17 9.3L1.4 6.38C.51 8.17 0 10.18 0 12.33c0 2.15.51 4.16 1.4 5.95l3.78-2.92c-.46-1.36-.73-2.8-.73-4.31 0-1.51.27-2.95.73-4.31l-.01.57z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.92l-3.78-2.93c-1.02.68-2.32 1.08-4.15 1.08-3.08 0-5.74-1.26-7.46-3.29L1.4 18.28C3.37 22.1 7.39 24.67 12 24z" />
+    </svg>
+  );
+}
+
+function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 /* ── Design-score helpers ────────────────────────────────────────── */
 
-function getScoreColor(score: number): { bar: string; text: string; label: string } {
-  if (score >= 9) {
-    return { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', label: 'Excelente' };
-  }
-  if (score >= 7) {
-    return { bar: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400', label: 'Bueno' };
-  }
-  if (score >= 5) {
-    return { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', label: 'Aceptable' };
-  }
-  return { bar: 'bg-red-500', text: 'text-red-600 dark:text-red-400', label: 'Necesita trabajo' };
+function getScoreColorClass(score: number): string {
+  if (score >= 9) return 'text-green-600 bg-green-100';
+  if (score >= 7) return 'text-blue-600 bg-blue-100';
+  if (score >= 5) return 'text-yellow-600 bg-yellow-100';
+  return 'text-red-600 bg-red-100';
+}
+
+function getScoreBlocks(score: number): string {
+  const filled = Math.round(score);
+  const empty = 10 - filled;
+  return '█'.repeat(filled) + '░'.repeat(empty);
 }
 
 /* ── Component ───────────────────────────────────────────────────── */
@@ -128,166 +176,200 @@ export function StudioToolbar({
   onAIGenerate,
   isModified,
 }: StudioToolbarProps) {
-  const scoreColors = typeof designScore === 'number' ? getScoreColor(designScore) : null;
+  const scoreColorClass = typeof designScore === 'number' ? getScoreColorClass(designScore) : null;
+
+  const PLATFORM_OPTIONS: Array<{ value: PlatformView; label: string; icon: React.FC<{ className?: string }> }> = [
+    { value: 'apple', label: 'Apple', icon: AppleLogo },
+    { value: 'google', label: 'Google', icon: GoogleLogo },
+    { value: 'both', label: 'Ambos', icon: EyeIcon },
+  ];
 
   return (
-    <header className="flex flex-col gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-      {/* ── Row 1 ─────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        {/* Undo / Redo */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onUndo}
-            disabled={!canUndo}
-            className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title="Deshacer"
-          >
-            <UndoIcon className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onRedo}
-            disabled={!canRedo}
-            className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title="Rehacer"
-          >
-            <RedoIcon className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
-
-        {/* Platform toggle */}
-        <PlatformToggle value={platformView} onChange={onPlatformViewChange} size="sm" />
-
-        <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
-
-        {/* Zoom controls */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onZoomChange(Math.max(0.5, zoom - 0.1))}
-            className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            title="Alejar"
-          >
-            <MinusIcon className="w-4 h-4" />
-          </button>
-          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 w-12 text-center tabular-nums">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={() => onZoomChange(Math.min(2, zoom + 0.1))}
-            className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            title="Acercar"
-          >
-            <PlusIcon className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Row 2 ─────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        {/* Plantillas */}
-        <button
-          type="button"
-          onClick={onOpenTemplates}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-        >
-          <Palette className="w-4 h-4" />
-          <span className="hidden sm:inline">Plantillas</span>
-        </button>
-
-        {/* Guardar */}
-        <button
-          type="button"
-          onClick={onSave}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
-        >
-          <Save className="w-4 h-4" />
-          <span>Guardar</span>
-          {isModified && <span className="w-1.5 h-1.5 rounded-full bg-white/80" />}
-        </button>
-
-        {/* Exportar */}
-        <button
-          type="button"
-          onClick={onExport}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-        >
-          <DownloadIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Exportar</span>
-        </button>
-
-        <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
-
-        {/* Frente / Reverso toggle */}
-        <div
-          className="inline-flex items-center rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-0.5 gap-0.5"
-          role="radiogroup"
-          aria-label="Vista del pase"
-        >
-          <button
-            type="button"
-            role="radio"
-            aria-checked={!showBack}
-            onClick={() => showBack && onToggleBack()}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              !showBack
-                ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            }`}
-          >
-            Frente
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={showBack}
-            onClick={() => !showBack && onToggleBack()}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              showBack
-                ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-            }`}
-          >
-            Reverso
-          </button>
-        </div>
-
-        <div className="flex-1" />
-
-        {/* Design Score */}
-        {scoreColors && typeof designScore === 'number' && (
-          <div className="flex items-center gap-2">
-            <div className="w-24 h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${scoreColors.bar}`}
-                style={{ width: `${Math.min(100, (designScore / 10) * 100)}%` }}
-              />
-            </div>
-            <span className={`text-xs font-semibold ${scoreColors.text}`}>
-              Score: {designScore.toFixed(1)}/10
-            </span>
+    <>
+      <style>{`
+        @keyframes ai-pulse-scale {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+      `}</style>
+      <header className="flex flex-col gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
+        {/* ── Row 1 ─────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3">
+          {/* Undo / Redo */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Deshacer"
+            >
+              <UndoIcon className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Rehacer"
+            >
+              <RedoIcon className="w-4 h-4" />
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* ── Row 3 (right-aligned) ─────────────────────────────────── */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onAIGenerate}
-          className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white rounded-xl transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] animate-ai-pulse"
-          style={{
-            background: 'linear-gradient(to right, #7c3aed, #818cf8)',
-          }}
-        >
-          <SparklesIcon className="w-4 h-4" />
-          <span>Diseñar con IA</span>
-        </button>
-      </div>
-    </header>
+          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
+
+          {/* Platform toggle */}
+          <div
+            className="inline-flex items-center rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-0.5 gap-0.5"
+            role="radiogroup"
+            aria-label="Seleccionar plataforma"
+          >
+            {PLATFORM_OPTIONS.map((option) => {
+              const isActive = platformView === option.value;
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => onPlatformViewChange(option.value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-neutral-900 ${
+                    isActive
+                      ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-md'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                  }`}
+                  title={option.label}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
+
+          {/* Zoom controls */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onZoomChange(Math.max(0.5, zoom - 0.25))}
+              className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              title="Alejar"
+            >
+              <MinusIcon className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 w-12 text-center tabular-nums">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => onZoomChange(Math.min(2, zoom + 0.25))}
+              className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              title="Acercar"
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Row 2 ─────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3">
+          {/* Plantillas */}
+          <button
+            type="button"
+            onClick={onOpenTemplates}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <PaletteIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Plantillas</span>
+          </button>
+
+          {/* Guardar */}
+          <button
+            type="button"
+            onClick={onSave}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
+          >
+            <SaveIcon className="w-4 h-4" />
+            <span>Guardar</span>
+            {isModified && <span className="w-1.5 h-1.5 rounded-full bg-white/80" />}
+          </button>
+
+          {/* Exportar */}
+          {onExport && (
+            <button
+              type="button"
+              onClick={onExport}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <DownloadIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+          )}
+
+          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
+
+          {/* Frente / Reverso toggle */}
+          <div
+            className="inline-flex items-center rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-0.5 gap-0.5"
+            role="radiogroup"
+            aria-label="Vista del pase"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!showBack}
+              onClick={() => showBack && onToggleBack()}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                !showBack
+                  ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+              }`}
+            >
+              Frente
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={showBack}
+              onClick={() => !showBack && onToggleBack()}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                showBack
+                  ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+              }`}
+            >
+              Reverso
+            </button>
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Design Score */}
+          {scoreColorClass && typeof designScore === 'number' && (
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${scoreColorClass}`}>
+                {getScoreBlocks(designScore)} {designScore.toFixed(1)}/10
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Row 3 (right-aligned) ─────────────────────────────────── */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onAIGenerate}
+            className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite]"
+          >
+            <SparklesIcon className="w-4 h-4" />
+            <span>Diseñar con IA</span>
+          </button>
+        </div>
+      </header>
+    </>
   );
 }
