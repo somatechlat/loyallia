@@ -36,42 +36,24 @@ describe('BarcodeTab', () => {
     expect(screen.getByText('QR Code')).toBeDefined();
   });
 
-  it('opens format dropdown and shows all 5 formats', () => {
+  it('shows all 4 main format cards', () => {
     render(<BarcodeTab {...baseProps} />);
-    const formatButton = screen.getByRole('button', { name: 'QR Code' });
-    fireEvent.click(formatButton);
-    expect(screen.getByText('Aztec')).toBeDefined();
-    expect(screen.getByText('PDF417')).toBeDefined();
-    expect(screen.getByText('Code 128')).toBeDefined();
-    expect(screen.getByText('Data Matrix')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'QR Code' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Aztec' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'PDF417' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Code 128' })).toBeDefined();
   });
 
   it('selecting a format updates state', () => {
     render(<BarcodeTab {...baseProps} />);
-    const formatButton = screen.getByRole('button', { name: 'QR Code' });
-    fireEvent.click(formatButton);
-    const aztecOption = screen.getByRole('option', { name: /aztec/i });
-    fireEvent.click(aztecOption);
+    const aztecButton = screen.getByRole('button', { name: 'Aztec' });
+    fireEvent.click(aztecButton);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith({ format: 'AZTEC' });
-  });
-
-  it('message input updates state on change', () => {
-    render(<BarcodeTab {...baseProps} />);
-    const input = screen.getByPlaceholderText('{customer_id}-{program_id}-{timestamp}');
-    fireEvent.change(input, { target: { value: 'hello-world' } });
-    expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith({ message: 'hello-world' });
-  });
-
-  it('message encoding select updates state', () => {
-    render(<BarcodeTab {...baseProps} />);
-    const select = screen.getByLabelText(/codificación/i);
-    fireEvent.change(select, { target: { value: 'utf-8' } });
-    expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith({ messageEncoding: 'utf-8' });
   });
 
   it('alt text input updates state', () => {
     render(<BarcodeTab {...baseProps} />);
-    const input = screen.getByPlaceholderText(/texto mostrado debajo del código/i);
+    const input = screen.getByPlaceholderText('0000 0000 0000');
     fireEvent.change(input, { target: { value: 'Mi Código' } });
     expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith({ altText: 'Mi Código' });
   });
@@ -83,57 +65,60 @@ describe('BarcodeTab', () => {
     expect(svg).toBeTruthy();
   });
 
-  it('shows apple warning when format not supported on apple', () => {
+  it('shows rectangular warning for PDF417', () => {
     render(
       <BarcodeTab
         {...baseProps}
-        barcode={createMockBarcode({ format: 'DATA_MATRIX' })}
+        barcode={createMockBarcode({ format: 'PDF417' })}
       />
     );
-    expect(screen.getByText(/no es compatible con Apple Wallet/i)).toBeDefined();
+    expect(screen.getByText(/PDF417 y Code 128 son rectangulares/i)).toBeDefined();
   });
 
-  it('shows google warning when format not supported on google', () => {
+  it('shows rectangular warning for Code 128', () => {
     render(
       <BarcodeTab
         {...baseProps}
-        barcode={createMockBarcode({ format: 'AZTEC' })}
+        barcode={createMockBarcode({ format: 'CODE128' })}
       />
     );
-    expect(screen.getByText(/no es compatible con Google Wallet/i)).toBeDefined();
+    expect(screen.getByText(/PDF417 y Code 128 son rectangulares/i)).toBeDefined();
   });
 
-  it('shows compatibility message when both platforms supported', () => {
+  it('does not show rectangular warning for QR Code', () => {
     render(<BarcodeTab {...baseProps} barcode={createMockBarcode({ format: 'QR_CODE' })} />);
-    expect(screen.getByText(/Compatible con Apple Wallet y Google Wallet/i)).toBeDefined();
+    expect(screen.queryByText(/PDF417 y Code 128 son rectangulares/i)).toBeNull();
   });
 
-  it('inserts placeholder when helper button clicked', () => {
+  it('shows extra format rows', () => {
     render(<BarcodeTab {...baseProps} />);
-    const customerBtn = screen.getByText('Customer ID');
-    fireEvent.click(customerBtn);
-    expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('{customer_id}'),
-      })
-    );
+    expect(screen.getByText('Data Matrix')).toBeDefined();
+    expect(screen.getByText('Rotating Barcode')).toBeDefined();
   });
 
-  it('shows example generated data', () => {
+  it('toggles customer id checkbox', () => {
     render(<BarcodeTab {...baseProps} />);
-    expect(screen.getByText(/ejemplo generado/i)).toBeDefined();
-    // Find the example code block by its container
-    const exampleSection = screen.getByText(/ejemplo generado/i).closest('div');
-    expect(exampleSection).toBeTruthy();
-    const exampleCode = exampleSection!.querySelector('code');
-    expect(exampleCode).toBeTruthy();
-    expect(exampleCode!.textContent).toContain('CUST-12345');
-    expect(exampleCode!.textContent).toContain('PROG-67890');
+    const checkbox = screen.getByRole('checkbox', { name: /id de cliente/i });
+    fireEvent.click(checkbox);
+    expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
   });
 
-  it('copy example button exists', () => {
+  it('toggles program id checkbox', () => {
     render(<BarcodeTab {...baseProps} />);
-    const copyBtn = screen.getByLabelText(/copiar ejemplo/i);
-    expect(copyBtn).toBeDefined();
+    const checkbox = screen.getByRole('checkbox', { name: /id de programa/i });
+    fireEvent.click(checkbox);
+    expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
+  });
+
+  it('toggles timestamp checkbox', () => {
+    render(<BarcodeTab {...baseProps} />);
+    const checkbox = screen.getByRole('checkbox', { name: /^timestamp$/i });
+    fireEvent.click(checkbox);
+    expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
+  });
+
+  it('shows probar en dispositivo button', () => {
+    render(<BarcodeTab {...baseProps} />);
+    expect(screen.getByRole('button', { name: /probar en dispositivo/i })).toBeDefined();
   });
 });
