@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import { QRCodeSVG } from 'qrcode.react';
 import { portalApiClient } from '@/lib/portal-api';
+import { useI18n } from '@/lib/i18n';
 
 interface PortalPass {
   pass_id: string;
@@ -22,6 +23,7 @@ interface PortalPass {
 
 export default function PortalDashboardPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [passes, setPasses] = useState<PortalPass[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -41,21 +43,21 @@ export default function PortalDashboardPage() {
       const { data } = await portalApiClient.passes();
       setPasses(data.passes || []);
     } catch {
-      toast.error('No se pudieron cargar tus tarjetas');
+      toast.error(t('portal.dashboard.toast.loadError'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDisenroll = async (passId: string, cardName: string) => {
-    if (!confirm(`¿Salir del programa "${cardName}"? Ya no podrás usar esta tarjeta.`)) return;
+    if (!confirm(t('portal.dashboard.confirm.disenroll', { cardName }))) return;
     setDeletingId(passId);
     try {
       await portalApiClient.disenroll(passId);
-      toast.success('Has salido del programa exitosamente.');
+      toast.success(t('portal.dashboard.toast.disenrollSuccess'));
       setPasses((prev) => prev.filter((p) => p.pass_id !== passId));
     } catch {
-      toast.error('No se pudo salir del programa');
+      toast.error(t('portal.dashboard.toast.disenrollError'));
     } finally {
       setDeletingId(null);
     }
@@ -68,14 +70,14 @@ export default function PortalDashboardPage() {
 
   const cardTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      stamp: 'Tarjeta de Sellos',
-      cashback: 'Cashback',
-      vip_membership: 'Membresía VIP',
-      referral_pass: 'Referidos',
-      coupon: 'Cupón',
-      gift_certificate: 'Regalo',
-      discount: 'Descuento',
-      multipass: 'Multipase',
+      stamp: t('portal.cardTypes.stamp'),
+      cashback: t('portal.cardTypes.cashback'),
+      vip_membership: t('portal.cardTypes.vip_membership'),
+      referral_pass: t('portal.cardTypes.referral_pass'),
+      coupon: t('portal.cardTypes.coupon'),
+      gift_certificate: t('portal.cardTypes.gift_certificate'),
+      discount: t('portal.cardTypes.discount'),
+      multipass: t('portal.cardTypes.multipass'),
     };
     return labels[type] || type;
   };
@@ -89,7 +91,7 @@ export default function PortalDashboardPage() {
               <span className="text-white font-black text-lg">L</span>
             </div>
             <div>
-              <h1 className="font-bold text-surface-900 dark:text-white text-lg leading-tight">Portal de Cliente</h1>
+              <h1 className="font-bold text-surface-900 dark:text-white text-lg leading-tight">{t('portal.dashboard.title')}</h1>
               <p className="text-xs text-surface-500">Loyallia</p>
             </div>
           </div>
@@ -98,20 +100,20 @@ export default function PortalDashboardPage() {
               href="/portal/privacy"
               className="text-sm text-surface-600 dark:text-surface-400 hover:text-brand-500 px-3 py-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
             >
-              Privacidad
+              {t('portal.dashboard.nav.privacy')}
             </Link>
             <button
               onClick={handleLogout}
               className="text-sm text-red-600 hover:text-red-700 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
-              Cerrar sesión
+              {t('portal.dashboard.nav.logout')}
             </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-6">Mis Tarjetas</h2>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-6">{t('portal.dashboard.myCardsTitle')}</h2>
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -124,8 +126,8 @@ export default function PortalDashboardPage() {
                 <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10l10 5 10-5" />
               </svg>
             </div>
-            <p className="text-surface-500 text-sm">No tienes tarjetas de fidelización activas.</p>
-            <p className="text-surface-400 text-xs mt-1">Escanea un QR de un negocio para inscribirte.</p>
+            <p className="text-surface-500 text-sm">{t('portal.dashboard.emptyState.title')}</p>
+            <p className="text-surface-400 text-xs mt-1">{t('portal.dashboard.emptyState.hint')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -157,7 +159,7 @@ export default function PortalDashboardPage() {
                   )}
 
                   <p className="text-[10px] text-surface-400 mt-3">
-                    Inscrito el {new Date(pass.enrolled_at).toLocaleDateString('es-EC')}
+                    {t('portal.dashboard.enrolledOn')} {new Date(pass.enrolled_at).toLocaleDateString('es-EC')}
                   </p>
 
                   <div className="mt-4 flex gap-2">
@@ -166,7 +168,7 @@ export default function PortalDashboardPage() {
                       disabled={deletingId === pass.pass_id}
                       className="text-xs text-red-600 hover:text-red-700 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
                     >
-                      {deletingId === pass.pass_id ? 'Saliendo...' : 'Salir del programa'}
+                      {deletingId === pass.pass_id ? t('portal.dashboard.disenrollLoading') : t('portal.dashboard.disenrollButton')}
                     </button>
                   </div>
                 </div>
