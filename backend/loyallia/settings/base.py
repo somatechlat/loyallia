@@ -63,6 +63,7 @@ LOCAL_APPS = [
     "apps.api.apps.ApiConfig",
     "apps.backup.apps.BackupConfig",
     "apps.redemption.apps.RedemptionConfig",
+    "apps.ai.apps.AIConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -84,6 +85,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.tenants.middleware.TenantMiddleware",  # Tenant resolution from JWT
+    "apps.ai.middleware.AIRateLimitMiddleware",  # AI endpoint rate limiting (hourly/daily)
     "common.middleware.AuditUserMiddleware",  # Audit user tracking for created_by/updated_by
 ]
 
