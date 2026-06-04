@@ -8,6 +8,8 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { LockedFeature } from './LockedFeature';
 import type { UnifiedField, FieldGroup, CardType } from '@/components/wallet/types/unified-state';
 import { validateFieldGroupLimits, canAddFieldToGroup } from '@/components/wallet/utils/field-validation';
 import { FieldCard } from './FieldCard';
@@ -94,6 +96,7 @@ function ArrowDownIcon({ className }: { className?: string }) {
 /* ── Component ────────────────────────────────────────────────────── */
 
 export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioProps) {
+  const planFeatures = usePlanFeatures();
   const [dragOverGroup, setDragOverGroup] = useState<FieldGroup | null>(null);
 
   const groupValidations = useMemo(
@@ -244,6 +247,15 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
 
   return (
     <div className="space-y-5">
+      {!planFeatures.hasAdvancedFields && (
+        <LockedFeature
+          featureName="Campos avanzados"
+          requiredPlan="Profesional"
+          isLocked={!planFeatures.hasAdvancedFields}
+        >
+          <div className="h-12" />
+        </LockedFeature>
+      )}
       {FIELD_GROUPS.map((group) => {
         const groupFields = fieldsByGroup.get(group) ?? [];
         const validation = groupValidations.find((v) => v.group === group);
@@ -288,6 +300,7 @@ export function FieldStudio({ fields, cardType, onUpdateFields }: FieldStudioPro
                       field={field}
                       cardType={cardType}
                       isCompact={isCompactGroup}
+                      showAdvanced={planFeatures.hasAdvancedFields}
                       onUpdate={handleUpdateField}
                       onDelete={() => handleDeleteField(field.id)}
                     />

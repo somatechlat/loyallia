@@ -17,6 +17,7 @@ export interface FieldCardProps {
   field: UnifiedField;
   cardType: CardType;
   isCompact?: boolean;
+  showAdvanced?: boolean;
   onUpdate: (updated: UnifiedField) => void;
   onDelete: () => void;
 }
@@ -121,7 +122,14 @@ function ChevronUpIcon({ className }: { className?: string }) {
 
 /* ── Component ────────────────────────────────────────────────────── */
 
-export function FieldCard({ field, cardType, isCompact = false, onUpdate, onDelete }: FieldCardProps) {
+export function FieldCard({
+  field,
+  cardType,
+  isCompact = false,
+  showAdvanced = true,
+  onUpdate,
+  onDelete,
+}: FieldCardProps) {
   const [isExpanded, setIsExpanded] = useState(!isCompact);
 
   const isVisible = field.showOnApple || field.showOnGoogle;
@@ -378,19 +386,21 @@ export function FieldCard({ field, cardType, isCompact = false, onUpdate, onDele
       </div>
 
       {/* Template picker + Dynamic + Delete row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <InlineTemplatePicker value={field.value} onChange={handleValueChange} cardType={cardType} />
+      {showAdvanced && (
+        <div className="flex flex-wrap items-center gap-3">
+          <InlineTemplatePicker value={field.value} onChange={handleValueChange} cardType={cardType} />
 
-        <label className="inline-flex items-center gap-1.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={field.isDynamic}
-            onChange={handleToggleDynamic}
-            className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-xs text-neutral-700 dark:text-neutral-300">Dinámico</span>
-        </label>
-      </div>
+          <label className="inline-flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={field.isDynamic}
+              onChange={handleToggleDynamic}
+              className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-xs text-neutral-700 dark:text-neutral-300">Dinámico</span>
+          </label>
+        </div>
+      )}
 
       {/* Platform toggles */}
       <div className="flex items-center gap-3">
@@ -460,42 +470,44 @@ export function FieldCard({ field, cardType, isCompact = false, onUpdate, onDele
           </div>
 
           {/* Notification toggle */}
-          <div className="space-y-2">
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={Boolean(
-                  field.notifications.appleChangeMessage || field.notifications.googleMessage
-                )}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    onUpdate({
-                      ...field,
-                      notifications: {
-                        appleChangeMessage: field.notifications.appleChangeMessage ?? '¡Nuevo sello!',
-                        googleMessage: field.notifications.googleMessage ?? 'Tu tarjeta ha sido actualizada',
-                      },
-                    });
-                  } else {
-                    onUpdate({ ...field, notifications: {} });
-                  }
-                }}
-                className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                Enviar notificación:
-              </span>
-            </label>
+          {showAdvanced && (
+            <div className="space-y-2">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(
+                    field.notifications.appleChangeMessage || field.notifications.googleMessage
+                  )}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      onUpdate({
+                        ...field,
+                        notifications: {
+                          appleChangeMessage: field.notifications.appleChangeMessage ?? '¡Nuevo sello!',
+                          googleMessage: field.notifications.googleMessage ?? 'Tu tarjeta ha sido actualizada',
+                        },
+                      });
+                    } else {
+                      onUpdate({ ...field, notifications: {} });
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                  Enviar notificación:
+                </span>
+              </label>
 
-            {Boolean(
-              field.notifications.appleChangeMessage || field.notifications.googleMessage
-            ) && (
-              <NotificationConfigPanel
-                notifications={field.notifications}
-                onChange={handleNotificationChange}
-              />
-            )}
-          </div>
+              {Boolean(
+                field.notifications.appleChangeMessage || field.notifications.googleMessage
+              ) && (
+                <NotificationConfigPanel
+                  notifications={field.notifications}
+                  onChange={handleNotificationChange}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

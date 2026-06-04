@@ -127,6 +127,8 @@ def get_current_usage(tenant, resource: str) -> int:
         ),
         "api_calls_day": lambda: _count_api_calls_today(tenant),
         "exports_month": lambda: _count_exports_month(tenant, month_start),
+        "wallet_templates": lambda: _count_wallet_templates(tenant),
+        "wallet_pass_updates_month": lambda: _count_wallet_pass_updates_month(tenant, month_start),
     }
 
     counter = usage_map.get(resource)
@@ -263,6 +265,35 @@ def _count_exports_month(tenant, month_start) -> int:
     return AuditLog.objects.filter(
         tenant_id=str(tenant.id),
         action="EXPORT",
+        created_at__gte=month_start,
+    ).count()
+
+
+def _count_wallet_templates(tenant) -> int:
+    """Count custom wallet pass templates for a tenant.
+
+    PERF: Single COUNT query on WalletTemplate (or WalletPass if templates stored there).
+    Falls back to 0 if model doesn't exist yet.
+    """
+    try:
+        from apps.wallet.models import WalletTemplate
+
+        return WalletTemplate.objects.filter(tenant=tenant).count()
+    except ImportError:
+        logger.debug("WalletTemplate model not available; returning usage=0.")
+        return 0
+
+
+def _count_wallet_pass_updates_month(tenant, month_start) -> int:
+    """Count wallet pass updates/pushes this month.
+
+    PERF: Single COUNT query on WalletPass update log or CampaignDeliveryLog with wallet channel.
+    """
+    from apps.notifications.models import CampaignDeliveryLog
+
+    return CampaignDeliveryLog.objects.filter(
+        campaign_run__tenant=tenant,
+        campaign_run__channel="wallet",
         created_at__gte=month_start,
     ).count()
 
