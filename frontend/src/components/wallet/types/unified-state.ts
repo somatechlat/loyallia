@@ -195,8 +195,10 @@ export interface WalletColors {
 export interface WalletImages {
   logo?: ImageAsset;
   logo2x?: ImageAsset;
+  logo3x?: ImageAsset;
   strip?: ImageAsset;
   strip2x?: ImageAsset;
+  strip3x?: ImageAsset;
   thumbnail?: ImageAsset;
   thumbnail2x?: ImageAsset;
   icon?: ImageAsset;
@@ -204,6 +206,7 @@ export interface WalletImages {
   heroImage?: ImageAsset;
   wideLogo?: ImageAsset;
   imageModule?: ImageAsset;
+  background?: ImageAsset; // Apple event ticket background
 }
 
 export type ActiveTab = 'images' | 'cardType' | 'fields' | 'back' | 'barcode' | 'colors' | 'advanced';
