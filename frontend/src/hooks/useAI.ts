@@ -1,19 +1,18 @@
 /**
  * AI design assistant hook for the Wallet Pass Studio.
  *
- * Provides AI-powered template generation, color suggestions,
- * design critique, and stamp icon recommendations by calling
- * the Loyallia backend API.
+ * Provides mock AI-powered template generation, color suggestions,
+ * and design critique with loading/error states and quota tracking.
  */
 
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { aiApi } from '@/lib/api';
 import type {
   WalletPassStudioState,
   CardType,
   Industry,
+  WalletColors,
 } from '@/components/wallet/types/unified-state';
 
 export interface UseAIOptions {
@@ -28,15 +27,6 @@ export interface AIVariation {
   design: Partial<WalletPassStudioState>;
 }
 
-export interface AIColorPalette {
-  name: string;
-  primary: string;
-  secondary: string;
-  background: string;
-  text: string;
-  accent: string;
-}
-
 export interface UseAIReturn {
   isLoading: boolean;
   error: string | null;
@@ -47,32 +37,88 @@ export interface UseAIReturn {
     industry: Industry
   ) => Promise<AIVariation[]>;
   suggestColors: (
-    description: string,
-    industry: Industry
-  ) => Promise<AIColorPalette[]>;
+    description: string
+  ) => Promise<Array<{ background: string; foreground: string; label: string; accent: string }>>;
   critiqueDesign: (state: WalletPassStudioState) => Promise<string[]>;
-  suggestStampIcons: (businessType: string) => Promise<string[]>;
   reset: () => void;
 }
 
-function mapBackendVariations(raw: unknown[]): AIVariation[] {
-  return raw.map((item: any, idx: number) => ({
-    id: `ai-variation-${idx}-${Date.now()}`,
-    name: item.name || 'Variación',
-    description: item.description || '',
-    confidence: item.confidence ?? 0.8,
-    design: item.design || {},
-  }));
+const MOCK_COLOR_PALETTES: Array<{ background: string; foreground: string; label: string; accent: string }> = [
+  {
+    background: '#6B4226',
+    foreground: '#FFFFFF',
+    label: '#F5DEB3',
+    accent: '#D2691E',
+  },
+  {
+    background: '#1A1A2E',
+    foreground: '#FFFFFF',
+    label: '#E94560',
+    accent: '#E94560',
+  },
+  {
+    background: '#0D1117',
+    foreground: '#C9D1D9',
+    label: '#8B949E',
+    accent: '#58A6FF',
+  },
+];
+
+const MOCK_CRITIQUE_SUGGESTIONS = [
+  'Aumenta el contraste entre el fondo y el texto principal para mejorar la legibilidad.',
+  'Considera usar un color de acento más vibrante para destacar las llamadas a la acción.',
+  'El espaciado entre campos podría ser más uniforme para una apariencia más profesional.',
+  'Añade un logo para reforzar la identidad de marca en el pase.',
+];
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function mapBackendPalettes(raw: unknown[]): AIColorPalette[] {
-  return raw.map((item: any) => ({
-    name: item.name || 'Paleta',
-    primary: item.primary || '#2C3E50',
-    secondary: item.secondary || '#95A5A6',
-    background: item.background || '#FFFFFF',
-    text: item.text || '#2C3E50',
-    accent: item.accent || '#3498DB',
+function generateMockVariations(
+  description: string,
+  cardType: CardType,
+  industry: Industry
+): AIVariation[] {
+  const baseColors: WalletColors[] = [
+    {
+      background: '#6B4226',
+      foreground: '#FFFFFF',
+      label: '#F5DEB3',
+      accent: '#D2691E',
+    },
+    {
+      background: '#1A1A1A',
+      foreground: '#FFFFFF',
+      label: '#B0B0B0',
+      accent: '#C0A062',
+    },
+    {
+      background: '#0D1117',
+      foreground: '#C9D1D9',
+      label: '#8B949E',
+      accent: '#58A6FF',
+    },
+  ];
+
+  const names = ['Café Cálido', 'Industrial Oscuro', 'Minimal'];
+  const descriptions = [
+    `Diseño cálido inspirado en "${description.slice(0, 30)}..."`,
+    'Estilo industrial con tonos oscuros y metálicos',
+    'Diseño minimalista con énfasis en la claridad',
+  ];
+
+  return names.map((name, idx) => ({
+    id: `ai-variation-${idx}-${Date.now()}`,
+    name,
+    description: descriptions[idx],
+    confidence: 9.1 - idx * 0.2,
+    design: {
+      cardType,
+      industry,
+      colors: baseColors[idx],
+      name: `${name} - ${description.slice(0, 20)}`,
+    },
   }));
 }
 
@@ -80,7 +126,7 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
   const enabled = options?.enabled ?? true;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quota, setQuota] = useState({ used: 0, limit: 10 });
+  const [quota, setQuota] = useState({ used: 3, limit: 10 });
   const abortRef = useRef<AbortController | null>(null);
 
   const reset = useCallback(() => {
@@ -112,22 +158,20 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       abortRef.current = new AbortController();
 
       try {
-        const resp = await aiApi.generateTemplate({
-          description,
-          card_type: cardType,
-          industry,
-          language: 'es',
-        });
+        await delay(1200);
+
+        if (abortRef.current.signal.aborted) {
+          return [];
+        }
 
         setQuota((prev) => ({
           used: Math.min(prev.used + 1, prev.limit),
           limit: prev.limit,
         }));
 
-        const data = resp.data?.data || [];
-        return mapBackendVariations(data);
-      } catch (err: any) {
-        const message = err?.response?.data?.message || err?.message || 'Error desconocido';
+        return generateMockVariations(description, cardType, industry);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido';
         setError(message);
         return [];
       } finally {
@@ -139,9 +183,8 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
 
   const suggestColors = useCallback(
     async (
-      description: string,
-      industry: Industry
-    ): Promise<AIColorPalette[]> => {
+      description: string
+    ): Promise<Array<{ background: string; foreground: string; label: string; accent: string }>> => {
       if (!enabled) {
         setError('La funcionalidad de IA no está habilitada.');
         return [];
@@ -156,15 +199,15 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       abortRef.current = new AbortController();
 
       try {
-        const resp = await aiApi.suggestColors({
-          description,
-          industry,
-        });
+        await delay(800);
 
-        const data = resp.data?.data || [];
-        return mapBackendPalettes(data);
-      } catch (err: any) {
-        const message = err?.response?.data?.message || err?.message || 'Error desconocido';
+        if (abortRef.current.signal.aborted) {
+          return [];
+        }
+
+        return MOCK_COLOR_PALETTES;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido';
         setError(message);
         return [];
       } finally {
@@ -186,47 +229,22 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       abortRef.current = new AbortController();
 
       try {
-        const resp = await aiApi.critiqueDesign({
-          design_data: state as Record<string, unknown>,
-        });
+        await delay(1000);
 
-        const data = resp.data?.data || [];
-        return Array.isArray(data) ? data : [];
-      } catch (err: any) {
-        const message = err?.response?.data?.message || err?.message || 'Error desconocido';
-        setError(message);
-        return [];
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [enabled]
-  );
+        if (abortRef.current.signal.aborted) {
+          return [];
+        }
 
-  const suggestStampIcons = useCallback(
-    async (businessType: string): Promise<string[]> => {
-      if (!enabled) {
-        setError('La funcionalidad de IA no está habilitada.');
-        return [];
-      }
-      if (!businessType.trim()) {
-        setError('Por favor, indica el tipo de negocio.');
-        return [];
-      }
+        const suggestions = [...MOCK_CRITIQUE_SUGGESTIONS];
 
-      setError(null);
-      setIsLoading(true);
-      abortRef.current = new AbortController();
+        // Add contextual suggestion based on contrast
+        if (state.colors.background === state.colors.foreground) {
+          suggestions.push('El color de fondo y el texto no pueden ser idénticos.');
+        }
 
-      try {
-        const resp = await aiApi.suggestStampIcons({
-          business_type: businessType,
-        });
-
-        const data = resp.data?.data || [];
-        return Array.isArray(data) ? data : [];
-      } catch (err: any) {
-        const message = err?.response?.data?.message || err?.message || 'Error desconocido';
+        return suggestions;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido';
         setError(message);
         return [];
       } finally {
@@ -243,7 +261,6 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
     generateTemplate,
     suggestColors,
     critiqueDesign,
-    suggestStampIcons,
     reset,
   };
 }

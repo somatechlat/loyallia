@@ -1,40 +1,88 @@
 /**
- * Plan features hook for Wallet Pass Studio gating.
+ * Plan-aware feature gating hook for the Wallet Pass Studio.
  *
- * Mock implementation for Phase 11.
- * Will be replaced with real API integration in a later phase.
+ * Wraps usePlan with wallet-specific feature checks and limit tracking.
+ * Provides typed access to wallet plan features and usage limits.
+ *
+ * Gracefully falls back to all-features-enabled when PlanProvider is
+ * not available (e.g. in tests or standalone usage).
  */
 
-export interface PlanFeatures {
-  wallet_pass_studio: boolean;
-  wallet_custom_templates: boolean;
-  wallet_advanced_fields: boolean;
-  limits: {
-    wallet_templates: number;
-    wallet_pass_updates_month: number;
-    wallet_ai_designs_month: number;
-  };
-  usage: {
-    wallet_templates: number;
-    wallet_pass_updates_month: number;
-    wallet_ai_designs_month: number;
-  };
+'use client';
+
+import { usePlan } from './usePlan';
+
+export interface WalletPlanFeatures {
+  hasPassStudio: boolean;
+  hasCustomTemplates: boolean;
+  hasAdvancedFields: boolean;
+  hasAIAssistant: boolean;
+  walletTemplatesLimit: number;
+  walletTemplatesUsed: number;
+  walletTemplatesRemaining: number;
+  walletPassUpdatesLimit: number;
+  walletPassUpdatesUsed: number;
+  walletPassUpdatesRemaining: number;
+  isAtTemplateLimit: boolean;
+  isAtPassUpdatesLimit: boolean;
+  isLoading: boolean;
+  error: Error | null;
 }
 
-export function usePlanFeatures(): PlanFeatures {
-  return {
-    wallet_pass_studio: true,
-    wallet_custom_templates: true,
-    wallet_advanced_fields: true,
-    limits: {
-      wallet_templates: 50,
-      wallet_pass_updates_month: 200,
-      wallet_ai_designs_month: 20,
-    },
-    usage: {
-      wallet_templates: 3,
-      wallet_pass_updates_month: 12,
-      wallet_ai_designs_month: 2,
-    },
-  };
+const DEFAULT_FEATURES: WalletPlanFeatures = {
+  hasPassStudio: true,
+  hasCustomTemplates: true,
+  hasAdvancedFields: true,
+  hasAIAssistant: true,
+  walletTemplatesLimit: 999,
+  walletTemplatesUsed: 0,
+  walletTemplatesRemaining: 999,
+  walletPassUpdatesLimit: 999,
+  walletPassUpdatesUsed: 0,
+  walletPassUpdatesRemaining: 999,
+  isAtTemplateLimit: false,
+  isAtPassUpdatesLimit: false,
+  isLoading: false,
+  error: null,
+};
+
+export function usePlanFeatures(): WalletPlanFeatures {
+  try {
+    const plan = usePlan();
+
+    const hasPassStudio = plan.hasFeature('wallet_pass_studio');
+    const hasCustomTemplates = plan.hasFeature('wallet_custom_templates');
+    const hasAdvancedFields = plan.hasFeature('wallet_advanced_fields');
+    const hasAIAssistant = plan.hasFeature('ai_assistant');
+
+    const walletTemplatesLimit = plan.getLimit('wallet_templates');
+    const walletTemplatesUsed = plan.getUsage('wallet_templates');
+    const walletTemplatesRemaining = Math.max(0, walletTemplatesLimit - walletTemplatesUsed);
+    const isAtTemplateLimit = plan.isAtLimit('wallet_templates');
+
+    const walletPassUpdatesLimit = plan.getLimit('wallet_pass_updates_month');
+    const walletPassUpdatesUsed = plan.getUsage('wallet_pass_updates_month');
+    const walletPassUpdatesRemaining = Math.max(0, walletPassUpdatesLimit - walletPassUpdatesUsed);
+    const isAtPassUpdatesLimit = plan.isAtLimit('wallet_pass_updates_month');
+
+    return {
+      hasPassStudio,
+      hasCustomTemplates,
+      hasAdvancedFields,
+      hasAIAssistant,
+      walletTemplatesLimit,
+      walletTemplatesUsed,
+      walletTemplatesRemaining,
+      walletPassUpdatesLimit,
+      walletPassUpdatesUsed,
+      walletPassUpdatesRemaining,
+      isAtTemplateLimit,
+      isAtPassUpdatesLimit,
+      isLoading: plan.isLoading,
+      error: plan.error,
+    };
+  } catch {
+    // PlanProvider not available — return defaults (all features enabled)
+    return DEFAULT_FEATURES;
+  }
 }

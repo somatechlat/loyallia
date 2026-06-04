@@ -32,7 +32,8 @@ describe('meetsWCAGAA', () => {
   });
 
   it('large text has lower threshold', () => {
-    expect(meetsWCAGAA('#CCCCCC', '#FFFFFF', true)).toBe(false);
+    expect(meetsWCAGAA('#888888', '#FFFFFF', true)).toBe(true);
+    expect(meetsWCAGAA('#888888', '#FFFFFF', false)).toBe(false);
   });
 });
 
@@ -55,8 +56,8 @@ describe('getWCAGLevel', () => {
     expect(getWCAGLevel('#777777', '#FFFFFF')).toBe('FAIL');
   });
 
-  it('dark gray on white is AAA', () => {
-    expect(getWCAGLevel('#595959', '#FFFFFF')).toBe('AAA');
+  it('dark gray on white is AA', () => {
+    expect(getWCAGLevel('#666666', '#FFFFFF')).toBe('AA');
   });
 });
 

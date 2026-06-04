@@ -12,7 +12,6 @@ import type { WalletDesignState, AppleFieldDef } from '@/components/wallet/types
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 import { mapFieldsToApple, mapFieldsToGoogle } from '@/components/wallet/utils/field-mappers';
-import { useI18n } from '@/lib/i18n';
 
 export interface StudioCanvasProps {
   state: WalletPassStudioState;
@@ -156,32 +155,31 @@ function buildForm(state: WalletPassStudioState) {
   };
 }
 
-function buildSelectedType(state: WalletPassStudioState, t: (key: string) => string) {
+function buildSelectedType(state: WalletPassStudioState) {
   const labels: Record<string, string> = {
-    stamp: t('portal.cardTypes.stamp'),
-    cashback: t('portal.cardTypes.cashback'),
-    coupon: t('portal.cardTypes.coupon'),
-    affiliate: t('programs.cardTypes.affiliate'),
-    discount: t('programs.cardTypes.discount'),
-    gift_certificate: t('wallet.studio.gift.giftCard'),
-    vip_membership: t('portal.cardTypes.vip_membership'),
-    corporate_discount: t('programs.cardTypes.corporate_discount'),
-    referral_pass: t('portal.cardTypes.referral_pass'),
-    multipass: t('wallet.studio.multipass.defaultName'),
+    stamp: 'Tarjeta de Sellos',
+    cashback: 'Cashback',
+    coupon: 'Cupón',
+    affiliate: 'Afiliado',
+    discount: 'Descuento por Niveles',
+    gift_certificate: 'Tarjeta Regalo',
+    vip_membership: 'Membresía VIP',
+    corporate_discount: 'Descuento Corporativo',
+    referral_pass: 'Pase de Referido',
+    multipass: 'Multi-Pase',
   };
 
   return {
     value: state.cardType,
-    label: labels[state.cardType] ?? t('wallet.preview.loyaltyProgram'),
+    label: labels[state.cardType] ?? 'Programa',
     icon: state.cardType,
     desc: '',
   };
 }
 
 export function StudioCanvas({ state, platformView, showBack }: StudioCanvasProps) {
-  const { t } = useI18n();
   const form = buildForm(state);
-  const selectedType = buildSelectedType(state, t);
+  const selectedType = buildSelectedType(state);
   const walletDesign = buildWalletDesign(state);
   const barcodeType = mapBarcodeFormat(state.barcode.format);
   const logoPreview = state.images.logo?.url ?? null;
@@ -228,7 +226,7 @@ export function StudioCanvas({ state, platformView, showBack }: StudioCanvasProp
                 walletDesign={walletDesign}
               />
             )}
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.preview.appleWallet')}</span>
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Apple Wallet</span>
           </div>
         )}
 
@@ -236,7 +234,7 @@ export function StudioCanvas({ state, platformView, showBack }: StudioCanvasProp
           <div className="flex flex-col items-center gap-3">
             {showBack ? (
               <div className="flex items-center justify-center w-[260px] h-[540px] bg-neutral-800 rounded-[44px] border-2 border-neutral-700">
-                <p className="text-sm text-neutral-400">{t('wallet.preview.backSoon')}</p>
+                <p className="text-sm text-neutral-400">Back preview coming soon</p>
               </div>
             ) : (
               <GoogleWalletCard
@@ -248,7 +246,7 @@ export function StudioCanvas({ state, platformView, showBack }: StudioCanvasProp
                 walletDesign={walletDesign}
               />
             )}
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.preview.googleWallet')}</span>
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Google Wallet</span>
           </div>
         )}
       </div>

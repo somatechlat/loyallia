@@ -7,7 +7,6 @@
 
 'use client';
 
-import { useI18n } from '@/lib/i18n';
 import type { PlatformView } from '@/components/wallet/types/unified-state';
 
 export interface PlatformToggleProps {
@@ -73,14 +72,13 @@ const SIZE_CLASSES = {
 } as const;
 
 export function PlatformToggle({ value, onChange, size = 'md' }: PlatformToggleProps) {
-  const { t } = useI18n();
   const classes = SIZE_CLASSES[size];
 
   return (
     <div
       className={`inline-flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 ${classes.container}`}
       role="radiogroup"
-      aria-label={t('wallet.studio.platformToggle.select')}
+      aria-label="Seleccionar plataforma"
     >
       {OPTION_CONFIG.map((option) => {
         const isActive = value === option.value;

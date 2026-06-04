@@ -6,7 +6,6 @@
 'use client';
 
 import React from 'react';
-import { useI18n } from '@/lib/i18n';
 import type { CardType, CardTypeConfig } from '@/components/wallet/types/unified-state';
 import { StampTab } from './tabs/StampTab';
 import { CashbackTab } from './tabs/CashbackTab';
@@ -99,10 +98,9 @@ export function CardTypeTab({ cardType, config, onChange }: CardTypeTabProps) {
       );
     default:
       // Exhaustiveness check
-      const { t } = useI18n();
       return (
         <div className="p-4 text-sm text-neutral-500 dark:text-neutral-400">
-          {t('wallet.studio.cardType.unsupported', { type: (cardType as string) ?? t('wallet.studio.cardType.unknown') })}
+          Tipo de tarjeta no soportado: {(cardType as string) ?? 'desconocido'}
         </div>
       );
   }

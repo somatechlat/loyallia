@@ -7,7 +7,6 @@
 import React, { useCallback } from 'react';
 import type { AffiliateCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
-import { useI18n } from '@/lib/i18n';
 
 export interface AffiliateTabProps {
   config: AffiliateCardConfig;
@@ -15,8 +14,6 @@ export interface AffiliateTabProps {
 }
 
 function AffiliatePreview({ config }: { config: AffiliateCardConfig }) {
-  const { t } = useI18n();
-
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-2">
       <div className="flex items-center gap-2">
@@ -27,10 +24,10 @@ function AffiliatePreview({ config }: { config: AffiliateCardConfig }) {
           A
         </div>
         <div>
-          <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{t('wallet.studio.affiliate.programName')}</p>
+          <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Programa de Afiliados</p>
           {config.affiliateCodePattern && (
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-mono">
-              {t('wallet.studio.affiliate.codeLabel', { code: config.affiliateCodePattern })}
+              Código: {config.affiliateCodePattern}
             </p>
           )}
         </div>
@@ -50,8 +47,6 @@ function AffiliatePreview({ config }: { config: AffiliateCardConfig }) {
 }
 
 export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
-  const { t } = useI18n();
-
   const handleTextChange = useCallback(
     (field: keyof AffiliateCardConfig) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onChange({ [field]: e.target.value } as Partial<AffiliateCardConfig>);
@@ -62,19 +57,19 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
   return (
     <div className="space-y-5">
       <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-        {t('wallet.studio.affiliate.title')}
+        Configuración de Afiliado
       </h3>
 
       {/* Affiliate code pattern */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.affiliate.codePattern')}
+          Patrón de código de afiliado
         </label>
         <input
           type="text"
           value={config.affiliateCodePattern}
           onChange={handleTextChange('affiliateCodePattern')}
-          placeholder={t('wallet.studio.affiliate.codePlaceholder')}
+          placeholder="Ej: AFF-{number}"
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="affiliate-code-input"
         />
@@ -83,7 +78,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
       {/* Benefits description */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.affiliate.benefitsDescription')}
+          Descripción de beneficios
         </label>
         <textarea
           value={config.benefitsDescription}
@@ -97,7 +92,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
       {/* Badge color */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.affiliate.badgeColor')}
+          Color de insignia
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -114,13 +109,13 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
       {/* Referral banner text */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.affiliate.bannerText')}
+          Texto del banner de referido
         </label>
         <input
           type="text"
           value={config.referralBannerText}
           onChange={handleTextChange('referralBannerText')}
-          placeholder={t('wallet.studio.affiliate.bannerPlaceholder')}
+          placeholder="Ej: Invita y gana"
           className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="banner-text-input"
         />
@@ -129,7 +124,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
       {/* Referral chain icon */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.affiliate.referralChainIcon')}
+          Icono de cadena de referidos
         </label>
         <IconPicker
           value={config.referralChainIcon ?? ''}
@@ -141,7 +136,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
       {/* Ambassador badge */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.affiliate.ambassadorBadge')}
+          Insignia de embajador
         </label>
         <IconPicker
           value={config.ambassadorBadge ?? ''}
@@ -153,7 +148,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
       {/* Live preview */}
       <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
         <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          {t('wallet.studio.affiliate.preview')}
+          Vista previa
         </label>
         <AffiliatePreview config={config} />
       </div>

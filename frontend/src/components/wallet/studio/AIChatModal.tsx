@@ -14,12 +14,10 @@
 import React, { useState, useCallback } from 'react';
 import { useAI } from '@/hooks/useAI';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { LockedFeature } from '@/components/shared/LockedFeature';
-import { LimitReached } from '@/components/shared/LimitReached';
+import { LockedFeature } from './LockedFeature';
 import type {
   CardType,
   Industry,
-  WalletPassStudioState,
 } from '@/components/wallet/types/unified-state';
 import { CARD_TYPE_METADATA, INDUSTRY_METADATA } from '@/components/wallet/constants';
 import type { AIVariation } from '@/hooks/useAI';
@@ -155,8 +153,8 @@ export function AIChatModal({
   initialCardType = 'stamp',
   initialIndustry = 'food',
 }: AIChatModalProps) {
-  const plan = usePlanFeatures();
-  const { isLoading, error, quota, generateTemplate, reset } = useAI({ enabled: true });
+  const planFeatures = usePlanFeatures();
+  const { isLoading, error, quota, generateTemplate, reset } = useAI({ enabled: planFeatures.hasAIAssistant });
   const [description, setDescription] = useState('');
   const [cardType, setCardType] = useState<CardType>(initialCardType);
   const [industry, setIndustry] = useState<Industry>(initialIndustry);
@@ -190,42 +188,6 @@ export function AIChatModal({
 
   if (!isOpen) return null;
 
-  // Plan gating
-  if (!plan.wallet_pass_studio) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-        <div className="relative z-10 w-full max-w-md">
-          <LockedFeature
-            featureName="Diseñar con inteligencia artificial"
-            requiredPlan="Profesional o superior"
-            onUpgrade={() => {
-              /* TODO: open upgrade modal */
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (plan.usage.wallet_ai_designs_month >= plan.limits.wallet_ai_designs_month) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-        <div className="relative z-10 w-full max-w-md">
-          <LimitReached
-            limitName="diseños con IA"
-            current={plan.usage.wallet_ai_designs_month}
-            limit={plan.limits.wallet_ai_designs_month}
-            onUpgrade={() => {
-              /* TODO: open upgrade modal */
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
-
   const cardTypeOptions = Object.entries(CARD_TYPE_METADATA).map(([key, meta]) => ({
     value: key as CardType,
     label: meta.label,
@@ -236,7 +198,7 @@ export function AIChatModal({
     label: meta.label,
   }));
 
-  const canGenerate = description.trim().length > 0 && !isLoading;
+  const canGenerate = description.trim().length > 0 && !isLoading && planFeatures.hasAIAssistant;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -275,6 +237,17 @@ export function AIChatModal({
 
         {/* Body */}
         <div className="px-6 py-5 space-y-5">
+          {/* Plan lock overlay */}
+          {!planFeatures.hasAIAssistant && (
+            <LockedFeature
+              featureName="Diseño con IA"
+              requiredPlan="Profesional"
+              isLocked={!planFeatures.hasAIAssistant}
+            >
+              <div className="space-y-5" />
+            </LockedFeature>
+          )}
+
           {/* Description textarea */}
           <div className="space-y-2">
             <label htmlFor="ai-description" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -286,7 +259,8 @@ export function AIChatModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Gimnasio de CrossFit con ambiente industrial... colores negro mate, rojo y gris metálico"
-              className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border-neutral-300 dark:border-neutral-700 resize-none"
+              disabled={!planFeatures.hasAIAssistant}
+              className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border-neutral-300 dark:border-neutral-700 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -301,7 +275,8 @@ export function AIChatModal({
                   key={suggestion}
                   type="button"
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="px-3 py-1.5 text-xs font-medium rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                  disabled={!planFeatures.hasAIAssistant}
+                  className="px-3 py-1.5 text-xs font-medium rounded-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 hover:text-purple-700 dark:hover:text-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   &ldquo;{suggestion}&rdquo;
                 </button>
@@ -319,7 +294,8 @@ export function AIChatModal({
                 id="ai-card-type"
                 value={cardType}
                 onChange={(e) => setCardType(e.target.value as CardType)}
-                className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-purple-500 border-neutral-300 dark:border-neutral-700"
+                disabled={!planFeatures.hasAIAssistant}
+                className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-purple-500 border-neutral-300 dark:border-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {cardTypeOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -337,7 +313,8 @@ export function AIChatModal({
                 id="ai-industry"
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value as Industry)}
-                className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-purple-500 border-neutral-300 dark:border-neutral-700"
+                disabled={!planFeatures.hasAIAssistant}
+                className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-purple-500 border-neutral-300 dark:border-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {industryOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
