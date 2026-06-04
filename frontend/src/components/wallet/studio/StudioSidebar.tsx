@@ -16,6 +16,8 @@ import { ColorsTab } from './ColorsTab';
 import { CardTypeTab } from './CardTypeTab';
 import { BackDesignTab } from './BackDesignTab';
 import { AdvancedTab } from './AdvancedTab';
+import { DesignScore } from './DesignScore';
+import { useDesignScore } from '@/hooks/useDesignScore';
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -269,6 +271,7 @@ export function StudioSidebar({
 }: StudioSidebarProps) {
   const activeTab = state.ui.activeTab;
   const cardTypeConfig = getCardTypeTabConfig(state.cardType);
+  const designScore = useDesignScore(state);
 
   // Build ordered tab list: images, cardType, fields, back, barcode, colors, advanced
   const allTabs: TabConfig[] = [
@@ -351,6 +354,8 @@ export function StudioSidebar({
           />
         )}
       </div>
+
+      <DesignScore result={designScore} />
     </aside>
   );
 }
