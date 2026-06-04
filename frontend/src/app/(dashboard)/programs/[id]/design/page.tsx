@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { WalletStudioIntegration } from '@/components/programs/WalletStudioIntegration';
 import { useState, useEffect } from 'react';
 import { programsApi } from '@/lib/api';
-import { type WalletDesignState, defaultWalletDesignState } from '@/components/wallet/types';
+import { type WalletDesignState, defaultWalletDesignState } from '@/components/wallet/types-v1';
 import { parseWalletDesignFromMetadata } from '@/components/wallet/serialization';
 
 export default function ProgramDesignPage() {
@@ -22,7 +22,7 @@ export default function ProgramDesignPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    programsApi.getById(programId).then((res: { data: { id: string; name: string; card_type: string; metadata: Record<string, unknown> } }) => {
+    programsApi.get(programId).then((res: { data: { id: string; name: string; card_type: string; metadata: Record<string, unknown> } }) => {
       const p = res.data;
       setProgram(p);
       const design = parseWalletDesignFromMetadata(p.metadata);

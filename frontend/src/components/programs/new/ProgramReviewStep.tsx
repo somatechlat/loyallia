@@ -3,7 +3,7 @@ import { useI18n } from '@/lib/i18n';
 import { CardTypeIcon, BARCODE_TYPES } from '@/components/programs/constants';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import type { AppleWalletFeatureConfig } from '@/components/programs/WalletCardPreview';
-import type { WalletDesignState } from '@/components/wallet/types';
+import type { WalletDesignState } from '@/components/wallet/types-v1';
 import { APPLE_FIELD_GROUPS } from '@/components/programs/constants';
 
 /** Translation keys for all program metadata keys — prevents mixed languages in review step. */

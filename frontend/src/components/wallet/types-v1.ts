@@ -1,6 +1,6 @@
 /**
  * Re-export of the legacy v1 wallet design types.
- * The canonical definitions live in `types.ts`.
+ * The canonical definitions live in `types-v1-definitions.ts`.
  */
 export type {
   WalletDesignState,
@@ -13,6 +13,6 @@ export type {
   WalletLocation,
   WalletBeacon,
   WalletLink,
-} from './types';
+} from './types-v1-definitions';
 
-export { defaultWalletDesignState } from './types';
+export { defaultWalletDesignState } from './types-v1-definitions';
