@@ -33,6 +33,12 @@ describe('useKeyboardShortcuts', () => {
     onZoomOut: vi.fn(),
     onResetZoom: vi.fn(),
     onEscape: vi.fn(),
+    onDuplicate: vi.fn(),
+    onDelete: vi.fn(),
+    onNudge: vi.fn(),
+    onToggleGrid: vi.fn(),
+    onNextField: vi.fn(),
+    onPrevField: vi.fn(),
   };
 
   beforeEach(() => {
@@ -117,5 +123,53 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts(mocks));
     dispatchKey('b', { ctrlKey: true });
     expect(mocks.onToggleBack).not.toHaveBeenCalled();
+  });
+
+  it('calls onDuplicate for Ctrl+D', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('d', { ctrlKey: true });
+    expect(mocks.onDuplicate).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onDelete for Delete key', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('Delete');
+    expect(mocks.onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onDelete for Backspace key', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('Backspace');
+    expect(mocks.onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onToggleGrid for Ctrl+G', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('g', { ctrlKey: true });
+    expect(mocks.onToggleGrid).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onNudge with direction and 1px for ArrowUp', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('ArrowUp');
+    expect(mocks.onNudge).toHaveBeenCalledWith('up', 1);
+  });
+
+  it('calls onNudge with direction and 10px for Shift+ArrowDown', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('ArrowDown', { shiftKey: true });
+    expect(mocks.onNudge).toHaveBeenCalledWith('down', 10);
+  });
+
+  it('calls onNextField for Tab', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('Tab');
+    expect(mocks.onNextField).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onPrevField for Shift+Tab', () => {
+    renderHook(() => useKeyboardShortcuts(mocks));
+    dispatchKey('Tab', { shiftKey: true });
+    expect(mocks.onPrevField).toHaveBeenCalledTimes(1);
   });
 });
