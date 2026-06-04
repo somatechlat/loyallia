@@ -5,12 +5,9 @@
  */
 
 import type { WalletTemplate } from '@/components/wallet/types/templates';
+import { defaultBackContentDefaults } from '@/components/wallet/types/back-content';
 
 const now = new Date().toISOString();
-
-function emptyBackContent() {
-  return { fields: [], links: [], detailImages: [] };
-}
 
 export const SYSTEM_TEMPLATES: WalletTemplate[] = [
   /* ── 1. Café Clásico ─────────────────────────────────────────────── */
@@ -44,7 +41,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       stampGridLayout: '5x2',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.stamp,
     apple: {
       passStyle: 'storeCard',
       description: 'Tarjeta de sellos de café',
@@ -85,7 +82,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       progressRingColor: '#FF7043',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.cashback,
     apple: {
       passStyle: 'storeCard',
       description: 'Cashback en café',
@@ -128,7 +125,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       discountBannerText: 'Más compras, más ahorro',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.discount,
     apple: {
       passStyle: 'storeCard',
       description: 'Descuentos por niveles',
@@ -170,7 +167,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       benefitsListIcons: ['dumbbell', 'users', 'flame', 'apple'],
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.vip_membership,
     apple: {
       passStyle: 'generic',
       description: 'Membresía Gym Pro',
@@ -217,7 +214,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       stampGridLayout: '4x4',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.stamp,
     apple: {
       passStyle: 'storeCard',
       description: 'Tarjeta de sellos salón',
@@ -259,7 +256,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       benefitsListIcons: ['bed', 'coffee', 'clock', 'spa'],
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.vip_membership,
     apple: {
       passStyle: 'generic',
       description: 'Membresía Hotel Lujo',
@@ -305,7 +302,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       offerTag: '2×1',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.coupon,
     apple: {
       passStyle: 'coupon',
       description: 'Cupón Food Truck',
@@ -352,7 +349,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       stampGridLayout: '6x2',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.stamp,
     apple: {
       passStyle: 'storeCard',
       description: 'Tarjeta de sellos librería',
@@ -395,7 +392,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       discountBannerText: 'Tu salud, tu ahorro',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.discount,
     apple: {
       passStyle: 'storeCard',
       description: 'Descuentos Farmacia Salud',
@@ -442,7 +439,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       stampGridLayout: '5x2',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.stamp,
     apple: {
       passStyle: 'storeCard',
       description: 'Tarjeta de sellos mascotas',
@@ -489,7 +486,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       stampGridLayout: '4x4',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.stamp,
     apple: {
       passStyle: 'storeCard',
       description: 'Tarjeta de sellos panadería',
@@ -530,7 +527,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       progressRingColor: '#26A69A',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.cashback,
     apple: {
       passStyle: 'storeCard',
       description: 'Cashback Restaurante Gourmet',
@@ -571,7 +568,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       indicatorStyle: 'visual',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.multipass,
     apple: {
       passStyle: 'eventTicket',
       description: 'Multi-pase Barbería',
@@ -611,7 +608,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       denominationBadge: 'gift-badge',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.gift_certificate,
     apple: {
       passStyle: 'storeCard',
       description: 'Certificado Spa Relax',
@@ -652,7 +649,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       indicatorStyle: 'numeric',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.multipass,
     apple: {
       passStyle: 'eventTicket',
       description: 'Multi-pase Cine Estrella',
@@ -693,7 +690,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       indicatorStyle: 'minimal',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.multipass,
     apple: {
       passStyle: 'eventTicket',
       description: 'Multi-pase Parking',
@@ -740,7 +737,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       stampGridLayout: '5x2',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.stamp,
     apple: {
       passStyle: 'storeCard',
       description: 'Tarjeta de sellos lavandería',
@@ -780,7 +777,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       denominationBadge: 'rose-badge',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.gift_certificate,
     apple: {
       passStyle: 'storeCard',
       description: 'Certificado Floristería Ramo',
@@ -823,7 +820,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       discountBannerText: 'Tecnología al mejor precio',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.discount,
     apple: {
       passStyle: 'storeCard',
       description: 'Descuentos Tech Store',
@@ -864,7 +861,7 @@ export const SYSTEM_TEMPLATES: WalletTemplate[] = [
       progressRingColor: '#3CB371',
     },
     barcode: { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: emptyBackContent(),
+    backContent: defaultBackContentDefaults.cashback,
     apple: {
       passStyle: 'storeCard',
       description: 'Cashback Supermercado Ahorro',
