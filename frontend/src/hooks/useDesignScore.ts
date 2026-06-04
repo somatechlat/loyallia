@@ -150,8 +150,24 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     return c;
   }, [state]);
 
-  const passedCount = checks.filter((ch) => ch.passed).length;
-  const score = Math.round((passedCount / checks.length) * 10 * 10) / 10;
+  // Weighted scoring per SRS-003 §10
+  const WEIGHTS: Record<string, number> = {
+    contrast_text: 2.0,
+    contrast_label: 2.0,
+    platform_compat: 2.0,
+    logo_present: 1.5,
+    primary_field: 1.5,
+    barcode_configured: 1.5,
+    hero_present: 1.0,
+    back_content: 1.0,
+    color_harmony: 1.0,
+    notifications_ok: 1.0,
+  };
+
+  const totalWeight = checks.reduce((sum, ch) => sum + (WEIGHTS[ch.id] ?? 1.0), 0);
+  const earnedWeight = checks.reduce((sum, ch) => sum + (ch.passed ? (WEIGHTS[ch.id] ?? 1.0) : 0), 0);
+  const rawScore = (earnedWeight / totalWeight) * 10;
+  const score = Math.round(rawScore * 10) / 10;
   const level = getLevel(score);
 
   return { score, level, checks };
