@@ -330,7 +330,7 @@ class PlanOut(BaseModel):
             max_ai_queries_month=p.max_ai_queries_month,
             max_api_calls_day=p.max_api_calls_day,
             max_exports_month=p.max_exports_month,
-            features=p.features,
+            features=p.features if isinstance(p.features, list) else [],
             is_active=p.is_active,
             is_featured=p.is_featured,
             status=p.status,
