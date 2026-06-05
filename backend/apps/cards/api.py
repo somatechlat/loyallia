@@ -16,7 +16,6 @@ from apps.cards import services
 from apps.cards.models import Card, CardType
 from apps.customers.models import CustomerPass
 from apps.customers.segment_api import _apply_segment_filter
-from apps.transactions.models import Enrollment
 from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
@@ -68,9 +67,14 @@ class CardCreateIn(BaseModel):
                     if field.get("type") not in ("text", "email", "tel", "date", "select", "number"):
                         raise ValueError(f"Invalid form_field type: {field.get('type')}")
                 # Ensure mandatory enrollment fields exist
+                # Accept either a single 'name' field or 'first_name' + 'last_name'
                 field_ids = {f.get("id") for f in form_fields}
-                if "name" not in field_ids:
-                    raise ValueError("Enrollment form must include a 'name' field")
+                has_name = "name" in field_ids
+                has_split_name = "first_name" in field_ids and "last_name" in field_ids
+                if not (has_name or has_split_name):
+                    raise ValueError(
+                        "Enrollment form must include a 'name' field or both 'first_name' and 'last_name' fields"
+                    )
                 if "email" not in field_ids:
                     raise ValueError("Enrollment form must include an 'email' field")
         return v
@@ -134,9 +138,14 @@ class CardUpdateIn(BaseModel):
                     if field.get("type") not in ("text", "email", "tel", "date", "select", "number"):
                         raise ValueError(f"Invalid form_field type: {field.get('type')}")
                 # Ensure mandatory enrollment fields exist
+                # Accept either a single 'name' field or 'first_name' + 'last_name'
                 field_ids = {f.get("id") for f in form_fields}
-                if "name" not in field_ids:
-                    raise ValueError("Enrollment form must include a 'name' field")
+                has_name = "name" in field_ids
+                has_split_name = "first_name" in field_ids and "last_name" in field_ids
+                if not (has_name or has_split_name):
+                    raise ValueError(
+                        "Enrollment form must include a 'name' field or both 'first_name' and 'last_name' fields"
+                    )
                 if "email" not in field_ids:
                     raise ValueError("Enrollment form must include an 'email' field")
         return v

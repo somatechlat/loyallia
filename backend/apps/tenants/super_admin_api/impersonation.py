@@ -10,12 +10,11 @@ from datetime import UTC, datetime, timedelta
 import jwt as pyjwt
 from django.conf import settings
 from django.core.cache import cache
-
-from apps.authentication.tokens import _get_signing_key
 from ninja import Router
 from ninja.errors import HttpError
 
 from apps.authentication.models import User, UserRole
+from apps.authentication.tokens import _get_signing_key
 from apps.tenants.models import Tenant
 from apps.tenants.super_admin_api.schemas import ImpersonateIn, ImpersonateOut
 from common.messages import get_message

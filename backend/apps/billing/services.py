@@ -7,18 +7,15 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
-from django.conf import settings
 from django.utils import timezone
 
 from apps.billing.models import (
     Invoice,
     PaymentMethod,
     Subscription,
-    SubscriptionPlan,
     SubscriptionStatus,
 )
 from apps.billing.payment_gateway import PaymentGatewayError, get_payment_gateway
-from apps.tenants.models import PlatformSetting
 from common.messages import get_message
 
 logger = logging.getLogger("loyallia.billing")

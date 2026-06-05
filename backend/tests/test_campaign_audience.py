@@ -5,8 +5,8 @@ most_active segment, and wallet platform filtering.
 from django.test import RequestFactory, TestCase
 
 from apps.authentication.models import UserRole
-from apps.customers.segment_api import _apply_segment_filter
 from apps.customers.models import Customer
+from apps.customers.segment_api import _apply_segment_filter
 from tests.factories import make_card, make_customer, make_customer_pass, make_tenant, make_user
 
 

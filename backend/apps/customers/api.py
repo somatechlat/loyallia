@@ -4,7 +4,6 @@ Phase 5 implementation of customer + pass management endpoints.
 """
 
 import logging
-from typing import Any
 
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -16,7 +15,7 @@ from apps.audit.models import AuditAction
 from apps.audit.service import log_action
 from apps.cards.models import Card
 from apps.customers import services
-from apps.customers.models import Customer, CustomerPass
+from apps.customers.models import Customer
 from apps.customers.schemas import (
     CustomerCreateIn,
     CustomerListOut,
@@ -191,7 +190,6 @@ def enroll_customer_public(
     Rate limited to 10 enrollments per hour per IP address.
     Does NOT overwrite existing customer profile data — only creates/updates the pass.
     """
-    from django.core.cache import cache
 
     # Rate limiting: 10 per hour per IP (atomic via Redis/Cache INCR)
     client_ip = get_client_ip(request)

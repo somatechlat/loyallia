@@ -3,7 +3,7 @@
 from django.shortcuts import get_object_or_404
 
 from apps.notifications.models import PushDevice
-from common.messages import get_message, get_message_for_request
+from common.messages import get_message_for_request
 from common.permissions import jwt_auth
 
 from .base import PushDeviceSchema, _get_customer_or_403, router

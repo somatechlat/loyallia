@@ -27,8 +27,8 @@ from apps.customers.pass_engine.builders import (
     _get_issuer_id,
     _resolve_gw_type,
 )
-
 from common.messages import get_message
+
 logger = logging.getLogger(__name__)
 
 
