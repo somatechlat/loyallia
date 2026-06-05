@@ -9,7 +9,6 @@ import uuid
 from datetime import timedelta
 from typing import cast
 
-from django.conf import settings
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 from django.utils.text import slugify

@@ -37,7 +37,7 @@ from ninja.errors import HttpError
 
 from apps.authentication import services
 from apps.authentication.helpers import issue_tokens
-from apps.authentication.models import RefreshToken, User
+from apps.authentication.models import User
 from apps.authentication.schemas import (
     ForgotPasswordIn,
     GoogleTokenIn,

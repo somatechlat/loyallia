@@ -15,7 +15,6 @@ import logging
 import secrets
 from typing import Any
 
-from django.conf import settings
 from django.db import transaction
 from django.http import HttpRequest
 from ninja import Router, Schema
@@ -26,9 +25,9 @@ from apps.customers.portal_auth import (
     create_customer_access_token,
     portal_auth,
 )
+from apps.customers.services.portal_email import send_portal_password_email
 from common.messages import get_message, get_message_for_request
 from common.rate_limit import check_rate_limit
-from apps.customers.services.portal_email import send_portal_password_email
 
 logger = logging.getLogger(__name__)
 router = Router()

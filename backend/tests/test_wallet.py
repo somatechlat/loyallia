@@ -6,12 +6,10 @@ using Vault test overrides with real certificate formats.
 NO mocks — all tests use real objects and real code paths.
 """
 
-import uuid
 
 import pytest
 from django.test import override_settings
 
-from apps.customers.models import CustomerPass
 from apps.customers.pass_engine.apple_pass import (
     generate_pkpass,
     get_apple_wallet_diagnostics,
@@ -20,7 +18,6 @@ from apps.customers.pass_engine.apple_pass import (
 from apps.customers.pass_engine.google_pass import (
     generate_google_wallet_url,
     get_google_wallet_diagnostics,
-    is_google_wallet_configured,
 )
 from apps.customers.wallet_api import get_wallet_status
 from common.vault import clear_test_overrides, set_test_override

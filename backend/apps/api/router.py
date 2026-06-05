@@ -6,8 +6,8 @@ Mounted at /api/v1/ in loyallia/urls.py
 
 from typing import Any
 
-from django.http import HttpRequest, JsonResponse
 from django.conf import settings
+from django.http import HttpRequest, JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import HttpError, ValidationError
 

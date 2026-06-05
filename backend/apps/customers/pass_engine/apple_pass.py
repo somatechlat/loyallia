@@ -22,15 +22,18 @@ from typing import Any
 
 from django.conf import settings
 
-from apps.customers.pass_engine.apple_pass_builders import (
-    APPLE_PASS_STYLES,
-    _build_fields_for_type,
-    _build_locations,
+from apps.customers.pass_engine.apple_image_utils import (
     _generate_placeholder_icon,
     _generate_placeholder_logo,
     _hex_to_rgb,
     _resize_image,
 )
+from apps.customers.pass_engine.apple_pass_builders import (
+    APPLE_PASS_STYLES,
+    _build_fields_for_type,
+    _build_locations,
+)
+from apps.customers.pass_engine.apple_v2_builders import _get_wallet_studio
 from common.platform_config import get_platform_config
 
 logger = logging.getLogger(__name__)
@@ -193,23 +196,45 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     barcode_value = customer_pass.qr_code or str(customer_pass.id)
     barcode_format = APPLE_BARCODE_FORMATS.get(card.barcode_type, "PKBarcodeFormatQR")
 
+    wallet_studio = _get_wallet_studio(card)
+    v2_colors = wallet_studio.get("colors") or {}
+    v2_barcode = wallet_studio.get("barcode") or {}
+    v2_apple = wallet_studio.get("apple") or {}
+
+    background_color = v2_colors.get("background") or card.background_color or "#1A1A2E"
+    foreground_color = v2_colors.get("foreground") or card.text_color or "#FFFFFF"
+    label_color = v2_colors.get("label") or foreground_color
+
+    # V2 barcode configuration takes precedence
+    if v2_barcode.get("format"):
+        v2_format = v2_barcode["format"]
+        barcode_format = APPLE_BARCODE_FORMATS.get(v2_format.lower(), barcode_format)
+    if v2_barcode.get("message"):
+        barcode_value = v2_barcode["message"]
+    barcode_alt = v2_barcode.get("altText") or barcode_value
+    barcode_encoding = v2_barcode.get("messageEncoding") or "iso-8859-1"
+
+    description = v2_apple.get("description") or card.name
+    organization_name = v2_apple.get("organizationName") or tenant.name
+    logo_text = tenant.name or card.name
+
     pass_json = {
         "formatVersion": 1,
         "passTypeIdentifier": config["pass_type_id"],
         "teamIdentifier": config["team_id"],
         "serialNumber": str(customer_pass.id),
-        "organizationName": tenant.name,
-        "description": card.name,
-        "logoText": tenant.name or card.name,
-        "foregroundColor": _hex_to_rgb(card.text_color or "#FFFFFF"),
-        "backgroundColor": _hex_to_rgb(card.background_color or "#1A1A2E"),
-        "labelColor": _hex_to_rgb(card.text_color or "#FFFFFF"),
+        "organizationName": organization_name,
+        "description": description,
+        "logoText": logo_text,
+        "foregroundColor": _hex_to_rgb(foreground_color),
+        "backgroundColor": _hex_to_rgb(background_color),
+        "labelColor": _hex_to_rgb(label_color),
         "barcodes": [
             {
                 "format": barcode_format,
                 "message": barcode_value,
-                "messageEncoding": "iso-8859-1",
-                "altText": barcode_value,
+                "messageEncoding": barcode_encoding,
+                "altText": barcode_alt,
             }
         ],
         pass_style: fields,
@@ -220,31 +245,26 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         pass_json["locations"] = locations
         pass_json["maxDistance"] = 100
 
-    metadata = card.metadata or {}
-    wallet_design = (
-        metadata.get("wallet_design", {}) if isinstance(metadata, dict) else {}
-    )
-    apple_advanced = (
-        wallet_design.get("apple_advanced", {})
-        if isinstance(wallet_design, dict)
-        else {}
-    )
-    nfc_override = (
-        apple_advanced.get("nfcMessage", "") if isinstance(apple_advanced, dict) else ""
-    )
+    # Apply V2 Apple advanced settings
+    nfc_override = ""
+    if isinstance(v2_apple, dict):
+        v2_nfc = v2_apple.get("nfc") or {}
+        if isinstance(v2_nfc, dict) and v2_nfc.get("enabled"):
+            nfc_override = v2_nfc.get("message", "")
+        if v2_apple.get("suppressStripShine") is not None:
+            pass_json["suppressStripShine"] = v2_apple["suppressStripShine"]
+        if v2_apple.get("sharingProhibited") is not None:
+            pass_json["sharingProhibited"] = v2_apple["sharingProhibited"]
+        if v2_apple.get("voided") is not None:
+            pass_json["voided"] = v2_apple["voided"]
+        if v2_apple.get("expirationDate"):
+            pass_json["expirationDate"] = v2_apple["expirationDate"]
+        if v2_apple.get("appLaunchURL"):
+            pass_json["appLaunchURL"] = v2_apple["appLaunchURL"]
+
     nfc_payload = _build_nfc_payload(card, customer_pass, barcode_value, nfc_override)
     if nfc_payload:
         pass_json["nfc"] = nfc_payload
-
-    if isinstance(apple_advanced, dict):
-        if apple_advanced.get("suppressStripShine") is not None:
-            pass_json["suppressStripShine"] = apple_advanced["suppressStripShine"]
-        if apple_advanced.get("sharingProhibited") is not None:
-            pass_json["sharingProhibited"] = apple_advanced["sharingProhibited"]
-        if apple_advanced.get("voided") is not None:
-            pass_json["voided"] = apple_advanced["voided"]
-        if apple_advanced.get("expirationDate"):
-            pass_json["expirationDate"] = apple_advanced["expirationDate"]
 
     web_service_url = getattr(settings, "PASS_WEB_SERVICE_URL", "")
     if not web_service_url:
@@ -338,7 +358,9 @@ def generate_pkpass(customer_pass) -> bytes | None:
         return None
     pass_json_bytes = json.dumps(pass_json, ensure_ascii=False).encode("utf-8")
 
-    bg_color = card.background_color or "#1A1A2E"
+    wallet_studio = _get_wallet_studio(card)
+    v2_colors = wallet_studio.get("colors") or {}
+    bg_color = v2_colors.get("background") or card.background_color or "#1A1A2E"
 
     async def _fetch_image_bytes_async(url: str) -> bytes | None:
         """Async fetch image bytes from a URL with SSRF protection."""
@@ -380,21 +402,34 @@ def generate_pkpass(customer_pass) -> bytes | None:
             logger.warning("Failed to fetch image from %s: %s", url, exc)
         return None
 
-    wallet_design = (
-        (card.metadata or {}).get("wallet_design", {})
-        if isinstance(card.metadata, dict)
-        else {}
-    )
-    apple_images = (
-        wallet_design.get("apple_images", {}) if isinstance(wallet_design, dict) else {}
-    )
+    wallet_studio = _get_wallet_studio(card)
+    v2_images = wallet_studio.get("images") or {}
+
+    def _image_url(asset) -> str:
+        """Extract URL from an ImageAsset dict or return as-is if string."""
+        if isinstance(asset, dict):
+            return asset.get("url") or ""
+        if isinstance(asset, str):
+            return asset
+        return ""
+
+    logo_url = _image_url(v2_images.get("logo")) or card.logo_url
+    logo_2x_url = _image_url(v2_images.get("logo2x"))
+    logo_3x_url = _image_url(v2_images.get("logo3x"))
+    icon_url = _image_url(v2_images.get("icon")) or card.icon_url
+    icon_2x_url = _image_url(v2_images.get("icon2x"))
+    strip_url = _image_url(v2_images.get("strip")) or card.strip_image_url
+    strip_2x_url = _image_url(v2_images.get("strip2x"))
+    strip_3x_url = _image_url(v2_images.get("strip3x"))
+    thumbnail_url = _image_url(v2_images.get("thumbnail")) or card.strip_image_url
+    thumbnail_2x_url = _image_url(v2_images.get("thumbnail2x"))
 
     if pass_style in ("storeCard", "coupon"):
-        strip_url = apple_images.get("strip") or card.strip_image_url
-        strip_2x_url = apple_images.get("strip_2x")
+        strip_url = strip_url or card.strip_image_url
+        strip_2x_url = strip_2x_url or strip_3x_url
     elif pass_style == "generic":
-        strip_url = apple_images.get("thumbnail") or card.strip_image_url
-        strip_2x_url = apple_images.get("thumbnail_2x")
+        strip_url = thumbnail_url or card.strip_image_url
+        strip_2x_url = thumbnail_2x_url
     else:
         strip_url = None
         strip_2x_url = None
@@ -406,10 +441,10 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
     async def _fetch_all_images():
         return await asyncio.gather(
-            _fetch_image_bytes_async(apple_images.get("logo") or card.logo_url),
-            _fetch_image_bytes_async(apple_images.get("logo_2x")),
-            _fetch_image_bytes_async(apple_images.get("icon") or card.icon_url),
-            _fetch_image_bytes_async(apple_images.get("icon_2x")),
+            _fetch_image_bytes_async(logo_url),
+            _fetch_image_bytes_async(logo_2x_url or logo_3x_url),
+            _fetch_image_bytes_async(icon_url),
+            _fetch_image_bytes_async(icon_2x_url),
             _fetch_image_bytes_async(strip_url),
             _fetch_image_bytes_async(strip_2x_url),
         )
@@ -532,7 +567,12 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
 
 def is_apple_wallet_configured() -> bool:
-    """Check if Apple Wallet is properly configured."""
-    if not getattr(settings, "APPLE_WALLET_ENABLED", False):
-        return False
+    """Check if Apple Wallet is properly configured.
+
+    Uses Vault certificate presence as the single source of truth.
+    The APPLE_WALLET_ENABLED Django setting is intentionally NOT checked
+    here to avoid inconsistency with generate_pkpass() which only checks
+    _check_config_ready(). Vault certs being present means Apple Wallet
+    is ready to use.
+    """
     return _check_config_ready()

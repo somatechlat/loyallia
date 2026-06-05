@@ -6,6 +6,7 @@ Uses same JWT secret as staff auth but with type="customer_access" claim
 to prevent token cross-use.
 """
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 

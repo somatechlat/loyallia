@@ -9,8 +9,8 @@ from typing import Any
 from django.conf import settings
 
 from apps.tenants.models import PlatformSetting
-
 from common.messages import get_message
+
 logger = logging.getLogger(__name__)
 
 # Google Wallet API barcode type mapping (ref: developers.google.com/wallet/generic/rest/v1/Barcode)
@@ -154,6 +154,194 @@ def _get_google_advanced(card) -> dict:
     return _get_wallet_design(card).get("google_advanced", {}) or {}
 
 
+# ---------------------------------------------------------------------------
+# WalletStudio V2 helpers
+# ---------------------------------------------------------------------------
+
+
+def _get_wallet_studio(card) -> dict:
+    """Return the wallet_studio dict from card metadata, if any."""
+    metadata = card.metadata or {}
+    if isinstance(metadata, dict):
+        return metadata.get("wallet_studio", {}) or {}
+    return {}
+
+
+def _get_v2_google_config(card) -> dict:
+    """Return the google-specific config from WalletStudio V2 state."""
+    return _get_wallet_studio(card).get("google", {}) or {}
+
+
+def _get_v2_image_url(v2_images: dict, key: str) -> str:
+    """Extract an absolute image URL from a WalletStudio V2 image asset."""
+    asset = v2_images.get(key) if isinstance(v2_images, dict) else None
+    if isinstance(asset, dict):
+        return asset.get("url") or ""
+    if isinstance(asset, str):
+        return asset
+    return ""
+
+
+def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tenant) -> str:
+    """Resolve WalletStudio V2 dynamic templates like {customer_name} to real values.
+
+    Supported tokens:
+        {customer_name}, {first_name}, {last_name}, {email}
+        {program_name}, {business_name}, {tenant_name}
+        {stamp_count}, {cashback_balance}, {gift_balance}
+        {referral_count}, {coupon_redemption_count}, {corporate_discount}
+        {discount_tier}, {current_tier}, {membership_tier}
+        {qr_code}, {account_id}, {balance}, {points}
+        {bundle_remaining}, {bundle_size}
+    """
+    if not template or not isinstance(template, str):
+        return template or ""
+
+    pass_data = getattr(customer_pass, "pass_data", None) or {}
+
+    def _replacer(match: re.Match) -> str:
+        key = match.group(1).strip().lower()
+
+        if key == "customer_name":
+            return f"{customer.first_name or ''} {customer.last_name or ''}".strip()
+        if key == "first_name":
+            return customer.first_name or ""
+        if key == "last_name":
+            return customer.last_name or ""
+        if key == "email":
+            return customer.email or ""
+        if key in ("program_name", "card_name"):
+            return card.name or ""
+        if key in ("business_name", "tenant_name", "merchant_name"):
+            return tenant.name or ""
+        if key == "stamp_count":
+            return str(getattr(customer_pass, "stamp_count_val", 0))
+        if key == "cashback_balance":
+            return str(getattr(customer_pass, "cashback_balance_val", 0))
+        if key == "gift_balance":
+            return str(getattr(customer_pass, "gift_balance_val", 0))
+        if key == "referral_count":
+            return str(getattr(customer_pass, "referral_count_val", 0))
+        if key == "coupon_redemption_count":
+            return str(getattr(customer_pass, "coupon_redemption_count", 0))
+        if key == "corporate_discount":
+            return str(getattr(customer_pass, "corporate_discount", 0))
+        if key == "discount_tier":
+            return getattr(customer_pass, "discount_tier", "") or pass_data.get("discount_tier", "")
+        if key == "current_tier":
+            return getattr(customer_pass, "discount_tier", "") or pass_data.get("discount_tier", "")
+        if key == "membership_tier":
+            return pass_data.get("membership_tier", "")
+        if key == "qr_code":
+            return getattr(customer_pass, "qr_code", "") or ""
+        if key == "account_id":
+            return str(customer.id)[:8]
+        if key == "balance":
+            return str(getattr(customer_pass, "gift_balance_val", 0))
+        if key == "points":
+            return str(getattr(customer_pass, "stamp_count_val", 0))
+        if key == "bundle_remaining":
+            return str(getattr(customer_pass, "multipass_remaining_val", 0))
+        if key == "bundle_size":
+            metadata = card.metadata or {}
+            return str(metadata.get("bundle_size", 10))
+        if key == "coupon_end_date":
+            metadata = card.metadata or {}
+            return str(metadata.get("coupon_end_date", pass_data.get("expiry_date", "")))
+        if key == "usage_limit":
+            metadata = card.metadata or {}
+            return str(metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1)))
+        if key == "company_name":
+            metadata = card.metadata or {}
+            return str(pass_data.get("company_name", metadata.get("company_name", card.name)))
+
+        # Unknown token: leave as-is so the pass still shows the literal token
+        return match.group(0)
+
+    return re.sub(r"\{([^}]+)\}", _replacer, template)
+
+
+def _build_v2_text_modules_data(card, customer_pass, customer, tenant) -> list:
+    """Build Google Wallet textModulesData from WalletStudio V2 fields and back content."""
+    wallet_studio = _get_wallet_studio(card)
+    fields = wallet_studio.get("fields") or []
+    back_content = wallet_studio.get("backContent") or {}
+    back_fields = back_content.get("fields") if isinstance(back_content, dict) else []
+    if not isinstance(back_fields, list):
+        back_fields = []
+
+    modules = []
+
+    for field in fields:
+        if not isinstance(field, dict):
+            continue
+        if not field.get("showOnGoogle", True):
+            continue
+        value = field.get("value", "")
+        if field.get("isDynamic") and field.get("dynamicTemplate"):
+            value = _resolve_v2_dynamic_value(
+                field["dynamicTemplate"], card, customer_pass, customer, tenant
+            )
+        header = field.get("label", "")
+        body = _resolve_v2_dynamic_value(str(value), card, customer_pass, customer, tenant)
+        field_id = field.get("id")
+        if not field_id:
+            field_id = f"field_{len(modules)}"
+        if header or body:
+            modules.append({"header": header, "body": body, "id": field_id})
+
+    # Append back content fields as plain text modules (links handled separately)
+    for idx, back_field in enumerate(back_fields):
+        if not isinstance(back_field, dict):
+            continue
+        if back_field.get("isLink"):
+            continue
+        header = back_field.get("label", "")
+        body = back_field.get("value", "")
+        field_id = back_field.get("id") or f"back_field_{idx}"
+        if header or body:
+            modules.append({"header": header, "body": body, "id": field_id})
+
+    return modules
+
+
+def _build_v2_links_module_data(card) -> list:
+    """Build Google Wallet linksModuleData.uris from WalletStudio V2 back content."""
+    wallet_studio = _get_wallet_studio(card)
+    back_content = wallet_studio.get("backContent") or {}
+    back_fields = back_content.get("fields") if isinstance(back_content, dict) else []
+    if not isinstance(back_fields, list):
+        return []
+
+    uris = []
+    for back_field in back_fields:
+        if not isinstance(back_field, dict):
+            continue
+        if not back_field.get("isLink"):
+            continue
+        uri = back_field.get("value") or back_field.get("url") or ""
+        description = back_field.get("label") or back_field.get("description") or "Link"
+        field_id = back_field.get("id") or f"link_{len(uris)}"
+        if uri:
+            uris.append({"uri": uri, "description": description, "id": field_id})
+
+    # Also include any explicit links from google config
+    google_cfg = _get_v2_google_config(card)
+    extra_links = google_cfg.get("linksModuleUris") or []
+    if isinstance(extra_links, list):
+        for link in extra_links:
+            if isinstance(link, dict) and link.get("uri"):
+                uris.append(
+                    {
+                        "uri": link["uri"],
+                        "description": link.get("description", "Link"),
+                        "id": link.get("id") or f"google_link_{len(uris)}",
+                    }
+                )
+
+    return uris
+
+
 def _transform_google_rows(rows: list) -> list:
     """Convert frontend google_rows format to Google Wallet API cardRowTemplateInfos format.
 
@@ -290,10 +478,17 @@ def _normalize_multiple_devices(value: Any) -> str | None:
 
 
 def _apply_google_advanced_to_class(card, payload: dict) -> None:
-    """Apply google_advanced settings relevant to class payloads."""
-    advanced = _get_google_advanced(card)
+    """Apply google_advanced settings relevant to class payloads.
+
+    Prefers WalletStudio V2 google config; falls back to legacy google_advanced
+    for older cards.
+    """
+    v2_google = _get_v2_google_config(card)
+    legacy = _get_google_advanced(card)
+    advanced = v2_google if v2_google else legacy
     if not advanced:
         return
+
     review_status = _normalize_review_status(advanced.get("reviewStatus"))
     if review_status:
         payload["reviewStatus"] = review_status
@@ -304,19 +499,73 @@ def _apply_google_advanced_to_class(card, payload: dict) -> None:
         payload["homepageUri"] = advanced["homepageUri"]
     if advanced.get("helpUri"):
         payload["helpUri"] = advanced["helpUri"]
+    if advanced.get("merchantName"):
+        payload["merchantName"] = advanced["merchantName"]
+    if advanced.get("programName"):
+        payload["programName"] = advanced["programName"]
     if advanced.get("messages") and isinstance(advanced["messages"], list):
         payload.setdefault("messages", []).extend(advanced["messages"])
     _apply_links_module_uris(advanced, payload)
 
+    # V2 color override takes precedence
+    v2_colors = _get_wallet_studio(card).get("colors") or {}
+    if advanced.get("hexBackgroundColor"):
+        payload["hexBackgroundColor"] = advanced["hexBackgroundColor"]
+    elif v2_colors.get("background"):
+        payload["hexBackgroundColor"] = v2_colors["background"]
+
+    # V2 hero image for Google
+    hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip")
+    if not hero_url:
+        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip2x")
+    google_hero = advanced.get("heroImage")
+    if isinstance(google_hero, dict) and google_hero.get("url"):
+        hero_url = google_hero["url"]
+    if hero_url and "heroImage" not in payload:
+        payload["heroImage"] = {
+            "sourceUri": {"uri": _resolve_url(hero_url, "")},
+            "contentDescription": {
+                "defaultValue": {"language": "es", "value": payload.get("programName", "") or payload.get("title", "") or "Hero"}
+            },
+        }
+
 
 def _apply_google_advanced_to_object(card, payload: dict) -> None:
-    """Apply google_advanced settings relevant to object payloads."""
-    advanced = _get_google_advanced(card)
+    """Apply google_advanced settings relevant to object payloads.
+
+    Prefers WalletStudio V2 google config; falls back to legacy google_advanced.
+    """
+    v2_google = _get_v2_google_config(card)
+    legacy = _get_google_advanced(card)
+    advanced = v2_google if v2_google else legacy
     if not advanced:
         return
     if advanced.get("messages") and isinstance(advanced["messages"], list):
         payload.setdefault("messages", []).extend(advanced["messages"])
     _apply_links_module_uris(advanced, payload)
+
+    # Smart Tap redemption value from V2
+    if advanced.get("smartTapRedemptionValue"):
+        payload["smartTapRedemptionValue"] = advanced["smartTapRedemptionValue"]
+    if advanced.get("groupingId"):
+        payload["groupingId"] = advanced["groupingId"]
+
+    # Hero image from V2 Google-specific heroImage asset
+    hero_url = ""
+    google_hero = advanced.get("heroImage")
+    if isinstance(google_hero, dict) and google_hero.get("url"):
+        hero_url = google_hero["url"]
+    if not hero_url:
+        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip")
+    if not hero_url:
+        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip2x")
+    if hero_url and "heroImage" not in payload:
+        payload["heroImage"] = {
+            "sourceUri": {"uri": _resolve_url(hero_url, "")},
+            "contentDescription": {
+                "defaultValue": {"language": "es", "value": payload.get("programName", "") or payload.get("title", "") or "Hero"}
+            },
+        }
 
 
 def _apply_links_module_uris(advanced: dict, payload: dict) -> None:
@@ -327,7 +576,7 @@ def _apply_links_module_uris(advanced: dict, payload: dict) -> None:
     existing = payload.get("linksModuleData", {}).get("uris", [])
     new_uris = []
     for link in links:
-        if isinstance(link, dict) and "uri" in link and "description" in link:
+        if isinstance(link, dict) and link.get("uri") and link.get("description"):
             new_uris.append(
                 {
                     "uri": link["uri"],

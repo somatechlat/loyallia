@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import uuid
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
@@ -15,6 +16,9 @@ from django.db.models import F
 from django.utils import timezone
 
 from common.models import TimestampedModel
+
+if TYPE_CHECKING:
+    from apps.tenants.models import Tenant
 
 # PAYMENT METHOD
 
@@ -243,7 +247,7 @@ class Invoice(TimestampedModel):
             raise ValueError("total must be non-negative")
 
     @classmethod
-    def generate_invoice_number(cls, tenant: "Tenant") -> str:
+    def generate_invoice_number(cls, tenant: Tenant) -> str:
         """Generate sequential invoice number: LYL-{tenant_slug}-{seq}.
 
         Uses InvoiceCounter with select_for_update() to prevent race conditions

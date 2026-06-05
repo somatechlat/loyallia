@@ -25,7 +25,6 @@ from common.request import TenantRequest, require_tenant
 
 from .base import router
 
-
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
