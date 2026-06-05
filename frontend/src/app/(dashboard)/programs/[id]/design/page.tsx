@@ -1,10 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { WalletStudioIntegration } from '@/components/programs/WalletStudioIntegration';
+import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
 import { useState, useEffect } from 'react';
 import { programsApi } from '@/lib/api';
-import { type WalletDesignState, defaultWalletDesignState } from '@/components/wallet/types-v1';
+import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
+import { createDefaultState } from '@/hooks/useWalletStudio';
 import { parseWalletDesignFromMetadata } from '@/components/wallet/serialization';
 
 export default function ProgramDesignPage() {
@@ -18,7 +19,7 @@ export default function ProgramDesignPage() {
     metadata: Record<string, unknown>;
   } | null>(null);
 
-  const [walletDesign, setWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
+  const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function ProgramDesignPage() {
       const p = res.data;
       setProgram(p);
       const design = parseWalletDesignFromMetadata(p.metadata);
-      setWalletDesign(design);
+      setWalletDesign(prev => ({ ...prev, ...design, name: p.name, cardType: (p.card_type as any) || prev.cardType }));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [programId]);
@@ -55,11 +56,10 @@ export default function ProgramDesignPage() {
         </h1>
       </div>
       <div className="flex-1 overflow-hidden">
-        <WalletStudioIntegration
-          cardType={program.card_type}
-          state={walletDesign}
-          onChange={setWalletDesign}
-          provider={walletDesign.provider}
+        <WalletStudio
+          initialState={walletDesign}
+          onSave={(state) => setWalletDesign(state)}
+          onSaveAsTemplate={(s) => console.log('Save as template', s)}
         />
       </div>
     </div>

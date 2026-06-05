@@ -98,7 +98,7 @@ function validateFile(
   file: File,
   accept: string,
   maxSizeMB: number,
-  recommendedSize: { width: number; height: number }
+  _recommendedSize: { width: number; height: number }
 ): { valid: boolean; error?: string; warning?: string } {
   const allowed = accept.split(',').map((e) => e.trim().toLowerCase());
   const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
@@ -145,7 +145,7 @@ export function SmartImageUpload({
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
-  const [actualDimensions, setActualDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [_actualDimensions, setActualDimensions] = useState<{ width: number; height: number } | null>(null);
   const blobUrlsRef = useRef<Set<string>>(new Set());
 
   const displayUrl = value?.url || localPreview || '';

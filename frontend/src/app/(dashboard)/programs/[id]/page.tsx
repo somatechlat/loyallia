@@ -8,11 +8,9 @@ import toast from 'react-hot-toast';
 import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
 import { stripLocalMinioUrl } from '@/lib/url-utils';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { WalletStudioIntegration } from '@/components/programs/WalletStudioIntegration';
-import {
-  type WalletDesignState,
-  defaultWalletDesignState,
-} from '@/components/wallet/types-v1';
+import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
+import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
+import { createDefaultState } from '@/hooks/useWalletStudio';
 import {
   parseWalletDesignFromMetadata,
   buildWalletDesignMetadata,
@@ -79,7 +77,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   const [editSaving, setEditSaving] = useState(false);
 
   // Wallet design state for full editing
-  const [walletDesign, setWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
+  const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
 
   // Suspend / Delete modal states
   const [showSuspendModal, setShowSuspendModal] = useState(false);
@@ -91,7 +89,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   const [processing, setProcessing] = useState(false);
 
   // Wallet design for non-edit preview (parsed from program metadata)
-  const [previewWalletDesign, setPreviewWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
+  const [previewWalletDesign, setPreviewWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
   const [previewPlatform, setPreviewPlatform] = useState<'apple' | 'google'>('apple');
 
   const startEdit = () => {
@@ -106,14 +104,14 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       icon_url: stripLocalMinioUrl(program.icon_url),
     });
     const parsed = parseWalletDesignFromMetadata(program.metadata);
-    setWalletDesign(parsed);
+    setWalletDesign(prev => ({ ...prev, ...parsed }));
     setIsEditing(true);
   };
 
   const cancelEdit = () => {
     setIsEditing(false);
     setEditForm({});
-    setWalletDesign(defaultWalletDesignState());
+    setWalletDesign(createDefaultState());
   };
 
   const saveEdit = async () => {
@@ -122,10 +120,12 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
     try {
       const walletMeta = buildWalletDesignMetadata(walletDesign);
       // Map designer images to legacy fields for backward compat
+      const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
+      const isApple = walletDesign.ui.platformView !== 'google';
       const legacyImages = {
-        logo_url: walletDesign.provider === 'apple' ? walletDesign.appleLogoUrl : walletDesign.googleProgramLogoUrl,
-        strip_image_url: walletDesign.provider === 'apple' ? walletDesign.appleStripUrl : walletDesign.googleHeroImageUrl,
-        icon_url: walletDesign.provider === 'apple' ? walletDesign.appleIconUrl : walletDesign.googleProgramLogoUrl,
+        logo_url: clean(isApple ? (walletDesign.images.logo?.url ?? '') : (walletDesign.images.logo?.url ?? '')),
+        strip_image_url: clean(isApple ? (walletDesign.images.strip?.url ?? '') : (walletDesign.images.heroImage?.url ?? '')),
+        icon_url: clean(isApple ? (walletDesign.images.icon?.url ?? '') : (walletDesign.images.logo?.url ?? '')),
       };
       await programsApi.update(program.id, {
         ...editForm,
@@ -167,8 +167,9 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
         setStats(statsRes.data);
         // Parse wallet design for preview
         const parsed = parseWalletDesignFromMetadata(prog.metadata);
-        setPreviewWalletDesign(parsed);
-        setPreviewPlatform(parsed.provider || 'apple');
+        const previewState = { ...createDefaultState(), ...parsed };
+        setPreviewWalletDesign(previewState);
+        setPreviewPlatform(previewState.ui.platformView === 'google' ? 'google' : 'apple');
       })
       .catch(() => toast.error(t('programs.loadError')))
       .finally(() => setLoading(false));
@@ -467,11 +468,10 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           {/* Full Wallet Designer */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <div className="space-y-6">
-              <WalletStudioIntegration
-                cardType={program.card_type}
-                state={walletDesign}
-                onChange={setWalletDesign}
-                provider={walletDesign.provider}
+              <WalletStudio
+                initialState={walletDesign}
+                onSave={(state) => setWalletDesign(state)}
+                onSaveAsTemplate={(s) => console.log('Save as template', s)}
               />
             </div>
             <div className="sticky top-24 self-start bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">
@@ -486,8 +486,8 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                 }}
                 selectedType={selectedType}
                 barcodeType={program.barcode_type}
-                walletPlatform={walletDesign.provider}
-                onWalletPlatformChange={(v) => setWalletDesign(w => ({ ...w, provider: v }))}
+                walletPlatform={walletDesign.ui.platformView === 'google' ? 'google' : 'apple'}
+                onWalletPlatformChange={(v) => setWalletDesign(w => ({ ...w, ui: { ...w.ui, platformView: v as 'apple' | 'google' | 'both' } }))}
                 walletDesign={walletDesign}
               />
             </div>

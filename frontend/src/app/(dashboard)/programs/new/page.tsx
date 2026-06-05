@@ -7,15 +7,16 @@ import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
 
 import {
   CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta,
-  APPLE_DEFAULT_FIELDS,
 } from '@/components/programs/constants';
 
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
-import { WalletStudioIntegration } from '@/components/programs/WalletStudioIntegration';
-import { type WalletDesignState, defaultWalletDesignState } from '@/components/wallet/types-v1';
+import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
+import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
+import { createDefaultState } from '@/hooks/useWalletStudio';
+import { buildWalletDesignMetadata } from '@/components/wallet/serialization';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 import StepBar from '@/components/programs/new/StepBar';
 import ProgramReviewStep from '@/components/programs/new/ProgramReviewStep';
@@ -42,14 +43,14 @@ export default function NewProgramPage() {
     locations: [] as Array<{lat: number, lng: number, name: string}>,
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
-  const [walletDesign, setWalletDesign] = useState<WalletDesignState>(defaultWalletDesignState());
+  const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
   const [selectedTemplate, setSelectedTemplate] = useState('midnight');
   const [coordError] = useState(false);
 
-  // Keep generic uploads for backward compat (populated from wallet designer)
-  const walletProvider = walletDesign.provider;
-  const setWalletProvider = (v: 'apple' | 'google') => setWalletDesign(w => ({ ...w, provider: v }));
-  const appleWalletConfig = walletDesign.appleNfc;
+  // Derive preview platform from V2 state
+  const walletProvider: 'apple' | 'google' = walletDesign.ui.platformView === 'google' ? 'google' : 'apple';
+  const setWalletProvider = (v: 'apple' | 'google') => setWalletDesign(w => ({ ...w, ui: { ...w.ui, platformView: v as 'apple' | 'google' | 'both' } }));
+  const appleWalletConfig = walletDesign.apple.nfc;
 
   const selectedType = CARD_TYPES.find(t => t.value === form.card_type);
 
@@ -57,12 +58,9 @@ export default function NewProgramPage() {
     setForm(f => ({ ...f, card_type: type }));
     setMeta(defaultMeta(type));
     // Reset wallet design defaults for the new card type
-    const defaults = defaultWalletDesignState();
-    defaults.provider = walletDesign.provider;
-    const typeDefaults = APPLE_DEFAULT_FIELDS[type];
-    if (typeDefaults) {
-      defaults.appleFields = JSON.parse(JSON.stringify(typeDefaults));
-    }
+    const defaults = createDefaultState();
+    defaults.cardType = type as WalletPassStudioState['cardType'];
+    defaults.ui.platformView = walletDesign.ui.platformView;
     setWalletDesign(defaults);
   };
 
@@ -111,52 +109,19 @@ export default function NewProgramPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const walletMetadata = {
-        wallet_provider: 'both',
-        apple_wallet: walletDesign.appleNfc,
-      };
-      // Include wallet design configuration in metadata
-      const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
-      const walletDesignMetadata = {
-        wallet_design: {
-          provider: walletDesign.provider,
-          apple_images: {
-            logo: clean(walletDesign.appleLogoUrl),
-            logo_2x: clean(walletDesign.appleLogo2xUrl),
-            strip: clean(walletDesign.appleStripUrl),
-            strip_2x: clean(walletDesign.appleStrip2xUrl),
-            thumbnail: clean(walletDesign.appleThumbnailUrl),
-            thumbnail_2x: clean(walletDesign.appleThumbnail2xUrl),
-            icon: clean(walletDesign.appleIconUrl),
-            icon_2x: clean(walletDesign.appleIcon2xUrl),
-          },
-          google_images: {
-            program_logo: clean(walletDesign.googleProgramLogoUrl),
-            hero_image: clean(walletDesign.googleHeroImageUrl),
-            wide_logo: clean(walletDesign.googleWideLogoUrl),
-            image_module: clean(walletDesign.googleImageModuleUrl),
-          },
-          apple_fields: walletDesign.appleFields,
-          google_rows: walletDesign.googleRows,
-          google_advanced: walletDesign.googleAdvanced,
-          apple_advanced: walletDesign.appleAdvanced,
-          locations: walletDesign.locations,
-          beacons: walletDesign.beacons,
-          links: walletDesign.links,
-          homepage_uri: walletDesign.homepageUri,
-          help_uri: walletDesign.helpUri,
-        },
-      };
+      const walletMetadata = buildWalletDesignMetadata(walletDesign);
       // Map designer images to legacy fields for backward compat
+      const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
+      const isApple = walletProvider === 'apple';
       const legacyImages = {
-        logo_url: walletDesign.provider === 'apple' ? clean(walletDesign.appleLogoUrl) : clean(walletDesign.googleProgramLogoUrl),
-        strip_image_url: walletDesign.provider === 'apple' ? clean(walletDesign.appleStripUrl) : clean(walletDesign.googleHeroImageUrl),
-        icon_url: walletDesign.provider === 'apple' ? clean(walletDesign.appleIconUrl) : clean(walletDesign.googleProgramLogoUrl),
+        logo_url: clean(isApple ? (walletDesign.images.logo?.url ?? '') : (walletDesign.images.logo?.url ?? '')),
+        strip_image_url: clean(isApple ? (walletDesign.images.strip?.url ?? '') : (walletDesign.images.heroImage?.url ?? '')),
+        icon_url: clean(isApple ? (walletDesign.images.icon?.url ?? '') : (walletDesign.images.logo?.url ?? '')),
       };
       const resp = await programsApi.create({
         ...form,
         ...legacyImages,
-        metadata: { ...meta, ...walletMetadata, ...walletDesignMetadata }
+        metadata: { ...meta, ...walletMetadata }
       });
       toast.success('¡Programa creado exitosamente!');
       setCreatedProgram({ id: resp.data.id, name: resp.data.name });
@@ -281,7 +246,7 @@ export default function NewProgramPage() {
               <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full">
                 {hoveredType || form.card_type ? (
                   <div className="animate-fade-in flex justify-center">
-                    <WalletPreviewContent type={hoveredType || form.card_type} walletDesign={walletDesign} />
+                    <WalletPreviewContent type={hoveredType || form.card_type} walletDesign={walletDesign as any} />
                   </div>
                 ) : (
                   <div className="w-full h-[370px] flex items-center justify-center text-center">
@@ -419,11 +384,10 @@ export default function NewProgramPage() {
             </div>
 
             {/* Wallet Designer — Full visual customization */}
-            <WalletStudioIntegration
-              cardType={form.card_type}
-              state={walletDesign}
-              onChange={setWalletDesign}
-              provider={walletProvider}
+            <WalletStudio
+              initialState={walletDesign}
+              onSave={(state) => setWalletDesign(state)}
+              onSaveAsTemplate={(s) => console.log('Save as template', s)}
             />
 
             {/* Barcode Type Selector */}

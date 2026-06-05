@@ -144,7 +144,7 @@ export function useCustomers() {
       if (!editingCustomer) return;
       setSavingEdit(true);
       try {
-        await customersApi.update(editingCustomer.id, editForm);
+        await customersApi.update(editingCustomer.id, editForm as unknown as Record<string, unknown>);
         toast.success(t("customers.customerUpdated"));
         setShowEditModal(false);
         setEditingCustomer(null);

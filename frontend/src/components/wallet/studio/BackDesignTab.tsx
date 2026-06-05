@@ -280,7 +280,7 @@ function BackFieldRow({
 
 /* ── Main Component ───────────────────────────────────────────────── */
 
-export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig, googleConfig }: BackDesignTabProps) {
+export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _appleConfig, googleConfig: _googleConfig }: BackDesignTabProps) {
   const [appLinkEnabled, setAppLinkEnabled] = useState(Boolean(backContent.appLink));
 
   /* ── Back Fields ────────────────────────────────────────────────── */

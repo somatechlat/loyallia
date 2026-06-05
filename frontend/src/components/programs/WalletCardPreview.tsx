@@ -6,7 +6,6 @@ import {
   GOOGLE_WALLET_TYPES,
   APPLE_IMAGE_SUPPORT,
 } from './constants';
-import type { WalletDesignState } from '@/components/wallet/types-v1';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 
@@ -246,7 +245,7 @@ export interface CardProps {
  * @param {'apple' | 'google'} [props.walletPlatform='apple'] - Active wallet platform
  * @param {(platform: 'apple' | 'google') => void} [props.onWalletPlatformChange] - Platform change handler
  * @param {string} [props.customerName] - Customer name
- * @param {import('@/components/wallet/types').WalletDesignState} [props.walletDesign] - Wallet design state
+ * @param {unknown} [props.walletDesign] - Wallet design state
  * @returns JSX.Element
  */
 export default function WalletCardPreview({
@@ -268,7 +267,7 @@ export default function WalletCardPreview({
   walletPlatform?: 'apple' | 'google';
   onWalletPlatformChange?: (platform: 'apple' | 'google') => void;
   customerName?: string;
-  walletDesign?: WalletDesignState;
+  walletDesign?: any;
 }) {
   const { t } = useI18n();
   const [platform, setPlatform] = useState(walletPlatform);

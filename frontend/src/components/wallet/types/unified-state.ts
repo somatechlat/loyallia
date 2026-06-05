@@ -236,6 +236,7 @@ export interface WalletPassStudioState {
     platformView: PlatformView;
     showBack: boolean;
     zoom: number;
+    showGrid?: boolean;
     appliedTemplateId?: string;
     isModified: boolean;
   };

@@ -134,7 +134,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig): void {
           ArrowRight: 'right',
         };
         const amount = shiftKey ? 10 : 1;
-        config.onNudge?.(directionMap[key], amount);
+        config.onNudge?.(directionMap[key]!, amount);
         return;
       }
 

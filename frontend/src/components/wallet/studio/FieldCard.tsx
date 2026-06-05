@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { UnifiedField, CardType } from '@/components/wallet/types/unified-state';
 import { DynamicTemplatePicker } from './DynamicTemplatePicker';
 import { NotificationConfigPanel } from './NotificationConfigPanel';

@@ -1,7 +1,14 @@
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import { APPLE_PASS_STYLES, CardTypeIcon, adjustColor } from './constants';
-import type { WalletDesignState } from '@/components/wallet/types-v1';
+
+interface PreviewWalletDesign {
+  provider?: 'apple' | 'google';
+  appleLogoUrl?: string;
+  appleStripUrl?: string;
+  googleProgramLogoUrl?: string;
+  googleHeroImageUrl?: string;
+}
 
 /* ── Type-specific visual content for hover preview ─────────────────── */
 function useTypeVisuals(t: (key: string) => string): Record<string, { title: string; headerLabel: string; headerValue: string; detail: string; visual: React.ReactNode }> {
@@ -115,10 +122,10 @@ function resolveIcon(type: string) {
  * @description Full phone-frame hover preview rendered per card type.
  * @param {Object} props - Component props
  * @param {string} props.type - Card type key
- * @param {import('@/components/wallet/types').WalletDesignState} [props.walletDesign] - Wallet design state
+ * @param {PreviewWalletDesign} [props.walletDesign] - Wallet design state
  * @returns JSX.Element | null
  */
-function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesign?: WalletDesignState }) {
+function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesign?: PreviewWalletDesign }) {
   const { t } = useI18n();
   const TYPE_VISUALS = useTypeVisuals(t);
   const cfg = TYPE_VISUALS[type] ?? TYPE_VISUALS.stamp;
@@ -263,7 +270,7 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
  * @description Default export of the wallet preview content component.
  * @param {Object} props - Component props
  * @param {string} props.type - Card type key
- * @param {import('@/components/wallet/types').WalletDesignState} [props.walletDesign] - Wallet design state
+ * @param {PreviewWalletDesign} [props.walletDesign] - Wallet design state
  * @returns JSX.Element | null
  */
 export default WalletPreviewContent;

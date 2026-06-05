@@ -158,6 +158,12 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
     [setUndoableState]
   );
 
+  const handleExport = React.useCallback(() => {
+    // Placeholder for export — will be wired in a later phase
+    // eslint-disable-next-line no-console
+    console.log('Export triggered');
+  }, []);
+
   const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = React.useState(false);
   const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
@@ -215,7 +221,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
     onNextField: () => {
       const focusable = Array.from(document.querySelectorAll<HTMLElement>(
         '[data-field-id], [data-tab-button], input, textarea, select, button'
-      )).filter((el) => el.tabIndex >= -1 && !el.disabled && el.offsetParent !== null);
+      )).filter((el) => el.tabIndex >= -1 && !(el as HTMLInputElement).disabled && el.offsetParent !== null);
       const active = document.activeElement as HTMLElement | null;
       const idx = focusable.indexOf(active ?? document.body);
       const next = focusable[(idx + 1) % focusable.length];
@@ -224,7 +230,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
     onPrevField: () => {
       const focusable = Array.from(document.querySelectorAll<HTMLElement>(
         '[data-field-id], [data-tab-button], input, textarea, select, button'
-      )).filter((el) => el.tabIndex >= -1 && !el.disabled && el.offsetParent !== null);
+      )).filter((el) => el.tabIndex >= -1 && !(el as HTMLInputElement).disabled && el.offsetParent !== null);
       const active = document.activeElement as HTMLElement | null;
       const idx = focusable.indexOf(active ?? document.body);
       const prev = focusable[(idx - 1 + focusable.length) % focusable.length];
@@ -296,12 +302,6 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
 
   const handleCloseAIModal = React.useCallback(() => {
     setIsAIModalOpen(false);
-  }, []);
-
-  const handleExport = React.useCallback(() => {
-    // Placeholder for export — will be wired in a later phase
-    // eslint-disable-next-line no-console
-    console.log('Export triggered');
   }, []);
 
   const handleOpenTemplates = React.useCallback(() => {

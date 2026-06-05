@@ -1,8 +1,34 @@
-import type { WalletDesignState } from './types-v1-definitions';
 import { IPhone15ProFrame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, APPLE_PASS_STYLES } from '@/components/programs/constants';
 import { useI18n } from '@/lib/i18n';
+
+interface PreviewAppleField {
+  key: string;
+  label: string;
+  value: string;
+  changeMessage?: string;
+  textAlignment?: 'PKTextAlignmentLeft' | 'PKTextAlignmentCenter' | 'PKTextAlignmentRight' | 'PKTextAlignmentNatural';
+  attributedValue?: string;
+}
+
+interface PreviewWalletDesign {
+  appleLogoUrl?: string;
+  appleLogo2xUrl?: string;
+  appleStripUrl?: string;
+  appleStrip2xUrl?: string;
+  appleThumbnailUrl?: string;
+  appleThumbnail2xUrl?: string;
+  appleIconUrl?: string;
+  appleIcon2xUrl?: string;
+  appleFields?: {
+    headerFields?: PreviewAppleField[];
+    primaryFields?: PreviewAppleField[];
+    secondaryFields?: PreviewAppleField[];
+    auxiliaryFields?: PreviewAppleField[];
+    backFields?: PreviewAppleField[];
+  };
+}
 
 function resolveTemplate(value: string, ctx: Record<string, string>): string {
   return value.replace(/\{(\w+)\}/g, (_, key) => ctx[key] ?? `{${key}}`);
@@ -68,7 +94,7 @@ interface AppleWalletCardProps {
   /** Customer name for the preview */
   customerName?: string;
   /** Wallet design state */
-  walletDesign?: WalletDesignState;
+  walletDesign?: PreviewWalletDesign;
 }
 
 /**
@@ -281,7 +307,7 @@ export function AppleWalletCard({
  * @description Apple Wallet pass back side preview with back fields.
  * @param {Object} props - Component props
  * @param {Object} props.form - Program form data
- * @param {WalletDesignState} [props.walletDesign] - Wallet design state
+ * @param {PreviewWalletDesign} [props.walletDesign] - Wallet design state
  * @param {string} [props.customerName] - Customer name
  * @returns JSX.Element
  */
@@ -289,7 +315,7 @@ export function AppleWalletBackCard({
   form, walletDesign, customerName,
 }: {
   form: { name: string; description: string; background_color: string; text_color: string; card_type: string; discount_percentage?: string };
-  walletDesign?: WalletDesignState;
+  walletDesign?: PreviewWalletDesign;
   customerName?: string;
 }) {
   const { t } = useI18n();
