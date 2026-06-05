@@ -111,12 +111,12 @@ function generateMockVariations(
   return names.map((name, idx) => ({
     id: `ai-variation-${idx}-${Date.now()}`,
     name,
-    description: descriptions[idx],
+    description: descriptions[idx] ?? '',
     confidence: 9.1 - idx * 0.2,
     design: {
       cardType,
       industry,
-      colors: baseColors[idx],
+      colors: baseColors[idx] ?? baseColors[0]!,
       name: `${name} - ${description.slice(0, 20)}`,
     },
   }));

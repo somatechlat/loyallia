@@ -184,7 +184,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
   );
 
   const handleToggleScreenshotDisabled = useCallback(
-    (checked: boolean) => {
+    (_checked: boolean) => {
       // Google doesn't have a direct flag in our model, but we can store it as a custom field if needed.
       // For now we just call the callback to satisfy the UI requirement.
       onUpdateGoogleConfig({});
@@ -486,7 +486,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
             </label>
             <select
               className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={(e) => {
+              onChange={(_e) => {
                 // Placeholder for ordering logic
                 onUpdateGoogleConfig({});
               }}

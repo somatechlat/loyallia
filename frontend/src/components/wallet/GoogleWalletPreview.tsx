@@ -1,8 +1,28 @@
-import type { WalletDesignState } from './types-v1-definitions';
 import { Pixel7Frame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, GOOGLE_WALLET_TYPES } from '@/components/programs/constants';
 import { useI18n } from '@/lib/i18n';
+
+interface PreviewGoogleFieldItem {
+  id: string;
+  fieldPath: string;
+  label: string;
+  displayName: string;
+}
+
+interface PreviewGoogleFieldRow {
+  id: string;
+  type: 'oneItem' | 'twoItems' | 'threeItems';
+  items: PreviewGoogleFieldItem[];
+}
+
+interface PreviewWalletDesign {
+  googleProgramLogoUrl?: string;
+  googleHeroImageUrl?: string;
+  googleWideLogoUrl?: string;
+  googleImageModuleUrl?: string;
+  googleRows?: PreviewGoogleFieldRow[];
+}
 
 function buildContext(form: { name: string; description: string; card_type: string }, customerName: string | undefined, t: (key: string) => string): Record<string, string> {
   return {
@@ -75,7 +95,7 @@ interface GoogleWalletCardProps {
   /** Customer name for the preview */
   customerName?: string;
   /** Wallet design state */
-  walletDesign?: WalletDesignState;
+  walletDesign?: PreviewWalletDesign;
 }
 
 /**

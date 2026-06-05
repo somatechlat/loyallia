@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { CardTypeIcon, BARCODE_TYPES } from '@/components/programs/constants';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
-import type { AppleWalletFeatureConfig } from '@/components/programs/WalletCardPreview';
-import type { WalletDesignState } from '@/components/wallet/types-v1';
 import { APPLE_FIELD_GROUPS } from '@/components/programs/constants';
+import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 
 /** Translation keys for all program metadata keys — prevents mixed languages in review step. */
 const META_LABEL_KEYS: Record<string, string> = {
@@ -96,9 +95,9 @@ interface ProgramReviewStepProps {
   /** Wallet provider change handler */
   setWalletProvider: (value: 'apple' | 'google') => void;
   /** Apple Wallet feature configuration */
-  appleWalletConfig: AppleWalletFeatureConfig;
+  appleWalletConfig: { enabled: boolean; requiresAuthentication: boolean };
   /** Wallet design state */
-  walletDesign?: WalletDesignState;
+  walletDesign?: WalletPassStudioState;
 }
 
 /**
@@ -133,32 +132,40 @@ export default function ProgramReviewStep({
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const appleImages = walletDesign ? [
-    { labelKey: 'programs.walletPreview.logo', url: walletDesign.appleLogoUrl },
-    { labelKey: 'programs.walletPreview.logo2x', url: walletDesign.appleLogo2xUrl },
-    { labelKey: 'programs.walletPreview.icon', url: walletDesign.appleIconUrl },
-    { labelKey: 'programs.walletPreview.icon2x', url: walletDesign.appleIcon2xUrl },
-    { labelKey: 'programs.walletPreview.strip', url: walletDesign.appleStripUrl },
-    { labelKey: 'programs.walletPreview.strip2x', url: walletDesign.appleStrip2xUrl },
-    { labelKey: 'programs.walletPreview.thumbnail', url: walletDesign.appleThumbnailUrl },
-    { labelKey: 'programs.walletPreview.thumbnail2x', url: walletDesign.appleThumbnail2xUrl },
+    { labelKey: 'programs.walletPreview.logo', url: walletDesign.images.logo?.url },
+    { labelKey: 'programs.walletPreview.logo2x', url: walletDesign.images.logo2x?.url },
+    { labelKey: 'programs.walletPreview.icon', url: walletDesign.images.icon?.url },
+    { labelKey: 'programs.walletPreview.icon2x', url: walletDesign.images.icon2x?.url },
+    { labelKey: 'programs.walletPreview.strip', url: walletDesign.images.strip?.url },
+    { labelKey: 'programs.walletPreview.strip2x', url: walletDesign.images.strip2x?.url },
+    { labelKey: 'programs.walletPreview.thumbnail', url: walletDesign.images.thumbnail?.url },
+    { labelKey: 'programs.walletPreview.thumbnail2x', url: walletDesign.images.thumbnail2x?.url },
   ] : [];
 
   const googleImages = walletDesign ? [
-    { labelKey: 'programs.walletPreview.programLogo', url: walletDesign.googleProgramLogoUrl },
-    { labelKey: 'programs.walletPreview.heroImage', url: walletDesign.googleHeroImageUrl },
-    { labelKey: 'programs.walletPreview.wideLogo', url: walletDesign.googleWideLogoUrl },
-    { labelKey: 'programs.walletPreview.additionalImage', url: walletDesign.googleImageModuleUrl },
+    { labelKey: 'programs.walletPreview.programLogo', url: walletDesign.images.logo?.url },
+    { labelKey: 'programs.walletPreview.heroImage', url: walletDesign.images.heroImage?.url },
+    { labelKey: 'programs.walletPreview.wideLogo', url: walletDesign.images.wideLogo?.url },
+    { labelKey: 'programs.walletPreview.additionalImage', url: walletDesign.images.imageModule?.url },
   ] : [];
+
+  const groupMap: Record<string, string> = {
+    headerFields: 'header',
+    primaryFields: 'primary',
+    secondaryFields: 'secondary',
+    auxiliaryFields: 'auxiliary',
+    backFields: 'back',
+  };
 
   const appleFieldCounts = walletDesign
     ? APPLE_FIELD_GROUPS.map(g => ({
         labelKey: `programs.appleFieldGroups.${g.key}`,
-        count: (walletDesign.appleFields[g.key] || []).length,
+        count: walletDesign.fields.filter(f => f.showOnApple && f.fieldGroup === groupMap[g.key]).length,
       }))
     : [];
 
   const totalAppleFields = appleFieldCounts.reduce((sum, f) => sum + f.count, 0);
-  const googleRowCount = walletDesign?.googleRows?.length ?? 0;
+  const googleRowCount = walletDesign ? walletDesign.fields.filter(f => f.showOnGoogle).length : 0;
 
   const barcodeLabel = BARCODE_TYPES.find(b => b.value === form.barcode_type)?.label;
 
@@ -187,8 +194,8 @@ export default function ProgramReviewStep({
             <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700">
               <span className="text-sm text-surface-500">{t('programs.review.appleNfc')}</span>
               <span className="text-sm font-semibold">
-                {appleWalletConfig.nfc_enabled
-                  ? appleWalletConfig.nfc_requires_authentication
+                {appleWalletConfig.enabled
+                  ? appleWalletConfig.requiresAuthentication
                     ? t('programs.review.nfcEnabledAuth')
                     : t('programs.review.nfcEnabled')
                   : t('programs.review.nfcDisabled')}
@@ -226,13 +233,13 @@ export default function ProgramReviewStep({
 
             <div className="flex justify-between py-1 border-b border-surface-100 dark:border-surface-700">
               <span className="text-xs text-surface-500">{t('programs.review.platform')}</span>
-              <span className="text-xs font-semibold">{walletDesign.provider === 'apple' ? t('wallet.appleWallet') : t('wallet.googleWallet')}</span>
+              <span className="text-xs font-semibold">{walletDesign.ui.platformView !== 'google' ? t('wallet.appleWallet') : t('wallet.googleWallet')}</span>
             </div>
 
             {/* Images */}
             <div className="space-y-1.5">
               <p className="text-xs font-semibold text-surface-700 dark:text-surface-200">{t('programs.review.uploadedImages')}</p>
-              {walletDesign.provider === 'apple' ? (
+              {walletDesign.ui.platformView !== 'google' ? (
                 <div className="grid grid-cols-2 gap-1">
                   {appleImages.map(img => (
                     <div key={img.labelKey} className="flex items-center gap-1.5 text-xs">
@@ -254,7 +261,7 @@ export default function ProgramReviewStep({
             </div>
 
             {/* Fields / Rows */}
-            {walletDesign.provider === 'apple' ? (
+            {walletDesign.ui.platformView !== 'google' ? (
               <div className="space-y-1.5">
                 <p className="text-xs font-semibold text-surface-700 dark:text-surface-200">{t('programs.review.configuredFields', { count: totalAppleFields })}</p>
                 <div className="grid grid-cols-2 gap-1">
@@ -274,12 +281,12 @@ export default function ProgramReviewStep({
             )}
 
             {/* NFC status for Apple */}
-            {walletDesign.provider === 'apple' && (
+            {walletDesign.ui.platformView !== 'google' && (
               <div className="flex justify-between py-1 border-b border-surface-100 dark:border-surface-700">
                 <span className="text-xs text-surface-500">{t('programs.review.nfcStatus')}</span>
                 <span className="text-xs font-semibold">
-                  {walletDesign.appleNfc.nfc_enabled
-                    ? walletDesign.appleNfc.nfc_requires_authentication
+                  {walletDesign.apple.nfc.enabled
+                    ? walletDesign.apple.nfc.requiresAuthentication
                       ? t('programs.review.nfcEnabledAuth')
                       : t('programs.review.nfcEnabled')
                     : t('programs.review.nfcDisabled')}
@@ -295,55 +302,55 @@ export default function ProgramReviewStep({
             >
               {showAdvanced ? '▼' : '▶'} {t('programs.review.advancedSettings')}
             </button>
-            {showAdvanced && walletDesign.provider === 'apple' && (
+            {showAdvanced && walletDesign.ui.platformView !== 'google' && (
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.suppressStripShine')}</span>
-                  <span className="font-medium">{walletDesign.appleAdvanced.suppressStripShine ? t('common.yes') : t('common.no')}</span>
+                  <span className="font-medium">{walletDesign.apple.suppressStripShine ? t('common.yes') : t('common.no')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.sharingProhibited')}</span>
-                  <span className="font-medium">{walletDesign.appleAdvanced.sharingProhibited ? t('common.yes') : t('common.no')}</span>
+                  <span className="font-medium">{walletDesign.apple.sharingProhibited ? t('common.yes') : t('common.no')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.voided')}</span>
-                  <span className="font-medium">{walletDesign.appleAdvanced.voided ? t('common.yes') : t('common.no')}</span>
+                  <span className="font-medium">{walletDesign.apple.voided ? t('common.yes') : t('common.no')}</span>
                 </div>
-                {walletDesign.appleAdvanced.nfcMessage && (
+                {walletDesign.apple.nfc.message && (
                   <div className="flex justify-between">
                     <span className="text-surface-500">{t('programs.review.nfcMessage')}</span>
-                    <span className="font-medium">{walletDesign.appleAdvanced.nfcMessage}</span>
+                    <span className="font-medium">{walletDesign.apple.nfc.message}</span>
                   </div>
                 )}
-                {walletDesign.appleAdvanced.expirationDate && (
+                {walletDesign.apple.expirationDate && (
                   <div className="flex justify-between">
                     <span className="text-surface-500">{t('programs.review.expiration')}</span>
-                    <span className="font-medium">{walletDesign.appleAdvanced.expirationDate}</span>
+                    <span className="font-medium">{walletDesign.apple.expirationDate}</span>
                   </div>
                 )}
               </div>
             )}
-            {showAdvanced && walletDesign.provider === 'google' && (
+            {showAdvanced && walletDesign.ui.platformView === 'google' && (
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.reviewStatus')}</span>
-                  <span className="font-medium">{walletDesign.googleAdvanced.reviewStatus}</span>
+                  <span className="font-medium">{walletDesign.google.reviewStatus}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.allowMultipleUsers')}</span>
-                  <span className="font-medium">{walletDesign.googleAdvanced.allowMultipleUsers}</span>
+                  <span className="font-medium">{walletDesign.google.allowMultipleUsers}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.notifyChanges')}</span>
-                  <span className="font-medium">{walletDesign.googleAdvanced.notifyPreference ? t('common.yes') : t('common.no')}</span>
+                  <span className="font-medium">{walletDesign.google.notifyPreference ? t('common.yes') : t('common.no')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.additionalLinks')}</span>
-                  <span className="font-medium">{walletDesign.googleAdvanced.linksModuleUris.length}</span>
+                  <span className="font-medium">{walletDesign.backContent.links.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">{t('programs.review.messages')}</span>
-                  <span className="font-medium">{walletDesign.googleAdvanced.messages.length}</span>
+                  <span className="font-medium">{walletDesign.google.messages.length}</span>
                 </div>
               </div>
             )}
@@ -358,7 +365,7 @@ export default function ProgramReviewStep({
             <li>{t('programs.review.uniqueQr')}</li>
             <li>{t('programs.review.geoPush')}</li>
             <li>{t('programs.review.realTimeUpdate')}</li>
-            {walletProvider === 'apple' && appleWalletConfig.nfc_enabled && (
+            {walletProvider === 'apple' && appleWalletConfig.enabled && (
               <li>{t('programs.review.nfcAppleNote')}</li>
             )}
           </ul>

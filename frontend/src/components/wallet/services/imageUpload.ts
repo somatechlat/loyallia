@@ -17,7 +17,7 @@ import type { ImageAsset } from '@/components/wallet/types/unified-state';
  */
 export async function uploadWalletImage(
   file: File,
-  type: 'logo' | 'hero' | 'icon'
+  _type: 'logo' | 'hero' | 'icon'
 ): Promise<ImageAsset> {
   const url = await uploadFile(file, false);
   if (!url) {

@@ -40,6 +40,10 @@
   "exclude": [
     "node_modules",
     "tests",
-    "src/_archive"
+    "src/_archive",
+    "**/__tests__",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "vitest.config.ts"
   ]
 }

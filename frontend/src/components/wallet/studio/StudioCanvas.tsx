@@ -8,7 +8,6 @@
 'use client';
 
 import type { WalletPassStudioState, PlatformView, BarcodeFormat } from '@/components/wallet/types/unified-state';
-import type { WalletDesignState, AppleFieldDef } from '@/components/wallet/types';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 import { mapFieldsToApple, mapFieldsToGoogle } from '@/components/wallet/utils/field-mappers';
@@ -30,7 +29,9 @@ function mapBarcodeFormat(format: BarcodeFormat): string {
   return mapping[format] ?? 'qr_code';
 }
 
-function buildWalletDesign(state: WalletPassStudioState): WalletDesignState {
+type TextAlignment = 'PKTextAlignmentLeft' | 'PKTextAlignmentCenter' | 'PKTextAlignmentRight' | 'PKTextAlignmentNatural';
+
+function buildWalletDesign(state: WalletPassStudioState) {
   const appleFields = mapFieldsToApple(state.fields);
   const googleRows = mapFieldsToGoogle(state.fields);
 
@@ -54,7 +55,7 @@ function buildWalletDesign(state: WalletPassStudioState): WalletDesignState {
         label: f.label,
         value: f.value,
         changeMessage: f.changeMessage,
-        textAlignment: f.textAlignment as AppleFieldDef['textAlignment'],
+        textAlignment: f.textAlignment as TextAlignment,
         attributedValue: f.attributedValue,
       })),
       primaryFields: appleFields.primaryFields.map((f) => ({
@@ -62,7 +63,7 @@ function buildWalletDesign(state: WalletPassStudioState): WalletDesignState {
         label: f.label,
         value: f.value,
         changeMessage: f.changeMessage,
-        textAlignment: f.textAlignment as AppleFieldDef['textAlignment'],
+        textAlignment: f.textAlignment as TextAlignment,
         attributedValue: f.attributedValue,
       })),
       secondaryFields: appleFields.secondaryFields.map((f) => ({
@@ -70,7 +71,7 @@ function buildWalletDesign(state: WalletPassStudioState): WalletDesignState {
         label: f.label,
         value: f.value,
         changeMessage: f.changeMessage,
-        textAlignment: f.textAlignment as AppleFieldDef['textAlignment'],
+        textAlignment: f.textAlignment as TextAlignment,
         attributedValue: f.attributedValue,
       })),
       auxiliaryFields: appleFields.auxiliaryFields.map((f) => ({
@@ -78,7 +79,7 @@ function buildWalletDesign(state: WalletPassStudioState): WalletDesignState {
         label: f.label,
         value: f.value,
         changeMessage: f.changeMessage,
-        textAlignment: f.textAlignment as AppleFieldDef['textAlignment'],
+        textAlignment: f.textAlignment as TextAlignment,
         attributedValue: f.attributedValue,
       })),
       backFields: appleFields.backFields.map((f) => ({
@@ -86,7 +87,7 @@ function buildWalletDesign(state: WalletPassStudioState): WalletDesignState {
         label: f.label,
         value: f.value,
         changeMessage: f.changeMessage,
-        textAlignment: f.textAlignment as AppleFieldDef['textAlignment'],
+        textAlignment: f.textAlignment as TextAlignment,
         attributedValue: f.attributedValue,
       })),
     },

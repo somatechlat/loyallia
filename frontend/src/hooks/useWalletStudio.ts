@@ -49,7 +49,7 @@ export interface UseWalletStudioReturn {
   nudgeField: (id: string, direction: 'up' | 'down' | 'left' | 'right', amount: number) => void;
 }
 
-function createDefaultState(): WalletPassStudioState {
+export function createDefaultState(): WalletPassStudioState {
   return {
     version: 2,
     id: `pass-${Date.now()}`,
@@ -289,7 +289,9 @@ export function useWalletStudio(
         const x = (field as unknown as Record<string, number>).x ?? 0;
         const y = (field as unknown as Record<string, number>).y ?? 0;
         const deltas = { up: [0, -amount], down: [0, amount], left: [-amount, 0], right: [amount, 0] };
-        const [dx, dy] = deltas[direction];
+        const delta = deltas[direction] ?? [0, 0];
+        const dx = delta[0] ?? 0;
+        const dy = delta[1] ?? 0;
         const updatedField = { ...field, x: x + dx, y: y + dy } as UnifiedField;
         return mergeState(prev, {
           fields: prev.fields.map((f) => (f.id === id ? updatedField : f)),

@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import type { WalletColors } from '@/components/wallet/types/unified-state';
 import { COLOR_PRESETS } from '@/components/wallet/constants';
-import { hexToRgb, rgbToHex, hexToHsl, hslToHex, autoForeground, isValidHex, normalizeHex } from '@/components/wallet/utils/colors';
+import { hexToRgb, hexToHsl, hslToHex, autoForeground, isValidHex, normalizeHex } from '@/components/wallet/utils/colors';
 import { contrastRatio, getWCAGLevel } from '@/components/wallet/utils/contrast';
 
 export interface ColorsTabProps {
@@ -101,7 +101,6 @@ function ColorInput({
     setHexInput(value.toUpperCase());
   }, [value]);
 
-  const rgb = useMemo(() => hexToRgb(value), [value]);
   const isValid = isValidHex(hexInput);
 
   const handleHexChange = useCallback(

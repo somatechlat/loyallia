@@ -150,10 +150,10 @@ export function useAutomations() {
     setSaving(true);
     try {
       if (editingId) {
-        await automationApi.update(editingId, form);
+        await automationApi.update(editingId, form as unknown as Record<string, unknown>);
         toast.success(t("automation.toast.saved"));
       } else {
-        await automationApi.create(form);
+        await automationApi.create(form as unknown as Record<string, unknown>);
         toast.success(t("automation.toast.saved"));
       }
       setShowModal(false);
