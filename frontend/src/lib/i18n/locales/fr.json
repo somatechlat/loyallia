@@ -484,5 +484,10 @@
   "wallet.studio.fields.alignRight": "Right",
   "wallet.studio.advanced.nfcMessage": "NFC Message (requires NFC enabled)",
   "wallet.studio.advanced.nfcPlaceholder": "Text that appears when scanning with NFC",
-  "wallet.studio.advanced.expirationDate": "Expiration date"
+  "wallet.studio.advanced.expirationDate": "Expiration date",
+  "settings": {
+    "languageHint": "La préférence de langue est enregistrée dans ce navigateur"
+  },
+  "auth.login.passwordLabel": "Contraseña",
+  "auth.login.passwordPlaceholder": "••••••••"
 }
