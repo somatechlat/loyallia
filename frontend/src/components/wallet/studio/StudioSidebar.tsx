@@ -8,6 +8,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { WalletPassStudioState, WalletColors, WalletImages, BarcodeConfig, BackContent, CardTypeConfig, AppleSpecificConfig, GoogleSpecificConfig, UnifiedField } from '@/components/wallet/types/unified-state';
 import { ImagesTab } from './ImagesTab';
 import { FieldStudio } from './FieldStudio';
@@ -224,34 +225,34 @@ type TabId = 'images' | 'cardType' | 'fields' | 'back' | 'barcode' | 'colors' | 
 
 interface TabConfig {
   id: TabId;
-  label: string;
+  key: string;
   icon: React.ReactNode;
 }
 
-function getCardTypeTabConfig(cardType: WalletPassStudioState['cardType']): { label: string; icon: React.ReactNode } {
+function getCardTypeTabConfig(cardType: WalletPassStudioState['cardType']): { key: string; icon: React.ReactNode } {
   switch (cardType) {
     case 'stamp':
-      return { label: 'Sellos', icon: <TargetIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.stamp', icon: <TargetIcon className="w-4 h-4" /> };
     case 'cashback':
-      return { label: 'Puntos', icon: <TrophyIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.cashback', icon: <TrophyIcon className="w-4 h-4" /> };
     case 'coupon':
-      return { label: 'Cupón', icon: <ScissorsIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.coupon', icon: <ScissorsIcon className="w-4 h-4" /> };
     case 'discount':
-      return { label: 'Descuento', icon: <TagIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.discount', icon: <TagIcon className="w-4 h-4" /> };
     case 'gift_certificate':
-      return { label: 'Regalo', icon: <GiftIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.gift', icon: <GiftIcon className="w-4 h-4" /> };
     case 'vip_membership':
-      return { label: 'VIP', icon: <CrownIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.vip', icon: <CrownIcon className="w-4 h-4" /> };
     case 'affiliate':
-      return { label: 'Afiliado', icon: <LinkIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.affiliate', icon: <LinkIcon className="w-4 h-4" /> };
     case 'corporate_discount':
-      return { label: 'Corp', icon: <BuildingIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.corporate', icon: <BuildingIcon className="w-4 h-4" /> };
     case 'referral_pass':
-      return { label: 'Referido', icon: <UsersIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.referral', icon: <UsersIcon className="w-4 h-4" /> };
     case 'multipass':
-      return { label: 'Multi', icon: <TicketIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.multipass', icon: <TicketIcon className="w-4 h-4" /> };
     default:
-      return { label: 'Tarjeta', icon: <TargetIcon className="w-4 h-4" /> };
+      return { key: 'wallet.studio.sidebar.tab.stamp', icon: <TargetIcon className="w-4 h-4" /> };
   }
 }
 
@@ -269,19 +270,20 @@ export function StudioSidebar({
   updateGoogleConfig: _updateGoogleConfig,
   updateUI,
 }: StudioSidebarProps) {
+  const { t } = useI18n();
   const activeTab = state.ui.activeTab;
   const cardTypeConfig = getCardTypeTabConfig(state.cardType);
   const designScore = useDesignScore(state);
 
   // Build ordered tab list: images, cardType, fields, back, barcode, colors, advanced
   const allTabs: TabConfig[] = [
-    { id: 'images', label: 'Imágenes', icon: <ImageIcon className="w-4 h-4" /> },
-    { id: 'cardType', label: cardTypeConfig.label, icon: cardTypeConfig.icon },
-    { id: 'fields', label: 'Campos', icon: <TextIcon className="w-4 h-4" /> },
-    { id: 'back', label: 'Reverso', icon: <RotateCcwIcon className="w-4 h-4" /> },
-    { id: 'barcode', label: 'Código', icon: <QrCodeIcon className="w-4 h-4" /> },
-    { id: 'colors', label: 'Colores', icon: <PaletteIcon className="w-4 h-4" /> },
-    { id: 'advanced', label: 'Avanzado', icon: <SettingsIcon className="w-4 h-4" /> },
+    { id: 'images', key: 'wallet.studio.sidebar.tab.images', icon: <ImageIcon className="w-4 h-4" /> },
+    { id: 'cardType', key: cardTypeConfig.key, icon: cardTypeConfig.icon },
+    { id: 'fields', key: 'wallet.studio.sidebar.tab.fields', icon: <TextIcon className="w-4 h-4" /> },
+    { id: 'back', key: 'wallet.studio.sidebar.tab.back', icon: <RotateCcwIcon className="w-4 h-4" /> },
+    { id: 'barcode', key: 'wallet.studio.sidebar.tab.barcode', icon: <QrCodeIcon className="w-4 h-4" /> },
+    { id: 'colors', key: 'wallet.studio.sidebar.tab.colors', icon: <PaletteIcon className="w-4 h-4" /> },
+    { id: 'advanced', key: 'wallet.studio.sidebar.tab.advanced', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
 
   return (
@@ -303,10 +305,10 @@ export function StudioSidebar({
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                 }
               `}
-              title={tab.label}
+              title={t(tab.key)}
             >
               {tab.icon}
-              <span className="truncate max-w-full">{tab.label}</span>
+              <span className="truncate max-w-full">{t(tab.key)}</span>
             </button>
           );
         })}

@@ -10,6 +10,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import type { PlatformView } from '@/components/wallet/types/unified-state';
 
@@ -178,6 +179,7 @@ export function StudioToolbar({
   onAIGenerate,
   isModified,
 }: StudioToolbarProps) {
+  const { t } = useI18n();
   const planFeatures = usePlanFeatures();
   const scoreColorClass = typeof designScore === 'number' ? getScoreColorClass(designScore) : null;
 
@@ -205,7 +207,7 @@ export function StudioToolbar({
               onClick={onUndo}
               disabled={!canUndo}
               className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              title="Deshacer"
+              title={t('wallet.studio.toolbar.undo')}
             >
               <UndoIcon className="w-4 h-4" />
             </button>
@@ -214,7 +216,7 @@ export function StudioToolbar({
               onClick={onRedo}
               disabled={!canRedo}
               className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              title="Rehacer"
+              title={t('wallet.studio.toolbar.redo')}
             >
               <RedoIcon className="w-4 h-4" />
             </button>
@@ -226,7 +228,7 @@ export function StudioToolbar({
           <div
             className="inline-flex items-center rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-0.5 gap-0.5"
             role="radiogroup"
-            aria-label="Seleccionar plataforma"
+            aria-label={t('wallet.studio.toolbar.selectPlatform')}
           >
             {PLATFORM_OPTIONS.map((option) => {
               const isActive = platformView === option.value;
@@ -260,7 +262,7 @@ export function StudioToolbar({
               type="button"
               onClick={() => onZoomChange(Math.max(0.5, zoom - 0.25))}
               className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              title="Alejar"
+              title={t('wallet.studio.toolbar.zoomOut')}
             >
               <MinusIcon className="w-4 h-4" />
             </button>
@@ -271,7 +273,7 @@ export function StudioToolbar({
               type="button"
               onClick={() => onZoomChange(Math.min(2, zoom + 0.25))}
               className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              title="Acercar"
+              title={t('wallet.studio.toolbar.zoomIn')}
             >
               <PlusIcon className="w-4 h-4" />
             </button>
@@ -287,7 +289,7 @@ export function StudioToolbar({
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <PaletteIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Plantillas</span>
+            <span className="hidden sm:inline">{t('wallet.studio.toolbar.templates')}</span>
           </button>
 
           {/* Guardar */}
@@ -297,7 +299,7 @@ export function StudioToolbar({
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
           >
             <SaveIcon className="w-4 h-4" />
-            <span>Guardar</span>
+            <span>{t('wallet.studio.toolbar.save')}</span>
             {isModified && <span className="w-1.5 h-1.5 rounded-full bg-white/80" />}
           </button>
 
@@ -307,11 +309,11 @@ export function StudioToolbar({
               type="button"
               onClick={onSaveAsTemplate}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              title="Guardar como plantilla"
+              title={t('wallet.studio.toolbar.saveAsTemplate')}
               data-testid="toolbar-save-template-btn"
             >
               <span>💾</span>
-              <span className="hidden md:inline">Guardar como plantilla</span>
+              <span className="hidden md:inline">{t('wallet.studio.toolbar.saveAsTemplate')}</span>
             </button>
           )}
 
@@ -323,7 +325,7 @@ export function StudioToolbar({
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             >
               <DownloadIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Exportar</span>
+              <span className="hidden sm:inline">{t('wallet.studio.toolbar.export')}</span>
             </button>
           )}
 
@@ -333,7 +335,7 @@ export function StudioToolbar({
           <div
             className="inline-flex items-center rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-0.5 gap-0.5"
             role="radiogroup"
-            aria-label="Vista del pase"
+            aria-label={t('wallet.studio.toolbar.passView')}
           >
             <button
               type="button"
@@ -382,10 +384,10 @@ export function StudioToolbar({
             onClick={onAIGenerate}
             disabled={!planFeatures.hasAIAssistant}
             className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite] disabled:opacity-40 disabled:cursor-not-allowed disabled:animate-none"
-            title={planFeatures.hasAIAssistant ? 'Diseñar con IA' : 'Disponible en plan Profesional'}
+            title={planFeatures.hasAIAssistant ? t('wallet.studio.toolbar.aiDesign') : 'PRO'}
           >
             <SparklesIcon className="w-4 h-4" />
-            <span>Diseñar con IA</span>
+            <span>{t('wallet.studio.toolbar.aiDesign')}</span>
             {!planFeatures.hasAIAssistant && (
               <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">PRO</span>
             )}
