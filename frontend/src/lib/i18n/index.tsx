@@ -88,8 +88,8 @@ export function I18nProvider({ children }: I18nProviderProps) {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY) as SupportedLocale | null;
       if (stored && LOCALES[stored]) return stored;
-      const browserLang = navigator.language?.slice(0, 2).toLowerCase();
-      if (browserLang && LOCALES[browserLang as SupportedLocale]) return browserLang as SupportedLocale;
+      // Spanish is the mandatory default; browser language is NOT auto-detected.
+      // Users change language explicitly via Settings.
     }
     return DEFAULT_LOCALE;
   });

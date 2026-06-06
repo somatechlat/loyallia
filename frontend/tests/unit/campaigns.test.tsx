@@ -57,12 +57,12 @@ describe('CustomerPicker', () => {
 
   it('shows loading state', () => {
     render(<Wrapper><CustomerPicker {...baseProps} loading={true} customers={[]} /></Wrapper>);
-    expect(screen.getByText('Loading...')).toBeDefined();
+    expect(screen.getByText('Cargando...')).toBeDefined();
   });
 
   it('shows empty state when no customers', () => {
     render(<Wrapper><CustomerPicker {...baseProps} customers={[]} total={0} /></Wrapper>);
-    expect(screen.getByText('No customers found')).toBeDefined();
+    expect(screen.getByText('No se encontraron clientes')).toBeDefined();
   });
 
   it('calls onToggle when individual row is clicked', () => {
@@ -103,7 +103,7 @@ describe('ProgramSelector', () => {
 
   it('has search input', () => {
     render(<Wrapper><ProgramSelector {...baseProps} /></Wrapper>);
-    const inputs = screen.getAllByPlaceholderText('Search program...');
+    const inputs = screen.getAllByPlaceholderText('Buscar programa...');
     expect(inputs.length).toBeGreaterThan(0);
   });
 
@@ -124,7 +124,7 @@ describe('ProgramSelector', () => {
 
   it('shows all programs option', () => {
     render(<Wrapper><ProgramSelector {...baseProps} /></Wrapper>);
-    const options = screen.getAllByText('All programs');
+    const options = screen.getAllByText('Todos los programas');
     expect(options.length).toBeGreaterThan(0);
   });
 });
@@ -143,7 +143,7 @@ describe('PlatformSelector', () => {
 
   it('renders three platform options', () => {
     render(<Wrapper><PlatformSelector {...baseProps} /></Wrapper>);
-    expect(screen.getAllByText('Both').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Ambos').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Apple Wallet').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Google Wallet').length).toBeGreaterThan(0);
   });
