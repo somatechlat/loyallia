@@ -190,28 +190,7 @@ export function StudioCanvas({ state, platformView, showBack }: StudioCanvasProp
   const showGoogle = platformView === 'google' || platformView === 'both';
 
   return (
-    <div
-      className="flex-1 flex items-center justify-center min-w-0 overflow-auto p-6"
-      style={{
-        backgroundImage:
-          'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
-        backgroundSize: '20px 20px',
-        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-      }}
-    >
-      <div className="dark:hidden absolute inset-0 opacity-30" style={{
-        backgroundImage:
-          'linear-gradient(45deg, #e5e5e5 25%, transparent 25%), linear-gradient(-45deg, #e5e5e5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e5e5 75%), linear-gradient(-45deg, transparent 75%, #e5e5e5 75%)',
-        backgroundSize: '20px 20px',
-        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-      }} />
-      <div className="hidden dark:block absolute inset-0 opacity-10" style={{
-        backgroundImage:
-          'linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%)',
-        backgroundSize: '20px 20px',
-        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-      }} />
-
+    <div className="flex-1 flex items-center justify-center min-w-0 overflow-hidden p-6 bg-surface-100 dark:bg-surface-900">
       <div className={`relative z-10 flex items-center gap-8 ${platformView === 'both' ? 'flex-row' : 'flex-col'}`}>
         {showApple && (
           <div className="flex flex-col items-center gap-3">

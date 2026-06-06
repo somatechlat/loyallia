@@ -52,9 +52,9 @@ export function DesignScore({ result }: DesignScoreProps) {
   const config = LEVEL_CONFIG[result.level];
 
   return (
-    <div className="border-t border-neutral-200 dark:border-neutral-800 p-4">
+    <div className="bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 p-4">
       <h3 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
-        📊 Design Score
+        📊 Score de Diseño
       </h3>
 
       <div className="flex items-center gap-2 mb-3">

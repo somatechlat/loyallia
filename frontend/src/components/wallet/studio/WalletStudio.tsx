@@ -357,11 +357,11 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col h-full bg-neutral-50 dark:bg-neutral-950">
+      <div className="relative flex flex-col h-full bg-surface-50 dark:bg-surface-950">
         {/* Recovery banner */}
         {sessionRecovery.hasRecovery && (
           <div className="flex items-center justify-between px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm">
-            <span>Se detectó una sesión anterior sin guardar.</span>
+            <span>{t('wallet.studio.recovery.unsavedSession')}</span>
             <button
               type="button"
               onClick={handleRecoverSession}
