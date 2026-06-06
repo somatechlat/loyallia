@@ -193,84 +193,248 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative w-full max-w-3xl bg-white/90 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto animate-fade-in" onClick={e => e.stopPropagation()} style={{ boxShadow: '0 25px 80px rgba(0,0,0,0.15)' }}>
-        <div className="h-1.5 bg-gradient-to-r from-brand-400 via-purple-400 to-brand-600" />
-        <div className="p-6 border-b border-surface-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-black text-surface-900 dark:text-white">{t('superadmin.tenants.wizard.title')}</h2>
+    <div className="fixed inset-0 z-50 flex" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      {/* Full viewport modal — no scrollbars */}
+      <div
+        className="relative w-full h-[100dvh] max-w-5xl mx-auto bg-white dark:bg-surface-900 flex flex-col shadow-2xl animate-fade-in"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Top accent bar */}
+        <div className="h-1 bg-gradient-to-r from-brand-400 via-purple-400 to-brand-600 shrink-0" />
+
+        {/* Header */}
+        <div className="px-6 py-3 border-b border-surface-100 dark:border-surface-800 shrink-0">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-black text-surface-900 dark:text-white">{t('superadmin.tenants.wizard.title')}</h2>
             <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface-100 hover:bg-surface-200 flex items-center justify-center">{XIcon}</button>
           </div>
-          <div className="flex gap-2">{WIZARD_STEPS.map(s => (<div key={s.n} className="flex-1"><div className={`h-1.5 rounded-full transition-all ${step >= s.n ? 'bg-brand-500' : 'bg-surface-200'}`} /><p className={`text-xs mt-1 ${step >= s.n ? 'text-brand-600 font-semibold' : 'text-surface-400'}`}>{s.n}. {s.l}</p></div>))}</div>
+          <div className="flex gap-2">
+            {WIZARD_STEPS.map(s => (
+              <div key={s.n} className="flex-1">
+                <div className={`h-1 rounded-full transition-all ${step >= s.n ? 'bg-brand-500' : 'bg-surface-200'}`} />
+                <p className={`text-xs mt-1 ${step >= s.n ? 'text-brand-600 font-semibold' : 'text-surface-400'}`}>{s.n}. {s.l}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="p-6">
+
+        {/* Content area — flex-1 fills remaining space, overflow-hidden prevents scroll */}
+        <div className="flex-1 px-6 py-4 overflow-hidden">
           {/* STEP 1: Plan */}
-          {step === 1 && (<div className="space-y-6"><h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">{t('superadmin.tenants.wizard.planAndBilling')}</h3>
-            <div className="grid grid-cols-3 gap-3">{plans.filter((p) => p.is_active).map((plan) => (<button key={plan.slug} onClick={() => setPlanSlug(plan.slug)} className={`text-left p-4 rounded-xl border-2 transition-all ${planSlug === plan.slug ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}><p className="font-bold text-surface-900 dark:text-white text-sm">{plan.name}</p><p className="text-2xl font-black text-surface-900 dark:text-white mt-1">${plan.price_monthly}<span className="text-xs text-surface-400">{t('superadmin.tenants.wizard.perMonth')}</span></p><p className="text-xs text-surface-500 mt-1">{t('superadmin.tenants.wizard.freeDays', { days: plan.trial_days })}</p></button>))}</div>
-            <div><label className="label">{t('superadmin.tenants.wizard.billingCycle')}</label><div className="flex gap-3"><button onClick={() => setBillingCycle('monthly')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'monthly' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 dark:border-surface-700'}`}>{t('superadmin.tenants.wizard.monthly')}</button><button onClick={() => setBillingCycle('annual')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'annual' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 dark:border-surface-700'}`}>{t('superadmin.tenants.wizard.annualWithDiscount')}</button></div></div>
-          </div>)}
-          {/* STEP 2: Entity Type + Company */}
-          {step === 2 && (<div className="space-y-5">
-            <div>
-              <h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg mb-3">{t('superadmin.tenants.wizard.entityType')}</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button id="entity-juridica" onClick={() => setEntityType('juridica')} className={`p-4 rounded-xl border-2 text-left transition-all ${entityType === 'juridica' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
-                  <div className="flex items-center gap-2 mb-1">{BldgIcon}<span className="font-bold text-surface-900 dark:text-white">{t('superadmin.tenants.wizard.legalEntity')}</span></div>
+          {step === 1 && (
+            <div className="h-full flex flex-col justify-center space-y-6">
+              <div>
+                <h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg mb-4">{t('superadmin.tenants.wizard.planAndBilling')}</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {plans.filter((p) => p.is_active).map((plan) => (
+                    <button key={plan.slug} onClick={() => setPlanSlug(plan.slug)} className={`text-left p-4 rounded-xl border-2 transition-all ${planSlug === plan.slug ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
+                      <p className="font-bold text-surface-900 dark:text-white text-sm">{plan.name}</p>
+                      <p className="text-2xl font-black text-surface-900 dark:text-white mt-1">${plan.price_monthly}<span className="text-xs text-surface-400">{t('superadmin.tenants.wizard.perMonth')}</span></p>
+                      <p className="text-xs text-surface-500 mt-1">{t('superadmin.tenants.wizard.freeDays', { days: plan.trial_days })}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="label text-sm">{t('superadmin.tenants.wizard.billingCycle')}</label>
+                <div className="flex gap-3 mt-1">
+                  <button onClick={() => setBillingCycle('monthly')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'monthly' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 dark:border-surface-700'}`}>{t('superadmin.tenants.wizard.monthly')}</button>
+                  <button onClick={() => setBillingCycle('annual')} className={`px-4 py-2 rounded-xl text-sm font-medium border-2 ${billingCycle === 'annual' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-surface-200 dark:border-surface-700'}`}>{t('superadmin.tenants.wizard.annualWithDiscount')}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: Entity Type + Company — 3-column compact grid, no scroll */}
+          {step === 2 && (
+            <div className="h-full flex flex-col">
+              <div className="flex gap-3 mb-3 shrink-0">
+                <button id="entity-juridica" onClick={() => setEntityType('juridica')} className={`flex-1 p-3 rounded-xl border-2 text-left transition-all ${entityType === 'juridica' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
+                  <div className="flex items-center gap-2 mb-1">{BldgIcon}<span className="font-bold text-surface-900 dark:text-white text-sm">{t('superadmin.tenants.wizard.legalEntity')}</span></div>
                   <p className="text-xs text-surface-500">{t('superadmin.tenants.wizard.legalEntityDesc')}</p>
                 </button>
-                <button id="entity-natural" onClick={() => setEntityType('natural')} className={`p-4 rounded-xl border-2 text-left transition-all ${entityType === 'natural' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
-                  <div className="flex items-center gap-2 mb-1">{UserIcon}<span className="font-bold text-surface-900 dark:text-white">{t('superadmin.tenants.wizard.naturalPerson')}</span></div>
+                <button id="entity-natural" onClick={() => setEntityType('natural')} className={`flex-1 p-3 rounded-xl border-2 text-left transition-all ${entityType === 'natural' ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'}`}>
+                  <div className="flex items-center gap-2 mb-1">{UserIcon}<span className="font-bold text-surface-900 dark:text-white text-sm">{t('superadmin.tenants.wizard.naturalPerson')}</span></div>
                   <p className="text-xs text-surface-500">{t('superadmin.tenants.wizard.naturalPersonDesc')}</p>
                 </button>
               </div>
-            </div>
-            <h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">{t('superadmin.tenants.wizard.businessData')}</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="label">{t('superadmin.tenants.wizard.tradeName')} *</label><input id="wiz-name" required className="input" placeholder={entityType === 'natural' ? t('superadmin.tenants.wizard.tradeNamePlaceholderNatural') : t('superadmin.tenants.wizard.tradeNamePlaceholderLegal')} value={company.name} onChange={e => setCompany({...company, name: e.target.value})} /></div>
-              {entityType === 'juridica' ? (
-                <div><label className="label">{t('superadmin.tenants.wizard.legalName')}</label><input id="wiz-legal" className="input" placeholder={t('superadmin.tenants.wizard.legalNamePlaceholder')} value={company.legal_name} onChange={e => setCompany({...company, legal_name: e.target.value})} /></div>
-              ) : (
-                <div><label className="label">{t('superadmin.tenants.wizard.fullName')}</label><input id="wiz-legal" className="input" placeholder={t('superadmin.tenants.wizard.fullNamePlaceholder')} value={company.legal_name} onChange={e => setCompany({...company, legal_name: e.target.value})} /></div>
-              )}
-              {entityType === 'juridica' ? (
-                <div><label className="label">{t('superadmin.tenants.wizard.ruc')}</label><input id="wiz-ruc" className="input font-mono" maxLength={13} placeholder={t('superadmin.tenants.wizard.rucPlaceholder')} value={company.ruc} onChange={e => setCompany({...company, ruc: e.target.value.replace(/\D/g, '')})} />{company.ruc && company.ruc.length !== 13 && <p className="text-xs text-red-500 mt-1">{t('superadmin.tenants.wizard.rucError')}</p>}</div>
-              ) : (
-                <div><label className="label">{t('superadmin.tenants.wizard.idCard')}</label><input id="wiz-cedula" className="input font-mono" maxLength={10} placeholder={t('superadmin.tenants.wizard.idCardPlaceholder')} value={company.cedula} onChange={e => setCompany({...company, cedula: e.target.value.replace(/\D/g, '')})} />{company.cedula && company.cedula.length !== 10 && <p className="text-xs text-red-500 mt-1">{t('superadmin.tenants.wizard.idCardError')}</p>}</div>
-              )}
-              <div><label className="label">{t('superadmin.tenants.wizard.industry')}</label><select id="wiz-industry" className="input" value={company.industry} onChange={e => setCompany({...company, industry: e.target.value})}>{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
-              <div><label className="label">{t('superadmin.tenants.wizard.province')}</label><select className="input" value={company.province} onChange={e => setCompany({...company, province: e.target.value})}>{PROVINCES.map(p => <option key={p} value={p}>{formatProvince(p)}</option>)}</select></div>
-              <div><label className="label">{t('superadmin.tenants.wizard.city')}</label><input className="input" placeholder={t('superadmin.tenants.wizard.cityPlaceholder')} value={company.city} onChange={e => setCompany({...company, city: e.target.value})} /></div>
-              <div className="col-span-2"><label className="label">{t('superadmin.tenants.wizard.address')}</label><input className="input" placeholder={t('superadmin.tenants.wizard.addressPlaceholder')} value={company.address} onChange={e => setCompany({...company, address: e.target.value})} /></div>
-              <div><label className="label">{t('superadmin.tenants.wizard.phone')}</label><input className="input" placeholder={t('superadmin.tenants.wizard.phonePlaceholder')} value={company.phone} onChange={e => setCompany({...company, phone: e.target.value})} /></div>
-              <div><label className="label">{t('superadmin.tenants.wizard.corporateEmail')}</label><input type="email" className="input" placeholder={t('superadmin.tenants.wizard.corporateEmailPlaceholder')} value={company.email} onChange={e => setCompany({...company, email: e.target.value})} /></div>
-            </div>
-          </div>)}
-          {/* STEP 3: Owner */}
-          {step === 3 && (<div className="space-y-4"><h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">{t('superadmin.tenants.wizard.owner')}</h3><p className="text-sm text-surface-500">{t('superadmin.tenants.wizard.ownerDesc')}</p><div className="grid grid-cols-2 gap-4">
-            <div><label className="label">{t('superadmin.tenants.wizard.firstName')} *</label><input id="wiz-owner-fn" required className="input" placeholder={t('superadmin.tenants.wizard.firstNamePlaceholder')} value={owner.owner_first_name} onChange={e => setOwner({...owner, owner_first_name: e.target.value})} /></div>
-            <div><label className="label">{t('superadmin.tenants.wizard.lastName')} *</label><input id="wiz-owner-ln" required className="input" placeholder={t('superadmin.tenants.wizard.lastNamePlaceholder')} value={owner.owner_last_name} onChange={e => setOwner({...owner, owner_last_name: e.target.value})} /></div>
-            <div className="col-span-2"><label className="label">{t('superadmin.tenants.wizard.email')} *</label><input id="wiz-owner-email" required type="email" className="input" placeholder={t('superadmin.tenants.wizard.emailPlaceholder')} value={owner.owner_email} onChange={e => setOwner({...owner, owner_email: e.target.value})} /></div>
-            <div><label className="label">{t('superadmin.tenants.wizard.ownerIdCard')}</label><input className="input font-mono" maxLength={10} placeholder={t('superadmin.tenants.wizard.idCardPlaceholder')} value={owner.owner_cedula} onChange={e => setOwner({...owner, owner_cedula: e.target.value.replace(/\D/g, '')})} /></div>
-          </div><div className="bg-surface-50 rounded-xl p-4 border border-surface-100 mt-4"><p className="text-xs text-surface-500">{t('superadmin.tenants.wizard.tempPasswordGenerated')}</p></div></div>)}
-          {/* STEP 4: Locations */}
-          {step === 4 && (<div className="space-y-4"><div className="flex justify-between items-center"><div><h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">{t('superadmin.tenants.wizard.locations')}</h3><p className="text-sm text-surface-500">{t('superadmin.tenants.wizard.locationsDesc')}</p></div><button onClick={addWLoc} className="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">{PlusIcon} {t('superadmin.tenants.wizard.add')}</button></div>
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">{wLocs.map((loc, idx) => (<div key={idx} className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-4 border border-surface-200 dark:border-surface-700/50 space-y-3"><div className="flex justify-between items-center"><span className="text-xs font-semibold text-surface-500">{t('superadmin.tenants.wizard.branchNumber', { number: idx+1 })} {loc.is_primary && t('superadmin.tenants.wizard.primary')}</span>{idx > 0 && <button onClick={() => rmWLoc(idx)} className="text-xs text-red-500 hover:text-red-700">{t('common.delete')}</button>}</div><div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs font-medium text-surface-600 mb-1 block">{t('superadmin.tenants.wizard.locationName')} *</label><input className="input text-sm" placeholder={t('superadmin.tenants.wizard.locationNamePlaceholder')} value={loc.name} onChange={e => upWLoc(idx, 'name', e.target.value)} /></div>
-              <div><label className="text-xs font-medium text-surface-600 mb-1 block">{t('superadmin.tenants.wizard.locationCity')}</label><input className="input text-sm" placeholder={t('superadmin.tenants.wizard.locationCityPlaceholder')} value={loc.city} onChange={e => upWLoc(idx, 'city', e.target.value)} /></div>
-              <div className="col-span-2"><label className="text-xs font-medium text-surface-600 mb-1 block">{t('superadmin.tenants.wizard.locationAddress')}</label><input className="input text-sm" value={loc.address} onChange={e => upWLoc(idx, 'address', e.target.value)} /></div>
-              <div className="col-span-2"><label className="text-xs font-semibold text-surface-500 mb-1 block">{t('superadmin.tenants.wizard.mapLocation')}</label><LocationPicker lat={loc.latitude ?? null} lng={loc.longitude ?? null} onChange={(lat, lng, addr) => { upWLoc(idx, 'latitude', lat); upWLoc(idx, 'longitude', lng); if (addr && !loc.address) upWLoc(idx, 'address', addr.split(',').slice(0, 3).join(',')); }} /></div>
-              <div className="col-span-2 grid grid-cols-2 gap-3">
-                <div><label className="text-xs font-medium text-surface-600 mb-1 block">{t('superadmin.tenants.wizard.latitude')}</label><input type="number" step="0.000001" className="input text-sm font-mono" placeholder={t('superadmin.tenants.wizard.latitudePlaceholder')} value={loc.latitude ?? ''} onChange={e => upWLoc(idx, 'latitude', e.target.value ? +e.target.value : null)} /></div>
-                <div><label className="text-xs font-medium text-surface-600 mb-1 block">{t('superadmin.tenants.wizard.longitude')}</label><input type="number" step="0.000001" className="input text-sm font-mono" placeholder={t('superadmin.tenants.wizard.longitudePlaceholder')} value={loc.longitude ?? ''} onChange={e => upWLoc(idx, 'longitude', e.target.value ? +e.target.value : null)} /></div>
+
+              {/* Compact 3-column form grid */}
+              <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.tradeName')} *</label>
+                  <input id="wiz-name" required className="input py-1.5 text-sm" placeholder={entityType === 'natural' ? t('superadmin.tenants.wizard.tradeNamePlaceholderNatural') : t('superadmin.tenants.wizard.tradeNamePlaceholderLegal')} value={company.name} onChange={e => setCompany({...company, name: e.target.value})} />
+                </div>
+                {entityType === 'juridica' ? (
+                  <div>
+                    <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.legalName')}</label>
+                    <input id="wiz-legal" className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.legalNamePlaceholder')} value={company.legal_name} onChange={e => setCompany({...company, legal_name: e.target.value})} />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.fullName')}</label>
+                    <input id="wiz-legal" className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.fullNamePlaceholder')} value={company.legal_name} onChange={e => setCompany({...company, legal_name: e.target.value})} />
+                  </div>
+                )}
+                {entityType === 'juridica' ? (
+                  <div>
+                    <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.ruc')}</label>
+                    <input id="wiz-ruc" className="input py-1.5 text-sm font-mono" maxLength={13} placeholder={t('superadmin.tenants.wizard.rucPlaceholder')} value={company.ruc} onChange={e => setCompany({...company, ruc: e.target.value.replace(/\D/g, '')})} />
+                    {company.ruc && company.ruc.length !== 13 && <p className="text-[10px] text-red-500 mt-0.5">{t('superadmin.tenants.wizard.rucError')}</p>}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.idCard')}</label>
+                    <input id="wiz-cedula" className="input py-1.5 text-sm font-mono" maxLength={10} placeholder={t('superadmin.tenants.wizard.idCardPlaceholder')} value={company.cedula} onChange={e => setCompany({...company, cedula: e.target.value.replace(/\D/g, '')})} />
+                    {company.cedula && company.cedula.length !== 10 && <p className="text-[10px] text-red-500 mt-0.5">{t('superadmin.tenants.wizard.idCardError')}</p>}
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.industry')}</label>
+                  <select id="wiz-industry" className="input py-1.5 text-sm" value={company.industry} onChange={e => setCompany({...company, industry: e.target.value})}>{INDUSTRIES.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}</select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.province')}</label>
+                  <select className="input py-1.5 text-sm" value={company.province} onChange={e => setCompany({...company, province: e.target.value})}>{PROVINCES.map(p => <option key={p} value={p}>{formatProvince(p)}</option>)}</select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.city')}</label>
+                  <input className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.cityPlaceholder')} value={company.city} onChange={e => setCompany({...company, city: e.target.value})} />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.address')}</label>
+                  <input className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.addressPlaceholder')} value={company.address} onChange={e => setCompany({...company, address: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.phone')}</label>
+                  <input className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.phonePlaceholder')} value={company.phone} onChange={e => setCompany({...company, phone: e.target.value})} />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.corporateEmail')}</label>
+                  <input type="email" className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.corporateEmailPlaceholder')} value={company.email} onChange={e => setCompany({...company, email: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.website') || 'Sitio web'}</label>
+                  <input className="input py-1.5 text-sm" placeholder="https://..." value={company.website} onChange={e => setCompany({...company, website: e.target.value})} />
+                </div>
               </div>
-            </div></div>))}</div>
-            <div className="bg-surface-50/80 backdrop-blur-sm rounded-xl p-5 border border-surface-200 dark:border-surface-700/50 space-y-2 text-sm mt-4"><h4 className="font-bold text-surface-900 dark:text-white mb-3">{t('superadmin.tenants.wizard.summary')}</h4><div className="grid grid-cols-2 gap-y-2"><span className="text-surface-500">{t('superadmin.tenants.wizard.type')}:</span><span className="font-medium">{entityType === 'natural' ? t('superadmin.tenants.wizard.naturalPerson') : t('superadmin.tenants.wizard.legalEntity')}</span><span className="text-surface-500">{t('superadmin.tenants.wizard.company')}:</span><span className="font-medium">{company.name||'—'}</span><span className="text-surface-500">{entityType === 'juridica' ? t('superadmin.tenants.wizard.ruc') : t('superadmin.tenants.wizard.idCard')}:</span><span className="font-mono">{entityType === 'juridica' ? company.ruc||'—' : company.cedula||'—'}</span><span className="text-surface-500">{t('superadmin.tenants.wizard.ownerLabel')}:</span><span>{owner.owner_first_name} {owner.owner_last_name}</span><span className="text-surface-500">{t('superadmin.tenants.wizard.email')}:</span><span>{owner.owner_email}</span><span className="text-surface-500">{t('superadmin.tenants.wizard.branches')}:</span><span>{wLocs.filter(l => l.name.trim()).length}</span><span className="text-surface-500">{t('superadmin.tenants.wizard.plan')}:</span><span className="font-semibold text-brand-600">{selPlan?.name || planSlug}</span></div></div>
-          </div>)}
+            </div>
+          )}
+
+          {/* STEP 3: Owner — compact 2-column */}
+          {step === 3 && (
+            <div className="h-full flex flex-col justify-center max-w-2xl mx-auto">
+              <h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg mb-1">{t('superadmin.tenants.wizard.owner')}</h3>
+              <p className="text-sm text-surface-500 mb-4">{t('superadmin.tenants.wizard.ownerDesc')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.firstName')} *</label>
+                  <input id="wiz-owner-fn" required className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.firstNamePlaceholder')} value={owner.owner_first_name} onChange={e => setOwner({...owner, owner_first_name: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.lastName')} *</label>
+                  <input id="wiz-owner-ln" required className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.lastNamePlaceholder')} value={owner.owner_last_name} onChange={e => setOwner({...owner, owner_last_name: e.target.value})} />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.email')} *</label>
+                  <input id="wiz-owner-email" required type="email" className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.emailPlaceholder')} value={owner.owner_email} onChange={e => setOwner({...owner, owner_email: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.ownerIdCard')}</label>
+                  <input className="input py-1.5 text-sm font-mono" maxLength={10} placeholder={t('superadmin.tenants.wizard.idCardPlaceholder')} value={owner.owner_cedula} onChange={e => setOwner({...owner, owner_cedula: e.target.value.replace(/\D/g, '')})} />
+                </div>
+              </div>
+              <div className="bg-surface-50 dark:bg-surface-800/50 rounded-xl p-3 border border-surface-100 dark:border-surface-700 mt-4">
+                <p className="text-xs text-surface-500">{t('superadmin.tenants.wizard.tempPasswordGenerated')}</p>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Locations + Summary — no inner scroll */}
+          {step === 4 && (
+            <div className="h-full flex flex-col">
+              <div className="flex justify-between items-center mb-2 shrink-0">
+                <div>
+                  <h3 className="font-bold text-surface-800 dark:text-surface-100 text-lg">{t('superadmin.tenants.wizard.locations')}</h3>
+                  <p className="text-sm text-surface-500">{t('superadmin.tenants.wizard.locationsDesc')}</p>
+                </div>
+                <button onClick={addWLoc} className="text-sm text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1">{PlusIcon} {t('superadmin.tenants.wizard.add')}</button>
+              </div>
+
+              {/* Location cards — no max-height scroll, flex to fill */}
+              <div className="flex-1 space-y-2 overflow-hidden">
+                {wLocs.map((loc, idx) => (
+                  <div key={idx} className="bg-surface-50/80 dark:bg-surface-800/50 backdrop-blur-sm rounded-xl p-3 border border-surface-200 dark:border-surface-700/50">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-semibold text-surface-500">{t('superadmin.tenants.wizard.branchNumber', { number: idx+1 })} {loc.is_primary && <span className="text-brand-600">{t('superadmin.tenants.wizard.primary')}</span>}</span>
+                      {idx > 0 && <button onClick={() => rmWLoc(idx)} className="text-xs text-red-500 hover:text-red-700">{t('common.delete')}</button>}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.locationName')} *</label>
+                        <input className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.locationNamePlaceholder')} value={loc.name} onChange={e => upWLoc(idx, 'name', e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.locationCity')}</label>
+                        <input className="input py-1.5 text-sm" placeholder={t('superadmin.tenants.wizard.locationCityPlaceholder')} value={loc.city} onChange={e => upWLoc(idx, 'city', e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.locationAddress')}</label>
+                        <input className="input py-1.5 text-sm" placeholder="Calle y número" value={loc.address} onChange={e => upWLoc(idx, 'address', e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <label className="text-xs font-semibold text-surface-500 mb-0.5 block">{t('superadmin.tenants.wizard.mapLocation')}</label>
+                      <div className="h-24 rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700">
+                        <LocationPicker lat={loc.latitude ?? null} lng={loc.longitude ?? null} onChange={(lat, lng, addr) => { upWLoc(idx, 'latitude', lat); upWLoc(idx, 'longitude', lng); if (addr && !loc.address) upWLoc(idx, 'address', addr.split(',').slice(0, 3).join(',')); }} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div>
+                        <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.latitude')}</label>
+                        <input type="number" step="0.000001" className="input py-1.5 text-sm font-mono" placeholder={t('superadmin.tenants.wizard.latitudePlaceholder')} value={loc.latitude ?? ''} onChange={e => upWLoc(idx, 'latitude', e.target.value ? +e.target.value : null)} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-surface-600 dark:text-surface-400 mb-0.5 block">{t('superadmin.tenants.wizard.longitude')}</label>
+                        <input type="number" step="0.000001" className="input py-1.5 text-sm font-mono" placeholder={t('superadmin.tenants.wizard.longitudePlaceholder')} value={loc.longitude ?? ''} onChange={e => upWLoc(idx, 'longitude', e.target.value ? +e.target.value : null)} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Summary — compact inline */}
+              <div className="bg-surface-50 dark:bg-surface-800/50 rounded-xl p-3 border border-surface-200 dark:border-surface-700/50 text-sm mt-2 shrink-0">
+                <h4 className="font-bold text-surface-900 dark:text-white mb-2">{t('superadmin.tenants.wizard.summary')}</h4>
+                <div className="grid grid-cols-4 gap-y-1 gap-x-4">
+                  <span className="text-surface-500 text-xs">{t('superadmin.tenants.wizard.type')}:</span>
+                  <span className="font-medium text-xs">{entityType === 'natural' ? t('superadmin.tenants.wizard.naturalPerson') : t('superadmin.tenants.wizard.legalEntity')}</span>
+                  <span className="text-surface-500 text-xs">{t('superadmin.tenants.wizard.company')}:</span>
+                  <span className="font-medium text-xs truncate">{company.name||'—'}</span>
+                  <span className="text-surface-500 text-xs">{entityType === 'juridica' ? t('superadmin.tenants.wizard.ruc') : t('superadmin.tenants.wizard.idCard')}:</span>
+                  <span className="font-mono text-xs">{entityType === 'juridica' ? company.ruc||'—' : company.cedula||'—'}</span>
+                  <span className="text-surface-500 text-xs">{t('superadmin.tenants.wizard.ownerLabel')}:</span>
+                  <span className="text-xs">{owner.owner_first_name} {owner.owner_last_name}</span>
+                  <span className="text-surface-500 text-xs">{t('superadmin.tenants.wizard.email')}:</span>
+                  <span className="text-xs truncate">{owner.owner_email}</span>
+                  <span className="text-surface-500 text-xs">{t('superadmin.tenants.wizard.branches')}:</span>
+                  <span className="text-xs">{wLocs.filter(l => l.name.trim()).length}</span>
+                  <span className="text-surface-500 text-xs">{t('superadmin.tenants.wizard.plan')}:</span>
+                  <span className="font-semibold text-brand-600 text-xs">{selPlan?.name || planSlug}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="px-6 py-4 border-t border-surface-100 flex justify-between">
-          <button onClick={() => step > 1 ? setStep(step-1) : onClose()} className="px-4 py-2 text-surface-600 hover:text-surface-900 dark:text-white font-medium">{step === 1 ? t('common.cancel') : t('superadmin.tenants.wizard.previous')}</button>
-          {step < 4 ? <button id="wiz-next" onClick={() => setStep(step+1)} className="btn-primary" disabled={step === 2 && !company.name.trim()}>{t('superadmin.tenants.wizard.next')}</button> : <button id="wiz-submit" onClick={handleSubmit} className="btn-primary">{t('superadmin.tenants.wizard.registerBusinessAction')}</button>}
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-surface-100 dark:border-surface-800 flex justify-between shrink-0">
+          <button onClick={() => step > 1 ? setStep(step-1) : onClose()} className="px-4 py-2 text-surface-600 hover:text-surface-900 dark:text-white font-medium text-sm">{step === 1 ? t('common.cancel') : t('superadmin.tenants.wizard.previous')}</button>
+          {step < 4 ? <button id="wiz-next" onClick={() => setStep(step+1)} className="btn-primary py-2 text-sm" disabled={step === 2 && !company.name.trim()}>{t('superadmin.tenants.wizard.next')}</button> : <button id="wiz-submit" onClick={handleSubmit} className="btn-primary py-2 text-sm">{t('superadmin.tenants.wizard.registerBusinessAction')}</button>}
         </div>
       </div>
     </div>

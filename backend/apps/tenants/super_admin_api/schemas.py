@@ -191,6 +191,7 @@ class CreateTenantOut(BaseModel):
     tenant_id: str
     owner_id: str
     owner_email: str = ""
+    temp_password: str = ""
 
 
 class PlatformMetricsOut(BaseModel):

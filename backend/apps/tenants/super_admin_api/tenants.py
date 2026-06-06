@@ -253,6 +253,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 tenant_id=str(tenant.id),
                 owner_id=str(owner.id),
                 owner_email=owner.email,
+                temp_password=temp_password,
             )
     except Exception as e:
         logger.error("Tenant creation failed: %s", e)
