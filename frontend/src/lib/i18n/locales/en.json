@@ -1100,7 +1100,8 @@
     "passwordMinLength": "Minimum 8 characters",
     "confirmNewPassword": "Confirm new password",
     "passwordMismatch": "Passwords do not match",
-    "loadError": "Error loading settings"
+    "loadError": "Error loading settings",
+    "languageHint": "Language preference is saved in this browser"
   },
   "team": {
     "title": "Team",
@@ -2128,5 +2129,7 @@
   "wallet.studio.iconPicker.title": "Icon",
   "wallet.studio.iconPicker.comingSoon": "Coming soon: icon picker.",
   "wallet.studio.dynamicTemplate.title": "Template",
-  "wallet.studio.dynamicTemplate.comingSoon": "Coming soon: dynamic templates."
+  "wallet.studio.dynamicTemplate.comingSoon": "Coming soon: dynamic templates.",
+  "auth.login.passwordLabel": "Contraseña",
+  "auth.login.passwordPlaceholder": "••••••••"
 }

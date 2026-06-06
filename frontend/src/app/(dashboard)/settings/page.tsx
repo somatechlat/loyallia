@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, type SupportedLocale } from '@/lib/i18n';
 import WhatsAppWizard from '@/components/settings/WhatsAppWizard';
 import DataPrivacySection from '@/components/settings/DataPrivacySection';
 import AuditLogSection from '@/components/settings/AuditLogSection';
@@ -18,7 +18,7 @@ interface TenantProfile {
 }
 
 export default function SettingsPage() {
-  const { t } = useI18n();
+  const { t, locale, setLocale, localeNames } = useI18n();
 
   const TIMEZONES = [
     { value: 'America/Guayaquil', label: t('timezones.americaGuayaquil') },
@@ -306,6 +306,22 @@ export default function SettingsPage() {
               <div className="flex justify-between"><span className="text-surface-500">{t('auth.email')}</span><span className="font-medium text-xs">{user?.email}</span></div>
               <div className="flex justify-between"><span className="text-surface-500">{t('team.role')}</span><span className="badge-blue">{user?.role}</span></div>
             </div>
+          </div>
+
+          {/* Language selector */}
+          <div className="card p-5">
+            <h3 className="font-semibold text-surface-900 dark:text-white mb-3">{t('settings.language')}</h3>
+            <select
+              className="input text-sm w-full"
+              value={locale}
+              onChange={e => setLocale(e.target.value as SupportedLocale)}
+              aria-label={t('settings.language')}
+            >
+              {(Object.keys(localeNames) as SupportedLocale[]).map(code => (
+                <option key={code} value={code}>{localeNames[code]}</option>
+              ))}
+            </select>
+            <p className="text-xs text-surface-400 mt-2">{t('settings.languageHint')}</p>
           </div>
 
           {/* Plan info */}

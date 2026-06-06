@@ -41,8 +41,12 @@ const LOCALE_NAMES: Record<SupportedLocale, string> = {
 const STORAGE_KEY = "loyallia_lang";
 const DEFAULT_LOCALE: SupportedLocale = "es";
 
-// Nested key lookup
+// Nested key lookup — supports both dot-notation flat keys and nested objects
 export function getNestedValue(obj: Record<string, unknown>, path: string): string {
+  // Prefer exact key match first (e.g. "auth.login.title" as a top-level key)
+  const exact = obj[path];
+  if (typeof exact === "string") return exact;
+
   const keys = path.split(".");
   let current: unknown = obj;
 

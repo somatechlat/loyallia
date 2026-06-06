@@ -1100,7 +1100,8 @@
     "passwordMinLength": "Mínimo 8 caracteres",
     "confirmNewPassword": "Confirmar nueva contraseña",
     "passwordMismatch": "Las contraseñas no coinciden",
-    "loadError": "Error al cargar configuración"
+    "loadError": "Error al cargar configuración",
+    "languageHint": "El idioma se guarda en este navegador"
   },
   "team": {
     "title": "Equipo",
@@ -2128,5 +2129,7 @@
   "wallet.studio.iconPicker.title": "Icono",
   "wallet.studio.iconPicker.comingSoon": "Próximamente: selector de iconos.",
   "wallet.studio.dynamicTemplate.title": "Plantilla",
-  "wallet.studio.dynamicTemplate.comingSoon": "Próximamente: plantillas dinámicas."
+  "wallet.studio.dynamicTemplate.comingSoon": "Próximamente: plantillas dinámicas.",
+  "auth.login.passwordLabel": "Contraseña",
+  "auth.login.passwordPlaceholder": "••••••••"
 }
