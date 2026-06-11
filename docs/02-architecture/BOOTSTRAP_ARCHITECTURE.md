@@ -336,13 +336,13 @@ secure_delete() {
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `docs/BOOTSTRAP_ARCHITECTURE.md` | This document | **Updated** |
+| `docs/02-architecture/BOOTSTRAP_ARCHITECTURE.md` | This document | **Updated** |
 | `deploy/bootstrap/generate_secrets.sh` | Generate `.bootstrap_secrets.json` + read certs | **Modified** |
 | `deploy/vault/init.sh` | Read JSON, initialize Vault, seed certs | **Modified** |
 | `deploy/bootstrap/bootstrap-development.sh` | Orchestrate DEV bootstrap, auto-rescue, cleanup | **Idempotent** |
 | `deploy/bootstrap/bootstrap-production.sh` | Orchestrate PROD bootstrap, auto-rescue, cleanup | **Idempotent** |
 | `docker-compose.yml` | Add `loyallia_bootstrap_tmp` volume | **Modified** |
-| `docs/FACTORY_RESET_PROCEDURE.md` | Reference new architecture | **Updated** |
+| `docs/04-runbooks/FACTORY_RESET_PROCEDURE.md` | Reference new architecture | **Updated** |
 
 **Note:** The unified `bootstrap.sh` was split into `bootstrap-development.sh` and `bootstrap-production.sh` in commit `5d8d02f` for complete environment isolation. Both scripts are now fully idempotent.
 

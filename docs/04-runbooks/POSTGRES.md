@@ -121,4 +121,4 @@ Then update application connection strings to point to the new primary.
 - [`deploy/pgbouncer/`](../pgbouncer/) — Connection pooling in front of PostgreSQL
 - [`deploy/vault/`](../vault/) — Vault injects `postgres_password` into containers
 - [`deploy/bootstrap/full-deploy.sh`](../bootstrap/full-deploy.sh) — Deployment orchestrator
-- [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) — Data layer architecture
+- [`../../docs/02-architecture/ARCHITECTURE.md`](../02-architecture/ARCHITECTURE.md) — Data layer architecture

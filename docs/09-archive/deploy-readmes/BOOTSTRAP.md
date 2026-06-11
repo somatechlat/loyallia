@@ -109,4 +109,4 @@ Optional flags:
 - [`deploy/disaster_recovery/`](../disaster_recovery/) — Full stack recovery from rescue files
 - [`deploy/factory_reset/`](../factory_reset/) — Nuke and pave a development environment
 - [`deploy/scripts/`](../scripts/) — Secret rotation procedures
-- [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) — High-level platform architecture
+- [`../../docs/02-architecture/ARCHITECTURE.md`](../../02-architecture/ARCHITECTURE.md) — High-level platform architecture

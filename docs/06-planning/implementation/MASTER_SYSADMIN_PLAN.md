@@ -824,7 +824,7 @@ For every new SuperAdmin endpoint:
 ### LOPDP (Ecuador) Requirements
 1. **Audit Trail** — ✅ Immutable AuditLog exists
 2. **Data Export** — 🟡 Needs tenant-level export UI
-3. **Breach Notification** — 🔴 Missing (see docs/COMPLIANCE_CHECKLIST.md)
+3. **Breach Notification** — 🔴 Missing (see docs/05-compliance/COMPLIANCE_CHECKLIST.md)
 4. **Retention Policy** — 🟡 Documented but not automated
 
 ### GDPR Requirements

@@ -349,9 +349,9 @@ export PLAYWRIGHT_ALLOW_MUTATING_E2E=true
 | Document | Purpose |
 |----------|---------|
 | `rules.md` | Vibe Coding Rules — MUST READ before any code change |
-| `docs/ARCHITECTURE.md` | Full system diagrams (Mermaid) |
-| `docs/WALLET_CREDENTIALS_STATUS.md` | Current credential audit |
-| `docs/GOOGLE_SETUP_STEP_BY_STEP.md` | How to obtain Google credentials |
-| `docs/SRS_Loyallia_COMPLETE.md` | Full requirements spec |
-| `docs/COMPLIANCE_CHECKLIST.md` | LOPDP/GDPR compliance checklist |
-| `docs/TODO_CURRENT_PRODUCTION_READINESS.md` | Remaining production tasks |
+| `docs/02-architecture/ARCHITECTURE.md` | Full system diagrams (Mermaid) |
+| `docs/08-references/WALLET_CREDENTIALS_STATUS.md` | Current credential audit |
+| `docs/08-references/GOOGLE_SETUP_STEP_BY_STEP.md` | How to obtain Google credentials |
+| `docs/06-planning/SRS_Loyallia_COMPLETE.md` | Full requirements spec |
+| `docs/05-compliance/COMPLIANCE_CHECKLIST.md` | LOPDP/GDPR compliance checklist |
+| `docs/06-planning/TODO_CURRENT_PRODUCTION_READINESS.md` | Remaining production tasks |

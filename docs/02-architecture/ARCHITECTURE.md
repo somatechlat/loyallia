@@ -51,7 +51,7 @@ graph TB
         end
 
         subgraph "Data Layer"
-            PG[(PostgreSQL 16<br/>Primary Database<br/>Port 33900)]
+            PG[(PostgreSQL 17<br/>Primary Database<br/>Port 33900)]
             RD[(Redis 7<br/>Cache + Queue<br/>Port 33902)]
             PGB[PgBouncer<br/>Connection Pool<br/>Port 33901]
         end
@@ -638,7 +638,7 @@ This appendix documents all backend, frontend, and infrastructure changes made d
 - Public billing API — returns all 12 rate-limit fields in plan responses
 
 **Database Fix Note:**
-If migration `0007` is recorded in `django_migrations` but columns are missing from `loyallia_subscription_plans`, apply the fix in `docs/AGENT_ONBOARDING.md` §7 (Common Issues).
+If migration `0007` is recorded in `django_migrations` but columns are missing from `loyallia_subscription_plans`, apply the fix in `docs/01-start-here/AGENT_ONBOARDING.md` §7 (Common Issues).
 
 ### A.2 Agent API Call Logging
 
@@ -794,10 +794,10 @@ openssl rsa -in certs/apple_pass_new.key -pubout | openssl rsa -pubin -modulus -
 | Document | Status | Purpose |
 |----------|--------|---------|
 | `AGENT.md` | Updated | Agent directives, stack rules, wallet specs |
-| `docs/AGENT_ONBOARDING.md` | **New** | Complete onboarding for future agents |
-| `docs/ARCHITECTURE.md` | Updated | This appendix added |
-| `docs/WALLET_CREDENTIALS_STATUS.md` | **New** | Real credential audit |
-| `docs/WALLET_CREDENTIALS_SETUP.md` | Updated | Step-by-step credential acquisition |
-| `docs/GOOGLE_SETUP_STEP_BY_STEP.md` | **New** | Google OAuth + Wallet setup guide |
+| `docs/01-start-here/AGENT_ONBOARDING.md` | **New** | Complete onboarding for future agents |
+| `docs/02-architecture/ARCHITECTURE.md` | Updated | This appendix added |
+| `docs/08-references/WALLET_CREDENTIALS_STATUS.md` | **New** | Real credential audit |
+| `docs/08-references/WALLET_CREDENTIALS_SETUP.md` | Updated | Step-by-step credential acquisition |
+| `docs/08-references/GOOGLE_SETUP_STEP_BY_STEP.md` | **New** | Google OAuth + Wallet setup guide |
 | `scripts/inject_wallet_credentials.py` | **New** | Helper script for Vault injection |
 | `README.md` | Updated | Quick start + credential setup notes |

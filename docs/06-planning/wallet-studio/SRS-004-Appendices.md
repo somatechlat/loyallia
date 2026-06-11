@@ -1814,7 +1814,7 @@ Most text fields support localization:
 - [ ] Pass update/patch endpoints for both platforms
 - [ ] Template storage and versioning
 - [ ] Design quality scoring algorithm
-- [ ] AI design assistant API integration (Kimi K2.6)
+- [ ] AI design assistant API integration (Groq)
 
 ## E.2 Frontend (Next.js) Requirements
 
@@ -1836,7 +1836,7 @@ Most text fields support localization:
 
 ## E.3 AI Integration Requirements
 
-- [ ] Kimi K2.6 API connection
+- [ ] Groq API connection
 - [ ] Prompt engineering for pass design
 - [ ] Design generation from natural language
 - [ ] Design critique and scoring

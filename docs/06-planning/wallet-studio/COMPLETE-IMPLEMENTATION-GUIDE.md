@@ -78,7 +78,7 @@ This document is the **single source of truth** for implementing the Wallet Pass
 | | Template CRUD (rename, duplicate, delete) | CRITICAL | SRS-009 |
 | | Template preview before apply | HIGH | SRS-009 |
 | **AI** | ✨ "Diseñar con IA" button | CRITICAL | SRS-007 |
-| | Kimi K2.6 backend proxy | CRITICAL | SRS-007 |
+| | Groq backend proxy | CRITICAL | SRS-007 |
 | | Generate template from description | HIGH | SRS-007 |
 | | Suggest colors based on industry | HIGH | SRS-007 |
 | | Design critique and scoring | MEDIUM | SRS-007 |
@@ -163,7 +163,7 @@ This document is the **single source of truth** for implementing the Wallet Pass
 │  │    └── urls.py → /api/v1/wallet/studio/*                             │  │
 │  ├───────────────────────────────────────────────────────────────────────┤  │
 │  │  apps/ai/                                                             │  │
-│  │    ├── services/kimi_service.py → Kimi K2.6 integration              │  │
+│  │    ├── services/kimi_service.py → Groq integration              │  │
 │  │    ├── services/fallback_designer.py → Rule-based fallback           │  │
 │  │    ├── views.py → AI endpoints (generate, colors, critique)          │  │
 │  │    └── middleware.py → AI rate limiting                              │  │
@@ -177,7 +177,7 @@ This document is the **single source of truth** for implementing the Wallet Pass
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         EXTERNAL SERVICES                                    │
-│  Kimi API (api.moonshot.cn/v1) → AI generation                               │
+│  Groq API (api.groq.com/openai/v1) → AI generation                               │
 │  Apple Push Notification Service → Field change alerts                       │
 │  Google Wallet REST API → Pass updates                                       │
 │  S3/MinIO → Image storage + template previews                                │
@@ -440,7 +440,7 @@ interface WalletPassStudioState {
 | 1 | `backend/apps/ai/__init__.py` | AI app initialization | 8 |
 | 2 | `backend/apps/ai/urls.py` | AI endpoint URLs | 8 |
 | 3 | `backend/apps/ai/views.py` | AI API views | 8 |
-| 4 | `backend/apps/ai/services/kimi_service.py` | Kimi K2.6 integration | 8 |
+| 4 | `backend/apps/ai/services/kimi_service.py` | Groq integration | 8 |
 | 5 | `backend/apps/ai/services/fallback_designer.py` | Rule-based fallback | 8 |
 | 6 | `backend/apps/ai/services/cost_tracker.py` | AI cost tracking | 8 |
 | 7 | `backend/apps/ai/middleware.py` | AI rate limiting middleware | 8 |
@@ -683,7 +683,7 @@ interface WalletPassStudioState {
 
 ### Phase 8: AI Integration (Week 5-6)
 
-**Goal:** Kimi K2.6 backend + frontend AI features.
+**Goal:** Groq backend + frontend AI features.
 
 | # | Task | File(s) | Test File | Done |
 |---|------|---------|-----------|------|
@@ -868,7 +868,7 @@ Both Apple + Google previews update simultaneously
 | Undo/redo | Array of state snapshots (max 50) | Simple, reliable, 50 actions = ~500KB memory |
 | Auto-save | localStorage every 30s + on navigation | Fast, works offline, recoverable |
 | Image processing | Backend (Sharp.js) not frontend | Better performance, security |
-| AI provider | Kimi K2.6 via backend proxy | Key stays server-side, no exposure |
+| AI provider | Groq via backend proxy | Key stays server-side, no exposure |
 | Icon library | Lucide + Custom SVG set | Familiar icons + branded stamps |
 | Canvas approach | Absolute positioning overlays on previews | Not true canvas API — simpler, accessible |
 | Mobile sidebar | Bottom sheet (not drawer) | Better UX on small screens |
@@ -1133,13 +1133,13 @@ RATE_LIMIT_RULES = [
 
 ## 11. AI Integration Specification
 
-### 11.1 Kimi API Configuration
+### 11.1 Groq API Configuration
 
 | Property | Value |
 |----------|-------|
-| Provider | Moonshot AI (Kimi) |
+| Provider | Groq |
 | Model | `kimi-k2-6` |
-| Base URL | `https://api.moonshot.cn/v1` |
+| Base URL | `https://api.groq.com/openai/v1` |
 | Key Storage | HashiCorp Vault (`kimi_api_key`) |
 | Timeout | 30s |
 | Max Tokens | 4096 |
@@ -1166,7 +1166,7 @@ RATE_LIMIT_RULES = [
 
 ### 11.4 Fallback Designer
 
-When Kimi API is unavailable, use rule-based fallback:
+When Groq API is unavailable, use rule-based fallback:
 - Color presets by industry (cafe, gym, retail, salon, hotel)
 - Default field configurations by card type
 - Pre-defined layout patterns
@@ -1264,7 +1264,7 @@ Before coding begins, user must confirm these decisions:
 
 | Risk | Probability | Impact | Mitigation |
 |------|:-----------:|:------:|------------|
-| Kimi API downtime | Medium | High | Fallback designer + caching + retries |
+| Groq API downtime | Medium | High | Fallback designer + caching + retries |
 | Image processing memory | Medium | Medium | Celery background queue |
 | Canvas performance | Medium | Medium | Lazy rendering, virtual scrolling |
 | Migration breaks v1 designs | Low | High | Backup + thorough migration tests |
@@ -1378,7 +1378,7 @@ Before coding begins, user must confirm these decisions:
 - [ ] AI-generated designs have valid structure
 - [ ] AI rate limit blocks after 10 requests/hour (429)
 - [ ] AI quota display updates correctly in UI
-- [ ] Fallback designer works when Kimi API unavailable
+- [ ] Fallback designer works when Groq API unavailable
 - [ ] AI error shows user-friendly message with retry
 - [ ] Color suggestions based on industry
 - [ ] Design critique identifies real issues

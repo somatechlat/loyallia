@@ -191,7 +191,7 @@ npx playwright test --project=security
 
 ## PART E: DOCUMENTATION UPDATES
 
-### E1. Update `docs/DEPLOYMENT_GUIDE.md`
+### E1. Update `docs/04-runbooks/DEPLOYMENT_GUIDE.md`
 **Status:** ⚠️ SIGNIFICANTLY OUTDATED  
 **Issues:**
 - Step 4 shows legacy manual Vault initialization
@@ -202,14 +202,14 @@ npx playwright test --project=security
 
 **Action:** Rewrite deployment section to reference `bootstrap.sh` as canonical path.
 
-### E2. Update `docs/TODO_CURRENT_PRODUCTION_READINESS.md`
+### E2. Update `docs/06-planning/TODO_CURRENT_PRODUCTION_READINESS.md`
 **Status:** ⚠️ LIKELY STALE (dated 2026-05-11)  
 **Action:** Re-run Ruff and pytest, update blocker statuses.
 
-### E3. Update `docs/AGENT_ONBOARDING.md`
+### E3. Update `docs/01-start-here/AGENT_ONBOARDING.md`
 **Action:** Add bootstrap v2.2 changes, factory-reset.sh, new file locations.
 
-### E4. Update `docs/FACTORY_RESET_PROCEDURE.md`
+### E4. Update `docs/04-runbooks/FACTORY_RESET_PROCEDURE.md`
 **Action:** Reference new `deploy/bootstrap/factory-reset.sh` script.
 
 ### E5. Create `docs/SECRETS_INVENTORY.md`

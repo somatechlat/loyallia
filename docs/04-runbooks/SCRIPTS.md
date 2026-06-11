@@ -91,4 +91,4 @@ The script prints a checklist on completion:
 - [`deploy/vault/`](../vault/) — Vault initialization, policies, and token management
 - [`deploy/bootstrap/`](../bootstrap/) — Deployment orchestrator and `generate_secrets.sh`
 - [`deploy/backups/`](../backups/) — Backup and restore procedures
-- [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) — Security architecture and secret lifecycle
+- [`../../docs/02-architecture/ARCHITECTURE.md`](../02-architecture/ARCHITECTURE.md) — Security architecture and secret lifecycle

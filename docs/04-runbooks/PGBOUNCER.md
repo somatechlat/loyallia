@@ -112,4 +112,4 @@ SHOW SERVERS;    -- Backend server connections
 
 - [`deploy/postgres/`](../postgres/) — PostgreSQL primary and replica configuration
 - [`deploy/bootstrap/full-deploy.sh`](../bootstrap/full-deploy.sh) — Deployment orchestrator
-- [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) — Data layer architecture
+- [`../../docs/02-architecture/ARCHITECTURE.md`](../02-architecture/ARCHITECTURE.md) — Data layer architecture

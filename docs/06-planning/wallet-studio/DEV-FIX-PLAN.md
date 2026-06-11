@@ -11,7 +11,7 @@
 
 Per `rules.md` §Core Conduct and §Forbidden:
 
-1. **MOCKS USED AS FINAL IMPLEMENTATION** — `useAI.ts` and `kimi_service.py` contain `delay()` + mock data instead of real HTTP calls to Kimi K2.6.
+1. **MOCKS USED AS FINAL IMPLEMENTATION** — `useAI.ts` and `kimi_service.py` contain `delay()` + mock data instead of real HTTP calls to Groq.
 2. **PLACEHOLDERS LEFT IN PRODUCTION CODE** — `StudioCanvas.tsx` has "Back preview coming soon"; `SmartImageUpload.tsx` has `allowUpload` prop with no handler; `AdvancedTab.tsx` has no-op handlers.
 3. **FALSE COMPLETION CLAIMS** — Claimed "531 tests passing" and "Phase 11 complete" while AI integration, template gallery, and notification model were mocked or incomplete.
 4. **TODOs IN FINAL CODE** — `kimi_service.py` contains `TODO: Implement real Kimi API call` comments.
@@ -37,7 +37,7 @@ PLAN-10 (Card Visuals) → PLAN-11 (Plan Enforcement) → PLAN-12 (Quality Gates
 
 ---
 
-## PLAN-1: Fix AI Integration — Real Kimi K2.6 Backend + Frontend Wiring
+## PLAN-1: Fix AI Integration — Real Groq Backend + Frontend Wiring
 
 **Severity:** 🔴 CRITICAL — Feature is completely fake.
 
@@ -51,7 +51,7 @@ PLAN-10 (Card Visuals) → PLAN-11 (Plan Enforcement) → PLAN-12 (Quality Gates
 #### Backend — `backend/apps/ai/services/kimi_service.py`
 ```python
 # REAL implementation requirements:
-1. Use `requests` or `httpx` to POST to https://api.moonshot.cn/v1/chat/completions
+1. Use `requests` or `httpx` to POST to https://api.groq.com/openai/v1/chat/completions
 2. Read API key from Vault: get_secret("kimi_api_key", strict=True)
 3. Build structured prompts per SRS-007 §5 with SYSTEM_PROMPT
 4. Parse JSON response, validate against schema, return real data
@@ -88,7 +88,7 @@ PLAN-10 (Card Visuals) → PLAN-11 (Plan Enforcement) → PLAN-12 (Quality Gates
 - `backend/apps/ai/services/cost_tracker.py` — Add budget_blocking() method
 - `frontend/src/hooks/useAI.ts` — Replace mocks with real fetch calls
 
-**Deliverable:** AI button generates real designs from Kimi K2.6. Quota tracked by backend. Rate limits enforced.
+**Deliverable:** AI button generates real designs from Groq. Quota tracked by backend. Rate limits enforced.
 
 ---
 
@@ -520,7 +520,7 @@ This plan requires explicit user approval before any code is written.
 Per rules.md §Standard Workflow Step 5: "Plan non-trivial work and state risks."
 
 **Blockers/Risks:**
-1. Kimi API key must be available in Vault for real integration
+1. Groq API key must be available in Vault for real integration
 2. Backend wallet views/endpoints may not exist yet for decorator application
 3. Template preview generation (iPhone+Pixel side-by-side) requires canvas-to-image or server-side rendering
 4. Emoji icon picker may require additional font/emoji support

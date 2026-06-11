@@ -189,18 +189,18 @@ docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm test --
 
 | Document | Status | Action Required |
 |----------|--------|-----------------|
-| `docs/BOOTSTRAP_ARCHITECTURE.md` | ✅ Current | v2.2 reflects new flow |
-| `docs/FACTORY_RESET_PROCEDURE.md` | ✅ Current | References new factory-reset.sh |
-| `docs/AGENT_ONBOARDING.md` | ✅ Current | Updated 2026-05-21 |
+| `docs/02-architecture/BOOTSTRAP_ARCHITECTURE.md` | ✅ Current | v2.2 reflects new flow |
+| `docs/04-runbooks/FACTORY_RESET_PROCEDURE.md` | ✅ Current | References new factory-reset.sh |
+| `docs/01-start-here/AGENT_ONBOARDING.md` | ✅ Current | Updated 2026-05-21 |
 
 ### Documents Needing Update
 
 | Document | Issue | Priority |
 |----------|-------|----------|
-| `docs/DEPLOYMENT_GUIDE.md` | Shows legacy manual Vault init. Missing bootstrap.sh, .bootstrap_secrets.json, vault-init container, auto-rescue files. | **HIGH** |
-| `docs/TODO_CURRENT_PRODUCTION_READINESS.md` | Dated 2026-05-11. Ruff/pytest statuses may be stale. | **MEDIUM** |
-| `docs/BACKUP_DISASTER_RECOVERY.md` | Rescue file naming inconsistent with actual artifacts. | **MEDIUM** |
-| `docs/SETTINGS_COMPLETENESS_AUDIT.md` | May be missing new platform settings. | **LOW** |
+| `docs/04-runbooks/DEPLOYMENT_GUIDE.md` | Shows legacy manual Vault init. Missing bootstrap.sh, .bootstrap_secrets.json, vault-init container, auto-rescue files. | **HIGH** |
+| `docs/06-planning/TODO_CURRENT_PRODUCTION_READINESS.md` | Dated 2026-05-11. Ruff/pytest statuses may be stale. | **MEDIUM** |
+| `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` | Rescue file naming inconsistent with actual artifacts. | **MEDIUM** |
+| `docs/07-reviews/SETTINGS_COMPLETENESS_AUDIT.md` | May be missing new platform settings. | **LOW** |
 
 ---
 
@@ -233,7 +233,7 @@ docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm test --
 
 ### Immediate (This Week)
 1. **Fix `twilio_use_test_mode`** → Set to `true` in `.bootstrap_secrets.env` for development
-2. **Update `docs/DEPLOYMENT_GUIDE.md`** → Replace manual Vault init with bootstrap.sh flow
+2. **Update `docs/04-runbooks/DEPLOYMENT_GUIDE.md`** → Replace manual Vault init with bootstrap.sh flow
 3. **Fix impersonation PIN endpoint** → Investigate 404 on `POST /auth/users/pin/`
 4. **Add rate limit bypass for E2E tests** → Use `X-E2E-Test: true` header or test-specific rate limits
 
@@ -241,7 +241,7 @@ docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm test --
 5. ~~Create dedicated test container~~ → ✅ DONE — `docker-compose.test.yml` created and validated
 6. **Add CI/CD pipeline** → GitHub Actions for backend tests + Playwright
 7. **Add test coverage** → Configure `pytest-cov` with threshold gates
-8. **Update `docs/TODO_CURRENT_PRODUCTION_READINESS.md`** → Re-run linters and tests
+8. **Update `docs/06-planning/TODO_CURRENT_PRODUCTION_READINESS.md`** → Re-run linters and tests
 
 ### Long-term (Next Quarter)
 9. **Refactor files approaching 600 lines** → Split using enterprise patterns

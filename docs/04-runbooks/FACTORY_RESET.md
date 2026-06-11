@@ -92,4 +92,4 @@ Factory reset complete.
 - [`deploy/bootstrap/`](../bootstrap/) — Re-bootstrap the environment after a factory reset
 - [`deploy/disaster_recovery/`](../disaster_recovery/) — Recover from encrypted rescue files (preserves data)
 - [`deploy/backups/`](../backups/) — Backup procedures to run *before* any factory reset
-- [`../../docs/BACKUP_ARCHITECTURE.md`](../../docs/BACKUP_ARCHITECTURE.md) — Backup and retention policies
+- [`../../docs/02-architecture/BACKUP_ARCHITECTURE.md`](../02-architecture/BACKUP_ARCHITECTURE.md) — Backup and retention policies
