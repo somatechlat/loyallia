@@ -14,7 +14,7 @@
 | **Architecture & Diagrams** | `docs/02-architecture/ARCHITECTURE.md` | System architecture, sequence diagrams, flowcharts, ERD (Mermaid) |
 | **Port Authority** | `docs/08-references/PORT_AUTHORITY.md` | Development port map |
 | **Audit Report** | `docs/07-reviews/audit/FULL_SYSTEM_AUDIT_REPORT.md` | Latest full codebase audit report |
-| **Handoff** | `docs/09-archive/docs/09-archive/HANDOFF.md` | Historical handoff (archived) |
+| **Handoff** | `docs/09-archive/HANDOFF.md` | Historical handoff (archived) |
 | **Docker Compose** | `docker-compose.yml` | Full local/staging stack — all open source |
 
 ---
