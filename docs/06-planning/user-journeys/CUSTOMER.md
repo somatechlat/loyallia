@@ -31,8 +31,8 @@ End customer enrolling in loyalty programs and using digital wallet passes.
 
 ### 3. Portal Access
 1. Visit `/portal`
-2. Enter email → receives magic link
-3. Click link → authenticated via token
+2. Enter email → receives temporary password by email
+3. Log in with email + temporary password at `/portal/login`
 4. View:
    - Active passes and balances
    - Transaction history
@@ -43,8 +43,8 @@ End customer enrolling in loyalty programs and using digital wallet passes.
 
 | Action | Tables Affected |
 |--------|----------------|
-| Enroll | `customers_customer`, `customers_customerpass` |
-| Wallet save | Updates `customers_customerpass.wallet_status` |
+| Enroll | `loyallia_customers`, `loyallia_customer_passes` |
+| Wallet save | Updates `loyallia_customer_passes.apple_pass_id` / `google_pass_id` |
 | Portal login | None (token-based) |
 
 ## Error Scenarios

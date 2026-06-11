@@ -127,34 +127,34 @@ All endpoints are mounted under `/api/v1/auth/` via `apps.authentication.api` an
 | `/google/config/` | GET | Return Google OAuth client_id config |
 | `/google/login/` | POST | Verify Google ID token and login/register |
 
-### Authenticated Endpoints (jwt_auth)
+### Authenticated Endpoints (`jwt_auth`, mounted at `/auth/users/`)
 
 | Endpoint | Method | Summary | Role Guard |
 |----------|--------|---------|------------|
-| `/logout/` | POST | Revoke refresh token | Any |
-| `/me/` | GET | Current user profile | Any |
-| `/profile/` | PUT | Update profile (name) | Any |
-| `/change-password/` | POST | Change password | Any |
-| `/invite/` | POST | Invite MANAGER or STAFF | OWNER only |
-| `/users/` | GET | List tenant users | OWNER only |
-| `/users/{id}/` | DELETE | Deactivate user + revoke tokens | OWNER only |
-| `/phone/verify/request/` | POST | Request Twilio Verify OTP | Any |
-| `/phone/verify/confirm/` | POST | Confirm OTP | Any |
+| `/auth/users/logout/` | POST | Revoke refresh token | Any |
+| `/auth/users/me/` | GET | Current user profile | Any |
+| `/auth/users/profile/` | PUT | Update profile (name) | Any |
+| `/auth/users/change-password/` | POST | Change password | Any |
+| `/auth/users/invite/` | POST | Invite MANAGER or STAFF | OWNER only |
+| `/auth/users/users/` | GET | List tenant users | OWNER only |
+| `/auth/users/users/{id}/` | DELETE | Deactivate user + revoke tokens | OWNER only |
+| `/auth/users/phone/verify/request/` | POST | Request Twilio Verify OTP | Any |
+| `/auth/users/phone/verify/confirm/` | POST | Confirm OTP | Any |
 
 ### Pydantic Schemas (apps.authentication.schemas)
 
 - `RegisterIn` / `RegisterOut`
 - `LoginIn` / `TokenOut`
-- `RefreshIn` / `RefreshOut`
+- `RefreshIn` / `RefreshOut` (returns `access_token`, `refresh_token`, `token_type`)
 - `LogoutIn`
 - `VerifyEmailIn`
 - `ForgotPasswordIn` / `ResetPasswordIn`
-- `GoogleTokenIn`
+- `GoogleTokenIn` (fields: `credential`, optional `business_name`, optional `is_login_only`)
 - `InviteIn`
 - `UserOut`
-- `PhoneVerifyRequestIn` / `PhoneVerifyConfirmIn`
-- `PhoneVerifyStartIn` / `PhoneVerifyStartOut`
-- `PhoneVerifyCheckIn` / `PhoneVerifyCheckOut`
+- `PhoneVerifyRequestIn` / `PhoneVerifyConfirmIn` (authenticated endpoints under `/auth/users/phone/verify/`)
+- `PhoneVerifyStartIn` / `PhoneVerifyStartOut` (public endpoints under `/auth/phone/verify-phone/start/`)
+- `PhoneVerifyCheckIn` / `PhoneVerifyCheckOut` (public endpoints under `/auth/phone/verify-phone/check/`)
 
 ---
 
@@ -183,7 +183,7 @@ All endpoints are mounted under `/api/v1/auth/` via `apps.authentication.api` an
 | `JWT_PRIVATE_KEY_PATH` | `""` | RS256 private key file |
 | `JWT_PUBLIC_KEY_PATH` | `""` | RS256 public key file |
 | `GOOGLE_OAUTH_CLIENT_ID` | Vault | Google Identity Services client ID |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | Vault | For server-side flows |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Vault | Loaded but not used by the current GSI tokeninfo flow |
 | `TRIAL_DAYS` | `5` | Default trial duration |
 | `FRONTEND_URL` | `http://localhost:33906` | Used in password reset links |
 

@@ -2,7 +2,7 @@
 
 > **Single source of truth for any coding agent joining this project.**
 > Updated: 2026-05-21
-> Status: Backend 576/576 passing. Frontend E2E in progress.
+> Status: Backend test suite runs inside Docker only; counts vary. Frontend E2E in progress.
 
 ---
 
@@ -46,7 +46,7 @@
 |-------|-----------|------|
 | API | Django 5 + Django Ninja | 33905 |
 | Frontend | Next.js 14 + React + Tailwind | 33906 |
-| Database | PostgreSQL 16 | 33900 |
+| Database | PostgreSQL 17 | 33900 |
 | Pooler | PgBouncer | 33901 |
 | Cache/Queue | Redis 7 | 33902 |
 | Storage | MinIO S3 | 33903/33904 |
@@ -62,7 +62,7 @@ backend/           Django project
   apps/            All Django apps
     tenants/       Multi-tenant logic, SuperAdmin API
     authentication/  JWT auth, OAuth
-    customers/     Wallet pass engine (apple_pass.py, google_pass.py)
+    customers/     Wallet pass engine (pass_engine/apple_pass.py, pass_engine/google_pass.py)
     billing/       Subscription plans, rate limits
     agent_api/     Enterprise AI API, call logging
   common/          Shared utils (vault.py, plan_enforcement.py, messages.py)
@@ -99,7 +99,7 @@ certs/             Certificate files (real + dev)
 |--------|------|-----|
 | **Audit Log Viewer** | `src/components/settings/AuditLogSection.tsx` | New settings section showing tenant-scoped audit events with status badges |
 | **Data Privacy** | `src/components/settings/DataPrivacySection.tsx` | Account deletion UI with cookie clearing and ZIP export download |
-| **Plan Status UI** | `src/components/superadmin/plans/page.tsx`, `PlanModal.tsx` | 3-section layout (Published/Drafts/Archived) with status selector in modal |
+| **Plan Status UI** | `src/app/(dashboard)/superadmin/plans/page.tsx`, `PlanModal.tsx` | 3-section layout (Published/Drafts/Archived) with status selector in modal |
 | **Password Toggles** | `src/app/(auth)/register/page.tsx`, `src/app/(auth)/reset-password/page.tsx` | Visibility toggle for password fields |
 | **Wallet Preview** | `src/components/programs/WalletCardPreview.tsx` | Black phone frames with rounded bezels and gradient styling |
 | **Settings Page** | `src/app/(dashboard)/superadmin/settings/page.tsx` | Inline Vault editor for ALL integrations |
@@ -118,7 +118,7 @@ certs/             Certificate files (real + dev)
 
 ## 4. Credentials — Where Everything Lives
 
-**ALL secrets are in HashiCorp Vault at `secret/data/loyallia/production`.**
+**ALL secrets are in HashiCorp Vault at `secret/data/loyallia/<environment>` (development in local dev, production in production).**
 **NO secrets in `.env`, NO secrets in code, NO secrets in Git.**
 
 ### Vault Access
@@ -126,12 +126,12 @@ certs/             Certificate files (real + dev)
 # Load root token into a local shell variable only; do not echo or log it.
 ROOT_TOKEN="$(docker exec loyallia-vault cat /vault/file/init.json | python3 -c "import sys,json; print(json.load(sys.stdin)['root_token'])")"
 
-# Read a secret
-curl -H "X-Vault-Token: <token>" http://localhost:33908/v1/secret/data/loyallia/production
+# Read a secret (use https; Vault runs with TLS)
+curl -k -H "X-Vault-Token: <token>" https://localhost:33908/v1/secret/data/loyallia/development
 
 # Write a secret (SUPER_ADMIN only)
-curl -X POST -H "X-Vault-Token: <token>" -H "Content-Type: application/json" \
-  http://localhost:33908/v1/secret/data/loyallia/production \
+curl -k -X POST -H "X-Vault-Token: <token>" -H "Content-Type: application/json" \
+  https://localhost:33908/v1/secret/data/loyallia/development \
   -d '{"data": {"key": "value"}}'
 ```
 
@@ -157,19 +157,15 @@ curl -X POST -H "X-Vault-Token: <token>" -H "Content-Type: application/json" \
 | `secret_key` | Vault | Required for Django |
 
 ### Certificate Files in `certs/`
+Files tracked in Git (only Vault TLS files):
 ```
 certs/
-  passNew.cer              Local ignored Apple Pass Type ID cert
-  apple_pass_new.key       Local ignored Apple private key
-  apple_pass_new.csr       Local ignored CSR
-  AppleWWDRCAG4.cer        Local ignored Apple WWDR intermediate cert
-  client_secret_*.json     Local ignored Google OAuth client secrets
-  service-account-*.json   Local ignored Google Wallet service account
   README.md                — Documentation
+  vault.crt                Vault TLS certificate
+  vault.key                Vault TLS key
 ```
 
-**Removed (were placeholders):**
-- `apple_pass.key`, `apple_pass_cert.pem`, `apple_wwdr.pem`, `apple_pass.csr`, `pass.cer`
+Apple/Google Wallet credentials and service-account JSON files are **local ignored files** supplied by the operator; they are never committed. Typical local names include `passNew.cer`, `apple_pass_new.key`, `AppleWWDRCAG4.cer`, and Google service-account JSONs.
 
 ---
 
@@ -179,7 +175,7 @@ certs/
 ```
 POST /api/v1/auth/login/          → JWT access + refresh tokens
 POST /api/v1/auth/refresh/        → Refresh access token
-POST /api/v1/auth/google/callback/ → Google OAuth callback
+POST /api/v1/auth/google/login/   → Google Identity Services login (ID token)
 ```
 
 ### SuperAdmin (requires SUPER_ADMIN role)
@@ -190,7 +186,7 @@ PUT  /api/v1/admin/plans/{id}/               → Update plan
 DELETE /api/v1/admin/plans/{id}/             → Deactivate (blocked if active subs)
 GET  /api/v1/admin/platform/integrations/    → Integration status + diagnostics
 PUT  /api/v1/admin/platform/integrations/{key}/secret/  → Write Vault secret
-POST /api/v1/admin/broadcast/                → Email all owners
+# POST /api/v1/admin/broadcast/              # Not currently implemented
 ```
 
 ### Public Billing
@@ -200,7 +196,7 @@ GET /api/v1/billing/plans/         → Public plan listing (all rate limits incl
 
 ### Health
 ```
-GET /api/v1/health/                → {status: "ok", version: "1.0.0"}
+GET /api/v1/health/                → {status: "ok", version: "1.0.0", platform: "Loyallia"}
 ```
 
 ---
@@ -308,7 +304,7 @@ When running pytest on the host against the Docker cluster, export these first:
 export PGBOUNCER_URL="postgres://loyallia@localhost:33901/loyallia_dev"
 export DATABASE_DIRECT_URL="postgres://loyallia@localhost:33900/loyallia_dev"
 export DATABASE_URL="postgres://loyallia@localhost:33900/loyallia_dev"
-export VAULT_ADDR="http://localhost:33908"
+export VAULT_ADDR="https://localhost:33908"
 export VAULT_TOKEN="<root-token-from-.agents/vault_init_rescue.json>"
 export VAULT_SECRET_PATH="secret/data/loyallia/development"
 export DEBUG="True"
@@ -324,16 +320,13 @@ curl -s -X POST http://localhost:33905/api/v1/admin/platform/seed-demo-data/ \
 The endpoint auto-generates a demo password and includes it in the response. `seed_ecuador_businesses` requires `--password` and is for **demo purposes only**.
 
 ### Playwright mutating tests
-Tests that create or delete data require:
-```bash
-export PLAYWRIGHT_ALLOW_MUTATING_E2E=true
-```
+Tests that create or delete data must use uniquely prefixed records and clean up only those records. There is no special environment variable to enable mutating tests.
 
 ---
 
 ## 9. Rules & Constraints
 
-- **File size limit:** 600 lines per `.py`/`.tsx` file
+- **File size limit:** Keep `.py` files under 650 lines; keep `.tsx` files focused and under 650 lines
 - **No FastAPI:** Django Ninja only
 - **No SQLAlchemy:** Django ORM + migrations only
 - **No hardcoded strings:** Use `common/messages.py` + `get_message()`

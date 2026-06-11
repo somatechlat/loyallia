@@ -88,20 +88,20 @@ sequenceDiagram
 
   Owner->>Frontend: Select Apple Wallet in program wizard
   Frontend->>Frontend: Render Apple preview and Apple-only options
-  Frontend->>API: POST /api/v1/programs with metadata.wallet_provider=apple
+  Frontend->>API: POST /api/v1/programs/ with metadata.wallet_provider=apple
   API-->>Frontend: Saved Card
 
   Customer->>Frontend: Open public enrollment page
-  Frontend->>API: GET /api/v1/cards/public/{card_id}
+  Frontend->>API: GET /api/v1/cards/public/{card_id}/
   API-->>Frontend: Card metadata and design
   Customer->>Frontend: Submit enrollment form
   Frontend->>API: POST /api/v1/customers/enroll/?card_id={card_id}
   API-->>Frontend: CustomerPass wallet URLs
-  Frontend->>API: GET /api/v1/wallet/status/{pass_id}
+  Frontend->>API: GET /api/v1/wallet/status/{pass_id}/
   API->>Vault: Validate Apple PKPass keys and cert parseability
   Vault-->>API: Readiness result without secret values
   API-->>Frontend: Apple URL available when ready
-  Customer->>API: GET /api/v1/wallet/apple/{pass_id}
+  Customer->>API: GET /api/v1/wallet/apple/{pass_id}/
   API->>ApplePassEngine: Build pass.json, manifest, and signature
   ApplePassEngine->>Vault: Load signing cert, private key, WWDR cert, optional NFC key
   ApplePassEngine-->>API: Signed .pkpass bytes
@@ -118,7 +118,7 @@ These are required for normal Apple Wallet pass generation from a web app:
 | Pass Type ID | Yes | Yes | Must start with `pass.` and use reverse DNS style. |
 | Pass Type ID certificate | Yes | Yes | Apple-issued signing certificate for the Pass Type ID. |
 | Pass Type private key | Yes | Yes | Generated from the CSR process; secret. |
-| Pass Type private key passphrase | If encrypted | Yes | Secret. |
+| Pass Type private key passphrase | If encrypted | Yes | Not currently consumed by the signing code; keep unencrypted or implement support. |
 | Apple WWDR certificate | Yes | Yes | Required for PKPass signing chain. |
 
 ## Additional Apple Requirements For NFC Passes

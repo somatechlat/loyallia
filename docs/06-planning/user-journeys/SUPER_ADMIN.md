@@ -32,28 +32,28 @@ Platform administrator with full system access.
 ### 3. Impersonation
 1. Find tenant in tenant list
 2. Click "Ingresar como OWNER"
-3. API: `POST /api/v1/admin/impersonate/{tenant_id}/`
+3. API: `POST /api/v1/admin/tenants/{tenant_id}/impersonate/` (requires owner PIN and justification)
 4. Receives temporary JWT scoped to tenant
 5. Redirected to tenant dashboard
 6. "Salir de impersonación" restores original session
 
 ### 4. System Operations
-- **Seed demo data**: `POST /api/v1/admin/platform/seed-demo-data/`
-- **Factory reset**: Request OTP → Confirm → `POST /api/v1/admin/platform/factory-reset/confirm/`
-- **Broadcast message**: `POST /api/v1/admin/broadcast/`
+- **Seed demo data**: `POST /api/v1/admin/reset/platform/seed-demo-data/`
+- **Factory reset**: Request OTP → Confirm → `POST /api/v1/admin/reset/platform/factory-reset/confirm/`
+- **Broadcast message**: `POST /api/v1/admin/broadcast/` — not currently implemented
 - **Platform mode toggle**: Development ↔ Production
 
 ## Database State Changes
 
 | Action | Tables Affected |
 |--------|----------------|
-| Create tenant | `tenants_tenant`, `billing_subscription`, `authentication_user` |
-| Update plan | `billing_subscriptionplan` |
+| Create tenant | `loyallia_tenants`, `loyallia_subscriptions`, `loyallia_users` |
+| Update plan | `loyallia_subscription_plans` |
 | Impersonate | None (token-only) |
 | Factory reset | Truncates most tenant-scoped tables |
 
 ## Error Scenarios
 
-- Duplicate tenant slug → 400 validation error
+- Duplicate owner email → 400 validation error
 - Invalid plan limits → 400 Pydantic validation
 - Factory reset without OTP → 403 forbidden

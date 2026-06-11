@@ -15,15 +15,13 @@ Tenant manager. Can manage programs, customers, and locations. Cannot manage bil
 
 ### 1. Customer Enrollment
 1. Navigate to `/customers`
-2. Click "Nuevo cliente"
-3. Fill contact info (name, email, phone)
-4. Select program to enroll
-5. API: `POST /api/v1/customers/` → creates Customer
-6. API: `POST /api/v1/customers/{id}/enroll/?card_id={cardId}` → creates CustomerPass
-7. QR code and wallet links generated
+2. View existing customers (create new customer is OWNER-only)
+3. Select customer and program to enroll
+4. API: `POST /api/v1/customers/{id}/enroll/?card_id={cardId}` → creates CustomerPass
+5. QR code and wallet links generated
 
 ### 2. Transaction Processing (via Scanner)
-1. Open `/scanner` on mobile device
+1. Open `/scanner/scan` on mobile device
 2. Scan customer QR code
 3. Select action (stamp, redeem, add points)
 4. Confirm transaction
@@ -32,9 +30,8 @@ Tenant manager. Can manage programs, customers, and locations. Cannot manage bil
 
 ### 3. Location Management
 1. Navigate to `/locations`
-2. Add new location with address and map coordinates
+2. View existing locations (create new location is OWNER-only)
 3. Set primary location flag
-4. API: `POST /api/v1/tenants/locations/`
 
 ### 4. Campaign Monitoring
 1. Navigate to `/campaigns`
@@ -46,10 +43,8 @@ Tenant manager. Can manage programs, customers, and locations. Cannot manage bil
 
 | Action | Tables Affected |
 |--------|----------------|
-| Create customer | `customers_customer` |
-| Enroll customer | `customers_customerpass` |
-| Process transaction | `transactions_transaction`, `customers_customerpass` |
-| Add location | `tenants_location` |
+| Enroll customer | `loyallia_customer_passes` |
+| Process transaction | `loyallia_transactions`, `loyallia_customer_passes` |
 
 ## Error Scenarios
 

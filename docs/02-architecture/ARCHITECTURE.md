@@ -447,18 +447,18 @@ flowchart TD
 graph TB
     subgraph "Host Machine"
         subgraph "docker-compose network: loyallia-net"
-            NX[nginx<br/>:80 :443]
-            API[api — Django<br/>:8000]
-            WEB[web — Next.js<br/>:3000]
+            NX[nginx<br/>host :80/:443]
+            API[api — Django<br/>container :8000 → host :33905]
+            WEB[web — Next.js<br/>container :3000 → host :33906]
             CEL1[celery-worker<br/>pass_generation queue]
             CEL2[celery-worker<br/>push_delivery queue]
             CEL3[celery-worker<br/>default queue]
             BEAT[celery-beat<br/>scheduler]
-            FLW[flower<br/>:5555]
-            PG[postgres<br/>:5432]
-            PGB[pgbouncer<br/>:6432]
-            RD[redis<br/>:6379]
-            MIO[minio<br/>:9000 :9001]
+            FLW[flower<br/>container :5555 → host :33907]
+            PG[postgres<br/>container :5432 → host :33900]
+            PGB[pgbouncer<br/>container :6432 → host :33901]
+            RD[redis<br/>container :6379 → host :33902]
+            MIO[minio<br/>container :9000/:9001 → host :33903/:33904]
         end
     end
 
@@ -484,6 +484,8 @@ graph TB
 ```
 
 ## DIAGRAM 12 — ENTITY RELATIONSHIP DIAGRAM (CORE TABLES)
+
+> ⚠️ **Source of truth:** The actual models are in `backend/apps/*/models.py`. This diagram is an approximation; always verify fields, table names, and relationships against the current Django models and migrations.
 
 ```mermaid
 erDiagram
@@ -626,16 +628,16 @@ This appendix documents all backend, frontend, and infrastructure changes made d
 **Motivation:** Existing plans only had basic limits (`max_locations`, `max_customers`, etc.). The platform needed granular rate limits for enterprise features.
 
 **Changes:**
-- `apps/billing/models.py` — `SubscriptionPlan` gained 6 new fields:
-  - `max_automations` (default: 3)
-  - `max_automation_executions_day` (default: 100)
-  - `max_ai_queries_month` (default: 0)
-  - `max_api_calls_day` (default: 0)
-  - `max_exports_month` (default: 5)
-  - `max_wallet_pushes_month` (default: 0)
+- `apps/billing/models.py` — `SubscriptionPlan` defines 16 resource-limit fields plus the derived `wallet_ai_designs_month` alias:
+  - `max_locations`, `max_users`, `max_customers`, `max_programs`
+  - `max_notifications_month`, `max_transactions_month`
+  - `max_whatsapp_day`, `max_emails_month`, `max_sms_day`, `max_wallet_pushes_month`
+  - `max_automations`, `max_automation_executions_day`
+  - `max_ai_queries_month`, `max_api_calls_day`, `max_exports_month`
+  - `max_wallet_templates`, `max_wallet_pass_updates_month`
 - Migration `0007_add_rate_limit_fields` — adds columns + CHECK constraints
 - `common/plan_enforcement.py` — `_count_api_calls_day()` now queries `AgentAPICallLog` instead of returning 0
-- Public billing API — returns all 12 rate-limit fields in plan responses
+- Public billing API — returns all 17 rate-limit fields in plan responses
 
 **Database Fix Note:**
 If migration `0007` is recorded in `django_migrations` but columns are missing from `loyallia_subscription_plans`, apply the fix in `docs/01-start-here/AGENT_ONBOARDING.md` §7 (Common Issues).
@@ -673,7 +675,7 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
   ```
   - Validates `key` against per-integration `ALLOWED_KEYS` allowlist
   - Returns 400 if key not allowed for that integration
-  - Supports: `google_wallet`, `apple_wallet`, `payment_gateway`, `email`
+  - Supports 13 integration groups (see `backend/apps/tenants/super_admin_api/integration_config.py`)
 
 **ALLOWED_KEYS per integration:**
 ```python
@@ -702,7 +704,47 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
 "mailjet": [
     "mailjet_api_key",
     "mailjet_secret_key",
-    "mailjet_sender_email",
+],
+"google_oauth": [
+    "google_oauth_client_id",
+    "google_oauth_client_secret",
+],
+"whatsapp_bridge": [
+    "whatsapp_bridge_url",
+    "whatsapp_bridge_api_key",
+],
+"twilio_sms": [
+    "twilio_account_sid",
+    "twilio_auth_token",
+    "twilio_from_number",
+],
+"twilio_verify": [
+    "twilio_verify_enabled",
+    "twilio_verify_service_sid",
+    "twilio_verify_default_channel",
+],
+"twilio_api_key": [
+    "twilio_api_key_sid",
+    "twilio_api_key_secret",
+],
+"twilio_test": [
+    "twilio_test_account_sid",
+    "twilio_test_auth_token",
+],
+"apple_nfc": [
+    "apple_nfc_enabled",
+    "apple_nfc_encryption_public_key",
+],
+"ai_agent": [
+    "ai_agent_base_url",
+    "ai_agent_api_key",
+],
+"backup_config": [
+    "vault_thresholds",
+    "backup_frequency",
+    "backup_retention",
+    "cron_hour",
+    "system_mode",
 ],
 ```
 
