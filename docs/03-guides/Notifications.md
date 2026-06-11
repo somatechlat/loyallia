@@ -166,8 +166,8 @@ All notification endpoints are mounted under `/api/v1/notifications/`.
 
 | Endpoint | Method | Auth | Summary |
 |----------|--------|------|---------|
-| `/analytics/` | GET | jwt | Campaign metrics |
-| `/push/register/` | POST | jwt | Register push device token |
+| `/stats/` | GET | jwt | Notification stats |
+| `/devices/register/` | POST | jwt | Register push device token |
 
 ### Pydantic Schemas
 
@@ -186,7 +186,7 @@ All notification endpoints are mounted under `/api/v1/notifications/`.
 | `cards` | `Card` M2M on `CampaignRun` for program-targeted campaigns | `target_program_ids` filtering |
 | `tenants` | All notifications scoped by `tenant`; `WhatsAppSession` tracks bridge state | `TenantMiddleware` provides `request.tenant` |
 | `billing` | Plan limits enforce channel quotas | `check_plan_limit(tenant, "emails_month", write=True)` before campaign dispatch |
-| `redemption` | `NotificationService.send_reward_notification()` called on reward earn/redeem | Also triggers Google Wallet push |
+| `redemption` | `NotificationService.send_reward_notification()` exists but is not currently called by redemption strategies | Reward push notifications are not yet wired end-to-end |
 | `automation` | Celery tasks scheduled by automation rules | `send_birthday_notifications`, `send_inactive_reminders` |
 | `audit` | Campaign creation logged via `log_action()` | `resource_type="campaign"` |
 

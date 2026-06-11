@@ -80,7 +80,7 @@ The Loyallia backup system adheres to the **3-2-1 rule**:
 |------|---------------|----------|
 | **3 copies** | Primary data + local `.age` backup + offsite MinIO | Local disk + Avender S3 |
 | **2 media types** | Local filesystem (ext4/XFS) + S3 object storage | Host disk + MinIO bucket |
-| **1 offsite** | Avender MinIO server (`149.28.50.169:9100`) | Remote datacenter |
+| **1 offsite** | Avender MinIO server (`149.28.50.169:9100`) | Remote datacenter — credentials are currently hardcoded in `deploy/backups/lib/minio-client.sh`; rotate and move to Vault |
 | **Encryption at rest** | `age` public-key encryption on all backups | All backup files |
 | **Encryption in transit** | HTTPS/TLS for MinIO upload/download | Network layer |
 | **Integrity verification** | SHA-256 checksums in rescue manifests | Rescue packages |

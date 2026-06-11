@@ -4,12 +4,12 @@ Front-line staff member. Can scan QR codes and process basic transactions.
 
 ## Entry Points
 
-- `/scanner` — QR code scanner (mobile-optimized)
+- `/scanner/scan` — QR code scanner (mobile-optimized)
 
 ## Key Flows
 
 ### 1. QR Scanner Transaction
-1. Open `/scanner` on phone/tablet
+1. Open `/scanner/scan` on phone/tablet
 2. Camera opens automatically
 3. Scan customer QR code
 4. System validates: `POST /api/v1/scanner/validate/`
@@ -25,7 +25,7 @@ Front-line staff member. Can scan QR codes and process basic transactions.
 
 ### 2. Manual Customer Lookup
 1. Enter phone number or email in search
-2. API: `GET /api/v1/customers/?search={query}`
+2. API: `GET /api/v1/scanner/customer/search/?query={query}`
 3. Select customer from results
 4. View passes and process transaction
 
@@ -33,8 +33,8 @@ Front-line staff member. Can scan QR codes and process basic transactions.
 
 | Action | Tables Affected |
 |--------|----------------|
-| Validate QR | Reads `customers_customerpass` |
-| Transact | `transactions_transaction`, updates `customers_customerpass` |
+| Validate QR | Reads `loyallia_customer_passes` |
+| Transact | `loyallia_transactions`, updates `loyallia_customer_passes` |
 
 ## Error Scenarios
 

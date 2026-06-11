@@ -4,6 +4,8 @@
 > **Scope:** `deploy/backups/development/`, `deploy/disaster_recovery/`, and safety checks on production scripts.  
 > **Environment:** macOS / Linux with Docker Compose stack running (`docker compose up -d`).  
 > **Estimated time:** 20–30 minutes (full suite).
+>
+> ⚠️ **Status:** This testing plan reflects an earlier backup implementation. The current scripts produce `age`-encrypted archives, use different filenames, and have different command-line interfaces. Always verify against the actual scripts in `deploy/backups/` and `deploy/disaster_recovery/` before running tests.
 
 ---
 

@@ -87,6 +87,7 @@ DB-driven SaaS plan managed by SUPER_ADMIN.
 | `max_notifications_month` / `max_transactions_month` | PositiveInteger | Monthly quotas |
 | `max_whatsapp_day` / `max_emails_month` / `max_sms_day` / `max_wallet_pushes_month` | PositiveInteger | Channel quotas; `0` = disabled |
 | `max_automations` / `max_automation_executions_day` / `max_ai_queries_month` / `max_api_calls_day` / `max_exports_month` | PositiveInteger | Feature quotas |
+| `max_wallet_templates` / `max_wallet_pass_updates_month` | PositiveInteger | Wallet Pass Studio quotas |
 | `features` | JSONField | List of `PlanFeature` strings |
 | `status` | CharField | `draft`, `published`, `archived` |
 | `trial_days` | PositiveInteger | Default trial length |
@@ -206,6 +207,9 @@ WHATSAPP_CAMPAIGNS = "whatsapp_campaigns"
 EMAIL_CAMPAIGNS = "email_campaigns"
 WALLET_CAMPAIGNS = "wallet_campaigns"
 SMS_CAMPAIGNS = "sms_campaigns"
+WALLET_PASS_STUDIO = "wallet_pass_studio"
+WALLET_CUSTOM_TEMPLATES = "wallet_custom_templates"
+WALLET_ADVANCED_FIELDS = "wallet_advanced_fields"
 ```
 
 ### Trial Limits (`TRIAL_LIMITS`)
@@ -227,6 +231,9 @@ SMS_CAMPAIGNS = "sms_campaigns"
 | ai_queries_month | 500 |
 | api_calls_day | 1,000 |
 | exports_month | 10 |
+| wallet_templates | 5 |
+| wallet_pass_updates_month | 50 |
+| wallet_ai_designs_month | 20 |
 
 ---
 
@@ -301,11 +308,11 @@ class InvoiceModelTest(TestCase):
 
 ### Issue: Payment gateway not found
 - Verify `PAYMENT_GATEWAY_ENABLED` is `true` in Vault.
-- Check `PAYMENT_GATEWAY_PROVIDER` matches a registered key in `_GATEWAY_REGISTRY`.
-- Use `get_payment_gateway()` factory to debug the resolved provider.
+- Built-in providers are `manual` and `disabled`; custom providers must be registered via `register_gateway()`.
+- `PAYMENT_GATEWAY_BASE_URL`, `PAYMENT_GATEWAY_LOGIN`, `PAYMENT_GATEWAY_TRAN_KEY`, and `PAYMENT_GATEWAY_WEBHOOK_SECRET` are only relevant for custom gateways.
 
 ### Issue: Webhook duplicate processing
-- `WebhookEvent` stores `event_id` and `payload_hash` with unique constraint.
+- `WebhookEvent.event_id` has a unique constraint; `payload_hash` is stored but not unique.
 - Verify webhook handler checks `WebhookEvent.objects.filter(event_id=...).exists()` before processing.
 
 ### Issue: Cancel subscription fails

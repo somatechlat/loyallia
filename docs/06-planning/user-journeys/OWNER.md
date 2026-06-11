@@ -41,8 +41,8 @@ Tenant owner. Full access to all tenant features including billing and team mana
 3. Select upgrade plan
 4. Choose billing cycle (monthly/annual)
 5. Add payment method
-6. API: `POST /api/v1/billing/subscribe/`
-7. Stripe webhook confirms payment
+6. API: `POST /api/v1/billing/subscribe/` → returns invoice with `manual_verification_required: true`
+7. SuperAdmin manually confirms payment via `POST /api/v1/admin/billing/confirm-payment/{invoice_id}/`
 
 ### 4. Team Management
 1. Navigate to `/team`
@@ -55,10 +55,10 @@ Tenant owner. Full access to all tenant features including billing and team mana
 
 | Action | Tables Affected |
 |--------|----------------|
-| Create program | `cards_card`, `cards_reward` |
-| Launch campaign | `notifications_campaign`, `notifications_campaignrun`, `notifications_campaigndeliverylog` |
-| Subscribe | `billing_subscription`, `billing_paymentmethod` |
-| Invite team | `authentication_user` |
+| Create program | `loyallia_cards` |
+| Launch campaign | `loyallia_campaign_runs`, `loyallia_campaign_delivery_logs` |
+| Subscribe | `loyallia_subscriptions`, `loyallia_payment_methods` |
+| Invite team | `loyallia_users` |
 
 ## Error Scenarios
 

@@ -124,7 +124,7 @@ Standardized response shape.
 | `intent_resolved` | Literal | `earn`, `redeem`, `none` |
 | `new_balance` | str \| None | Human-readable balance |
 | `remaining_uses` | int \| None | |
-| `new_state` | dict | Additional pass state |
+| `new_state` | dict | Reserved field; currently always empty |
 
 ---
 
@@ -160,7 +160,7 @@ Mounted under `/api/v1/scanner/v2/` via `apps.redemption.api`.
 | `transactions` | `Transaction` rows created for every redemption (success or denied) | `TransactionType` enum: `STAMP_EARNED`, `STAMP_REDEEMED`, `DENIED`, etc. |
 | `tenants` | Tenant scoping on every lookup and transaction | `CustomerPass.objects.get(qr_code=..., card__tenant=tenant)` |
 | `authentication` | `staff_id` from `request.user.id`; `STAFF+` required | `is_staff_or_above()` guard |
-| `notifications` | `NotificationService.send_reward_notification()` after successful earn/redeem | Also triggers Google Wallet push |
+| `notifications` | `NotificationService.send_reward_notification()` exists but is not currently called by redemption strategies | Reward push notifications are not yet wired end-to-end |
 | `audit` | Denied transactions create `TransactionType.DENIED` rows with `denial_reason` and `rules_evaluated` | |
 
 ---
