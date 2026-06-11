@@ -88,6 +88,5 @@ docker compose exec alertmanager amtool check-config /etc/alertmanager/alertmana
 ## Related Docs
 
 - [`deploy/alerts/`](../alerts/) — Prometheus alert rule definitions
-- [`deploy/alerting/`](../alerting/) — Human escalation matrix and on-call procedures
 - [`deploy/grafana/`](../grafana/) — Grafana alerting rules and dashboards
 - [`deploy/bootstrap/full-deploy.sh`](../bootstrap/full-deploy.sh) — Deployment orchestrator that starts Alertmanager

@@ -67,7 +67,7 @@ grafana:
 
 ### Access
 
-- Grafana UI: `http://<host>:3000`
+- Grafana UI: `http://<host>:33910`
 - Default credentials are seeded by Vault (`grafana_admin_password`)
 
 ### Deploy / Restart
@@ -98,5 +98,4 @@ docker compose restart grafana
 
 - [`deploy/alertmanager/`](../alertmanager/) — Alert routing and notifications
 - [`deploy/alerts/`](../alerts/) — Prometheus alert rules
-- [`deploy/alerting/`](../alerting/) — On-call escalation procedures
 - [`deploy/bootstrap/full-deploy.sh`](../bootstrap/full-deploy.sh) — Deployment orchestrator

@@ -1,7 +1,10 @@
+> **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+
 # Owner Dashboard Complete Audit Report
 
 **Project:** Loyallia  
-**Audit Date:** 2025-01-14  
+**Audit Date:** 2025-01-14 (snapshot updated 2026-06-11)  
 **Auditor:** Senior Full-Stack Engineer (Loyallia-K2 Review)  
 **Scope:** Backend APIs, Frontend UI/UX, RBAC Enforcement, User Creation, Team Management, Billing, Settings, Locations
 
@@ -122,7 +125,7 @@ The `invite_user` endpoint in `users_api.py` (lines 114-153) is **unused by the 
 |-------|--------|---------|
 | OWNER can view subscription | **PASS** | `@require_role("OWNER")` on all billing endpoints |
 | OWNER can upgrade/downgrade | **PASS** | `subscribe()` allows plan changes, `update_subscription()` for cycle changes |
-| Stripe integration | **PARTIAL** | Payment gateway abstraction is excellent (`payment_gateway.py` with pluggable providers). Currently uses `ManualGateway` (admin-verified). No Stripe provider registered yet, but architecture supports it via `register_gateway()`. |
+| Stripe integration | **NOT IMPLEMENTED** | Payment gateway abstraction is excellent (`payment_gateway.py` with pluggable providers). Currently uses `ManualGateway` (admin-verified) only; `DEPLOYMENT_GUIDE.md` lists Payments as disabled. No Stripe provider registered yet, but architecture supports it via `register_gateway()`. |
 | Invoices generated | **PASS** | `Invoice.generate_invoice_number()`, tax calculation, SRI fields. Proper `InvoiceStatus` enum used. |
 | Payment security | **PASS** | Webhook: HMAC signature verification + 5-min timestamp replay protection + idempotency via `WebhookEvent` model. Payment method soft-delete prevents removing last PM for active subscriptions. |
 

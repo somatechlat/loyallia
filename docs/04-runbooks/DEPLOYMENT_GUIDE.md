@@ -99,19 +99,21 @@ docker compose logs vault-init -f
 
 ## Step 4: Initialize Vault
 
+The bootstrap process (`deploy/bootstrap/bootstrap-production.sh` / `deploy/vault/init.sh`) already initializes Vault, seeds KV v2, and creates the `loyallia-app` policy and its token at `/vault/runtime/app-token` inside the shared `vault_runtime` volume. Manual creation is only needed if you are recovering or rotating the app token.
+
 ```bash
 # Get root token
 ROOT_TOKEN=$(docker compose exec vault cat /vault/file/init.json | jq -r '.root_token')
 # Do not echo or log root tokens.
 
-# Set app token
+# Create or rotate the app token (policy name is loyallia-app, not app)
 docker compose exec -e VAULT_TOKEN="$ROOT_TOKEN" vault \
-  vault token create -policy=app -ttl=8760h -format=json | \
+  vault token create -policy=loyallia-app -ttl=8760h -format=json | \
   jq -r '.auth.client_token' > /tmp/app-token
 
 # Copy to runtime volume
-docker cp /tmp/app-token loyallia-vault-init:/tmp/app-token
-docker compose exec vault-init cp /tmp/app-token /vault/runtime/app-token
+docker cp /tmp/app-token loyallia-vault:/tmp/app-token
+docker compose exec vault cp /tmp/app-token /vault/runtime/app-token
 ```
 
 ---
@@ -167,7 +169,7 @@ For **localhost** (Development):
 
 | Setting | Value |
 |---------|-------|
-| **Authorized JS Origins** | `http://localhost:3000` |
+| **Authorized JS Origins** | `http://localhost:33906` |
 | **Authorized Redirect URIs** | `http://localhost:33905/api/v1/auth/google/callback/` |
 
 ---
@@ -206,11 +208,12 @@ docker compose exec api python manage.py seed_subscription_plans
 # Seed platform settings
 docker compose exec api python manage.py seed_platform_settings
 
-# Create/recover superadmin (REQUIRES ADMIN_PASSWORD in production)
+# Create/recover superadmin (REQUIRES ADMIN_PASSWORD in production; production also needs --force)
 docker compose exec -T api python manage.py recover_admin_access \
     --email "admin@loyallia.com" \
     --password "$ADMIN_PASSWORD" \
-    --create
+    --create \
+    --force
 ```
 
 **CRITICAL:** The `recover_admin_access` command is the only supported way to create/recover the admin account. Do not use inline shell scripts or hardcoded passwords.

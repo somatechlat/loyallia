@@ -1,3 +1,6 @@
+> **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+
 # Loyallia-K2 Review: Campaigns, Automation & Notifications
 
 **Auditor:** Senior Full-Stack Engineer (Campaigns/Automation Focus)

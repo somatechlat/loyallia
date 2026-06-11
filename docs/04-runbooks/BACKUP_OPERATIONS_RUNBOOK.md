@@ -34,10 +34,10 @@ Run the unified verification command:
   BACKUP VERIFICATION
 ════════════════════════════════════════════════════════════
 
-postgres: OK (loyallia_20260603_020000.dump.age, 2h old)
+postgres: OK (loyallia_20260603_020000.sql.age, 2h old)
 redis: OK (dump_20260603_020000.rdb.age, 2h old)
-vault: OK (vault_20260603_020000.tar.age, 2h old)
-minio: OK (minio_20260603_020000.tar.age, 2h old)
+vault: OK (vault_20260603_020000.tar.gz.age, 2h old)
+minio: OK (minio_20260603_020000.tar.gz.age, 2h old)
 
 Decryption test: PASS
 
@@ -54,11 +54,11 @@ All backups verified OK
 Verify that backups reached the offsite MinIO server:
 
 ```bash
-# List today's offsite backups
+# List today's offsite backups (recursively under the daily prefix)
 ./deploy/backups/lib/minio-client.sh list loyallia/production/2026/06/03/
 ```
 
-**Expected:** All four component `.age` files are present with non-zero sizes.
+**Expected:** Encrypted files appear under component subdirectories (e.g., `postgres/`, `redis/`, `vault/`, `minio/`) with non-zero sizes.
 
 **Connectivity test:**
 ```bash
@@ -194,8 +194,8 @@ bash deploy/disaster_recovery/production/recover.sh
 # API health
 curl -sf http://127.0.0.1:33905/api/v1/health/ && echo "API: OK"
 
-# Database
-docker compose exec -T postgres pg_isready -U loyallia -d loyallia
+# Database (use `loyallia_dev` in development, `loyallia` in production)
+docker compose exec -T postgres pg_isready -U loyallia -d loyallia_dev
 
 # Vault
 docker compose exec -T vault wget -qO- --no-check-certificate \
@@ -225,30 +225,37 @@ Validate that backups stored on the offsite MinIO server can be downloaded and d
 ./deploy/backups/restore --list
 
 # 2. Download and restore a component from offsite
-./deploy/backups/restore --postgres --offsite --date=2026-06-01
+# ./deploy/backups/restore --postgres --offsite --date=2026-06-01
+# NOTE: --offsite and --date are parsed but not yet implemented by the component restore scripts.
+# Use the offsite sync scripts directly or restore from the latest local .age backup.
 
-# 3. Verify the restored data
-pg_restore --list ./backups/postgres/loyallia_20260601_020000.dump | wc -l
+# 3. Verify the restored data (development dumps are plain SQL; production dumps use pg_restore custom format)
+head -n 20 ./backups/postgres/loyallia_20260601_020000.sql | grep -q 'PostgreSQL database dump' && echo "Restore file: OK"
 ```
 
 **Alternative: Manual offsite download test**
 
 ```bash
-# Download a specific file from offsite
+# List the offsite prefix to discover the actual object key
+./deploy/backups/lib/minio-client.sh list \
+    loyallia/production/2026/06/01/postgres/ | head
+
+# Download a specific file from offsite (replace with the real object key)
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/2026/06/01/postgres/loyallia_20260601_020000.dump.age \
+    loyallia/production/2026/06/01/postgres/loyallia_20260601_020000.sql.age \
     /tmp/test_download.age
 
 # Decrypt
-age -d -i ~/.config/age/loyallia_key.txt -o /tmp/test_download.dump /tmp/test_download.age
+age -d -i ~/.config/age/loyallia_key.txt -o /tmp/test_download.sql /tmp/test_download.age
 
-# Validate
-pg_restore --list /tmp/test_download.dump >/dev/null && echo "Offsite restore: OK"
+# Validate (development dumps are plain SQL; production dumps use custom format)
+head -n 20 /tmp/test_download.sql | grep -q 'PostgreSQL database dump' && echo "Offsite restore: OK"
+# For production custom-format dumps use: pg_restore --list /tmp/test_download.dump >/dev/null
 ```
 
 **Clean up test files:**
 ```bash
-rm -f /tmp/test_download.age /tmp/test_download.dump
+rm -f /tmp/test_download.age /tmp/test_download.sql /tmp/test_download.dump
 ```
 
 ---
@@ -301,7 +308,7 @@ curl -sfI https://rewards.loyallia.com
 **RPO:** 24 hours
 
 ```bash
-# 1. Provision new server (Ubuntu 22.04, Docker, Docker Compose)
+# 1. Provision new server (Ubuntu 24.04 LTS, Docker, Docker Compose)
 # 2. Clone repository
 git clone <repo-url> /opt/loyallia
 cd /opt/loyallia
@@ -314,7 +321,7 @@ cp loyallia_age_private_key.txt ~/.config/age/
 # 4. Download rescue files from offsite MinIO
 mkdir -p /var/backups/loyallia/rescue
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/vault_init_rescue.json.age \
+    loyallia/production/YYYY/MM/DD/vault_init_rescue.json.age \
     /var/backups/loyallia/rescue/vault_init_rescue.json.age
 # ... repeat for all rescue files ...
 
@@ -370,7 +377,7 @@ curl -sf http://127.0.0.1:33905/api/v1/health/
 | `--vault` | Restore Vault | `./deploy/backups/restore --vault` |
 | `--minio` | Restore MinIO | `./deploy/backups/restore --minio` |
 | `--offsite` | Download from offsite MinIO before restoring | `./deploy/backups/restore --postgres --offsite` |
-| `--date=YYYY-MM-DD` | Restore specific date (requires `--offsite`) | `./deploy/backups/restore --postgres --offsite --date=2026-06-02` |
+| `--date=YYYY-MM-DD` | Parsed for future use; not yet implemented by component restore scripts | `./deploy/backups/restore --postgres --offsite --date=2026-06-02` (not functional) |
 | `--list` | List available local and offsite backups | `./deploy/backups/restore --list` |
 | `--dry-run` | Show what would happen without executing | `./deploy/backups/restore --full --dry-run` |
 
@@ -384,7 +391,9 @@ curl -sf http://127.0.0.1:33905/api/v1/health/
 ./deploy/backups/restore --postgres
 
 # Restore PostgreSQL from offsite (specific date)
-./deploy/backups/restore --postgres --offsite --date=2026-06-01
+# ./deploy/backups/restore --postgres --offsite --date=2026-06-01
+# NOTE: --offsite and --date are parsed but not yet implemented by the component restore scripts.
+# Use the offsite sync scripts directly or restore from the latest local .age backup.
 
 # Full restore from offsite (disaster scenario)
 ./deploy/backups/restore --full --offsite

@@ -18,8 +18,8 @@ Vault is deployed as a container and initialized by a dedicated `vault-init` con
 | `.env.example` | Example bootstrap secrets file showing all 50+ keys that can be seeded into Vault. |
 | `generate-dev-certs.sh` | Generates self-signed TLS certificates for Vault in **development only**. |
 | `init.sh` | **Core initialization script** — pure POSIX `sh` for Alpine Linux. Handles init, unseal, secret seeding, policy creation, and token provisioning. |
-| `policies/app-policy.hcl` | **Read/write** policy for services that need to create or update secrets programmatically. |
-| `policies/app.hcl` | **Read-only** policy for the Loyallia application. Grants access to secrets and minimal system health endpoints. |
+| `policies/app-policy.hcl` | Read/write policy file (reference). `init.sh` writes an equivalent inline policy for the running app token. |
+| `policies/app.hcl` | Read-only policy file (reference) for the Loyallia application. Grants access to secrets and minimal system health endpoints. |
 
 ## Configuration
 
@@ -62,8 +62,8 @@ The `init.sh` script automatically detects and decodes `_b64` keys.
 
 ### Policies
 
-- **`policies/app.hcl`** — Standard application policy (read-only secrets, token self-renewal, system health).
-- **`policies/app-policy.hcl`** — Elevated policy (read + create + update + patch) for admin tooling and the init container.
+- **`policies/app.hcl`** — Read-only application policy file (token self-renewal, system health). `init.sh` does not load this file; it is kept as a reference.
+- **`policies/app-policy.hcl`** — Elevated policy file (read + create + update + patch) for admin tooling. `init.sh` creates the live `loyallia-app` policy inline with equivalent permissions.
 
 ## Usage
 
@@ -90,8 +90,8 @@ docker compose exec vault vault status
 ### Read a Secret
 
 ```bash
-export VAULT_TOKEN=$(cat .agents/vault_secrets_rescue.json | jq -r '.root_token')
-vault kv get -mount=secret loyallia/production/postgres_password
+export VAULT_TOKEN=$(cat .agents/vault_init_rescue.json | jq -r '.root_token')
+vault kv get -mount=secret -field=postgres_password loyallia/production
 ```
 
 ### Rotate the Root Token

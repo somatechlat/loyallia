@@ -1,3 +1,6 @@
+> **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+
 # SysAdmin / SuperAdmin API - Comprehensive Security Review
 
 **Reviewer:** Loyallia-K2 (Backend Security Audit)

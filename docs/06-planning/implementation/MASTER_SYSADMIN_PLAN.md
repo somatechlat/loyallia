@@ -16,25 +16,25 @@ After reading **every line** of code, documentation, configuration, and prior ag
 | Backend API | 🟡 GOOD | 85% | Solid Django Ninja architecture, plan enforcement exists but not fully wired |
 | Frontend Dashboard | 🟡 GOOD | 80% | Next.js 14 App Router, all major pages exist |
 | Super Admin Panel | 🟡 FUNCTIONAL | 75% | Works but has gaps — no audit viewer, no real-time, synthetic data |
-| Tenant Creation | 🟢 WORKS | 90% | 4-step wizard functional, creates trial subscription automatically |
+| Tenant Creation | 🟢 WORKS | 90% | 4-step wizard functional; creates TRIAL subscription only when plan_slug == "trial", otherwise ACTIVE paid subscription |
 | Plan Management | 🟢 WORKS | 95% | Full CRUD with validation, feature flags, rate limits |
-| Integration Settings | 🟢 WORKS | 90% | Vault editor functional for all 10 integrations |
-| Billing/Subscriptions | 🟡 PARTIAL | 60% | Models solid, but payment flow NOT functional (returns 402, no charge) |
-| Analytics Backend | 🟡 PARTIAL | 50% | Overview works, missing revenue breakdown, visits, demographics |
+| Integration Settings | 🟢 WORKS | 90% | Vault editor functional for 12 integration groups (wallet, payments, mailjet, WhatsApp, Twilio, Apple NFC, AI, backup) |
+| Billing/Subscriptions | 🟡 PARTIAL | 75% | `/billing/subscribe/` creates subscription + invoice with `PAST_DUE` status; payment is manual/offline verification (no self-service card checkout) |
+| Analytics Backend | 🟡 PARTIAL | 65% | Overview works; revenue, visits, demographics exist in advanced analytics but require `advanced_analytics` feature |
 | Audit/Compliance | 🟢 WORKS | 85% | Immutable AuditLog, SuperAdmin API exists, NO frontend viewer |
 | Tests | 🟡 PARTIAL | 40% | 460 backend tests pass, Playwright E2E written but NEVER RUN |
 | Documentation | 🟢 EXCELLENT | 95% | SRS, Architecture, BDR, Compliance all documented |
 
 ## Critical Finding: The Billing Gap
 
-The `/billing/subscribe/` endpoint **does not process payments**. It assigns a plan and returns HTTP 402 "Payment confirmation required", but there is **no checkout flow** that actually charges the customer. The `BillingService.subscribe()` method exists but is **never called** by the API. This means:
-- Tenants can NEVER convert from trial to paid via self-service
-- SuperAdmin can NEVER upgrade a tenant's plan directly
-- The entire revenue model is blocked
+The `/billing/subscribe/` endpoint creates a paid `Subscription` (status `PAST_DUE`) and an `Invoice`, then returns `manual_verification_required: true`. It does **not** trigger an online card checkout or payment-gateway charge. The `BillingService.subscribe()` method exists but is **not called** by the API; `process_subscription()` is used instead. This means:
+- Tenants can select a plan and generate an invoice, but payment must be verified manually
+- There is no self-service card checkout or automated webhook confirmation
+- SuperAdmin cannot yet upgrade a tenant's plan directly from the admin panel
 
 ## Critical Finding: Synthetic Data in Admin Metrics
 
-The `/superadmin/metrics` page generates **fake monthly growth data** using a synthetic accumulation algorithm. It does NOT query real historical data. The `DailyAnalytics` model exists but is not used for the admin growth chart.
+The `/superadmin/metrics` page generates **synthetic monthly growth data** by spreading current totals across six months (`monthlyGrowth` in `frontend/src/app/(dashboard)/superadmin/metrics/page.tsx`). It does NOT query the `DailyAnalytics` materialized table. A platform-level `/admin/platform/growth/` endpoint does not exist.
 
 ---
 
@@ -96,8 +96,8 @@ The `/superadmin/metrics` page generates **fake monthly growth data** using a sy
 │  • plan_slug (from active SubscriptionPlans)                                │
 │  • billing_cycle: monthly | annual                                          │
 │                                                                             │
-│  NOTE: Selected plan determines trial_days ONLY. Tenant always starts       │
-│        in TRIAL status regardless of plan chosen.                           │
+│  NOTE: If plan_slug == "trial", the subscription is TRIALING. Otherwise it  │
+│        is ACTIVE with current_period_start/end set immediately.             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -120,10 +120,11 @@ The `/superadmin/metrics` page generates **fake monthly growth data** using a sy
 │                                                                             │
 │  4. Create Subscription:                                                    │
 │     • subscription_plan = plan from slug                                    │
-│     • status = "TRIALING"                                                   │
-│     • trial_start = now()                                                   │
-│     • trial_end = now() + plan.trial_days                                   │
+│     • status = TRIALING if plan_slug == "trial", else ACTIVE                │
+│     • trial_start / trial_end only set for trial plans                      │
+│     • current_period_start / current_period_end set for active paid plans   │
 │     • billing_cycle = from payload                                          │
+│     • plan capacity validated against PlatformSetting PLAN_CAPACITY_<slug>  │
 │                                                                             │
 │  5. Sync Tenant:                                                            │
 │     • tenant.trial_end = subscription.trial_end                             │
@@ -135,12 +136,13 @@ The `/superadmin/metrics` page generates **fake monthly growth data** using a sy
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ RESPONSE TO FRONTEND                                                        │
+│ RESPONSE TO FRONTEND (CreateTenantOut)                                      │
 │  {                                                                          │
 │    "success": true,                                                         │
 │    "message": "Negocio registrado",                                         │
 │    "tenant_id": "<uuid>",                                                   │
 │    "owner_id": "<uuid>",                                                    │
+│    "owner_email": "owner@example.com",                                      │
 │    "temp_password": "abc123xyz"  ← ONLY SHOWN ONCE                          │
 │  }                                                                          │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -206,9 +208,9 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │ SOFT DELETE (Deactivate)                                                    │
 │  DELETE /api/v1/admin/plans/{id}/                                           │
 │                                                                             │
-│  → Sets is_active=False                                                     │
+│  → Sets is_active=False AND status=ARCHIVED                                 │
 │  → REJECTED if any active subscriptions use this plan                       │
-│  → Audit logged                                                             │
+│  → Audit logged (ADMIN_PLAN_DEACTIVATED)                                    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -231,8 +233,9 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
                               ┌─────────────┐
                               │  TRIALING   │◄─────────────────────────┐
                               │             │                          │
-                              │ • Unlimited features                   │
-                              │ • Unlimited resources                  │
+                              │ • Only if created/registered with       │
+                              │   plan_slug == "trial"                  │
+                              │ • Plan limits enforced                  │
                               │ • trial_end = now + N days             │
                               └──────┬──────┘                          │
                                      │                                  │
@@ -289,25 +292,28 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │ STEP 1: LOAD INTEGRATIONS                                                   │
 │  GET /api/v1/admin/platform/integrations/                                   │
 │                                                                             │
-│  Returns array of 10 integrations:                                          │
-│  ┌─────────────────┬───────────┬────────────┬─────────────────────────────┐ │
-│  │ Integration     │ Enabled   │ Configured │ Status                      │ │
-│  ├─────────────────┼───────────┼────────────┼─────────────────────────────┤ │
-│  │ Google Wallet   │ true/false│ true/false │ "Conectado" / "Error" /     │ │
-│  │ Apple Wallet    │ true/false│ true/false │ "No configurado"            │ │
-│  │ Payment Gateway │ true/false│ true/false │                             │ │
-│  │ Email SMTP      │ true/false│ true/false │                             │ │
-│  │ Google OAuth    │ true/false│ true/false │                             │ │
-│  │ WhatsApp Bridge │ true/false│ true/false │                             │ │
-│  │ Twilio SMS      │ true/false│ true/false │                             │ │
-│  │ Mailjet Email   │ true/false│ true/false │                             │ │
-│  │ Apple NFC       │ true/false│ true/false │                             │ │
-│  │ AI Agent        │ true/false│ true/false │                             │ │
-│  └─────────────────┴───────────┴────────────┴─────────────────────────────┘ │
+│  Returns array of 13 integrations (as implemented in integration_config.py):│
+│  ┌─────────────────────┬───────────┬────────────┬─────────────────────────┐ │
+│  │ Integration         │ Enabled   │ Configured │ Status                  │ │
+│  ├─────────────────────┼───────────┼────────────┼─────────────────────────┤ │
+│  │ Google Wallet       │ true/false│ true/false │ configured / missing_   │ │
+│  │ Apple Wallet        │ true/false│ true/false │ configured / missing_   │ │
+│  │ Payments            │ true/false│ true/false │ active / disabled       │ │
+│  │ Google OAuth        │ true/false│ true/false │ configured / missing_   │ │
+│  │ Mailjet Email       │ true      │ true/false │ configured / missing_   │ │
+│  │ WhatsApp Bridge     │ true/false│ true/false │ configured / missing_   │ │
+│  │ Twilio SMS          │ true/false│ true/false │ configured / missing_   │ │
+│  │ Twilio Verify       │ true/false│ true/false │ configured / missing_   │ │
+│  │ Twilio API Key      │ true/false│ true/false │ configured / missing_   │ │
+│  │ Twilio Test         │ true/false│ true/false │ configured / missing_   │ │
+│  │ Apple NFC           │ true/false│ true/false │ configured / missing_   │ │
+│  │ AI Agent            │ true/false│ true/false │ configured / missing_   │ │
+│  │ Backup & DR         │ true      │ true      │ active                  │ │
+│  └─────────────────────┴───────────┴────────────┴─────────────────────────┘ │
 │                                                                             │
 │  Each includes:                                                             │
-│    • diagnostics: { errors: [], ...health_checks }                          │
-│    • preview_values: { key: "***masked***" }  ← NEVER exposes real secrets  │
+│    • diagnostics: { ...health_checks }                                      │
+│    • preview_values: non-secret identifiers only (secrets are redacted)     │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -336,9 +342,10 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │  Backend:                                                                   │
 │    1. Validate integration_key exists in ALLOWED_INTEGRATION_KEYS           │
 │    2. Validate field_key is in allowed list for that integration            │
-│    3. Call vault.write_secret(f"secret/data/loyallia/production", ...)      │
-│    4. Log to AuditLog: action="UPDATE", resource_type="IntegrationSecret"   │
-│    5. Return success                                                        │
+│    3. Normalize/validate high-risk values (PEM, JSON, SIDs, etc.)           │
+│    4. Call common.vault.put_secret(key, value)                              │
+│    5. Log to AuditLog: action="UPDATE", resource_type="vault_secret"        │
+│    6. Return success                                                        │
 │                                                                             │
 │  Security:                                                                  │
 │    • Only SUPER_ADMIN can call this endpoint                                │
@@ -361,11 +368,13 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ FRONTEND ACTIONS                                                            │
-│  1. confirm() dialog: "¿Impersonar a [tenant.name]?"                        │
-│  2. Save current SuperAdmin token to sessionStorage:                        │
+│  1. Collect 6-digit OWNER security PIN and justification (min 10 chars)    │
+│  2. confirm() dialog: "¿Impersonar a [tenant.name]?"                        │
+│  3. Save current SuperAdmin token to sessionStorage:                        │
 │       sessionStorage.setItem("superadmin_token", current_access_token)      │
 │       sessionStorage.setItem("impersonation_started_at", Date.now())        │
-│  3. Call API: POST /api/v1/admin/tenants/{id}/impersonate/                  │
+│  4. Call API: POST /api/v1/admin/tenants/{id}/impersonate/                  │
+│       Body: { owner_pin: "<6-digit PIN>", justification: "..." }            │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -374,16 +383,20 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │                                                                             │
 │  1. Verify request.user is SUPER_ADMIN                                      │
 │  2. Fetch tenant's OWNER user (role="OWNER", tenant=tenant)                 │
-│  3. Generate NEW access_token JWT:                                          │
-│       • sub = owner_user.id                                                 │
+│  3. Validate justification (min 10 chars) and owner security PIN            │
+│     • 3 failed PIN attempts trigger 15-minute lockout (Redis cache)         │
+│     • Returns 400 if owner has not set a security PIN                       │
+│  4. Generate NEW access_token JWT:                                          │
+│       • user_id = owner_user.id                                             │
 │       • role = "OWNER"                                                      │
 │       • tenant_id = tenant.id                                               │
 │       • impersonated = true                                                 │
 │       • impersonated_by = superadmin_user.id                                │
+│       • type = "access"                                                     │
 │       • exp = now + 60 minutes                                              │
 │                                                                             │
-│  4. AuditLog: action="IMPERSONATE", resource_type="User"                    │
-│       • justification = "SuperAdmin support session"                        │
+│  5. AuditLog: action="IMPERSONATE", resource_type="tenant"                  │
+│       • justification = payload justification                               │
 │       • actor = superadmin, target = owner                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -397,24 +410,32 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ IMPERSONATION BANNER (shown on all pages)                                   │
-│  • Purple banner at top: "Modo soporte — Volver al Admin [XX:XX]"           │
+│  • Purple banner at top: "Modo impersonación activo (MM:SS restante)"       │
+│    with a "← Volver al Admin" button                                        │
 │  • Timer counts down from 60 minutes                                        │
 │  • "Volver al Admin" button:                                                │
 │       1. Retrieves superadmin_token from sessionStorage                     │
 │       2. Restores access_token cookie                                       │
 │       3. Clears sessionStorage keys                                         │
-│       4. Redirects to /superadmin                                           │
+│       4. Redirects to /superadmin/tenants                                   │
 │                                                                             │
 │  • Auto-expiry: If sessionStorage.impersonation_started_at > 1hr ago        │
-│    → Auto-redirects back to /superadmin                                     │
+│    → Auto-redirects back to /superadmin/tenants                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## FLOWCHART 6: Broadcast Email Flow
 
+> ⚠️ **PARTIALLY IMPLEMENTED AS OF 2026-06-11.** The SuperAdmin broadcast UI
+> exists (`frontend/src/components/superadmin/settings/BroadcastPanel.tsx`, wired
+> in `SysAdminOperations.tsx`) and already calls `POST /api/v1/admin/broadcast/`.
+> However, the backend endpoint is **not implemented**; the request will 404.
+> Use tenant-level campaigns (Email channel) for mass email until the endpoint
+> is added.
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                     GLOBAL BROADCAST EMAIL                                  │
+│                     GLOBAL BROADCAST EMAIL (PLANNED)                        │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -423,21 +444,21 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │    • subject (required)                                                     │
 │    • message body (required)                                                │
 │                                                                             │
-│  Submit → POST /api/v1/admin/broadcast/                                     │
+│  Submit → POST /api/v1/admin/broadcast/   [ENDPOINT NOT IMPLEMENTED]        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ BACKEND PROCESSING                                                          │
+│ EXPECTED BACKEND PROCESSING (WHEN BUILT)                                    │
 │  1. Validate SUPER_ADMIN role                                               │
-│  2. Query: SELECT email FROM users WHERE role = 'OWNER'                     │
+│  2. Query owners across all tenants                                         │
 │  3. For each owner:                                                         │
 │       send_mail(subject, message, from=EMAIL_FROM, to=[owner_email])        │
 │  4. Returns: { "message": "Enviado a N propietarios" }                      │
 │                                                                             │
-│  NOTE: Uses Django send_mass_mail for efficiency                            │
-│  NOTE: No HTML template — plain text only                                   │
-│  NOTE: No delivery tracking / open rates                                    │
+│  NOTE: A real implementation should use Mailjet templates, opt-out footers, │
+│        and delivery-event tracking via the existing /webhooks/mailjet/      │
+│        webhook handler.                                                     │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -457,23 +478,25 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │  • requires_restart (bool)                                                  │
 │  • updated_at                                                               │
 │                                                                             │
-│  CACHE: Redis 60-second TTL                                                 │
+│  CACHE: Redis TTL configured by settings (_PLATFORM_SETTING_CACHE_TTL)      │
 │  READ: PlatformSetting.get(key, default) → checks Redis first               │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ CURRENT SETTINGS (from DB seeds):                                           │
+│ CURRENT SEEDED SETTINGS (backend/apps/tenants/fixtures/platform_settings):  │
 │  ┌────────────────────────────┬───────────────┬───────────────────────────┐ │
 │  │ Key                        │ Default Value │ Category                  │ │
 │  ├────────────────────────────┼───────────────┼───────────────────────────┤ │
+│  │ TRIAL_DAYS                 │ 14            │ billing                   │ │
 │  │ TAX_RATE_ECUADOR           │ 0.15          │ billing                   │ │
-│  │ TRIAL_DAYS_DEFAULT         │ 14            │ billing                   │ │
-│  │ MAX_TRIAL_EXTENSION_DAYS   │ 7             │ billing                   │ │
-│  │ PASS_GENERATION_TIMEOUT    │ 30            │ performance               │ │
-│  │ PUSH_BATCH_SIZE            │ 500           │ performance               │ │
-│  │ ENABLE_REGISTRATION        │ true          │ security                  │ │
-│  │ MAINTENANCE_MODE           │ false         │ system                    │ │
+│  │ DEFAULT_TIMEZONE           │ America/      │ system                    │ │
+│  │                            │ Guayaquil     │                           │ │
 │  └────────────────────────────┴───────────────┴───────────────────────────┘ │
+│                                                                             │
+│  Other keys (e.g. mailjet_sender_email, backup_frequency, PLATFORM_MODE)    │
+│  are created at runtime via Vault or admin endpoints. MAX_TRIAL_EXTENSION_  │
+│  DAYS, PASS_GENERATION_TIMEOUT, PUSH_BATCH_SIZE, ENABLE_REGISTRATION and    │
+│  MAINTENANCE_MODE are NOT present in the current fixture set.               │
 │                                                                             │
 │  NOTE: The settings UI auto-populates from GET /platform/settings/          │
 │        and renders each as a labeled input with "Guardar" button            │
@@ -486,15 +509,15 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 
 ## 🔴 CRITICAL GAPS (P0)
 
-### GAP-001: Billing Payment Flow is Non-Functional
+### GAP-001: Billing Payment Flow is Manual-Only
 **Location:** `backend/apps/billing/api.py`, `frontend/src/app/(dashboard)/billing/page.tsx`
-**Problem:** The `/billing/subscribe/` endpoint returns HTTP 402 but never actually processes payment. There is no checkout UI.
-**Impact:** ZERO revenue possible. Tenants cannot upgrade from trial.
+**Problem:** The `/billing/subscribe/` endpoint creates a paid `Subscription` (status `PAST_DUE`) and an `Invoice`, then returns `manual_verification_required: true`. It does **not** perform an online card charge or redirect to a payment-gateway checkout. `BillingService.subscribe()` exists but is unused; the API calls `process_subscription()` instead.
+**Impact:** Tenants can generate an invoice, but payment must be verified offline. There is no self-service card checkout or automated webhook confirmation.
 **Fix Required:**
-1. Wire `BillingService.subscribe()` into the API endpoint
-2. Implement payment gateway session creation (Manual / pluggable provider)
-3. Create checkout redirect flow in frontend
-4. Handle webhook confirmation
+1. Integrate a PCI-compliant payment gateway (Stripe/PlacetoPay/etc.) into `/billing/subscribe/`
+2. Return a real checkout URL/session_token instead of `manual_verification_required`
+3. Build a checkout redirect/confirmation page in the frontend
+4. Implement and secure the corresponding payment webhooks
 
 ### GAP-002: No Audit Log Viewer in SuperAdmin
 **Location:** Missing frontend page
@@ -561,14 +584,14 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 2. UI: Button in tenant detail "Acciones" tab
 3. Auto-email temp password to owner
 
-### GAP-009: Broadcast Email is Plain Text Only
-**Location:** `backend/apps/tenants/super_admin_api/platform.py`
-**Problem:** Uses Django `send_mass_mail` with plain text. No HTML template, no unsubscribe, no tracking.
-**Impact:** Unprofessional communications, compliance risk.
+### GAP-009: SuperAdmin Broadcast Email Endpoint Missing
+**Location:** Missing backend endpoint (schema `BroadcastIn` exists in `backend/apps/tenants/super_admin_api/schemas.py`); UI already implemented in `frontend/src/components/superadmin/settings/BroadcastPanel.tsx`.
+**Problem:** The frontend broadcast panel calls `POST /api/v1/admin/broadcast/`, but no backend route handles it. The `platform.py` module does not contain any broadcast logic.
+**Impact:** SuperAdmin cannot send mass email to all tenant owners (the UI will 404).
 **Fix Required:**
-1. Create HTML email template for broadcasts
-2. Add unsubscribe footer
-3. Track delivery via Mailjet/provider delivery events where supported
+1. Add `POST /api/v1/admin/broadcast/` endpoint behind SUPER_ADMIN auth
+2. Use Mailjet (or configured email backend) with HTML templates, unsubscribe footer, and delivery tracking via the existing `/webhooks/mailjet/` handler
+3. The UI at `/superadmin/settings` (Operations tab) already exists and can be used once the endpoint is wired
 
 ### GAP-010: No Bulk Operations on Tenants
 **Location:** Missing
@@ -588,12 +611,12 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 ### GAP-012: Plan Cards on Frontend Billing Page are Hardcoded
 **Location:** `frontend/src/app/(dashboard)/billing/page.tsx`
 **Problem:** The plan comparison table shows static Starter/Pro/Enterprise values, not actual DB plan data.
-**Fix:** Fetch plans from `/billing/plans/` and render dynamically
+**Fix:** Fetch plans from the existing `GET /api/v1/billing/plans/` endpoint (`backend/apps/billing/api.py:82`) and render dynamically
 
-### GAP-013: No Tenant Data Export from Admin
-**Location:** Missing
-**Problem:** SuperAdmin cannot export a tenant's full data (customers, transactions, passes) for GDPR/LOPDP portability requests.
-**Fix:** API + UI for tenant data export (CSV/JSON)
+### GAP-013: No SuperAdmin-Initiated Tenant Data Export
+**Location:** `backend/apps/tenants/security_privacy_api.py` (tenant-facing only)
+**Problem:** A tenant owner can export their own data via `GET /api/v1/tenants/data-export/` (using `generate_tenant_export()`), but SuperAdmin has no equivalent endpoint or UI to export any tenant's data for GDPR/LOPDP portability requests.
+**Fix:** Add `GET /api/v1/admin/tenants/{id}/export/` behind SUPER_ADMIN auth and a corresponding download button in the tenant detail modal.
 
 ### GAP-014: Missing Role for Support Staff
 **Location:** `backend/apps/authentication/models.py`
@@ -663,8 +686,8 @@ Export → CSV download (triggers new audit log entry!)
 
 ### 2.1 Wire Payment Processing
 **Files to modify:**
-- `backend/apps/billing/api.py` — call `BillingService.subscribe()`
-- `backend/apps/billing/service.py` — ensure gateway integration works
+- `backend/apps/billing/api.py` — replace manual invoice flow with real payment gateway
+- `backend/apps/billing/services.py` — extend `process_subscription()` to charge/authorize
 - `frontend/src/app/(dashboard)/billing/page.tsx` — add plan selection modal
 
 ### 2.2 Create Checkout Flow
@@ -672,12 +695,29 @@ Export → CSV download (triggers new audit log entry!)
 - `frontend/src/components/billing/PlanSelectorModal.tsx`
 - `frontend/src/components/billing/CheckoutRedirect.tsx`
 
-**Flow:**
+**Current flow (manual):**
 ```
 Owner clicks "Mejorar Plan"
     │
     ▼
-Show PlanSelectorModal (fetches from /billing/plans/)
+Redirect to /billing/upgrade (hardcoded comparison table)
+    │
+    ▼
+Select plan + billing_cycle
+    │
+    ▼
+POST /billing/subscribe/ → returns { invoice_id, amount_due, manual_verification_required: true }
+    │
+    ▼
+Payment must be verified offline by the platform operator
+```
+
+**Target flow (when gateway integrated):**
+```
+Owner clicks "Mejorar Plan"
+    │
+    ▼
+Show PlanSelectorModal (fetches from the existing GET /api/v1/billing/plans/ endpoint)
     │
     ▼
 Select plan + billing_cycle
@@ -766,14 +806,15 @@ Frontend calls POST /billing/confirm/ → activates paid subscription
 
 | File | Lines | Status | Action Needed |
 |------|-------|--------|---------------|
-| `backend/apps/tenants/super_admin_api/tenants.py` | 527 | 🟡 Functional | Add subscription mgmt, password reset, plan change |
-| `backend/apps/tenants/super_admin_api/platform.py` | 557 | 🟡 Functional | Add growth API, health API |
-| `backend/apps/tenants/super_admin_api/schemas.py` | ~300 | 🟢 Good | Add schemas for new endpoints |
-| `backend/apps/tenants/super_admin_api/integration_config.py` | 186 | 🟢 Good | No changes needed |
+| `backend/apps/tenants/super_admin_api/tenants.py` | 625 | 🟡 Functional | Add subscription mgmt, password reset, plan change |
+| `backend/apps/tenants/super_admin_api/impersonation.py` | 185 | 🟢 Good | PIN-gated; no changes needed |
+| `backend/apps/tenants/super_admin_api/platform.py` | 612 | 🟡 Functional | Docstring mentions broadcast/plan CRUD, but broadcast is missing and plan CRUD lives in `platform_plans.py`; add growth API, health API, broadcast endpoint |
+| `backend/apps/tenants/super_admin_api/schemas.py` | 543 | 🟢 Good | Add schemas for new endpoints |
+| `backend/apps/tenants/super_admin_api/integration_config.py` | 493 | 🟢 Good | No changes needed |
 | `backend/apps/tenants/super_admin_api/plan_validation.py` | 87 | 🟢 Good | No changes needed |
-| `backend/apps/audit/api.py` | ~150 | 🟢 Good | Enhance filtering |
-| `backend/apps/billing/api.py` | ~200 | 🔴 Broken | Wire payment processing |
-| `backend/apps/billing/service.py` | ~250 | 🟡 Unused | Wire into API |
+| `backend/apps/audit/api.py` | 198 | 🟢 Good | Enhance filtering |
+| `backend/apps/billing/api.py` | 554 | 🟡 Manual | Integrate real payment gateway |
+| `backend/apps/billing/service.py` | 238 | 🟡 Unused | Wire into API or deprecate |
 
 ## Frontend Files (SuperAdmin-related)
 
@@ -781,7 +822,7 @@ Frontend calls POST /billing/confirm/ → activates paid subscription
 |------|-------|--------|---------------|
 | `frontend/src/app/(dashboard)/superadmin/page.tsx` | ~200 | 🟢 Good | Add auto-refresh |
 | `frontend/src/app/(dashboard)/superadmin/tenants/page.tsx` | ~800 | 🟡 Functional | Add subscription tab, plan change, password reset |
-| `frontend/src/app/(dashboard)/superadmin/metrics/page.tsx` | ~400 | 🟡 Synthetic | Replace fake data |
+| `frontend/src/app/(dashboard)/superadmin/metrics/page.tsx` | ~288 | 🟡 Synthetic | Replace fake data |
 | `frontend/src/app/(dashboard)/superadmin/plans/page.tsx` | ~200 | 🟢 Good | Minor polish |
 | `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | ~500 | 🟢 Good | Minor polish |
 | `frontend/src/components/superadmin/plans/PlanModal.tsx` | 568 | 🟢 Good | No changes needed |
@@ -792,7 +833,7 @@ Frontend calls POST /billing/confirm/ → activates paid subscription
 
 ### Backend Tests
 - `test_superadmin_tenants.py` — CRUD, wizard, actions, impersonation
-- `test_superadmin_platform.py` — metrics, integrations, settings, broadcast
+- `test_superadmin_platform.py` — metrics, integrations, settings
 - `test_superadmin_plans.py` — plan CRUD, validation
 - `test_audit_log.py` — immutability, filtering, export
 - `test_billing.py` — subscription flow, payment gateway, webhooks
@@ -823,13 +864,13 @@ For every new SuperAdmin endpoint:
 
 ### LOPDP (Ecuador) Requirements
 1. **Audit Trail** — ✅ Immutable AuditLog exists
-2. **Data Export** — 🟡 Needs tenant-level export UI
+2. **Data Export** — 🟡 Tenant owner export exists; needs SuperAdmin-initiated UI
 3. **Breach Notification** — 🔴 Missing (see docs/05-compliance/COMPLIANCE_CHECKLIST.md)
 4. **Retention Policy** — 🟡 Documented but not automated
 
 ### GDPR Requirements
-1. **Right to Access** — 🟡 Needs admin-initiated export
-2. **Right to Deletion** — 🟡 Admin can suspend but not fully purge
+1. **Right to Access** — 🟡 Tenant owner can self-export; SuperAdmin-initiated export missing
+2. **Right to Deletion** — 🟡 Admin can suspend but not fully purge (hard-delete exists for SuperAdmin with justification)
 3. **Data Processing Records** — 🟢 AuditLog serves this purpose
 
 ---

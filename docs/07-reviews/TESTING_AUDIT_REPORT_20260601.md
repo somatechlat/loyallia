@@ -1,5 +1,8 @@
+> **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+
 # LOYALLIA — COMPREHENSIVE TESTING & AUDIT REPORT
-## Date: 2026-06-01 | System: Rebuilt from Zero (Bootstrap v2.2)
+## Date: 2026-06-01 (snapshot updated 2026-06-11) | System: Rebuilt from Zero (Bootstrap v2.2)
 
 ---
 
@@ -7,14 +10,14 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| Bootstrap | ✅ PASS | Clean rebuild from zero. 20 containers healthy. |
-| Backend Tests | ✅ PASS | 580/581 passed (99.8%). Test container works perfectly. |
-| Playwright E2E | ✅ PASS | 75/80 passed (93.8%). 4 rate-limit 429s expected on live system. |
-| Manual UI | ✅ PASS | All SuperAdmin screens load, all integrations visible, Twilio shows correct status. |
-| File Sizes | ✅ PASS | No files exceed 650 lines. |
-| Plan Enforcement | ✅ PASS | All decorators applied, gaps fixed, frontend aware. |
-| Documentation | ⚠️ NEEDS UPDATE | DEPLOYMENT_GUIDE.md is outdated. |
-| Twilio | ⚠️ CONFIG ISSUE | `twilio_use_test_mode` is `false` in dev. Should be `true`. |
+| Bootstrap | ✅ PASS (snapshot) | Clean rebuild from zero. 20 containers healthy at time of report. |
+| Backend Tests | ✅ PASS (snapshot) | 580/581 passed (99.8%). Test container works perfectly at time of report. |
+| Playwright E2E | ✅ PASS (snapshot) | 75/80 passed (93.8%). 4 rate-limit 429s expected on live system at time of report. |
+| Manual UI | ✅ PASS (snapshot) | All SuperAdmin screens load, all integrations visible, Twilio shows correct status at time of report. |
+| File Sizes | ✅ PASS (snapshot) | No files exceed 650 lines at time of report. |
+| Plan Enforcement | ✅ PASS (snapshot) | All decorators applied, gaps fixed, frontend aware at time of report. |
+| Documentation | ✅ UPDATED | `docs/04-runbooks/DEPLOYMENT_GUIDE.md` was revised to reference `bootstrap-production.sh`, `recover_admin_access`, and current bootstrap flow. |
+| Twilio | ⚠️ CONFIG ISSUE (snapshot) | `twilio_use_test_mode` is `false` in dev. Should be `true`. |
 
 ---
 

@@ -1,5 +1,11 @@
 # 🎨 Documento 2: Mocks de Todas las Pantallas
 
+> ⚠️ **Estado del documento (2026-06-11):** Estos mocks representan el **diseño
+> propuesto**. La implementación real (`CampaignWizard.tsx` y componentes en
+> `frontend/src/components/campaigns/`) usa **3 pasos** (Canal → Audiencia →
+> Contenido), no 4. También incluye selección/exclusión manual de clientes y
+> programación de envío. Los endpoints reales se documentan en el Documento 3.
+
 Muestras completas del wizard rediseñado. Cada pantalla representa el estado final del diseño.
 
 ---
@@ -30,7 +36,7 @@ Esta pantalla NO cambia drásticamente, solo se mejora el botón de creación.
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Cambios:**
+**Cambios implementados:**
 - El botón `[+ Nueva Campaña]` abre el wizard de pantalla completa (no un form inline)
 - Los banners de uso por canal son más compactos (una sola línea cada uno)
 
@@ -43,8 +49,8 @@ Esta pantalla NO cambia drásticamente, solo se mejora el botón de creación.
 │                                                                             │
 │  ❌  Cancelar                                                               │
 │                                                                             │
-│                    ● Canal        ○ Audiencia      ○ Contenido    ○ Revisar │
-│                    ●──────        ○────────        ○─────────     ○──────── │
+│                    ● Canal        ○ Audiencia      ○ Contenido             │
+│                    ●──────        ○────────        ○─────────              │
 │                                                                             │
 │                                                                             │
 │           ┌──────────────────┐                                              │
@@ -91,10 +97,11 @@ Esta pantalla NO cambia drásticamente, solo se mejora el botón de creación.
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Reglas de esta pantalla:**
+**Reglas de esta pantalla (implementadas):**
 - Solo se puede seleccionar UN canal
 - Los canales bloqueados por plan muestran candado y mensaje de upgrade
 - El canal seleccionado se marca con checkmark y borde de color
+- Existen "Quick Presets" que permiten saltar directamente al paso de contenido
 
 ---
 
@@ -105,8 +112,8 @@ Esta pantalla NO cambia drásticamente, solo se mejora el botón de creación.
 │                                                                             │
 │  ❌  Cancelar                                                               │
 │                                                                             │
-│     ① ✓        ● Audiencia      ○ Contenido      ○ Revisar                  │
-│                  ●─────────      ○─────────       ○────────                   │
+│     ① ✓ Canal  ● Audiencia      ○ Contenido                                 │
+│                  ●─────────      ○─────────                                  │
 │                                                                             │
 │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
 │  📌 RESUMEN:  📱 Wallet  │  Programa: —  │  Audiencia: —                    │
@@ -188,7 +195,7 @@ Esta pantalla NO cambia drásticamente, solo se mejora el botón de creación.
 - Cuando el usuario selecciona un programa, TODOS los contadores de segmento se actualizan para reflejar SOLO los clientes de ese programa
 - Cuando el usuario cambia la plataforma de wallet, los contadores de segmento se actualizan de nuevo
 - El resumen sticky (arriba) se actualiza en tiempo real
-- "Más activos" = top 15% por gasto en el programa seleccionado
+- "Más activos" = top 15% por actividad (visitas y gasto) en el programa seleccionado
 
 ---
 
@@ -232,13 +239,14 @@ Aparece cuando el usuario hace click en "PERSONALIZADO..."
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Reglas del modal:**
+**Reglas del modal (implementadas):**
 - Los filtros de programa y plataforma YA están aplicados (no se pueden cambiar aquí)
 - Búsqueda por nombre, email o teléfono
 - Checkbox por fila + checkbox global "seleccionar todos visibles"
 - Paginación (25 por página)
 - Al confirmar, se guardan los customer_ids y se cierra el modal
-- En el paso 2 del wizard, la tarjeta "PERSONALIZADO" muestra "✓ 2 clientes seleccionados"
+- En el paso 2 del wizard, la tarjeta "PERSONALIZADO" muestra "✓ N clientes seleccionados"
+- También existe un modo **Exclusión** para quitar clientes específicos de una selección mayor
 
 ---
 
@@ -249,8 +257,8 @@ Aparece cuando el usuario hace click en "PERSONALIZADO..."
 │                                                                             │
 │  ❌  Cancelar                                                               │
 │                                                                             │
-│     ① ✓      ② ✓        ● Contenido         ④ Revisar                      │
-│                           ●─────────          ○────────                     │
+│     ① ✓      ② ✓        ● Contenido                                       │
+│                           ●─────────                                        │
 │                                                                             │
 │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
 │  📌 RESUMEN:  📱 Wallet  │  ☕ Café Rewards  │  👥 1,240 clientes (Todos)   │
@@ -300,26 +308,32 @@ Aparece cuando el usuario hace click en "PERSONALIZADO..."
 │  │                                                                     │    │
 │  └────────────────────────────────────────────────────────────────────┘    │
 │                                                                             │
-│                      [← Volver]            [Continuar →]                    │
+│                      [← Volver]        [🕐 Programar] [🚀 Enviar ahora]     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Cambios:**
-- El preview ahora muestra **ambas plataformas** lado a lado (Apple y Google)
+**Cambios implementados:**
+- El preview muestra **ambas plataformas** lado a lado para Wallet
 - Contador de caracteres visible
 - Emoji picker accesible
+- Campo "Nombre interno" adicional
+- Selector de programación: inmediata o fecha/hora futura
+- Los botones "Programar" y "Enviar ahora" están en el paso de contenido
 
 ---
 
-## Pantalla 4: Paso 4 — Revisar y Enviar
+## Pantalla 4: Revisar y Enviar (diseño original; fusionado en Paso 3)
+
+> En la implementación actual el resumen y los botones de envío/programación
+> forman parte del **Paso 3 — Contenido**. No hay un paso separado.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
 │  ❌  Cancelar                                                               │
 │                                                                             │
-│     ① ✓      ② ✓         ③ ✓         ● Revisar y Enviar                   │
+│     ① ✓ Canal  ② ✓ Audiencia  ③ ✓ Contenido (Revisar y Enviar)            │
 │                                         ●────────────────                   │
 │                                                                             │
 │                                                                             │
@@ -418,26 +432,15 @@ Aparece cuando el usuario hace click en "PERSONALIZADO..."
                     │  ──────────── │  │ │
                     │  Título       │  │ │
                     │  Mensaje      │  │ │
-                    │  Preview ●●   │  │ │
+                    │  Preview      │  │ │
+                    │  Programación │  │ │
+                    │  [Programar]  │  │ │
+                    │  [Enviar]     │  │ │
                     └───────┬───────┘  │ │
-                            │          │ │
-              [Continuar]   │          │ │
                             │          │ │
                             ▼          │ │
                     ┌───────────────┐  │ │
-                    │  PASO 4       │◄─┘ │
-                    │  Revisar      │    │
-                    │  ──────────── │    │
-                    │  Resumen      │    │
-                    │  Uso del plan │    │
-                    │  [Enviar]     │    │
-                    └───────┬───────┘    │
-                            │            │
-              [Programar]   │            │
-              [Enviar]      │            │
-                            ▼            │
-                    ┌───────────────┐    │
-                    │  ✅ Éxito     │    │
+                    │  ✅ Éxito     │◄─┘ │
                     │  Volver a     │    │
                     │  la lista     │    │
                     └───────────────┘    │
@@ -445,7 +448,8 @@ Aparece cuando el usuario hace click en "PERSONALIZADO..."
                                          ▼
                               ┌─────────────────┐
                               │  Modal:         │
-                              │  Selección      │
+                              │  Selección /    │
+                              │  exclusión      │
                               │  manual de      │
                               │  clientes       │
                               │  (tabla + ☑️)   │

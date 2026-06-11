@@ -1,6 +1,6 @@
 # Loyallia Wallet Credentials — Current Status
 
-> **Document Date:** 2026-05-06
+> **Document Date:** 2026-06-11
 > **Policy:** Do not store credential values in Git. Verify locally against Vault or ignored certificate files.
 
 ---
@@ -51,7 +51,7 @@ openssl rsa -in apple_pass_new.key -pubout | openssl rsa -pubin -modulus -noout
 |-----------|-------|--------|
 | `mailjet_api_key` | Vault secret | Operator provided |
 | `mailjet_secret_key` | Vault secret | Operator provided |
-| `mailjet_sender_email` | Vault value | Operator provided |
+| `mailjet_sender_email` | PlatformSetting | Operator provided |
 
 **SMTP Server:** `in-v3.mailjet.com` (Mailjet)
 **Port:** `587` (from Django settings)
@@ -85,7 +85,8 @@ All integration cards now support inline Vault editing:
 - Google Wallet: Enabled, Issuer ID, Service Account JSON, OAuth Client ID, OAuth Client Secret
 - Apple Wallet: Enabled, Pass Type ID, Team ID, Certificate PEM, Private Key PEM, WWDR PEM
 - Payment Gateway: Enabled, Provider, Login, Transaction Key, Webhook Secret
-- Mailjet Email: API key, secret key, sender email
+- Mailjet Vault fields: API key, secret key
+- Mailjet PlatformSettings: sender email, sender name
 
 ---
 
@@ -93,20 +94,17 @@ All integration cards now support inline Vault editing:
 
 | File | Status | Notes |
 |------|--------|-------|
-| `AppleWWDRCAG4.cer` | Ignored local credential | Apple WWDR intermediate cert |
-| `passNew.cer` | Ignored local credential | Apple Pass Type ID cert |
-| `apple_pass_new.key` | Ignored local credential | Apple private key |
-| `apple_pass_new.csr` | Ignored local credential | CSR |
-| `client_secret_*.json` | Ignored local credential | Google OAuth 2.0 client secrets |
-| `service-account-*.json` | Ignored local credential | Google Wallet service account |
+| `vault.crt` | Local dev TLS certificate | Vault HTTPS dev certificate |
+| `vault.key` | Local dev TLS private key | Vault HTTPS dev key |
 | `README.md` | — | Documentation |
 
-**Removed Files (sanitized/obsolete):**
-- `apple_pass.key` — sanitized placeholder
-- `apple_pass_cert.pem` — sanitized placeholder
-- `apple_wwdr.pem` — sanitized placeholder
-- `apple_pass.csr` — old CSR for missing keypair
-- `pass.cer` — old certificate for missing keypair
+Wallet and OAuth credential files are **not stored in `certs/`** — they live in
+HashiCorp Vault. The following patterns are gitignored to prevent accidental
+commits:
+- `certs/*.pem`
+- `certs/*.key`
+- `certs/*.p12`
+- `certs/*.json`
 
 ---
 
@@ -124,6 +122,6 @@ All integration cards now support inline Vault editing:
 
 ## NEXT STEPS
 
-1. **Production:** keep SMTP password in Vault only and rotate by operator policy.
+1. **Production:** keep Mailjet API key/secret in Vault only and rotate by operator policy.
 2. **Security:** rotate Google service account keys by operator policy.
 3. **Apple Wallet:** track certificate expiry outside Git and renew before expiry.

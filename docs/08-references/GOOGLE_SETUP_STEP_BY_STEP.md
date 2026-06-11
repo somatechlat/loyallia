@@ -72,15 +72,16 @@ Esto da al sistema el `Client ID` y `Client Secret` para el login.
 | **Nombre** | `Loyallia Web App` |
 
 5. En **"Orígenes de JavaScript autorizados"**, hacé click en **"AGREGAR URI"** y agregá:
-   - `http://localhost` (para desarrollo local — frontend por Nginx en puerto 80)
+   - `http://localhost:33906` (Next.js dev)
+   - `http://localhost` (si accedés por Nginx en puerto 80)
    - `https://rewards.loyallia.com` (tu dominio real de producción)
    - Si tenés otro dominio, agregalo también.
 
 6. En **"URI de redireccionamiento autorizados"**, hacé click en **"AGREGAR URI"** y agregá:
-   - `http://localhost/api/v1/auth/google/callback/` (desarrollo local — va por Nginx en puerto 80)
+   - `http://localhost:33905/api/v1/auth/google/callback/` (API directa en desarrollo)
    - `https://rewards.loyallia.com/api/v1/auth/google/callback/` (producción)
 
-   > ⚠️ **IMPORTANTE:** La URL DEBE terminar en `/` (slash al final). Si no, falla.
+   > ⚠️ **IMPORTANTE:** La URL DEBE terminar en `/` (slash al final). Si no, falla. El valor por defecto en desarrollo es el que usa `GOOGLE_OAUTH_REDIRECT_URI` (`backend/loyallia/settings/base.py`).
 
 7. Hacé click en **"CREAR"**
 
@@ -187,6 +188,10 @@ Una vez que terminaste los 7 pasos anteriores, mandame estos datos EXACTOS:
 ```
 
 > ⚠️ **IMPORTANTE de seguridad:** El archivo JSON contiene una clave privada. Solo pasamelo por este chat privado. No lo subas a GitHub ni lo mandes por email público.
+>
+> Las claves de Vault que se usan son:
+> - Google OAuth: `google_oauth_client_id`, `google_oauth_client_secret`
+> - Google Wallet: `google_wallet_issuer_id`, `google_service_account_json`, `google_wallet_enabled`
 
 ---
 
@@ -206,13 +211,13 @@ Una vez que me pases los 4 datos de arriba, yo:
 
 Después de que yo configure todo, podés verificar en:
 
-**URL:** `http://localhost/superadmin/settings` (logueado como SuperAdmin)
+**URL:** `http://localhost:33906/superadmin/settings` (logueado como SuperAdmin; también accesible vía Nginx en `http://localhost/superadmin/settings`)
 
 | Integración | Estado Esperado | Significado |
 |-------------|-----------------|-------------|
-| Google Wallet | 🟢 **Conectado** | Todo funciona |
-| Google Wallet | 🔴 **Faltan credenciales** | Falta algún dato |
-| Google OAuth | 🟢 Funcionando | Los usuarios pueden loguear con Google |
+| Google Wallet | 🟢 **Conectado** | `google_wallet_enabled=true`, Issuer ID presente y service account válido |
+| Google Wallet | 🔴 **Faltan credenciales** | Falta Issuer ID, service account o algún campo obligatorio |
+| Google OAuth | 🟢 **Datos cargados** | `google_oauth_client_id` y `google_oauth_client_secret` están en Vault (se editan dentro de la tarjeta Google Wallet) |
 
 ---
 

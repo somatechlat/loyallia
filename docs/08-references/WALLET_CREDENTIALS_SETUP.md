@@ -4,7 +4,7 @@
 
 This document explains how to obtain and configure real API credentials for **Google Wallet** and **Apple Wallet** in Loyallia.
 
-> **Security Notice:** All wallet credentials are stored in HashiCorp Vault (`secret/data/loyallia/production`). Never commit real certificates or service account keys to Git.
+> **Security Notice:** All wallet credentials are stored in HashiCorp Vault. The exact path depends on the environment: development uses `secret/data/loyallia/development` (default in `backend/common/vault.py` and `docker-compose.yml`), production uses `secret/data/loyallia/production`. Never commit real certificates or service account keys to Git.
 
 ---
 
@@ -43,8 +43,8 @@ This document explains how to obtain and configure real API credentials for **Go
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Navigate to **IAM & Admin** → **Service Accounts**
 3. Click **"Create Service Account"**
-4. Name it: `loyallia-wallet-sa`
-5. Grant it the role: **"Wallet API Service Account"** (or create a custom role with `walletobjects.eventticket` permissions)
+4. Name it: `loyallia-wallet`
+5. Grant it a Google Wallet API role (for example, a role with `walletobjects.*` permissions). The exact name depends on your Google Cloud organization.
 6. Click **"Create Key"** → Choose **JSON** format
 7. Download the `.json` file — this is your service account key
 
@@ -58,8 +58,8 @@ This document explains how to obtain and configure real API credentials for **Go
 
 #### Option A: Via SuperAdmin UI (Recommended)
 
-1. Log in to Loyallia as SuperAdmin: `http://localhost/superadmin/login`
-2. Navigate to **Configuración** → **Integraciones**
+1. Log in to Loyallia as SuperAdmin: `http://localhost:33906/login`
+2. Navigate to **Configuración Global** → **Integraciones** (`/superadmin/settings`)
 3. Find the **Google Wallet** card
 4. Click **"Configurar credenciales en Vault"**
 5. Fill in:
@@ -71,18 +71,24 @@ This document explains how to obtain and configure real API credentials for **Go
 
 #### Option B: Via Vault CLI
 
+> Vault runs HTTPS in the development stack (`docker-compose.yml`). Use `--insecure`
+> (`-k`) or set `VAULT_SKIP_VERIFY=true`. Replace `VAULT_SECRET_PATH` with
+> `secret/data/loyallia/development` for local dev or `secret/data/loyallia/production`
+> for production.
+
 ```bash
 # Read the service account JSON file
-SA_JSON=$(cat /path/to/loyallia-wallet-sa-*.json)
+SA_JSON=$(cat /path/to/loyallia-wallet-*.json)
 
-# Get the Vault root token
+# Get the Vault root token from the container init file
 export VAULT_TOKEN="$(docker exec loyallia-vault cat /vault/file/init.json | python3 -c "import sys,json; print(json.load(sys.stdin)['root_token'])")"
 
 # Write credentials to Vault
 curl -X POST \
   -H "X-Vault-Token: $VAULT_TOKEN" \
   -H "Content-Type: application/json" \
-  http://localhost:33908/v1/secret/data/loyallia/production \
+  --insecure \
+  https://localhost:33908/v1/secret/data/loyallia/production \
   -d "{
     \"data\": {
       \"google_wallet_issuer_id\": \"YOUR_ISSUER_ID\",
@@ -94,14 +100,22 @@ curl -X POST \
 
 #### Option C: Via API Script
 
-Use the provided helper script:
+Use the provided helper script (`scripts/inject_wallet_credentials.py`).
+Set `VAULT_SECRET_PATH` to match your environment (`secret/data/loyallia/development`
+for local dev, `secret/data/loyallia/production` for production). The script
+defaults to `http://localhost:33908`; local Vault uses HTTPS with a self-signed
+certificate, so run it from a context where the Vault CA is trusted or adjust
+`VAULT_ADDR` accordingly.
 
 ```bash
 # Copy your service account JSON to the project root
-cp /path/to/loyallia-wallet-sa-*.json ./google-service-account.json
+cp /path/to/loyallia-wallet-*.json ./google-service-account.json
 
-# Run the injection script
-python3 scripts/inject_wallet_credentials.py --google-issuer-id "YOUR_ISSUER_ID" --google-sa-json ./google-service-account.json
+# Local development example
+export VAULT_SECRET_PATH=secret/data/loyallia/development
+python3 scripts/inject_wallet_credentials.py \
+  --google-issuer-id "YOUR_ISSUER_ID" \
+  --google-sa-json ./google-service-account.json
 ```
 
 ### Step 5: Verify Integration
@@ -109,7 +123,7 @@ python3 scripts/inject_wallet_credentials.py --google-issuer-id "YOUR_ISSUER_ID"
 1. Go to SuperAdmin → Configuración → Integraciones
 2. The Google Wallet card should show:
    - Status: **Verde** (Conectado)
-   - Diagnostics: `service_account_present: true`, `service_account_valid_json: true`
+   - Diagnostics: `issuer_id_present: true`, `service_account_present: true`, `service_account_has_required_fields: true`
 
 ---
 
@@ -178,8 +192,8 @@ openssl x509 -in pass.cer -inform DER -out apple_cert.pem -outform PEM
 
 #### Option A: Via SuperAdmin UI (Recommended)
 
-1. Log in to Loyallia as SuperAdmin
-2. Navigate to **Configuración** → **Integraciones**
+1. Log in to Loyallia as SuperAdmin at `http://localhost:33906/login`
+2. Navigate to **Configuración Global** → **Integraciones** (`/superadmin/settings`)
 3. Find the **Apple Wallet** card
 4. Click **"Configurar credenciales en Vault"**
 5. Fill in each field:
@@ -194,6 +208,10 @@ openssl x509 -in pass.cer -inform DER -out apple_cert.pem -outform PEM
 
 #### Option B: Via Vault CLI
 
+> Vault runs HTTPS in the development stack. Use `--insecure` (`-k`) or set
+> `VAULT_SKIP_VERIFY=true`. Replace the path with `secret/data/loyallia/development`
+> for local dev.
+
 ```bash
 # Read certificate contents
 CERT_PEM=$(cat apple_cert.pem | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
@@ -205,7 +223,8 @@ export VAULT_TOKEN="$(docker exec loyallia-vault cat /vault/file/init.json | pyt
 curl -X POST \
   -H "X-Vault-Token: $VAULT_TOKEN" \
   -H "Content-Type: application/json" \
-  http://localhost:33908/v1/secret/data/loyallia/production \
+  --insecure \
+  https://localhost:33908/v1/secret/data/loyallia/production \
   -d "{
     \"data\": {
       \"apple_pass_type_identifier\": \"<vault:apple_pass_type_identifier>\",
@@ -221,7 +240,8 @@ curl -X POST \
 #### Option C: Via Helper Script
 
 ```bash
-# Run the injection script
+# Local development example
+export VAULT_SECRET_PATH=secret/data/loyallia/development
 python3 scripts/inject_wallet_credentials.py \
   --apple-pass-id "<vault:apple_pass_type_identifier>" \
   --apple-team-id "<vault:apple_team_identifier>" \
@@ -245,13 +265,18 @@ A convenience script is provided at `scripts/inject_wallet_credentials.py` to au
 
 ### Usage
 
+Set `VAULT_SECRET_PATH` to match the target environment (`secret/data/loyallia/development`
+in local dev, `secret/data/loyallia/production` in production).
+
 ```bash
 # Google Wallet only
+VAULT_SECRET_PATH=secret/data/loyallia/development \
 python3 scripts/inject_wallet_credentials.py \
   --google-issuer-id "<vault:google_wallet_issuer_id>" \
   --google-sa-json ./google-service-account.json
 
 # Apple Wallet only
+VAULT_SECRET_PATH=secret/data/loyallia/development \
 python3 scripts/inject_wallet_credentials.py \
   --apple-pass-id "<vault:apple_pass_type_identifier>" \
   --apple-team-id "<vault:apple_team_identifier>" \
@@ -260,6 +285,7 @@ python3 scripts/inject_wallet_credentials.py \
   --apple-wwdr ./apple_wwdr.pem
 
 # Both
+VAULT_SECRET_PATH=secret/data/loyallia/development \
 python3 scripts/inject_wallet_credentials.py \
   --google-issuer-id "<vault:google_wallet_issuer_id>" \
   --google-sa-json ./google-service-account.json \
@@ -291,7 +317,7 @@ python3 scripts/inject_wallet_credentials.py \
 | `team_id_present: false` | Set `apple_team_identifier` in Vault |
 | `cert_pem_present: false` | Set `apple_cert_pem` in Vault |
 | `key_pem_present: false` | Set `apple_cert_key_pem` in Vault |
-| `wwdr_cert_present: false` | Set `apple_wwdr_cert_pem` in Vault |
+| `wwdr_cert_pem_present: false` | Set `apple_wwdr_cert_pem` in Vault |
 | `certs_cryptographically_valid: false` | Certificates may be expired or mismatched |
 
 ### Vault Permission Denied
@@ -303,7 +329,7 @@ Ensure the Vault token has `create` and `update` permissions on `secret/data/loy
 docker exec loyallia-vault vault policy read loyallia-app
 
 # Policy should include:
-# path "secret/data/loyallia/production" {
+# path "secret/data/loyallia/*" {
 #   capabilities = ["read", "create", "update"]
 # }
 ```
