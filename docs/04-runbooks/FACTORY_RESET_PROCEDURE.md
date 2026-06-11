@@ -108,7 +108,7 @@ ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap-production.sh
 
 **Idempotent:** Both scripts are fully idempotent. If interrupted, simply re-run — completed steps are skipped automatically.
 
-**Architecture:** See `docs/BOOTSTRAP_ARCHITECTURE.md` for full Zero Trust design.
+**Architecture:** See `docs/02-architecture/BOOTSTRAP_ARCHITECTURE.md` for full Zero Trust design.
 
 ---
 

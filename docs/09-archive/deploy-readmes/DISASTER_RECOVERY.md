@@ -112,5 +112,5 @@ The recovery script will:
 - [`deploy/bootstrap/`](../bootstrap/) — Full deployment orchestrator (used after recovery)
 - [`deploy/factory_reset/`](../factory_reset/) — Destroy development environment (opposite of recovery)
 - [`deploy/vault/`](../vault/) — Vault initialization and secret management
-- [`../../docs/BACKUP_ARCHITECTURE.md`](../../docs/BACKUP_ARCHITECTURE.md) — Backup and encryption architecture
-- [`../../docs/BACKUP_DISASTER_RECOVERY.md`](../../docs/BACKUP_DISASTER_RECOVERY.md) — Detailed recovery runbook
+- [`../../docs/02-architecture/BACKUP_ARCHITECTURE.md`](../../02-architecture/BACKUP_ARCHITECTURE.md) — Backup and encryption architecture
+- [`../../docs/09-archive/BACKUP_DISASTER_RECOVERY.md`](../BACKUP_DISASTER_RECOVERY.md) — Detailed recovery runbook

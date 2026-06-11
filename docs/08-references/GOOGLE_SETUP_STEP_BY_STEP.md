@@ -221,7 +221,7 @@ Después de que yo configure todo, podés verificar en:
 Si también querés tarjetas para iPhone, necesitás:
 
 1. Una cuenta de **Apple Developer Program** ($99 USD/año)
-2. Seguir los pasos de: [`docs/WALLET_CREDENTIALS_SETUP.md`](./WALLET_CREDENTIALS_SETUP.md)
+2. Seguir los pasos de: [`docs/08-references/WALLET_CREDENTIALS_SETUP.md`](./WALLET_CREDENTIALS_SETUP.md)
 
 Apple Wallet es **independiente** de Google Wallet. Podés tener uno, el otro, o ambos.
 

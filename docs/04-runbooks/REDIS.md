@@ -109,4 +109,4 @@ Celery uses separate databases on the same Redis instance:
 
 - [`deploy/vault/`](../vault/) — Vault stores `redis_url` and derived `redis_password`
 - [`deploy/bootstrap/full-deploy.sh`](../bootstrap/full-deploy.sh) — Deployment orchestrator
-- [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) — Caching and task queue architecture
+- [`../../docs/02-architecture/ARCHITECTURE.md`](../02-architecture/ARCHITECTURE.md) — Caching and task queue architecture

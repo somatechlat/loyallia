@@ -425,7 +425,7 @@ Recovery restores normal operations using validated, clean systems.
 
 ### 8.4 Communication Templates
 
-Pre-approved templates are maintained in `docs/iso27001/templates/`:
+Pre-approved templates are maintained in `docs/05-compliance/iso27001/templates/`:
 - `customer-breach-notification.md`
 - `regulatory-breach-notification-ecuador.md`
 - `internal-incident-update.md`

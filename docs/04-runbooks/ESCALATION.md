@@ -57,4 +57,4 @@ L4 CTO / VP Engineering
 - API Down
 - PostgreSQL Failover
 - Redis Failover
-- [Backup Recovery](../../docs/BACKUP_DISASTER_RECOVERY.md)
+- [Backup Recovery](../09-archive/BACKUP_DISASTER_RECOVERY.md)

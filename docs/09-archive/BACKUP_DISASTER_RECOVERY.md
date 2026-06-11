@@ -1398,7 +1398,7 @@ services:
 **Known Gaps (aspirational features not yet implemented):**
 - WAL archiving is to local disk (`/var/lib/postgresql/data/wal_archive/`), not MinIO bucket `pg-wal-archive`.
 - Vault backup exports KV secrets with `age` encryption; Raft snapshots with GPG are not implemented.
-- `recover_from_rescue.sh` has unfixed Vault recovery bugs (see `docs/BACKUP_TESTING_PLAN.md` §9). Do not use for full DR until redesigned.
+- `recover_from_rescue.sh` has unfixed Vault recovery bugs (see `docs/03-guides/BACKUP_TESTING_PLAN.md` §9). Do not use for full DR until redesigned.
 - Weekly automated restore test (Sundays 4:00 AM) does not exist as a standalone script.
 - MinIO cross-site replication is documented but not configured.
 - Circuit breaker pattern is documented but not implemented in code.

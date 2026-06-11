@@ -336,6 +336,6 @@ A **complete redesign** of the Loyallia Wallet Pass Studio — transforming an a
 ---
 
 *This is the complete scope. Nothing more will be added without your explicit request.*
-*All documentation lives in `docs/wallet-studio/` on branch `PASS-DESIGNER`.*
+*All documentation lives in `docs/06-planning/wallet-studio/` on branch `PASS-DESIGNER`.*
 
 **Are you ready to approve this scope and proceed?**

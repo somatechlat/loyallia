@@ -185,11 +185,11 @@ These issues span multiple domains and require immediate attention:
 
 | Agent | Report Path |
 |-------|-------------|
-| QA & Testing | `docs/audit/QA_TESTING_AUDIT_REPORT.md` |
-| Architecture & Patterns | `docs/audit/ARCHITECTURE_PATTERNS_AUDIT_REPORT.md` |
-| UI/UX Design | `docs/audit/UI_UX_AUDIT_REPORT.md` |
-| API Design & Security | `docs/audit/API_SECURITY_AUDIT_REPORT.md` |
-| Database Design & Performance | `docs/audit/DATABASE_PERFORMANCE_AUDIT_REPORT.md` |
+| QA & Testing | `docs/07-reviews/audit/QA_TESTING_AUDIT_REPORT.md` |
+| Architecture & Patterns | `docs/07-reviews/audit/ARCHITECTURE_PATTERNS_AUDIT_REPORT.md` |
+| UI/UX Design | `docs/07-reviews/audit/UI_UX_AUDIT_REPORT.md` |
+| API Design & Security | `docs/07-reviews/audit/API_SECURITY_AUDIT_REPORT.md` |
+| Database Design & Performance | `docs/07-reviews/audit/DATABASE_PERFORMANCE_AUDIT_REPORT.md` |
 
 ---
 

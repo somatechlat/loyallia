@@ -143,7 +143,7 @@ The following functions are classified as **Critical** (business cannot operate 
 - **Vault:** HA Raft cluster with AWS KMS auto-unseal. If cluster is lost, restore from encrypted Raft snapshot + `vault_init_rescue.json` (10–15 min).
 - **Application Containers:** Docker Compose restart policy (`unless-stopped`). If host fails, redeploy on replacement host using bootstrap scripts.
 
-**Reference:** See `docs/BACKUP_DISASTER_RECOVERY.md` §7.1–7.4 and `docs/DISASTER_RECOVERY_PLAYBOOK.md` §3.
+**Reference:** See `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` §7.1–7.4 and `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §3.
 
 ### 4.2 Data Center Loss (Complete Site Failure)
 
@@ -163,7 +163,7 @@ The following functions are classified as **Critical** (business cannot operate 
 **RTO:** ≤ 4 hours  
 **RPO:** ≤ 24 hours (object storage); ≤ 5 minutes (transactional DB via WAL archive if secondary region has near-real-time WAL shipping).
 
-**Reference:** See `docs/DISASTER_RECOVERY_PLAYBOOK.md` §3.2 and `docs/BACKUP_DISASTER_RECOVERY.md` §7.5.
+**Reference:** See `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §3.2 and `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` §7.5.
 
 ### 4.3 Cyber Attack / Ransomware
 
@@ -185,7 +185,7 @@ The following functions are classified as **Critical** (business cannot operate 
    - Rotate all secrets, API keys, and certificates regardless of apparent compromise.
    - LOPDP breach notification within 72 hours if personal data is affected.
 
-**Reference:** See `deploy/backups/breach_notification.py` and `docs/DISASTER_RECOVERY_PLAYBOOK.md` §5.
+**Reference:** See `deploy/backups/breach_notification.py` and `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §5.
 
 ### 4.4 Natural Disaster (Earthquake, Flood, Power Grid Failure)
 
@@ -216,7 +216,7 @@ All backups must be verified automatically on a scheduled basis; manual verifica
 
 **Failure Handling:** If any automated verification fails, Alertmanager pages the Primary On-Call SRE within 5 minutes. The SRE must investigate and resolve the failure within 4 hours, or escalate to the Infrastructure Lead.
 
-**Reference:** See `deploy/backups/README.md` and `docs/BACKUP_DISASTER_RECOVERY.md` §3.5, §6.1.
+**Reference:** See `deploy/backups/README.md` and `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` §3.5, §6.1.
 
 ### 5.2 Recovery Procedures
 
@@ -228,8 +228,8 @@ Recovery procedures are maintained in three layers:
    - `deploy/backups/restore` — component-level restore (`--postgres`, `--redis`, `--vault`, `--minio`, `--snapshot`).
 
 2. **Runbooks:**
-   - `docs/DISASTER_RECOVERY_PLAYBOOK.md` — step-by-step commands for every scenario matrix entry.
-   - `docs/BACKUP_DISASTER_RECOVERY.md` — architecture, RTO/RPO justification, and deep-dive recovery for each data layer.
+   - `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` — step-by-step commands for every scenario matrix entry.
+   - `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` — architecture, RTO/RPO justification, and deep-dive recovery for each data layer.
 
 3. **Bootstrap Rebuild:**
    - `deploy/bootstrap/bootstrap-production.sh` — idempotent zero-trust rebuild from scratch (used when no rescue files are viable, or for green-field DR site).
@@ -336,7 +336,7 @@ Before declaring an incident resolved and returning to normal operations, the fo
 | Within 1 week | Post-mortem written; action items assigned; DR gaps remediated. | CISO |
 | Within 1 month | DR drill scheduled to validate fixes; documentation updated; on-call training refreshed. | Infrastructure Lead |
 
-**Reference:** See `docs/DISASTER_RECOVERY_PLAYBOOK.md` §5 (Post-Incident Checklist).
+**Reference:** See `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §5 (Post-Incident Checklist).
 
 ---
 
@@ -358,12 +358,12 @@ Any change to this policy or its subordinate procedures must follow the standard
 1. Draft change in a feature branch.
 2. Technical review by SRE Lead and Security Lead.
 3. Approval by CISO (policy changes) or Infrastructure Lead (procedure changes).
-4. Merge to `main`; auto-archive previous version in `docs/iso27001/archive/`.
+4. Merge to `main`; auto-archive previous version in `docs/05-compliance/iso27001/archive/`.
 5. Notify BCM team within 24 hours.
 
 ### 9.3 Training and Awareness
 
-- New engineering hires complete BCM/DR orientation within their first 30 days, including a walkthrough of `docs/DISASTER_RECOVERY_PLAYBOOK.md` and hands-on rescue-file verification.
+- New engineering hires complete BCM/DR orientation within their first 30 days, including a walkthrough of `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` and hands-on rescue-file verification.
 - All SRE staff must successfully complete at least one component-restore drill per quarter.
 - BCM team roles and contact details are updated in `deploy/alerting/ESCALATION.md` whenever personnel change.
 
@@ -373,16 +373,16 @@ Any change to this policy or its subordinate procedures must follow the standard
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Backup & Disaster Recovery Plan | `docs/BACKUP_DISASTER_RECOVERY.md` | Detailed backup architecture, RTO/RPO rationale, and per-component recovery steps. |
-| Disaster Recovery Playbook | `docs/DISASTER_RECOVERY_PLAYBOOK.md` | Scenario matrix, escalation contacts, step-by-step recovery commands, post-incident checklist. |
-| Factory Reset Procedure | `docs/FACTORY_RESET_PROCEDURE.md` | Idempotent environment rebuild and surgical data cleanup. |
+| Backup & Disaster Recovery Plan | `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` | Detailed backup architecture, RTO/RPO rationale, and per-component recovery steps. |
+| Disaster Recovery Playbook | `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` | Scenario matrix, escalation contacts, step-by-step recovery commands, post-incident checklist. |
+| Factory Reset Procedure | `docs/04-runbooks/FACTORY_RESET_PROCEDURE.md` | Idempotent environment rebuild and surgical data cleanup. |
 | Backup Scripts | `deploy/backups/` | Daily encrypted backups, offsite sync, verification automation. |
 | DR Scripts | `deploy/disaster_recovery/` | Rescue-file creation and automated full-environment recovery. |
 | Factory Reset Scripts | `deploy/factory_reset/` | Production and development factory-reset automation. |
 | Bootstrap Scripts | `deploy/bootstrap/` | Zero-trust full environment rebuild from scratch. |
 | Monitoring & Alerting | `deploy/alerting/ESCALATION.md` | Escalation paths and on-call rotation. |
-| Access Control Policy | `docs/iso27001/04-Access-Control-Policy.md` | Roles and permissions for DR execution. |
-| Risk Assessment | `docs/iso27001/02-Risk-Assessment.md` | Identified risks informing BIA priorities. |
+| Access Control Policy | `docs/05-compliance/iso27001/04-Access-Control-Policy.md` | Roles and permissions for DR execution. |
+| Risk Assessment | `docs/05-compliance/iso27001/02-Risk-Assessment.md` | Identified risks informing BIA priorities. |
 
 ---
 

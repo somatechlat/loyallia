@@ -130,4 +130,4 @@ export VAULT_RESCUE_INIT_JSON=/path/to/vault_init_rescue.json
 - [`deploy/scripts/`](../scripts/) — `rotate_secrets.sh` for secret rotation
 - [`deploy/disaster_recovery/`](../disaster_recovery/) — Recovery from encrypted rescue files
 - [`deploy/backups/`](../backups/) — Backup procedures
-- [`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) — Security and secrets architecture
+- [`../../docs/02-architecture/ARCHITECTURE.md`](../02-architecture/ARCHITECTURE.md) — Security and secrets architecture

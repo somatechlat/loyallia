@@ -23,7 +23,7 @@
 | [SRS-004-Appendices.md](./SRS-004-Appendices.md) | **Complete Apple PassKit & Google Wallet technical reference** | ✅ Complete |
 | [SRS-005-User-Journeys.md](./SRS-005-User-Journeys.md) | **23 complete user journeys** — every possible path through the system | ✅ Complete |
 | [SRS-006-Card-Type-Visual-Customization.md](./SRS-006-Card-Type-Visual-Customization.md) | **All 10 card types** — customizable icons, badges, stamps, decorative elements per type | ✅ Complete |
-| [SRS-007-AI-Integration.md](./SRS-007-AI-Integration.md) | **Kimi K2.6 integration** — architecture, prompts, backend/frontend code, security, rate limiting | ✅ Complete |
+| [SRS-007-AI-Integration.md](./SRS-007-AI-Integration.md) | **Groq integration** — architecture, prompts, backend/frontend code, security, rate limiting | ✅ Complete |
 
 ---
 
@@ -57,7 +57,7 @@ The **Wallet Pass Studio** is a state-of-the-art visual design environment for c
 
 1. **Canvas-Based Design** — Drag, drop, resize elements directly on the pass preview
 2. **Dual-Platform Simultaneous Preview** — Design once, see both Apple and Google
-3. **AI Assistant (✨ Diseñar con IA)** — Generate complete designs from business descriptions via Kimi K2.6
+3. **AI Assistant (✨ Diseñar con IA)** — Generate complete designs from business descriptions via Groq
 4. **20+ Industry Templates** — Café, Retail, Gym, Salon, Hotel, and more
 5. **Smart Defaults** — Every card type starts with a complete, usable design
 6. **Design Quality Score** — Real-time WCAG contrast checks and validation
@@ -86,7 +86,7 @@ Our documentation now contains **comprehensive knowledge** scraped and compiled 
 
 ### AI Integration
 
-- **API:** Kimi K2.6 (Moonshot AI) via `https://api.moonshot.cn/v1`
+- **API:** Groq (OpenAI-compatible) via `https://api.groq.com/openai/v1`
 - **API Key:** Stored securely in HashiCorp Vault (`kimi_api_key`)
 - **Backend Proxy:** All AI calls go through Django (key never exposed to frontend)
 - **Features:** Magic Template, Smart Color, Design Critique, Stamp Icon Suggestions, Auto-Layout
@@ -136,7 +136,7 @@ Small business owners (cafés, retail stores, gyms, salons) with **no design or 
 | Google Wallet API | https://developers.google.com/wallet | Official Google documentation |
 | Google Wallet Codelab | https://codelabs.developers.google.com/add-to-wallet-web | Web integration tutorial |
 | Google Pass Customization | https://developers.google.com/wallet/retail/loyalty-cards/use-cases/pass-customization | Layout customization guide |
-| Kimi AI API | https://api.moonshot.cn/v1 | AI design assistant backend |
+| Groq API | https://api.groq.com/openai/v1 | AI design assistant backend |
 
 ---
 

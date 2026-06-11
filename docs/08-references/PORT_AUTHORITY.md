@@ -6,7 +6,7 @@ All Loyallia services use the **33900** port range to avoid collisions with othe
 
 | Port  | Service           | Internal Port | Memory Limit | Description                        |
 |-------|-------------------|---------------|--------------|------------------------------------|
-| 33900 | PostgreSQL 16     | 5432          | 1.5 GB       | Primary database (tuned)           |
+| 33900 | PostgreSQL 17     | 5432          | 1.5 GB       | Primary database (tuned)           |
 | 33901 | PgBouncer         | 6432          | 128 MB       | Connection pooling proxy           |
 | 33902 | Redis 7           | 6379          | 512 MB       | Cache + Celery broker (AOF)        |
 | 33903 | MinIO (API)       | 9000          | 512 MB       | S3-compatible object storage       |

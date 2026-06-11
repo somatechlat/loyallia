@@ -1,14 +1,14 @@
-# SRS-007: AI Integration Specification — Kimi K2.6
+# SRS-007: AI Integration Specification — Groq API
 
 > **ISO/IEC/IEEE 29148:2018 — Software Requirements Specification**
-> Document ID: SRS-LOY-WPS-007 | Version: 1.0.0-Draft
+> Document ID: SRS-LOY-WPS-007 | Version: 1.1.0
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#1-overview)
-2. [Kimi API Configuration & Security](#2-kimi-api-configuration--security)
+2. [Groq API Configuration & Security](#2-groq-api-configuration--security)
 3. [Architecture](#3-architecture)
 4. [AI Features in Wallet Pass Studio](#4-ai-features-in-wallet-pass-studio)
 5. [Prompt Engineering](#5-prompt-engineering)
@@ -22,7 +22,7 @@
 
 ## 1. Overview
 
-The Loyallia Wallet Pass Studio integrates **Kimi K2.6** (Moonshot AI) as the AI engine for design assistance, template generation, and intelligent suggestions. This document specifies the complete integration architecture.
+The Loyallia Wallet Pass Studio integrates the **Groq API** (OpenAI-compatible) as the AI engine for design assistance, template generation, and intelligent suggestions. This document specifies the complete integration architecture.
 
 ### AI Capabilities
 
@@ -39,23 +39,23 @@ The Loyallia Wallet Pass Studio integrates **Kimi K2.6** (Moonshot AI) as the AI
 
 | Property | Value |
 |----------|-------|
-| **Provider** | Moonshot AI (Kimi) |
-| **Model** | kimi-k2-6 (or latest available) |
-| **Base URL** | `https://api.moonshot.cn/v1` |
+| **Provider** | Groq (OpenAI-compatible) |
+| **Model** | openai/gpt-oss-120b (configurable via Vault) |
+| **Base URL** | `https://api.groq.com/openai/v1` |
 | **Authentication** | Bearer token (API key) |
-| **Key Storage** | HashiCorp Vault (`kimi_api_key`) |
+| **Key Storage** | HashiCorp Vault (`ai_api_key`) |
 
 ---
 
-## 2. Kimi API Configuration & Security
+## 2. Groq API Configuration & Security
 
 ### Vault Secret Path
 
 ```
 secret/data/loyallia/production
-├── kimi_api_key          ← Kimi API Key (sk-kimi-...)
+├── ai_api_key            ← Groq API Key (gsk-...)
 ├── ai_agent_api_key      ← Same key (alias for compatibility)
-└── ai_agent_base_url     ← https://api.moonshot.cn/v1
+└── ai_agent_base_url     ← https://api.groq.com/openai/v1
 ```
 
 ### Vault Injection Script
@@ -67,7 +67,7 @@ secret/data/loyallia/production
 # The key was injected via:
 # VAULT_ADDR=https://localhost:33908
 # PATCH /v1/secret/data/loyallia/production
-# Body: {"data": {"kimi_api_key": "sk-kimi-..."}}
+# Body: {"data": {"ai_api_key": "gsk-..."}}
 ```
 
 ### Backend Secret Retrieval
@@ -76,8 +76,8 @@ secret/data/loyallia/production
 # backend/common/vault.py
 from common.vault import get_secret
 
-KIMI_API_KEY = get_secret("kimi_api_key", strict=True)
-KIMI_BASE_URL = get_secret("ai_agent_base_url", default="https://api.moonshot.cn/v1")
+AI_API_KEY = get_secret("ai_api_key", strict=True)
+AI_BASE_URL = get_secret("ai_agent_base_url", default="https://api.groq.com/openai/v1")
 ```
 
 ### Security Rules
@@ -124,7 +124,7 @@ KIMI_BASE_URL = get_secret("ai_agent_base_url", default="https://api.moonshot.cn
 │  │         │                │                │                          │  │
 │  │         └────────────────┴────────────────┘                          │  │
 │  │                          │                                           │  │
-│  │                    POST https://api.moonshot.cn/v1/chat/completions   │  │
+│  │                    POST https://api.groq.com/openai/v1/chat/completions   │  │
 │  │                    Authorization: Bearer <kimi_api_key from Vault>    │  │
 │  └──────────────────────────┼───────────────────────────────────────────┘  │
 │                             │                                               │
@@ -137,8 +137,8 @@ KIMI_BASE_URL = get_secret("ai_agent_base_url", default="https://api.moonshot.cn
                               │ HTTPS
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         MOONSHOT AI (Kimi K2.6)                             │
-│                         https://api.moonshot.cn/v1                           │
+│                         GROQ API (OpenAI-compatible)                        │
+│                         https://api.groq.com/openai/v1                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -146,9 +146,9 @@ KIMI_BASE_URL = get_secret("ai_agent_base_url", default="https://api.moonshot.cn
 
 | Approach | Risk | Our Solution |
 |----------|------|-------------|
-| Frontend → Kimi directly | API key exposed in browser | ❌ Rejected |
-| Frontend → Kimi via env var | Key bundled in JS bundle | ❌ Rejected |
-| **Frontend → Django → Kimi** | Key stays server-side only | ✅ **Selected** |
+| Frontend → Groq directly | API key exposed in browser | ❌ Rejected |
+| Frontend → Groq via env var | Key bundled in JS bundle | ❌ Rejected |
+| **Frontend → Django → Groq** | Key stays server-side only | ✅ **Selected** |
 
 ---
 
@@ -168,7 +168,7 @@ User Input → Frontend → POST /api/v1/ai/generate-template
            - User description
            - Platform constraints (Apple + Google)
                 ↓
-         Kimi API: Generate JSON design spec
+         Groq API: Generate JSON design spec
                 ↓
          Backend: Validate JSON structure
                 ↓
@@ -225,9 +225,9 @@ Frontend sends: uploaded images + card type + industry
                 ↓
 Backend extracts dominant colors (node-vibrant)
                 ↓
-Backend sends to Kimi: "Suggest accessible color palette"
+Backend sends to Groq: "Suggest accessible color palette"
                 ↓
-Kimi returns: 3 color palettes with WCAG contrast ratios
+Groq returns: 3 color palettes with WCAG contrast ratios
                 ↓
 Frontend displays: 3 palette swatches + contrast scores
 ```
@@ -246,7 +246,7 @@ Backend builds critique prompt:
   - Image presence/absence
   - Platform compliance checks
                 ↓
-Kimi analyzes and returns:
+Groq analyzes and returns:
   - Issues found (e.g., "Low contrast: 2.1:1")
   - Suggested fixes (e.g., "Change text to #FFFFFF")
   - Estimated score improvement
@@ -264,7 +264,7 @@ User in Stamp Card configuration
                 ↓
 Backend sends: business type + industry + brand colors
                 ↓
-Kimi returns: 8-12 icon recommendations with reasoning
+Groq returns: 8-12 icon recommendations with reasoning
   e.g., "Coffee cup ☕ for café (matches warm tones)"
                 ↓
 Frontend shows: Icon grid with "Why this icon?" tooltip
@@ -283,7 +283,7 @@ Backend validates against platform limits:
   - Google: row structure feasibility
                 ↓
 If violation detected:
-  Kimi suggests optimal layout rearrangement
+  Groq suggests optimal layout rearrangement
                 ↓
 Frontend shows: "💡 Sugerencia de IA" with preview
 ```
@@ -306,7 +306,7 @@ Frontend shows: "💡 Sugerencia de IA" with preview
 
 ```python
 SYSTEM_PROMPT = """
-You are Loyallia AI, an expert digital wallet pass designer.
+You are Loyallia AI, an expert digital wallet pass designer powered by Groq.
 You help small business owners create beautiful Apple Wallet and Google Wallet passes.
 
 Your expertise includes:
@@ -397,15 +397,15 @@ from common.vault import get_secret
 logger = logging.getLogger(__name__)
 
 class KimiService:
-    """Service for interacting with Moonshot AI (Kimi) API."""
+    """Service for interacting with Groq API (OpenAI-compatible)."""
     
-    BASE_URL = "https://api.moonshot.cn/v1"
-    MODEL = "kimi-k2-6"
+    BASE_URL = "https://api.groq.com/openai/v1"
+    MODEL = "openai/gpt-oss-120b"
     TIMEOUT = 30
     MAX_TOKENS = 4096
     
     def __init__(self):
-        self.api_key = get_secret("kimi_api_key", strict=True)
+        self.api_key = get_secret("ai_api_key", strict=True)
         self.base_url = get_secret("ai_agent_base_url", default=self.BASE_URL)
         self.session = requests.Session()
         self.session.headers.update({
@@ -419,7 +419,7 @@ class KimiService:
         temperature: float = 0.7,
         max_tokens: int = None,
     ) -> Dict:
-        """Send a chat completion request to Kimi API."""
+        """Send a chat completion request to Groq API."""
         
         payload = {
             "model": self.MODEL,
@@ -437,7 +437,7 @@ class KimiService:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Kimi API error: {e}")
+            logger.error(f"Groq API error: {e}")
             raise KimiAPIError(f"Failed to communicate with AI service: {e}")
     
     def generate_template(
@@ -581,7 +581,7 @@ class KimiService:
         """
     
     def _extract_json(self, response: Dict) -> Dict:
-        """Extract and parse JSON from Kimi response."""
+        """Extract and parse JSON from Groq response."""
         content = response["choices"][0]["message"]["content"]
         
         # Try to find JSON in the response
@@ -604,7 +604,7 @@ class KimiService:
 
 
 class KimiAPIError(Exception):
-    """Raised when Kimi API communication fails."""
+    """Raised when Groq API communication fails."""
     pass
 ```
 
@@ -834,15 +834,15 @@ export function AISuggestion({
 
 | Scenario | User Message | Fallback Action |
 |----------|-------------|----------------|
-| Kimi API timeout | "El servicio de IA está tardando demasiado. Intenta de nuevo." | Retry 2×, then show manual design options |
-| Kimi API error (5xx) | "El servicio de IA no está disponible. Diseña manualmente o usa una plantilla." | Show template gallery as fallback |
+| Groq API timeout | "El servicio de IA está tardando demasiado. Intenta de nuevo." | Retry 2×, then show manual design options |
+| Groq API error (5xx) | "El servicio de IA no está disponible. Diseña manualmente o usa una plantilla." | Show template gallery as fallback |
 | Rate limit (429) | "Has alcanzado el límite de solicitudes. Espera 1 hora o diseña manualmente." | Disable AI button, show countdown |
 | Invalid JSON from AI | "La IA generó una respuesta inesperada. Intenta con una descripción diferente." | Retry once with stricter prompt |
 | Network error | "Error de conexión. Verifica tu internet e intenta de nuevo." | Queue request, retry on reconnect |
 
 ### Fallback Design Generator
 
-If Kimi is unavailable, use a rule-based fallback:
+If Groq is unavailable, use a rule-based fallback:
 
 ```python
 # apps/ai/services/fallback_designer.py
@@ -885,7 +885,7 @@ class FallbackDesigner:
 | suggest-stamp-icons | 20 | 100 | 5/min |
 | suggest-layout | 30 | 200 | 5/min |
 
-### Cost Estimates (Kimi K2.6)
+### Cost Estimates (Groq)
 
 | Operation | Avg Input Tokens | Avg Output Tokens | Est. Cost (USD) |
 |-----------|:----------------:|:-----------------:|:---------------:|
@@ -915,7 +915,7 @@ class AICostTracker:
     """Track and limit AI usage costs."""
     
     DAILY_BUDGET_USD = 50.0  # Configurable
-    COST_PER_1K_TOKENS = 0.006  # Kimi K2.6 pricing
+    COST_PER_1K_TOKENS = 0.006  # Groq pricing
     
     @classmethod
     def track_usage(cls, tokens_used: int):
@@ -1073,8 +1073,8 @@ describe('useAI', () => {
 
 | Variable | Source | Description |
 |----------|--------|-------------|
-| `KIMI_API_KEY` | Vault (`kimi_api_key`) | Moonshot AI API key |
-| `AI_AGENT_BASE_URL` | Vault (`ai_agent_base_url`) | Kimi API base URL |
+| `AI_API_KEY` | Vault (`ai_api_key`) | Groq API key |
+| `AI_AGENT_BASE_URL` | Vault (`ai_agent_base_url`) | Groq API base URL |
 | `AI_DAILY_BUDGET` | Env / settings.py | Max daily AI spend in USD |
 | `AI_RATE_LIMIT_ENABLED` | Env / settings.py | Toggle rate limiting |
 | `AI_CACHE_TTL` | Env / settings.py | Cache AI responses (seconds) |
