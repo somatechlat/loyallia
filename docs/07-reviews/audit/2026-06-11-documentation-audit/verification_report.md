@@ -63,6 +63,20 @@
 - Some archived documents still contain outdated references (e.g., `docs/09-archive/`). These are intentionally preserved as historical artifacts and are not actively maintained.
 - The repository working tree contained many unrelated modifications at the time of this documentation reorganization; only documentation changes were committed.
 
+## Corrections to Audit Reports
+
+Como parte de la mantención de la documentación, se verificaron y corrigieron dos reportes de audit en `docs/07-reviews/audit/`:
+
+1. **QA_TESTING_AUDIT_REPORT.md**
+   - Conteos actualizados: 42 archivos de test backend, 7 archivos de test unitario frontend, 32 archivos E2E.
+   - Se añadieron disclaimers de snapshot a los conteos históricos y a la tabla de brechas de cobertura.
+
+2. **UI_UX_AUDIT_REPORT.md**
+   - Se actualizaron las referencias de línea de los hallazgos verificados (cadenas hardcodeadas, emojis/símbolos, `CustomerTable` `<a>` vs `next/link`, lista screen-by-screen).
+   - Se marcaron como resueltos los hallazgos que ya no aplican tras la migración a i18n.
+
+El link-check posterior a estas correcciones se ejecuta mediante `python3 scripts/docs-audit/verify_all_links.py` y debe reportar 0 enlaces rotos.
+
 ## Conclusion
 
-The documentation is now organized by audience and purpose, obsolete/duplicate files have been removed or archived, internal links are intact, and the two largest factual discrepancies versus the codebase (PostgreSQL version and AI provider) have been corrected.
+The documentation is now organized by audience and purpose, obsolete/duplicate files have been removed or archived, internal links are intact, and the two largest factual discrepancies versus the codebase (PostgreSQL version and AI provider) have been corrected. Audit report counts and line references were refreshed with snapshot disclaimers.

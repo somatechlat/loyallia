@@ -53,19 +53,19 @@ $PROJECT_ROOT/deploy/backups/secret-snapshots/secrets_YYYYMMDD_HHMMSS.json
 ### Rotate All Secrets
 
 ```bash
-./deploy/scripts/rotate_secrets.sh
+bash ./deploy/scripts/rotate_secrets.sh
 ```
 
 ### Dry Run (preview only)
 
 ```bash
-./deploy/scripts/rotate_secrets.sh --dry-run
+bash ./deploy/scripts/rotate_secrets.sh --dry-run
 ```
 
 ### Rotate a Single Secret
 
 ```bash
-./deploy/scripts/rotate_secrets.sh --secret redis_password
+bash ./deploy/scripts/rotate_secrets.sh --secret redis_password
 ```
 
 ### Post-Rotation Checklist

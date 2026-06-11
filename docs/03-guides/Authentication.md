@@ -57,7 +57,7 @@ It enforces per-tenant Role-Based Access Control (RBAC) with four roles: `SUPER_
 **Refresh Flow:**
 1. Frontend sends `POST /api/v1/auth/refresh/` with refresh token.
 2. Backend hashes token, looks up `RefreshToken` row with `select_for_update(of=("self",))`.
-3. If valid, revokes old token (`revoked_at = now()`), issues new pair.
+3. If valid, revokes old token (`revoked_at = now()`) and issues a new `access_token` (the existing refresh token is not rotated).
 4. Stolen tokens become single-use.
 
 **Google OAuth Flow:**
@@ -120,7 +120,7 @@ All endpoints are mounted under `/api/v1/auth/` via `apps.authentication.api` an
 |----------|--------|---------|
 | `/register/` | POST | Register new business + OWNER user atomically |
 | `/login/` | POST | Email + password login → JWT pair |
-| `/refresh/` | POST | Rotate refresh token → new JWT pair |
+| `/refresh/` | POST | Refresh access token → new `access_token` only |
 | `/verify-email/` | POST | Validate email OTP |
 | `/forgot-password/` | POST | Request password reset email |
 | `/reset-password/` | POST | Confirm reset with uid + token |
@@ -135,17 +135,19 @@ All endpoints are mounted under `/api/v1/auth/` via `apps.authentication.api` an
 | `/auth/users/me/` | GET | Current user profile | Any |
 | `/auth/users/profile/` | PUT | Update profile (name) | Any |
 | `/auth/users/change-password/` | POST | Change password | Any |
-| `/auth/users/invite/` | POST | Invite MANAGER or STAFF | OWNER only |
+| `/auth/users/invite/` | POST | Invite MANAGER or STAFF (legacy endpoint) | OWNER only |
 | `/auth/users/users/` | GET | List tenant users | OWNER only |
 | `/auth/users/users/{id}/` | DELETE | Deactivate user + revoke tokens | OWNER only |
 | `/auth/users/phone/verify/request/` | POST | Request Twilio Verify OTP | Any |
 | `/auth/users/phone/verify/confirm/` | POST | Confirm OTP | Any |
 
+> **Team provisioning:** The owner dashboard uses `POST /api/v1/tenants/team/` to create team members. The backend creates the user with a generated `temp_password` and sends a welcome email with the temporary credentials. The `/auth/users/invite/` endpoint exists but is not the path used by the owner dashboard.
+
 ### Pydantic Schemas (apps.authentication.schemas)
 
 - `RegisterIn` / `RegisterOut`
 - `LoginIn` / `TokenOut`
-- `RefreshIn` / `RefreshOut` (returns `access_token`, `refresh_token`, `token_type`)
+- `RefreshIn` / `RefreshOut` (returns `access_token`, `token_type` only — no new `refresh_token`)
 - `LogoutIn`
 - `VerifyEmailIn`
 - `ForgotPasswordIn` / `ResetPasswordIn`
@@ -236,7 +238,7 @@ class AuthLoginAPITest(TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("access_token", data)
-        self.assertIn("refresh_token", data)
+        self.assertNotIn("refresh_token", data)
 ```
 
 ### What to Test

@@ -44,9 +44,9 @@
 | Failure Scenario | Severity | Immediate Action | Recovery Method | Estimated Time |
 |-----------------|----------|-----------------|-----------------|----------------|
 | **Single container crash** | P3 | `docker compose restart <service>` | Automatic restart policy handles most cases; manual restart if stuck | < 5 min |
-| **Volume corruption (PostgreSQL)** | P1 | Stop API/Celery; assess corruption | Restore from `pg_dump` backup (`./deploy/backups/restore --postgres`) | 1–2 h |
-| **Volume corruption (Redis)** | P2 | Stop Redis; backup corrupt RDB | Restore from RDB snapshot (`./deploy/backups/restore --redis`) | 15–30 min |
-| **Config error (nginx, .env)** | P2 | Identify bad change | Restore from snapshot (`./deploy/backups/restore --snapshot`) | 15–30 min |
+| **Volume corruption (PostgreSQL)** | P1 | Stop API/Celery; assess corruption | Restore from `pg_dump` backup (`bash ./deploy/backups/restore --postgres`) | 1–2 h |
+| **Volume corruption (Redis)** | P2 | Stop Redis; backup corrupt RDB | Restore from RDB snapshot (`bash ./deploy/backups/restore --redis`) | 15–30 min |
+| **Config error (nginx, .env)** | P2 | Identify bad change | Restore from snapshot (`bash ./deploy/backups/restore --snapshot`) | 15–30 min |
 | **Server hardware failure** | P1 | Provision new VPS | DR rescue package recovery on new server | 2–4 h |
 | **Datacenter loss** | P1 | Provision new VPS in alternate region | DR rescue recovery + offsite backup download | 3–4 h |
 | **Vault sealed (restart)** | P2 | Check seal status | Unseal with keys from `init.json`; restart dependent services | 10–15 min |
@@ -130,22 +130,22 @@ bash deploy/disaster_recovery/development/recover.sh
 
 ```bash
 # Restore only PostgreSQL from local backup
-./deploy/backups/restore --postgres
+bash ./deploy/backups/restore --postgres
 
 # Restore only PostgreSQL from offsite
-# ./deploy/backups/restore --postgres --offsite --date=2026-06-02 (not yet implemented)
+# bash ./deploy/backups/restore --postgres --offsite --date=2026-06-02 (not yet implemented)
 
 # Restore only Redis
-./deploy/backups/restore --redis
+bash ./deploy/backups/restore --redis
 
 # Restore only Vault
-./deploy/backups/restore --vault
+bash ./deploy/backups/restore --vault
 
 # Restore only MinIO
-./deploy/backups/restore --minio
+bash ./deploy/backups/restore --minio
 
 # Restore full cluster snapshot
-./deploy/backups/restore --snapshot
+bash ./deploy/backups/restore --snapshot
 ```
 
 #### Factory Reset (Development)
@@ -262,22 +262,22 @@ bash deploy/disaster_recovery/production/recover.sh
 
 ```bash
 # Restore only PostgreSQL from local backup
-./deploy/backups/restore --postgres
+bash ./deploy/backups/restore --postgres
 
 # Restore from offsite
-# ./deploy/backups/restore --postgres --offsite --date=2026-06-02 (not yet implemented)
+# bash ./deploy/backups/restore --postgres --offsite --date=2026-06-02 (not yet implemented)
 
 # Restore Redis
-./deploy/backups/restore --redis
+bash ./deploy/backups/restore --redis
 
 # Restore Vault
-./deploy/backups/restore --vault
+bash ./deploy/backups/restore --vault
 
 # Restore MinIO
-./deploy/backups/restore --minio
+bash ./deploy/backups/restore --minio
 
 # Restore full snapshot
-./deploy/backups/restore --snapshot
+bash ./deploy/backups/restore --snapshot
 ```
 
 #### Factory Reset (Production)

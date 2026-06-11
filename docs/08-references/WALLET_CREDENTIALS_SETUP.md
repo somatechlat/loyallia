@@ -8,19 +8,22 @@ This document explains how to obtain and configure real API credentials for **Go
 
 ---
 
-## Current Vault Status
+## Current Vault Status (example / template)
 
-| Service | Key | Status |
-|---------|-----|--------|
-| Google Wallet | `google_wallet_enabled` | `false` (needs SA JSON) |
+> Values below are illustrative. Actual bootstrap values are environment-specific and
+> are verified in HashiCorp Vault; never store real credential values in Git.
+
+| Service | Key | Example Status |
+|---------|-----|----------------|
+| Google Wallet | `google_wallet_enabled` | `true` (after SA JSON is set) |
 | Google Wallet | `google_wallet_issuer_id` | `<vault:google_wallet_issuer_id>` |
-| Google Wallet | `google_service_account_json` | **EMPTY** (needs real JSON) |
-| Apple Wallet | `apple_wallet_enabled` | `false` |
-| Apple Wallet | `apple_pass_type_identifier` | **EMPTY** |
-| Apple Wallet | `apple_team_identifier` | **EMPTY** |
-| Apple Wallet | `apple_cert_pem` | **EMPTY** |
-| Apple Wallet | `apple_cert_key_pem` | **EMPTY** |
-| Apple Wallet | `apple_wwdr_cert_pem` | **EMPTY** |
+| Google Wallet | `google_service_account_json` | Set from downloaded SA JSON |
+| Apple Wallet | `apple_wallet_enabled` | `true` (after certificates are set) |
+| Apple Wallet | `apple_pass_type_identifier` | `<vault:apple_pass_type_identifier>` |
+| Apple Wallet | `apple_team_identifier` | `<vault:apple_team_identifier>` |
+| Apple Wallet | `apple_cert_pem` | Set from `apple_cert.pem` |
+| Apple Wallet | `apple_cert_key_pem` | Set from `apple_cert_key.pem` |
+| Apple Wallet | `apple_wwdr_cert_pem` | Set from `apple_wwdr.pem` |
 
 ---
 
@@ -111,7 +114,9 @@ certificate, so run it from a context where the Vault CA is trusted or adjust
 # Copy your service account JSON to the project root
 cp /path/to/loyallia-wallet-*.json ./google-service-account.json
 
-# Local development example
+# Local development example (dev Vault uses HTTPS with a self-signed cert)
+export VAULT_ADDR=https://localhost:33908
+export VAULT_SKIP_VERIFY=true
 export VAULT_SECRET_PATH=secret/data/loyallia/development
 python3 scripts/inject_wallet_credentials.py \
   --google-issuer-id "YOUR_ISSUER_ID" \
@@ -209,8 +214,8 @@ openssl x509 -in pass.cer -inform DER -out apple_cert.pem -outform PEM
 #### Option B: Via Vault CLI
 
 > Vault runs HTTPS in the development stack. Use `--insecure` (`-k`) or set
-> `VAULT_SKIP_VERIFY=true`. Replace the path with `secret/data/loyallia/development`
-> for local dev.
+> `VAULT_SKIP_VERIFY=true`. The example below uses `secret/data/loyallia/development`
+> for local dev; replace with `secret/data/loyallia/production` for production.
 
 ```bash
 # Read certificate contents
@@ -218,13 +223,15 @@ CERT_PEM=$(cat apple_cert.pem | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
 KEY_PEM=$(cat apple_cert_key.pem | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
 WWDR_PEM=$(cat apple_wwdr.pem | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
 
+export VAULT_ADDR=https://localhost:33908
+export VAULT_SKIP_VERIFY=true
 export VAULT_TOKEN="$(docker exec loyallia-vault cat /vault/file/init.json | python3 -c "import sys,json; print(json.load(sys.stdin)['root_token'])")"
 
 curl -X POST \
   -H "X-Vault-Token: $VAULT_TOKEN" \
   -H "Content-Type: application/json" \
   --insecure \
-  https://localhost:33908/v1/secret/data/loyallia/production \
+  https://localhost:33908/v1/secret/data/loyallia/development \
   -d "{
     \"data\": {
       \"apple_pass_type_identifier\": \"<vault:apple_pass_type_identifier>\",
@@ -240,7 +247,9 @@ curl -X POST \
 #### Option C: Via Helper Script
 
 ```bash
-# Local development example
+# Local development example (dev Vault uses HTTPS with a self-signed cert)
+export VAULT_ADDR=https://localhost:33908
+export VAULT_SKIP_VERIFY=true
 export VAULT_SECRET_PATH=secret/data/loyallia/development
 python3 scripts/inject_wallet_credentials.py \
   --apple-pass-id "<vault:apple_pass_type_identifier>" \
@@ -257,6 +266,17 @@ python3 scripts/inject_wallet_credentials.py \
    - Status: **Verde** (Conectado)
    - Diagnostics: `certs_cryptographically_valid: true`
 
+### Apple Wallet NFC (optional)
+
+If your passes support NFC engagement, set these additional Vault keys:
+
+| Vault Key | Description |
+|-----------|-------------|
+| `apple_nfc_enabled` | `true` to enable NFC payloads on generated passes |
+| `apple_nfc_encryption_public_key` | PEM-encoded public key used for NFC payload encryption |
+
+Add them alongside the other Apple Wallet fields when injecting credentials into Vault.
+
 ---
 
 ## Helper Script
@@ -266,17 +286,22 @@ A convenience script is provided at `scripts/inject_wallet_credentials.py` to au
 ### Usage
 
 Set `VAULT_SECRET_PATH` to match the target environment (`secret/data/loyallia/development`
-in local dev, `secret/data/loyallia/production` in production).
+in local dev, `secret/data/loyallia/production` in production). Dev Vault uses HTTPS
+with a self-signed certificate, so also set `VAULT_ADDR` and `VAULT_SKIP_VERIFY`.
 
 ```bash
 # Google Wallet only
-VAULT_SECRET_PATH=secret/data/loyallia/development \
+export VAULT_ADDR=https://localhost:33908
+export VAULT_SKIP_VERIFY=true
+export VAULT_SECRET_PATH=secret/data/loyallia/development
 python3 scripts/inject_wallet_credentials.py \
   --google-issuer-id "<vault:google_wallet_issuer_id>" \
   --google-sa-json ./google-service-account.json
 
 # Apple Wallet only
-VAULT_SECRET_PATH=secret/data/loyallia/development \
+export VAULT_ADDR=https://localhost:33908
+export VAULT_SKIP_VERIFY=true
+export VAULT_SECRET_PATH=secret/data/loyallia/development
 python3 scripts/inject_wallet_credentials.py \
   --apple-pass-id "<vault:apple_pass_type_identifier>" \
   --apple-team-id "<vault:apple_team_identifier>" \
@@ -285,7 +310,9 @@ python3 scripts/inject_wallet_credentials.py \
   --apple-wwdr ./apple_wwdr.pem
 
 # Both
-VAULT_SECRET_PATH=secret/data/loyallia/development \
+export VAULT_ADDR=https://localhost:33908
+export VAULT_SKIP_VERIFY=true
+export VAULT_SECRET_PATH=secret/data/loyallia/development
 python3 scripts/inject_wallet_credentials.py \
   --google-issuer-id "<vault:google_wallet_issuer_id>" \
   --google-sa-json ./google-service-account.json \

@@ -5,9 +5,17 @@
 
 **Project:** Loyallia  
 **Branch:** `main`  
-**Date:** 2026-06-04  
+**Audit snapshot date:** 2026-06-11  
 **Auditors:** 5 Specialized Agents (QA, Architecture, UI/UX, API/Security, Database)  
-**Scope:** 640 files audited line-by-line (294 backend Python, 175 frontend TS/TSX, 74 docs, 97 deploy/config)
+**Scope (original audit, 2026-06-04):** 640 files audited line-by-line  
+**Current verified counts (as of 2026-06-11):**
+- Backend Python: ~456 files (including migrations and tests)  
+- Frontend TS/TSX (`frontend/src`): ~249 files  
+- E2E tests: 43 files  
+- Backend test files: 41 files  
+- Frontend unit test files: 28 files  
+
+> ⚠️ **Historical metrics disclaimer:** Findings, severity counts, and line references below reflect the 2026-06-04 audit snapshot unless explicitly updated. Status notes indicate which items have been resolved or remain valid as of 2026-06-11.
 
 ---
 
@@ -16,7 +24,7 @@
 | Domain | Files | P0 | P1 | P2 | Total |
 |--------|-------|----|----|----|-------|
 | QA & Testing | 62 | 12 | 14 | 11 | **37** |
-| Architecture & Patterns | 350+ | 10 | 13 | 5 | **28** |
+| Architecture & Patterns | 350+ | 10 | 13 | 5 | **28** *(several P0/P1 items resolved as of 2026-06-11)* |
 | UI/UX Design | 68 | 12 | 35 | 40 | **87** |
 | API Design & Security | 35 | 2 | 25 | 19 | **46** |
 | Database Design & Performance | 36 | 4 | 14 | 10 | **28** |
@@ -35,16 +43,19 @@ These issues span multiple domains and require immediate attention:
 
 | # | Issue | Domains Affected | Files | Impact |
 |---|-------|-----------------|-------|--------|
-| 1 | **OWNER can invite SUPER_ADMIN** — `invite_user` has no role validation | API Security, Architecture | `backend/apps/authentication/users_api.py:145` | Role hierarchy bypass; SUPER_ADMIN creation by non-SUPER_ADMIN |
-| 2 | **Impersonation revocation is broken** — cache key mismatch | API Security, Architecture | `backend/apps/tenants/super_admin_api/impersonation.py:163`, `backend/apps/authentication/tokens.py` | Revoked impersonation tokens still valid indefinitely |
+| 1 | **OWNER can invite SUPER_ADMIN** — `invite_user` has no role validation | API Security, Architecture | `backend/apps/authentication/users_api.py:122` (role assigned at line 146) | Role hierarchy bypass; SUPER_ADMIN creation by non-SUPER_ADMIN |
+| 2 | **Impersonation revocation is broken** — cache key mismatch | API Security, Architecture | `backend/apps/tenants/super_admin_api/impersonation.py:156-163` | Revoked impersonation tokens still valid indefinitely |
 | 3 | **Transaction.tenant uses CASCADE** — audit records erased on tenant deletion | Database, Compliance | `backend/apps/transactions/models.py:47` | LOPDP Art. 47 violation; permanent loss of financial audit trail |
 | 4 | **N+1 query bomb in Card list endpoint** — 50 extra queries for 50 cards | Database, Performance | `backend/apps/cards/api.py:195` | Hot endpoint degraded; linear query growth |
 | 5 | **Hardcoded Spanish strings on ~20+ screens** — i18n severely incomplete | UI/UX, Compliance | Login, Register, Scanner, Portal, Enrollment, Dashboard, Settings, etc. | Cannot support English/FR/DE markets; LOPDP requires accurate language |
 | 6 | **No CI/CD exists** — quality gates not automated | QA, Architecture | `.github/workflows/` missing | Manual quality checks; regressions slip through |
 | 7 | **Mocked APIs used as production proof** — scanner/wallet tests bypass real code | QA, API Security | `backend/tests/test_scanner.py`, `backend/tests/test_wallet.py` | False confidence in production readiness |
-| 8 | **3 runtime `NameError` bugs** — undefined `logger`/`logging` | Architecture, API Security | `tenants/models.py`, `customers/portal_auth.py`, `billing/payment_models.py` | Production crashes on specific code paths |
-| 9 | **`search_customers` has no pagination limit** — DoS risk | API Security, Database | `backend/apps/customers/api.py:77` | Unbounded memory exhaustion |
-| 10 | **7 files exceed 650-line limit** — maintainability debt | Architecture | `customers/models.py`, `backup/api.py`, `automation/models.py`, `billing/models.py`, `tenants/models.py`, `apple_pass_builders.py`, `wallet/constants.ts` | God classes/functions; difficult to review and test |
+| 8 | ~~3 runtime `NameError` bugs — undefined `logger`/`logging`~~ **RESOLVED** | Architecture, API Security | `tenants/models.py`, `customers/portal_auth.py`, `billing/payment_models.py` | `ruff check --select F821` passes; missing imports added or unused code removed |
+| 9 | **`search_customers` has no client-side pagination limit** — capped server-side | API Security, Database | `backend/apps/customers/api.py:77`, `backend/apps/customers/services/__init__.py:101` | Service now slices `[:50]`; API still does not expose `limit`/`offset` parameters |
+| 10 | ~~7 backend files exceed 650-line limit~~ **RESOLVED**; frontend files still over limit | Architecture | Backend files now ≤ 649 lines; frontend over limit: `frontend/src/components/wallet/constants.ts` (726), `frontend/src/components/wallet/templates/registry.ts` (926), `frontend/src/components/wallet/AppleWalletPreview.tsx` (664) | Backend refactor complete; frontend wallet modules still need splitting |
+| 11 | ~~HSTS/SSL hardening~~ **RESOLVED** | API Security, Architecture | `backend/loyallia/settings/production.py:25-27` | `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS=31536000`, `SECURE_HSTS_INCLUDE_SUBDOMAINS` enforced in production; nginx adds security headers |
+| 12 | ~~Router import hygiene / missing imports~~ **RESOLVED** | Architecture | `backend/apps/api/router.py` | All routers imported cleanly at module level; no wildcard or inline fallback imports |
+| 13 | ~~Automation engine expansion~~ **RESOLVED** | Architecture, Campaigns | `backend/apps/automation/engine.py`, `tasks.py`, `webhook_executor.py`, `models.py` | `trigger_webhook` action implemented; `points_threshold`, `inactive_reminder`, and `scheduled_time` triggers implemented with daily Celery Beat tasks |
 
 ---
 
@@ -55,7 +66,7 @@ These issues span multiple domains and require immediate attention:
 |-------|----------|-------|-------------|
 | Role validation gaps | P0 | 2 | `invite_user` bypasses hierarchy; `notify_top_buyers` allows MANAGER |
 | Impersonation broken | P0 | 1 | Revocation cache key mismatch |
-| Missing audit logging | P1/P2 | 8 | Login, register, password reset, email verify, phone verify |
+| Missing audit logging | P1/P2 | 8 | Register, email verify, password reset, Google login, phone verify still unaudited; login/logout now audited |
 | Token TTL too long | P1 | 1 | Impersonation tokens = 60 min (should be ≤15) |
 
 ### Billing & Payments
@@ -72,21 +83,21 @@ These issues span multiple domains and require immediate attention:
 | Portal entirely untested | P0/P1 | 1 | Zero tests for portal endpoints |
 | `process_transaction` god function | P0/P1 | 1 | 135-line method in model layer |
 | Hardcoded Spanish strings | P0/P1 | 6 | Portal login, dashboard, enrollment, pass page |
-| N+1 in customer queries | P1 | 1 | `search_customers` unbounded |
+| N+1 in customer queries | P1 | 1 | `search_customers` capped at 50 server-side; API still lacks `limit`/`offset` params |
 
 ### Scanner & Wallet
 | Issue | Severity | Count | Key Problems |
 |-------|----------|-------|-------------|
 | Mocked APIs in tests | P0 | 2 | `RedemptionGateway` and `CustomerPass` mocked |
 | Hardcoded Spanish strings | P0 | 1 | Entire scanner page |
-| Wallet endpoints may bypass rate limiting | P1 | 1 | Mounted outside `/api/` prefix |
+| Wallet endpoints may bypass rate limiting | P1 | 1 | `/api/v1/wallet/` covered; `/wallet/apple/` mounted outside `/api/` prefix bypasses `RateLimitMiddleware` |
 | No Apple Wallet Web Service tests | P1 | 1 | Completely untested |
 
 ### Campaigns & Automation
 | Issue | Severity | Count | Key Problems |
 |-------|----------|-------|-------------|
-| God class `Automation` model | P0/P1 | 1 | 8 execution methods in model |
-| N+1 in automation engine | P0/P1 | 1 | 300+ queries for 100 customers |
+| ~~God class `Automation` model~~ **RESOLVED** | — | — | Execution methods moved to `apps/automation/engine.py`; model now only holds data and `can_execute`/`execute` entry points |
+| N+1 in automation engine | P0/P1 | 1 | `can_execute_for_customer` still queries `CustomerAnalytics` and `customer.passes` per customer; `fire_trigger` prefetches `target_programs` but not analytics/passes |
 | No pagination on list endpoints | P0 | 2 | `list_automations`, `list_team` |
 | Missing audit logging | P1 | 4 | Automation CRUD, toggle, execute |
 
@@ -104,6 +115,12 @@ These issues span multiple domains and require immediate attention:
 | Missing audit logging | P1 | 6 | Tenant suspend/reactivate, plan CRUD, platform settings |
 | Manual JSON parsing | P1 | 2 | Bypasses Ninja schema validation |
 | No positive-path tests for factory reset | P1 | 1 | Only guardrail tests exist |
+
+### Backup & Restore
+| Issue | Severity | Count | Key Problems |
+|-------|----------|-------|-------------|
+| Monolithic `backup/api.py` removed | — | — | Split into `backend/apps/backup/api/` package (`core.py`, `jobs.py`, `restores.py`, `settings.py`, `offsite.py`) |
+| Missing audit logging | P1 | 0 | Backup trigger, verify, restore, and cleanup endpoints now audited via `_audit()` helper |
 
 ---
 
@@ -124,26 +141,34 @@ These issues span multiple domains and require immediate attention:
 13. **Every model sets `db_table`** — All 30 concrete models explicitly define table names
 14. **Idempotency keys** — Scanner transactions use `idempotency_key` with `db_index=True`
 15. **E2E safety guardrails** — Production host blocking, real API login, no hardcoded passwords
+16. **HSTS/SSL hardening** — Production settings enforce `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS=31536000`, `SECURE_HSTS_INCLUDE_SUBDOMAINS`, secure cookies; nginx adds security headers
+17. **Automation engine expanded** — `trigger_webhook` action implemented; `points_threshold`, `inactive_reminder`, and `scheduled_time` triggers implemented with a daily Celery Beat task
+18. **Backend line-limit compliance** — All backend Python files are now ≤ 649 lines; oversized backend models/APIs were split or refactored
+19. **No undefined-name errors** — `ruff check --select F821` passes across `backend/`
+20. **Backup API modularized** — Monolithic `backup/api.py` split into `backup/api/` package (`core.py`, `jobs.py`, `restores.py`, `settings.py`, `offsite.py`)
+21. **Router imports cleaned** — `backend/apps/api/router.py` imports all routers at module level with no wildcard or inline fallback imports
 
 ---
 
 ## 🛠️ Recommended Remediation Roadmap
 
 ### Week 1 — Critical Fixes (P0)
-- [ ] Fix `invite_user` role validation (block OWNER from creating SUPER_ADMIN)
-- [ ] Fix impersonation revocation cache key mismatch
-- [ ] Fix 3 runtime `NameError` bugs (`logger` in tenants/models.py, `logging` in portal_auth.py)
-- [ ] Change `Transaction.tenant` from CASCADE to PROTECT
-- [ ] Fix N+1 in `CardOut.from_model` (hot list endpoint)
-- [ ] Add pagination to `list_automations` and `list_team`
-- [ ] Cap `limit` and `days` parameters on all list/analytics endpoints
+- [ ] Fix `invite_user` role validation (block OWNER from creating SUPER_ADMIN) — **still open**
+- [ ] Fix impersonation revocation cache key mismatch — **still open**
+- [x] ~~Fix 3 runtime `NameError` bugs (`logger` in tenants/models.py, `logging` in portal_auth.py)~~ **RESOLVED**
+- [x] ~~HSTS/SSL hardening and router import cleanup~~ **RESOLVED**
+- [x] ~~Automation triggers/actions (`trigger_webhook`, `points_threshold`, `inactive_reminder`, `scheduled_time`)~~ **RESOLVED**
+- [ ] Change `Transaction.tenant` from CASCADE to PROTECT — **still open**
+- [ ] Fix N+1 in `CardOut.from_model` (hot list endpoint) — **still open**
+- [ ] Add pagination to `list_automations` and `list_team` — **still open**
+- [ ] Cap `limit` and `days` parameters on all list/analytics endpoints — **still open**
 
 ### Week 2 — Security Hardening (P0/P1)
 - [ ] Add audit logging to all untested mutations (billing, tenant, SuperAdmin, auth)
 - [ ] Redact `invoice_data` from API responses
 - [ ] Reduce impersonation token TTL to 15 minutes
 - [ ] Fix `notify_top_buyers` role check (OWNER only)
-- [ ] Add rate limiting rule for `/wallet/` prefix
+- [ ] Add rate limiting rule for `/wallet/` prefix (including `/wallet/apple/`)
 - [ ] Change CASCADE to PROTECT on audit-critical models (Invoice, Enrollment, CampaignRun, BackupJob, Location)
 
 ### Week 3 — i18n Blitz (P0/P1)
@@ -166,13 +191,13 @@ These issues span multiple domains and require immediate attention:
 - [ ] Fix E2E test data leaks (programs, tenants, campaigns)
 
 ### Week 5 — Architecture Cleanup (P1/P2)
-- [ ] Extract `Automation` execution methods to `services/executor.py`
-- [ ] Extract `CustomerPass.process_transaction` to `services/redemption_mapper.py`
-- [ ] Split 7 files exceeding 650 lines
-- [ ] Replace legacy `unique_together` with `UniqueConstraint` (8 models)
-- [ ] Add DB indexes on `CustomerAnalytics` and `ProgramAnalytics`
-- [ ] Standardize module-level imports (remove inline imports where no circular risk)
-- [ ] Fix `update_location` and `update_tenant_admin` manual JSON parsing
+- [x] ~~Extract `Automation` execution methods to `services/executor.py`~~ **RESOLVED** — execution logic moved to `apps/automation/engine.py` and `webhook_executor.py`
+- [ ] Extract `CustomerPass.process_transaction` to `services/redemption_mapper.py` — **still open**
+- [x] ~~Split backend files exceeding 650 lines~~ **RESOLVED** — all backend Python files ≤ 649 lines; frontend wallet files (`constants.ts`, `templates/registry.ts`, `AppleWalletPreview.tsx`) still over limit
+- [ ] Replace legacy `unique_together` with `UniqueConstraint` (8 models) — **still open**
+- [ ] Add DB indexes on `CustomerAnalytics` and `ProgramAnalytics` — **still open**
+- [ ] Standardize module-level imports (remove inline imports where no circular risk) — **still open**
+- [ ] Fix `update_location` and `update_tenant_admin` manual JSON parsing — **still open**
 
 ### Week 6 — Performance & Polish (P1/P2)
 - [ ] Fix N+1 in automation engine (`can_execute_for_customer`)

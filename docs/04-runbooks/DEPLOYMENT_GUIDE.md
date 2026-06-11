@@ -87,8 +87,8 @@ certbot --nginx -d rewards.loyallia.com --agree-tos --no-eff-email -m admin@loya
 ```bash
 cd /opt/loyallia
 
-# Start Vault, Postgres, Redis first
-docker compose up -d vault postgres redis minio
+# Start Vault, vault-init, Postgres, Redis, and MinIO first
+docker compose up -d vault vault-init postgres redis minio
 
 # Wait for Vault init
 docker compose logs vault-init -f
@@ -196,8 +196,8 @@ docker compose ps
 ## Step 7: Database Setup
 
 ```bash
-# Run migrations
-docker compose exec api python manage.py migrate --noinput
+# Run migrations (bypass PgBouncer for schema changes)
+docker compose exec api python manage.py migrate --database=direct --noinput
 
 # Collect static files
 docker compose exec api python manage.py collectstatic --noinput
@@ -209,7 +209,7 @@ docker compose exec api python manage.py seed_subscription_plans
 docker compose exec api python manage.py seed_platform_settings
 
 # Create/recover superadmin (REQUIRES ADMIN_PASSWORD in production; production also needs --force)
-docker compose exec -T api python manage.py recover_admin_access \
+docker compose exec api python manage.py recover_admin_access \
     --email "admin@loyallia.com" \
     --password "$ADMIN_PASSWORD" \
     --create \
@@ -243,12 +243,6 @@ curl -s -o /dev/null -w "%{http_code}" https://rewards.loyallia.com/
 ---
 
 ## Troubleshooting
-
-### CSS Not Loading
-
-**Symptom:** Raw `@tailwind` directives in CSS file.  
-**Cause:** `postcss.config.js` was excluded from Docker build context.  
-**Fix:** Remove `postcss.config.js` from `.dockerignore` and rebuild web container.
 
 ### 500 Error on Login
 
@@ -303,17 +297,3 @@ docker cp loyallia-vault:/vault/file/init.json vault-backup-$(date +%Y%m%d).json
 
 ---
 
-## Credential Status Matrix
-
-> **Note:** The statuses below reflect the state of the codebase at the time of writing. Verify actual credential statuses in your local environment before deployment.
-
-| Integration | Status | Action Required |
-|-------------|--------|-----------------|
-| Google OAuth | ✅ Working | None |
-| Google Wallet | ⚠️ Empty JSON | Add service account JSON |
-| Apple Wallet | ⚠️ Disabled | Add certificates + enable |
-| Mailjet Email | ⚠️ Placeholder | Add Mailjet credentials |
-| Payments | ⚠️ Disabled | Add payment gateway credentials |
-| Twilio SMS | ⚠️ Missing | Add Twilio credentials |
-| WhatsApp Bridge | ⚠️ Missing | Add bridge API key |
-| AI Agent | ⚠️ Missing | Add AI API key |

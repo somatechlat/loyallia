@@ -95,9 +95,16 @@ Usuario selecciona "Café Rewards"
     Los contadores se actualizan en tiempo real
 ```
 
-> Nota: El endpoint de conteo de miembros del programa devuelve
-> `{ count, active_count }`, **no** `{ total, apple_wallet, google_wallet }`.
-> Los desgloses por plataforma se obtienen de `segment-counts`.
+> Nota: Existe un desfase documentado entre fuentes de conteo:
+>
+> - Las **tarjetas de programa** usan `GET /api/v1/programs/{id}/member-count/`,
+>   el cual devuelve `{ count, active_count }` y **no** incluye campos
+>   `apple_wallet` ni `google_wallet`. Por ello, el desglose por plataforma en
+>   esas tarjetas mostrará 0.
+> - Las **tarjetas de segmento** usan `GET /api/v1/programs/{id}/segment-counts/?wallet_platform=...`,
+>   que sí filtra y devuelve conteos por plataforma.
+>
+> Los desgloses por plataforma precisos se obtienen únicamente de `segment-counts`.
 
 **Debounce:** Las llamadas se hacen con debounce de 300ms para no saturar el backend mientras el usuario cambia opciones rápidamente.
 
@@ -131,7 +138,7 @@ elif extra == "most_active":
     return base.order_by("-total_visits", "-total_spent")[:threshold]
 ```
 
-**Nota:** Este preset requiere que el cliente esté inscrito en el programa seleccionado. No aplica a "Todos los programas".
+**Nota:** Este preset ordena a los clientes por actividad y toma el top 15%. Cuando se elige un programa específico, el cálculo se hace sobre los inscritos de ese programa. Cuando se elige "Todos los programas", el cálculo se hace sobre todo el tenant, por lo que el preset sigue disponible.
 
 ---
 
@@ -164,7 +171,7 @@ tiene PRIORIDAD sobre segmento y programa en `apply_campaign_filters`.
 - Es una opción adicional al grid de programas (checkbox debajo)
 - Si se selecciona, NO se aplica filtro de programa
 - Los segmentos muestran los contadores del tenant completo
-- El preset "Más Activos" se deshabilita (no aplica sin programa específico)
+- El preset "Más Activos" sigue disponible: calcula el top 15% de actividad sobre todo el tenant
 - Wallet Platform sigue aplicando (filtra clientes que tengan AL MENOS un pass de esa plataforma en CUALQUIER programa)
 
 ---
@@ -212,7 +219,9 @@ una tabla grande que necesita su propio espacio.
 
 | Feature | Cambio | Archivo |
 |---------|--------|---------|
-| Conteo de miembros por wallet platform | El endpoint `member-count` devuelve `{count, active_count}`; el frontend espera desglose por plataforma | `backend/apps/cards/api.py` o `frontend/src/components/campaigns/AudienceSelector.tsx` |
+| Respuesta de `member-count` | El endpoint devuelve `{count, active_count}`; carece de campos `apple_wallet`/`google_wallet` | `backend/apps/cards/api.py` |
+| Mapeo frontend del desglose por plataforma | El frontend espera `{total, apple_wallet, google_wallet}`; debe ajustar su consumo de `member-count` o usar `segment-counts` | `frontend/src/components/campaigns/AudienceSelector.tsx` |
+| Fuente de tarjetas de programa | Las tarjetas de programa usan `member-count`, por lo que el desglose por plataforma muestra 0 | `frontend/src/components/campaigns/AudienceSelector.tsx` |
 | Filtro `wallet_platform` en miembros de programa | Existe como query param en `AudienceSelector` pero `program_members` no lo aplica | `backend/apps/cards/services.py` |
 
 ### Qué NO se usa más:

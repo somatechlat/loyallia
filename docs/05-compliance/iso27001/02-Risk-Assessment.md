@@ -131,7 +131,7 @@ The following risks were identified through:
 | **R-01** | Data Breach | Unauthorized access to customer PII due to missing breach detection and notification mechanisms (LOPDP Art. 44 / GDPR Art. 33-34). No automated incident alerting exists. | 4 | 5 | **20** | **Critical** | Customer database, audit logs | RBAC, tenant isolation, TLS, Vault secrets management |
 | **R-02** | Compliance Violation | GDPR cookie consent fails to provide reject option or granular categories (G-01, G-02). Consent withdrawal mechanism absent. | 4 | 4 | **16** | **Critical** | Web application, consent records | CookieConsent.tsx banner, localStorage persistence |
 | **R-03** | Data Loss | No automated customer data retention policy (DR-03). Customer PII persists indefinitely after account closure, increasing breach surface and violating storage limitation. | 4 | 4 | **16** | **Critical** | PostgreSQL customer tables | Manual deletion endpoint exists; no automation |
-| **R-04** | Service Availability | DDoS or resource exhaustion attack against payment webhook endpoint. Rate limit exists (100 req/min per IP) but a determined volumetric attack could still overwhelm upstream bandwidth or the application tier. | 2 | 4 | **8** | **Medium** | API availability, payment processing | HMAC signature verification; `@rate_limit` on `/api/v1/billing/payments/webhook/` |
+| **R-04** | Service Availability | DDoS or resource exhaustion attack against payment webhook endpoint. Rate limiting is implemented (`@rate_limit`, 100 req/min per IP) on `/api/v1/billing/payments/webhook/`; residual risk is a determined volumetric attack overwhelming upstream bandwidth or the application tier. | 2 | 4 | **8** | **Medium** | API availability, payment processing | HMAC signature verification; `@rate_limit` decorator (100 req/min per IP) on `/api/v1/billing/payments/webhook/` |
 | **R-05** | Third-Party Vendor | Dependency vulnerabilities in Python/Node.js packages without CI scanning (OWASP-06). Unpinned versions increase supply-chain risk. | 4 | 3 | **12** | **High** | Application codebase, container images | Manual dependency updates; no automated scanning |
 | **R-06** | Data Corruption | Audit log retention (7 years) is not enforced (DR-01, L-11). Lack of automated purge/archival risks unbounded storage growth and potential tampering window. | 3 | 4 | **12** | **High** | Audit logs, compliance evidence | Immutable audit model (save/delete blocked) |
 | **R-07** | Insider Threat | Privileged user (SRE/Engineer) abuses Vault or PostgreSQL access to exfiltrate tenant data. No separation of duties for backup decryption keys. | 3 | 4 | **12** | **High** | Vault, PostgreSQL, backup archives | RBAC, age-encrypted backups, audit logging |
@@ -241,7 +241,7 @@ The residual risk profile above has been reviewed and is deemed acceptable for L
 | R-01 | L-14, G-04 | No breach notification mechanism |
 | R-02 | G-01, G-02 | Cookie consent missing reject option / withdrawal |
 | R-03 | DR-03 | No customer data retention policy |
-| R-04 | R-11 | No rate limit on payment webhook |
+| R-04 | R-11 (resolved) | Rate limit implemented on payment webhook |
 | R-05 | OWASP-06 | No dependency vulnerability scanning in CI |
 | R-06 | DR-01, L-11 | Audit log retention not enforced |
 | R-08 | G-03, G-07 | No ROPA / no documented lawful basis |

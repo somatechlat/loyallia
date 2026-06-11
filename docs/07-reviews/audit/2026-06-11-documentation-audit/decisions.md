@@ -32,3 +32,12 @@ See `inventory.json` for the complete list of moved files and target paths.
 ## Link Updates
 
 All internal Markdown links were scanned and repaired after the moves. See `verification_report.md` for the final link-check result.
+
+## Corrections to Audit Reports (post-reorganization)
+
+Los siguientes reportes de audit fueron corregidos para reflejar el estado actual del repositorio y añadir disclaimers de snapshot:
+
+- `docs/07-reviews/audit/QA_TESTING_AUDIT_REPORT.md`: conteos actualizados a 42 archivos de test backend, 7 archivos de test unitario frontend y 32 archivos E2E; se añadieron disclaimers de snapshot y se marcó la tabla de brechas de cobertura como fotografía del audit.
+- `docs/07-reviews/audit/UI_UX_AUDIT_REPORT.md`: se actualizaron referencias de línea para cadenas hardcodeadas, emojis/símbolos, `<a>` vs `next/link` en `CustomerTable` y la lista screen-by-screen; se marcaron como resueltos los hallazgos que ya fueron corregidos en el código.
+
+Estas correcciones no introducen cambios de código; solo actualizan la documentación de auditoría.

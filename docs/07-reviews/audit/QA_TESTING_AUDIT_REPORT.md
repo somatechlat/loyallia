@@ -1,5 +1,7 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+>
+> **Snapshot disclaimer:** Los conteos y la tabla de brechas de cobertura reflejan el estado del repositorio en la fecha del audit. Los valores históricos se conservan con su contexto; los conteos actualizados se verificaron contra el árbol de trabajo actual.
 
 # QA & Testing Audit Report
 
@@ -14,8 +16,8 @@
 | Metric | Count |
 |--------|-------|
 | Files audited | 62 |
-| Backend test files | 30 |
-| Frontend unit test files | 5 |
+| Backend test files | 42 |
+| Frontend unit test files | 7 |
 | Frontend E2E test files | 32 |
 | Docker Compose configs | 3 |
 | CI/CD workflow files | 0 |
@@ -103,6 +105,8 @@ The Loyallia project has a solid foundation of backend tests covering authentica
 ---
 
 ## Coverage Gap Analysis
+
+> **Snapshot (2026-06-11):** Esta tabla es una fotografía del audit original (2026-06-04) actualizada únicamente donde se verificaron cambios explícitos en el árbol de trabajo. Los porcentajes son aproximados y deben contrastarse con `pytest --cov` si se requiere precisión.
 
 | Module | Endpoints (approx.) | Tests | Coverage % | Missing Tests |
 |--------|---------------------|-------|------------|---------------|

@@ -1,11 +1,13 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+>
+> **Snapshot disclaimer:** Los números de línea y el estado "Resuelto" reflejan una reverificación selectiva del árbol de trabajo actual. Los hallazgos no marcados como resueltos conservan las referencias del audit original (2026-06-04) y pueden requerir re-verificación línea por línea.
 
 # UI/UX Design Audit Report
 
 ## Executive Summary
 - **Files audited:** 68 (all `.tsx`/`.ts` in `frontend/src/components/`, `frontend/src/app/`, `frontend/src/hooks/`, `frontend/src/lib/i18n/`, `frontend/src/lib/api.ts`)
-- **Issues found:** 87 (P0: 12, P1: 35, P2: 40)
+- **Issues found:** 87 (P0: 12, P1: 35, P2: 40) — *snapshot del audit original; el recuento real cambió tras las correcciones parciales*
 
 The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + Tailwind foundation with good architectural patterns (API client with retries, JWT refresh, offline detection, lazy-loaded charts, and a reusable `ConfirmModal`). However, **i18n coverage is severely incomplete**—dozens of user-facing screens contain hardcoded Spanish strings, violating the project's own localization rule. Accessibility is partially implemented (focus traps in some modals, ARIA in auth forms) but inconsistent across the app. Responsive design is generally good but the dashboard sidebar layout breaks below 1024px. The scanner PWA works functionally but lacks localization and has a fragile camera re-initialization flow.
 
@@ -15,18 +17,18 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 
 | # | File | Line | Issue | Rule Violated | Suggested Fix |
 |---|------|------|-------|---------------|---------------|
-| 1 | `frontend/src/app/(auth)/login/page.tsx` | 109-110, 137, 159, 189, 203, 206-207 | Hardcoded Spanish UI strings: "Iniciar sesión", "Accede a tu panel", "Correo electrónico", "Contraseña", "¿Olvidaste tu contraseña?", "Iniciar sesión" button text, "¿No tienes cuenta?" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Replace all hardcoded strings with `t('auth.login')`, `t('auth.email')`, `t('auth.password')`, etc. Add keys to `es.json`, `en.json`, `fr.json`, `de.json` |
-| 2 | `frontend/src/app/(auth)/register/page.tsx` | 109, 272-318, 322-573 | Extensive hardcoded Spanish strings throughout registration flow including phone verification UI ("Verificar teléfono", "Código enviado", "Teléfono verificado", etc.) and Google business name step | Rule: "New or changed user-facing strings should use the existing localization pattern" | Extract all strings to i18n keys. The phone verification section alone has ~20 hardcoded strings |
-| 3 | `frontend/src/app/(auth)/forgot-password/page.tsx` | 6-77 | Entire page uses hardcoded Spanish: "¿Olvidaste tu contraseña?", "Correo enviado", "Ingresa tu correo", "Enviar enlace de restablecimiento", "Volver a iniciar sesión" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Wrap all strings with `t()` and add to locale files |
-| 4 | `frontend/src/app/(auth)/reset-password/page.tsx` | 7-132 | Hardcoded Spanish strings: "Nueva contraseña", "Contraseña actualizada", "Enlace inválido", "Restablecer contraseña", "Las contraseñas no coinciden" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Wrap with `t()` and add to locale files |
-| 5 | `frontend/src/app/scanner/scan/page.tsx` | 42-58, 216-217, 250, 255, 267, 270, 275, 284-286, 298-349, 355-380, 384-407 | Scanner page is almost entirely hardcoded Spanish: "Autenticación requerida", "Scanner Loyallia", "Salir", "Monto de la compra", "Apunta la cámara al código QR", "QR escaneado", "Confirmar transacción", "Transacción exitosa", "Transacción denegada", etc. | Rule: "New or changed user-facing strings should use the existing localization pattern" | The scanner is a PWA used by staff; it MUST support i18n. Extract all ~40 strings to locale files |
-| 6 | `frontend/src/app/portal/login/page.tsx` | 10-176 | Portal login page entirely hardcoded Spanish: "Generar contraseña", "Iniciar sesión", "Correo electrónico", "Contraseña", "Enviar contraseña", "¿Ya tienes contraseña?" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Add portal-specific i18n namespace and replace all strings |
-| 7 | `frontend/src/app/portal/page.tsx` | 22-179 | Portal dashboard entirely hardcoded Spanish: "Portal de Cliente", "Mis Tarjetas", "No tienes tarjetas de fidelización activas", "Salir del programa", "Cerrar sesión" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t()` for all portal strings |
-| 8 | `frontend/src/app/enroll/[slug]/page.tsx` | 42-402 | Enrollment page has extensive hardcoded Spanish: "Programa no encontrado", "Inscripción exitosa", "Ya estás inscrito", "Reenviar tarjeta a mi email", "Error de inscripción", "Intentar de nuevo" | Rule: "New or changed user-facing strings should use the existing localization pattern" | This is a public-facing customer enrollment page; i18n is critical. Extract all strings |
-| 9 | `frontend/src/app/pass/[id]/page.tsx` | 90-261 | Pass page hardcoded Spanish: "Pase no encontrado", "Agregar a billetera digital", "Añadir a Apple Wallet", "Guardar en Google Wallet", "Billetera digital en configuración" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Extract all wallet/pass strings to i18n |
-| 10 | `frontend/src/components/dashboard/DashboardInsights.tsx` | 124-313 | Dozens of hardcoded Spanish chart labels and tooltips: "Recompensas — Emitidas vs Canjeadas", "Métricas de visitas", "Desglose de ingresos", "Top 15 compradores", "Demografía de clientes", "Visitas por tipo de programa" | Rule: "New or changed user-facing strings should use the existing localization pattern" | These are user-facing analytics labels. Must use `t()`. Add keys to `dashboard` namespace |
-| 11 | `frontend/src/components/settings/DataPrivacySection.tsx` | 112-226 | Hardcoded Spanish strings throughout: "Datos y Privacidad", "LOPDP — Ley de Protección de Datos (Ecuador)", "Exportar Todos Mis Datos", "Eliminar Mi Cuenta", "Eliminar Cuenta Permanentemente", modal content | Rule: "New or changed user-facing strings should use the existing localization pattern" | Replace all strings with `t()` keys. This is a legally-sensitive LOPDP flow; language accuracy matters |
-| 12 | `frontend/src/components/ErrorBoundary.tsx` | 46-57 | Error boundary fallback UI has hardcoded **English** strings: "Something went wrong", "An unexpected error occurred. Please try refreshing the page.", "Refresh Page" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Replace with `t('errorBoundary.title')`, `t('errorBoundary.message')`, `t('errorBoundary.refresh')` and localize |
+| 1 | `frontend/src/app/(auth)/login/page.tsx` | — | **RESUELTO.** Todas las cadenas de login usan `t('auth.login.*')`; ya no quedan textos en español hardcodeados. | — | — |
+| 2 | `frontend/src/app/(auth)/register/page.tsx` | — | **RESUELTO.** Flujo de registro completo (verificación telefónica, paso de Google, toasts) migrado a `t('auth.register.*')`. Quedan emojis de banderas en el selector de país (`COUNTRY_CODES`). | — | Revisar si los emojis de banderas deben reemplazarse por íconos SVG accesibles. |
+| 3 | `frontend/src/app/(auth)/forgot-password/page.tsx` | — | **RESUELTO.** Página completa migrada a `t('auth.forgotPassword.*')`. | — | — |
+| 4 | `frontend/src/app/(auth)/reset-password/page.tsx` | — | **RESUELTO.** Página completa migrada a `t('auth.resetPassword.*')`. | — | — |
+| 5 | `frontend/src/app/scanner/scan/page.tsx` | 99, 234, 307, 408 | Mayoría de cadenas ya usa `t('scanner.*')`; persisten textos hardcodeados: título "Scanner Loyallia" (l. 234), botón "Cancelar" (l. 307), formato de hora fijo `'es-EC'` (l. 99) y footer de marca (l. 408). | Rule: "New or changed user-facing strings should use the existing localization pattern" | Extraer cadenas residuales a i18n y derivar `toLocaleTimeString` del locale de la app. |
+| 6 | `frontend/src/app/portal/login/page.tsx` | 172 | **RESUELTO** para todo el flujo de formulario. Persiste solo el footer de marca hardcodeado en inglés (l. 172). | — | Mover "Loyallia · Intelligent Rewards" a i18n o a constante de marca. |
+| 7 | `frontend/src/app/portal/page.tsx` | 53, 95, 162 | Formulario y estados principales migrados a `t('portal.*')`. Persisten: `confirm()` nativo para desinscripción (l. 53), subtítulo "Loyallia" hardcodeado (l. 95) y `toLocaleDateString('es-EC')` fijo (l. 162). | Rule: "New or changed user-facing strings should use the existing localization pattern" / "Confirmation dialogs for destructive actions" | Reemplazar `confirm()` por `<ConfirmModal>`; extraer subtítulo y locale de fecha. |
+| 8 | `frontend/src/app/enroll/[slug]/page.tsx` | 152-157, 162, 166, 169, 174, 178, 192, 226, 246, 249, 273-274, 294, 330-334, 360, 372, 378, 388-389, 393, 401 | Página de inscripción sigue con textos en español hardcodeados: labels de campos, mensajes de validación, estados de éxito/error, botones de wallet y footer de marca. | Rule: "New or changed user-facing strings should use the existing localization pattern" | Migrar toda la página al namespace `enroll.*`; revisar flujo de cooldown/validación (l. 176). |
+| 9 | `frontend/src/app/pass/[id]/page.tsx` | 90-91, 115, 134, 142, 146, 160, 174-175, 180-181, 201, 207-208, 226, 240, 247-248, 258 | Pase de cliente sigue con textos en español hardcodeados: estados vacío/error, etiquetas de tarjeta, botones de wallet y mensajes de no-disponibilidad. | Rule: "New or changed user-facing strings should use the existing localization pattern" | Migrar todo el namespace `pass.*`; no hay soporte de i18n actual. |
+| 10 | `frontend/src/components/dashboard/DashboardInsights.tsx` | — | **RESUELTO.** Todas las etiquetas de gráficos, métricas, estados vacíos y toasts usan `t('dashboard.insights.*')`. | — | — |
+| 11 | `frontend/src/components/settings/DataPrivacySection.tsx` | 128, 142 | **RESUELTO** para todo el texto. Persisten emojis decorativos (`📦`, `🗑️`) en botones de exportar/eliminar. | — | Reemplazar emojis por íconos SVG de `LucideIcons` para consistencia. |
+| 12 | `frontend/src/components/ErrorBoundary.tsx` | — | **RESUELTO.** Fallback UI ahora usa `t('errorBoundary.*')`. | — | — |
 
 ---
 
@@ -34,13 +36,14 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 
 | # | File | Line | Issue | Rule Violated | Suggested Fix |
 |---|------|------|-------|---------------|---------------|
-| 13 | `frontend/src/app/(dashboard)/layout.tsx` | 319 | Sidebar is fixed `w-64` and main content has `ml-64` with no responsive breakpoint handling. On screens < 1024px, the sidebar overlaps content or causes horizontal overflow | Rule: "Responsive at 1440px, 1024px, 768px, 390px" | Add responsive behavior: collapse sidebar to hamburger menu on `lg:` breakpoint, or make sidebar overlay on smaller screens |
-| 14 | `frontend/src/app/(dashboard)/layout.tsx` | 92-103 | Navigation labels hardcoded Spanish: "Resumen", "Programas", "Clientes", "Analíticas", "Automatización", "Campañas", "Sucursales", "Equipo", "Configuración", "Facturación" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('nav.*')` keys for all navigation labels |
+| 13 | `frontend/src/app/(dashboard)/layout.tsx` | 319, 336 | Sidebar is fixed `w-64` and main content has `ml-64` with no responsive breakpoint handling. On screens < 1024px, the sidebar overlaps content or causes horizontal overflow | Rule: "Responsive at 1440px, 1024px, 768px, 390px" | Add responsive behavior: collapse sidebar to hamburger menu on `lg:` breakpoint, or make sidebar overlay on smaller screens |
+| 14 | `frontend/src/app/(dashboard)/layout.tsx` | 92-119 | Navigation labels hardcoded Spanish: "Resumen", "Programas", "Clientes", "Analíticas", "Automatización", "Campañas", "Sucursales", "Equipo", "Configuración", "Facturación" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('nav.*')` keys for all navigation labels |
 | 15 | `frontend/src/app/(dashboard)/layout.tsx` | 121-123 | Role labels hardcoded Spanish: "Propietario", "Gerente", "Personal", "Super Admin" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('team.roles.*')` or create `t('nav.roles.*')` |
-| 16 | `frontend/src/app/(dashboard)/layout.tsx` | 153-183 | Theme toggle buttons hardcoded Spanish: "Claro", "Oscuro" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('theme.light')`, `t('theme.dark')` |
+| 16 | `frontend/src/app/(dashboard)/layout.tsx` | 167, 179 | Theme toggle buttons hardcoded Spanish: "Claro", "Oscuro" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('theme.light')`, `t('theme.dark')` |
+| 16a | `frontend/src/app/(dashboard)/layout.tsx` | 76, 78, 82, 199, 208, 309, 313 | Textos hardcodeados adicionales en layout: banner de impersonación, tooltips de perfil/cierre de sesión, toast "Sesión cerrada" y título "Plataforma SaaS". | Rule: "New or changed user-facing strings should use the existing localization pattern" | Migrar todos los textos restantes a i18n. |
 | 17 | `frontend/src/app/(dashboard)/automation/page.tsx` | 51-128 | Hardcoded Spanish: "Automatizaciones", "Reglas automáticas de engagement con clientes", "Nueva automatización", "Automatización no disponible", "No hay automatizaciones configuradas" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Extract to `automation.*` i18n keys |
-| 18 | `frontend/src/app/(dashboard)/team/page.tsx` | 76 | Uses native `confirm()` dialog with hardcoded Spanish string for member deletion. Native `confirm()` is not accessible (no keyboard trap, no screen reader support) and cannot be styled or localized consistently | Rule: "Accessibility: keyboard nav, focus states, ARIA labels" and "Confirmation dialogs for destructive actions" | Replace with the existing `<ConfirmModal>` component |
-| 19 | `frontend/src/app/(dashboard)/team/page.tsx` | 105-117, 119-295 | Hardcoded Spanish role badges, labels, table headers, form labels throughout team page | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('team.*')` for all strings |
+| 18 | `frontend/src/app/(dashboard)/team/page.tsx` | 77 | Uses native `confirm()` dialog for member deletion. Native `confirm()` is not accessible (no keyboard trap, no screen reader support) and cannot be styled or localized consistently | Rule: "Accessibility: keyboard nav, focus states, ARIA labels" and "Confirmation dialogs for destructive actions" | Replace with the existing `<ConfirmModal>` component |
+| 19 | `frontend/src/app/(dashboard)/team/page.tsx` | — | **RESUELTO** para textos. Encabezados, formularios, badges y mensajes de la página de equipo usan `t('team.*')`. | — | — |
 | 20 | `frontend/src/app/(dashboard)/customers/[id]/page.tsx` | 117-199 | Customer detail page has hardcoded Spanish: "Volver a Clientes", "Pases activos", "Inscribir en programa", "Solo lectura", "No hay inscripciones", "Modal de inscripción" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('customers.*')` |
 | 21 | `frontend/src/app/(dashboard)/customers/[id]/page.tsx` | 157-197 | Enrollment modal lacks focus trap, Escape key handling, and ARIA attributes. It's a raw `<div>` overlay | Rule: "Accessibility: keyboard nav, focus states, ARIA labels" | Wrap with `useFocusTrap` hook, add `role="dialog" aria-modal="true"`, and implement Escape-to-close |
 | 22 | `frontend/src/app/(dashboard)/programs/page.tsx` | 25-163, 165-308 | Programs page and `ProgramSections` component have hardcoded Spanish status labels and empty state text: "Activos", "Borradores", "Inactivos", "No hay programas", "Crear primer programa" | Rule: "New or changed user-facing strings should use the existing localization pattern" | Already partially uses `t()` but many strings are still hardcoded. Complete the migration |
@@ -63,12 +66,12 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 | 39 | `frontend/src/app/(dashboard)/superadmin/settings/PlatformSettings.tsx` | (not read directly) | Platform settings likely contain hardcoded strings | Rule: "New or changed user-facing strings should use the existing localization pattern" | Audit and localize |
 | 40 | `frontend/src/components/chat/Chatbot.tsx` | (not read directly) | Chatbot component was lazy-loaded; not audited. May contain hardcoded strings | Rule: "New or changed user-facing strings should use the existing localization pattern" | Read and audit `Chatbot.tsx` for i18n compliance |
 | 41 | `frontend/src/components/wallet/` | (multiple files) | Wallet designer and preview components were not fully read. Likely contain hardcoded Spanish labels | Rule: "New or changed user-facing strings should use the existing localization pattern" | Audit all wallet components for hardcoded strings |
-| 42 | `frontend/src/app/(dashboard)/page.tsx` | 189-230 | Stats cards use `t()` for labels but the `sub` values format numbers with hardcoded Spanish formatting patterns like `+{count} nuevos` | Rule: "New or changed user-facing strings should use the existing localization pattern" | Already uses `t()` with interpolation — verify `es.json` has these keys for all 4 locales |
-| 43 | `frontend/src/app/(dashboard)/page.tsx` | 442-444 | Date footer uses hardcoded `'es-EC'` locale for `toLocaleDateString` instead of respecting user's selected locale | Rule: "Consistent design system usage" | Use `dateLocale` derived from `locale` state (as done in `CustomerTable`) |
-| 44 | `frontend/src/app/(auth)/login/page.tsx` | 98 | Error fallback message is hardcoded Spanish: `'Credenciales incorrectas'` | Rule: "New or changed user-facing strings should use the existing localization pattern" | Use `t('auth.invalidCredentials')` |
-| 45 | `frontend/src/app/(auth)/register/page.tsx` | 167, 179, 187-188, 195-205, 211-235 | Phone verification and Google registration flows have hardcoded error/success toast messages | Rule: "New or changed user-facing strings should use the existing localization pattern" | Wrap all toast messages with `t()` |
+| 42 | `frontend/src/app/(dashboard)/page.tsx` | 189-230 | Stats cards ahora usan `t()` con interpolación para labels y sub-valores. Verificar que `es.json`, `en.json`, `fr.json`, `de.json` contengan todas las claves. | Rule: "New or changed user-facing strings should use the existing localization pattern" | Completar keys faltantes y validar con `npm run typecheck`. |
+| 43 | `frontend/src/app/(dashboard)/page.tsx` | 443 | Date footer uses hardcoded `'es-EC'` locale for `toLocaleDateString` instead of respecting user's selected locale | Rule: "Consistent design system usage" | Use `dateLocale` derived from `locale` state (as done in `CustomerTable`) |
+| 44 | `frontend/src/app/(auth)/login/page.tsx` | — | **RESUELTO.** El mensaje de error ahora usa `t('auth.login.credentialsError')`. | — | — |
+| 45 | `frontend/src/app/(auth)/register/page.tsx` | — | **RESUELTO.** Todos los toasts de verificación telefónica y registro con Google usan `t('auth.register.toast.*')`. | — | — |
 | 46 | `frontend/src/app/(dashboard)/settings/page.tsx` | 93-95 | Plan feature fetch catch block silently swallows errors with empty comment `/* no plan info — default to empty */` | Rule: "No fake/successful UI states" | Add a toast warning or console warning so users know plan info failed to load |
-| 47 | `frontend/src/app/scanner/scan/page.tsx` | 41-58 | `formatDenialReason` uses a hardcoded Spanish mapping. Denial reasons from API are mapped to Spanish strings unconditionally | Rule: "New or changed user-facing strings should use the existing localization pattern" | Move the `map` to i18n locale files and look up via `t('scanner.denialReasons.' + code)` |
+| 47 | `frontend/src/app/scanner/scan/page.tsx` | — | **RESUELTO.** `formatDenialReason` ahora consulta `t('scanner.errors.denial.*')`. | — | — |
 
 ---
 
@@ -77,11 +80,11 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 | # | File | Line | Issue | Rule Violated | Suggested Fix |
 |---|------|------|-------|---------------|---------------|
 | 48 | `frontend/src/app/(dashboard)/layout.tsx` | 319 | Sidebar has fixed height `h-full` but no `overflow-y-auto` on the outer aside, which could clip on short viewports | Rule: "Responsive at 1440px, 1024px, 768px, 390px" | Ensure sidebar handles overflow gracefully |
-| 49 | `frontend/src/app/(dashboard)/layout.tsx` | 337 | Main content uses `p-8` padding which is very large on mobile (if sidebar were to collapse) | Rule: "Responsive at 390px" | Use responsive padding: `p-4 md:p-6 lg:p-8` |
+| 49 | `frontend/src/app/(dashboard)/layout.tsx` | 336 | Main content uses `p-8` padding which is very large on mobile (if sidebar were to collapse) | Rule: "Responsive at 390px" | Use responsive padding: `p-4 md:p-6 lg:p-8` |
 | 50 | `frontend/src/app/(dashboard)/programs/new/page.tsx` | 247-293 | Step 0 preview panel is hidden on non-lg screens (`hidden lg:flex`). Mobile users get no preview | Rule: "Responsive at 768px, 390px" | Add a mobile-friendly preview or step indicator |
 | 51 | `frontend/src/app/(dashboard)/programs/new/page.tsx` | 486-495 | Live wallet preview is `sticky top-24` but may overlap or be cut off on short viewports | Rule: "Responsive at 768px, 390px" | Test and adjust sticky positioning for smaller heights |
 | 52 | `frontend/src/components/campaigns/CampaignWizard.tsx` | 284 | Modal uses `w-[96vw] h-[92vh]` which leaves very little margin on 390px screens | Rule: "Responsive at 390px" | Use `w-full max-w-4xl h-[90dvh]` or similar with safe-area-inset handling |
-| 53 | `frontend/src/components/campaigns/CampaignWizard.tsx` | 310-348 | Sticky summary bar uses emoji literals (💌 📱 💬 📨) which may render differently across platforms | Rule: "Consistent design system usage" | Replace with consistent SVG icons from `LucideIcons` |
+| 53 | `frontend/src/components/campaigns/CampaignWizard.tsx` | 314-317, 333-335, 343, 462, 472 | Sticky summary bar and botones de acción usan emoji literals (💌 📱 💬 📨 🍎 🤖 ✓ 👥 🕐 🚀) que pueden renderizarse diferente según plataforma | Rule: "Consistent design system usage" | Replace with consistent SVG icons from `LucideIcons` |
 | 54 | `frontend/src/components/customers/CustomerTable.tsx` | 61-63 | Customer name links use `<a href="/customers/${c.id}">` causing full page reload instead of client-side navigation | Rule: "Consistent design system usage" | Use `next/link` `<Link>` component for SPA navigation |
 | 55 | `frontend/src/components/customers/EditModal.tsx` | 16-110 | Edit modal uses `useFocusTrap` correctly but the close button is missing (only closes on backdrop click or Escape) | Rule: "Accessibility: keyboard nav, focus states, ARIA labels" | Add an explicit close button (×) in the modal header |
 | 56 | `frontend/src/components/customers/ImportModal.tsx` | 39-124 | Import modal lacks focus trap and Escape-to-close handling | Rule: "Accessibility: keyboard nav, focus states, ARIA labels" | Add `useFocusTrap` hook and Escape key listener |
@@ -138,13 +141,15 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 
 ## Screen-by-Screen UX Issues
 
+> **Snapshot (2026-06-11):** Estado actualizado tras reverificación selectiva. Las pantallas marcadas como **Resuelto** ya no contienen textos hardcodeados en el ámbito indicado.
+
 | Screen | Issue | Severity | Suggested Fix |
 |--------|-------|----------|---------------|
-| Login | Hardcoded Spanish strings throughout | P0 | Full i18n pass on auth namespace |
-| Register | Phone verification UI entirely hardcoded Spanish | P0 | Extract all verification strings to i18n |
-| Forgot Password | All text hardcoded Spanish | P0 | i18n wrap all strings |
-| Reset Password | All text hardcoded Spanish | P0 | i18n wrap all strings |
-| Dashboard | Sidebar navigation labels hardcoded Spanish; date footer uses hardcoded `es-EC` | P1 | Use `t('nav.*')`; derive date locale from app locale |
+| Login | **Resuelto.** Ya no quedan cadenas hardcodeadas en la pantalla de login. | — | — |
+| Register | **Resuelto.** Flujo de registro y verificación telefónica migrados a i18n. Quedan emojis de banderas. | — | Revisar accesibilidad de emojis de banderas. |
+| Forgot Password | **Resuelto.** Página completa migrada a i18n. | — | — |
+| Reset Password | **Resuelto.** Página completa migrada a i18n. | — | — |
+| Dashboard | Sidebar navigation labels hardcoded Spanish; date footer uses hardcoded `es-EC`; stat cards usan `<a>` para navegación (l. 340). | P1 | Use `t('nav.*')`; derive date locale from app locale; reemplazar `<a>` de stats por `next/link` o `router.push`. |
 | Dashboard | Sidebar fixed `w-64` with `ml-64` main content breaks below 1024px | P1 | Implement collapsible sidebar or overlay for tablet/mobile |
 | Programs List | Status section titles hardcoded Spanish | P1 | Complete i18n migration |
 | Program Detail | Inline editing and QR modal have hardcoded Spanish | P1 | Use `t('programs.*')` for all inline strings |
@@ -154,26 +159,26 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 | Customer Detail | Page text hardcoded Spanish | P1 | i18n wrap all strings |
 | Analytics | Chart loading text hardcoded English | P1 | Use `t('analytics.loadingCharts')` |
 | Campaigns | Wizard uses `w-[96vw] h-[92vh]` leaving no safe margin on 390px | P2 | Use `max-w-4xl` and `h-[90dvh]` with safe-area padding |
-| Campaigns | Emoji literals in summary bar instead of consistent icons | P2 | Replace with Lucide icons |
+| Campaigns | Emoji literals in summary bar and buttons instead of consistent icons | P2 | Replace with Lucide icons |
 | Locations | InfoRow labels hardcoded Spanish | P1 | Use `t('locations.*')` |
 | Team | Native `confirm()` for member deletion is inaccessible | P1 | Replace with `<ConfirmModal>` |
-| Team | Table headers and form labels hardcoded Spanish | P1 | i18n wrap all strings |
+| Team | **Resuelto.** Table headers and form labels now use `t('team.*')`. | — | — |
 | Settings | Partial i18n coverage; many labels hardcoded | P1 | Complete audit and wrap remaining strings |
-| Settings | DataPrivacy section entirely hardcoded Spanish | P0 | Full i18n pass; LOPDP copy must be accurate per locale |
+| Settings | **Resuelto.** DataPrivacy section text is now i18n'd. Emoji icons remain. | — | Replace emojis with Lucide icons. |
 | Settings | AuditLog action labels hardcoded Spanish | P1 | Move to `t('audit.actions.*')` |
 | Billing | Usage label map has mixed hardcoded Spanish | P1 | Extract to `billing.*` i18n keys |
-| Scanner | Entire page hardcoded Spanish | P0 | Full i18n pass; this is staff-facing and needs multi-language support |
+| Scanner | Mostly i18n'd; residual hardcoded strings remain (title "Scanner Loyallia", "Cancelar", footer). | P1 | Complete i18n pass for remaining strings. |
 | Scanner | Camera init uses magic number `300ms` with no loading state | P2 | Show "Initializing camera..." during delay |
 | Scanner | `reset()` duplicates scanner init code | P2 | Extract to reusable function |
-| Portal Login | All text hardcoded Spanish | P0 | Full i18n pass on portal namespace |
-| Portal Dashboard | All text hardcoded Spanish | P0 | Full i18n pass on portal namespace |
+| Portal Login | **Resuelto.** Formulario migrado a i18n. Footer de marca sigue hardcodeado. | — | Mover footer de marca a i18n. |
+| Portal Dashboard | Texto principal migrado a i18n; persisten `confirm()` nativo, subtítulo "Loyallia" y locale de fecha fijo. | P1 | Reemplazar `confirm()`, extraer subtítulo y locale. |
 | Enrollment | All text hardcoded Spanish | P0 | Full i18n pass; public customer-facing page |
 | Pass Page | All text hardcoded Spanish | P0 | Full i18n pass |
 | SuperAdmin Dashboard | Fallback city label hardcoded Spanish | P1 | Use `t('superadmin.dashboard.fallbackCity')` |
 | SuperAdmin Plans | Feature labels in PlanCard hardcoded Spanish | P1 | Use `t('superadmin.planFeatures.*')` |
 | SuperAdmin Tenants | Creation result labels hardcoded Spanish | P1 | Use `t('superadmin.tenants.*')` |
-| Error Boundary | Fallback UI hardcoded English | P0 | Localize with `t('errorBoundary.*')` |
+| Error Boundary | **Resuelto.** Fallback UI now uses `t('errorBoundary.*')`. | — | — |
 | Cookie Consent | Entire banner hardcoded Spanish | P1 | Localize; LOPDP compliance requires accurate language |
 | Offline Banner | Message hardcoded Spanish | P1 | Use `t('offline.message')` |
 | Profile Modal | All text hardcoded Spanish; lacks focus trap | P1 | Add `useFocusTrap` and i18n wrap all strings |
-| Dashboard Insights | All chart labels, metrics, and empty states hardcoded Spanish | P0 | Extract to `dashboard.insights.*` i18n keys |
+| Dashboard Insights | **Resuelto.** All chart labels, metrics, and empty states now use i18n keys. | — | — |

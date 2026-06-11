@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The Notifications subsystem delivers messages to customers and staff across multiple channels: **Push (APNs)**, **Email (Mailjet)**, **SMS (Twilio)**, **WhatsApp (Baileys bridge)**, **Wallet (Google/Apple push)**, and **In-App**.
+The Notifications subsystem delivers messages to customers and staff across multiple channels: **Push (APNs)**, **Email (Mailjet)**, **SMS (Twilio campaigns)**, **WhatsApp (Baileys bridge)**, **Wallet (Google/Apple push)**, and **In-App**.
 
 It supports two modes:
 - **Transactional**: reward earned, reward ready, birthday offer, visit reminder — sent immediately via `NotificationService`.
@@ -54,6 +54,8 @@ It supports two modes:
 3. Channel determined by `NotificationChannel` enum (default `push`).
 4. `_send_push_notification()` calls `dispatch_push()` → APNs client.
 5. Row marked `is_sent=True` regardless of delivery success (prevents re-dispatch loops).
+
+> **Note on transactional SMS:** The `_send_sms_notification` helper is currently a logged stub and is not wired to Twilio. Only campaign SMS (`send_sms_campaign`) dispatches through Twilio.
 
 **Campaign Flow:**
 1. Owner creates campaign via `POST /api/v1/notifications/campaigns/`.
@@ -158,16 +160,16 @@ All notification endpoints are mounted under `/api/v1/notifications/`.
 | Endpoint | Method | Auth | Summary |
 |----------|--------|------|---------|
 | `/inbox/` | GET | jwt | Customer notification inbox |
-| `/notifications/{id}/read/` | POST | jwt | Mark as read |
-| `/notifications/{id}/click/` | POST | jwt | Mark as clicked |
-| `/notifications/{id}/` | DELETE | jwt | Delete notification |
+| `/notifications/notifications/{id}/read/` | POST | jwt | Mark as read (double prefix due to router mount) |
+| `/notifications/notifications/{id}/click/` | POST | jwt | Mark as clicked (double prefix due to router mount) |
+| `/notifications/notifications/{id}/` | DELETE | jwt | Delete notification (double prefix due to router mount) |
 
 ### Analytics / Misc
 
 | Endpoint | Method | Auth | Summary |
 |----------|--------|------|---------|
 | `/stats/` | GET | jwt | Notification stats |
-| `/devices/register/` | POST | jwt | Register push device token |
+| `/notifications/devices/register/` | POST | jwt | Register push device token (double prefix due to router mount) |
 
 ### Pydantic Schemas
 
