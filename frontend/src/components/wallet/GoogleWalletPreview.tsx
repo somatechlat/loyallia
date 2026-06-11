@@ -2,12 +2,29 @@ import { Pixel7Frame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, GOOGLE_WALLET_TYPES } from '@/components/programs/constants';
 import { useI18n } from '@/lib/i18n';
+import { resolveTemplate } from '@/components/wallet/AppleWalletPreview';
+import { formatFieldValue } from '@/components/wallet/utils/field-formatting';
+import type { CardTypeConfig } from '@/components/wallet/types/unified-state';
+import {
+  StampGridDecoration,
+  CashbackDecoration,
+  CouponDecoration,
+  VIPMembershipDecoration,
+  GiftCertificateDecoration,
+  ReferralPassDecoration,
+  DiscountDecoration,
+  AffiliateDecoration,
+  CorporateDiscountDecoration,
+  MultipassDecoration,
+} from '@/components/wallet/preview-decorations';
 
 interface PreviewGoogleFieldItem {
   id: string;
   fieldPath: string;
   label: string;
   displayName: string;
+  value: string;
+  dataType?: import('@/components/wallet/types/unified-field').FieldDataType;
 }
 
 interface PreviewGoogleFieldRow {
@@ -21,11 +38,17 @@ interface PreviewWalletDesign {
   googleHeroImageUrl?: string;
   googleWideLogoUrl?: string;
   googleImageModuleUrl?: string;
+  googleBackgroundUrl?: string;
   googleRows?: PreviewGoogleFieldRow[];
 }
 
-function buildContext(form: { name: string; description: string; card_type: string }, customerName: string | undefined, t: (key: string) => string): Record<string, string> {
-  return {
+function buildContext(
+  form: { name: string; description: string; card_type: string },
+  cardTypeConfig: CardTypeConfig | undefined,
+  customerName: string | undefined,
+  t: (key: string) => string
+): Record<string, string | undefined> {
+  const defaults: Record<string, string | undefined> = {
     customer_name: customerName || t('wallet.preview.customer'),
     program_name: form.name || t('wallet.preview.programName'),
     description: form.description || '',
@@ -53,9 +76,56 @@ function buildContext(form: { name: string; description: string; card_type: stri
     expiry_days: '365',
     tiers_list: `${t('wallet.studio.vip.badgeBronze')} 5%, ${t('wallet.studio.vip.badgeSilver')} 10%, ${t('wallet.studio.vip.badgeGold')} 15%`,
   };
+
+  if (!cardTypeConfig) return defaults;
+
+  const cfg = cardTypeConfig;
+  switch (cfg.cardType) {
+    case 'stamp': {
+      const stampsReq = cfg.stampsRequired ?? 10;
+      const stampsAt = cfg.stampsAtIssue ?? 0;
+      return { ...defaults, stamp_count: String(stampsAt), stamps_required: String(stampsReq), stamp_display: `${stampsAt} / ${stampsReq}`, reward_description: cfg.rewardDescription || defaults.reward_description };
+    }
+    case 'cashback': {
+      const pct = cfg.cashbackPercentage ?? 5;
+      const minPurchase = cfg.minimumPurchase ?? 0;
+      return { ...defaults, cashback_percentage: String(pct), cashback_balance: `$${minPurchase.toFixed(2)}`, membership_tier: cfg.tierName || defaults.membership_tier };
+    }
+    case 'coupon': {
+      const val = cfg.discountValue ?? 10;
+      const limit = cfg.usageLimitPerCustomer ?? 1;
+      return { ...defaults, discount_percentage: String(val), coupon_usage: `0 / ${limit}`, coupon_end_date: cfg.couponEndDate || defaults.coupon_end_date, coupon_terms: cfg.couponDescription || form.description || defaults.coupon_terms };
+    }
+    case 'vip_membership': {
+      return { ...defaults, membership_tier: cfg.membershipName || defaults.membership_tier, perks: cfg.perks?.join(', ') || defaults.perks, expiry_days: cfg.validityPeriod === 'lifetime' ? t('wallet.preview.lifetime') : String(cfg.validityPeriod === 'annual' ? 365 : 30) };
+    }
+    case 'discount': {
+      const firstTier = cfg.tiers?.[0];
+      return { ...defaults, discount_percentage: firstTier ? String(firstTier.discountPercentage) : defaults.discount_percentage, discount_tier: firstTier?.tierName || defaults.discount_tier, tiers_list: cfg.tiers?.map((t) => `${t.tierName} ${t.discountPercentage}%`).join(', ') || defaults.tiers_list };
+    }
+    case 'gift_certificate': {
+      const firstDenom = cfg.denominations?.[0];
+      return { ...defaults, gift_balance: firstDenom ? `$${firstDenom.toFixed(2)}` : defaults.gift_balance, expiry_days: String(cfg.expiryDays ?? 365) };
+    }
+    case 'affiliate': {
+      return { ...defaults, affiliate_code: cfg.affiliateCodePattern || defaults.affiliate_code, benefits: cfg.benefitsDescription || defaults.benefits };
+    }
+    case 'corporate_discount': {
+      return { ...defaults, corporate_discount: String(cfg.corporateDiscountPercentage ?? 10), company_name: cfg.companyName || defaults.company_name };
+    }
+    case 'referral_pass': {
+      const maxRef = cfg.maxReferralsPerCustomer ?? 5;
+      return { ...defaults, referral_code: cfg.referralCodePattern || defaults.referral_code, referrals_made: `0 / ${maxRef}`, referrer_reward: cfg.referrerReward || defaults.referrer_reward };
+    }
+    case 'multipass': {
+      return { ...defaults, multipass_remaining: String(cfg.bundleSize ?? 10), bundle_size: String(cfg.bundleSize ?? 10), bundle_price: cfg.bundlePrice ? `$${cfg.bundlePrice.toFixed(2)}` : defaults.bundle_price };
+    }
+    default:
+      return defaults;
+  }
 }
 
-function getGoogleSampleValue(fieldPath: string, ctx: Record<string, string>, t: (key: string) => string): string {
+function getGoogleSampleValue(fieldPath: string, ctx: Record<string, string | undefined>, t: (key: string) => string): string {
   const map: Record<string, string> = {
     'object.accountName': ctx.customer_name || t('wallet.preview.customer'),
     'object.loyaltyPoints.balance': '1,250',
@@ -96,6 +166,8 @@ interface GoogleWalletCardProps {
   customerName?: string;
   /** Wallet design state */
   walletDesign?: PreviewWalletDesign;
+  /** Card type configuration */
+  cardTypeConfig?: CardTypeConfig;
 }
 
 /**
@@ -104,41 +176,148 @@ interface GoogleWalletCardProps {
  * @returns JSX.Element
  */
 export function GoogleWalletCard({
-  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign,
+  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign, cardTypeConfig,
 }: GoogleWalletCardProps) {
   const { t } = useI18n();
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const heroImage = walletDesign?.googleHeroImageUrl || stripPreview || form.strip_image_url;
   const logoImage = walletDesign?.googleProgramLogoUrl || logoPreview;
-  const ctx = buildContext(form, customerName, t);
+  const backgroundImage = walletDesign?.googleBackgroundUrl;
+  const wideLogoImage = walletDesign?.googleWideLogoUrl;
+  const imageModuleImage = walletDesign?.googleImageModuleUrl;
+  const ctx = buildContext(form, cardTypeConfig, customerName, t);
 
   const googleRows = walletDesign?.googleRows;
   const hasCustomRows = googleRows && googleRows.length > 0;
 
-  const defaultRows: Array<{ label: string; value: string }> = [
-    { label: t('wallet.preview.member'), value: customerName || t('wallet.preview.customer') },
-  ];
-  switch (form.card_type) {
-    case 'stamp':             defaultRows.push({ label: t('wallet.preview.defaultHeader.stamp'), value: '0 / 10' }); break;
-    case 'cashback':          defaultRows.push({ label: t('wallet.preview.defaultHeader.cashback'), value: '$0.00' }, { label: t('wallet.studio.cashback.percentage'), value: '10%' }); break;
-    case 'coupon':            defaultRows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: form.name || t('wallet.preview.offer') }, { label: t('wallet.preview.uses'), value: '0 / 1' }, { label: t('wallet.preview.validUntil'), value: t('wallet.preview.validUntilDate') }, { label: t('wallet.preview.terms'), value: form.description || t('wallet.preview.terms') }); break;
-    case 'vip_membership':    defaultRows.push({ label: t('wallet.preview.membership'), value: t('wallet.studio.vip.defaultName') }); break;
-    case 'referral_pass':     defaultRows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: form.name || t('wallet.preview.offer') }, { label: t('wallet.preview.defaultHeader.referral'), value: '0' }, { label: t('wallet.studio.affiliate.codePattern'), value: 'REF-XXXX' }, { label: t('wallet.preview.reward'), value: t('wallet.preview.reward') }); break;
-    case 'discount':          defaultRows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: form.name || t('wallet.preview.offer') }, { label: t('wallet.preview.tier'), value: t('wallet.studio.vip.badgeBronze') }, { label: t('wallet.preview.currentDiscount'), value: '5%' }); break;
-    case 'gift_certificate':  defaultRows.push({ label: t('wallet.preview.defaultHeader.gift'), value: '$0.00' }); break;
-    case 'affiliate':         defaultRows.push({ label: t('wallet.preview.affiliateProgram'), value: form.name || t('programs.cardTypes.affiliate') }); break;
-    case 'corporate_discount':defaultRows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: form.name || t('wallet.preview.offer') }, { label: t('wallet.preview.corporateDiscount'), value: '10%' }, { label: t('wallet.preview.company'), value: t('wallet.preview.company') }); break;
-    case 'multipass':         defaultRows.push({ label: t('wallet.preview.remainingUses'), value: '10' }); break;
+  function buildDefaultRows(cardType: string, config: CardTypeConfig | undefined): Array<{ label: string; value: string }> {
+    const rows: Array<{ label: string; value: string }> = [
+      { label: t('wallet.preview.member'), value: customerName || t('wallet.preview.customer') },
+    ];
+    switch (cardType) {
+      case 'stamp': {
+        const stampsAt = (config as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsAtIssue ?? 0;
+        const stampsReq = (config as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsRequired ?? 10;
+        rows.push({ label: t('wallet.preview.defaultHeader.stamp'), value: `${stampsAt} / ${stampsReq}` });
+        break;
+      }
+      case 'cashback': {
+        const pct = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.cashbackPercentage ?? 5;
+        const minPurchase = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.minimumPurchase ?? 0;
+        rows.push({ label: t('wallet.preview.defaultHeader.cashback'), value: `$${minPurchase.toFixed(2)}` }, { label: t('wallet.studio.cashback.percentage'), value: `${pct}%` });
+        break;
+      }
+      case 'coupon': {
+        const val = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
+        const type = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
+        const displayVal = type === 'percentage' ? `${val}% OFF` : `$${val.toFixed(2)} OFF`;
+        rows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: displayVal }, { label: t('wallet.preview.uses'), value: `0 / ${(config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.usageLimitPerCustomer ?? 1}` }, { label: t('wallet.preview.validUntil'), value: t('wallet.preview.validUntilDate') }, { label: t('wallet.preview.terms'), value: form.description || t('wallet.preview.terms') });
+        break;
+      }
+      case 'vip_membership': {
+        const name = (config as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.membershipName;
+        rows.push({ label: t('wallet.preview.membership'), value: name || t('wallet.studio.vip.defaultName') });
+        break;
+      }
+      case 'referral_pass': {
+        const maxRef = (config as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.maxReferralsPerCustomer ?? 5;
+        const pattern = (config as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.referralCodePattern;
+        rows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: form.name || t('wallet.preview.offer') }, { label: t('wallet.preview.defaultHeader.referral'), value: `0 / ${maxRef}` }, { label: t('wallet.studio.affiliate.codePattern'), value: pattern || 'REF-XXXX' }, { label: t('wallet.preview.reward'), value: (config as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.referrerReward || t('wallet.preview.reward') });
+        break;
+      }
+      case 'discount': {
+        const firstTier = (config as Extract<CardTypeConfig, { cardType: 'discount' }>)?.tiers?.[0];
+        rows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: form.name || t('wallet.preview.offer') }, { label: t('wallet.preview.tier'), value: firstTier?.tierName || t('wallet.studio.vip.badgeBronze') }, { label: t('wallet.preview.currentDiscount'), value: firstTier ? `${firstTier.discountPercentage}%` : '5%' });
+        break;
+      }
+      case 'gift_certificate': {
+        const firstDenom = (config as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
+        rows.push({ label: t('wallet.preview.defaultHeader.gift'), value: firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00' });
+        break;
+      }
+      case 'affiliate': {
+        rows.push({ label: t('wallet.preview.affiliateProgram'), value: form.name || t('programs.cardTypes.affiliate') });
+        break;
+      }
+      case 'corporate_discount': {
+        const pct = (config as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.corporateDiscountPercentage ?? 10;
+        rows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: form.name || t('wallet.preview.offer') }, { label: t('wallet.preview.corporateDiscount'), value: `${pct}%` }, { label: t('wallet.preview.company'), value: (config as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.companyName || t('wallet.preview.company') });
+        break;
+      }
+      case 'multipass': {
+        const size = (config as Extract<CardTypeConfig, { cardType: 'multipass' }>)?.bundleSize ?? 10;
+        rows.push({ label: t('wallet.preview.remainingUses'), value: String(size) });
+        break;
+      }
+    }
+    rows.push({ label: t('wallet.preview.passType'), value: GOOGLE_WALLET_TYPES[form.card_type]?.label || t('wallet.preview.loyaltyProgram') });
+    return rows;
   }
-  defaultRows.push({ label: t('wallet.preview.passType'), value: GOOGLE_WALLET_TYPES[form.card_type]?.label || t('wallet.preview.loyaltyProgram') });
+
+  const defaultRows = buildDefaultRows(form.card_type, cardTypeConfig);
+
+  function renderDecoration() {
+    switch (form.card_type) {
+      case 'stamp': {
+        const stampsAt = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsAtIssue ?? 0;
+        const stampsReq = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsRequired ?? 10;
+        return <StampGridDecoration current={stampsAt} total={stampsReq} color={textColor} />;
+      }
+      case 'cashback': {
+        const pct = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.cashbackPercentage ?? 5;
+        const tier = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.tierName || t('wallet.studio.vip.defaultName');
+        return <CashbackDecoration percentage={pct} tierName={tier} color={textColor} />;
+      }
+      case 'coupon': {
+        const val = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
+        const type = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
+        const endDate = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.couponEndDate || t('wallet.preview.validUntilDate');
+        return <CouponDecoration discount={val} discountType={type} validUntil={endDate} color={textColor} />;
+      }
+      case 'vip_membership': {
+        const name = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.membershipName || t('wallet.studio.vip.defaultName');
+        const perks = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.perks || [];
+        return <VIPMembershipDecoration tierName={name} perks={perks} color={textColor} />;
+      }
+      case 'gift_certificate': {
+        const firstDenom = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
+        const balance = firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00';
+        return <GiftCertificateDecoration balance={balance} color={textColor} />;
+      }
+      case 'referral_pass': {
+        const pattern = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.referralCodePattern || 'REF-XXXX';
+        const maxRef = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.maxReferralsPerCustomer ?? 5;
+        return <ReferralPassDecoration code={pattern} referralsMade={0} maxReferrals={maxRef} color={textColor} />;
+      }
+      case 'discount': {
+        const tiers = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'discount' }>)?.tiers || [];
+        return <DiscountDecoration tiers={tiers} color={textColor} />;
+      }
+      case 'affiliate': {
+        const code = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'affiliate' }>)?.affiliateCodePattern || 'AFIL-001';
+        return <AffiliateDecoration code={code} color={textColor} />;
+      }
+      case 'corporate_discount': {
+        const company = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.companyName || t('wallet.preview.company');
+        const pct = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.corporateDiscountPercentage ?? 10;
+        return <CorporateDiscountDecoration companyName={company} discountPercentage={pct} color={textColor} />;
+      }
+      case 'multipass': {
+        const size = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'multipass' }>)?.bundleSize ?? 10;
+        return <MultipassDecoration remaining={size} total={size} color={textColor} />;
+      }
+      default:
+        return null;
+    }
+  }
 
   return (
     <Pixel7Frame>
       <div
         className="rounded-[28px] overflow-hidden flex flex-col shadow-lg h-full"
         style={{
-          background: bgColor,
+          background: backgroundImage ? `${bgColor} url(${backgroundImage}) center/cover no-repeat` : bgColor,
           color: textColor,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2)',
         }}
@@ -170,6 +349,15 @@ export function GoogleWalletCard({
           <p className="text-[10px] opacity-40 mt-0.5 font-medium truncate">{selectedType?.label || t('wallet.preview.loyaltyProgram')}</p>
         </div>
 
+        {/* Wide Logo */}
+        {wideLogoImage && (
+          <div className="px-4 pb-1 shrink-0">
+            <div className="w-full h-10 rounded-lg overflow-hidden border border-white/10">
+              <img src={wideLogoImage} alt={t('wallet.studio.images.wideLogo')} className="w-full h-full object-contain" />
+            </div>
+          </div>
+        )}
+
         {/* Info rows with dividers */}
         <div className="px-3 pt-1.5 pb-1 shrink-0">
           {hasCustomRows ? (
@@ -183,7 +371,7 @@ export function GoogleWalletCard({
                     <div key={item.id} className={`min-w-0 overflow-hidden ${row.type !== 'oneItem' && iIdx > 0 ? 'text-right' : ''}`}>
                       <p className="text-[8px] opacity-35 font-medium leading-none mb-0.5 truncate">{item.displayName || item.label || t('wallet.studio.fields.label')}</p>
                       <p className="text-[10px] font-semibold leading-tight truncate">
-                        {getGoogleSampleValue(item.fieldPath, ctx, t)}
+                        {item.value ? formatFieldValue(resolveTemplate(item.value, ctx), item.dataType ?? 'text') : getGoogleSampleValue(item.fieldPath, ctx, t)}
                       </p>
                     </div>
                   ))}
@@ -210,6 +398,18 @@ export function GoogleWalletCard({
           )}
         </div>
 
+        {/* ── CARD TYPE DECORATION ── */}
+        <div className="shrink-0">{renderDecoration()}</div>
+
+        {/* Image Module */}
+        {imageModuleImage && (
+          <div className="px-3 pt-2 pb-1 shrink-0">
+            <div className="w-full rounded-xl overflow-hidden border border-white/10 shadow-sm">
+              <img src={imageModuleImage} alt={t('wallet.studio.images.imageModule')} className="w-full h-auto object-cover" />
+            </div>
+          </div>
+        )}
+
         {/* Spacer */}
         <div className="flex-1 min-h-0" />
 
@@ -223,4 +423,126 @@ export function GoogleWalletCard({
       </div>
     </Pixel7Frame>
   );
+}
+
+/* ── Google Wallet Back / Details View ─────────────────────────────── */
+
+interface GoogleWalletBackCardProps {
+  form: {
+    name: string;
+    description: string;
+    background_color: string;
+    text_color: string;
+    card_type: string;
+  };
+  logoPreview?: string | null;
+  walletDesign?: PreviewWalletDesign;
+  cardTypeConfig?: CardTypeConfig;
+  backFields?: Array<{ label: string; value: string }>;
+  backLinks?: Array<{ type: string; url: string; label: string }>;
+}
+
+export function GoogleWalletBackCard({
+  form, logoPreview, walletDesign, backFields, backLinks,
+}: GoogleWalletBackCardProps) {
+  const { t } = useI18n();
+  const bgColor = form.background_color || '#1a1a2e';
+  const textColor = form.text_color || '#ffffff';
+  const logoImage = walletDesign?.googleProgramLogoUrl || logoPreview;
+
+  return (
+    <Pixel7Frame>
+      <div
+        className="rounded-[28px] overflow-hidden flex flex-col shadow-lg h-full"
+        style={{
+          background: bgColor,
+          color: textColor,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2)',
+        }}
+      >
+        {/* Header bar */}
+        <div className="px-4 py-3 flex items-center gap-2 shrink-0 border-b border-white/10">
+          <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          <span className="text-[11px] font-semibold opacity-60">{t('wallet.preview.details')}</span>
+        </div>
+
+        {/* Logo + name */}
+        <div className="px-4 py-3 flex items-center gap-3 shrink-0 border-b border-white/10">
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-sm bg-neutral-900 flex-shrink-0">
+            {logoImage ? (
+              <img src={logoImage} alt={t('wallet.studio.images.logo')} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-white/10">
+                <span className="text-xs opacity-50">{form.name?.charAt(0) || 'L'}</span>
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="text-[13px] font-bold leading-tight">{form.name || t('wallet.preview.programName')}</p>
+            <p className="text-[10px] opacity-40 mt-0.5">{t('wallet.preview.loyaltyProgram')}</p>
+          </div>
+        </div>
+
+        {/* Scrollable details content */}
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          {/* Back fields as sections */}
+          {backFields && backFields.length > 0 ? (
+            <div className="space-y-4">
+              {backFields.map((field, i) => (
+                <div key={i}>
+                  <div className="h-px bg-white/10 mb-3" />
+                  <p className="text-[9px] font-bold uppercase tracking-wider opacity-40 mb-1">{field.label}</p>
+                  <p className="text-[11px] leading-relaxed opacity-90 whitespace-pre-wrap break-words">{field.value}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center text-center">
+              <p className="text-[10px] opacity-30">{t('wallet.preview.noBackFields')}</p>
+            </div>
+          )}
+
+          {/* Quick links */}
+          {backLinks && backLinks.length > 0 && (
+            <>
+              <div className="h-px bg-white/10 my-4" />
+              <p className="text-[9px] font-bold uppercase tracking-wider opacity-40 mb-2">{t('wallet.preview.links')}</p>
+              <div className="space-y-2">
+                {backLinks.map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-[11px] hover:bg-white/10 transition-colors"
+                  >
+                    <span className="opacity-60">{getLinkIcon(link.type)}</span>
+                    <span className="truncate">{link.label || link.url}</span>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Bottom nav pill */}
+        <div className="flex justify-center pb-3 pt-1 shrink-0">
+          <div className="w-28 h-[3px] bg-white rounded-full opacity-15" />
+        </div>
+      </div>
+    </Pixel7Frame>
+  );
+}
+
+function getLinkIcon(type: string): string {
+  switch (type) {
+    case 'website': return '🌐';
+    case 'phone': return '📞';
+    case 'email': return '✉️';
+    case 'instagram': return '📸';
+    case 'facebook': return '👍';
+    default: return '🔗';
+  }
 }

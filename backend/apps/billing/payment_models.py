@@ -134,9 +134,7 @@ class Invoice(TimestampedModel):
     )
 
     # Invoice number (sequential per tenant)
-    invoice_number = models.CharField(
-        max_length=50, verbose_name="Número de factura"
-    )
+    invoice_number = models.CharField(max_length=50, verbose_name="Número de factura")
 
     # Amounts
     subtotal = models.DecimalField(
@@ -256,7 +254,10 @@ class Invoice(TimestampedModel):
         slug = tenant.slug[:10].upper().replace("-", "")
 
         with transaction.atomic():
-            counter, _created = InvoiceCounter.objects.select_for_update().get_or_create(
+            (
+                counter,
+                _created,
+            ) = InvoiceCounter.objects.select_for_update().get_or_create(
                 tenant=tenant, defaults={"last_number": 0}
             )
             counter.last_number = F("last_number") + 1

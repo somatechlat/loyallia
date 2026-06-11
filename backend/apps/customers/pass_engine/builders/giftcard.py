@@ -2,6 +2,8 @@
 Gift card pass builders for Google Wallet.
 """
 
+from django.conf import settings
+
 from apps.tenants.models import PlatformSetting
 from common.messages import get_message
 
@@ -37,7 +39,12 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
     ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
 
     merchant_name = google_cfg.get("merchantName") or tenant.name
-    hex_color = google_cfg.get("hexBackgroundColor") or (_get_wallet_studio(card).get("colors") or {}).get("background") or card.background_color or "#1A1A2E"
+    hex_color = (
+        google_cfg.get("hexBackgroundColor")
+        or (_get_wallet_studio(card).get("colors") or {}).get("background")
+        or card.background_color
+        or "#1A1A2E"
+    )
 
     payload = {
         "id": class_id,
@@ -78,8 +85,16 @@ def _build_gift_card_object(
     program_name = google_cfg.get("programName") or card.name
 
     text_modules = [
-        {"header": get_message("WALLET_LABEL_BUSINESS"), "body": tenant.name, "id": "tenant_name"},
-        {"header": get_message("WALLET_LABEL_CARD"), "body": program_name, "id": "program_name"},
+        {
+            "header": get_message("WALLET_LABEL_BUSINESS"),
+            "body": tenant.name,
+            "id": "tenant_name",
+        },
+        {
+            "header": get_message("WALLET_LABEL_CARD"),
+            "body": program_name,
+            "id": "program_name",
+        },
     ] + _build_v2_text_modules_data(card, customer_pass, customer, tenant)
 
     obj = {
@@ -88,13 +103,17 @@ def _build_gift_card_object(
         "state": "ACTIVE",
         "cardNumber": str(customer.id)[:8],
         "balance": {
-            "micros": int(float(balance) * 1_000_000),
+            "micros": int(
+                float(balance) * settings.PASS_GOOGLE_GIFTCARD_MICROS_MULTIPLIER
+            ),
             "currencyCode": metadata.get("currency", "USD"),
         },
         "barcode": {
             "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,
-            "alternateText": customer_pass.qr_code[:10],
+            "alternateText": customer_pass.qr_code[
+                : settings.PASS_GOOGLE_QR_TRUNCATE_LENGTH
+            ],
         },
         "textModulesData": text_modules,
     }
@@ -115,7 +134,10 @@ def _build_gift_card_object(
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {
-                "defaultValue": {"language": "es", "value": get_message("WALLET_BANNER_OF", name=program_name)}
+                "defaultValue": {
+                    "language": "es",
+                    "value": get_message("WALLET_BANNER_OF", name=program_name),
+                }
             },
         }
 
@@ -149,7 +171,9 @@ def _build_gift_card_object(
     v2_links = _build_v2_links_module_data(card)
     if v2_links:
         obj.setdefault("linksModuleData", {"uris": []})
-        obj["linksModuleData"]["uris"] = obj["linksModuleData"].get("uris", []) + v2_links
+        obj["linksModuleData"]["uris"] = (
+            obj["linksModuleData"].get("uris", []) + v2_links
+        )
 
     _apply_google_advanced_to_object(card, obj)
     return obj

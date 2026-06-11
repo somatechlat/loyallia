@@ -30,8 +30,11 @@ export interface StudioToolbarProps {
   onSave: () => void;
   onSaveAsTemplate?: () => void;
   onExport?: () => void;
+  isExporting?: boolean;
   onAIGenerate: () => void;
   isModified: boolean;
+  onShowSuggestions?: () => void;
+  hasSuggestions?: boolean;
 }
 
 /* ── Inline icons ────────────────────────────────────────────────── */
@@ -152,12 +155,6 @@ function getScoreColorClass(score: number): string {
   return 'text-red-600 bg-red-100';
 }
 
-function getScoreBlocks(score: number): string {
-  const filled = Math.round(score);
-  const empty = 10 - filled;
-  return '█'.repeat(filled) + '░'.repeat(empty);
-}
-
 /* ── Component ───────────────────────────────────────────────────── */
 
 export function StudioToolbar({
@@ -176,8 +173,11 @@ export function StudioToolbar({
   onSave,
   onSaveAsTemplate,
   onExport,
+  isExporting,
   onAIGenerate,
   isModified,
+  onShowSuggestions,
+  hasSuggestions,
 }: StudioToolbarProps) {
   const { t } = useI18n();
   const planFeatures = usePlanFeatures();
@@ -197,16 +197,16 @@ export function StudioToolbar({
           50% { transform: scale(1.03); }
         }
       `}</style>
-      <header className="flex flex-col gap-2 px-4 py-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-        {/* ── Row 1 ─────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3">
+      <header className="flex flex-col gap-1.5 px-3 py-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
+        {/* ── Row 1: Primary actions + Platform + Zoom + Score + AI ── */}
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Undo / Redo */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={onUndo}
               disabled={!canUndo}
-              className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title={t('wallet.studio.toolbar.undo')}
             >
               <UndoIcon className="w-4 h-4" />
@@ -215,14 +215,14 @@ export function StudioToolbar({
               type="button"
               onClick={onRedo}
               disabled={!canRedo}
-              className="p-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title={t('wallet.studio.toolbar.redo')}
             >
               <RedoIcon className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
+          <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
 
           {/* Platform toggle */}
           <div
@@ -240,96 +240,46 @@ export function StudioToolbar({
                   role="radio"
                   aria-checked={isActive}
                   onClick={() => onPlatformViewChange(option.value)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-neutral-900 ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-neutral-900 ${
                     isActive
-                      ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-md'
+                      ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
                       : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                   }`}
                   title={option.label}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  <span>{option.label}</span>
+                  <span className="hidden sm:inline">{option.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
+          <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700" />
 
           {/* Zoom controls */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => onZoomChange(Math.max(0.5, zoom - 0.25))}
-              className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              className="p-1 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               title={t('wallet.studio.toolbar.zoomOut')}
             >
               <MinusIcon className="w-4 h-4" />
             </button>
-            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 w-12 text-center tabular-nums">
+            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 w-10 text-center tabular-nums">
               {Math.round(zoom * 100)}%
             </span>
             <button
               type="button"
               onClick={() => onZoomChange(Math.min(2, zoom + 0.25))}
-              className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              className="p-1 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               title={t('wallet.studio.toolbar.zoomIn')}
             >
               <PlusIcon className="w-4 h-4" />
             </button>
           </div>
-        </div>
 
-        {/* ── Row 2 ─────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3">
-          {/* Plantillas */}
-          <button
-            type="button"
-            onClick={onOpenTemplates}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          >
-            <PaletteIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('wallet.studio.toolbar.templates')}</span>
-          </button>
-
-          {/* Guardar */}
-          <button
-            type="button"
-            onClick={onSave}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
-          >
-            <SaveIcon className="w-4 h-4" />
-            <span>{t('wallet.studio.toolbar.save')}</span>
-            {isModified && <span className="w-1.5 h-1.5 rounded-full bg-white/80" />}
-          </button>
-
-          {/* Guardar como plantilla */}
-          {onSaveAsTemplate && (
-            <button
-              type="button"
-              onClick={onSaveAsTemplate}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              title={t('wallet.studio.toolbar.saveAsTemplate')}
-              data-testid="toolbar-save-template-btn"
-            >
-              <span>💾</span>
-              <span className="hidden md:inline">{t('wallet.studio.toolbar.saveAsTemplate')}</span>
-            </button>
-          )}
-
-          {/* Exportar */}
-          {onExport && (
-            <button
-              type="button"
-              onClick={onExport}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            >
-              <DownloadIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('wallet.studio.toolbar.export')}</span>
-            </button>
-          )}
-
-          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700" />
+          <div className="w-px h-5 bg-neutral-200 dark:bg-neutral-700 hidden sm:block" />
 
           {/* Frente / Reverso toggle */}
           <div
@@ -342,26 +292,26 @@ export function StudioToolbar({
               role="radio"
               aria-checked={!showBack}
               onClick={() => showBack && onToggleBack()}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
                 !showBack
                   ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
               }`}
             >
-              Frente
+              {t('wallet.studio.toolbar.front')}
             </button>
             <button
               type="button"
               role="radio"
               aria-checked={showBack}
               onClick={() => !showBack && onToggleBack()}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
                 showBack
                   ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
               }`}
             >
-              Reverso
+              {t('wallet.studio.toolbar.back')}
             </button>
           </div>
 
@@ -369,29 +319,87 @@ export function StudioToolbar({
 
           {/* Design Score */}
           {scoreColorClass && typeof designScore === 'number' && (
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${scoreColorClass}`}>
-                {getScoreBlocks(designScore)} {designScore.toFixed(1)}/10
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${scoreColorClass}`}>
+                {designScore.toFixed(1)}/10
               </span>
+              {hasSuggestions && onShowSuggestions && (
+                <button
+                  type="button"
+                  onClick={onShowSuggestions}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                >
+                  🔧 {t('wallet.studio.score.viewSuggestions')}
+                </button>
+              )}
             </div>
           )}
-        </div>
 
-        {/* ── Row 3 (right-aligned) ─────────────────────────────────── */}
-        <div className="flex justify-end">
+          {/* AI Button */}
           <button
             type="button"
             onClick={onAIGenerate}
             disabled={!planFeatures.hasAIAssistant}
-            className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite] disabled:opacity-40 disabled:cursor-not-allowed disabled:animate-none"
+            className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite] disabled:opacity-40 disabled:cursor-not-allowed disabled:animate-none shrink-0"
             title={planFeatures.hasAIAssistant ? t('wallet.studio.toolbar.aiDesign') : 'PRO'}
           >
-            <SparklesIcon className="w-4 h-4" />
-            <span>{t('wallet.studio.toolbar.aiDesign')}</span>
+            <SparklesIcon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t('wallet.studio.toolbar.aiDesign')}</span>
             {!planFeatures.hasAIAssistant && (
-              <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">PRO</span>
+              <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded">PRO</span>
             )}
           </button>
+        </div>
+
+        {/* ── Row 2: Templates | Save | Save As | Export ────────────── */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenTemplates}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <PaletteIcon className="w-3.5 h-3.5" />
+            <span>{t('wallet.studio.toolbar.templates')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onSave}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
+          >
+            <SaveIcon className="w-3.5 h-3.5" />
+            <span>{t('wallet.studio.toolbar.save')}</span>
+            {isModified && <span className="w-1.5 h-1.5 rounded-full bg-white/80" />}
+          </button>
+
+          {onSaveAsTemplate && (
+            <button
+              type="button"
+              onClick={onSaveAsTemplate}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              title={t('wallet.studio.toolbar.saveAsTemplate')}
+              data-testid="toolbar-save-template-btn"
+            >
+              <span>💾</span>
+              <span className="hidden md:inline">{t('wallet.studio.toolbar.saveAsTemplate')}</span>
+            </button>
+          )}
+
+          {onExport && (
+            <button
+              type="button"
+              onClick={onExport}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? (
+                <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <DownloadIcon className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">{t('wallet.studio.toolbar.export')}</span>
+            </button>
+          )}
         </div>
       </header>
     </>

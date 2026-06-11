@@ -7,41 +7,61 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0010_alter_card_background_color_alter_card_barcode_type_and_more'),
-        ('customers', '0010_alter_applepassregistration_customer_pass_and_more'),
-        ('tenants', '0011_alter_location_address_alter_location_city_and_more'),
+        ("cards", "0010_alter_card_background_color_alter_card_barcode_type_and_more"),
+        ("customers", "0010_alter_applepassregistration_customer_pass_and_more"),
+        ("tenants", "0011_alter_location_address_alter_location_city_and_more"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='customer',
-            unique_together={('tenant', 'email')},
+            name="customer",
+            unique_together={("tenant", "email")},
         ),
         migrations.AlterUniqueTogether(
-            name='customerpass',
-            unique_together={('customer', 'card')},
+            name="customerpass",
+            unique_together={("customer", "card")},
         ),
         migrations.AddField(
-            model_name='customerpass',
-            name='tenant',
-            field=models.ForeignKey(blank=True, help_text='Tenant for query scoping and isolation.', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='customer_passes', to='tenants.tenant', verbose_name='Negocio'),
+            model_name="customerpass",
+            name="tenant",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Tenant for query scoping and isolation.",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="customer_passes",
+                to="tenants.tenant",
+                verbose_name="Negocio",
+            ),
         ),
         migrations.AlterField(
-            model_name='customer',
-            name='referral_code',
-            field=models.CharField(blank=True, default='', help_text='Unique referral code per tenant.', max_length=20),
+            model_name="customer",
+            name="referral_code",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Unique referral code per tenant.",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='customerpass',
-            name='qr_code',
-            field=models.CharField(blank=True, db_index=True, default='', help_text='Unique QR code for pass validation per tenant.', max_length=100, verbose_name='Código QR'),
+            model_name="customerpass",
+            name="qr_code",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                default="",
+                help_text="Unique QR code for pass validation per tenant.",
+                max_length=100,
+                verbose_name="Código QR",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='customer',
-            unique_together={('tenant', 'email'), ('tenant', 'referral_code')},
+            name="customer",
+            unique_together={("tenant", "email"), ("tenant", "referral_code")},
         ),
         migrations.AlterUniqueTogether(
-            name='customerpass',
-            unique_together={('customer', 'card'), ('tenant', 'qr_code')},
+            name="customerpass",
+            unique_together={("customer", "card"), ("tenant", "qr_code")},
         ),
     ]

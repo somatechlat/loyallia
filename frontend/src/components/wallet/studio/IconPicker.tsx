@@ -9,6 +9,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import type { IconDefinition, IconCategory } from '@/components/wallet/icon-library';
 import { ICON_LIBRARY, getIconsByCategory, searchIcons } from '@/components/wallet/icon-library';
+import { getLucideIcon } from '@/components/wallet/lucide-icon-map';
 
 export interface IconPickerProps {
   value: string;
@@ -48,6 +49,7 @@ const CATEGORY_ORDER: Array<IconCategory | 'all'> = [
 ];
 
 function IconPreview({ icon, className }: { icon: IconDefinition; className?: string }) {
+  // 1. Use inline SVG path if available
   if (icon.svgPath) {
     return (
       <svg
@@ -63,6 +65,16 @@ function IconPreview({ icon, className }: { icon: IconDefinition; className?: st
       </svg>
     );
   }
+
+  // 2. Use lucide-react icon if mapped
+  if (icon.lucideName) {
+    const LucideIcon = getLucideIcon(icon.lucideName);
+    if (LucideIcon) {
+      return <LucideIcon className={className} strokeWidth={2} />;
+    }
+  }
+
+  // 3. Fallback to first letter
   return (
     <div
       className={`${className} flex items-center justify-center text-xs font-bold text-neutral-500 dark:text-neutral-400`}

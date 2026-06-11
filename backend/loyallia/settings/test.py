@@ -27,7 +27,9 @@ if "direct" in DATABASES:  # noqa: F405
 # Tests must not be blocked by Redis-backed rate limiting.
 
 MIDDLEWARE = [  # noqa: F405
-    m for m in MIDDLEWARE if m != "common.rate_limit.RateLimitMiddleware"  # noqa: F405
+    m
+    for m in MIDDLEWARE  # noqa: F405
+    if m != "common.rate_limit.RateLimitMiddleware"  # noqa: F405
 ]
 
 # PRODUCTION-FIDELITY TEST SETTINGS
@@ -50,6 +52,10 @@ CACHES = {
 
 # Disable Sentry in tests to avoid polluting error tracking
 SENTRY_DSN = None
+
+# Dummy AI API key for tests that exercise KimiService code paths
+# (real HTTP calls are mocked in test files)
+AI_API_KEY = "test-dummy-key"
 
 # CORS: explicit whitelist (not allow-all) for production fidelity
 CORS_ALLOW_ALL_ORIGINS = False

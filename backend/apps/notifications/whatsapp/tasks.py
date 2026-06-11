@@ -7,6 +7,7 @@ Periodic tasks for WhatsApp session maintenance and rate-limit resets.
 import logging
 
 from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -15,8 +16,8 @@ logger = logging.getLogger(__name__)
 @shared_task(
     name="apps.notifications.whatsapp.tasks.reset_whatsapp_daily_counters",
     queue="default",
-    soft_time_limit=300,
-    time_limit=360,
+    soft_time_limit=settings.CELERY_SOFT_TIME_LIMIT_NOTIFICATIONS_WHATSAPP,
+    time_limit=settings.CELERY_TIME_LIMIT_NOTIFICATIONS_WHATSAPP,
 )
 def reset_whatsapp_daily_counters() -> dict:
     """Reset messages_sent_today and advance warmup_day for all WhatsApp sessions.

@@ -7,6 +7,7 @@ No authentication required. Rate limited.
 
 import logging
 
+from django.conf import settings
 from ninja import Router
 
 from apps.authentication.otp_service import check_otp, send_otp
@@ -40,7 +41,7 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
     try:
         count = cache.incr(rate_key)
     except ValueError:
-        cache.set(rate_key, 1, timeout=600)
+        cache.set(rate_key, 1, timeout=settings.CACHE_TTL_PHONE_VERIFY_RATE)
         count = 1
     if count > 5:
         return PhoneVerifyStartOut(
@@ -70,7 +71,10 @@ def verify_phone_start(request, payload: PhoneVerifyStartIn):
             action=AuditAction.CREATE,
             resource_type="phone_verification",
             resource_id=payload.phone,
-            details={"channel": result.get("channel", "sms"), "strategy": result.get("strategy", "")},
+            details={
+                "channel": result.get("channel", "sms"),
+                "strategy": result.get("strategy", ""),
+            },
             status=AuditStatus.SUCCESS,
         )
     except Exception as e:
@@ -98,7 +102,7 @@ def verify_phone_check(request, payload: PhoneVerifyCheckIn):
     """
     phone = payload.phone.strip()
     allowed, _ = check_rate_limit(
-        f"verify_phone_check:{phone}", max_requests=5, window_seconds=900
+        f"verify_phone_check:{phone}", max_requests=settings.PHONE_VERIFY_RATE_LIMIT_MAX, window_seconds=settings.PHONE_VERIFY_RATE_LIMIT_WINDOW
     )
     if not allowed:
         return PhoneVerifyCheckOut(

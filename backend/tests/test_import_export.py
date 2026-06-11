@@ -48,7 +48,7 @@ class TestCustomerImportService:
             }
         )
         file_obj = io.BytesIO()
-        df.to_excel(file_obj, index=False)
+        df.to_excel(file_obj, index=False)  # type: ignore[reportArgumentType]
         file_obj.seek(0)
 
         service = CustomerImportService(tenant)

@@ -83,9 +83,7 @@ def _build_v2_template_context(card, customer_pass) -> dict:
         "gift_amount": str(customer_pass.gift_balance_val),
         "remaining_uses": str(customer_pass.multipass_remaining_val or 0),
         "session_count": "0",
-        "referral_code": customer.referral_code
-        or customer_pass.qr_code
-        or "",
+        "referral_code": customer.referral_code or customer_pass.qr_code or "",
         "company_name": pass_data.get("company_name")
         or metadata.get("company_name")
         or "",
@@ -137,7 +135,14 @@ def _map_v2_field_to_apple(field: dict, context: dict) -> dict:
     }
 
     apple_options = field.get("appleOptions", {}) or {}
-    if apple_options.get("changeMessage"):
+    # Structured notification config takes precedence; fall back to legacy flat string
+    notifications = field.get("notifications", {}) or {}
+    apple_change_cfg = notifications.get("appleChangeMessage")
+    if isinstance(apple_change_cfg, dict) and apple_change_cfg.get("enabled"):
+        apple_field["changeMessage"] = apple_change_cfg.get("message", "")
+    elif isinstance(apple_change_cfg, str) and apple_change_cfg:
+        apple_field["changeMessage"] = apple_change_cfg
+    elif apple_options.get("changeMessage"):
         apple_field["changeMessage"] = apple_options["changeMessage"]
     if apple_options.get("textAlignment"):
         apple_field["textAlignment"] = apple_options["textAlignment"]
@@ -195,6 +200,8 @@ def _build_v2_apple_fields(card, customer_pass) -> dict | None:
         if not field.get("showOnApple", True):
             continue
         group = field.get("fieldGroup")
+        if not isinstance(group, str):
+            continue
         apple_group = group_map.get(group)
         if not apple_group:
             continue
@@ -218,9 +225,7 @@ def _build_v2_apple_fields(card, customer_pass) -> dict | None:
             link_url = back_field.get("url") or back_field.get("value", "")
             if link_url:
                 display = label or value or link_url
-                apple_back["attributedValue"] = (
-                    f"<a href='{link_url}'>{display}</a>"
-                )
+                apple_back["attributedValue"] = f"<a href='{link_url}'>{display}</a>"
         groups["backFields"].append(apple_back)
 
     # Remove empty groups to keep pass.json clean

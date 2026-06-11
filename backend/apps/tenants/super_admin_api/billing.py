@@ -72,7 +72,9 @@ def confirm_manual_payment(request, invoice_id: str):
             status=AuditStatus.SUCCESS,
         )
     except Exception as e:
-        logger.warning("Failed to audit manual payment confirmation: %s", e, exc_info=True)
+        logger.warning(
+            "Failed to audit manual payment confirmation: %s", e, exc_info=True
+        )
 
     logger.info(
         "SUPER_ADMIN %s confirmed invoice %s for tenant %s",

@@ -28,6 +28,7 @@ from apps.customers.portal_auth import (
 from apps.customers.services.portal_email import send_portal_password_email
 from common.messages import get_message, get_message_for_request
 from common.rate_limit import check_rate_limit
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -179,7 +180,7 @@ def generate_portal_password(
 
     # Rate limit before any DB query to prevent timing attacks
     allowed, _ = check_rate_limit(
-        f"portal_password:{email}", max_requests=3, window_seconds=3600
+        f"portal_password:{email}", max_requests=settings.PORTAL_PASSWORD_RATE_LIMIT_MAX, window_seconds=settings.PORTAL_PASSWORD_RATE_LIMIT_WINDOW
     )
     if not allowed:
         # Return same message as non-existent email to prevent enumeration
@@ -188,7 +189,9 @@ def generate_portal_password(
             message=get_message_for_request("PORTAL_PASSWORD_SENT", request),
         )
 
-    # Verify this email exists in at least one customer record
+    # Verify this email exists in at least one customer record.
+    # NOTE: Global lookup by design — portal accounts are cross-tenant.
+    # Rate limiting above prevents enumeration attacks.
     has_customer = Customer.objects.filter(email=email, is_active=True).exists()
     if not has_customer:
         # Return same message to prevent email enumeration

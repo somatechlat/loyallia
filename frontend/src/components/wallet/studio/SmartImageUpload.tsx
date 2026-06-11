@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { ImageAsset } from '@/components/wallet/types/unified-state';
 import { uploadWalletImage } from '@/components/wallet/services/imageUpload';
 
@@ -143,9 +144,10 @@ export function SmartImageUpload({
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
-  const [_actualDimensions, setActualDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [actualDimensions, setActualDimensions] = useState<{ width: number; height: number } | null>(null);
   const blobUrlsRef = useRef<Set<string>>(new Set());
 
   const displayUrl = value?.url || localPreview || '';
@@ -185,7 +187,12 @@ export function SmartImageUpload({
         img.naturalHeight < recommendedSize.height
       ) {
         setWarning(
-          `Dimensiones recomendadas: ${recommendedSize.width}x${recommendedSize.height}px. Tu imagen es ${img.naturalWidth}x${img.naturalHeight}px.`
+          t('wallet.studio.smartImageUpload.dimensionsWarning', {
+            recWidth: recommendedSize.width,
+            recHeight: recommendedSize.height,
+            actWidth: img.naturalWidth,
+            actHeight: img.naturalHeight,
+          })
         );
       } else {
         setWarning(null);
@@ -201,7 +208,7 @@ export function SmartImageUpload({
     };
 
     img.src = objectUrl;
-  }, [recommendedSize]);
+  }, [recommendedSize, t]);
 
   const handleFile = useCallback(async (file: File, type: 'logo' | 'hero' | 'icon') => {
     setError(null);
@@ -300,7 +307,7 @@ export function SmartImageUpload({
             type="button"
             onClick={handleClear}
             className="p-1.5 rounded-md text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-            title="Eliminar imagen"
+            title={t('wallet.studio.smartImageUpload.removeImage')}
           >
             <TrashIcon className="w-4 h-4" />
           </button>
@@ -332,7 +339,7 @@ export function SmartImageUpload({
         {uploading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-50/80 dark:bg-neutral-800/80 z-10">
             <SpinnerIcon className="w-8 h-8 text-blue-500" />
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Subiendo...</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('wallet.studio.smartImageUpload.uploading')}</span>
           </div>
         ) : null}
 
@@ -346,10 +353,10 @@ export function SmartImageUpload({
           <>
             <ImageIcon className="w-8 h-8 text-neutral-400 dark:text-neutral-500" />
             <span className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
-              Haz click o arrastra una imagen
+              {t('wallet.studio.smartImageUpload.clickOrDrag')}
             </span>
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono text-center">
-              {accept} · Máx {maxSizeMB}MB
+              {accept} · {t('wallet.studio.smartImageUpload.maxSize', { maxSizeMB })}
             </span>
           </>
         )}
@@ -380,12 +387,12 @@ export function SmartImageUpload({
 
       {/* Platform crop previews */}
       {isImageLoaded && (
-        <div className="flex items-center gap-4 pt-1">
+        <div className="flex items-center gap-3 pt-1">
           {/* Apple preview */}
           <div className="flex flex-col items-center gap-1.5 flex-1">
             <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider font-medium">
               <AppleIcon className="w-3 h-3" />
-              <span>Apple</span>
+              <span>{t('wallet.studio.smartImageUpload.apple')}</span>
             </div>
             <div className={`relative overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 ${shapeClass(applePreviewShape)} ${previewSizeClass}`}>
               <img
@@ -394,13 +401,16 @@ export function SmartImageUpload({
                 className="w-full h-full object-cover"
               />
             </div>
+            <span className="text-[9px] text-neutral-400 dark:text-neutral-500">
+              {recommendedSize.width}x{recommendedSize.height}px
+            </span>
           </div>
 
           {/* Google preview */}
           <div className="flex flex-col items-center gap-1.5 flex-1">
             <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider font-medium">
               <GoogleIcon className="w-3 h-3" />
-              <span>Google</span>
+              <span>{t('wallet.studio.smartImageUpload.google')}</span>
             </div>
             <div className={`relative overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 ${shapeClass(googlePreviewShape)} ${previewSizeClass}`}>
               <img
@@ -409,6 +419,31 @@ export function SmartImageUpload({
                 className="w-full h-full object-cover"
               />
             </div>
+            <span className="text-[9px] text-neutral-400 dark:text-neutral-500">
+              {recommendedSize.width}x{recommendedSize.height}px
+            </span>
+          </div>
+
+          {/* Original preview */}
+          <div className="flex flex-col items-center gap-1.5 flex-1">
+            <div className="flex items-center gap-1 text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider font-medium">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span>{t('wallet.studio.images.original')}</span>
+            </div>
+            <div className={`relative overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 rounded-lg ${previewSizeClass}`}>
+              <img
+                src={displayUrl}
+                alt={`${label} - Original preview`}
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="text-[9px] text-neutral-400 dark:text-neutral-500">
+              {actualDimensions ? `${actualDimensions.width}x${actualDimensions.height}px` : t('wallet.studio.images.originalSize')}
+            </span>
           </div>
         </div>
       )}
@@ -416,7 +451,7 @@ export function SmartImageUpload({
       {/* Specs footer */}
       {!isImageLoaded && (
         <p className="text-[10px] text-neutral-400 dark:text-neutral-500 text-center">
-          Recomendado: {recommendedSize.width}x{recommendedSize.height}px
+          {t('wallet.studio.smartImageUpload.recommended', { width: recommendedSize.width, height: recommendedSize.height })}
         </p>
       )}
     </div>

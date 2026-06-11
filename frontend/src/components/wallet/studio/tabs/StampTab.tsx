@@ -7,7 +7,6 @@
 import React, { useCallback } from 'react';
 import type { StampCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
-import { StampGrid } from '@/components/wallet/studio/StampGrid';
 
 export interface StampTabProps {
   config: StampCardConfig;
@@ -79,225 +78,150 @@ export function StampTab({ config, onChange }: StampTabProps) {
   );
 
   return (
-    <div className="space-y-5">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
         Configuración de Sellos
       </h3>
 
-      {/* Stamps required */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Sellos necesarios
-        </label>
-        <input
-          type="number"
-          min={1}
-          max={20}
-          value={config.stampsRequired}
-          onChange={handleNumberChange('stampsRequired', 1, 20)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          data-testid="stamps-required-input"
-        />
+      <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Sellos necesarios</label>
+          <input type="number" min={1} max={20} value={config.stampsRequired} onChange={handleNumberChange('stampsRequired', 1, 20)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="stamps-required-input" />
+        </div>
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Sellos al emitir</label>
+          <input type="number" min={0} max={20} value={config.stampsAtIssue} onChange={handleNumberChange('stampsAtIssue', 0, 20)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="stamps-at-issue-input" />
+        </div>
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Límite diario</label>
+          <input type="number" min={0} max={100} value={config.dailyStampLimit} onChange={handleNumberChange('dailyStampLimit', 0, 100)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="daily-stamp-limit-input" />
+        </div>
       </div>
 
-      {/* Reward description */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Descripción de recompensa
-        </label>
-        <input
-          type="text"
-          value={config.rewardDescription}
-          onChange={handleTextChange('rewardDescription')}
-          placeholder="Ej: Café gratis"
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          data-testid="reward-description-input"
-        />
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Recompensa</label>
+        <input type="text" value={config.rewardDescription} onChange={handleTextChange('rewardDescription')} placeholder="Ej: Café gratis" className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="reward-description-input" />
       </div>
 
-      {/* Stamp shape */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Forma del sello
-        </label>
-        <div className="grid grid-cols-3 gap-2">
+      {/* Expiry */}
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Vencimiento de sellos</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onChange({ stampExpiry: 'unlimited' })}
+            className={`flex-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
+              config.stampExpiry === 'unlimited'
+                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
+            }`}
+            data-testid="stamp-expiry-unlimited"
+          >
+            Ilimitado
+          </button>
+          <div className="flex-1 flex items-center gap-2 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
+            <input
+              type="number"
+              min={1}
+              value={typeof config.stampExpiry === 'number' ? config.stampExpiry : ''}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                if (!Number.isNaN(value) && value >= 1) {
+                  onChange({ stampExpiry: value });
+                }
+              }}
+              placeholder="Días"
+              className="w-full text-xs text-neutral-800 dark:text-neutral-100 bg-transparent focus:outline-none"
+              data-testid="stamp-expiry-days-input"
+            />
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap">días</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Start/End dates */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Fecha de inicio</label>
+          <input
+            type="date"
+            value={config.stampStartDate ?? ''}
+            onChange={(e) => onChange({ stampStartDate: e.target.value || undefined })}
+            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="stamp-start-date-input"
+          />
+        </div>
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Fecha de fin</label>
+          <input
+            type="date"
+            value={config.stampEndDate ?? ''}
+            onChange={(e) => onChange({ stampEndDate: e.target.value || undefined })}
+            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="stamp-end-date-input"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Forma</label>
+        <div className="grid grid-cols-6 gap-1">
           {SHAPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => handleShapeChange(opt.value)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors ${
-                config.stampShape === opt.value
-                  ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500'
-              }`}
-              data-testid={`shape-option-${opt.value}`}
-            >
+            <button key={opt.value} type="button" onClick={() => handleShapeChange(opt.value)} className={`flex flex-col items-center gap-0.5 p-1 rounded-md border transition-colors ${config.stampShape === opt.value ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-400'}`} data-testid={`shape-option-${opt.value}`}>
               <ShapePreview shape={opt.value} color={config.stampColor} />
-              <span className="text-[10px] text-neutral-600 dark:text-neutral-400">{opt.label}</span>
+              <span className="text-[9px] text-neutral-600 dark:text-neutral-400">{opt.label}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Stamp icon */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Icono del sello
-        </label>
-        <IconPicker
-          value={config.stampFilledIcon}
-          onChange={(iconId) => onChange({ stampFilledIcon: iconId })}
-          category="stamp"
-        />
-      </div>
-
-      {/* Stamp color */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Color del sello
-        </label>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            value={config.stampColor}
-            onChange={(e) => onChange({ stampColor: e.target.value })}
-            className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 cursor-pointer p-0 overflow-hidden"
-            data-testid="stamp-color-input"
-          />
-          <span className="text-xs font-mono text-neutral-600 dark:text-neutral-400">{config.stampColor}</span>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Color</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={config.stampColor} onChange={(e) => onChange({ stampColor: e.target.value })} className="w-7 h-7 rounded-md border border-neutral-300 dark:border-neutral-700 cursor-pointer p-0 overflow-hidden" data-testid="stamp-color-input" />
+            <span className="text-[10px] font-mono text-neutral-500">{config.stampColor}</span>
+          </div>
+        </div>
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Cumpleaños</label>
+          <input type="number" min={0} max={20} value={config.birthdayStamps} onChange={handleNumberChange('birthdayStamps', 0, 20)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="birthday-stamps-input" />
         </div>
       </div>
 
-      {/* Grid layout */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Disposición
-        </label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleGridLayoutChange(true)}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              config.stampGridLayout !== 'dynamic'
-                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
-            }`}
-            data-testid="layout-grid"
-          >
-            Cuadrícula
-          </button>
-          <button
-            type="button"
-            onClick={() => handleGridLayoutChange(false)}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              config.stampGridLayout === 'dynamic'
-                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
-            }`}
-            data-testid="layout-linear"
-          >
-            Lineal
-          </button>
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Icono de sello vacío</label>
+        <IconPicker value={config.stampIcon} onChange={(iconId) => onChange({ stampIcon: iconId })} category="stamp" />
+      </div>
+
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Icono de sello lleno</label>
+        <IconPicker value={config.stampFilledIcon} onChange={(iconId) => onChange({ stampFilledIcon: iconId })} category="stamp" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Disposición</label>
+          <div className="flex gap-1">
+            <button type="button" onClick={() => handleGridLayoutChange(true)} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampGridLayout !== 'dynamic' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Cuadrícula</button>
+            <button type="button" onClick={() => handleGridLayoutChange(false)} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampGridLayout === 'dynamic' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Lineal</button>
+          </div>
+        </div>
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Tipo</label>
+          <div className="flex gap-1">
+            <button type="button" onClick={() => handleStampTypeChange('visit')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'visit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Visita</button>
+            <button type="button" onClick={() => handleStampTypeChange('consumption')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'consumption' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Consumo</button>
+          </div>
         </div>
       </div>
 
-      {/* Stamp type */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Tipo de sello
-        </label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleStampTypeChange('visit')}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              config.stampType === 'visit'
-                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
-            }`}
-            data-testid="stamp-type-visit"
-          >
-            Visita
-          </button>
-          <button
-            type="button"
-            onClick={() => handleStampTypeChange('consumption')}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              config.stampType === 'consumption'
-                ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
-            }`}
-            data-testid="stamp-type-consumption"
-          >
-            Consumo
-          </button>
-        </div>
-      </div>
-
-      {/* Consumption per stamp */}
       {config.stampType === 'consumption' && (
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-            Consumo por sello
-          </label>
-          <input
-            type="number"
-            min={1}
-            value={config.consumptionPerStamp}
-            onChange={handleNumberChange('consumptionPerStamp', 1, 9999)}
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            data-testid="consumption-per-stamp-input"
-          />
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Consumo por sello</label>
+          <input type="number" min={1} value={config.consumptionPerStamp} onChange={handleNumberChange('consumptionPerStamp', 1, 9999)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="consumption-per-stamp-input" />
         </div>
       )}
-
-      {/* Daily stamp limit */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Límite diario de sellos
-        </label>
-        <input
-          type="number"
-          min={0}
-          max={100}
-          value={config.dailyStampLimit}
-          onChange={handleNumberChange('dailyStampLimit', 0, 100)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          data-testid="daily-stamp-limit-input"
-        />
-      </div>
-
-      {/* Birthday stamps */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Sellos de cumpleaños
-        </label>
-        <input
-          type="number"
-          min={0}
-          max={20}
-          value={config.birthdayStamps}
-          onChange={handleNumberChange('birthdayStamps', 0, 20)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          data-testid="birthday-stamps-input"
-        />
-      </div>
-
-      {/* Live preview */}
-      <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
-        </label>
-        <StampGrid
-          stampsRequired={config.stampsRequired}
-          stampsEarned={Math.min(3, config.stampsRequired)}
-          stampShape={config.stampShape}
-          stampIcon={config.stampFilledIcon}
-          stampColor={config.stampColor}
-          layout={config.stampGridLayout === 'dynamic' ? 'linear' : 'grid'}
-        />
-      </div>
     </div>
   );
 }

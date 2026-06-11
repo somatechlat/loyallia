@@ -1,6 +1,7 @@
 """
 Environment guard tests — NO mocks, NO stubs, NO bypasses.
 """
+
 import os
 
 from common.environment_guard import (

@@ -92,7 +92,9 @@ def _get_cache_ttl(key: str, window_seconds: int) -> int:
     return ttl
 
 
-def check_rate_limit(key: str, max_requests: int, window_seconds: int) -> tuple[bool, int]:
+def check_rate_limit(
+    key: str, max_requests: int, window_seconds: int
+) -> tuple[bool, int]:
     """Check a custom rate limit key using Redis (preferred) or Django cache.
 
     Returns (allowed, ttl) where *allowed* is True when the request is within
@@ -138,7 +140,9 @@ def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) ->
             redis_client.expire(key, window_seconds)
         return current <= max_requests
     except Exception as e:
-        logger.warning("Rate limiter: Redis INCR failed (%s). Falling back to cache.", e)
+        logger.warning(
+            "Rate limiter: Redis INCR failed (%s). Falling back to cache.", e
+        )
         return _check_rate_limit_cache(key, max_requests, window_seconds)
 
 
@@ -179,7 +183,12 @@ RATE_LIMIT_RULES = [
     ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP (legacy)
     ("/api/v1/auth/", "ip", 60, 60),  # 60 general auth requests per minute per IP
     ("/api/v1/scanner/", "user", 120, 60),  # 120 scans per minute per user
-    ("/api/v1/scanner/v2/", "user", 120, 60),  # 120 scans per minute per user (v2 canonical)
+    (
+        "/api/v1/scanner/v2/",
+        "user",
+        120,
+        60,
+    ),  # 120 scans per minute per user (v2 canonical)
     # Dashboard loads fan out to several analytics endpoints; 60/min lets normal
     # date-filter usage work while preserving user-scoped abuse protection.
     ("/api/v1/analytics/", "user", 60, 60),
@@ -226,11 +235,17 @@ RATE_LIMIT_RULES = [
         60,
     ),  # 30 template ops per minute per user
     (
+        "/api/v1/wallet/studio/ai/",
+        "user",
+        10,
+        60,
+    ),  # 10 AI requests per minute per user
+    (
         "/api/v1/wallet/studio/generate/",
         "user",
-        20,
+        5,
         60,
-    ),  # 20 generate ops per minute per user
+    ),  # 5 generate ops per minute per user
     ("/api/v1/", "ip", 200, 60),  # 200 general API requests per minute per IP
 ]
 
@@ -290,7 +305,9 @@ class RateLimitMiddleware:
             return cache
         except Exception as e:
             self._cache_available = False
-            logger.warning("Rate limiter: Cache backend unavailable (%s). Failing open.", e)
+            logger.warning(
+                "Rate limiter: Cache backend unavailable (%s). Failing open.", e
+            )
             return None
 
     def __call__(self, request: HttpRequest):
@@ -354,7 +371,9 @@ class RateLimitMiddleware:
                         current_count = 1
             except Exception as e:
                 # Cache error fail open
-                logger.warning("Rate limiter: Cache operation error (%s). Failing open.", e)
+                logger.warning(
+                    "Rate limiter: Cache operation error (%s). Failing open.", e
+                )
                 break
 
             if current_count > max_requests:

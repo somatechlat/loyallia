@@ -30,69 +30,6 @@ const COMMON_PERKS = [
   'Ampliación de garantía',
 ];
 
-function CrownIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg
-      className={className}
-      style={style}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-    </svg>
-  );
-}
-
-function VIPPreview({ config }: { config: VipMembershipCardConfig }) {
-  const badgeColor = BADGE_STYLES.find((b) => b.value === config.memberBadgeStyle)?.color ?? '#FFD700';
-
-  return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: badgeColor + '33' }}
-        >
-          <CrownIcon className="w-5 h-5" style={{ color: badgeColor }} />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-            {config.membershipName || 'Membresía VIP'}
-          </p>
-          <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-            {config.validityPeriod === 'lifetime'
-              ? 'Vitalicia'
-              : config.validityPeriod === 'annual'
-                ? `$${config.annualFee}/año`
-                : `$${config.monthlyFee}/mes`}
-          </p>
-        </div>
-      </div>
-      {config.perks.length > 0 && (
-        <ul className="space-y-1">
-          {config.perks.slice(0, 3).map((perk, i) => (
-            <li key={i} className="text-[11px] text-neutral-600 dark:text-neutral-400 flex items-center gap-1.5">
-              <svg className="w-3 h-3 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-              {perk}
-            </li>
-          ))}
-          {config.perks.length > 3 && (
-            <li className="text-[10px] text-neutral-400 dark:text-neutral-500">
-              +{config.perks.length - 3} más
-            </li>
-          )}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 export function VIPTab({ config, onChange }: VIPTabProps) {
   const handleNumberChange = useCallback(
     (field: keyof VipMembershipCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,14 +76,14 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
   const [customPerk, setCustomPerk] = React.useState('');
 
   return (
-    <div className="space-y-5">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
         Configuración de Membresía VIP
       </h3>
 
       {/* Membership name */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Nombre de la membresía
         </label>
         <input
@@ -154,14 +91,14 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
           value={config.membershipName}
           onChange={handleTextChange('membershipName')}
           placeholder="Ej: Club Premium"
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="membership-name-input"
         />
       </div>
 
       {/* Monthly fee */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Cuota mensual
         </label>
         <input
@@ -169,14 +106,14 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
           min={0}
           value={config.monthlyFee}
           onChange={handleNumberChange('monthlyFee', 0, 999999)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="monthly-fee-input"
         />
       </div>
 
       {/* Annual fee */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Cuota anual
         </label>
         <input
@@ -184,14 +121,14 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
           min={0}
           value={config.annualFee}
           onChange={handleNumberChange('annualFee', 0, 999999)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="annual-fee-input"
         />
       </div>
 
       {/* Validity period */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Periodo de validez
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -200,7 +137,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
               key={period}
               type="button"
               onClick={() => handleValidityChange(period)}
-              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`px-2 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 config.validityPeriod === period
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                   : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -214,8 +151,8 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       </div>
 
       {/* Perks */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Beneficios
         </label>
         <div className="flex flex-wrap gap-1.5">
@@ -249,7 +186,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
               }
             }}
             placeholder="Agregar beneficio…"
-            className="flex-1 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="custom-perk-input"
           />
           <button
@@ -260,7 +197,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
                 setCustomPerk('');
               }
             }}
-            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
             data-testid="add-perk-btn"
           >
             +
@@ -269,8 +206,8 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       </div>
 
       {/* Common perks checklist */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Beneficios comunes
         </label>
         <div className="space-y-1">
@@ -279,7 +216,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
             return (
               <label
                 key={perk}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
+                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -294,7 +231,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
                   className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-700 text-blue-600 focus:ring-blue-500"
                   data-testid={`perk-check-${perk.replace(/\s+/g, '-').toLowerCase()}`}
                 />
-                <span className="text-sm text-neutral-700 dark:text-neutral-300">{perk}</span>
+                <span className="text-xs text-neutral-700 dark:text-neutral-300">{perk}</span>
               </label>
             );
           })}
@@ -302,8 +239,8 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       </div>
 
       {/* Crown icon */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Icono de corona
         </label>
         <IconPicker
@@ -314,8 +251,8 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
       </div>
 
       {/* Member badge style */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Estilo de insignia de miembro
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -324,7 +261,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
               key={opt.value}
               type="button"
               onClick={() => onChange({ memberBadgeStyle: opt.value })}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-2 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 config.memberBadgeStyle === opt.value
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                   : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -338,12 +275,16 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
         </div>
       </div>
 
-      {/* Live preview */}
-      <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
+      {/* Benefits list icons */}
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+          Icono para beneficios
         </label>
-        <VIPPreview config={config} />
+        <IconPicker
+          value={config.benefitsListIcons?.[0] ?? ''}
+          onChange={(iconId) => onChange({ benefitsListIcons: [iconId] })}
+          category="decorative"
+        />
       </div>
     </div>
   );

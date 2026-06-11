@@ -39,7 +39,12 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
 
     program_name = google_cfg.get("programName") or card.name
-    hex_color = google_cfg.get("hexBackgroundColor") or (_get_wallet_studio(card).get("colors") or {}).get("background") or card.background_color or "#1A1A2E"
+    hex_color = (
+        google_cfg.get("hexBackgroundColor")
+        or (_get_wallet_studio(card).get("colors") or {}).get("background")
+        or card.background_color
+        or "#1A1A2E"
+    )
 
     payload = {
         "id": class_id,
@@ -140,21 +145,34 @@ def _build_loyalty_object(
             "value": customer_pass.qr_code,
             "alternateText": customer_pass.qr_code,
         },
-        "smartTapRedemptionValue": google_cfg.get("smartTapRedemptionValue") or customer_pass.qr_code,
+        "smartTapRedemptionValue": google_cfg.get("smartTapRedemptionValue")
+        or customer_pass.qr_code,
     }
 
     # Merge V2 text modules with default branding
     v2_modules = _build_v2_text_modules_data(card, customer_pass, customer, tenant)
-    text_modules = [
-        {"header": get_message("WALLET_LABEL_ESTABLISHMENT"), "body": tenant.name, "id": "tenant_name"},
-        {"header": get_message("WALLET_LABEL_PROGRAM"), "body": program_name, "id": "program_name"},
-    ] + v2_modules + [
-        {
-            "header": "",
-            "body": get_message("WALLET_POWERED_BY"),
-            "id": "loyallia_branding",
-        },
-    ]
+    text_modules = (
+        [
+            {
+                "header": get_message("WALLET_LABEL_ESTABLISHMENT"),
+                "body": tenant.name,
+                "id": "tenant_name",
+            },
+            {
+                "header": get_message("WALLET_LABEL_PROGRAM"),
+                "body": program_name,
+                "id": "program_name",
+            },
+        ]
+        + v2_modules
+        + [
+            {
+                "header": "",
+                "body": get_message("WALLET_POWERED_BY"),
+                "id": "loyallia_branding",
+            },
+        ]
+    )
     obj["textModulesData"] = text_modules
 
     # Links: default + V2 back-content links
@@ -180,7 +198,10 @@ def _build_loyalty_object(
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {
-                "defaultValue": {"language": "es", "value": get_message("WALLET_BANNER_OF", name=program_name)}
+                "defaultValue": {
+                    "language": "es",
+                    "value": get_message("WALLET_BANNER_OF", name=program_name),
+                }
             },
         }
 
@@ -211,7 +232,9 @@ def _build_loyalty_object(
         ]
 
     if card.card_type == "cashback":
-        pct = metadata.get("cashback_percentage", 10)
+        pct = metadata.get(
+            "cashback_percentage", settings.PASS_GOOGLE_CASHBACK_DEFAULT_PCT
+        )
         obj["secondaryLoyaltyPoints"] = {
             "label": get_message("WALLET_CASHBACK_RATE_LABEL"),
             "balance": {"string": f"{pct}%"},
@@ -228,10 +251,15 @@ def _build_points_for_type(card, customer_pass) -> dict:
 
     if card.card_type == "stamp":
         current = customer_pass.stamp_count_val
-        return {"label": get_message("WALLET_LABEL_STAMPS"), "balance": {"int": current}}
+        return {
+            "label": get_message("WALLET_LABEL_STAMPS"),
+            "balance": {"int": current},
+        }
     elif card.card_type == "multipass":
         remaining = customer_pass.multipass_remaining_val or 0
-        bundle_size = metadata.get("bundle_size", 10)
+        bundle_size = metadata.get(
+            "bundle_size", settings.PASS_GOOGLE_BUNDLE_SIZE_DEFAULT
+        )
         return {
             "label": get_message("WALLET_LABEL_USES"),
             "balance": {"string": f"{remaining} / {bundle_size}"},

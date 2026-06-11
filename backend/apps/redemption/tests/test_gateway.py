@@ -87,7 +87,7 @@ class GatewayTestCase(TestCase):
         return RedemptionCommand(
             tenant_id=str(self.tenant.id),
             qr_code=qr_code,
-            intent=intent,
+            intent=intent,  # type: ignore[reportArgumentType]
             amount=amount,
             idempotency_key=idempotency_key,
             scanned_at=timezone.now(),
@@ -128,7 +128,7 @@ class GatewayTestCase(TestCase):
             transaction_type=TransactionType.DENIED,
         ).first()
         self.assertIsNotNone(txn)
-        self.assertEqual(txn.denial_reason, "usage_limit_exceeded")
+        self.assertEqual(txn.denial_reason, "usage_limit_exceeded")  # type: ignore[reportOptionalMemberAccess]
 
     def test_idempotency_blocks_duplicate(self):
         card = self.make_card("stamp", metadata={"stamps_required": 5})

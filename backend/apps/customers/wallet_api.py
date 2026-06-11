@@ -19,6 +19,7 @@ from ninja import Router, Schema
 from ninja.errors import HttpError
 
 from common.messages import get_message
+from common.permissions import jwt_auth
 from common.platform_config import get_platform_config
 
 logger = logging.getLogger(__name__)
@@ -175,7 +176,7 @@ def download_apple_pass(request, pass_id: str):
         if pkpass_bytes is None:
             raise HttpError(500, get_message("PASS_APPLE_GEN_ERROR"))
         # Cache for 24 hours (it will auto-invalidate if last_updated changes)
-        cache.set(cache_key, pkpass_bytes, timeout=86400)
+        cache.set(cache_key, pkpass_bytes, timeout=settings.CACHE_TTL_PKPASS)
 
     # Mark this pass as having an Apple Wallet version
     if not customer_pass.apple_pass_id:
@@ -283,6 +284,23 @@ def get_wallet_status(request, pass_id: str):
     )
 
 
+class StudioPreviewIn(Schema):
+    """Request body for studio preview export."""
+
+    platform: str  # 'apple' or 'google'
+    program_id: str | None = None
+    studio_state: dict | None = None
+
+
+class StudioPreviewOut(Schema):
+    """Response for studio preview export."""
+
+    download_url: str = ""
+    save_url: str = ""
+    pass_id: str = ""
+    message: str = ""
+
+
 class PublicPassOut(Schema):
     """Public pass info for existing members to view/add to wallet."""
 
@@ -349,3 +367,184 @@ def get_public_pass(request, pass_id: str):
             "status": f"/api/v1/wallet/status/{pass_id}/",
         },
     )
+
+
+# STUDIO PREVIEW EXPORT
+
+
+@router.post(
+    "/wallet/preview/",
+    response=StudioPreviewOut,
+    summary="Generar pase de preview desde Studio",
+    auth=jwt_auth,
+)
+def studio_preview_export(request, payload: StudioPreviewIn):
+    """
+    Generate a preview wallet pass from the Wallet Studio design state.
+
+    - If `program_id` is provided: uses the existing program card.
+    - If `studio_state` is provided: creates a temporary preview card
+      (deleted after generation).
+
+    Returns a download URL for Apple (.pkpass) or a save URL for Google.
+    """
+    from apps.cards.models import Card
+    from apps.customers.models import Customer, CustomerPass
+    from apps.customers.pass_engine.apple_pass import (
+        generate_pkpass,
+        is_apple_wallet_configured,
+    )
+    from apps.customers.pass_engine.google_pass import (
+        generate_google_wallet_url,
+        is_google_wallet_configured,
+    )
+
+    user = request.user
+    tenant = getattr(request, "tenant", None) or getattr(user, "tenant", None)
+    if not tenant:
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+    platform = payload.platform.lower()
+    if platform not in ("apple", "google"):
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR", detail="platform must be 'apple' or 'google'"
+            ),
+        )
+
+    card = None
+    temp_card = False
+
+    if payload.program_id:
+        try:
+            card = Card.objects.get(
+                id=uuid.UUID(payload.program_id), tenant=tenant, is_active=True
+            )
+        except (Card.DoesNotExist, ValueError):
+            raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
+    elif payload.studio_state:
+        # Create a temporary preview card
+        # studio_state is the full metadata object { wallet_studio: {...}, wallet_provider: ... }
+        metadata = payload.studio_state
+        studio = metadata.get("wallet_studio") or metadata
+        colors = studio.get("colors") or {}
+        images = studio.get("images") or {}
+        card_type = studio.get("cardType") or "stamp"
+        card = Card.objects.create(
+            tenant=tenant,
+            card_type=card_type,
+            name=studio.get("name") or "Preview",
+            description=studio.get("description") or "",
+            background_color=colors.get("background") or "#1A1A2E",
+            text_color=colors.get("foreground") or "#FFFFFF",
+            logo_url=images.get("logo", {}).get("url") or "",
+            strip_image_url=images.get("strip", {}).get("url")
+            or images.get("heroImage", {}).get("url")
+            or "",
+            icon_url=images.get("icon", {}).get("url") or "",
+            barcode_type=studio.get("barcode", {}).get("format") or "qr_code",
+            metadata=(
+                metadata if isinstance(metadata, dict) else {"wallet_studio": studio}
+            ),
+            is_active=True,
+            is_published=False,
+        )
+        temp_card = True
+    else:
+        raise HttpError(
+            400,
+            get_message(
+                "VALIDATION_ERROR", detail="Provide program_id or studio_state"
+            ),
+        )
+
+    # Get or create a preview customer for this user/tenant
+    preview_email = f"preview+{user.id}@{tenant.slug or 'loyallia.local'}"
+    customer, _ = Customer.objects.get_or_create(
+        tenant=tenant,
+        email=preview_email,
+        defaults={
+            "first_name": user.first_name or "Preview",
+            "last_name": user.last_name or "User",
+            "phone": "",
+            "is_active": True,
+        },
+    )
+
+    # Get or create a preview pass
+    pass_obj, _ = CustomerPass.objects.get_or_create(
+        customer=customer,
+        card=card,
+        defaults={
+            "tenant": tenant,
+            "qr_code": f"PREVIEW-{uuid.uuid4().hex[:8].upper()}",
+            "is_active": True,
+        },
+    )
+
+    result = StudioPreviewOut(pass_id=str(pass_obj.id))
+
+    try:
+        if platform == "apple":
+            if not is_apple_wallet_configured():
+                result.message = get_message("PASS_APPLE_NOT_CONFIGURED")
+                return result
+            pkpass_bytes = generate_pkpass(pass_obj)
+            if pkpass_bytes is None:
+                result.message = get_message("PASS_APPLE_GEN_ERROR")
+                return result
+            # Store in cache for 5 minutes so the download endpoint can retrieve it
+            from django.core.cache import cache
+
+            cache_key = f"studio_preview:apple:{pass_obj.id}"
+            cache.set(cache_key, pkpass_bytes, timeout=settings.CACHE_TTL_PKPASS_ERROR)
+            result.download_url = (
+                f"/api/v1/wallet/preview/download/apple/{pass_obj.id}/"
+            )
+            result.message = get_message("ENROLLMENT_PASS_READY")
+        else:
+            if not is_google_wallet_configured():
+                result.message = get_message("PASS_GOOGLE_NOT_CONFIGURED")
+                return result
+            base_url = get_platform_config(
+                "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+            ) or request.build_absolute_uri("/").rstrip("/")
+            save_url = generate_google_wallet_url(pass_obj, base_url=base_url)
+            if save_url is None:
+                result.message = get_message("PASS_GOOGLE_GEN_ERROR")
+                return result
+            result.save_url = save_url
+            result.message = get_message("ENROLLMENT_PASS_READY")
+    finally:
+        if temp_card:
+            # Clean up temporary preview records individually
+            from contextlib import suppress
+
+            with suppress(Exception):
+                pass_obj.delete()
+            with suppress(Exception):
+                customer.delete()
+            with suppress(Exception):
+                card.delete()
+
+    return result
+
+
+@router.get(
+    "/wallet/preview/download/apple/{pass_id}/",
+    summary="Descargar pase de preview de Apple Wallet",
+    auth=None,
+)
+def studio_preview_download_apple(request, pass_id: str):
+    """Download a cached Apple preview .pkpass file."""
+    from django.core.cache import cache
+
+    cache_key = f"studio_preview:apple:{pass_id}"
+    pkpass_bytes = cache.get(cache_key)
+    if not pkpass_bytes:
+        raise HttpError(404, get_message("PASS_NOT_FOUND"))
+
+    response = HttpResponse(pkpass_bytes, content_type="application/vnd.apple.pkpass")
+    response["Content-Disposition"] = 'attachment; filename="preview.pkpass"'
+    return response

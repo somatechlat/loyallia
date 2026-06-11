@@ -14,6 +14,7 @@ import zipfile
 from datetime import datetime
 from typing import Any
 
+from django.conf import settings
 from django.db.models import QuerySet
 
 logger = logging.getLogger("loyallia.data_export")
@@ -562,7 +563,9 @@ def generate_tenant_export(tenant) -> io.BytesIO:
         _write_table(
             zf,
             "audit_log",
-            AuditLog.objects.filter(tenant_id=tenant.id).order_by("-created_at")[:5000],
+            AuditLog.objects.filter(tenant_id=tenant.id).order_by("-created_at")[
+                : settings.DATA_EXPORT_AUDIT_LOG_LIMIT
+            ],
             [
                 "id",
                 "actor_id",

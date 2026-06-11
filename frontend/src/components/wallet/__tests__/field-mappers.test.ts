@@ -27,6 +27,7 @@ function makeField(overrides: Partial<UnifiedField> & { id: string }): UnifiedFi
     showOnApple: true,
     showOnGoogle: true,
     isDynamic: false,
+    dataType: 'text',
     appleOptions: {},
     googleOptions: { isPredefined: false },
     notifications: {},
@@ -126,17 +127,43 @@ describe('mapFieldToApple', () => {
       label: 'Date',
       value: '2025-01-01',
       appleOptions: {
-        changeMessage: 'Updated to %@',
         textAlignment: 'PKTextAlignmentCenter',
         dateStyle: 'PKDateStyleShort',
       },
     });
     const apple = mapFieldToApple(field);
 
-    expect(apple.changeMessage).toBe('Updated to %@');
     expect(apple.textAlignment).toBe('PKTextAlignmentCenter');
     expect(apple.dateStyle).toBe('PKDateStyleShort');
     expect(apple.timeStyle).toBeUndefined();
+  });
+
+  it('reads changeMessage from structured notification config', () => {
+    const field = makeField({
+      id: 'f3',
+      label: 'Points',
+      value: '100',
+      notifications: {
+        appleChangeMessage: { enabled: true, message: 'Updated to %@' },
+      },
+    });
+    const apple = mapFieldToApple(field);
+
+    expect(apple.changeMessage).toBe('Updated to %@');
+  });
+
+  it('reads changeMessage from legacy flat string for backward compat', () => {
+    const field = makeField({
+      id: 'f4',
+      label: 'Points',
+      value: '100',
+      notifications: {
+        appleChangeMessage: 'Legacy message' as any,
+      },
+    });
+    const apple = mapFieldToApple(field);
+
+    expect(apple.changeMessage).toBe('Legacy message');
   });
 });
 
@@ -153,6 +180,7 @@ describe('mapFieldToGoogle', () => {
     expect(google.fieldPath).toBe('class.header[0]');
     expect(google.label).toBe('Points');
     expect(google.displayName).toBe('Points');
+    expect(google.value).toBe('100');
   });
 
   it('uses the provided position index', () => {

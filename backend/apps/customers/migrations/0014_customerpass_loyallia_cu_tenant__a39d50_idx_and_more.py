@@ -6,22 +6,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0012_card_loyallia_ca_tenant__90dc30_idx_and_more'),
-        ('customers', '0013_customer_created_by_customer_updated_by'),
-        ('tenants', '0011_alter_location_address_alter_location_city_and_more'),
+        ("cards", "0012_card_loyallia_ca_tenant__90dc30_idx_and_more"),
+        ("customers", "0013_customer_created_by_customer_updated_by"),
+        ("tenants", "0011_alter_location_address_alter_location_city_and_more"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='customerpass',
-            index=models.Index(fields=['tenant', 'lifecycle_state'], name='loyallia_cu_tenant__a39d50_idx'),
+            model_name="customerpass",
+            index=models.Index(
+                fields=["tenant", "lifecycle_state"],
+                name="loyallia_cu_tenant__a39d50_idx",
+            ),
         ),
         migrations.AddIndex(
-            model_name='customerpass',
-            index=models.Index(fields=['tenant', 'is_active'], name='loyallia_cu_tenant__0e1ff6_idx'),
+            model_name="customerpass",
+            index=models.Index(
+                fields=["tenant", "is_active"], name="loyallia_cu_tenant__0e1ff6_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='customerpass',
-            index=models.Index(fields=['tenant', 'qr_code'], name='loyallia_cu_tenant__6a5627_idx'),
+            model_name="customerpass",
+            index=models.Index(
+                fields=["tenant", "qr_code"], name="loyallia_cu_tenant__6a5627_idx"
+            ),
         ),
     ]

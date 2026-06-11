@@ -2,11 +2,26 @@ import { IPhone15ProFrame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, APPLE_PASS_STYLES } from '@/components/programs/constants';
 import { useI18n } from '@/lib/i18n';
+import { formatFieldValue } from '@/components/wallet/utils/field-formatting';
+import type { CardTypeConfig } from '@/components/wallet/types/unified-state';
+import {
+  StampGridDecoration,
+  CashbackDecoration,
+  CouponDecoration,
+  VIPMembershipDecoration,
+  GiftCertificateDecoration,
+  ReferralPassDecoration,
+  DiscountDecoration,
+  AffiliateDecoration,
+  CorporateDiscountDecoration,
+  MultipassDecoration,
+} from '@/components/wallet/preview-decorations';
 
 interface PreviewAppleField {
   key: string;
   label: string;
   value: string;
+  dataType?: import('@/components/wallet/types/unified-field').FieldDataType;
   changeMessage?: string;
   textAlignment?: 'PKTextAlignmentLeft' | 'PKTextAlignmentCenter' | 'PKTextAlignmentRight' | 'PKTextAlignmentNatural';
   attributedValue?: string;
@@ -21,6 +36,7 @@ interface PreviewWalletDesign {
   appleThumbnail2xUrl?: string;
   appleIconUrl?: string;
   appleIcon2xUrl?: string;
+  appleBackgroundUrl?: string;
   appleFields?: {
     headerFields?: PreviewAppleField[];
     primaryFields?: PreviewAppleField[];
@@ -30,12 +46,18 @@ interface PreviewWalletDesign {
   };
 }
 
-function resolveTemplate(value: string, ctx: Record<string, string>): string {
+export function resolveTemplate(value: string, ctx: Record<string, string | undefined>): string {
   return value.replace(/\{(\w+)\}/g, (_, key) => ctx[key] ?? `{${key}}`);
 }
 
-function buildContext(form: { name: string; description: string; card_type: string }, customerName: string | undefined, t: (key: string) => string): Record<string, string> {
-  return {
+function buildContext(
+  form: { name: string; description: string; card_type: string },
+  cardTypeConfig: CardTypeConfig | undefined,
+  customerName: string | undefined,
+  t: (key: string) => string
+): Record<string, string | undefined> {
+  // Default fallback values
+  const defaults: Record<string, string | undefined> = {
     customer_name: customerName || t('wallet.preview.customer'),
     program_name: form.name || t('wallet.preview.programName'),
     description: form.description || '',
@@ -67,6 +89,107 @@ function buildContext(form: { name: string; description: string; card_type: stri
     expiry_days: '365',
     tiers_list: `${t('wallet.studio.vip.badgeBronze')} 5%, ${t('wallet.studio.vip.badgeSilver')} 10%, ${t('wallet.studio.vip.badgeGold')} 15%`,
   };
+
+  if (!cardTypeConfig) return defaults;
+
+  const cfg = cardTypeConfig;
+  switch (cfg.cardType) {
+    case 'stamp': {
+      const stampsReq = cfg.stampsRequired ?? 10;
+      const stampsAt = cfg.stampsAtIssue ?? 0;
+      return {
+        ...defaults,
+        stamp_count: String(stampsAt),
+        stamps_required: String(stampsReq),
+        stamp_display: `${stampsAt} / ${stampsReq}`,
+        reward_description: cfg.rewardDescription || defaults.reward_description,
+      };
+    }
+    case 'cashback': {
+      const pct = cfg.cashbackPercentage ?? 5;
+      const minPurchase = cfg.minimumPurchase ?? 0;
+      return {
+        ...defaults,
+        cashback_percentage: String(pct),
+        cashback_balance: `$${minPurchase.toFixed(2)}`,
+        membership_tier: cfg.tierName || defaults.membership_tier,
+      };
+    }
+    case 'coupon': {
+      const val = cfg.discountValue ?? 10;
+      const limit = cfg.usageLimitPerCustomer ?? 1;
+      return {
+        ...defaults,
+        discount_percentage: String(val),
+        coupon_usage: `0 / ${limit}`,
+        coupon_end_date: cfg.couponEndDate || defaults.coupon_end_date,
+        coupon_terms: cfg.couponDescription || form.description || defaults.coupon_terms,
+        offer_tag: cfg.offerTag || '',
+      };
+    }
+    case 'vip_membership': {
+      return {
+        ...defaults,
+        membership_tier: cfg.membershipName || defaults.membership_tier,
+        perks: cfg.perks?.join(', ') || defaults.perks,
+        expiry_days: cfg.validityPeriod === 'lifetime' ? t('wallet.preview.lifetime') : String(cfg.validityPeriod === 'annual' ? 365 : 30),
+      };
+    }
+    case 'discount': {
+      const firstTier = cfg.tiers?.[0];
+      return {
+        ...defaults,
+        discount_percentage: firstTier ? String(firstTier.discountPercentage) : defaults.discount_percentage,
+        discount_tier: firstTier?.tierName || defaults.discount_tier,
+        tiers_list: cfg.tiers?.map((t) => `${t.tierName} ${t.discountPercentage}%`).join(', ') || defaults.tiers_list,
+      };
+    }
+    case 'gift_certificate': {
+      const firstDenom = cfg.denominations?.[0];
+      return {
+        ...defaults,
+        gift_balance: firstDenom ? `$${firstDenom.toFixed(2)}` : defaults.gift_balance,
+        expiry_days: String(cfg.expiryDays ?? 365),
+        occasion: cfg.occasion || '',
+      };
+    }
+    case 'affiliate': {
+      return {
+        ...defaults,
+        affiliate_code: cfg.affiliateCodePattern || defaults.affiliate_code,
+        benefits: cfg.benefitsDescription || defaults.benefits,
+        referral_banner: cfg.referralBannerText || '',
+      };
+    }
+    case 'corporate_discount': {
+      return {
+        ...defaults,
+        corporate_discount: String(cfg.corporateDiscountPercentage ?? 10),
+        company_name: cfg.companyName || defaults.company_name,
+      };
+    }
+    case 'referral_pass': {
+      const maxRef = cfg.maxReferralsPerCustomer ?? 5;
+      return {
+        ...defaults,
+        referral_code: cfg.referralCodePattern || defaults.referral_code,
+        referrals_made: `0 / ${maxRef}`,
+        referrer_reward: cfg.referrerReward || defaults.referrer_reward,
+        referee_reward: cfg.refereeReward || '',
+      };
+    }
+    case 'multipass': {
+      return {
+        ...defaults,
+        multipass_remaining: String(cfg.bundleSize ?? 10),
+        bundle_size: String(cfg.bundleSize ?? 10),
+        bundle_price: cfg.bundlePrice ? `$${cfg.bundlePrice.toFixed(2)}` : defaults.bundle_price,
+        pass_type_label: cfg.passTypeLabel || '',
+      };
+    }
+    default:
+      return defaults;
+  }
 }
 
 /**
@@ -95,6 +218,8 @@ interface AppleWalletCardProps {
   customerName?: string;
   /** Wallet design state */
   walletDesign?: PreviewWalletDesign;
+  /** Card type configuration */
+  cardTypeConfig?: CardTypeConfig;
 }
 
 /**
@@ -103,7 +228,7 @@ interface AppleWalletCardProps {
  * @returns JSX.Element
  */
 export function AppleWalletCard({
-  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign,
+  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign, cardTypeConfig,
 }: AppleWalletCardProps) {
   const { t } = useI18n();
   const bgColor = form.background_color || '#1a1a2e';
@@ -113,7 +238,8 @@ export function AppleWalletCard({
   const hasStrip = heroImage && (passStyle === 'storeCard' || passStyle === 'coupon');
   const isCoupon = passStyle === 'coupon';
   const isGeneric = passStyle === 'generic';
-  const ctx = buildContext(form, customerName, t);
+  const backgroundImage = walletDesign?.appleBackgroundUrl;
+  const ctx = buildContext(form, cardTypeConfig, customerName, t);
 
   const appleFields = walletDesign?.appleFields;
   const headerFields = appleFields?.headerFields?.length ? appleFields.headerFields : undefined;
@@ -122,43 +248,197 @@ export function AppleWalletCard({
   const auxiliaryFields = appleFields?.auxiliaryFields?.length ? appleFields.auxiliaryFields : undefined;
   const backFields = appleFields?.backFields?.length ? appleFields.backFields : undefined;
 
-  const defaultPrimary: { label: string; value: string } = {
-    stamp:             { label: t('wallet.preview.stampAccumulated'), value: '0 / 10' },
-    cashback:          { label: t('wallet.preview.availableBalance'), value: '$0.00' },
-    coupon:            { label: form.description || t('wallet.preview.specialDiscount'), value: form.discount_percentage ? `${form.discount_percentage}% ${t('wallet.studio.coupon.off')}` : `20% ${t('wallet.studio.coupon.off')}` },
-    vip_membership:    { label: t('wallet.preview.membership'), value: t('wallet.studio.vip.defaultName') },
-    referral_pass:     { label: t('wallet.preview.referralCode'), value: 'REF-XXXX' },
-    discount:          { label: t('wallet.preview.currentDiscount'), value: '5%' },
-    gift_certificate:  { label: t('wallet.preview.giftBalance'), value: '$0.00' },
-    affiliate:         { label: t('wallet.preview.affiliateProgram'), value: form.name || t('programs.cardTypes.affiliate') },
-    corporate_discount:{ label: t('wallet.preview.corporateDiscount'), value: '0%' },
-    multipass:         { label: t('wallet.preview.remainingUses'), value: '10' },
-  }[form.card_type] || { label: '', value: '—' };
+  // Build default primary field based on cardTypeConfig
+  function buildDefaultPrimary(cardType: string, config: CardTypeConfig | undefined): { label: string; value: string } {
+    switch (cardType) {
+      case 'stamp': {
+        const stampsReq = (config as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsRequired ?? 10;
+        const stampsAt = (config as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsAtIssue ?? 0;
+        return { label: t('wallet.preview.stampAccumulated'), value: `${stampsAt} / ${stampsReq}` };
+      }
+      case 'cashback': {
+        const minPurchase = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.minimumPurchase ?? 0;
+        return { label: t('wallet.preview.availableBalance'), value: `$${minPurchase.toFixed(2)}` };
+      }
+      case 'coupon': {
+        const val = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
+        const type = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
+        const displayVal = type === 'percentage' ? `${val}% ${t('wallet.studio.coupon.off')}` : `$${val.toFixed(2)} ${t('wallet.studio.coupon.off')}`;
+        return { label: form.description || t('wallet.preview.specialDiscount'), value: displayVal };
+      }
+      case 'vip_membership': {
+        const name = (config as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.membershipName;
+        return { label: t('wallet.preview.membership'), value: name || t('wallet.studio.vip.defaultName') };
+      }
+      case 'referral_pass': {
+        const pattern = (config as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.referralCodePattern;
+        return { label: t('wallet.preview.referralCode'), value: pattern || 'REF-XXXX' };
+      }
+      case 'discount': {
+        const firstTier = (config as Extract<CardTypeConfig, { cardType: 'discount' }>)?.tiers?.[0];
+        return { label: t('wallet.preview.currentDiscount'), value: firstTier ? `${firstTier.discountPercentage}%` : '5%' };
+      }
+      case 'gift_certificate': {
+        const firstDenom = (config as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
+        return { label: t('wallet.preview.giftBalance'), value: firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00' };
+      }
+      case 'affiliate': {
+        return { label: t('wallet.preview.affiliateProgram'), value: form.name || t('programs.cardTypes.affiliate') };
+      }
+      case 'corporate_discount': {
+        const pct = (config as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.corporateDiscountPercentage ?? 10;
+        return { label: t('wallet.preview.corporateDiscount'), value: `${pct}%` };
+      }
+      case 'multipass': {
+        const size = (config as Extract<CardTypeConfig, { cardType: 'multipass' }>)?.bundleSize ?? 10;
+        return { label: t('wallet.preview.remainingUses'), value: String(size) };
+      }
+      default:
+        return { label: '', value: '—' };
+    }
+  }
+
+  const defaultPrimary = buildDefaultPrimary(form.card_type, cardTypeConfig);
 
   const defaultAux: Array<{ label: string; value: string }> = [
     { label: t('wallet.preview.customer'), value: customerName || t('wallet.preview.customer') },
     { label: t('wallet.preview.validUntil'), value: t('wallet.preview.validUntilDate') },
   ];
 
+  function buildDefaultHeaderValue(cardType: string, config: CardTypeConfig | undefined): string {
+    switch (cardType) {
+      case 'stamp': {
+        const stampsAt = (config as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsAtIssue ?? 0;
+        const stampsReq = (config as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsRequired ?? 10;
+        return `${stampsAt}/${stampsReq}`;
+      }
+      case 'cashback': {
+        const minPurchase = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.minimumPurchase ?? 0;
+        return `$${minPurchase.toFixed(2)}`;
+      }
+      case 'coupon': {
+        const val = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
+        const type = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
+        return type === 'percentage' ? `${val}%` : `$${val}`;
+      }
+      case 'vip_membership':
+        return t('wallet.preview.vip');
+      case 'referral_pass': {
+        const maxRef = (config as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.maxReferralsPerCustomer ?? 5;
+        return `0 / ${maxRef}`;
+      }
+      case 'discount': {
+        const firstTier = (config as Extract<CardTypeConfig, { cardType: 'discount' }>)?.tiers?.[0];
+        return firstTier?.tierName || t('wallet.studio.vip.badgeBronze');
+      }
+      case 'gift_certificate': {
+        const firstDenom = (config as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
+        return firstDenom ? `$${firstDenom.toFixed(2)}` : '$0';
+      }
+      case 'affiliate':
+        return form.name?.slice(0, 6) || '—';
+      case 'corporate_discount': {
+        const pct = (config as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.corporateDiscountPercentage ?? 10;
+        return `${pct}%`;
+      }
+      case 'multipass': {
+        const size = (config as Extract<CardTypeConfig, { cardType: 'multipass' }>)?.bundleSize ?? 10;
+        return `${size}/${size}`;
+      }
+      default:
+        return '';
+    }
+  }
+
   const defaultHeaderValue: Record<string, string> = {
-    stamp: '0/10', cashback: '$0.00', coupon: t('portal.cardTypes.coupon'), vip_membership: t('wallet.preview.vip'),
-    referral_pass: '0', discount: t('wallet.studio.vip.badgeBronze'), gift_certificate: '$0',
-    affiliate: form.name?.slice(0, 6) || '—', corporate_discount: '0%', multipass: '10/10',
+    stamp: buildDefaultHeaderValue('stamp', cardTypeConfig),
+    cashback: buildDefaultHeaderValue('cashback', cardTypeConfig),
+    coupon: buildDefaultHeaderValue('coupon', cardTypeConfig),
+    vip_membership: buildDefaultHeaderValue('vip_membership', cardTypeConfig),
+    referral_pass: buildDefaultHeaderValue('referral_pass', cardTypeConfig),
+    discount: buildDefaultHeaderValue('discount', cardTypeConfig),
+    gift_certificate: buildDefaultHeaderValue('gift_certificate', cardTypeConfig),
+    affiliate: buildDefaultHeaderValue('affiliate', cardTypeConfig),
+    corporate_discount: buildDefaultHeaderValue('corporate_discount', cardTypeConfig),
+    multipass: buildDefaultHeaderValue('multipass', cardTypeConfig),
   };
+
   const defaultHeaderLabel: Record<string, string> = {
-    stamp: t('wallet.preview.defaultHeader.stamp'), cashback: t('wallet.preview.defaultHeader.cashback'), coupon: t('wallet.preview.defaultHeader.coupon'), vip_membership: t('wallet.preview.defaultHeader.vip'),
-    referral_pass: t('wallet.preview.defaultHeader.referral'), discount: t('wallet.preview.defaultHeader.discount'), gift_certificate: t('wallet.preview.defaultHeader.gift'),
-    affiliate: t('wallet.preview.defaultHeader.affiliate'), corporate_discount: t('wallet.preview.defaultHeader.corporate'), multipass: t('wallet.preview.defaultHeader.multipass'),
+    stamp: t('wallet.preview.defaultHeader.stamp'),
+    cashback: t('wallet.preview.defaultHeader.cashback'),
+    coupon: t('wallet.preview.defaultHeader.coupon'),
+    vip_membership: t('wallet.preview.defaultHeader.vip'),
+    referral_pass: t('wallet.preview.defaultHeader.referral'),
+    discount: t('wallet.preview.defaultHeader.discount'),
+    gift_certificate: t('wallet.preview.defaultHeader.gift'),
+    affiliate: t('wallet.preview.defaultHeader.affiliate'),
+    corporate_discount: t('wallet.preview.defaultHeader.corporate'),
+    multipass: t('wallet.preview.defaultHeader.multipass'),
   };
 
   const auxItems: Array<{ label: string; value: string }> = auxiliaryFields || defaultAux;
+
+  function renderDecoration() {
+    switch (form.card_type) {
+      case 'stamp': {
+        const stampsAt = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsAtIssue ?? 0;
+        const stampsReq = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsRequired ?? 10;
+        return <StampGridDecoration current={stampsAt} total={stampsReq} color={textColor} />;
+      }
+      case 'cashback': {
+        const pct = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.cashbackPercentage ?? 5;
+        const tier = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.tierName || t('wallet.studio.vip.defaultName');
+        return <CashbackDecoration percentage={pct} tierName={tier} color={textColor} />;
+      }
+      case 'coupon': {
+        const val = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
+        const type = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
+        const endDate = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.couponEndDate || t('wallet.preview.validUntilDate');
+        return <CouponDecoration discount={val} discountType={type} validUntil={endDate} color={textColor} />;
+      }
+      case 'vip_membership': {
+        const name = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.membershipName || t('wallet.studio.vip.defaultName');
+        const perks = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.perks || [];
+        return <VIPMembershipDecoration tierName={name} perks={perks} color={textColor} />;
+      }
+      case 'gift_certificate': {
+        const firstDenom = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
+        const balance = firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00';
+        return <GiftCertificateDecoration balance={balance} color={textColor} />;
+      }
+      case 'referral_pass': {
+        const pattern = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.referralCodePattern || 'REF-XXXX';
+        const maxRef = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.maxReferralsPerCustomer ?? 5;
+        return <ReferralPassDecoration code={pattern} referralsMade={0} maxReferrals={maxRef} color={textColor} />;
+      }
+      case 'discount': {
+        const tiers = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'discount' }>)?.tiers || [];
+        return <DiscountDecoration tiers={tiers} color={textColor} />;
+      }
+      case 'affiliate': {
+        const code = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'affiliate' }>)?.affiliateCodePattern || 'AFIL-001';
+        return <AffiliateDecoration code={code} color={textColor} />;
+      }
+      case 'corporate_discount': {
+        const company = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.companyName || t('wallet.preview.company');
+        const pct = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.corporateDiscountPercentage ?? 10;
+        return <CorporateDiscountDecoration companyName={company} discountPercentage={pct} color={textColor} />;
+      }
+      case 'multipass': {
+        const size = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'multipass' }>)?.bundleSize ?? 10;
+        return <MultipassDecoration remaining={size} total={size} color={textColor} />;
+      }
+      default:
+        return null;
+    }
+  }
 
   return (
     <IPhone15ProFrame>
       <div
         className="rounded-2xl overflow-hidden flex flex-col shadow-lg h-full"
         style={{
-          background: bgColor,
+          background: backgroundImage ? `${bgColor} url(${backgroundImage}) center/cover no-repeat` : bgColor,
           color: textColor,
           boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25)',
         }}
@@ -196,6 +476,17 @@ export function AppleWalletCard({
             </div>
           )}
 
+          {/* Icon — small square shown when set */}
+          {(walletDesign?.appleIconUrl || walletDesign?.appleIcon2xUrl) && (
+            <div className="shrink-0 w-[18px] h-[18px] rounded overflow-hidden border border-white/10 shadow-sm">
+              <img
+                src={walletDesign?.appleIconUrl || walletDesign?.appleIcon2xUrl}
+                alt={t('wallet.studio.images.icon')}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
           {/* Program name */}
           <div className="flex-1 min-w-0 pt-0.5">
             <p className="text-[10px] font-bold truncate leading-tight">{form.name || t('wallet.preview.programName')}</p>
@@ -207,7 +498,7 @@ export function AppleWalletCard({
               {headerFields.slice(0, 3).map((f, i) => (
                 <div key={f.key || i} className="text-right shrink-0">
                   <p className="text-[7px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate max-w-[52px]">{f.label}</p>
-                  <p className="text-[10px] font-black leading-none truncate max-w-[52px]">{resolveTemplate(f.value, ctx)}</p>
+                  <p className="text-[10px] font-black leading-none truncate max-w-[52px]">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>
@@ -236,7 +527,7 @@ export function AppleWalletCard({
             primaryFields.map((f, i) => (
               <div key={f.key || i}>
                 <p className="text-[8px] font-semibold uppercase tracking-wider opacity-35 leading-none mb-1 truncate">{f.label}</p>
-                <p className="text-[22px] font-black leading-none tracking-tight truncate">{resolveTemplate(f.value, ctx)}</p>
+                <p className="text-[22px] font-black leading-none tracking-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
               </div>
             ))
           ) : (
@@ -254,7 +545,7 @@ export function AppleWalletCard({
               {secondaryFields.slice(0, 4).map((f, i) => (
                 <div key={f.key || i} className="min-w-0 overflow-hidden">
                   <p className="text-[7px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                  <p className="text-[11px] font-semibold opacity-85 leading-tight truncate">{resolveTemplate(f.value, ctx)}</p>
+                  <p className="text-[11px] font-semibold opacity-85 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>
@@ -267,11 +558,14 @@ export function AppleWalletCard({
             {auxItems.slice(0, 4).map((f, i) => (
               <div key={(f as any).key || i} className="min-w-0 overflow-hidden">
                 <p className="text-[6px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                <p className="text-[10px] font-semibold opacity-85 leading-tight truncate">{resolveTemplate(f.value, ctx)}</p>
+                <p className="text-[10px] font-semibold opacity-85 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), (f as any).dataType ?? 'text')}</p>
               </div>
             ))}
           </div>
         </div>
+
+        {/* ── CARD TYPE DECORATION ── */}
+        <div className="shrink-0">{renderDecoration()}</div>
 
         {/* Spacer to push barcode to bottom */}
         <div className="flex-1 min-h-0" />
@@ -292,7 +586,7 @@ export function AppleWalletCard({
               {backFields.slice(0, 6).map((f, i) => (
                 <div key={f.key || i} className="flex justify-between gap-2">
                   <span className="text-[7px] opacity-40 truncate">{f.label}</span>
-                  <span className="text-[7px] font-medium opacity-80 text-right truncate max-w-[55%]">{resolveTemplate(f.value, ctx)}</span>
+                  <span className="text-[7px] font-medium opacity-80 text-right truncate max-w-[55%]">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</span>
                 </div>
               ))}
             </div>
@@ -309,20 +603,22 @@ export function AppleWalletCard({
  * @param {Object} props.form - Program form data
  * @param {PreviewWalletDesign} [props.walletDesign] - Wallet design state
  * @param {string} [props.customerName] - Customer name
+ * @param {CardTypeConfig} [props.cardTypeConfig] - Card type configuration
  * @returns JSX.Element
  */
 export function AppleWalletBackCard({
-  form, walletDesign, customerName,
+  form, walletDesign, customerName, cardTypeConfig,
 }: {
   form: { name: string; description: string; background_color: string; text_color: string; card_type: string; discount_percentage?: string };
   walletDesign?: PreviewWalletDesign;
   customerName?: string;
+  cardTypeConfig?: CardTypeConfig;
 }) {
   const { t } = useI18n();
   const bgColor = form.background_color || '#1a1a2e';
   const textColor = form.text_color || '#ffffff';
   const backFields = walletDesign?.appleFields?.backFields;
-  const ctx = buildContext(form, customerName, t);
+  const ctx = buildContext(form, cardTypeConfig, customerName, t);
 
   return (
     <IPhone15ProFrame>
@@ -347,7 +643,7 @@ export function AppleWalletBackCard({
               {backFields.map((f, i) => (
                 <div key={f.key || i} className="border-b border-white/10 pb-2.5 last:border-0">
                   <p className="text-[7px] font-semibold uppercase tracking-wider opacity-35 mb-1">{f.label}</p>
-                  <p className="text-[10px] leading-relaxed opacity-90 whitespace-pre-wrap break-words">{resolveTemplate(f.value, ctx)}</p>
+                  <p className="text-[10px] leading-relaxed opacity-90 whitespace-pre-wrap break-words">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>

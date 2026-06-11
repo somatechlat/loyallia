@@ -56,9 +56,21 @@ def _make_v2_wallet_studio(card_name: str, card_type: str) -> dict:
             "accent": "#FF5733",
         },
         "images": {
-            "logo": {"url": "https://placehold.co/160x160/png", "width": 160, "height": 160},
-            "strip": {"url": "https://placehold.co/1125x432/png", "width": 1125, "height": 432},
-            "icon": {"url": "https://placehold.co/90x90/png", "width": 90, "height": 90},
+            "logo": {
+                "url": "https://placehold.co/160x160/png",
+                "width": 160,
+                "height": 160,
+            },
+            "strip": {
+                "url": "https://placehold.co/1125x432/png",
+                "width": 1125,
+                "height": 432,
+            },
+            "icon": {
+                "url": "https://placehold.co/90x90/png",
+                "width": 90,
+                "height": 90,
+            },
         },
         "fields": [
             {
@@ -146,9 +158,7 @@ def test_real_v2_wallet_studio_apple_and_google(db, card_type):
     )
     card_name = f"V2 {card_type.label}"
     v2_studio = _make_v2_wallet_studio(card_name, card_type.value)
-    card = make_card(
-        tenant, card_type=card_type, metadata={"wallet_studio": v2_studio}
-    )
+    card = make_card(tenant, card_type=card_type, metadata={"wallet_studio": v2_studio})
     cp = make_customer_pass(customer, card)
 
     # --- Apple Wallet: real PKCS#7 signing with Vault certificates ---
@@ -210,14 +220,12 @@ def test_real_v2_wallet_studio_apple_and_google(db, card_type):
     assert present_groups, f"No V2 field groups for {card_type.value}"
 
     all_values = str(pass_json)
-    assert "Jane Doe" in all_values, (
-        f"Dynamic customer_name not resolved for {card_type.value}"
-    )
+    assert (
+        "Jane Doe" in all_values
+    ), f"Dynamic customer_name not resolved for {card_type.value}"
 
     back_fields = style_dict.get("backFields", [])
-    link_field = next(
-        (f for f in back_fields if f.get("key") == "website"), None
-    )
+    link_field = next((f for f in back_fields if f.get("key") == "website"), None)
     assert link_field is not None, f"V2 back link missing for {card_type.value}"
     assert "https://example.com/terms" in link_field.get("attributedValue", "")
 
@@ -246,20 +254,20 @@ def test_real_v2_wallet_studio_apple_and_google(db, card_type):
     google_class = wallet_payload[class_key][0]
     google_object = wallet_payload[object_key][0]
 
-    assert google_class.get("hexBackgroundColor") == "#123456", (
-        f"V2 color missing in Google class for {card_type.value}"
-    )
+    assert (
+        google_class.get("hexBackgroundColor") == "#123456"
+    ), f"V2 color missing in Google class for {card_type.value}"
 
     text_modules = google_object.get("textModulesData", [])
     module_bodies = {m.get("body", "") for m in text_modules}
-    assert "Jane Doe" in module_bodies, (
-        f"Dynamic customer_name missing in Google modules for {card_type.value}"
-    )
+    assert (
+        "Jane Doe" in module_bodies
+    ), f"Dynamic customer_name missing in Google modules for {card_type.value}"
 
     link_uris = {
         link.get("uri", "")
         for link in google_object.get("linksModuleData", {}).get("uris", [])
     }
-    assert "https://example.com/terms" in link_uris, (
-        f"V2 back link missing in Google links for {card_type.value}"
-    )
+    assert (
+        "https://example.com/terms" in link_uris
+    ), f"V2 back link missing in Google links for {card_type.value}"

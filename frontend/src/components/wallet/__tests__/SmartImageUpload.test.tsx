@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { SmartImageUpload } from '@/components/wallet/studio/SmartImageUpload';
 
 // Mock the upload service
@@ -82,22 +83,24 @@ describe('SmartImageUpload', () => {
   };
 
   it('renders upload zone when no image', () => {
-    render(<SmartImageUpload {...baseProps} />);
+    render(<I18nProvider><SmartImageUpload {...baseProps} /></I18nProvider>);
     expect(screen.getByText('Test Image')).toBeDefined();
     expect(screen.getByText('Haz click o arrastra una imagen')).toBeDefined();
   });
 
   it('shows description when provided', () => {
-    render(<SmartImageUpload {...baseProps} description="A helpful description" />);
+    render(<I18nProvider><SmartImageUpload {...baseProps} description="A helpful description" /></I18nProvider>);
     expect(screen.getByText('A helpful description')).toBeDefined();
   });
 
   it('shows preview when image provided', () => {
     render(
-      <SmartImageUpload
-        {...baseProps}
-        value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
-      />
+      <I18nProvider>
+        <SmartImageUpload
+          {...baseProps}
+          value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
+        />
+      </I18nProvider>
     );
     const img = screen.getByAltText('Test Image') as HTMLImageElement;
     expect(img).toBeDefined();
@@ -106,7 +109,7 @@ describe('SmartImageUpload', () => {
 
   it('validates file type and rejects .exe', async () => {
     const onError = vi.fn();
-    render(<SmartImageUpload {...baseProps} onError={onError} />);
+    render(<I18nProvider><SmartImageUpload {...baseProps} onError={onError} /></I18nProvider>);
 
     const file = createMockFile('malware.exe', 'application/x-msdownload', 1024);
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -120,7 +123,7 @@ describe('SmartImageUpload', () => {
 
   it('validates file size and shows error for oversized file', async () => {
     const onError = vi.fn();
-    render(<SmartImageUpload {...baseProps} maxSizeMB={1} onError={onError} />);
+    render(<I18nProvider><SmartImageUpload {...baseProps} maxSizeMB={1} onError={onError} /></I18nProvider>);
 
     const file = createMockFile('big.png', 'image/png', 2 * 1024 * 1024); // 2MB
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -140,7 +143,7 @@ describe('SmartImageUpload', () => {
       height: 200,
     });
 
-    render(<SmartImageUpload {...baseProps} onChange={onChange} />);
+    render(<I18nProvider><SmartImageUpload {...baseProps} onChange={onChange} /></I18nProvider>);
 
     const file = createMockFile('photo.png', 'image/png', 1024);
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -162,11 +165,13 @@ describe('SmartImageUpload', () => {
   it('calls onChange with undefined on remove', () => {
     const onChange = vi.fn();
     render(
-      <SmartImageUpload
-        {...baseProps}
-        value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
-        onChange={onChange}
-      />
+      <I18nProvider>
+        <SmartImageUpload
+          {...baseProps}
+          value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
+          onChange={onChange}
+        />
+      </I18nProvider>
     );
 
     const removeBtn = screen.getByTitle('Eliminar imagen');
@@ -177,10 +182,12 @@ describe('SmartImageUpload', () => {
 
   it('shows Apple and Google previews when image is loaded', () => {
     render(
-      <SmartImageUpload
-        {...baseProps}
-        value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
-      />
+      <I18nProvider>
+        <SmartImageUpload
+          {...baseProps}
+          value={{ url: 'https://example.com/image.png', width: 100, height: 100 }}
+        />
+      </I18nProvider>
     );
 
     expect(screen.getByText('Apple')).toBeDefined();
@@ -198,7 +205,7 @@ describe('SmartImageUpload', () => {
       () => new Promise((resolve) => setTimeout(() => resolve({ url: 'https://example.com/x.png', width: 10, height: 10 }), 100))
     );
 
-    render(<SmartImageUpload {...baseProps} />);
+    render(<I18nProvider><SmartImageUpload {...baseProps} /></I18nProvider>);
 
     const file = createMockFile('photo.png', 'image/png', 1024);
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;

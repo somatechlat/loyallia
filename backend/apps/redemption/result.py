@@ -4,7 +4,6 @@ Standardized response shape for all redemption operations.
 """
 
 from dataclasses import dataclass, field
-from typing import Literal
 
 
 @dataclass
@@ -25,7 +24,7 @@ class RedemptionResult:
     reward_earned: bool = False
     reward_description: str = ""
     message_code: str = ""
-    intent_resolved: Literal["earn", "redeem", "none"] = "none"
+    intent_resolved: str = "none"
     new_balance: str | None = None
     remaining_uses: int | None = None
 

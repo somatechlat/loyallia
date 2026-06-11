@@ -121,8 +121,16 @@ def _make_v2_wallet_studio(card_name: str, card_type: str) -> dict:
             "accent": "#FF5733",
         },
         "images": {
-            "logo": {"url": "https://example.com/logo.png", "width": 160, "height": 160},
-            "strip": {"url": "https://example.com/strip.png", "width": 1125, "height": 432},
+            "logo": {
+                "url": "https://example.com/logo.png",
+                "width": 160,
+                "height": 160,
+            },
+            "strip": {
+                "url": "https://example.com/strip.png",
+                "width": 1125,
+                "height": 432,
+            },
             "icon": {"url": "https://example.com/icon.png", "width": 90, "height": 90},
         },
         "fields": [
@@ -273,7 +281,9 @@ def test_v2_wallet_studio_generates_apple_pkpass(db, card_type):
 
     pkpass = generate_pkpass(cp)
 
-    assert pkpass is not None, f"Apple pass generation returned None for {card_type.value}"
+    assert (
+        pkpass is not None
+    ), f"Apple pass generation returned None for {card_type.value}"
     assert isinstance(pkpass, bytes)
     assert len(pkpass) > 0
     assert pkpass[:2] == b"PK"
@@ -284,9 +294,10 @@ def test_v2_wallet_studio_generates_apple_pkpass(db, card_type):
 
     # V2 colors must override legacy card colors
     # Apple PassKit represents colors as CSS rgb(...) strings
-    assert pass_json["backgroundColor"] in ("#123456", "rgb(18, 52, 86)"), (
-        f"Expected V2 background color for {card_type.value}, got {pass_json['backgroundColor']}"
-    )
+    assert pass_json["backgroundColor"] in (
+        "#123456",
+        "rgb(18, 52, 86)",
+    ), f"Expected V2 background color for {card_type.value}, got {pass_json['backgroundColor']}"
     assert pass_json["foregroundColor"] in ("#FFFFFF", "rgb(255, 255, 255)")
     assert pass_json["labelColor"] in ("#CCCCCC", "rgb(204, 204, 204)")
 
@@ -299,27 +310,57 @@ def test_v2_wallet_studio_generates_apple_pkpass(db, card_type):
         "backFields",
     }
     # Apple pass groups live under the pass style key (storeCard, coupon, generic, ...)
-    pass_style_key = next((k for k in pass_json if k not in {
-        "formatVersion", "passTypeIdentifier", "teamIdentifier", "serialNumber",
-        "organizationName", "description", "logoText", "foregroundColor",
-        "backgroundColor", "labelColor", "barcodes", "locations", "maxDistance",
-        "nfc", "webServiceURL", "authenticationToken", "sharingProhibited",
-        "voided", "relevantDate", "expirationDate", "appLaunchURL", "associatedStoreIdentifiers",
-        "userInfo", "beacons", "passType",
-    } and isinstance(pass_json[k], dict)), None)
+    pass_style_key = next(
+        (
+            k
+            for k in pass_json
+            if k
+            not in {
+                "formatVersion",
+                "passTypeIdentifier",
+                "teamIdentifier",
+                "serialNumber",
+                "organizationName",
+                "description",
+                "logoText",
+                "foregroundColor",
+                "backgroundColor",
+                "labelColor",
+                "barcodes",
+                "locations",
+                "maxDistance",
+                "nfc",
+                "webServiceURL",
+                "authenticationToken",
+                "sharingProhibited",
+                "voided",
+                "relevantDate",
+                "expirationDate",
+                "appLaunchURL",
+                "associatedStoreIdentifiers",
+                "userInfo",
+                "beacons",
+                "passType",
+            }
+            and isinstance(pass_json[k], dict)
+        ),
+        None,
+    )
     assert pass_style_key is not None, f"No pass style dict found for {card_type.value}"
     style_dict = pass_json[pass_style_key]
     present_groups = {k for k in style_dict if k in field_groups}
-    assert present_groups, f"No V2 field groups found for {card_type.value} in {pass_style_key}: {style_dict.keys()}"
+    assert (
+        present_groups
+    ), f"No V2 field groups found for {card_type.value} in {pass_style_key}: {style_dict.keys()}"
 
     # Dynamic token {customer_name} should be resolved
     all_fields = []
     for g in field_groups:
         all_fields.extend(style_dict.get(g, []))
     values = {f.get("value", "") for f in all_fields}
-    assert "Jane Doe" in values, (
-        f"Dynamic token customer_name not resolved for {card_type.value}; values={values}"
-    )
+    assert (
+        "Jane Doe" in values
+    ), f"Dynamic token customer_name not resolved for {card_type.value}; values={values}"
 
     # V2 back content link must appear as backField with attributedValue
     back_fields = style_dict.get("backFields", [])
@@ -387,9 +428,9 @@ def test_v2_wallet_studio_generates_google_url(db, card_type):
                 class_payload = wallet_payload[key][0]
                 break
 
-    assert class_payload.get("hexBackgroundColor") == "#123456", (
-        f"V2 hex color missing in Google class for {card_type.value}: {class_payload}"
-    )
+    assert (
+        class_payload.get("hexBackgroundColor") == "#123456"
+    ), f"V2 hex color missing in Google class for {card_type.value}: {class_payload}"
 
     # Verify V2 text module data appears in the object
     object_key = None
@@ -402,13 +443,13 @@ def test_v2_wallet_studio_generates_google_url(db, card_type):
 
     text_modules = obj_payload.get("textModulesData", [])
     module_values = {m.get("body", "") for m in text_modules}
-    assert "Jane Doe" in module_values, (
-        f"Dynamic token customer_name not in Google text modules for {card_type.value}; {text_modules}"
-    )
+    assert (
+        "Jane Doe" in module_values
+    ), f"Dynamic token customer_name not in Google text modules for {card_type.value}; {text_modules}"
 
     # Verify V2 link appears in linksModuleData
     links = obj_payload.get("linksModuleData", {}).get("uris", [])
     link_uris = {link.get("uri", "") for link in links}
-    assert "https://example.com/terms" in link_uris, (
-        f"V2 back link missing in Google links for {card_type.value}; {links}"
-    )
+    assert (
+        "https://example.com/terms" in link_uris
+    ), f"V2 back link missing in Google links for {card_type.value}; {links}"

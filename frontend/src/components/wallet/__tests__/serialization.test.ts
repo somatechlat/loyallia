@@ -41,6 +41,7 @@ const MINIMAL_V2_STATE: WalletPassStudioState = {
       showOnGoogle: true,
       isDynamic: true,
       dynamicTemplate: '{customer_name}',
+      dataType: 'text',
       appleOptions: {},
       googleOptions: { isPredefined: false },
       notifications: {},

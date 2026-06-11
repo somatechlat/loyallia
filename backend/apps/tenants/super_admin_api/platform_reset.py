@@ -5,6 +5,7 @@ Loyallia Super Admin API: Seed Demo Data and Factory Reset
 import logging
 from typing import cast
 
+from django.conf import settings
 from django.db import transaction
 from django.http import HttpRequest
 from ninja import Router
@@ -135,7 +136,11 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     # Store verification SID in Redis for confirm step
     from django.core.cache import cache
 
-    cache.set(f"factory_reset:sid:{user.email}", result.get("sid", ""), timeout=300)
+    cache.set(
+        f"factory_reset:sid:{user.email}",
+        result.get("sid", ""),
+        timeout=settings.CACHE_TTL_FACTORY_RESET_SID,
+    )
 
     # Secondary: Email notification (always sent, regardless of Verify)
     from django.core.mail import send_mail

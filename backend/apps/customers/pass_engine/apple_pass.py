@@ -176,7 +176,7 @@ def _build_nfc_payload(
         )
 
     message = override_message or str(apple_config.get("nfc_message") or barcode_value)
-    if len(message.encode("utf-8")) > 64:
+    if len(message.encode("utf-8")) > settings.PASS_APPLE_NFC_MESSAGE_MAX_BYTES:
         raise ValueError("Apple NFC message must be 64 bytes or less")
 
     nfc_payload: dict[str, Any] = {
@@ -212,7 +212,9 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     if v2_barcode.get("message"):
         barcode_value = v2_barcode["message"]
     barcode_alt = v2_barcode.get("altText") or barcode_value
-    barcode_encoding = v2_barcode.get("messageEncoding") or "iso-8859-1"
+    barcode_encoding = (
+        v2_barcode.get("messageEncoding") or settings.PASS_APPLE_DEFAULT_BARCODE
+    )
 
     description = v2_apple.get("description") or card.name
     organization_name = v2_apple.get("organizationName") or tenant.name
@@ -243,7 +245,7 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     locations = _build_locations(card)
     if locations:
         pass_json["locations"] = locations
-        pass_json["maxDistance"] = 100
+        pass_json["maxDistance"] = settings.PASS_MAX_DISTANCE_METERS
 
     # Apply V2 Apple advanced settings
     nfc_override = ""
@@ -385,12 +387,14 @@ def generate_pkpass(customer_pass) -> bytes | None:
             import httpx
 
             async with httpx.AsyncClient(
-                timeout=10.0, follow_redirects=False, max_redirects=0
+                timeout=settings.HTTP_TIMEOUT_APPLE_WALLET,
+                follow_redirects=False,
+                max_redirects=0,
             ) as client:
                 resp = await client.get(url)
                 if resp.status_code == 200:
                     content = resp.content
-                    if len(content) > 5 * 1024 * 1024:
+                    if len(content) > settings.PASS_IMAGE_MAX_DOWNLOAD_BYTES:
                         logger.warning(
                             "Image too large (%d bytes): %s", len(content), url
                         )
@@ -445,8 +449,8 @@ def generate_pkpass(customer_pass) -> bytes | None:
             _fetch_image_bytes_async(logo_2x_url or logo_3x_url),
             _fetch_image_bytes_async(icon_url),
             _fetch_image_bytes_async(icon_2x_url),
-            _fetch_image_bytes_async(strip_url),
-            _fetch_image_bytes_async(strip_2x_url),
+            _fetch_image_bytes_async(strip_url or ""),
+            _fetch_image_bytes_async(strip_2x_url or ""),
         )
 
     (
@@ -461,49 +465,79 @@ def generate_pkpass(customer_pass) -> bytes | None:
     from PIL import Image
 
     # Default fallbacks
-    icon_29 = _generate_placeholder_icon(card.name, bg_color, 29)
-    icon_58 = _generate_placeholder_icon(card.name, bg_color, 58)
+    icon_29 = _generate_placeholder_icon(
+        card.name, bg_color, settings.PASS_APPLE_ICON_SMALL
+    )
+    icon_58 = _generate_placeholder_icon(
+        card.name, bg_color, settings.PASS_APPLE_ICON_MEDIUM
+    )
     # Apple logo spec: 160x50 pt (@1x) and 320x100 pt (@2x) — wide, not square
-    logo_160x50 = _generate_placeholder_logo(card.name, bg_color, 160, 50)
-    logo_320x100 = _generate_placeholder_logo(card.name, bg_color, 320, 100)
+    logo_160x50 = _generate_placeholder_logo(
+        card.name,
+        bg_color,
+        settings.PASS_APPLE_LOGO_WIDTH,
+        settings.PASS_APPLE_LOGO_HEIGHT,
+    )
+    logo_320x100 = _generate_placeholder_logo(
+        card.name,
+        bg_color,
+        settings.PASS_APPLE_LOGO_2X_WIDTH,
+        settings.PASS_APPLE_LOGO_2X_HEIGHT,
+    )
 
     if logo_bytes:
         try:
             img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-            logo_160x50 = _resize_image(img, 160, 50)
+            logo_160x50 = _resize_image(
+                img, settings.PASS_APPLE_LOGO_WIDTH, settings.PASS_APPLE_LOGO_HEIGHT
+            )
         except Exception as exc:
             logger.warning("Failed to process logo image: %s", exc)
 
     if logo_2x_bytes:
         try:
             img = Image.open(io.BytesIO(logo_2x_bytes)).convert("RGBA")
-            logo_320x100 = _resize_image(img, 320, 100)
+            logo_320x100 = _resize_image(
+                img,
+                settings.PASS_APPLE_LOGO_2X_WIDTH,
+                settings.PASS_APPLE_LOGO_2X_HEIGHT,
+            )
         except Exception as exc:
             logger.warning("Failed to process logo@2x image: %s", exc)
     elif logo_bytes:
         try:
             img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-            logo_320x100 = _resize_image(img, 320, 100)
+            logo_320x100 = _resize_image(
+                img,
+                settings.PASS_APPLE_LOGO_2X_WIDTH,
+                settings.PASS_APPLE_LOGO_2X_HEIGHT,
+            )
         except Exception as exc:
             logger.warning("Failed to process logo image: %s", exc)
 
     if icon_bytes:
         try:
             img = Image.open(io.BytesIO(icon_bytes)).convert("RGBA")
-            icon_29 = _resize_image(img, 29, 29)
+            icon_29 = _resize_image(
+                img, settings.PASS_APPLE_ICON_SMALL, settings.PASS_APPLE_ICON_SMALL
+            )
         except Exception as exc:
             logger.warning("Failed to process icon image: %s", exc)
 
     if icon_2x_bytes:
         try:
             img = Image.open(io.BytesIO(icon_2x_bytes)).convert("RGBA")
-            icon_58 = _resize_image(img, 58, 58)
+            icon_58 = _resize_image(
+                img, settings.PASS_APPLE_ICON_MEDIUM, settings.PASS_APPLE_ICON_MEDIUM
+            )
         except Exception as exc:
             logger.warning("Failed to process icon@2x image: %s", exc)
     elif icon_bytes:
         try:
             img = Image.open(io.BytesIO(icon_bytes)).convert("RGBA")
-            icon_58 = _resize_image(img, 58, 58)
+            icon_58 = _resize_image(
+                img, settings.PASS_APPLE_ICON_MEDIUM, settings.PASS_APPLE_ICON_MEDIUM
+            )
         except Exception as exc:
             logger.warning("Failed to process icon image: %s", exc)
 
@@ -522,10 +556,18 @@ def generate_pkpass(customer_pass) -> bytes | None:
             # generic passes use thumbnail.png instead (90×90pt, up to 3:2 aspect).
             if pass_style in ("storeCard", "coupon"):
                 # Apple Wallet strip recommended sizes: 375x123 (@1x) and 750x246 (@2x)
-                files["strip.png"] = _resize_image(img, 375, 123)
+                files["strip.png"] = _resize_image(
+                    img,
+                    settings.PASS_APPLE_STRIP_WIDTH,
+                    settings.PASS_APPLE_STRIP_HEIGHT,
+                )
                 if strip_2x_bytes:
                     img_2x = Image.open(io.BytesIO(strip_2x_bytes)).convert("RGBA")
-                    files["strip@2x.png"] = _resize_image(img_2x, 750, 246)
+                    files["strip@2x.png"] = _resize_image(
+                        img_2x,
+                        settings.PASS_APPLE_STRIP_2X_WIDTH,
+                        settings.PASS_APPLE_STRIP_2X_HEIGHT,
+                    )
                 else:
                     files["strip@2x.png"] = _resize_image(img, 750, 246)
             elif pass_style == "generic":

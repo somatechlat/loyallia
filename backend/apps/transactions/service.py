@@ -7,6 +7,7 @@ import logging
 from decimal import Decimal
 from typing import Any
 
+from django.conf import settings
 from django.db import transaction
 
 from apps.customers.models import CustomerPass
@@ -187,7 +188,9 @@ class TransactionService:
         }
 
     @staticmethod
-    def list_transactions(tenant, limit=50, offset=0):
+    def list_transactions(
+        tenant, limit=settings.API_LIMIT_TRANSACTIONS_DEFAULT, offset=0
+    ):
         """
         List transactions for a tenant with optimized queries.
 

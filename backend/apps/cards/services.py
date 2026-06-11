@@ -23,10 +23,7 @@ def list_programs(tenant):
         .annotate(_enrollments_count=Count("passes", distinct=True))
         .order_by("-created_at")
     )
-    return [
-        (card, getattr(card, "_enrollments_count", 0))
-        for card in cards
-    ]
+    return [(card, getattr(card, "_enrollments_count", 0)) for card in cards]
 
 
 def create_program(tenant, data: dict) -> Card:
@@ -123,9 +120,7 @@ def update_program(card: Card, data: dict, tenant) -> Card:
             with transaction.atomic():
                 card.save(update_fields=update_fields + ["updated_at"])
                 if update_loyalty_class_async is not None:
-                    transaction.on_commit(
-                        lambda: update_loyalty_class_async.delay(str(card.id))
-                    )
+                    transaction.on_commit(lambda: update_loyalty_class_async.delay(str(card.id)))  # type: ignore[reportCallIssue]
         except ValueError as exc:
             raise ValueError(f"VALIDATION_ERROR:{exc}")
 

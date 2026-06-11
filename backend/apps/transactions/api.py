@@ -95,7 +95,7 @@ def validate_qr(request: TenantRequest, data: ScanValidateIn):
     """
     from apps.redemption.api import validate_qr_v2
 
-    result = validate_qr_v2(request, data)
+    result = validate_qr_v2(request, data)  # type: ignore[reportArgumentType]
     # Remove v2-only field to maintain exact v1 backward compatibility
     result.pop("lifecycle_state", None)
     return result
@@ -111,7 +111,7 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     from apps.redemption.api import transact_v2
 
     # Delegate core processing to v2 (handles auth, validation, gateway)
-    result = transact_v2(request, data)
+    result = transact_v2(request, data)  # type: ignore[reportArgumentType]
 
     # V1-specific async side effects
     tenant = require_tenant(request)

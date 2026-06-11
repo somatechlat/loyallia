@@ -6,7 +6,6 @@ using Vault test overrides with real certificate formats.
 NO mocks — all tests use real objects and real code paths.
 """
 
-
 import pytest
 from django.test import override_settings
 

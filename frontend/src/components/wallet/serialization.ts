@@ -133,13 +133,15 @@ function parseV1(v1: Record<string, unknown>, metadata: Record<string, unknown>)
         showOnApple: true,
         showOnGoogle: false,
         isDynamic: false,
+        dataType: 'text',
         appleOptions: {
-          changeMessage: f.changeMessage,
           textAlignment: f.textAlignment as any,
           attributedValue: f.attributedValue,
         },
         googleOptions: { isPredefined: false },
-        notifications: {},
+        notifications: f.changeMessage
+          ? { appleChangeMessage: { enabled: true, message: f.changeMessage } }
+          : {},
         formatting: { isLink: false },
       });
     });
@@ -156,6 +158,7 @@ function parseV1(v1: Record<string, unknown>, metadata: Record<string, unknown>)
         showOnApple: false,
         showOnGoogle: true,
         isDynamic: false,
+        dataType: 'text',
         appleOptions: {},
         googleOptions: {
           isPredefined: true,

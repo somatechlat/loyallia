@@ -6,6 +6,7 @@ Extracted business logic from customer API views.
 import logging
 import re
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.dateparse import parse_date
@@ -75,10 +76,10 @@ class CustomerService:
             first_name=first_name,
             last_name=data.get("last_name", "").strip(),
             email=email,
-            phone=data.get("phone", "").strip()[:20],
+            phone=data.get("phone", "").strip()[: settings.CUSTOMER_PHONE_MAX_LENGTH],
             date_of_birth=date_of_birth,
             gender=gender,
-            notes=data.get("notes", "").strip()[:2000],
+            notes=data.get("notes", "").strip()[: settings.CUSTOMER_NOTES_MAX_LENGTH],
         )
 
         return customer
@@ -106,7 +107,7 @@ class CustomerService:
             update_fields.append("last_name")
 
         if data.get("phone") is not None:
-            customer.phone = data["phone"].strip()[:20]
+            customer.phone = data["phone"].strip()[: settings.CUSTOMER_PHONE_MAX_LENGTH]
             update_fields.append("phone")
 
         if data.get("date_of_birth") is not None:
@@ -118,7 +119,7 @@ class CustomerService:
             update_fields.append("gender")
 
         if data.get("notes") is not None:
-            customer.notes = data["notes"].strip()[:2000]
+            customer.notes = data["notes"].strip()[: settings.CUSTOMER_NOTES_MAX_LENGTH]
             update_fields.append("notes")
 
         if data.get("is_active") is not None:
@@ -131,7 +132,7 @@ class CustomerService:
         return customer
 
     @staticmethod
-    def search(tenant, query, limit=10):
+    def search(tenant, query, limit=settings.API_LIMIT_SEARCH_DEFAULT):
         """
         Search customers by name, email, or phone.
 

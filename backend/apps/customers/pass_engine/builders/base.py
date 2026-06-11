@@ -123,7 +123,9 @@ def _get_google_locations(card) -> list:
     """Build location array from tenant locations for Google Wallet geo-push."""
     locations = []
     # Locations belong to the Tenant
-    tenant_locations = card.tenant.locations.filter(is_active=True)[:10]
+    tenant_locations = card.tenant.locations.filter(is_active=True)[
+        : settings.PASS_GOOGLE_MAX_LOCATIONS
+    ]
 
     for loc in tenant_locations:
         try:
@@ -182,7 +184,9 @@ def _get_v2_image_url(v2_images: dict, key: str) -> str:
     return ""
 
 
-def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tenant) -> str:
+def _resolve_v2_dynamic_value(
+    template: str, card, customer_pass, customer, tenant
+) -> str:
     """Resolve WalletStudio V2 dynamic templates like {customer_name} to real values.
 
     Supported tokens:
@@ -227,9 +231,13 @@ def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tena
         if key == "corporate_discount":
             return str(getattr(customer_pass, "corporate_discount", 0))
         if key == "discount_tier":
-            return getattr(customer_pass, "discount_tier", "") or pass_data.get("discount_tier", "")
+            return getattr(customer_pass, "discount_tier", "") or pass_data.get(
+                "discount_tier", ""
+            )
         if key == "current_tier":
-            return getattr(customer_pass, "discount_tier", "") or pass_data.get("discount_tier", "")
+            return getattr(customer_pass, "discount_tier", "") or pass_data.get(
+                "discount_tier", ""
+            )
         if key == "membership_tier":
             return pass_data.get("membership_tier", "")
         if key == "qr_code":
@@ -244,16 +252,24 @@ def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tena
             return str(getattr(customer_pass, "multipass_remaining_val", 0))
         if key == "bundle_size":
             metadata = card.metadata or {}
-            return str(metadata.get("bundle_size", 10))
+            return str(
+                metadata.get("bundle_size", settings.PASS_GOOGLE_BUNDLE_SIZE_DEFAULT)
+            )
         if key == "coupon_end_date":
             metadata = card.metadata or {}
-            return str(metadata.get("coupon_end_date", pass_data.get("expiry_date", "")))
+            return str(
+                metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
+            )
         if key == "usage_limit":
             metadata = card.metadata or {}
-            return str(metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1)))
+            return str(
+                metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1))
+            )
         if key == "company_name":
             metadata = card.metadata or {}
-            return str(pass_data.get("company_name", metadata.get("company_name", card.name)))
+            return str(
+                pass_data.get("company_name", metadata.get("company_name", card.name))
+            )
 
         # Unknown token: leave as-is so the pass still shows the literal token
         return match.group(0)
@@ -283,7 +299,9 @@ def _build_v2_text_modules_data(card, customer_pass, customer, tenant) -> list:
                 field["dynamicTemplate"], card, customer_pass, customer, tenant
             )
         header = field.get("label", "")
-        body = _resolve_v2_dynamic_value(str(value), card, customer_pass, customer, tenant)
+        body = _resolve_v2_dynamic_value(
+            str(value), card, customer_pass, customer, tenant
+        )
         field_id = field.get("id")
         if not field_id:
             field_id = f"field_{len(modules)}"
@@ -517,7 +535,9 @@ def _apply_google_advanced_to_class(card, payload: dict) -> None:
     # V2 hero image for Google
     hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip")
     if not hero_url:
-        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip2x")
+        hero_url = _get_v2_image_url(
+            _get_wallet_studio(card).get("images") or {}, "strip2x"
+        )
     google_hero = advanced.get("heroImage")
     if isinstance(google_hero, dict) and google_hero.get("url"):
         hero_url = google_hero["url"]
@@ -525,7 +545,12 @@ def _apply_google_advanced_to_class(card, payload: dict) -> None:
         payload["heroImage"] = {
             "sourceUri": {"uri": _resolve_url(hero_url, "")},
             "contentDescription": {
-                "defaultValue": {"language": "es", "value": payload.get("programName", "") or payload.get("title", "") or "Hero"}
+                "defaultValue": {
+                    "language": "es",
+                    "value": payload.get("programName", "")
+                    or payload.get("title", "")
+                    or "Hero",
+                }
             },
         }
 
@@ -556,14 +581,23 @@ def _apply_google_advanced_to_object(card, payload: dict) -> None:
     if isinstance(google_hero, dict) and google_hero.get("url"):
         hero_url = google_hero["url"]
     if not hero_url:
-        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip")
+        hero_url = _get_v2_image_url(
+            _get_wallet_studio(card).get("images") or {}, "strip"
+        )
     if not hero_url:
-        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip2x")
+        hero_url = _get_v2_image_url(
+            _get_wallet_studio(card).get("images") or {}, "strip2x"
+        )
     if hero_url and "heroImage" not in payload:
         payload["heroImage"] = {
             "sourceUri": {"uri": _resolve_url(hero_url, "")},
             "contentDescription": {
-                "defaultValue": {"language": "es", "value": payload.get("programName", "") or payload.get("title", "") or "Hero"}
+                "defaultValue": {
+                    "language": "es",
+                    "value": payload.get("programName", "")
+                    or payload.get("title", "")
+                    or "Hero",
+                }
             },
         }
 

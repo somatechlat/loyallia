@@ -17,8 +17,6 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Cost per 1K tokens (USD) — Groq pricing
-COST_PER_1K_TOKENS = 0.003
 
 # JSON Schemas for Structured Outputs (strict=True)
 # Static schemas are placed first in prompts to maximize cache hits
@@ -88,7 +86,14 @@ _PALETTE_SCHEMA = {
                         "text": {"type": "string"},
                         "accent": {"type": "string"},
                     },
-                    "required": ["name", "primary", "secondary", "background", "text", "accent"],
+                    "required": [
+                        "name",
+                        "primary",
+                        "secondary",
+                        "background",
+                        "text",
+                        "accent",
+                    ],
                     "additionalProperties": False,
                 },
             }
@@ -127,6 +132,40 @@ _ICONS_SCHEMA = {
             }
         },
         "required": ["icons"],
+        "additionalProperties": False,
+    },
+}
+
+_LAYOUT_SCHEMA = {
+    "name": "wallet_layout_suggestion",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "layout": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "description": {"type": "string"},
+                    "logo_position": {"type": "string"},
+                    "field_arrangement": {"type": "string"},
+                    "header_style": {"type": "string"},
+                    "footer_style": {"type": "string"},
+                    "reasoning": {"type": "string"},
+                },
+                "required": [
+                    "name",
+                    "description",
+                    "logo_position",
+                    "field_arrangement",
+                    "header_style",
+                    "footer_style",
+                    "reasoning",
+                ],
+                "additionalProperties": False,
+            }
+        },
+        "required": ["layout"],
         "additionalProperties": False,
     },
 }
@@ -228,7 +267,9 @@ class KimiService:
             "prompt_tokens": usage.get("prompt_tokens", 0),
             "completion_tokens": usage.get("completion_tokens", 0),
             "total_tokens": usage.get("total_tokens", 0),
-            "cached_tokens": usage.get("prompt_tokens_details", {}).get("cached_tokens", 0),
+            "cached_tokens": usage.get("prompt_tokens_details", {}).get(
+                "cached_tokens", 0
+            ),
         }
         return parsed
 
@@ -251,8 +292,15 @@ class KimiService:
             "Generate 3 creative, visually distinct template variations."
         )
 
-        logger.info("AI generate_template: type=%s industry=%s lang=%s", card_type, industry, language)
-        result = self._call_chat_completion(system_prompt, user_prompt, _TEMPLATE_SCHEMA)
+        logger.info(
+            "AI generate_template: type=%s industry=%s lang=%s",
+            card_type,
+            industry,
+            language,
+        )
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _TEMPLATE_SCHEMA
+        )
         variations = result.get("variations", [])
         if not variations:
             raise KimiServiceError("AI API returned no variations")
@@ -299,7 +347,9 @@ class KimiService:
         )
 
         logger.info("AI critique_design")
-        result = self._call_chat_completion(system_prompt, user_prompt, _CRITIQUE_SCHEMA, temperature=0.5)
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _CRITIQUE_SCHEMA, temperature=0.5
+        )
         suggestions = result.get("suggestions", [])
         if not suggestions:
             raise KimiServiceError("AI API returned no suggestions")
@@ -323,11 +373,42 @@ class KimiService:
         )
 
         logger.info("AI suggest_stamp_icons: business_type=%s", business_type)
-        result = self._call_chat_completion(system_prompt, user_prompt, _ICONS_SCHEMA, temperature=0.8)
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _ICONS_SCHEMA, temperature=0.8
+        )
         icons = result.get("icons", [])
         if not icons:
             raise KimiServiceError("AI API returned no icons")
         return {
             "icons": icons,
+            "tokens_used": result.get("_tokens_used", {}),
+        }
+
+    def suggest_layout(
+        self, design_data: dict[str, Any], card_type: str
+    ) -> dict[str, Any]:
+        """Suggest an improved layout for the current design and card type."""
+        system_prompt = (
+            "You are an expert digital wallet pass layout designer. "
+            "Given current design data and card type, suggest an optimal layout. "
+            "Respond ONLY with a JSON object matching the provided schema exactly. "
+            "All reasoning must be in Spanish."
+        )
+
+        user_prompt = (
+            f"Card type: {card_type}\n"
+            f"Current design: {json.dumps(design_data, ensure_ascii=False)}\n"
+            "Suggest the best layout for this wallet pass."
+        )
+
+        logger.info("AI suggest_layout: card_type=%s", card_type)
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _LAYOUT_SCHEMA, temperature=0.6
+        )
+        layout = result.get("layout", {})
+        if not layout:
+            raise KimiServiceError("AI API returned no layout")
+        return {
+            "layout": layout,
             "tokens_used": result.get("_tokens_used", {}),
         }

@@ -1,13 +1,18 @@
 /**
  * AI design assistant hook for the Wallet Pass Studio.
  *
- * Provides mock AI-powered template generation, color suggestions,
- * and design critique with loading/error states and quota tracking.
+ * Connects to the real Loyallia backend AI service (Groq API) for:
+ * - Template generation from business descriptions
+ * - Color palette suggestions
+ * - Design critique and scoring
+ * - Stamp icon suggestions
  */
 
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { aiApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import type {
   WalletPassStudioState,
   CardType,
@@ -27,6 +32,16 @@ export interface AIVariation {
   design: Partial<WalletPassStudioState>;
 }
 
+export interface AILayoutSuggestion {
+  name: string;
+  description: string;
+  logo_position: string;
+  field_arrangement: string;
+  header_style: string;
+  footer_style: string;
+  reasoning: string;
+}
+
 export interface UseAIReturn {
   isLoading: boolean;
   error: string | null;
@@ -37,96 +52,70 @@ export interface UseAIReturn {
     industry: Industry
   ) => Promise<AIVariation[]>;
   suggestColors: (
-    description: string
+    description: string,
+    industry: Industry
   ) => Promise<Array<{ background: string; foreground: string; label: string; accent: string }>>;
   critiqueDesign: (state: WalletPassStudioState) => Promise<string[]>;
+  suggestStampIcons: (businessType: string) => Promise<string[]>;
+  suggestLayout: (
+    designData: Record<string, unknown>,
+    cardType: CardType
+  ) => Promise<AILayoutSuggestion>;
   reset: () => void;
 }
 
-const MOCK_COLOR_PALETTES: Array<{ background: string; foreground: string; label: string; accent: string }> = [
-  {
-    background: '#6B4226',
-    foreground: '#FFFFFF',
-    label: '#F5DEB3',
-    accent: '#D2691E',
-  },
-  {
-    background: '#1A1A2E',
-    foreground: '#FFFFFF',
-    label: '#E94560',
-    accent: '#E94560',
-  },
-  {
-    background: '#0D1117',
-    foreground: '#C9D1D9',
-    label: '#8B949E',
-    accent: '#58A6FF',
-  },
-];
-
-const MOCK_CRITIQUE_SUGGESTIONS = [
-  'Aumenta el contraste entre el fondo y el texto principal para mejorar la legibilidad.',
-  'Considera usar un color de acento más vibrante para destacar las llamadas a la acción.',
-  'El espaciado entre campos podría ser más uniforme para una apariencia más profesional.',
-  'Añade un logo para reforzar la identidad de marca en el pase.',
-];
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function generateMockVariations(
-  description: string,
+/** Transform backend template response into frontend AIVariation shape. */
+function mapBackendVariations(
+  variations: Array<{
+    name: string;
+    description: string;
+    confidence: number;
+    design: {
+      background_color: string;
+      foreground_color: string;
+      accent_color: string;
+      header_image?: string;
+      logo_position?: string;
+      fields_layout?: string;
+      font_family?: string;
+    };
+  }>,
   cardType: CardType,
   industry: Industry
 ): AIVariation[] {
-  const baseColors: WalletColors[] = [
-    {
-      background: '#6B4226',
-      foreground: '#FFFFFF',
-      label: '#F5DEB3',
-      accent: '#D2691E',
-    },
-    {
-      background: '#1A1A1A',
-      foreground: '#FFFFFF',
-      label: '#B0B0B0',
-      accent: '#C0A062',
-    },
-    {
-      background: '#0D1117',
-      foreground: '#C9D1D9',
-      label: '#8B949E',
-      accent: '#58A6FF',
-    },
-  ];
-
-  const names = ['Café Cálido', 'Industrial Oscuro', 'Minimal'];
-  const descriptions = [
-    `Diseño cálido inspirado en "${description.slice(0, 30)}..."`,
-    'Estilo industrial con tonos oscuros y metálicos',
-    'Diseño minimalista con énfasis en la claridad',
-  ];
-
-  return names.map((name, idx) => ({
+  return variations.map((v, idx) => ({
     id: `ai-variation-${idx}-${Date.now()}`,
-    name,
-    description: descriptions[idx] ?? '',
-    confidence: 9.1 - idx * 0.2,
+    name: v.name,
+    description: v.description,
+    confidence: v.confidence,
     design: {
       cardType,
       industry,
-      colors: baseColors[idx] ?? baseColors[0]!,
-      name: `${name} - ${description.slice(0, 20)}`,
+      colors: {
+        background: v.design.background_color,
+        foreground: v.design.foreground_color,
+        label: v.design.foreground_color,
+        accent: v.design.accent_color,
+      } as WalletColors,
+      name: v.name,
     },
   }));
 }
 
+/** Update local quota state from backend response payload. */
+function extractQuota(payload: any): { used: number; limit: number } | null {
+  if (payload?.quota && typeof payload.quota.used === 'number' && typeof payload.quota.limit === 'number') {
+    return payload.quota;
+  }
+  return null;
+}
+
 export function useAI(options?: UseAIOptions): UseAIReturn {
+  const { t } = useI18n();
   const enabled = options?.enabled ?? true;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quota, setQuota] = useState({ used: 3, limit: 10 });
+  const [quota, setQuota] = useState({ used: 0, limit: 10 });
   const abortRef = useRef<AbortController | null>(null);
 
   const reset = useCallback(() => {
@@ -145,11 +134,11 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       industry: Industry
     ): Promise<AIVariation[]> => {
       if (!enabled) {
-        setError('La funcionalidad de IA no está habilitada.');
+        setError(t('wallet.studio.ai.disabled'));
         return [];
       }
       if (!description.trim()) {
-        setError('Por favor, describe tu negocio para generar diseños.');
+        setError(t('wallet.studio.ai.describeBusiness'));
         return [];
       }
 
@@ -158,20 +147,36 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       abortRef.current = new AbortController();
 
       try {
-        await delay(1200);
+        const response = await aiApi.generateTemplate({
+          description,
+          card_type: cardType,
+          industry,
+          language: 'es',
+        });
 
         if (abortRef.current.signal.aborted) {
           return [];
         }
 
-        setQuota((prev) => ({
-          used: Math.min(prev.used + 1, prev.limit),
-          limit: prev.limit,
-        }));
+        const payload = response.data;
+        if (!payload.success) {
+          setError(payload.message || t('wallet.studio.ai.generateError'));
+          return [];
+        }
 
-        return generateMockVariations(description, cardType, industry);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Error desconocido';
+        const variations = payload.data?.variations ?? [];
+        const quotaUpdate = extractQuota(payload);
+        if (quotaUpdate) setQuota(quotaUpdate);
+
+        return mapBackendVariations(variations, cardType, industry);
+      } catch (err: any) {
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+          return [];
+        }
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          t('wallet.studio.ai.generateError');
         setError(message);
         return [];
       } finally {
@@ -183,14 +188,15 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
 
   const suggestColors = useCallback(
     async (
-      description: string
+      description: string,
+      industry: Industry
     ): Promise<Array<{ background: string; foreground: string; label: string; accent: string }>> => {
       if (!enabled) {
-        setError('La funcionalidad de IA no está habilitada.');
+        setError(t('wallet.studio.ai.disabled'));
         return [];
       }
       if (!description.trim()) {
-        setError('Por favor, describe tu negocio para sugerir colores.');
+        setError(t('wallet.studio.ai.describeBusiness'));
         return [];
       }
 
@@ -199,15 +205,39 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       abortRef.current = new AbortController();
 
       try {
-        await delay(800);
+        const response = await aiApi.suggestColors({
+          description,
+          industry,
+        });
 
         if (abortRef.current.signal.aborted) {
           return [];
         }
 
-        return MOCK_COLOR_PALETTES;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Error desconocido';
+        const payload = response.data;
+        if (!payload.success) {
+          setError(payload.message || t('wallet.studio.ai.suggestColorsError'));
+          return [];
+        }
+
+        const palettes = payload.data?.palettes ?? [];
+        const quotaUpdate = extractQuota(payload);
+        if (quotaUpdate) setQuota(quotaUpdate);
+
+        return palettes.map((p: any) => ({
+          background: p.background_color,
+          foreground: p.foreground_color,
+          label: p.label_color || p.foreground_color,
+          accent: p.accent_color || p.foreground_color,
+        }));
+      } catch (err: any) {
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+          return [];
+        }
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          t('wallet.studio.ai.suggestColorsError');
         setError(message);
         return [];
       } finally {
@@ -220,7 +250,7 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
   const critiqueDesign = useCallback(
     async (state: WalletPassStudioState): Promise<string[]> => {
       if (!enabled) {
-        setError('La funcionalidad de IA no está habilitada.');
+        setError(t('wallet.studio.ai.disabled'));
         return [];
       }
 
@@ -229,24 +259,198 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       abortRef.current = new AbortController();
 
       try {
-        await delay(1000);
+        const response = await aiApi.critiqueDesign({
+          design_data: {
+            colors: state.colors,
+            cardType: state.cardType,
+            industry: state.industry,
+            fields: state.fields.map((f) => ({
+              label: f.label,
+              value: f.value,
+              group: f.fieldGroup,
+            })),
+            hasLogo: Boolean(state.images.logo?.url),
+            hasHero: Boolean(state.images.strip?.url || state.images.heroImage?.url),
+            barcodeFormat: state.barcode.format,
+          },
+        });
 
         if (abortRef.current.signal.aborted) {
           return [];
         }
 
-        const suggestions = [...MOCK_CRITIQUE_SUGGESTIONS];
-
-        // Add contextual suggestion based on contrast
-        if (state.colors.background === state.colors.foreground) {
-          suggestions.push('El color de fondo y el texto no pueden ser idénticos.');
+        const payload = response.data;
+        if (!payload.success) {
+          setError(payload.message || t('wallet.studio.ai.critiqueError'));
+          return [];
         }
 
+        const suggestions = payload.data?.suggestions ?? [];
+        const quotaUpdate = extractQuota(payload);
+        if (quotaUpdate) setQuota(quotaUpdate);
+
         return suggestions;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Error desconocido';
+      } catch (err: any) {
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+          return [];
+        }
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          t('wallet.studio.ai.critiqueError');
         setError(message);
         return [];
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [enabled]
+  );
+
+  const suggestStampIcons = useCallback(
+    async (businessType: string): Promise<string[]> => {
+      if (!enabled) {
+        setError(t('wallet.studio.ai.disabled'));
+        return [];
+      }
+      if (!businessType.trim()) {
+        return [];
+      }
+
+      setError(null);
+      setIsLoading(true);
+      abortRef.current = new AbortController();
+
+      try {
+        const response = await aiApi.suggestStampIcons({
+          business_type: businessType,
+        });
+
+        if (abortRef.current.signal.aborted) {
+          return [];
+        }
+
+        const payload = response.data;
+        if (!payload.success) {
+          setError(payload.message || t('wallet.studio.ai.suggestIconsError'));
+          return [];
+        }
+
+        const icons = payload.data?.icons ?? [];
+        const quotaUpdate = extractQuota(payload);
+        if (quotaUpdate) setQuota(quotaUpdate);
+
+        return icons;
+      } catch (err: any) {
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+          return [];
+        }
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          t('wallet.studio.ai.suggestIconsError');
+        setError(message);
+        return [];
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [enabled]
+  );
+
+  const suggestLayout = useCallback(
+    async (
+      designData: Record<string, unknown>,
+      cardType: CardType
+    ): Promise<AILayoutSuggestion> => {
+      if (!enabled) {
+        setError(t('wallet.studio.ai.disabled'));
+        return {
+          name: 'Predeterminado',
+          description: 'Disposición estándar',
+          logo_position: 'top_center',
+          field_arrangement: 'vertical_stack',
+          header_style: 'full_width_banner',
+          footer_style: 'minimal',
+          reasoning: 'Modo IA desactivado.',
+        };
+      }
+
+      setError(null);
+      setIsLoading(true);
+      abortRef.current = new AbortController();
+
+      try {
+        const response = await aiApi.suggestLayout({
+          design_data: designData,
+          card_type: cardType,
+        });
+
+        if (abortRef.current.signal.aborted) {
+          return {
+            name: 'Predeterminado',
+            description: 'Disposición estándar',
+            logo_position: 'top_center',
+            field_arrangement: 'vertical_stack',
+            header_style: 'full_width_banner',
+            footer_style: 'minimal',
+            reasoning: 'Solicitud cancelada.',
+          };
+        }
+
+        const payload = response.data;
+        if (!payload.success) {
+          setError(payload.message || t('wallet.studio.ai.layoutError'));
+          return {
+            name: 'Predeterminado',
+            description: 'Disposición estándar',
+            logo_position: 'top_center',
+            field_arrangement: 'vertical_stack',
+            header_style: 'full_width_banner',
+            footer_style: 'minimal',
+            reasoning: payload.message || 'Error del servicio de IA.',
+          };
+        }
+
+        const layout = payload.data ?? {};
+        const quotaUpdate = extractQuota(payload);
+        if (quotaUpdate) setQuota(quotaUpdate);
+
+        return {
+          name: layout.name || 'Sugerencia',
+          description: layout.description || '',
+          logo_position: layout.logo_position || 'top_center',
+          field_arrangement: layout.field_arrangement || 'vertical_stack',
+          header_style: layout.header_style || 'full_width_banner',
+          footer_style: layout.footer_style || 'minimal',
+          reasoning: layout.reasoning || '',
+        };
+      } catch (err: any) {
+        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+          return {
+            name: 'Predeterminado',
+            description: 'Disposición estándar',
+            logo_position: 'top_center',
+            field_arrangement: 'vertical_stack',
+            header_style: 'full_width_banner',
+            footer_style: 'minimal',
+            reasoning: 'Solicitud cancelada.',
+          };
+        }
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          t('wallet.studio.ai.layoutError');
+        setError(message);
+        return {
+          name: 'Predeterminado',
+          description: 'Disposición estándar',
+          logo_position: 'top_center',
+          field_arrangement: 'vertical_stack',
+          header_style: 'full_width_banner',
+          footer_style: 'minimal',
+          reasoning: message,
+        };
       } finally {
         setIsLoading(false);
       }
@@ -261,6 +465,8 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
     generateTemplate,
     suggestColors,
     critiqueDesign,
+    suggestStampIcons,
+    suggestLayout,
     reset,
   };
 }

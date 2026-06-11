@@ -5,7 +5,8 @@
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { WalletColors } from '@/components/wallet/types/unified-state';
 import { COLOR_PRESETS } from '@/components/wallet/constants';
 import { hexToRgb, hexToHsl, hslToHex, autoForeground, isValidHex, normalizeHex } from '@/components/wallet/utils/colors';
@@ -82,6 +83,96 @@ function ContrastBadge({ level }: { level: 'AAA' | 'AA' | 'FAIL' }) {
   );
 }
 
+const PRESET_SWATCHES = [
+  '#1A1A2E', '#16213E', '#0F3460', '#533483', '#E94560',
+  '#1B1B2F', '#4A4E69', '#9A8C98', '#C9ADA7', '#F2E9E4',
+  '#2D3047', '#419D78', '#E0A458', '#D9594C', '#8D99AE',
+  '#000000', '#FFFFFF', '#F8F9FA', '#212529', '#6C757D',
+  '#FF6B35', '#F7931E', '#FFD23F', '#06FFA5', '#3BFFE2',
+  '#118AB2', '#073B4C', '#EF476F', '#FFC43D', '#1B9AAA',
+];
+
+function ColorPickerPopover({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+  label: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const nativeInputRef = useRef<HTMLInputElement>(null);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
+  const handleSelect = useCallback(
+    (color: string) => {
+      onChange(color.toUpperCase());
+      setIsOpen(false);
+    },
+    [onChange]
+  );
+
+  const handleNativeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange(e.target.value.toUpperCase());
+      setIsOpen(false);
+    },
+    [onChange]
+  );
+
+  return (
+    <div className="relative" ref={popoverRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 cursor-pointer overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
+        style={{ backgroundColor: value }}
+        aria-label={`Selector de color ${label}`}
+        title={value}
+      />
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 z-50 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-xl w-[260px]">
+          <div className="grid grid-cols-6 gap-1.5 mb-3">
+            {PRESET_SWATCHES.map((swatch) => (
+              <button
+                key={swatch}
+                type="button"
+                onClick={() => handleSelect(swatch)}
+                className="w-8 h-8 rounded-md border border-neutral-200 dark:border-neutral-700 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ backgroundColor: swatch }}
+                title={swatch}
+              />
+            ))}
+          </div>
+          <div className="flex items-center gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <input
+              ref={nativeInputRef}
+              type="color"
+              value={normalizeHex(value)}
+              onChange={handleNativeChange}
+              className="w-8 h-8 rounded border border-neutral-300 dark:border-neutral-700 cursor-pointer p-0 overflow-hidden shrink-0"
+            />
+            <span className="text-[11px] text-neutral-500 dark:text-neutral-400">Personalizado</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ColorInput({
   config,
   value,
@@ -150,15 +241,7 @@ function ColorInput({
       </div>
       <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{config.description}</p>
       <div className="flex items-center gap-2">
-        <div className="relative flex-shrink-0">
-          <input
-            type="color"
-            value={normalizeHex(value)}
-            onChange={(e) => onChange(e.target.value.toUpperCase())}
-            className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 cursor-pointer p-0 overflow-hidden"
-            aria-label={`Selector de color ${config.label}`}
-          />
-        </div>
+        <ColorPickerPopover value={value} onChange={onChange} label={config.label} />
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2">
             <input
@@ -191,8 +274,37 @@ function ColorInput({
   );
 }
 
+const SAVED_PRESETS_KEY = 'loyallia_color_presets';
+
+interface SavedColorPreset {
+  name: string;
+  background: string;
+  foreground: string;
+  label: string;
+  accent: string;
+}
+
+function loadSavedPresets(): SavedColorPreset[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SAVED_PRESETS_KEY);
+    return raw ? (JSON.parse(raw) as SavedColorPreset[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePresetsToStorage(presets: SavedColorPreset[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SAVED_PRESETS_KEY, JSON.stringify(presets));
+}
+
 export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
+  const { t } = useI18n();
   const [hoveredPreset, setHoveredPreset] = useState<string | null>(null);
+  const [savedPresets, setSavedPresets] = useState<SavedColorPreset[]>(loadSavedPresets);
+  const [isSavingPreset, setIsSavingPreset] = useState(false);
+  const [presetName, setPresetName] = useState('');
 
   const handleColorChange = useCallback(
     (key: ColorKey) => (color: string) => {
@@ -202,7 +314,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
   );
 
   const handleApplyPreset = useCallback(
-    (preset: (typeof COLOR_PRESETS)[number]) => {
+    (preset: (typeof COLOR_PRESETS)[number] | SavedColorPreset) => {
       onUpdateColors({
         background: preset.background,
         foreground: preset.foreground,
@@ -217,147 +329,174 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
     onUpdateColors({ foreground: autoForeground(colors.background) });
   }, [colors.background, onUpdateColors]);
 
+  const handleSavePreset = useCallback(() => {
+    const name = presetName.trim();
+    if (!name) return;
+    const newPreset: SavedColorPreset = {
+      name,
+      background: colors.background,
+      foreground: colors.foreground,
+      label: colors.label,
+      accent: colors.accent,
+    };
+    const updated = [...savedPresets.filter((p) => p.name !== name), newPreset];
+    setSavedPresets(updated);
+    savePresetsToStorage(updated);
+    setIsSavingPreset(false);
+    setPresetName('');
+  }, [presetName, colors, savedPresets]);
+
+  const handleDeletePreset = useCallback(
+    (name: string) => {
+      const updated = savedPresets.filter((p) => p.name !== name);
+      setSavedPresets(updated);
+      savePresetsToStorage(updated);
+    },
+    [savedPresets]
+  );
+
   const contrast = useMemo(() => contrastRatio(colors.foreground, colors.background), [colors.foreground, colors.background]);
   const wcagLevel = useMemo(() => getWCAGLevel(colors.foreground, colors.background), [colors.foreground, colors.background]);
 
   const harmony = useMemo(() => getHarmonyColors(colors.background), [colors.background]);
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Configuración de Colores</h3>
+    <div className="space-y-3">
+      <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">{t('wallet.studio.colors.title')}</h3>
 
-      {/* Contrast Check */}
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4 space-y-3">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-2.5 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-            Contraste
-          </span>
+          <span className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.colors.contrast')}</span>
           <ContrastBadge level={wcagLevel} />
         </div>
-        <div className="flex items-center gap-3">
-          <div
-            className="w-16 h-16 rounded-lg border border-neutral-200 dark:border-neutral-700 flex items-center justify-center"
-            style={{ backgroundColor: colors.background }}
-          >
-            <span className="text-sm font-semibold" style={{ color: colors.foreground }}>Aa</span>
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-lg border border-neutral-200 dark:border-neutral-700 flex items-center justify-center" style={{ backgroundColor: colors.background }}>
+            <span className="text-xs font-semibold" style={{ color: colors.foreground }}>Aa</span>
           </div>
           <div className="flex-1">
-            <p className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-              {contrast.toFixed(2)}:1
-            </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {wcagLevel === 'AAA'
-                ? 'Excelente legibilidad para todo tipo de texto.'
-                : wcagLevel === 'AA'
-                ? 'Buena legibilidad para texto normal.'
-                : 'El contraste es insuficiente. Considera ajustar los colores.'}
+            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{contrast.toFixed(2)}:1</p>
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+              {wcagLevel === 'AAA' ? t('wallet.studio.colors.contrastAAA') : wcagLevel === 'AA' ? t('wallet.studio.colors.contrastAA') : t('wallet.studio.colors.contrastFail')}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Color Inputs */}
-      <div className="space-y-5">
+      <div className="space-y-3">
         {COLOR_FIELDS.map((field) => (
-          <ColorInput
-            key={field.key}
-            config={field}
-            value={colors[field.key]}
-            onChange={handleColorChange(field.key)}
-            showAutoForeground={field.key === 'background' ? handleAutoForeground : undefined}
-          />
+          <ColorInput key={field.key} config={field} value={colors[field.key]} onChange={handleColorChange(field.key)} showAutoForeground={field.key === 'background' ? handleAutoForeground : undefined} />
         ))}
       </div>
 
-      {/* Quick Color Presets */}
+      {/* Save preset */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Presets rápidos
-        </label>
-        <div className="grid grid-cols-5 gap-2">
-          {COLOR_PRESETS.map((preset) => (
+        {!isSavingPreset ? (
+          <button
+            type="button"
+            onClick={() => setIsSavingPreset(true)}
+            className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+            {t('wallet.studio.colors.savePreset')}
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSavePreset(); if (e.key === 'Escape') { setIsSavingPreset(false); setPresetName(''); } }}
+              placeholder={t('wallet.studio.colors.presetName')}
+              className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
             <button
-              key={preset.name}
               type="button"
-              onClick={() => handleApplyPreset(preset)}
-              onMouseEnter={() => setHoveredPreset(preset.name)}
-              onMouseLeave={() => setHoveredPreset(null)}
-              data-testid="color-preset"
-              className="relative group flex flex-col items-center gap-1.5 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
-              title={preset.name}
+              onClick={handleSavePreset}
+              className="px-2 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             >
+              {t('common.save')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsSavingPreset(false); setPresetName(''); }}
+              className="px-2 py-1 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Saved presets */}
+      {savedPresets.length > 0 && (
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.colors.savedPresets')}</label>
+          <div className="grid grid-cols-5 gap-1.5">
+            {savedPresets.map((preset) => (
+              <div key={preset.name} className="relative group">
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset(preset)}
+                  onMouseEnter={() => setHoveredPreset(preset.name)}
+                  onMouseLeave={() => setHoveredPreset(null)}
+                  className="w-full flex flex-col items-center gap-1 p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 transition-colors"
+                  title={preset.name}
+                >
+                  <div className="w-full flex gap-0.5">
+                    <div className="w-1/2 h-4 rounded-l" style={{ backgroundColor: preset.background }} />
+                    <div className="w-1/2 h-4 rounded-r" style={{ backgroundColor: preset.accent }} />
+                  </div>
+                </button>
+                {hoveredPreset === preset.name && (
+                  <>
+                    <span className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-neutral-800 dark:bg-neutral-700 text-[9px] text-white whitespace-nowrap z-10">{preset.name}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleDeletePreset(preset.name); }}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title={t('common.delete')}
+                    >
+                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                    </button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.colors.presets')}</label>
+        <div className="grid grid-cols-5 gap-1.5">
+          {COLOR_PRESETS.map((preset) => (
+            <button key={preset.name} type="button" onClick={() => handleApplyPreset(preset)} onMouseEnter={() => setHoveredPreset(preset.name)} onMouseLeave={() => setHoveredPreset(null)} data-testid="color-preset" className="relative group flex flex-col items-center gap-1 p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 transition-colors" title={preset.name}>
               <div className="w-full flex gap-0.5">
-                <div className="w-1/2 h-5 rounded-l" style={{ backgroundColor: preset.background }} />
-                <div className="w-1/2 h-5 rounded-r" style={{ backgroundColor: preset.accent }} />
+                <div className="w-1/2 h-4 rounded-l" style={{ backgroundColor: preset.background }} />
+                <div className="w-1/2 h-4 rounded-r" style={{ backgroundColor: preset.accent }} />
               </div>
               {hoveredPreset === preset.name && (
-                <span className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-800 dark:bg-neutral-700 text-[10px] text-white whitespace-nowrap z-10">
-                  {preset.name}
-                </span>
+                <span className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-neutral-800 dark:bg-neutral-700 text-[9px] text-white whitespace-nowrap z-10">{preset.name}</span>
               )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Color Harmony */}
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Armonía de color
-        </label>
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => onUpdateColors({ accent: harmony.analogous[0] })}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full border border-neutral-200 dark:border-neutral-700" style={{ backgroundColor: harmony.analogous[0] }} />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Análogo +</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onUpdateColors({ accent: harmony.analogous[1] })}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full border border-neutral-200 dark:border-neutral-700" style={{ backgroundColor: harmony.analogous[1] }} />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Análogo −</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onUpdateColors({ accent: harmony.complementary })}
-            className="flex flex-col items-center gap-1 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full border border-neutral-200 dark:border-neutral-700" style={{ backgroundColor: harmony.complementary }} />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Complementario</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Live Preview */}
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
-        </label>
-        <div
-          className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 space-y-3 shadow-sm"
-          style={{ backgroundColor: colors.background }}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold" style={{ color: colors.label }}>PROGRAMA</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.accent, color: colors.background }}>
-              VIP
-            </span>
-          </div>
-          <div>
-            <p className="text-lg font-bold" style={{ color: colors.foreground }}>Loyallia Rewards</p>
-            <p className="text-sm mt-0.5" style={{ color: colors.label }}>Acumula sellos y gana recompensas</p>
-          </div>
-          <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: colors.label + '33' }}>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: colors.accent, color: colors.background }}>
-              5
-            </div>
-            <p className="text-xs" style={{ color: colors.foreground }}>Sello 5 de 10</p>
-          </div>
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.colors.harmony')}</label>
+        <div className="grid grid-cols-3 gap-1.5">
+          {[
+            { label: t('wallet.studio.colors.analogousPlus'), color: harmony.analogous[0] },
+            { label: t('wallet.studio.colors.analogousMinus'), color: harmony.analogous[1] },
+            { label: t('wallet.studio.colors.complementary'), color: harmony.complementary },
+          ].map((item) => (
+            <button key={item.label} type="button" onClick={() => onUpdateColors({ accent: item.color })} className="flex flex-col items-center gap-1 p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 transition-colors">
+              <div className="w-6 h-6 rounded-full border border-neutral-200 dark:border-neutral-700" style={{ backgroundColor: item.color }} />
+              <span className="text-[9px] text-neutral-500 dark:text-neutral-400">{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

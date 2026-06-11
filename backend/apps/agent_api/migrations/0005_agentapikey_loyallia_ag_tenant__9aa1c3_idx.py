@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agent_api', '0004_alter_agentapicalllog_api_key_and_more'),
-        ('tenants', '0011_alter_location_address_alter_location_city_and_more'),
+        ("agent_api", "0004_alter_agentapicalllog_api_key_and_more"),
+        ("tenants", "0011_alter_location_address_alter_location_city_and_more"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='agentapikey',
-            index=models.Index(fields=['tenant', 'is_active'], name='loyallia_ag_tenant__9aa1c3_idx'),
+            model_name="agentapikey",
+            index=models.Index(
+                fields=["tenant", "is_active"], name="loyallia_ag_tenant__9aa1c3_idx"
+            ),
         ),
     ]

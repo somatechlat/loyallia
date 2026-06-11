@@ -7,6 +7,7 @@ Split from customers/api.py per the 600-line architectural limit.
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.db.models import Q
 from ninja import Router
 from ninja.errors import HttpError
@@ -24,7 +25,6 @@ DAYS_30 = 30
 DAYS_60 = 60
 VIP_PERCENTILE = 0.9
 MOST_ACTIVE_PERCENTILE = 0.15
-CSV_CHUNK_SIZE = 500
 
 
 # BUILT-IN SEGMENTS
@@ -219,9 +219,7 @@ def list_segments(request):
     # Single-query aggregate for all filter-based segments
     agg = base_queryset.aggregate(
         all_count=Count("id", filter=Q(is_active=True)),
-        active_count=Count(
-            "id", filter=Q(is_active=True, last_visit__gte=cutoff_30)
-        ),
+        active_count=Count("id", filter=Q(is_active=True, last_visit__gte=cutoff_30)),
         at_risk_count=Count(
             "id",
             filter=Q(
@@ -238,9 +236,7 @@ def list_segments(request):
                 | Q(last_visit__isnull=True, created_at__lt=cutoff_60)
             ),
         ),
-        new_count=Count(
-            "id", filter=Q(is_active=True, created_at__gte=cutoff_30)
-        ),
+        new_count=Count("id", filter=Q(is_active=True, created_at__gte=cutoff_30)),
     )
 
     count_map = {
@@ -338,7 +334,7 @@ def export_segment(request, segment_id: str):
 
     def generate_rows():
         yield "id,first_name,last_name,email,phone,total_visits,total_spent,last_visit,created_at\n"
-        for customer in members.iterator(chunk_size=CSV_CHUNK_SIZE):
+        for customer in members.iterator(chunk_size=settings.CSV_CHUNK_SIZE):
             yield (
                 f"{customer.id},{customer.first_name},{customer.last_name},"
                 f"{customer.email},{customer.phone},{customer.total_visits},"

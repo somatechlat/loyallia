@@ -19,14 +19,15 @@ Called by: Transaction endpoint (transact), Enrollment endpoint, Analytics sched
 import logging
 
 from celery import shared_task
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    max_retries=3,
-    default_retry_delay=60,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_MEDIUM,
     queue="pass_generation",
     name="apps.customers.tasks.generate_qr_for_pass",
 )
@@ -66,8 +67,8 @@ def generate_qr_for_pass(self, customer_pass_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=3,
-    default_retry_delay=30,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
     queue="pass_generation",
     name="apps.customers.tasks.trigger_pass_update",
 )
@@ -169,8 +170,8 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=2,
-    default_retry_delay=120,
+    max_retries=settings.CELERY_MAX_RETRIES_LOW,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_LONG,
     queue="pass_generation",
     name="apps.customers.tasks.update_customer_analytics",
 )
@@ -212,8 +213,8 @@ def update_customer_analytics(self, customer_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=3,
-    default_retry_delay=30,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
     queue="pass_generation",
     name="apps.customers.tasks.update_loyalty_class_async",
 )
@@ -240,14 +241,12 @@ def update_loyalty_class_async(self, card_id: str, base_url: str = "") -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=3,
-    default_retry_delay=30,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
     queue="pass_generation",
     name="apps.customers.tasks.update_wallet_object_async",
 )
-def update_wallet_object_async(
-    self, customer_pass_id: str, base_url: str = ""
-) -> dict:
+def update_wallet_object_async(self, customer_pass_id: str, base_url: str = "") -> dict:
     """PATCH a Google Wallet Object with updated pass data."""
     import uuid
 
@@ -259,9 +258,7 @@ def update_wallet_object_async(
             "customer", "card", "card__tenant"
         ).get(id=uuid.UUID(customer_pass_id))
     except CustomerPass.DoesNotExist:
-        logger.error(
-            "update_wallet_object_async: pass %s not found", customer_pass_id
-        )
+        logger.error("update_wallet_object_async: pass %s not found", customer_pass_id)
         return {"success": False, "error": "Pass not found"}
 
     try:
@@ -275,8 +272,8 @@ def update_wallet_object_async(
 
 @shared_task(
     bind=True,
-    max_retries=3,
-    default_retry_delay=30,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
     queue="pass_generation",
     name="apps.customers.tasks.send_google_push_notification_async",
 )
@@ -319,8 +316,8 @@ def send_google_push_notification_async(
 
 @shared_task(
     bind=True,
-    max_retries=3,
-    default_retry_delay=30,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
     queue="pass_generation",
     name="apps.customers.tasks.delete_wallet_class_async",
 )

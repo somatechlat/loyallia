@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 _SENSITIVE_KEYS = ("password", "passwd", "secret", "token", "key", "credential")
 
+
 class SafeConfigDict(dict):
     """Dict subclass that masks sensitive values in repr to prevent accidental logging."""
 
@@ -25,7 +26,6 @@ class SafeConfigDict(dict):
             else:
                 masked[k] = v
         return repr(masked)
-
 
 
 def scrub_error(msg: str) -> str:
@@ -74,25 +74,29 @@ def get_backup_settings() -> dict:
 def get_db_config() -> dict:
     """Read DB config from Django settings (populated from Vault)."""
     db = settings.DATABASES.get("direct", settings.DATABASES["default"])
-    return SafeConfigDict({
-        "host": db.get("HOST", "localhost"),
-        "port": db.get("PORT", "5432"),
-        "name": db.get("NAME", "loyallia"),
-        "user": db.get("USER", "loyallia"),
-        "password": db.get("PASSWORD", ""),
-    })
+    return SafeConfigDict(
+        {
+            "host": db.get("HOST", "localhost"),
+            "port": db.get("PORT", "5432"),
+            "name": db.get("NAME", "loyallia"),
+            "user": db.get("USER", "loyallia"),
+            "password": db.get("PASSWORD", ""),
+        }
+    )
 
 
 def get_minio_config() -> dict:
     """Read MinIO/S3 config from Django settings (populated from Vault)."""
-    return SafeConfigDict({
-        "endpoint": getattr(settings, "MINIO_ENDPOINT", ""),
-        "access_key": getattr(settings, "MINIO_ACCESS_KEY", ""),
-        "secret_key": getattr(settings, "MINIO_SECRET_KEY", ""),
-        "bucket_passes": getattr(settings, "MINIO_BUCKET_PASSES", "passes"),
-        "bucket_assets": getattr(settings, "MINIO_BUCKET_ASSETS", "assets"),
-        "use_ssl": getattr(settings, "MINIO_USE_SSL", False),
-    })
+    return SafeConfigDict(
+        {
+            "endpoint": getattr(settings, "MINIO_ENDPOINT", ""),
+            "access_key": getattr(settings, "MINIO_ACCESS_KEY", ""),
+            "secret_key": getattr(settings, "MINIO_SECRET_KEY", ""),
+            "bucket_passes": getattr(settings, "MINIO_BUCKET_PASSES", "passes"),
+            "bucket_assets": getattr(settings, "MINIO_BUCKET_ASSETS", "assets"),
+            "use_ssl": getattr(settings, "MINIO_USE_SSL", False),
+        }
+    )
 
 
 def notify_backup_failure(job_id: str, error: str) -> None:

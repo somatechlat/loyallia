@@ -37,7 +37,11 @@ def send_notification(request, customer_id: str, data: SendNotificationSchema):
     return {
         "success": success,
         "notification_id": str(notification.id),
-        "message": get_message_for_request("NOTIFICATION_SENT", request) if success else get_message_for_request("NOTIFICATION_SEND_FAILED", request),
+        "message": (
+            get_message_for_request("NOTIFICATION_SENT", request)
+            if success
+            else get_message_for_request("NOTIFICATION_SEND_FAILED", request)
+        ),
     }
 
 

@@ -238,29 +238,27 @@ class Customer(TimestampedModel):
         return f"{self.first_name} {self.last_name}".strip()
 
     def generate_referral_code(self) -> str:
-        """Generate a unique referral code for this customer.
-
-        if the code space is exhausted or there's a DB issue.
-        """
+        """Generate a unique referral code for this customer."""
         import logging
         import secrets
         import string
 
-        logger = logging.getLogger(__name__)
-        max_attempts = 20
+        from django.conf import settings
 
-        for _attempt in range(max_attempts):
+        logger = logging.getLogger(__name__)
+
+        for _attempt in range(settings.SLUG_MAX_ATTEMPTS):
             code = "".join(
                 secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
             )
-            if not Customer.objects.filter(tenant=self.tenant, referral_code=code).exists():
+            if not Customer.objects.filter(
+                tenant=self.tenant, referral_code=code
+            ).exists():
                 return code
 
-        # Fallback: use UUID-based code (guaranteed unique)
         fallback = uuid.uuid4().hex[:12].upper()
         logger.warning(
-            "Referral code generation: exhausted %d random attempts, using UUID fallback",
-            max_attempts,
+            "Referral code generation: exhausted attempts, using UUID fallback",
         )
         return fallback
 
@@ -572,124 +570,10 @@ class CustomerPass(models.Model):
     def process_transaction(
         self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1
     ) -> dict:
-        """
-        Process a transaction for this pass based on card type.
-        Delegates to the new Redemption Engine strategies.
-        """
-        if quantity < 1:
-            raise ValueError("Quantity must be a positive integer")
+        """Process a transaction for this pass. Delegates to the service layer."""
+        from apps.customers.services.pass_transactions import process_pass_transaction
 
-        from django.utils import timezone
-
-        from apps.redemption.context import RedemptionContext
-        from apps.redemption.strategies.registry import get_strategy
-
-        # Resolve intent (mirrors RedemptionGateway._resolve_intent)
-        resolved_intent = "auto"
-        if transaction_type in ("earn", "redeem", "validate"):
-            resolved_intent = transaction_type
-        elif self.card.card_type == "stamp":
-            is_ready = (
-                self.lifecycle_state == self.LifecycleState.REWARD_READY
-                or self.pass_data.get("reward_ready", False)
-            )
-            resolved_intent = "redeem" if is_ready else "earn"
-        elif self.card.card_type == "cashback":
-            resolved_intent = "earn"
-        elif self.card.card_type in (
-            "vip_membership",
-            "corporate_discount",
-            "affiliate",
-        ):
-            resolved_intent = "validate"
-        else:
-            resolved_intent = "redeem"
-
-        context = RedemptionContext(
-            tenant=self.card.tenant,
-            customer_pass=self,
-            card=self.card,
-            amount=amount,
-            quantity=quantity,
-            staff_id=None,
-            location_id=None,
-            scanned_at=timezone.now(),
-            intent=resolved_intent,
-        )
-
-        # Capture old state for backward-compat mapping
-        _old_stamp_count = self.stamp_count or self.pass_data.get("stamp_count", 0)
-
-        strategy = get_strategy(self.card.card_type, resolved_intent)
-        result = strategy.execute(context)
-
-        if result.pass_updated:
-            self.refresh_from_db()
-
-        # Map RedemptionResult to legacy dict format for backward compatibility
-        card_type = self.card.card_type
-        legacy = {
-            "transaction_type": result.transaction_type,
-            "amount": amount,
-            "quantity": quantity,
-            "pass_updated": result.pass_updated,
-            "reward_earned": result.reward_earned,
-            "reward_description": result.reward_description,
-            "success": result.success,
-        }
-
-        # Coupon omits reward_earned on denial
-        if card_type == "coupon" and not result.pass_updated:
-            legacy.pop("reward_earned", None)
-            legacy.pop("reward_description", None)
-
-        if card_type == "stamp":
-            legacy["new_stamp_count"] = self.stamp_count
-            # Compute reward count
-            try:
-                stamps_required = int(self.card.metadata.get("stamps_required", 10))
-                if stamps_required <= 0:
-                    stamps_required = 10
-            except (TypeError, ValueError):
-                stamps_required = 10
-            total_stamps = _old_stamp_count + quantity
-            legacy["reward_count"] = total_stamps // stamps_required
-        elif card_type == "cashback":
-            if result.new_balance:
-                legacy["new_balance"] = Decimal(str(result.new_balance))
-                legacy["earned_amount"] = legacy["new_balance"]
-        elif card_type == "gift_certificate":
-            if result.pass_updated:
-                legacy["amount_redeemed"] = amount
-            legacy["new_balance"] = result.new_balance
-        elif card_type == "multipass":
-            legacy["stamps_used"] = 1 if result.pass_updated else 0
-            legacy["remaining_stamps"] = result.remaining_uses
-        elif card_type == "referral_pass":
-            legacy["new_referral_count"] = self.referral_count_val
-            max_ref = (
-                int(self.card.metadata.get("max_referrals_per_customer", 0))
-                if self.card.metadata
-                else 0
-            )
-            legacy["limit_reached"] = (
-                not result.pass_updated
-                and max_ref > 0
-                and self.referral_count_val >= max_ref
-            )
-        elif card_type == "discount":
-            legacy["discount_percentage"] = self.pass_data.get(
-                "current_discount_percentage", 0
-            )
-            legacy["tier_name"] = self.pass_data.get("current_tier_name", "")
-        elif card_type in ("vip_membership", "affiliate"):
-            legacy["membership_valid"] = result.success
-            legacy["membership_expiry"] = self.pass_data.get("membership_expiry", "")
-            legacy["reason"] = "" if result.success else "membership_expired"
-        elif card_type == "corporate_discount":
-            legacy["membership_valid"] = result.success
-
-        return legacy
+        return process_pass_transaction(self, transaction_type, amount, quantity)
 
     def _process_stamp_transaction(
         self, amount: Decimal = Decimal("0"), quantity: int = 1
@@ -707,16 +591,7 @@ class CustomerPass(models.Model):
 
 
 class ApplePassRegistration(models.Model):
-    """
-    Device registration for Apple Wallet pass update push notifications.
-
-    Per Apple PassKit docs: when a user adds a pass to Wallet, the device calls
-    POST /v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}
-    providing a pushToken. We store this mapping to send empty APNs pushes
-    when pass data changes, triggering the device to re-download the updated .pkpass.
-
-    Reference: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
-    """
+    """Device registration for Apple Wallet pass update push notifications."""
 
     id = models.UUIDField(
         primary_key=True,

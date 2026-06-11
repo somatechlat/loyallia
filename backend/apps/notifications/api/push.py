@@ -46,7 +46,10 @@ def unregister_device(request, device_id: str):
     device.is_active = False
     device.save()
 
-    return {"success": True, "message": get_message_for_request("DEVICE_UNREGISTERED", request)}
+    return {
+        "success": True,
+        "message": get_message_for_request("DEVICE_UNREGISTERED", request),
+    }
 
 
 @router.get("/devices/", auth=jwt_auth, summary="List registered devices")

@@ -5,14 +5,15 @@ Loyallia Automation Celery Tasks
 import logging
 
 from celery import shared_task
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    max_retries=2,
-    default_retry_delay=30,
+    max_retries=settings.CELERY_MAX_RETRIES_LOW,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
     queue="default",
     name="apps.automation.tasks.evaluate_trigger_for_customer",
 )
@@ -86,7 +87,9 @@ def evaluate_scheduled_automations() -> dict:
             is_active=True,
         )
 
-        for customer in customers.iterator(chunk_size=100):
+        for customer in customers.iterator(
+            chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT
+        ):
             if not automation.can_execute_for_customer(customer):
                 continue
 
@@ -131,7 +134,7 @@ def evaluate_inactive_triggers(days_threshold: int = 30) -> dict:
     ).select_related("tenant")
 
     triggered = 0
-    for customer in inactive.iterator(chunk_size=100):
+    for customer in inactive.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT):
         count = fire_trigger(
             trigger="inactive_reminder",
             customer=customer,
@@ -171,7 +174,9 @@ def evaluate_birthday_triggers() -> dict:
             is_active=True,
         ).select_related("tenant")
 
-        for customer in customers.iterator(chunk_size=100):
+        for customer in customers.iterator(
+            chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT
+        ):
             count = fire_trigger(
                 trigger="birthday_coming",
                 customer=customer,
@@ -237,7 +242,9 @@ def evaluate_points_threshold_triggers() -> dict:
             ).distinct()
 
         triggered = 0
-        for customer in qualifying.iterator(chunk_size=100):
+        for customer in qualifying.iterator(
+            chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT
+        ):
             count = fire_trigger(
                 trigger="points_threshold",
                 customer=customer,

@@ -347,6 +347,29 @@ export const aiApi = {
   suggestStampIcons: (data: {
     business_type: string;
   }) => api.post('/api/v1/ai/suggest-stamp-icons/', data),
+  suggestLayout: (data: {
+    design_data: Record<string, unknown>;
+    card_type: string;
+  }) => api.post('/api/v1/ai/suggest-layout/', data),
+};
+
+/** Wallet template endpoints for Wallet Pass Studio. */
+export const walletTemplatesApi = {
+  list: () => api.get<Array<Record<string, unknown>>>('/api/v1/wallet/templates/'),
+  create: (data: {
+    name: string;
+    description?: string;
+    card_type: string;
+    industry?: string;
+    design_state: Record<string, unknown>;
+    include_back_content?: boolean;
+    tags?: string[];
+  }) => api.post<Record<string, unknown>>('/api/v1/wallet/templates/', data),
+  get: (id: string) => api.get<Record<string, unknown>>(`/api/v1/wallet/templates/${id}/`),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch<Record<string, unknown>>(`/api/v1/wallet/templates/${id}/`, data),
+  delete: (id: string) => api.delete(`/api/v1/wallet/templates/${id}/`),
+  use: (id: string) => api.post<Record<string, unknown>>(`/api/v1/wallet/templates/${id}/use/`),
 };
 
 /** Scanner validation and transaction endpoints. */

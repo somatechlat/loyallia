@@ -10,13 +10,15 @@ import logging
 import struct
 import zlib
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 
 def _hex_to_rgb(hex_color: str) -> str:
     """Convert hex color (#RRGGBB or #RGB) to Apple's rgb(R, G, B) format."""
     if not hex_color:
-        return "rgb(26, 26, 46)"
+        return settings.PASS_PLACEHOLDER_FALLBACK_RGB
     hex_color = hex_color.strip()
     if hex_color.lower().startswith("rgb("):
         return hex_color
@@ -24,7 +26,7 @@ def _hex_to_rgb(hex_color: str) -> str:
     if len(hex_color) == 3:
         hex_color = "".join(c * 2 for c in hex_color)
     if len(hex_color) != 6:
-        return "rgb(26, 26, 46)"
+        return settings.PASS_PLACEHOLDER_FALLBACK_RGB
     try:
         r, g, b = (
             int(hex_color[0:2], 16),
@@ -32,12 +34,14 @@ def _hex_to_rgb(hex_color: str) -> str:
             int(hex_color[4:6], 16),
         )
     except ValueError:
-        return "rgb(26, 26, 46)"
+        return settings.PASS_PLACEHOLDER_FALLBACK_RGB
     return f"rgb({r}, {g}, {b})"
 
 
 def _generate_placeholder_icon(
-    name: str, bg_color: str = "#5660ff", size: int = 87
+    name: str,
+    bg_color: str = settings.PASS_PLACEHOLDER_BG_COLOR,
+    size: int = settings.PASS_APPLE_ICON_SIZE,
 ) -> bytes:
     """Generate a simple icon PNG using a solid background with the first letter."""
     try:
@@ -66,7 +70,10 @@ def _generate_placeholder_icon(
 
 
 def _generate_placeholder_logo(
-    name: str, bg_color: str = "#5660ff", width: int = 160, height: int = 50
+    name: str,
+    bg_color: str = settings.PASS_PLACEHOLDER_BG_COLOR,
+    width: int = settings.PASS_APPLE_LOGO_WIDTH,
+    height: int = settings.PASS_APPLE_LOGO_HEIGHT,
 ) -> bytes:
     """Generate a wide logo PNG using a solid background with the first letter.
 

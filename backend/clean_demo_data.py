@@ -90,7 +90,6 @@ def main():
     )
 
     with transaction.atomic():
-
         # Phase 1: Delete child records with FK dependencies FIRST
 
         print("[Phase 1] Deleting child records with foreign key dependencies...")

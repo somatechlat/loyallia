@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { ImagesTab } from '@/components/wallet/studio/ImagesTab';
 
 // Mock the upload utility
@@ -15,6 +16,10 @@ vi.mock('@/lib/upload', () => ({
 import { uploadFile } from '@/lib/upload';
 
 const mockedUploadFile = vi.mocked(uploadFile);
+
+function renderWithI18n(ui: React.ReactElement) {
+  return render(<I18nProvider>{ui}</I18nProvider>);
+}
 
 beforeEach(() => {
   vi.stubGlobal('URL', {
@@ -75,14 +80,14 @@ describe('ImagesTab', () => {
   };
 
   it('renders all 3 sections', () => {
-    render(<ImagesTab {...baseProps} />);
-    expect(screen.getByText('LOGO DEL NEGOCIO')).toBeDefined();
-    expect(screen.getByText('IMAGEN PRINCIPAL (Strip / Hero)')).toBeDefined();
-    expect(screen.getByText('IMÁGENES ADICIONALES')).toBeDefined();
+    renderWithI18n(<ImagesTab {...baseProps} />);
+    expect(screen.getByText(/LOGO DEL NEGOCIO/)).toBeDefined();
+    expect(screen.getByText(/IMAGEN PRINCIPAL \(Strip \/ Hero\)/)).toBeDefined();
+    expect(screen.getByText(/IMÁGENES ADICIONALES/)).toBeDefined();
   });
 
   it('renders logo upload zone with correct labels', () => {
-    render(<ImagesTab {...baseProps} />);
+    renderWithI18n(<ImagesTab {...baseProps} />);
     expect(screen.getByText('Arrastra una imagen o haz click')).toBeDefined();
     const formatTexts = screen.getAllByText(/Formatos: PNG, JPG, WebP/);
     expect(formatTexts.length).toBeGreaterThanOrEqual(2); // logo + strip zones
@@ -90,14 +95,14 @@ describe('ImagesTab', () => {
   });
 
   it('renders strip upload zone with correct label', () => {
-    render(<ImagesTab {...baseProps} />);
+    renderWithI18n(<ImagesTab {...baseProps} />);
     expect(screen.getByText('Arrastra una imagen panorámica')).toBeDefined();
   });
 
   it('renders additional image rows', () => {
-    render(<ImagesTab {...baseProps} />);
+    renderWithI18n(<ImagesTab {...baseProps} />);
     expect(screen.getByText('Icono Apple')).toBeDefined();
-    expect(screen.getByText('Lock screen y notificaciones')).toBeDefined();
+    expect(screen.getByText('29×29pt, mostrado en notificaciones')).toBeDefined();
     expect(screen.getByText('Miniatura')).toBeDefined();
     expect(screen.getByText('Fondo')).toBeDefined();
     expect(screen.getByText('Wide Logo')).toBeDefined();
@@ -107,7 +112,7 @@ describe('ImagesTab', () => {
     const onUpdateImages = vi.fn();
     mockedUploadFile.mockResolvedValueOnce('https://cdn.example.com/logo.png');
 
-    render(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
+    renderWithI18n(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
 
     const file = createMockFile('logo.png', 'image/png', 1024);
     const inputs = document.querySelectorAll('input[type="file"]');
@@ -130,7 +135,7 @@ describe('ImagesTab', () => {
     const onUpdateImages = vi.fn();
     mockedUploadFile.mockResolvedValueOnce('https://cdn.example.com/strip.png');
 
-    render(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
+    renderWithI18n(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
 
     const file = createMockFile('strip.png', 'image/png', 1024);
     const inputs = document.querySelectorAll('input[type="file"]');
@@ -154,7 +159,7 @@ describe('ImagesTab', () => {
     const onUpdateImages = vi.fn();
     mockedUploadFile.mockResolvedValueOnce('https://cdn.example.com/icon.png');
 
-    render(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
+    renderWithI18n(<ImagesTab images={{}} onUpdateImages={onUpdateImages} />);
 
     const file = createMockFile('icon.png', 'image/png', 1024);
     const inputs = document.querySelectorAll('input[type="file"]');
@@ -174,7 +179,7 @@ describe('ImagesTab', () => {
   });
 
   it('shows logo previews and action buttons after logo upload', () => {
-    render(
+    renderWithI18n(
       <ImagesTab
         images={{
           logo: { url: 'https://example.com/logo.png', width: 160, height: 50 },
@@ -195,7 +200,7 @@ describe('ImagesTab', () => {
 
   it('calls onUpdateImages with undefined when logo deleted', () => {
     const onUpdateImages = vi.fn();
-    render(
+    renderWithI18n(
       <ImagesTab
         images={{
           logo: { url: 'https://example.com/logo.png', width: 160, height: 50 },
@@ -215,13 +220,13 @@ describe('ImagesTab', () => {
   });
 
   it('renders platform helper text for strip section', () => {
-    render(<ImagesTab {...baseProps} />);
+    renderWithI18n(<ImagesTab {...baseProps} />);
     expect(screen.getByText(/Apple: Banner detrás de campos \(375×123pt\)/)).toBeDefined();
     expect(screen.getByText(/Google: Banner superior \(1032×336px\)/)).toBeDefined();
   });
 
   it('renders auto-generate checkbox when logo exists', () => {
-    render(
+    renderWithI18n(
       <ImagesTab
         images={{
           logo: { url: 'https://example.com/logo.png', width: 160, height: 50 },

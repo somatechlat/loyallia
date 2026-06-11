@@ -65,10 +65,15 @@ def list_notifications(
 def mark_notification_read(request, notification_id: str):
     """Mark a notification as read."""
     customer = _get_customer_or_403(request)
-    notification = get_object_or_404(Notification, id=notification_id, customer=customer)
+    notification = get_object_or_404(
+        Notification, id=notification_id, customer=customer
+    )
     notification.mark_as_read()
 
-    return {"success": True, "message": get_message_for_request("NOTIFICATION_MARKED_READ", request)}
+    return {
+        "success": True,
+        "message": get_message_for_request("NOTIFICATION_MARKED_READ", request),
+    }
 
 
 @router.post(
@@ -79,10 +84,15 @@ def mark_notification_read(request, notification_id: str):
 def mark_notification_clicked(request, notification_id: str):
     """Mark a notification as clicked (action taken)."""
     customer = _get_customer_or_403(request)
-    notification = get_object_or_404(Notification, id=notification_id, customer=customer)
+    notification = get_object_or_404(
+        Notification, id=notification_id, customer=customer
+    )
     notification.mark_as_clicked()
 
-    return {"success": True, "message": get_message_for_request("NOTIFICATION_ACTION_RECORDED", request)}
+    return {
+        "success": True,
+        "message": get_message_for_request("NOTIFICATION_ACTION_RECORDED", request),
+    }
 
 
 @router.delete(
@@ -91,6 +101,8 @@ def mark_notification_clicked(request, notification_id: str):
 def delete_notification(request, notification_id: str):
     """Delete a notification."""
     customer = _get_customer_or_403(request)
-    notification = get_object_or_404(Notification, id=notification_id, customer=customer)
+    notification = get_object_or_404(
+        Notification, id=notification_id, customer=customer
+    )
     notification.delete()
     return HttpResponse(status=204)

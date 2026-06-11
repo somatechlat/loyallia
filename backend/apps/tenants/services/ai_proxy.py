@@ -79,7 +79,7 @@ def chat_with_ai(
         request_data["model"] = model
 
     try:
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=settings.HTTP_TIMEOUT_AI_PROXY) as client:
             resp = client.post(
                 f"{agent_base_url}/api_message",
                 json=request_data,

@@ -6,6 +6,7 @@
 
 import React, { useCallback } from 'react';
 import type { DiscountCardConfig } from '@/components/wallet/types/card-type-config';
+import { IconPicker } from '@/components/wallet/studio/IconPicker';
 
 export interface DiscountTabProps {
   config: DiscountCardConfig;
@@ -17,57 +18,6 @@ const DISPLAY_STYLES: Array<{ value: NonNullable<DiscountCardConfig['percentageD
   { value: 'expanded', label: 'Expandido' },
   { value: 'badge', label: 'Insignia' },
 ];
-
-function DiscountPreview({ config }: { config: DiscountCardConfig }) {
-  return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-3">
-      <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Niveles de Descuento</p>
-      {config.tiers.length === 0 ? (
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center py-2">
-          Sin niveles configurados
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {config.tiers.map((tier, i) => {
-            const isCompact = config.percentageDisplayStyle === 'compact';
-            return (
-              <div
-                key={i}
-                className="flex items-center gap-2 p-2 rounded-md bg-neutral-50 dark:bg-neutral-700/50"
-              >
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                  style={{ backgroundColor: config.progressBarColor }}
-                >
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate">
-                    {tier.tierName}
-                  </p>
-                  {!isCompact && (
-                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
-                      Desde ${tier.threshold}
-                    </p>
-                  )}
-                </div>
-                <span
-                  className={`text-xs font-bold ${
-                    config.percentageDisplayStyle === 'badge'
-                      ? 'px-2 py-0.5 rounded-full bg-blue-600 text-white'
-                      : 'text-blue-600 dark:text-blue-400'
-                  }`}
-                >
-                  {tier.discountPercentage}%
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function DiscountTab({ config, onChange }: DiscountTabProps) {
   const addTier = useCallback(() => {
@@ -96,14 +46,29 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
   );
 
   return (
-    <div className="space-y-5">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
         Configuración de Descuentos por Niveles
       </h3>
 
+      {/* Discount banner text */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+          Texto del banner de descuento
+        </label>
+        <input
+          type="text"
+          value={config.discountBannerText}
+          onChange={(e) => onChange({ discountBannerText: e.target.value })}
+          placeholder="Ej: ¡Descuentos exclusivos por nivel!"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          data-testid="discount-banner-text-input"
+        />
+      </div>
+
       {/* Tiers */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Niveles
         </label>
         {config.tiers.map((tier, i) => (
@@ -117,7 +82,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
               value={tier.tierName}
               onChange={(e) => updateTier(i, 'tierName', e.target.value)}
               placeholder="Nombre"
-              className="flex-1 min-w-0 px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 min-w-0 px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               data-testid={`tier-name-${i}`}
             />
             <input
@@ -131,7 +96,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
                 }
               }}
               placeholder="Desde $"
-              className="w-20 px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-20 px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               data-testid={`tier-threshold-${i}`}
             />
             <input
@@ -146,7 +111,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
                 }
               }}
               placeholder="%"
-              className="w-16 px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
+              className="w-16 px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
               data-testid={`tier-percentage-${i}`}
             />
             <button
@@ -166,16 +131,28 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
         <button
           type="button"
           onClick={addTier}
-          className="w-full px-3 py-2 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+          className="w-full px-2 py-1 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 text-xs text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
           data-testid="add-tier-btn"
         >
           + Agregar nivel
         </button>
       </div>
 
+      {/* Tier badge icon */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+          Icono de insignia de nivel
+        </label>
+        <IconPicker
+          value={config.tierBadgeIcons?.[0] ?? ''}
+          onChange={(iconId) => onChange({ tierBadgeIcons: [iconId] })}
+          category="badge"
+        />
+      </div>
+
       {/* Tier indicator ring color */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Color de indicador de nivel
         </label>
         <div className="flex items-center gap-2">
@@ -192,7 +169,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
 
       {/* Percentage display style */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Estilo de visualización de porcentaje
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -201,7 +178,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
               key={opt.value}
               type="button"
               onClick={() => onChange({ percentageDisplayStyle: opt.value })}
-              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`px-2 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 config.percentageDisplayStyle === opt.value
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                   : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -212,14 +189,6 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Live preview */}
-      <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
-        </label>
-        <DiscountPreview config={config} />
       </div>
     </div>
   );

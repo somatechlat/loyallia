@@ -200,7 +200,7 @@ def hard_delete_tenant(
     return tenant_name
 
 
-@shared_task(queue="default", bind=True, max_retries=2)
+@shared_task(queue="default", bind=True, max_retries=settings.CELERY_MAX_RETRIES_LOW)
 def delete_tenant_cascade(self, tenant_id: str):
     """
     LOPDP Art. 18: Hard-delete ALL tenant data.

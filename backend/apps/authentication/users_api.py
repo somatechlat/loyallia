@@ -283,7 +283,7 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
     cache.set(
         f"phone_verify_sid:{payload.phone_number}",
         result.get("sid", ""),
-        timeout=300,
+        timeout=settings.CACHE_TTL_OTP,
     )
 
     return PhoneVerifyStartOut(
@@ -313,13 +313,13 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
     # Rate limit check
     cache_key = f"otp_attempts:phone_verify:{payload.phone_number}"
     attempts = cache.get(cache_key, 0)
-    if attempts >= 5:
+    if attempts >= settings.OTP_MAX_ATTEMPTS:
         return PhoneVerifyCheckOut(
             success=False,
             message=get_message("VERIFY_RATE_LIMITED", minutes=15),
             valid=False,
         )
-    cache.set(cache_key, attempts + 1, 900)
+    cache.set(cache_key, attempts + 1, settings.CACHE_TTL_OTP)
 
     # Retrieve SID from Redis
     sid = cache.get(f"phone_verify_sid:{payload.phone_number}", "")

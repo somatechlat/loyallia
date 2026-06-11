@@ -17,6 +17,8 @@ import io
 import logging
 import time
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +50,7 @@ def generate_qr_token(serial: str, secret: str, timestamp: int | None = None) ->
 
 
 def verify_qr_token(
-    token: str, secret: str, max_age_seconds: int = 86400
+    token: str, secret: str, max_age_seconds: int = settings.PASS_QR_MAX_AGE_SECONDS
 ) -> tuple[bool, str | None]:
     """
     Verify a QR token.
@@ -71,7 +73,9 @@ def verify_qr_token(
 
         # Age check
         age = int(time.time()) - timestamp
-        if age > max_age_seconds or age < -300:  # Allow 5-min clock skew
+        if (
+            age > max_age_seconds or age < -settings.PASS_QR_CLOCK_SKEW_SECONDS
+        ):  # Allow clock skew
             return False, None
 
         # HMAC check (constant-time comparison)
@@ -106,8 +110,8 @@ def generate_qr_image(token: str) -> bytes:
     qr = qrcode.QRCode(
         version=None,  # Auto-size
         error_correction=constants.ERROR_CORRECT_M,
-        box_size=10,
-        border=4,
+        box_size=settings.PASS_QR_BOX_SIZE,
+        border=settings.PASS_QR_BORDER,
     )
     qr.add_data(token)
     qr.make(fit=True)

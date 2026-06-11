@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { LockedFeature } from './LockedFeature';
 import { FieldLimitIndicator } from './FieldLimitIndicator';
@@ -24,33 +25,6 @@ export interface FieldStudioProps {
 
 const FIELD_GROUPS: FieldGroup[] = ['header', 'primary', 'secondary', 'auxiliary', 'back'];
 
-const GROUP_TITLES: Record<FieldGroup, { title: string; subtitle?: string }> = {
-  header: {
-    title: '🏷️ CAMPOS DE CABECERA — Máximo 3',
-    subtitle: '(Visibles incluso cuando el pase está en pila)',
-  },
-  primary: {
-    title: '⭐ CAMPO PRINCIPAL — 1 campo grande y prominente',
-  },
-  secondary: {
-    title: '📋 CAMPOS SECUNDARIOS — Hasta 4 (2 en Apple si barcode rect.)',
-  },
-  auxiliary: {
-    title: '🔍 CAMPOS AUXILIARES — Hasta 4 (2 en Apple si barcode rect.)',
-  },
-  back: {
-    title: '📄 DETALLES / TRASERO — Sin límite',
-  },
-};
-
-const GROUP_ADD_LABELS: Record<FieldGroup, string> = {
-  header: 'Añadir campo de cabecera',
-  primary: 'Añadir campo principal',
-  secondary: 'Añadir campo secundario',
-  auxiliary: 'Añadir campo auxiliar',
-  back: 'Añadir campo de detalles',
-};
-
 function createEmptyField(group: FieldGroup, order: number): UnifiedField {
   return {
     id: `field-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -61,6 +35,7 @@ function createEmptyField(group: FieldGroup, order: number): UnifiedField {
     showOnApple: true,
     showOnGoogle: true,
     isDynamic: false,
+    dataType: 'text',
     appleOptions: {},
     googleOptions: { isPredefined: false },
     notifications: {},
@@ -98,6 +73,7 @@ function ArrowDownIcon({ className }: { className?: string }) {
 /* ── Component ────────────────────────────────────────────────────── */
 
 export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }: FieldStudioProps) {
+  const { t } = useI18n();
   const planFeatures = usePlanFeatures();
   const [dragOverGroup, setDragOverGroup] = useState<FieldGroup | null>(null);
 
@@ -123,8 +99,10 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
   }, [fields]);
 
   const handleUpdateField = useCallback(
-    (updated: UnifiedField) => {
-      onUpdateFields((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+    (fieldId: string, partial: Partial<UnifiedField>) => {
+      onUpdateFields((prev) =>
+        prev.map((f) => (f.id === fieldId ? { ...f, ...partial } : f))
+      );
     },
     [onUpdateFields]
   );
@@ -132,6 +110,17 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
   const handleDeleteField = useCallback(
     (fieldId: string) => {
       onUpdateFields((prev) => prev.filter((f) => f.id !== fieldId));
+    },
+    [onUpdateFields]
+  );
+
+  const handleToggleVisibility = useCallback(
+    (fieldId: string, visible: boolean) => {
+      onUpdateFields((prev) =>
+        prev.map((f) =>
+          f.id === fieldId ? { ...f, showOnApple: visible, showOnGoogle: visible } : f
+        )
+      );
     },
     [onUpdateFields]
   );
@@ -253,18 +242,18 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-2">
       {!planFeatures.hasAdvancedFields && (
         <LockedFeature
-          featureName="Campos avanzados"
+          featureName={t('wallet.studio.locked.advancedFields')}
           requiredPlan="Profesional"
           isLocked={!planFeatures.hasAdvancedFields}
         >
-          <div className="h-12" />
+          <div className="h-8" />
         </LockedFeature>
       )}
       {combinedWarning && (
-        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300">
+        <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
           ⚠️ {combinedWarning.message}
         </div>
       )}
@@ -273,7 +262,6 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
         const validation = groupValidations.find((v) => v.group === group);
         const canAdd = validation ? validation.current < validation.max : false;
         const isDragOver = dragOverGroup === group;
-        const isCompactGroup = group === 'secondary' || group === 'auxiliary';
 
         return (
           <div
@@ -288,16 +276,14 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
             onDrop={(e) => handleDrop(e, group)}
           >
             {/* Group header */}
-            <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-t-lg border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+            <div className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800/50 rounded-t-lg border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-                  {GROUP_TITLES[group].title}
+                <h4 className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                  {t(`wallet.studio.group.${group}.title`)}
                 </h4>
-                {GROUP_TITLES[group].subtitle && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    {GROUP_TITLES[group].subtitle}
-                  </p>
-                )}
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0">
+                  {t(`wallet.studio.group.${group}.subtitle`, { max: validation?.max ?? 0 })}
+                </p>
               </div>
               {validation && (
                 <FieldLimitIndicator
@@ -309,10 +295,10 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
             </div>
 
             {/* Fields */}
-            <div className="p-3 space-y-2 min-h-[48px]">
+            <div className="p-2 space-y-1.5 min-h-[36px]">
               {groupFields.length === 0 ? (
-                <div className="text-center py-6 text-sm text-neutral-400 dark:text-neutral-500">
-                  No hay campos en este grupo
+                <div className="text-center py-3 text-xs text-neutral-400 dark:text-neutral-500">
+                  {t('wallet.studio.group.empty')}
                 </div>
               ) : (
                 groupFields.map((field, index) => (
@@ -320,14 +306,13 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
                     <FieldCard
                       field={field}
                       cardType={cardType}
-                      isCompact={isCompactGroup}
-                      showAdvanced={planFeatures.hasAdvancedFields}
-                      onUpdate={handleUpdateField}
-                      onDelete={() => handleDeleteField(field.id)}
+                      onUpdateField={handleUpdateField}
+                      onDeleteField={handleDeleteField}
+                      onToggleVisibility={handleToggleVisibility}
                     />
 
                     {/* Reorder buttons */}
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col opacity-0 group-hover/field:opacity-100 focus-within:opacity-100 transition-opacity z-10">
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col opacity-0 group-hover/field:opacity-100 focus-within:opacity-100 transition-opacity z-10 bg-white/90 dark:bg-neutral-800/90 rounded shadow-sm">
                       {index > 0 && (
                         <button
                           type="button"
@@ -336,8 +321,8 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
                             handleReorder(field.id, 'up');
                           }}
                           className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          aria-label="Move up"
-                          title="Move up"
+                          aria-label={t('wallet.studio.field.moveUp')}
+                          title={t('wallet.studio.field.moveUp')}
                         >
                           <ArrowUpIcon className="w-3 h-3" />
                         </button>
@@ -350,8 +335,8 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
                             handleReorder(field.id, 'down');
                           }}
                           className="p-0.5 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          aria-label="Move down"
-                          title="Move down"
+                          aria-label={t('wallet.studio.field.moveDown')}
+                          title={t('wallet.studio.field.moveDown')}
                         >
                           <ArrowDownIcon className="w-3 h-3" />
                         </button>
@@ -364,18 +349,18 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
 
             {/* Add button */}
             {canAdd && (
-              <div className="px-3 pb-3">
+              <div className="px-2 pb-2">
                 <button
                   type="button"
                   onClick={() => handleAddField(group)}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label={`Añadir campo a ${GROUP_TITLES[group].title}`}
+                  className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label={t('wallet.studio.group.add', { group: t(`wallet.studio.group.${group}.title`) })}
                 >
-                  <PlusIcon className="w-3.5 h-3.5" />
-                  {GROUP_ADD_LABELS[group]}
+                  <PlusIcon className="w-3 h-3" />
+                  {t(`wallet.studio.group.add.${group}`)}
                   {validation && validation.max < Infinity && (
                     <span className="text-neutral-400 dark:text-neutral-500">
-                      ({validation.max - validation.current} restantes)
+                      ({validation.max - validation.current})
                     </span>
                   )}
                 </button>

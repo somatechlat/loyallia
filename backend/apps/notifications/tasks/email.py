@@ -7,18 +7,19 @@ Email campaign delivery task with rich HTML templates and per-customer tracking.
 import logging
 
 from celery import shared_task
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=300,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_EXTRA_LONG,
     queue="email",
     name="apps.notifications.tasks.send_email_campaign",
-    soft_time_limit=600,
-    time_limit=660,
+    soft_time_limit=settings.CELERY_SOFT_TIME_LIMIT_NOTIFICATIONS_EMAIL,
+    time_limit=settings.CELERY_TIME_LIMIT_NOTIFICATIONS_EMAIL,
 )
 def send_email_campaign(
     self,
@@ -113,7 +114,9 @@ def send_email_campaign(
     error_summary = ""
 
     try:
-        for customer in audience.iterator(chunk_size=50):
+        for customer in audience.iterator(
+            chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL
+        ):
             delivery_log = CampaignDeliveryLog.objects.create(
                 campaign_run=campaign_run,
                 customer=customer,

@@ -58,13 +58,6 @@ describe('BarcodeTab', () => {
     expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith({ altText: 'Mi Código' });
   });
 
-  it('renders barcode preview', () => {
-    render(<BarcodeTab {...baseProps} />);
-    expect(screen.getByText(/vista previa/i)).toBeDefined();
-    const svg = document.querySelector('svg');
-    expect(svg).toBeTruthy();
-  });
-
   it('shows rectangular warning for PDF417', () => {
     render(
       <BarcodeTab
@@ -72,7 +65,7 @@ describe('BarcodeTab', () => {
         barcode={createMockBarcode({ format: 'PDF417' })}
       />
     );
-    expect(screen.getByText(/PDF417 y Code 128 son rectangulares/i)).toBeDefined();
+    expect(screen.getByText(/PDF417 y Code 128 reducen espacio/i)).toBeDefined();
   });
 
   it('shows rectangular warning for Code 128', () => {
@@ -82,30 +75,24 @@ describe('BarcodeTab', () => {
         barcode={createMockBarcode({ format: 'CODE128' })}
       />
     );
-    expect(screen.getByText(/PDF417 y Code 128 son rectangulares/i)).toBeDefined();
+    expect(screen.getByText(/PDF417 y Code 128 reducen espacio/i)).toBeDefined();
   });
 
   it('does not show rectangular warning for QR Code', () => {
     render(<BarcodeTab {...baseProps} barcode={createMockBarcode({ format: 'QR_CODE' })} />);
-    expect(screen.queryByText(/PDF417 y Code 128 son rectangulares/i)).toBeNull();
-  });
-
-  it('shows extra format rows', () => {
-    render(<BarcodeTab {...baseProps} />);
-    expect(screen.getByText('Data Matrix')).toBeDefined();
-    expect(screen.getByText('Rotating Barcode')).toBeDefined();
+    expect(screen.queryByText(/PDF417 y Code 128 reducen espacio/i)).toBeNull();
   });
 
   it('toggles customer id checkbox', () => {
     render(<BarcodeTab {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: /id de cliente/i });
+    const checkbox = screen.getByRole('checkbox', { name: /ID cliente/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
   });
 
   it('toggles program id checkbox', () => {
     render(<BarcodeTab {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: /id de programa/i });
+    const checkbox = screen.getByRole('checkbox', { name: /ID programa/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
   });
@@ -115,10 +102,5 @@ describe('BarcodeTab', () => {
     const checkbox = screen.getByRole('checkbox', { name: /^timestamp$/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
-  });
-
-  it('shows probar en dispositivo button', () => {
-    render(<BarcodeTab {...baseProps} />);
-    expect(screen.getByRole('button', { name: /probar en dispositivo/i })).toBeDefined();
   });
 });

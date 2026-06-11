@@ -4,6 +4,7 @@ Central registration of all sub-routers.
 Mounted at /api/v1/ in loyallia/urls.py
 """
 
+import logging
 from typing import Any
 
 from django.conf import settings
@@ -39,6 +40,9 @@ from apps.tenants.super_admin_api import router as super_admin_router
 from apps.tenants.super_admin_api.platform_reset import router as platform_reset_router
 from apps.transactions.api import router as transactions_router
 from apps.transactions.api import scanner_router
+from apps.wallet.api import router as wallet_template_router
+
+logger = logging.getLogger(__name__)
 
 api = NinjaAPI(
     title="Loyallia API",
@@ -87,7 +91,7 @@ def readiness_check(request: HttpRequest):
         from django.core.cache import cache
 
         start = time.monotonic()
-        cache.set("_health_check", "ok", timeout=5)
+        cache.set("_health_check", "ok", timeout=settings.CACHE_TTL_HEALTH_CHECK)
         val = cache.get("_health_check")
         checks["cache"] = {
             "status": "ok" if val == "ok" else "error",
@@ -123,7 +127,9 @@ def celery_health(request: HttpRequest):
     try:
         from loyallia.celery import app as celery_app
 
-        inspector = celery_app.control.inspect(timeout=2.0)
+        inspector = celery_app.control.inspect(
+            timeout=settings.HTTP_TIMEOUT_HEALTH_CHECK_CELERY
+        )
         ping_result = inspector.ping()
         if ping_result:
             workers = list(ping_result.keys())
@@ -167,6 +173,7 @@ api.add_router("/admin/", super_admin_router, tags=["Super Admin"])
 api.add_router("/admin/reset/", platform_reset_router, tags=["Super Admin"])
 api.add_router("/portal/", portal_router, tags=["Customer Portal"])
 api.add_router("/", wallet_router, tags=["Wallet"])
+api.add_router("/wallet/templates/", wallet_template_router, tags=["Wallet Templates"])
 api.add_router("/upload/", upload_router, tags=["Uploads"])
 api.add_router("/agent/", agent_api_router, tags=["Agent API"])
 api.add_router("/admin/audit/", audit_router, tags=["Audit"])
@@ -178,9 +185,33 @@ api.add_router("/admin/backups/", backup_router, tags=["Backup & Restore"])
 def mailjet_webhook(request, payload: list[dict[str, Any]]) -> dict:
     """Receive Mailjet event webhooks for email delivery tracking.
 
-    SEC: No authentication required  Mailjet sends signed requests.
-    IP whitelisting should be configured at Nginx level.
+    SEC: Signature verification via HMAC-SHA256. Mailjet secret must be
+    configured in Vault under 'mailjet_secret_key'. Nginx IP whitelisting
+    is recommended as a secondary defense.
     """
+    import hmac
+    from hashlib import sha256
+
+    from common.vault import get_secret
+
+    signature = request.headers.get("X-Mailjet-Signature", "")
+    if not signature:
+        logger.warning("Mailjet webhook rejected: missing signature header")
+        raise HttpError(401, "Unauthorized")
+
+    secret = get_secret("mailjet_secret_key", default="")
+    if secret:
+        body = request.body or b""
+        expected = hmac.new(secret.encode("utf-8"), body, sha256).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            logger.warning("Mailjet webhook rejected: invalid signature")
+            raise HttpError(401, "Unauthorized")
+    else:
+        logger.warning(
+            "Mailjet webhook accepted without signature verification: "
+            "mailjet_secret_key not configured in Vault"
+        )
+
     from apps.notifications.api.webhooks import process_mailjet_event
 
     processed = 0

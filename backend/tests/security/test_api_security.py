@@ -195,7 +195,7 @@ class TestCrossTenantIsolation(TestCase):
 
         req = self._request(self.owner_a)
         with self.assertRaises((HttpError, Http404)) as ctx:
-            get_program(req, str(self.card_b.id))
+            get_program(req, str(self.card_b.id))  # type: ignore[reportArgumentType]
         if hasattr(ctx.exception, "status_code"):
             self.assertIn(ctx.exception.status_code, (403, 404))
 
@@ -207,7 +207,7 @@ class TestCrossTenantIsolation(TestCase):
 
         req = self._request(self.owner_b)
         with self.assertRaises((HttpError, Http404)) as ctx:
-            get_program(req, str(self.card_a.id))
+            get_program(req, str(self.card_a.id))  # type: ignore[reportArgumentType]
         if hasattr(ctx.exception, "status_code"):
             self.assertIn(ctx.exception.status_code, (403, 404))
 
@@ -243,7 +243,7 @@ class TestRoleBoundariesAPI(TestCase):
         from apps.cards.api import CardCreateIn, create_program
 
         req = self._request(self.manager)
-        payload = CardCreateIn(name="Hacker", card_type="stamp")
+        payload = CardCreateIn(name="Hacker", card_type="stamp")  # type: ignore[reportArgumentType]
         with self.assertRaises(HttpError) as ctx:
             create_program(req, payload)
         self.assertEqual(ctx.exception.status_code, 403)

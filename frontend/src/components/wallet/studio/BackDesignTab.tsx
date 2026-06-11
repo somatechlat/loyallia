@@ -401,271 +401,91 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
   const customLinks = backContent.links.filter((l) => !quickLinkLabels.includes(l.label));
 
   return (
-    <div className="space-y-6">
-      {/* ── CAMPOS DEL REVERSO ── */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <span role="img" aria-label="document">
-            📄
-          </span>
-          CAMPOS DEL REVERSO — Sin límite
+    <div className="space-y-2">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
+          <span role="img" aria-label="document">📄</span> Campos del Reverso
         </h3>
-
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {sortedFields.length === 0 ? (
-            <div className="text-center py-6 text-sm text-neutral-400 dark:text-neutral-500">
-              No hay campos en el reverso
-            </div>
+            <div className="text-center py-2 text-xs text-neutral-400 dark:text-neutral-500">Sin campos</div>
           ) : (
             sortedFields.map((field) => (
-              <BackFieldRow
-                key={field.id}
-                field={field}
-                onUpdate={handleUpdateBackField}
-                onDelete={() => handleDeleteBackField(field.id)}
-              />
+              <BackFieldRow key={field.id} field={field} onUpdate={handleUpdateBackField} onDelete={() => handleDeleteBackField(field.id)} />
             ))
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={handleAddBackField}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Añadir campo del reverso"
-        >
-          <PlusIcon className="w-3.5 h-3.5" />
-          Añadir campo del reverso
+        <button type="button" onClick={handleAddBackField} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors" aria-label="Añadir campo del reverso">
+          <PlusIcon className="w-3 h-3" /> Añadir campo
         </button>
       </section>
 
-      {/* ── ENLACES RÁPIDOS ── */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <LinkIcon className="w-4 h-4" />
-          ENLACES RÁPIDOS
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
+          <LinkIcon className="w-3.5 h-3.5" /> Enlaces Rápidos
         </h3>
-
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {QUICK_LINK_DEFAULTS.map((defaults) => {
             const link = backContent.links.find((l) => l.label === defaults.label);
             const checked = Boolean(link);
             return (
-              <div key={defaults.label} className="flex items-start gap-3">
-                <label className="inline-flex items-center gap-2 cursor-pointer pt-1.5">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => handleToggleQuickLink(defaults.label, e.target.checked)}
-                    className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </label>
-                <div className="flex-1 space-y-1">
-                  <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                    {defaults.label}
-                  </label>
-                  <input
-                    type="text"
-                    value={link?.url ?? ''}
-                    onChange={(e) => handleUpdateQuickLinkUrl(defaults.label, e.target.value)}
-                    disabled={!checked}
-                    placeholder={defaults.defaultUrl || `URL de ${defaults.label}`}
-                    className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
+              <div key={defaults.label} className="flex items-center gap-2">
+                <input type="checkbox" checked={checked} onChange={(e) => handleToggleQuickLink(defaults.label, e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+                <div className="flex-1">
+                  <label className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{defaults.label}</label>
+                  <input type="text" value={link?.url ?? ''} onChange={(e) => handleUpdateQuickLinkUrl(defaults.label, e.target.value)} disabled={!checked} placeholder={defaults.defaultUrl || 'URL'} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
                 </div>
               </div>
             );
           })}
         </div>
-
         {customLinks.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
-            <h4 className="text-xs font-medium text-neutral-600 dark:text-neutral-400">Enlaces personalizados</h4>
+          <div className="space-y-1 pt-1 border-t border-neutral-200 dark:border-neutral-700">
+            <h4 className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Personalizados</h4>
             {customLinks.map((link) => (
-              <div key={link.id} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={link.label}
-                  onChange={(e) => {
-                    onUpdateBackContent({
-                      links: backContent.links.map((l) => (l.id === link.id ? { ...l, label: e.target.value } : l)),
-                    });
-                  }}
-                  placeholder="Nombre del enlace"
-                  className="flex-1 px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  value={link.url}
-                  onChange={(e) => {
-                    onUpdateBackContent({
-                      links: backContent.links.map((l) => (l.id === link.id ? { ...l, url: e.target.value } : l)),
-                    });
-                  }}
-                  placeholder="https://..."
-                  className="flex-1 px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <select
-                  value={link.type}
-                  onChange={(e) => {
-                    onUpdateBackContent({
-                      links: backContent.links.map((l) =>
-                        l.id === link.id ? { ...l, type: e.target.value as LinkType } : l
-                      ),
-                    });
-                  }}
-                  className="px-2 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {LINK_TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteCustomLink(link.id)}
-                  className="p-1.5 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
-                  aria-label="Eliminar enlace"
-                >
-                  <TrashIcon className="w-3.5 h-3.5" />
-                </button>
+              <div key={link.id} className="flex items-center gap-1">
+                <input type="text" value={link.label} onChange={(e) => { onUpdateBackContent({ links: backContent.links.map((l) => (l.id === link.id ? { ...l, label: e.target.value } : l)) }); }} placeholder="Nombre" className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={link.url} onChange={(e) => { onUpdateBackContent({ links: backContent.links.map((l) => (l.id === link.id ? { ...l, url: e.target.value } : l)) }); }} placeholder="https://" className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button type="button" onClick={() => handleDeleteCustomLink(link.id)} className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all" aria-label="Eliminar"><TrashIcon className="w-3 h-3" /></button>
               </div>
             ))}
           </div>
         )}
-
-        <button
-          type="button"
-          onClick={handleAddCustomLink}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Añadir enlace"
-        >
-          <PlusIcon className="w-3.5 h-3.5" />
-          Añadir enlace
+        <button type="button" onClick={handleAddCustomLink} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+          <PlusIcon className="w-3 h-3" /> Añadir enlace
         </button>
       </section>
 
-      {/* ── ENLACE A LA APP ── */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <AppIcon className="w-4 h-4" />
-          ENLACE A LA APP
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
+          <AppIcon className="w-3.5 h-3.5" /> Enlace a la App
         </h3>
-
         <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={appLinkEnabled}
-            onChange={(e) => handleToggleAppLink(e.target.checked)}
-            className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-sm text-neutral-700 dark:text-neutral-300">
-            Añadir botón &quot;Abrir en la app&quot;
-          </span>
+          <input type="checkbox" checked={appLinkEnabled} onChange={(e) => handleToggleAppLink(e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+          <span className="text-xs text-neutral-700 dark:text-neutral-300">Botón &quot;Abrir en app&quot;</span>
         </label>
-
         {appLinkEnabled && (
-          <div className="space-y-3 pt-2 border-t border-neutral-200 dark:border-neutral-700">
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                🍎 Apple (appLaunchURL)
-              </label>
-              <input
-                type="text"
-                value={backContent.appLink?.iosAppLink ?? ''}
-                onChange={(e) => handleUpdateAppLink({ iosAppLink: e.target.value })}
-                placeholder="https://apps.apple.com/..."
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                🤖 Google (appLinkData)
-              </label>
-              <input
-                type="text"
-                value={backContent.appLink?.androidAppPackage ?? ''}
-                onChange={(e) => handleUpdateAppLink({ androidAppPackage: e.target.value })}
-                placeholder="com.tuempresa.app (Android package)"
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={backContent.appLink?.androidAppLink ?? ''}
-                onChange={(e) => handleUpdateAppLink({ androidAppLink: e.target.value })}
-                placeholder="https://play.google.com/store/apps/... (iOS URL)"
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={backContent.appLink?.iosAppId ?? ''}
-                onChange={(e) => handleUpdateAppLink({ iosAppId: e.target.value })}
-                placeholder="https://tuapp.com/... (Web URL)"
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div className="space-y-1.5 pt-1.5 border-t border-neutral-200 dark:border-neutral-700">
+            <input type="text" value={backContent.appLink?.iosAppLink ?? ''} onChange={(e) => handleUpdateAppLink({ iosAppLink: e.target.value })} placeholder="https://apps.apple.com/..." className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="text" value={backContent.appLink?.androidAppPackage ?? ''} onChange={(e) => handleUpdateAppLink({ androidAppPackage: e.target.value })} placeholder="com.app (Android package)" className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         )}
       </section>
 
-      {/* ── IMÁGENES EN DETALLES ── */}
-      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <ImageIcon className="w-4 h-4" />
-          IMÁGENES EN DETALLES
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300">
-            Google Wallet exclusivo
-          </span>
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5" /> Imágenes en Detalles <span className="px-1 py-0 rounded text-[9px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300">Google</span>
         </h3>
-
-        <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
-          <span className="text-base leading-none mt-0.5" role="img" aria-label="warning">
-            ⚠️
-          </span>
-          <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-            Apple Wallet no soporta imágenes en el reverso
-          </p>
-        </div>
-
-        <div className="space-y-2">
+        <div className="space-y-1">
           {(backContent.detailImages ?? []).map((image, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={image.url}
-                onChange={(e) => handleUpdateDetailImage(index, { url: e.target.value })}
-                placeholder="https://..."
-                className="flex-1 px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={image.description ?? ''}
-                onChange={(e) => handleUpdateDetailImage(index, { description: e.target.value })}
-                placeholder="Descripción"
-                className="w-32 px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={() => handleDeleteDetailImage(index)}
-                className="p-1.5 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
-                aria-label="Eliminar imagen"
-              >
-                <TrashIcon className="w-3.5 h-3.5" />
-              </button>
+            <div key={index} className="flex items-center gap-1">
+              <input type="text" value={image.url} onChange={(e) => handleUpdateDetailImage(index, { url: e.target.value })} placeholder="https://..." className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button type="button" onClick={() => handleDeleteDetailImage(index)} className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"><TrashIcon className="w-3 h-3" /></button>
             </div>
           ))}
         </div>
-
-        <button
-          type="button"
-          onClick={handleAddDetailImage}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Añadir imagen a la vista de detalles"
-        >
-          <PlusIcon className="w-3.5 h-3.5" />
-          Añadir imagen a la vista de detalles
+        <button type="button" onClick={handleAddDetailImage} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+          <PlusIcon className="w-3 h-3" /> Añadir imagen
         </button>
       </section>
     </div>

@@ -5,6 +5,7 @@ Production-sensitive values are loaded from Vault. Non-secret routing values may
 come from environment or compose configuration.
 """
 
+import decimal
 import os
 from pathlib import Path
 
@@ -64,6 +65,7 @@ LOCAL_APPS = [
     "apps.backup.apps.BackupConfig",
     "apps.redemption.apps.RedemptionConfig",
     "apps.ai.apps.AIConfig",
+    "apps.wallet.apps.WalletConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -231,6 +233,7 @@ CACHES = {
 # CELERY CONFIGURATION Extracted to celery_config.py (Rule 245)
 
 from loyallia.settings.celery_config import *  # noqa: F401,F403,E402
+from loyallia.settings.constants import *  # noqa: F401,F403,E402
 
 # FILE STORAGE MinIO (S3-compatible)
 
@@ -473,7 +476,9 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
 # Provider-agnostic settings loaded from Vault; editable via PlatformSetting.
 
 AI_API_KEY = get_secret("ai_api_key", default="")
-AI_API_BASE_URL = get_secret("ai_api_base_url", default="https://api.groq.com/openai/v1")
+AI_API_BASE_URL = get_secret(
+    "ai_api_base_url", default="https://api.groq.com/openai/v1"
+)
 AI_MODEL = get_secret("ai_model", default="openai/gpt-oss-120b")
 _ai_max_tokens = get_secret("AI_MAX_TOKENS", default="4096")
 AI_MAX_TOKENS = int(_ai_max_tokens) if _ai_max_tokens else 4096
@@ -481,6 +486,10 @@ AI_TEMPERATURE = config("AI_TEMPERATURE", default=0.7, cast=float)
 _ai_timeout = get_secret("AI_TIMEOUT_SECONDS", default="30")
 AI_TIMEOUT_SECONDS = int(_ai_timeout) if _ai_timeout else 30
 AI_ENABLED = bool(AI_API_KEY)
+_ai_cost = get_secret("ai_cost_per_1k_tokens", default="0.003")
+AI_COST_PER_1K_TOKENS = (
+    decimal.Decimal(_ai_cost) if _ai_cost else decimal.Decimal("0.003")
+)
 
 # SENTRY Error Tracking (B-013)
 

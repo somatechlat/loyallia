@@ -29,7 +29,17 @@ from typing import Any
 
 from django.conf import settings
 
-from . import auth, billing, campaigns, common, wallet
+from . import (
+    auth,
+    billing,
+    campaigns,
+    common,
+    customers,
+    operations,
+    programs,
+    transactions,
+    wallet,
+)
 
 # SUPPORTED LANGUAGES
 SUPPORTED_LANGUAGES = ("es", "en", "fr", "de")
@@ -42,6 +52,10 @@ _MESSAGES_ES.update(auth._MESSAGES_ES)
 _MESSAGES_ES.update(billing._MESSAGES_ES)
 _MESSAGES_ES.update(campaigns._MESSAGES_ES)
 _MESSAGES_ES.update(common._MESSAGES_ES)
+_MESSAGES_ES.update(customers._MESSAGES_ES)
+_MESSAGES_ES.update(operations._MESSAGES_ES)
+_MESSAGES_ES.update(programs._MESSAGES_ES)
+_MESSAGES_ES.update(transactions._MESSAGES_ES)
 _MESSAGES_ES.update(wallet._MESSAGES_ES)
 
 _MESSAGES_EN: dict[str, str] = {}
@@ -49,6 +63,10 @@ _MESSAGES_EN.update(auth._MESSAGES_EN)
 _MESSAGES_EN.update(billing._MESSAGES_EN)
 _MESSAGES_EN.update(campaigns._MESSAGES_EN)
 _MESSAGES_EN.update(common._MESSAGES_EN)
+_MESSAGES_EN.update(customers._MESSAGES_EN)
+_MESSAGES_EN.update(operations._MESSAGES_EN)
+_MESSAGES_EN.update(programs._MESSAGES_EN)
+_MESSAGES_EN.update(transactions._MESSAGES_EN)
 _MESSAGES_EN.update(wallet._MESSAGES_EN)
 
 _MESSAGES_FR: dict[str, str] = {}
@@ -56,6 +74,10 @@ _MESSAGES_FR.update(auth._MESSAGES_FR)
 _MESSAGES_FR.update(billing._MESSAGES_FR)
 _MESSAGES_FR.update(campaigns._MESSAGES_FR)
 _MESSAGES_FR.update(common._MESSAGES_FR)
+_MESSAGES_FR.update(customers._MESSAGES_FR)
+_MESSAGES_FR.update(operations._MESSAGES_FR)
+_MESSAGES_FR.update(programs._MESSAGES_FR)
+_MESSAGES_FR.update(transactions._MESSAGES_FR)
 _MESSAGES_FR.update(wallet._MESSAGES_FR)
 
 _MESSAGES_DE: dict[str, str] = {}
@@ -63,6 +85,10 @@ _MESSAGES_DE.update(auth._MESSAGES_DE)
 _MESSAGES_DE.update(billing._MESSAGES_DE)
 _MESSAGES_DE.update(campaigns._MESSAGES_DE)
 _MESSAGES_DE.update(common._MESSAGES_DE)
+_MESSAGES_DE.update(customers._MESSAGES_DE)
+_MESSAGES_DE.update(operations._MESSAGES_DE)
+_MESSAGES_DE.update(programs._MESSAGES_DE)
+_MESSAGES_DE.update(transactions._MESSAGES_DE)
 _MESSAGES_DE.update(wallet._MESSAGES_DE)
 
 

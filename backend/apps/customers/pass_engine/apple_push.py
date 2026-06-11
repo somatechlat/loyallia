@@ -73,7 +73,9 @@ def _get_wwdr_g4_cert() -> str | None:
     import urllib.request
 
     try:
-        with urllib.request.urlopen(_WWDR_G4_URL, timeout=10) as resp:
+        with urllib.request.urlopen(
+            _WWDR_G4_URL, timeout=settings.HTTP_TIMEOUT_WWDR_DOWNLOAD
+        ) as resp:
             der_data = resp.read()
 
         # Convert DER to PEM via openssl
@@ -176,7 +178,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         with httpx.Client(
             http2=True,
             verify=ssl_context,
-            timeout=10.0,
+            timeout=settings.HTTP_TIMEOUT_APPLE_PUSH,
         ) as client:
             response = client.post(
                 url,

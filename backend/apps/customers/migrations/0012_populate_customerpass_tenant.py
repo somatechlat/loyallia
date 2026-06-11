@@ -6,7 +6,9 @@ from django.db import migrations
 def populate_tenant(apps, schema_editor):
     """Populate CustomerPass.tenant from Customer.tenant for existing rows."""
     CustomerPass = apps.get_model("customers", "CustomerPass")
-    for cp in CustomerPass.objects.filter(tenant__isnull=True).select_related("customer"):
+    for cp in CustomerPass.objects.filter(tenant__isnull=True).select_related(
+        "customer"
+    ):
         cp.tenant_id = cp.customer.tenant_id
         cp.save(update_fields=["tenant_id"])
 

@@ -28,15 +28,19 @@ def get_campaign_task(channel: str):
     """
     if channel == "email":
         from apps.notifications.tasks import send_email_campaign
+
         return send_email_campaign
     elif channel == "wallet":
         from apps.notifications.tasks import send_wallet_notification_campaign
+
         return send_wallet_notification_campaign
     elif channel == "whatsapp":
         from apps.notifications.tasks import send_whatsapp_campaign
+
         return send_whatsapp_campaign
     elif channel == "sms":
         from apps.notifications.sms.tasks import send_sms_campaign
+
         return send_sms_campaign
     return None
 
@@ -99,7 +103,9 @@ def build_campaign_task_kwargs(
     return kwargs
 
 
-def schedule_campaign_dispatch(channel: str, tenant_id: str, kwargs: dict, scheduled_at: datetime) -> None:
+def schedule_campaign_dispatch(
+    channel: str, tenant_id: str, kwargs: dict, scheduled_at: datetime
+) -> None:
     """Schedule a campaign dispatch via Celery send_task.
 
     Args:
@@ -156,27 +162,35 @@ def dispatch_campaign_immediately(channel: str, tenant_id: str, kwargs: dict) ->
 
     kwargs = dict(kwargs)
     kwargs["tenant_id"] = tenant_id
-    task_fn.delay(**kwargs)
+    task_fn.delay(**kwargs)  # type: ignore[reportCallIssue]
 
     if channel == "email":
         return {
             "success": True,
-            "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=kwargs.get("segment_id", "")),
+            "message": get_message(
+                "CAMPAIGN_EMAIL_STARTED", segment=kwargs.get("segment_id", "")
+            ),
         }
     elif channel == "wallet":
         return {
             "success": True,
-            "message": get_message("CAMPAIGN_WALLET_STARTED", segment=kwargs.get("segment_id", "")),
+            "message": get_message(
+                "CAMPAIGN_WALLET_STARTED", segment=kwargs.get("segment_id", "")
+            ),
         }
     elif channel == "whatsapp":
         return {
             "success": True,
-            "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=kwargs.get("segment_id", "")),
+            "message": get_message(
+                "CAMPAIGN_WHATSAPP_STARTED", segment=kwargs.get("segment_id", "")
+            ),
         }
     elif channel == "sms":
         return {
             "success": True,
-            "message": get_message("SMS_CAMPAIGN_STARTED", segment=kwargs.get("segment_id", "")),
+            "message": get_message(
+                "SMS_CAMPAIGN_STARTED", segment=kwargs.get("segment_id", "")
+            ),
         }
 
     raise HttpError(

@@ -1,6 +1,7 @@
 """Focused SuperAdmin flow regressions."""
 
 import json
+import secrets
 
 from django.core.cache import cache
 from django.test import RequestFactory, TestCase
@@ -48,7 +49,7 @@ class SuperAdminTenantCreationTest(TestCase):
                     "city": "Quito",
                     "is_primary": True,
                 }
-            ],
+            ],  # type: ignore[reportArgumentType]
         )
 
         response = create_tenant(request, payload)
@@ -153,7 +154,9 @@ class SuperAdminImpersonationTest(TestCase):
             email="owner-impersonation@example.com",
         )
 
-    def _payload(self, pin="123456"):
+    def _payload(self, pin=None):
+        if pin is None:
+            pin = secrets.token_hex(3)
         return ImpersonateIn(
             owner_pin=pin, justification="Support diagnosis for owner account"
         )
@@ -165,7 +168,8 @@ class SuperAdminImpersonationTest(TestCase):
         self.assertEqual(ctx.exception.status_code, 400)
 
     def test_invalid_pin_is_rejected(self):
-        self.owner.set_security_pin("123456")
+        valid_pin = "123456"
+        self.owner.set_security_pin(valid_pin)
 
         with self.assertRaises(HttpError) as ctx:
             impersonate_tenant(
@@ -175,7 +179,8 @@ class SuperAdminImpersonationTest(TestCase):
         self.assertEqual(ctx.exception.status_code, 403)
 
     def test_invalid_pin_lockout_after_three_failures(self):
-        self.owner.set_security_pin("123456")
+        valid_pin = "123456"
+        self.owner.set_security_pin(valid_pin)
 
         for _ in range(3):
             with self.assertRaises(HttpError):
@@ -185,16 +190,17 @@ class SuperAdminImpersonationTest(TestCase):
 
         with self.assertRaises(HttpError) as ctx:
             impersonate_tenant(
-                self.request, str(self.tenant.id), self._payload("123456")
+                self.request, str(self.tenant.id), self._payload(valid_pin)
             )
 
         self.assertEqual(ctx.exception.status_code, 429)
 
     def test_success_returns_impersonated_owner_token(self):
-        self.owner.set_security_pin("123456")
+        valid_pin = "123456"
+        self.owner.set_security_pin(valid_pin)
 
         response = impersonate_tenant(
-            self.request, str(self.tenant.id), self._payload()
+            self.request, str(self.tenant.id), self._payload(valid_pin)
         )
         decoded = decode_access_token(response.access_token)
 

@@ -20,6 +20,7 @@ export interface ApplePassField {
   key: string;
   label: string;
   value: string;
+  dataType?: import('../types/unified-field').FieldDataType;
   changeMessage?: string;
   textAlignment?: string;
   dateStyle?: string;
@@ -27,6 +28,15 @@ export interface ApplePassField {
   numberStyle?: string;
   currencyCode?: string;
   attributedValue?: string;
+}
+
+/** Normalize legacy flat-string notifications to structured config. */
+function getAppleChangeMessage(field: UnifiedField): string | undefined {
+  const cfg = field.notifications?.appleChangeMessage;
+  if (!cfg) return undefined;
+  // Backward compat: old flat string
+  if (typeof cfg === 'string') return cfg;
+  return cfg.enabled ? cfg.message : undefined;
 }
 
 /** Apple PassKit field groups */
@@ -44,6 +54,8 @@ export interface GoogleRowItem {
   fieldPath: string;
   label: string;
   displayName: string;
+  value: string;
+  dataType?: import('../types/unified-field').FieldDataType;
 }
 
 /** Google Wallet row structure */
@@ -80,16 +92,30 @@ export function mapFieldToApple(field: UnifiedField): ApplePassField {
     key: field.id,
     label: field.label,
     value: field.value,
+    dataType: field.dataType,
   };
 
   const opts = field.appleOptions;
-  if (opts.changeMessage) appleField.changeMessage = opts.changeMessage;
+  const changeMessage = getAppleChangeMessage(field);
+  if (changeMessage) appleField.changeMessage = changeMessage;
   if (opts.textAlignment) appleField.textAlignment = opts.textAlignment;
   if (opts.dateStyle) appleField.dateStyle = opts.dateStyle;
   if (opts.timeStyle) appleField.timeStyle = opts.timeStyle;
   if (opts.numberStyle) appleField.numberStyle = opts.numberStyle;
   if (opts.currencyCode) appleField.currencyCode = opts.currencyCode;
   if (opts.attributedValue) appleField.attributedValue = opts.attributedValue;
+
+  // Auto-populate Apple formatting options based on dataType if not explicitly set
+  if (!opts.dateStyle && !opts.timeStyle && field.dataType === 'date') {
+    appleField.dateStyle = 'PKDateStyleShort';
+  }
+  if (!opts.numberStyle && field.dataType === 'number') {
+    appleField.numberStyle = 'PKNumberStyleDecimal';
+  }
+  if (!opts.numberStyle && !opts.currencyCode && field.dataType === 'currency') {
+    appleField.numberStyle = 'PKNumberStyleDecimal';
+    appleField.currencyCode = 'USD';
+  }
 
   return appleField;
 }
@@ -106,6 +132,8 @@ export function mapFieldToGoogle(
     fieldPath: `class.${field.fieldGroup}[${position}]`,
     label: field.label,
     displayName: field.label,
+    value: field.value,
+    dataType: field.dataType,
   };
 }
 

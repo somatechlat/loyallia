@@ -137,7 +137,7 @@ class PlanEnforcementDecoratorsTest(TestCase):
         req = self._request(self.owner)
         payload = CardCreateIn(
             name="Test Plan Check",
-            card_type="stamp",
+            card_type="stamp",  # type: ignore[reportArgumentType]
             metadata={"reward_description": "Free coffee", "stamps_required": 10},
         )
         # With active subscription, should not raise subscription error

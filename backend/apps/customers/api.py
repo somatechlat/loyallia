@@ -5,6 +5,7 @@ Phase 5 implementation of customer + pass management endpoints.
 
 import logging
 
+from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -61,10 +62,10 @@ def list_customers(
         },
     )
 
-    return {
-        "customers": [CustomerOut.from_model(c) for c in result["customers"]],
-        "total": result["total"],
-    }
+    return CustomerListOut(
+        customers=[CustomerOut.from_model(c) for c in result["customers"]],
+        total=result["total"],
+    )
 
 
 @router.get(
@@ -84,7 +85,9 @@ def search_customers(
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = require_tenant(request)
-    results = services.search_customers(tenant, query, program_ids, device_type, wallet_platform)
+    results = services.search_customers(
+        tenant, query, program_ids, device_type, wallet_platform
+    )
 
     return [
         CustomerSearchOut(
@@ -181,7 +184,9 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     return result
 
 
-@router.post("/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente")
+@router.post(
+    "/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente"
+)
 def enroll_customer_public(
     request: HttpRequest, card_id: str, customer_data: CustomerCreateIn
 ) -> CustomerPassOut:
@@ -194,7 +199,11 @@ def enroll_customer_public(
     # Rate limiting: 10 per hour per IP (atomic via Redis/Cache INCR)
     client_ip = get_client_ip(request)
     cache_key = f"enroll_rate:{client_ip}"
-    allowed, _ = check_rate_limit(cache_key, max_requests=10, window_seconds=3600)
+    allowed, _ = check_rate_limit(
+        cache_key,
+        max_requests=settings.ENROLL_RATE_LIMIT_MAX_REQUESTS,
+        window_seconds=settings.ENROLL_RATE_LIMIT_WINDOW_SECONDS,
+    )
     if not allowed:
         raise HttpError(429, get_message("RATE_LIMITED"))
 
@@ -214,7 +223,7 @@ def enroll_customer_public(
         check_plan_limit(card.tenant, "customers", write=True)
 
     try:
-        pass_obj, customer, already_enrolled = services.public_enroll(
+        pass_obj, customer, already_enrolled, _is_new = services.public_enroll(
             card, customer_data.model_dump()
         )
     except ValueError as exc:
@@ -252,7 +261,7 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     """
     email = data.email.strip().lower()
     allowed, _ = check_rate_limit(
-        f"resend_pass_email:{email}", max_requests=3, window_seconds=3600
+        f"resend_pass_email:{email}", max_requests=settings.RESEND_PASS_EMAIL_RATE_LIMIT_MAX, window_seconds=settings.RESEND_PASS_EMAIL_RATE_LIMIT_WINDOW
     )
     if not allowed:
         return MessageOut(success=False, message=get_message("RATE_LIMIT_EXCEEDED"))
@@ -420,7 +429,9 @@ def enroll_customer(
     except ValueError as exc:
         msg = str(exc)
         if msg == "ALREADY_ENROLLED":
-            raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
+            raise HttpError(
+                400, get_message("ENROLLMENT_DUPLICATE", email=customer.email)
+            )
         raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     return CustomerPassOut.from_model(pass_obj)

@@ -1,0 +1,138 @@
+"""
+Loyallia Customers Messages
+"""
+
+_MESSAGES_ES: dict[str, str] = {
+    "ENROLLMENT_SUCCESS": "¡Bienvenido a {program_name}! Tu tarjeta está lista.",
+    "ENROLLMENT_DUPLICATE": "Ya estás registrado en este programa. ¿Deseas reenviar tu tarjeta a {email}?",
+    "ENROLLMENT_PASS_GENERATING": "Generando tu tarjeta de fidelidad...",
+    "ENROLLMENT_PASS_READY": "¡Tu tarjeta está lista! Agrégala a tu Wallet.",
+    # Pass
+    "PASS_NOT_FOUND": "Tarjeta no encontrada.",
+    "PASS_NOT_FOUND_INACTIVE": "Pase no encontrado o inactivo.",
+    "PASS_EXPIRED": "Esta tarjeta ha expirado.",
+    "PASS_REVOKED": "Esta tarjeta ha sido desactivada.",
+    "PASS_INVALID_QR": "Código QR inválido.",
+    "PASS_QR_REQUIRED": "Código QR requerido.",
+    "PASS_RESENT": "Se ha reenviado tu tarjeta a {email}.",
+    "EMAIL_SEND_ERROR": "No se pudo enviar el correo. Inténtalo de nuevo más tarde.",
+    "PASS_UPDATED": "Tarjeta actualizada en tu Wallet.",
+    "PASS_APPLE_GEN_ERROR": "Error al generar el pase de Apple Wallet.",
+    "PASS_GOOGLE_GEN_ERROR": "Error al generar la URL de Google Wallet.",
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet no está configurado. Se requieren los identificadores y certificados de Apple Developer.",  # noqa: E501
+    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet no está configurado. Se requiere la cuenta de servicio de Google Wallet.",  # noqa: E501
+    "PASS_WALLET_PROVIDER_DISABLED": "Esta billetera no está habilitada para la tarjeta.",
+    "PASS_DISENROLLED": "Has salido del programa exitosamente.",
+    "PASS_QR_INVALID_SIGNATURE": "Firma del código QR inválida.",
+    "PASS_QR_EXPIRED": "El código QR ha expirado. Abre tu tarjeta para actualizar el código.",
+    # Transactions
+    "CUSTOMER_CREATED": "Cliente creado exitosamente.",
+    "CUSTOMER_UPDATED": "Cliente actualizado exitosamente.",
+    "CUSTOMER_NOT_FOUND": "Cliente no encontrado.",
+    "CUSTOMER_REQUIRED": "Perfil de cliente requerido.",
+    "CUSTOMER_IMPORT_INVALID_FORMAT": "Formato no soportado. Sube un archivo CSV, XLS o XLSX.",
+    "CUSTOMER_IMPORT_FILE_CORRUPT": "El archivo está dañado o tiene un formato inválido.",
+    "CUSTOMER_IMPORT_FILE_EMPTY": "El archivo está vacío.",
+    # Segments
+    "SEGMENT_NOT_FOUND": "Segmento no encontrado.",
+    # Automation extended
+}
+
+_MESSAGES_EN: dict[str, str] = {
+    "ENROLLMENT_SUCCESS": "Welcome to {program_name}! Your card is ready.",
+    "ENROLLMENT_DUPLICATE": "You are already enrolled in this program. Resend your card to {email}?",
+    "ENROLLMENT_PASS_GENERATING": "Generating your loyalty card...",
+    "ENROLLMENT_PASS_READY": "Your card is ready! Add it to your Wallet.",
+    # Pass
+    "PASS_NOT_FOUND": "Card not found.",
+    "PASS_NOT_FOUND_INACTIVE": "Pass not found or inactive.",
+    "PASS_EXPIRED": "This card has expired.",
+    "PASS_REVOKED": "This card has been deactivated.",
+    "PASS_INVALID_QR": "Invalid QR code.",
+    "PASS_QR_REQUIRED": "QR code required.",
+    "PASS_RESENT": "Your card has been resent to {email}.",
+    "EMAIL_SEND_ERROR": "Could not send email. Please try again later.",
+    "PASS_UPDATED": "Card updated in your Wallet.",
+    "PASS_APPLE_GEN_ERROR": "Error generating Apple Wallet pass.",
+    "PASS_GOOGLE_GEN_ERROR": "Error generating Google Wallet URL.",
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet is not configured. Apple Developer identifiers and certificates are required.",  # noqa: E501
+    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet is not configured. A Google Wallet service account is required.",
+    "PASS_WALLET_PROVIDER_DISABLED": "This wallet provider is not enabled for the card.",
+    "PASS_QR_INVALID_SIGNATURE": "Invalid QR code signature.",
+    "PASS_QR_EXPIRED": "QR code has expired. Open your card to refresh.",
+    # Transactions
+    "CUSTOMER_CREATED": "Customer created successfully.",
+    "CUSTOMER_UPDATED": "Customer updated successfully.",
+    "CUSTOMER_NOT_FOUND": "Customer not found.",
+    "CUSTOMER_REQUIRED": "Customer profile required.",
+    "CUSTOMER_IMPORT_INVALID_FORMAT": "Unsupported format. Upload a CSV, XLS or XLSX file.",
+    "CUSTOMER_IMPORT_FILE_CORRUPT": "File is corrupted or has an invalid format.",
+    "CUSTOMER_IMPORT_FILE_EMPTY": "File is empty.",
+    # Segments
+    "SEGMENT_NOT_FOUND": "Segment not found.",
+    # Automation extended
+}
+
+_MESSAGES_FR: dict[str, str] = {
+    "CUSTOMER_CREATED": "Customer created successfully.",
+    "CUSTOMER_IMPORT_FILE_CORRUPT": "File is corrupted or has an invalid format.",
+    "CUSTOMER_IMPORT_FILE_EMPTY": "File is empty.",
+    "CUSTOMER_IMPORT_INVALID_FORMAT": "Unsupported format. Upload a CSV, XLS or XLSX file.",
+    "CUSTOMER_NOT_FOUND": "Customer not found.",
+    "CUSTOMER_REQUIRED": "Customer profile required.",
+    "CUSTOMER_UPDATED": "Customer updated successfully.",
+    "EMAIL_SEND_ERROR": "Could not send email. Please try again later.",
+    "ENROLLMENT_DUPLICATE": "You are already enrolled in this program. Resend your card to {email}?",
+    "ENROLLMENT_PASS_GENERATING": "Generating your loyalty card...",
+    "ENROLLMENT_PASS_READY": "Your card is ready! Add it to your Wallet.",
+    "ENROLLMENT_SUCCESS": "Welcome to {program_name}! Your card is ready.",
+    "PASS_APPLE_GEN_ERROR": "Error generating Apple Wallet pass.",
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet is not configured. Apple Developer identifiers and certificates are required.",
+    "PASS_DISENROLLED": "Vous avez quitté le programme avec succès.",
+    "PASS_EXPIRED": "This card has expired.",
+    "PASS_GOOGLE_GEN_ERROR": "Error generating Google Wallet URL.",
+    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet is not configured. A Google Wallet service account is required.",
+    "PASS_INVALID_QR": "Invalid QR code.",
+    "PASS_NOT_FOUND": "Card not found.",
+    "PASS_NOT_FOUND_INACTIVE": "Pass not found or inactive.",
+    "PASS_QR_EXPIRED": "QR code has expired. Open your card to refresh.",
+    "PASS_QR_INVALID_SIGNATURE": "Invalid QR code signature.",
+    "PASS_QR_REQUIRED": "QR code required.",
+    "PASS_RESENT": "Your card has been resent to {email}.",
+    "PASS_REVOKED": "This card has been deactivated.",
+    "PASS_UPDATED": "Card updated in your Wallet.",
+    "PASS_WALLET_PROVIDER_DISABLED": "This wallet provider is not enabled for the card.",
+    "SEGMENT_NOT_FOUND": "Segment not found.",
+}
+
+_MESSAGES_DE: dict[str, str] = {
+    "CUSTOMER_CREATED": "Customer created successfully.",
+    "CUSTOMER_IMPORT_FILE_CORRUPT": "File is corrupted or has an invalid format.",
+    "CUSTOMER_IMPORT_FILE_EMPTY": "File is empty.",
+    "CUSTOMER_IMPORT_INVALID_FORMAT": "Unsupported format. Upload a CSV, XLS or XLSX file.",
+    "CUSTOMER_NOT_FOUND": "Customer not found.",
+    "CUSTOMER_REQUIRED": "Customer profile required.",
+    "CUSTOMER_UPDATED": "Customer updated successfully.",
+    "EMAIL_SEND_ERROR": "Could not send email. Please try again later.",
+    "ENROLLMENT_DUPLICATE": "You are already enrolled in this program. Resend your card to {email}?",
+    "ENROLLMENT_PASS_GENERATING": "Generating your loyalty card...",
+    "ENROLLMENT_PASS_READY": "Your card is ready! Add it to your Wallet.",
+    "ENROLLMENT_SUCCESS": "Welcome to {program_name}! Your card is ready.",
+    "PASS_APPLE_GEN_ERROR": "Error generating Apple Wallet pass.",
+    "PASS_APPLE_NOT_CONFIGURED": "Apple Wallet is not configured. Apple Developer identifiers and certificates are required.",
+    "PASS_DISENROLLED": "Sie haben das Programm erfolgreich verlassen.",
+    "PASS_EXPIRED": "This card has expired.",
+    "PASS_GOOGLE_GEN_ERROR": "Error generating Google Wallet URL.",
+    "PASS_GOOGLE_NOT_CONFIGURED": "Google Wallet is not configured. A Google Wallet service account is required.",
+    "PASS_INVALID_QR": "Invalid QR code.",
+    "PASS_NOT_FOUND": "Card not found.",
+    "PASS_NOT_FOUND_INACTIVE": "Pass not found or inactive.",
+    "PASS_QR_EXPIRED": "QR code has expired. Open your card to refresh.",
+    "PASS_QR_INVALID_SIGNATURE": "Invalid QR code signature.",
+    "PASS_QR_REQUIRED": "QR code required.",
+    "PASS_RESENT": "Your card has been resent to {email}.",
+    "PASS_REVOKED": "This card has been deactivated.",
+    "PASS_UPDATED": "Card updated in your Wallet.",
+    "PASS_WALLET_PROVIDER_DISABLED": "This wallet provider is not enabled for the card.",
+    "SEGMENT_NOT_FOUND": "Segment not found.",
+}

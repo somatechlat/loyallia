@@ -63,20 +63,20 @@ describe('BackDesignTab', () => {
 
   it('renders all 4 sections', () => {
     render(<BackDesignTab {...baseProps} />);
-    expect(screen.getByText('CAMPOS DEL REVERSO — Sin límite')).toBeDefined();
-    expect(screen.getByText('ENLACES RÁPIDOS')).toBeDefined();
-    expect(screen.getByText('ENLACE A LA APP')).toBeDefined();
-    expect(screen.getByText('IMÁGENES EN DETALLES')).toBeDefined();
+    expect(screen.getByText('Campos del Reverso')).toBeDefined();
+    expect(screen.getByText('Enlaces Rápidos')).toBeDefined();
+    expect(screen.getByText('Enlace a la App')).toBeDefined();
+    expect(screen.getByText(/Imágenes en Detalles/i)).toBeDefined();
   });
 
   it('renders empty state for back fields', () => {
     render(<BackDesignTab {...baseProps} />);
-    expect(screen.getByText('No hay campos en el reverso')).toBeDefined();
+    expect(screen.getByText('Sin campos')).toBeDefined();
   });
 
   it('adds a back field when clicking add button', () => {
     render(<BackDesignTab {...baseProps} />);
-    const addBtn = screen.getByRole('button', { name: /Añadir campo del reverso/i });
+    const addBtn = screen.getByRole('button', { name: /Añadir campo/i });
     fireEvent.click(addBtn);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledOnce();
     const callArg = baseProps.onUpdateBackContent.mock.calls[0]![0] as { fields: unknown[] };
@@ -169,7 +169,7 @@ describe('BackDesignTab', () => {
 
   it('toggles app link section and initializes appLink object', () => {
     render(<BackDesignTab {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: /Añadir botón/i });
+    const checkbox = screen.getByRole('checkbox', { name: /Abrir en app/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledWith(
       expect.objectContaining({ appLink: expect.objectContaining({ iosAppLink: '' }) })
@@ -185,26 +185,21 @@ describe('BackDesignTab', () => {
         })}
       />
     );
-    expect(screen.getByText(/Apple \(appLaunchURL\)/i)).toBeDefined();
-    expect(screen.getByText(/Google \(appLinkData\)/i)).toBeDefined();
+    expect(screen.getByPlaceholderText(/apps.apple.com/i)).toBeDefined();
+    expect(screen.getByPlaceholderText(/com.app/i)).toBeDefined();
   });
 
-  it('shows Apple Wallet warning for detail images', () => {
+  it('shows Google Wallet badge for detail images', () => {
     render(<BackDesignTab {...baseProps} />);
-    expect(screen.getByText(/Apple Wallet no soporta imágenes en el reverso/i)).toBeDefined();
+    expect(screen.getByText('Google')).toBeDefined();
   });
 
   it('adds detail image when clicking add button', () => {
     render(<BackDesignTab {...baseProps} />);
-    const addBtn = screen.getByRole('button', { name: /Añadir imagen a la vista de detalles/i });
+    const addBtn = screen.getByRole('button', { name: /Añadir imagen/i });
     fireEvent.click(addBtn);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledOnce();
     const callArg = baseProps.onUpdateBackContent.mock.calls[0]![0] as { detailImages: unknown[] };
     expect(callArg.detailImages).toHaveLength(1);
-  });
-
-  it('renders Google Wallet exclusivo badge on detail images section', () => {
-    render(<BackDesignTab {...baseProps} />);
-    expect(screen.getByText('Google Wallet exclusivo')).toBeDefined();
   });
 });

@@ -22,14 +22,15 @@ import logging
 from datetime import timedelta
 
 from celery import shared_task
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    max_retries=2,
-    default_retry_delay=120,
+    max_retries=settings.CELERY_MAX_RETRIES_LOW,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_LONG,
     queue="default",
     name="apps.analytics.tasks.update_tenant_analytics",
 )

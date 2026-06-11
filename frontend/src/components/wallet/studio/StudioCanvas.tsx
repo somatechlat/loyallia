@@ -7,15 +7,17 @@
 
 'use client';
 
+import { useI18n } from '@/lib/i18n';
 import type { WalletPassStudioState, PlatformView, BarcodeFormat } from '@/components/wallet/types/unified-state';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
-import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
+import { GoogleWalletCard, GoogleWalletBackCard } from '@/components/wallet/GoogleWalletPreview';
 import { mapFieldsToApple, mapFieldsToGoogle } from '@/components/wallet/utils/field-mappers';
 
 export interface StudioCanvasProps {
   state: WalletPassStudioState;
   platformView: PlatformView;
   showBack: boolean;
+  zoom?: number;
 }
 
 function mapBarcodeFormat(format: BarcodeFormat): string {
@@ -45,10 +47,12 @@ function buildWalletDesign(state: WalletPassStudioState) {
     appleThumbnail2xUrl: state.images.thumbnail2x?.url ?? '',
     appleIconUrl: state.images.icon?.url ?? '',
     appleIcon2xUrl: state.images.icon2x?.url ?? '',
+    appleBackgroundUrl: state.images.background?.url ?? '',
     googleProgramLogoUrl: state.images.logo?.url ?? '',
     googleHeroImageUrl: state.images.strip?.url ?? state.images.heroImage?.url ?? '',
     googleWideLogoUrl: state.images.wideLogo?.url ?? '',
     googleImageModuleUrl: state.images.imageModule?.url ?? '',
+    googleBackgroundUrl: state.images.background?.url ?? '',
     appleFields: {
       headerFields: appleFields.headerFields.map((f) => ({
         key: f.key,
@@ -99,6 +103,8 @@ function buildWalletDesign(state: WalletPassStudioState) {
         fieldPath: item.fieldPath,
         label: item.label,
         displayName: item.displayName,
+        value: item.value,
+        dataType: item.dataType,
       })),
     })),
     googleAdvanced: {
@@ -156,80 +162,84 @@ function buildForm(state: WalletPassStudioState) {
   };
 }
 
-function buildSelectedType(state: WalletPassStudioState) {
-  const labels: Record<string, string> = {
-    stamp: 'Tarjeta de Sellos',
-    cashback: 'Cashback',
-    coupon: 'Cupón',
-    affiliate: 'Afiliado',
-    discount: 'Descuento por Niveles',
-    gift_certificate: 'Tarjeta Regalo',
-    vip_membership: 'Membresía VIP',
-    corporate_discount: 'Descuento Corporativo',
-    referral_pass: 'Pase de Referido',
-    multipass: 'Multi-Pase',
-  };
-
+function buildSelectedType(state: WalletPassStudioState, t: (key: string) => string) {
+  const key = `programs.cardTypes.${state.cardType}`;
   return {
     value: state.cardType,
-    label: labels[state.cardType] ?? 'Programa',
+    label: t(key),
     icon: state.cardType,
     desc: '',
   };
 }
 
-export function StudioCanvas({ state, platformView, showBack }: StudioCanvasProps) {
+export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: StudioCanvasProps) {
+  const { t } = useI18n();
   const form = buildForm(state);
-  const selectedType = buildSelectedType(state);
+  const selectedType = buildSelectedType(state, t);
   const walletDesign = buildWalletDesign(state);
   const barcodeType = mapBarcodeFormat(state.barcode.format);
   const logoPreview = state.images.logo?.url ?? null;
   const stripPreview = state.images.strip?.url ?? null;
+  const cardTypeConfig = state.cardTypeConfig;
 
   const showApple = platformView === 'apple' || platformView === 'both';
   const showGoogle = platformView === 'google' || platformView === 'both';
 
   return (
-    <div className="flex-1 flex items-center justify-center min-w-0 overflow-hidden p-6 bg-surface-100 dark:bg-surface-900">
-      <div className={`relative z-10 flex items-center gap-8 ${platformView === 'both' ? 'flex-row' : 'flex-col'}`}>
-        {showApple && (
-          <div className="flex flex-col items-center gap-3">
-            {showBack ? (
-              <AppleWalletBackCard form={form} walletDesign={walletDesign} />
-            ) : (
-              <AppleWalletCard
-                form={form}
-                selectedType={selectedType}
-                logoPreview={logoPreview}
-                stripPreview={stripPreview}
-                barcodeType={barcodeType}
-                walletDesign={walletDesign}
-              />
-            )}
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Apple Wallet</span>
-          </div>
-        )}
+    <div className="flex-1 flex flex-col min-w-0 overflow-auto bg-surface-100 dark:bg-surface-900">
+      {/* Phone previews — centered in available space */}
+      <div className="flex-1 flex items-center justify-center p-6 min-h-0">
+        <div
+          className={`flex items-center gap-8 ${platformView === 'both' ? 'flex-row' : 'flex-col'}`}
+          style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+        >
+          {showApple && (
+            <div className="flex flex-col items-center gap-3 shrink-0">
+              {showBack ? (
+                <AppleWalletBackCard form={form} walletDesign={walletDesign} cardTypeConfig={cardTypeConfig} />
+              ) : (
+                <AppleWalletCard
+                  form={form}
+                  selectedType={selectedType}
+                  logoPreview={logoPreview}
+                  stripPreview={stripPreview}
+                  barcodeType={barcodeType}
+                  walletDesign={walletDesign}
+                  cardTypeConfig={cardTypeConfig}
+                />
+              )}
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.canvas.appleWallet')}</span>
+            </div>
+          )}
 
-        {showGoogle && (
-          <div className="flex flex-col items-center gap-3">
-            {showBack ? (
-              <div className="flex items-center justify-center w-[260px] h-[540px] bg-neutral-800 rounded-[44px] border-2 border-neutral-700">
-                <p className="text-sm text-neutral-400">Back preview coming soon</p>
-              </div>
-            ) : (
-              <GoogleWalletCard
-                form={form}
-                selectedType={selectedType}
-                logoPreview={logoPreview}
-                stripPreview={stripPreview}
-                barcodeType={barcodeType}
-                walletDesign={walletDesign}
-              />
-            )}
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Google Wallet</span>
-          </div>
-        )}
+          {showGoogle && (
+            <div className="flex flex-col items-center gap-3 shrink-0">
+              {showBack ? (
+                <GoogleWalletBackCard
+                  form={form}
+                  logoPreview={logoPreview}
+                  walletDesign={walletDesign}
+                  cardTypeConfig={cardTypeConfig}
+                  backFields={state.backContent.fields.map((f) => ({ label: f.label, value: f.value }))}
+                  backLinks={state.backContent.links.map((l) => ({ type: l.type, url: l.url, label: l.label }))}
+                />
+              ) : (
+                <GoogleWalletCard
+                  form={form}
+                  selectedType={selectedType}
+                  logoPreview={logoPreview}
+                  stripPreview={stripPreview}
+                  barcodeType={barcodeType}
+                  walletDesign={walletDesign}
+                  cardTypeConfig={cardTypeConfig}
+                />
+              )}
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.canvas.googleWallet')}</span>
+            </div>
+          )}
+        </div>
       </div>
+
     </div>
   );
 }
