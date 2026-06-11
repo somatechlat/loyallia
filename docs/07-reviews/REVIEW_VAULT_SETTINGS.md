@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Line references and findings reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Loyallia -- Vault, Secrets & Settings Security Review
@@ -87,21 +88,17 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 ...
 
 ## 2. VAULT INITIALIZATION (deploy/vault/init.sh)
 
-### 2.1 [CRITICAL] Single Unseal Key = No Key Splitting
-**File:** Line 159
+### 2.1 [CRITICAL] Single Unseal Key = No Key Splitting — ✅ RESOLVED
+**File:** Line 122
 ```sh
-vault operator init -key-shares=1 -key-threshold=1 -format=json >/vault/file/init.json
+vault operator init -key-shares=5 -key-threshold=3 -format=json > /vault/file/init.json
 ```
-**Finding:** Uses single key share with threshold of 1. This means **there is no Shamir's Secret Sharing protection**. One compromised key = full Vault compromise. There is no quorum protection.
+**Status:** `deploy/vault/init.sh` now initializes Vault with **5 key shares and a threshold of 3**, providing Shamir's Secret Sharing protection. A quorum of 3 unseal keys is required to unseal Vault.
 
-**Recommendation:** Use at least 3-5 key shares with a threshold of 2-3:
-```sh
-vault operator init -key-shares=5 -key-threshold=3 -format=json >/vault/file/init.json
-```
-**Severity:** CRITICAL
+**Severity:** CRITICAL — RESOLVED
 
 ### 2.2 [WARNING] Unseal Keys Stored Unencrypted on Filesystem
-**File:** Lines 159-161, 124-126
+**File:** Lines 122-126
 ```sh
 vault operator init ... >/vault/file/init.json
 UNSEAL_KEY="$(awk -F '"' '/unseal_keys_b64/ {getline; print $2}' /vault/file/init.json)"
@@ -614,15 +611,15 @@ These are documented in docker-compose files, so this is acceptable but could be
 
 ## 12. FINDINGS SUMMARY
 
-### CRITICAL (1)
-| # | Finding | File | Line |
-|---|---------|------|------|
-| C1 | Vault init uses 1 key share / 1 threshold = no Shamir protection | deploy/vault/init.sh | 159 |
+### CRITICAL (0 resolved)
+| # | Finding | File | Line | Status |
+|---|---------|------|------|--------|
+| ~~C1~~ | ~~Vault init uses 1 key share / 1 threshold = no Shamir protection~~ | ~~deploy/vault/init.sh~~ | ~~159~~ | **RESOLVED** — now uses 5 key shares / threshold 3 |
 
 ### HIGH (3)
 | # | Finding | File | Line |
 |---|---------|------|------|
-| H1 | Unseal keys + root token stored unencrypted in `/vault/file/init.json` | deploy/vault/init.sh | 159-161 |
+| H1 | Unseal keys + root token stored unencrypted in `/vault/file/init.json` | deploy/vault/init.sh | 122-124 |
 | H2 | Root token used for ongoing operations (should be revoked after init) | deploy/vault/init.sh | 137-147 |
 | H3 | App token and runtime secrets have 0444 permissions (world-readable) | deploy/vault/init.sh | 317-327 |
 
@@ -657,10 +654,7 @@ These are documented in docker-compose files, so this is acceptable but could be
 
 ### Immediate Actions Required
 
-1. **Fix Vault Key Splitting (CRITICAL):**
-   ```sh
-   vault operator init -key-shares=5 -key-threshold=3 ...
-   ```
+1. ✅ **Fix Vault Key Splitting (CRITICAL):** Resolved — `deploy/vault/init.sh` now uses 5 key shares with threshold 3.
 
 2. **Encrypt init.json (HIGH):**
    Store unseal keys encrypted. Distribute key shares to different operators.

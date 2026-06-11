@@ -18,10 +18,10 @@ After reading **every line** of code, documentation, configuration, and prior ag
 | Super Admin Panel | 🟡 FUNCTIONAL | 75% | Works but has gaps — no audit viewer, no real-time, synthetic data |
 | Tenant Creation | 🟢 WORKS | 90% | 4-step wizard functional; creates TRIAL subscription only when plan_slug == "trial", otherwise ACTIVE paid subscription |
 | Plan Management | 🟢 WORKS | 95% | Full CRUD with validation, feature flags, rate limits |
-| Integration Settings | 🟢 WORKS | 90% | Vault editor functional for 12 integration groups (wallet, payments, mailjet, WhatsApp, Twilio, Apple NFC, AI, backup) |
+| Integration Settings | 🟢 WORKS | 90% | Vault editor functional for 13 integration groups (wallet, payments, mailjet, WhatsApp, Twilio, Apple NFC, AI, backup, google_oauth) |
 | Billing/Subscriptions | 🟡 PARTIAL | 75% | `/billing/subscribe/` creates subscription + invoice with `PAST_DUE` status; payment is manual/offline verification (no self-service card checkout) |
 | Analytics Backend | 🟡 PARTIAL | 65% | Overview works; revenue, visits, demographics exist in advanced analytics but require `advanced_analytics` feature |
-| Audit/Compliance | 🟢 WORKS | 85% | Immutable AuditLog, SuperAdmin API exists, NO frontend viewer |
+| Audit/Compliance | 🟢 WORKS | 85% | Immutable AuditLog, SuperAdmin API exists; owner-facing viewer at /settings, no SuperAdmin frontend viewer |
 | Tests | 🟡 PARTIAL | 40% | 460 backend tests pass, Playwright E2E written but NEVER RUN |
 | Documentation | 🟢 EXCELLENT | 95% | SRS, Architecture, BDR, Compliance all documented |
 
@@ -49,7 +49,7 @@ The `/superadmin/metrics` page generates **synthetic monthly growth data** by sp
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ STEP 1: ENTITY TYPE SELECTION                                               │
+│ STEP 1: ENTITY AND BUSINESS DATA                                            │
 │  ┌──────────────┐    ┌──────────────┐                                       │
 │  │ PERSONA      │    │ PERSONA      │                                       │
 │  │ JURÍDICA     │ or │ NATURAL      │                                       │
@@ -58,11 +58,7 @@ The `/superadmin/metrics` page generates **synthetic monthly growth data** by sp
 │                                                                             │
 │  → Sets: entity_type, conditional validation on RUC (13 digits)             │
 │          or Cédula (10 digits)                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ STEP 2: BUSINESS DATA                                                       │
+│                                                                             │
 │  • name (commercial name)                                                   │
 │  • legal_name / full_name                                                   │
 │  • ruc OR cedula                                                            │
@@ -73,7 +69,7 @@ The `/superadmin/metrics` page generates **synthetic monthly growth data** by sp
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ STEP 3: OWNER DATA                                                          │
+│ STEP 2: OWNER DATA                                                          │
 │  • owner_first_name, owner_last_name                                        │
 │  • owner_email (must be unique)                                             │
 │  • owner_cedula                                                             │
@@ -84,7 +80,7 @@ The `/superadmin/metrics` page generates **synthetic monthly growth data** by sp
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ STEP 4: LOCATIONS                                                           │
+│ STEP 3: LOCATIONS                                                           │
 │  • Array of LocationIn: name, address, city, lat, lng, is_primary           │
 │  • First location auto-marked is_primary=True if none specified             │
 │  • Optional: LocationPicker map for GPS coordinates                         │
@@ -92,7 +88,7 @@ The `/superadmin/metrics` page generates **synthetic monthly growth data** by sp
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ STEP 5: PLAN SELECTION                                                      │
+│ STEP 4: PLAN SELECTION                                                      │
 │  • plan_slug (from active SubscriptionPlans)                                │
 │  • billing_cycle: monthly | annual                                          │
 │                                                                             │
@@ -139,12 +135,17 @@ The `/superadmin/metrics` page generates **synthetic monthly growth data** by sp
 │ RESPONSE TO FRONTEND (CreateTenantOut)                                      │
 │  {                                                                          │
 │    "success": true,                                                         │
-│    "message": "Negocio registrado",                                         │
+│    "message": "Configuración del negocio actualizada.",                     │
 │    "tenant_id": "<uuid>",                                                   │
 │    "owner_id": "<uuid>",                                                    │
 │    "owner_email": "owner@example.com",                                      │
 │    "temp_password": "abc123xyz"  ← ONLY SHOWN ONCE                          │
 │  }                                                                          │
+│                                                                             │
+│  NOTE: The backend currently returns the `TENANT_UPDATED` message key for   │
+│        this response, which maps to "Configuración del negocio actualizada."│
+│        The semantic key is reused from tenant update; the actual text shown │
+│        to the user is correct.                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -293,23 +294,23 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 │  GET /api/v1/admin/platform/integrations/                                   │
 │                                                                             │
 │  Returns array of 13 integrations (as implemented in integration_config.py):│
-│  ┌─────────────────────┬───────────┬────────────┬─────────────────────────┐ │
-│  │ Integration         │ Enabled   │ Configured │ Status                  │ │
-│  ├─────────────────────┼───────────┼────────────┼─────────────────────────┤ │
-│  │ Google Wallet       │ true/false│ true/false │ configured / missing_   │ │
-│  │ Apple Wallet        │ true/false│ true/false │ configured / missing_   │ │
-│  │ Payments            │ true/false│ true/false │ active / disabled       │ │
-│  │ Google OAuth        │ true/false│ true/false │ configured / missing_   │ │
-│  │ Mailjet Email       │ true      │ true/false │ configured / missing_   │ │
-│  │ WhatsApp Bridge     │ true/false│ true/false │ configured / missing_   │ │
-│  │ Twilio SMS          │ true/false│ true/false │ configured / missing_   │ │
-│  │ Twilio Verify       │ true/false│ true/false │ configured / missing_   │ │
-│  │ Twilio API Key      │ true/false│ true/false │ configured / missing_   │ │
-│  │ Twilio Test         │ true/false│ true/false │ configured / missing_   │ │
-│  │ Apple NFC           │ true/false│ true/false │ configured / missing_   │ │
-│  │ AI Agent            │ true/false│ true/false │ configured / missing_   │ │
-│  │ Backup & DR         │ true      │ true      │ active                  │ │
-│  └─────────────────────┴───────────┴────────────┴─────────────────────────┘ │
+│  ┌─────────────────────┬───────────┬────────────┬─────────────────────────────────────┐ │
+│  │ Integration         │ Enabled   │ Configured │ Status                              │ │
+│  ├─────────────────────┼───────────┼────────────┼─────────────────────────────────────┤ │
+│  │ Google Wallet       │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Apple Wallet        │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Payments            │ true/false│ true/false │ active / disabled                   │ │
+│  │ Google OAuth        │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Mailjet Email       │ true      │ true/false │ configured / missing_credentials    │ │
+│  │ WhatsApp Bridge     │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Twilio SMS          │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Twilio Verify       │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Twilio API Key      │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Twilio Test         │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Apple NFC           │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ AI Agent            │ true/false│ true/false │ configured / missing_credentials / disabled │ │
+│  │ Backup & DR         │ true      │ true      │ active                              │ │
+│  └─────────────────────┴───────────┴────────────┴─────────────────────────────────────┘ │
 │                                                                             │
 │  Each includes:                                                             │
 │    • diagnostics: { ...health_checks }                                      │
@@ -641,7 +642,7 @@ CREATE NEW PLAN                           EDIT EXISTING PLAN
 - `frontend/src/components/superadmin/audit/AuditLogFilters.tsx`
 
 **Backend changes:**
-- Enhance `GET /admin/audit/` with query params: `?action=&actor_id=&tenant_id=&from=&to=&search=`
+- `GET /admin/audit/` already supports query params: `?action=&resource_type=&actor_email=&tenant_id=&status=&date_from=&date_to=`. The following are documented as needed but are not yet implemented: `actor_id`, `from`, `to`, `search`.
 - Add `GET /admin/audit/actions/` → distinct action types for filter dropdown
 
 **Flowchart:**
@@ -820,11 +821,11 @@ Frontend calls POST /billing/confirm/ → activates paid subscription
 
 | File | Lines | Status | Action Needed |
 |------|-------|--------|---------------|
-| `frontend/src/app/(dashboard)/superadmin/page.tsx` | ~200 | 🟢 Good | Add auto-refresh |
-| `frontend/src/app/(dashboard)/superadmin/tenants/page.tsx` | ~800 | 🟡 Functional | Add subscription tab, plan change, password reset |
+| `frontend/src/app/(dashboard)/superadmin/page.tsx` | ~139 | 🟢 Good | Add auto-refresh |
+| `frontend/src/app/(dashboard)/superadmin/tenants/page.tsx` | ~114 | 🟡 Functional | Add subscription tab, plan change, password reset |
 | `frontend/src/app/(dashboard)/superadmin/metrics/page.tsx` | ~288 | 🟡 Synthetic | Replace fake data |
-| `frontend/src/app/(dashboard)/superadmin/plans/page.tsx` | ~200 | 🟢 Good | Minor polish |
-| `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | ~500 | 🟢 Good | Minor polish |
+| `frontend/src/app/(dashboard)/superadmin/plans/page.tsx` | ~238 | 🟢 Good | Minor polish |
+| `frontend/src/app/(dashboard)/superadmin/settings/page.tsx` | ~71 | 🟢 Good | Minor polish |
 | `frontend/src/components/superadmin/plans/PlanModal.tsx` | 568 | 🟢 Good | No changes needed |
 
 ---

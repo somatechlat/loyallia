@@ -31,6 +31,8 @@
 | `apple_cert_pem` | Vault secret | Ignored local Apple certificate |
 | `apple_cert_key_pem` | Vault secret | Ignored local Apple private key |
 | `apple_wwdr_cert_pem` | Vault value | Ignored local WWDR certificate |
+| `apple_nfc_enabled` | Vault boolean | SuperAdmin/Vault |
+| `apple_nfc_encryption_public_key` | Vault secret | Operator provided |
 
 **Certificate Details:** verify serial, pass type identifier, team identifier, issuer, validity, and keypair match locally without committing values.
 

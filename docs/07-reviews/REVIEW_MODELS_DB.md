@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Resolved-status claims and line references reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Loyallia Backend - Comprehensive Database & RBAC Review
@@ -73,10 +74,9 @@ is_staff = models.BooleanField(default=False)  # Django admin access
 
 ### 1.4 `require_role` Decorator
 
-**File:** `common/permissions.py` (lines 121-148)  
-**File:** `common/role_check.py` (lines 13-36) - DUPLICATE
+**File:** `common/permissions.py` (lines 121-148)
 
-**VERDICT: CORRECT but DEDUPLICATED.** Both files define an identical `require_role` decorator. The `common/role_check.py` version is imported by `automation/api.py` while `common/permissions.py` is the canonical version used everywhere else. This is a **LOW** maintainability issue, not a security issue.
+**VERDICT: CORRECT.** `require_role()` is defined only in `common/permissions.py`; the duplicate `common/role_check.py` file has been removed.
 
 ### 1.5 SUPER_ADMIN Tenant Isolation
 
@@ -119,50 +119,34 @@ if User.objects.filter(email=payload.email).exists():
 
 ## 2. CRITICAL ISSUES (Severity: CRITICAL)
 
-### CRIT-001: `Invoice.subscription` uses CASCADE - Billing History Lost on Subscription Deletion
+### CRIT-001: `Invoice.subscription` — ✅ RESOLVED
 
-**File:** `apps/billing/payment_models.py` (line 89)
-
-```python
-subscription = models.ForeignKey(
-    Subscription,
-    on_delete=models.CASCADE,  # <-- CRITICAL
-    related_name="invoices",
-)
-```
-
-**Risk:** If a `Subscription` is deleted (e.g., tenant deletion cascades through User -> Tenant -> Subscription), ALL associated `Invoice` records are permanently deleted. This destroys billing history needed for SRI compliance and tax reporting.
-
-**Recommendation:** Change to `on_delete=models.PROTECT` to prevent deletion of subscriptions with invoices, or `SET_NULL` with null=True to preserve invoices with a null subscription reference.
+**File:** `apps/billing/payment_models.py`
 
 ```python
 subscription = models.ForeignKey(
     Subscription,
-    on_delete=models.PROTECT,  # Prevent deletion if invoices exist
+    on_delete=models.PROTECT,
     related_name="invoices",
 )
 ```
 
-### CRIT-002: `CustomerPass.card` uses CASCADE - Mass Customer Unenrollment on Program Deletion
+**Status:** `Invoice.subscription` now uses `PROTECT`, preventing subscription deletion while invoices exist. Billing history is preserved for SRI compliance and tax reporting.
 
-**File:** `apps/customers/models.py` (line 168)
+### CRIT-002: `CustomerPass.card` — ✅ RESOLVED
 
-```python
-card = models.ForeignKey(Card, on_delete=models.CASCADE, related_name="passes", verbose_name="Programa")
-```
-
-**Risk:** Deleting a `Card` (loyalty program) will cascade-delete ALL `CustomerPass` records for that program, effectively unenrolling all customers without any warning or confirmation. This is a massive data loss event.
-
-**Recommendation:** Change to `on_delete=models.PROTECT` to prevent accidental program deletion when customers are enrolled.
+**File:** `apps/customers/models.py`
 
 ```python
 card = models.ForeignKey(
     Card,
-    on_delete=models.PROTECT,  # Prevent deletion if customers are enrolled
+    on_delete=models.PROTECT,
     related_name="passes",
     verbose_name="Programa",
 )
 ```
+
+**Status:** `CustomerPass.card` now uses `PROTECT`, preventing accidental program deletion when customers are enrolled.
 
 ---
 
@@ -350,15 +334,7 @@ def clean(self):
 
 ## 5. LOW SEVERITY ISSUES
 
-### LOW-001: Duplicate `require_role` decorator
-
-**Files:** `common/permissions.py` (121-148) and `common/role_check.py` (13-36)
-
-Both files define identical `require_role` decorators. `common/role_check.py` is only imported by `automation/api.py`. Consolidate to one canonical location.
-
-**Recommendation:** Remove `common/role_check.py` and update all imports to use `common.permissions.require_role`.
-
-### LOW-002: `RefreshToken` model has no expiration cleanup mechanism
+### LOW-001: `RefreshToken` model has no expiration cleanup mechanism
 
 **File:** `apps/authentication/models.py` (lines 223-243)
 
@@ -366,7 +342,7 @@ Expired refresh tokens are not automatically cleaned up. Over time, this table w
 
 **Recommendation:** Add a periodic Celery task to delete tokens where `expires_at < now()`.
 
-### LOW-003: `Customer.referral_code` uses `unique=True` but generated dynamically
+### LOW-002: `Customer.referral_code` uses `unique=True` but generated dynamically
 
 **File:** `apps/customers/models.py` (line 48)
 
@@ -381,7 +357,7 @@ The empty string default combined with `unique=True` means only one customer can
 referral_code = models.CharField(max_length=20, unique=True, null=True, blank=True, default=None)
 ```
 
-### LOW-004: `WebhookEvent.payload_hash` not indexed for dedup lookups
+### LOW-003: `WebhookEvent.payload_hash` not indexed for dedup lookups
 
 **File:** `apps/billing/payment_models.py` (lines 228-232)
 
@@ -577,11 +553,12 @@ The audit log implementation is EXCELLENT:
 
 ### Long-Term (LOW)
 
-12. **LOW-001:** Consolidate duplicate `require_role` decorators
-13. **LOW-002:** Add periodic cleanup for expired RefreshTokens
-14. **LOW-003:** Fix `Customer.referral_code` empty string unique constraint
-15. **LOW-004:** Add index on `WebhookEvent.payload_hash`
-16. **LOW-006:** Complete migration away from deprecated `Tenant.plan` field
+12. **LOW-001:** Add periodic cleanup for expired RefreshTokens
+13. **LOW-002:** Fix `Customer.referral_code` empty string unique constraint
+14. **LOW-003:** Add index on `WebhookEvent.payload_hash`
+15. **LOW-004:** Complete migration away from deprecated `Tenant.plan` field
+
+✅ **Resolved:** CRIT-001 (`Invoice.subscription` CASCADE) and CRIT-002 (`CustomerPass.card` CASCADE) are both now `PROTECT`. The duplicate `require_role` decorator has been consolidated.
 
 ---
 
@@ -592,10 +569,10 @@ The audit log implementation is EXCELLENT:
 | RBAC Implementation | A | Correct role hierarchy, no escalation vectors, proper SUPER_ADMIN isolation |
 | Multi-Tenant Isolation | A+ | 100% tenant FK coverage, secure JWT auth, no unfiltered queries found |
 | Index Strategy | B+ | Excellent compound indexes, a few missing standalone indexes |
-| Data Integrity | B | Good use of SET_NULL for audit preservation, 2 CRITICAL CASCADE issues |
+| Data Integrity | A- | Critical CASCADE issues resolved; remaining HIGH/MEDIUM/LOW items are manageable |
 | Django Best Practices | B | Good overall, deprecated `unique_together` usage, minor issues |
 | Audit & Compliance | A+ | Excellent immutable audit trail with LOPDP compliance |
 
-**Overall Grade: B+**
+**Overall Grade: A-**
 
-The codebase demonstrates solid understanding of multi-tenant architecture and RBAC. The 2 CRITICAL CASCADE issues are the primary concerns and should be addressed immediately to prevent data loss. The RBAC implementation itself is robust and secure.
+The codebase demonstrates solid understanding of multi-tenant architecture and RBAC. The previously critical CASCADE issues have been resolved. The RBAC implementation itself is robust and secure.

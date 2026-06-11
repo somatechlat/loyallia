@@ -107,7 +107,7 @@ Loyallia implements Role-Based Access Control (RBAC) with four defined roles. Th
 
 ### 5.1 SUPER_ADMIN Accounts
 - `SUPER_ADMIN` accounts are the highest-privilege identities in Loyallia.
-- The number of active `SUPER_ADMIN` accounts is capped at **three (3)**.
+- No hard limit on the number of active `SUPER_ADMIN` accounts is enforced in code; platform operators manage this through quarterly access reviews and onboarding approvals.
 - `SUPER_ADMIN` authentication requires:
   - Strong password (§6)
   - Multi-Factor Authentication (MFA) via OTP (Twilio Verify)
@@ -180,11 +180,11 @@ All local user passwords must comply with the following requirements, enforced a
 ### 7.2 Password Lifecycle
 - **Expiry** — User passwords do not have a forced expiry period. Password changes are triggered only upon suspected compromise or user request, consistent with NIST SP 800-63B guidance.
 - **History** — No password history enforcement is currently implemented in the codebase. Reuse of the last **5** passwords is a planned control but is not active.
-- **Reset** — Password resets are initiated via a time-limited, single-use token sent to the verified email address. Tokens expire after **24 hours**.
+- **Reset** — Password resets are initiated via a time-limited, single-use token sent to the verified email address. Tokens expire after **3 days** (Django default); the policy previously stated 24 hours, but no override is configured.
 - **Transmission** — Passwords are transmitted exclusively over TLS 1.2 or higher in production (host-level nginx).
 
 ### 7.3 Multi-Factor Authentication (MFA)
-- **OTP via SMS** — Twilio Verify is used for phone-based OTP. Enabled for `SUPER_ADMIN` and optionally for tenant users based on tenant settings.
+- **OTP via SMS** — Twilio Verify is used for phone-based OTP. Phone verification is enabled globally for users who provide a phone number; it is not configurable per tenant and is not limited to `SUPER_ADMIN`.
 - **Google OAuth 2.0** — Supported as an alternative authentication factor. Google Identity Services (GIS) tokens are verified server-side before account linkage.
 - **Security PIN** — A 6-digit PIN is required for `OWNER` accounts when `SUPER_ADMIN` impersonation is requested. The PIN is hashed with Argon2 and never stored in plain text.
 
@@ -199,7 +199,7 @@ Loyallia uses stateless JSON Web Tokens (JWT) for session management with the fo
 |---|---|---|
 | Access token lifetime | 60 minutes | Balance between UX and security |
 | Refresh token lifetime | 30 days | Long-lived offline access with revocation |
-| Algorithm | HS256 (default) / RS256 (production) | Cryptographic agility |
+| Algorithm | HS256 (default). RS256 is used only when asymmetric JWT key paths are explicitly configured. | Cryptographic agility |
 | Secret storage | Vault (`jwt_secret_key`) | Isolation from Django `SECRET_KEY` |
 | Token binding | Not bound to IP / device | Trade-off for mobile-friendly UX |
 
@@ -207,7 +207,7 @@ Loyallia uses stateless JSON Web Tokens (JWT) for session management with the fo
 - Refresh tokens are tracked in the database (`RefreshToken` model) with SHA-256 hashes.
 - Users may hold **multiple concurrent sessions** on different devices.
 - Revocation of a single refresh token does not invalidate other active sessions.
-- **Global logout** (`POST /api/v1/auth/logout/`) blacklists the current access token and revokes the associated refresh token.
+- **Global logout** (`POST /api/v1/auth/logout/`) revokes the current refresh token. Access tokens remain valid until their 60-minute expiry; no server-side access-token blacklist is maintained.
 
 ### 8.3 Session Timeout and Inactivity
 - Access tokens expire after **60 minutes** of issuance, regardless of activity.
@@ -240,9 +240,9 @@ To mitigate brute-force attacks, the following lockout policy is enforced:
 - Locked accounts immediately lose API access; existing JWTs expire naturally within 60 minutes.
 
 ### 9.3 Account Termination
-1. **User-Initiated** — Users may request account deletion. Tenant `OWNER`s must transfer ownership or delete the tenant before personal account deletion.
+1. **User-Initiated** — Users may request account deletion. Tenant `OWNER`s must transfer ownership or delete the tenant before personal account deletion. Tenant deletion is scheduled with a **24-hour grace period** (Celery task) before irreversible cascade deletion; `scheduled_deletion_at` must be set for the hard-delete task to run.
 2. **Administrative** — Upon termination of employment or contract, the responsible manager requests immediate deactivation via the tenant dashboard.
-3. **Data Retention** — Deactivated accounts are soft-deleted (`is_active=False`). Personal data is purged in accordance with the Data Retention Policy and applicable privacy laws (e.g., GDPR, LGPD) within **90 days** of deactivation unless legal hold applies.
+3. **Data Retention** — Deactivated accounts are soft-deleted (`is_active=False`). No automated purge after 90 days is currently implemented; personal data is removed only through explicit deletion by an authorized user or via tenant deletion cascade. This is a known gap tracked in the Data Retention Policy.
 4. **Audit** — All deactivations are logged with timestamp, actor, and reason.
 
 ---

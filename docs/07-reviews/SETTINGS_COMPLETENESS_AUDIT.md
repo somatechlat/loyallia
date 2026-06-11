@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Settings claims and file line counts reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Loyallia Django Settings Completeness Audit

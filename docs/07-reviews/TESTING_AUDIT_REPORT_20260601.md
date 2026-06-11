@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Test/container counts and pass/fail totals are historical snapshots from the 2026-06-01 run; re-run tests for current results.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # LOYALLIA — COMPREHENSIVE TESTING & AUDIT REPORT
@@ -7,6 +8,8 @@
 ---
 
 ## EXECUTIVE SUMMARY
+
+> **Historical snapshot — 2026-06-01.** Re-run `docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm test -q` and `npx playwright test` for current results.
 
 | Category | Status | Details |
 |----------|--------|---------|
@@ -314,6 +317,8 @@ docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm test te
 ---
 
 ## APPENDIX: SYSTEM STATE AFTER AUDIT
+
+> **Historical snapshot — 2026-06-01.** These counts are not live; re-run health checks and tests for the current state.
 
 ```
 Containers:     20 healthy

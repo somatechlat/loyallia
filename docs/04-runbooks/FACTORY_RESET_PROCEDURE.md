@@ -18,10 +18,10 @@
 ## Pre-Reset Checklist
 
 - [ ] Confirm environment is `localhost` disposable development
-- [ ] Confirm `.agents/vault_init_rescue.json` exists and is valid JSON
-- [ ] Confirm `.agents/vault_secrets_rescue.json` exists
-- [ ] Confirm `.agents/rescue/postgres_rescue_YYYYMMDD_HHMMSS.dump` exists (if data matters)
-- [ ] Confirm `.agents/rescue/certs_rescue_YYYYMMDD_HHMMSS.tar.gz` exists
+- [ ] Confirm `.agents/vault_init_rescue.json.age` exists and is valid encrypted rescue file
+- [ ] Confirm `.agents/vault_secrets_rescue.json.age` exists
+- [ ] Confirm `.agents/rescue/postgres_rescue_YYYYMMDD_HHMMSS.dump.age` exists (if data matters)
+- [ ] Confirm `.agents/rescue/certs_rescue_YYYYMMDD_HHMMSS.tar.gz.age` exists
 - [ ] Notify any other developers using this local instance
 - [ ] Export any data you need to keep
 
@@ -41,7 +41,7 @@ docker compose down --remove-orphans
 ## Step 2 — Destroy All Persistent Data
 
 ```bash
-for vol in vault_data vault_runtime postgres_data postgres_replica_data redis_data minio_data static_files media_files prometheus_data grafana_data loki_data next_cache; do
+for vol in vault_data vault_runtime postgres_data postgres_replica_data redis_data minio_data static_files media_files prometheus_data grafana_data loki_data next_cache alertmanager_data sentinel_data; do
     if docker volume inspect "loyallia_${vol}" &>/dev/null 2>&1; then
         docker volume rm "loyallia_${vol}"
         echo "Removed: loyallia_${vol}"
@@ -65,6 +65,8 @@ done
 | `loyallia_grafana_data` | Dashboards and alerts |
 | `loyallia_loki_data` | Log aggregation |
 | `loyallia_next_cache` | Next.js build cache |
+| `loyallia_alertmanager_data` | Alertmanager notifications state |
+| `loyallia_sentinel_data` | Redis Sentinel configuration/state |
 
 ---
 
@@ -96,16 +98,17 @@ ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap-production.sh
 **This runs the Zero Trust Bootstrap sequence:**
 1. Check prerequisites (docker, docker compose)
 2. Load or generate secrets → `.bootstrap_secrets.{mode}.env`
-3. Start Vault + vault-init (secrets injected via read-only volume, **NEVER via env vars**)
-4. Auto-save `init.json` to `.agents/vault_init_rescue.json`
-5. Auto-export Vault secrets to `.agents/vault_secrets_rescue.json`
+3. Prepare secure bootstrap volume
+4. Start Vault + vault-init (secrets injected via read-only volume, **NEVER via env vars**)
+5. Create rescue files (`init.json` + Vault KV secrets)
 6. Start PostgreSQL, Redis, MinIO, PgBouncer, replica
 7. Run migrations + seeds (API container startup)
 8. Ensure SuperAdmin account exists
-9. Start Celery workers, Flower, WhatsApp bridge, Nginx, Prometheus, Grafana, Loki
+9. Start Celery workers, Flower, WhatsApp bridge, Web/Nginx, Prometheus, Grafana, Loki, Alertmanager
 10. Start Redis Sentinel
-11. Securely cleanup temp volume
-12. Verify all containers healthy
+
+- **Final:** Securely cleanup temp volume
+- **Final:** Verify all containers healthy
 
 **Idempotent:** Both scripts are fully idempotent. If interrupted, simply re-run — completed steps are skipped automatically.
 
@@ -151,25 +154,28 @@ For a **data-only** reset (preserves Vault secrets and SuperAdmin):
 
 ## Rescue File Creation (Manual)
 
-If rescue files are missing, create them AFTER a successful bootstrap:
+If encrypted rescue files are missing, create them AFTER a successful bootstrap using the DR `create_rescue.sh` scripts (they produce `.age` encrypted files):
 
+**Development:**
 ```bash
-# Vault init.json (CRITICAL — contains unseal key)
-docker cp loyallia-vault:/vault/file/init.json .agents/vault_init_rescue.json
-
-# Vault secrets
-bash scripts/export_local_vault.sh .agents/vault_secrets_rescue.json
-
-# PostgreSQL dump (custom format used by DR scripts)
-mkdir -p .agents/rescue
-docker compose exec -T postgres pg_dump -U loyallia -d loyallia --format=custom --compress=9 > .agents/rescue/postgres_rescue_$(date +%Y%m%d_%H%M%S).dump
-
-# Certificates (preserved in certs/ directory, also backed up as rescue)
-tar czf .agents/rescue/certs_rescue_$(date +%Y%m%d_%H%M%S).tar.gz -C . certs/
-
-# Redis RDB
-docker cp loyallia-redis:/data/dump.rdb .agents/rescue/redis_rescue_$(date +%Y%m%d_%H%M%S).rdb
+bash deploy/disaster_recovery/development/create_rescue.sh
 ```
+
+**Production:**
+```bash
+bash deploy/disaster_recovery/production/create_rescue.sh
+```
+
+This creates files such as:
+- `vault_init_rescue.json.age`
+- `vault_secrets_rescue.json.age`
+- `postgres_rescue_YYYYMMDD_HHMMSS.dump.age`
+- `certs_rescue_YYYYMMDD_HHMMSS.tar.gz.age`
+- `redis_rescue_YYYYMMDD_HHMMSS.rdb.age`
+- `runtime_rescue_YYYYMMDD_HHMMSS.tar.gz.age`
+- `rescue_manifest.json`
+
+> **Note:** `scripts/export_local_vault.sh` only prints a redacted inventory to stdout and does not accept an output argument. Do not use it to create rescue files.
 
 ---
 

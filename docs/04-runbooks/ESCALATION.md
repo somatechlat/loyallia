@@ -54,7 +54,6 @@ L4 CTO / VP Engineering
 
 ## Runbooks
 
-- API Down
-- PostgreSQL Failover
-- Redis Failover
-- [Backup Recovery](../09-archive/BACKUP_DISASTER_RECOVERY.md)
+- [Disaster Recovery Playbook](./DISASTER_RECOVERY_PLAYBOOK.md)
+- [Backup Operations Runbook](./BACKUP_OPERATIONS_RUNBOOK.md)
+- [Factory Reset Procedure](./FACTORY_RESET_PROCEDURE.md)

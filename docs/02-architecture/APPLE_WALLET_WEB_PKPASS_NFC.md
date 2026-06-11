@@ -118,7 +118,7 @@ These are required for normal Apple Wallet pass generation from a web app:
 | Pass Type ID | Yes | Yes | Must start with `pass.` and use reverse DNS style. |
 | Pass Type ID certificate | Yes | Yes | Apple-issued signing certificate for the Pass Type ID. |
 | Pass Type private key | Yes | Yes | Generated from the CSR process; secret. |
-| Pass Type private key passphrase | If encrypted | Yes | Not currently consumed by the signing code; keep unencrypted or implement support. |
+| Pass Type private key passphrase | Unsupported | N/A | The signing code loads the key with `password=None`; encrypted keys are not supported. |
 | Apple WWDR certificate | Yes | Yes | Required for PKPass signing chain. |
 
 ## Additional Apple Requirements For NFC Passes
@@ -153,7 +153,6 @@ Core Apple Wallet keys:
 | `apple_pass_type_identifier` | Pass Type ID used in `pass.json` | No |
 | `apple_cert_pem` | Pass Type ID signing certificate | Yes |
 | `apple_cert_key_pem` | Pass Type ID private key | Yes |
-| `apple_cert_key_passphrase` | Optional private key passphrase | Yes |
 | `apple_wwdr_cert_pem` | Apple WWDR intermediate certificate | No |
 
 NFC keys:
@@ -161,7 +160,7 @@ NFC keys:
 | Vault Key | Purpose | Secret |
 |---|---|---:|
 | `apple_nfc_enabled` | Operator gate for NFC pass generation | No |
-| `apple_nfc_encryption_public_key` | Public key embedded in the pass `nfc` dictionary | No |
+| `apple_nfc_encryption_public_key` | Public key embedded in the pass `nfc` dictionary | Yes |
 
 The current web-app Wallet path SHALL NOT require these Verify with Wallet identity keys:
 

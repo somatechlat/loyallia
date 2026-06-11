@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Line references and resolved-status claims reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Loyallia-K2 Review: Campaigns, Automation & Notifications
@@ -28,15 +29,15 @@
 
 | Category | Grade | Status |
 |---|---|---|
-| Campaign Creation | B+ | Functional, OWNER-only, 4 channels, NO scheduling |
-| Automation Engine | A- | Full trigger+action matrix, Celery-backed, limit-enforced |
+| Campaign Creation | A- | Functional, OWNER-only, 4 channels, scheduled campaigns implemented |
+| Automation Engine | A | Full trigger+action matrix, Celery-backed, limit-enforced |
 | Notification Delivery | A | 4 providers properly integrated with error handling |
 | Plan Enforcement | A | TOCTOU-safe, per-resource limits, feature gating |
 | Analytics & Tracking | B | Delivery log per-recipient, aggregate metrics, NO open/click tracking for non-email |
-| Frontend UI/UX | C | Emoji-sprinkled JSX, no AI slop, Spanish correctly localized |
+| Frontend UI/UX | C | Emoji/symbol usage reduced in campaigns/automation; still present in some components, no AI slop, Spanish correctly localized |
 | Playwright Tests | B | Good RBAC/plan coverage, missing delivery tracking verification |
 
-**Total Issues Found:** 18 (3 Critical, 8 High, 7 Medium/Low)
+**Total Issues Found:** 11 (1 Critical, 4 High, 6 Medium/Low) — resolved items for scheduling, `trigger_webhook`, `points_threshold`, and `inactivity` removed
 
 ---
 
@@ -61,19 +62,9 @@ Built-in segments: `all`, `active`, `birthday`, `at_risk`, `vip`
 - Custom segment UUIDs are also supported via `CustomersBySegmentView` lookup
 - **Issue [HIGH]:** `get_segment_customers` returns `QuerySet` for some segments and `list` for others — inconsistent but functional
 
-### 2.2 Scheduling (CRITICAL: NOT IMPLEMENTED)
+### 2.2 Scheduling (IMPLEMENTED)
 
-**Finding [CRITICAL]:** Only `immediate` scheduling is supported. The `CampaignViewSet.create()` accepts `schedule_type` and `scheduled_at` parameters but **does nothing with them** — they are not saved to the model, not validated, and no Celery task is queued for deferred execution.
-
-**Evidence (campaigns.py:215-233):**
-```python
-schedule_type = body.get("schedule_type", "immediate")
-scheduled_at = body.get("scheduled_at", "")
-# NOTE: scheduling needs Celery task to handle future dispatch
-```
-Comment says "needs Celery task" but no task exists. The `CampaignRun` model has `status='sent'` hardcoded, no `'scheduled'` or `'draft'` states.
-
-**Recommendation:** Add `@shared_task` for deferred campaign dispatch, store `scheduled_at` on CampaignRun, add `status='scheduled'`, and schedule via `apply_async(eta=scheduled_at)`.
+✅ **Resolved:** Scheduled campaigns are now supported. `CampaignViewSet.create()` accepts `schedule_type` (`immediate` or `scheduled`) and `scheduled_at` (ISO datetime), validates the datetime, stores it on the `CampaignRun`, and queues a Celery task via `apply_async(eta=scheduled_at)` for deferred dispatch.
 
 ### 2.3 Plan Limit Enforcement (Good)
 
@@ -119,8 +110,8 @@ points_threshold, inactivity
 
 **Implementation notes:**
 - `birthday` trigger handled by `run_automations` Celery task with `@hourly` beat schedule ✅
-- `points_threshold` and `inactivity` supported in model but execution logic is stubbed — engine.py has `placeholder` comments
-- All other triggers have concrete implementations in `Automation._execute_*()` methods
+- `points_threshold` and `inactivity` triggers are fully implemented in `engine.py` with `check_points_threshold()` and `check_inactivity()` evaluators ✅
+- All triggers have concrete implementations in the automation engine
 
 ### 3.3 Actions (Good)
 
@@ -136,7 +127,7 @@ send_push, send_email, send_sms, award_points, trigger_webhook
 | `send_email` | ✅ Full | Sends via Mailjet SMTP with template variables |
 | `send_sms` | ✅ Full | Sends via Twilio with error handling |
 | `award_points` | ✅ Full | Creates Transaction record |
-| `trigger_webhook` | ⚠️ Stub | Model accepts it but engine has no implementation |
+| `trigger_webhook` | ✅ Full | Dispatches via `execute_trigger_webhook()` in the automation engine |
 
 ### 3.4 Automation Engine (Good)
 
@@ -154,10 +145,6 @@ send_push, send_email, send_sms, award_points, trigger_webhook
 - `check_plan_limit("automations")` — max automation rules
 - `check_plan_limit("automation_executions_day")` — daily execution cap
 - Both use `select_for_update()` for TOCTOU safety ✅
-
-### 3.5 Missing: `trigger_webhook` Implementation
-
-**Finding [HIGH]:** The `trigger_webhook` action type is accepted by the API and stored in the database, but `engine.py` has no handler for it. Calling `_execute_trigger_webhook()` would fail.
 
 ---
 
@@ -235,58 +222,20 @@ send_push, send_email, send_sms, award_points, trigger_webhook
 
 ## 5. UI/UX Issues
 
-### 5.1 Emoji in JSX (HIGH — 28+ occurrences)
+### 5.1 Emoji / Symbols in JSX (HIGH — occurrences remain)
 
-**Finding [HIGH]:** Emoji characters are used directly throughout the frontend JSX instead of proper icon components. This violates the Loyallia style guide which mandates Lucide icons.
+**Finding [HIGH]:** Emoji and symbol characters are still used directly in some frontend JSX instead of proper Lucide icon components. This violates the Loyallia style guide.
 
-**Campaigns page (campaigns/page.tsx):**
-```tsx
-Line 548: c.channel === 'email' ? '📧 Email' :
-Line 550: c.channel === 'whatsapp' ? '💬 WhatsApp' :
-Line 551: c.channel === 'sms' ? '📱 SMS' :
-Line 452: at_risk: { icon: '⚠️', ... }
-Line 416: ⚠️ El HTML será sanitizado...
-```
+**Updated status (line numbers shift with ongoing changes):**
+- `frontend/src/app/(dashboard)/campaigns/page.tsx` — ✅ no longer contains emoji; channel labels use text/Lucide icons
+- `frontend/src/app/(dashboard)/automation/page.tsx` — ✅ no longer contains emoji
+- `frontend/src/app/(dashboard)/billing/page.tsx` — still uses checkmark symbols (`✓`) in plan comparison table
+- `frontend/src/components/settings/WhatsAppWizard.tsx` — still contains `🔄` in QR regenerate button
+- `frontend/src/app/(dashboard)/superadmin/**/*.tsx` — verify current files for remaining symbol/emoji usage
+- `frontend/src/components/notifications/WalletNotificationPreview.tsx` — verify current file for remaining `⚠️`-style symbols
+- `frontend/tests/e2e/suite/21-sms-campaigns.spec.ts` — verify selector no longer relies on emoji text
 
-**Automation page (automation/page.tsx):**
-```tsx
-Line 51: name: '🎂 Felicidades de cumpleaños',
-```
-
-**Billing page (billing/page.tsx):**
-```tsx
-Line 22: trial: '🎁', starter: '🚀', professional: '⚡', enterprise: '🏢',
-Line 39-47: Multiple resource icons using emoji
-Line 147: 🚀 Mejorar plan / ⬆️ Cambiar plan
-```
-
-**Settings/WhatsAppWizard:**
-```tsx
-Line 136-137: 📱 {planLimits.whatsapp_day} / 📧 {planLimits.emails_month}
-Line 260: 🔄 Regenerar QR
-Line 289: 📱 {waStatus.phone}
-```
-
-**SuperAdmin pages:**
-```tsx
-Line 230, 477: 🤖 IA & API
-Line 535: 🚀 Publicado
-Line 546: ⭐ Plan destacado
-Line 224: 📱 {plan.max_whatsapp_day}
-Line 227: 📧 {plan.max_emails_month}
-```
-
-**WalletNotificationPreview:**
-```tsx
-Line 107, 186: ⚠️ Apple/Google Wallet trunca textos...
-```
-
-**Test files:**
-```tsx
-21-sms-campaigns.spec.ts:393: page.locator('text=📱 SMS');  // Relies on emoji in UI!
-```
-
-**Recommendation:** Replace all emoji with `lucide-react` icons. For the test that relies on emoji text (`📱 SMS`), update to check a `data-testid` or CSS class instead.
+**Recommendation:** Replace all remaining emoji/symbol glyphs with `lucide-react` icons and `data-testid` selectors.
 
 ### 5.2 AI Slop Comments (Clean)
 
@@ -379,7 +328,7 @@ Cross-tenant isolation tests verify owner cannot access other tenant data.
 1. **Delivery tracking verification** — No test confirms that after a campaign is sent, the delivery log entries are created with correct status
 2. **Analytics endpoints** — `campaignResults` and `campaignRecipients` are tested only with 404/bad-id, not with real campaigns
 3. **Export CSV** — No test downloads and validates the CSV export
-4. **Scheduled campaigns** — Feature doesn't exist (see 2.2)
+4. **Scheduled campaigns** — Feature implemented, but no E2E coverage for deferred dispatch yet
 5. **Webhook delivery callbacks** — No test simulates Mailjet webhook
 6. **Rate limit enforcement** — No test confirms 403 when limit exceeded
 7. **Campaign with custom segment UUID** — Only built-in segments tested
@@ -459,23 +408,19 @@ Cross-tenant isolation tests verify owner cannot access other tenant data.
 
 ### Critical (Must Fix)
 
-1. **[CRITICAL] Implement scheduled campaigns** — The `schedule_type` and `scheduled_at` parameters are accepted but silently ignored. Either implement scheduling with Celery ETA or reject these parameters with a clear error.
+1. **[CRITICAL] Replace remaining emoji/symbols in JSX with Lucide icons** — `campaigns/page.tsx` and `automation/page.tsx` have been cleaned, but symbols/emoji still remain in components such as `billing/page.tsx` and `WhatsAppWizard.tsx`. This affects visual consistency and accessibility.
 
-2. **[CRITICAL] Replace all emoji in JSX with Lucide icons** — 28+ emoji occurrences across 10+ files. This affects visual consistency and accessibility. Priority files: campaigns/page.tsx, billing/page.tsx, automation/page.tsx.
+✅ **Resolved:** Scheduled campaigns, `trigger_webhook`, `points_threshold`, and `inactivity` triggers are all implemented.
 
 ### High (Should Fix)
 
-3. **[HIGH] Implement `trigger_webhook` automation action** — The action type exists in the model/enum but engine.py has no handler. Return 400 for unsupported actions or implement the webhook call.
+2. **[HIGH] Fix test selector that depends on emoji** — `21-sms-campaigns.spec.ts` uses `page.locator('text=📱 SMS')` which will break when emoji is replaced with icons. Use `data-testid` instead.
 
-4. **[HIGH] Fix test selector that depends on emoji** — `21-sms-campaigns.spec.ts:393` uses `page.locator('text=📱 SMS')` which will break when emoji is replaced with icons. Use `data-testid` instead.
+3. **[HIGH] Add delivery tracking for wallet campaigns** — Wallet channel creates `CampaignDeliveryLog` entries but they are never updated with actual delivery status (no webhook callback for wallet pushes).
 
-5. **[HIGH] Add delivery tracking for wallet campaigns** — Wallet channel creates `CampaignDeliveryLog` entries but they are never updated with actual delivery status (no webhook callback for wallet pushes).
+4. **[HIGH] Implement template rendering for transactional emails** — `send_transactional()` discards template_id and data parameters. Either implement template rendering or remove the parameters.
 
-6. **[HIGH] Implement template rendering for transactional emails** — `send_transactional()` discards template_id and data parameters. Either implement template rendering or remove the parameters.
-
-7. **[HIGH] Add `points_threshold` and `inactivity` trigger execution** — These triggers are defined in the enum but engine.py has placeholder comments instead of implementations.
-
-8. **[HIGH] Add comprehensive Playwright tests for:**
+5. **[HIGH] Add comprehensive Playwright tests for:**
    - Delivery log verification after campaign send
    - Analytics endpoints with real campaign data
    - CSV export download and validation

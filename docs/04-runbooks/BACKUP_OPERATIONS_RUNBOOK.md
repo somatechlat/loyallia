@@ -28,16 +28,32 @@ Run the unified verification command:
 ./deploy/backups/backup --verify
 ```
 
-**Expected output:**
+**Expected output (development):**
 ```
 ════════════════════════════════════════════════════════════
-  BACKUP VERIFICATION
+  Backup Verification
 ════════════════════════════════════════════════════════════
 
 postgres: OK (loyallia_20260603_020000.sql.age, 2h old)
 redis: OK (dump_20260603_020000.rdb.age, 2h old)
 vault: OK (vault_20260603_020000.tar.gz.age, 2h old)
 minio: OK (minio_20260603_020000.tar.gz.age, 2h old)
+
+Age decryption test: OK
+
+All backups verified OK
+```
+
+**Expected output (production):**
+```
+════════════════════════════════════════════════════════════
+  BACKUP VERIFICATION
+════════════════════════════════════════════════════════════
+
+PostgreSQL: OK (loyallia_20260603_020000.sql.age, 2h old)
+Redis: OK (dump_20260603_020000.rdb.age, 2h old)
+Vault: OK (vault_20260603_020000.tar.gz.age, 2h old)
+MinIO: OK (minio_20260603_020000.tar.gz.age, 2h old)
 
 Decryption test: PASS
 
@@ -194,8 +210,8 @@ bash deploy/disaster_recovery/production/recover.sh
 # API health
 curl -sf http://127.0.0.1:33905/api/v1/health/ && echo "API: OK"
 
-# Database (use `loyallia_dev` in development, `loyallia` in production)
-docker compose exec -T postgres pg_isready -U loyallia -d loyallia_dev
+# Database (DR verification uses `loyallia`; the development app database is `loyallia_dev`)
+docker compose exec -T postgres pg_isready -U loyallia -d loyallia
 
 # Vault
 docker compose exec -T vault wget -qO- --no-check-certificate \
@@ -222,10 +238,10 @@ Validate that backups stored on the offsite MinIO server can be downloaded and d
 
 ```bash
 # 1. List available offsite backups
-./deploy/backups/restore --list
+bash ./deploy/backups/restore --list
 
 # 2. Download and restore a component from offsite
-# ./deploy/backups/restore --postgres --offsite --date=2026-06-01
+# bash ./deploy/backups/restore --postgres --offsite --date=2026-06-01
 # NOTE: --offsite and --date are parsed but not yet implemented by the component restore scripts.
 # Use the offsite sync scripts directly or restore from the latest local .age backup.
 
@@ -273,10 +289,10 @@ rm -f /tmp/test_download.age /tmp/test_download.sql /tmp/test_download.dump
 docker compose stop api celery-pass celery-push celery-default celery-beat
 
 # 2. Restore PostgreSQL from the latest local backup
-./deploy/backups/restore --postgres
+bash ./deploy/backups/restore --postgres
 
 # 3. If local backup is also corrupted, restore from offsite
-./deploy/backups/restore --postgres --offsite --date=2026-06-02
+bash ./deploy/backups/restore --postgres --offsite --date=2026-06-02
 
 # 4. Restart services
 docker compose start api celery-pass celery-push celery-default celery-beat
@@ -292,7 +308,7 @@ curl -sf http://127.0.0.1:33905/api/v1/health/
 
 ```bash
 # 1. Restore the latest snapshot (includes nginx configs)
-./deploy/backups/restore --snapshot
+bash ./deploy/backups/restore --snapshot
 
 # 2. Reload nginx
 docker compose exec nginx nginx -s reload
@@ -370,36 +386,36 @@ curl -sf http://127.0.0.1:33905/api/v1/health/
 
 | Flag | Description | Example |
 |------|-------------|---------|
-| `--full` | Restore all data components | `./deploy/backups/restore --full` |
-| `--snapshot` | Restore full cluster snapshot | `./deploy/backups/restore --snapshot` |
-| `--postgres` | Restore PostgreSQL | `./deploy/backups/restore --postgres` |
-| `--redis` | Restore Redis | `./deploy/backups/restore --redis` |
-| `--vault` | Restore Vault | `./deploy/backups/restore --vault` |
-| `--minio` | Restore MinIO | `./deploy/backups/restore --minio` |
-| `--offsite` | Download from offsite MinIO before restoring | `./deploy/backups/restore --postgres --offsite` |
-| `--date=YYYY-MM-DD` | Parsed for future use; not yet implemented by component restore scripts | `./deploy/backups/restore --postgres --offsite --date=2026-06-02` (not functional) |
-| `--list` | List available local and offsite backups | `./deploy/backups/restore --list` |
-| `--dry-run` | Show what would happen without executing | `./deploy/backups/restore --full --dry-run` |
+| `--full` | Restore all data components | `bash ./deploy/backups/restore --full` |
+| `--snapshot` | Restore full cluster snapshot | `bash ./deploy/backups/restore --snapshot` |
+| `--postgres` | Restore PostgreSQL | `bash ./deploy/backups/restore --postgres` |
+| `--redis` | Restore Redis | `bash ./deploy/backups/restore --redis` |
+| `--vault` | Restore Vault | `bash ./deploy/backups/restore --vault` |
+| `--minio` | Restore MinIO | `bash ./deploy/backups/restore --minio` |
+| `--offsite` | Download from offsite MinIO before restoring | `bash ./deploy/backups/restore --postgres --offsite` |
+| `--date=YYYY-MM-DD` | Parsed for future use; not yet implemented by component restore scripts | `bash ./deploy/backups/restore --postgres --offsite --date=2026-06-02` (not functional) |
+| `--list` | List available local and offsite backups | `bash ./deploy/backups/restore --list` |
+| `--dry-run` | Show what would happen without executing | `bash ./deploy/backups/restore --full --dry-run` |
 
 **Common combinations:**
 
 ```bash
 # List available backups
-./deploy/backups/restore --list
+bash ./deploy/backups/restore --list
 
 # Restore latest local PostgreSQL backup
-./deploy/backups/restore --postgres
+bash ./deploy/backups/restore --postgres
 
 # Restore PostgreSQL from offsite (specific date)
-# ./deploy/backups/restore --postgres --offsite --date=2026-06-01
+# bash ./deploy/backups/restore --postgres --offsite --date=2026-06-01
 # NOTE: --offsite and --date are parsed but not yet implemented by the component restore scripts.
 # Use the offsite sync scripts directly or restore from the latest local .age backup.
 
 # Full restore from offsite (disaster scenario)
-./deploy/backups/restore --full --offsite
+bash ./deploy/backups/restore --full --offsite
 
 # Dry run to preview a restore
-./deploy/backups/restore --full --dry-run
+bash ./deploy/backups/restore --full --dry-run
 ```
 
 ### Systemd Timer Reference (Production)

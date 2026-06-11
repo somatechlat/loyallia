@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Line references and findings reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Owner Dashboard Complete Audit Report
@@ -12,7 +13,7 @@
 
 ## Executive Summary
 
-The owner dashboard implementation is **solid and well-architected** overall. The backend enforces RBAC correctly with proper OWNER-only guards on sensitive endpoints. The frontend uses `UserRole` enum consistently and has proper route guards. Two **moderate bugs** were found (frontend expects `temp_password` not returned by API, `send_email` checkbox is non-functional), and several **minor issues** (nested HTML, unused invite endpoint, missing manager nav for `/team`). No critical security vulnerabilities were identified.
+The owner dashboard implementation is **solid and well-architected** overall. The backend enforces RBAC correctly with proper OWNER-only guards on sensitive endpoints. The frontend uses `UserRole` enum consistently and has proper route guards. One **moderate bug** remains (frontend expects `temp_password` not returned by API); the `send_email` checkbox issue has been **resolved**. Several **minor issues** remain (nested HTML, unused invite endpoint, missing manager nav for `/team`). No critical security vulnerabilities were identified.
 
 **Overall Grade: B+ (Good, with minor issues to fix)**
 
@@ -51,11 +52,11 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
 ### 1.2 Issues Found
 
-**ISSUE-001 [MODERATE]:** Frontend expects `temp_password` in API response, but backend doesn't return it.
+**ISSUE-001 [MODERATE]:** Frontend expects `temp_password` in API response, but backend still doesn't return it.
 
-- **Frontend** (`team/page.tsx:43`): `setCreatedPassword(data.temp_password || null);`
-- **Backend** (`tenants/api.py:375-378`): Returns only `success`, `message`, `user_id` -- no `temp_password`
-- **Impact:** The "password created" modal will always show empty/null password
+- **Frontend** (`team/page.tsx:53`): `setCreatedPassword(data.temp_password || null);`
+- **Backend** (`tenants/api.py:393-399`): Returns only `success`, `message`, `user_id` -- no `temp_password`
+- **Impact:** The "password created" modal will always show empty/null password.
 - **Fix:** Add `temp_password` to the response dict in `add_team_member()`:
   ```python
   return {
@@ -66,12 +67,13 @@ def add_team_member(request, payload: TeamMemberCreateIn):
   }
   ```
 
-**ISSUE-002 [MODERATE]:** `send_email` checkbox in frontend does nothing.
+**ISSUE-002 [MODERATE]:** ✅ RESOLVED — `send_email` checkbox is now functional.
 
-- **Frontend** (`team/page.tsx:20`): Form includes `send_email: true` field
-- **Backend** (`tenants/api.py:305-379`): `TeamMemberCreateIn` schema does NOT have `send_email` field; email is always sent
-- **Impact:** Checkbox gives false sense of control
-- **Fix:** Either (a) Add `send_email: bool = True` to `TeamMemberCreateIn` schema and conditionally send email, or (b) Remove the checkbox from frontend
+- **Frontend** (`team/page.tsx:22`): Form includes `send_email: true` field and binds the checkbox (`team/page.tsx:170`).
+- **Backend** (`tenants/api.py:139`): `TeamMemberCreateIn` schema now has `send_email: bool = True`.
+- **Backend** (`tenants/api.py:377-378`): Email is sent only when `payload.send_email` is `True`.
+- **Impact:** User can opt out of welcome email.
+- **Status:** Resolved.
 
 ---
 
@@ -349,7 +351,7 @@ const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation']
 | ID | Severity | Category | Description | Fix |
 |----|----------|----------|-------------|-----|
 | ISSUE-001 | **MODERATE** | Bug | `temp_password` not returned by API but frontend expects it | Add `temp_password` to response dict |
-| ISSUE-002 | **MODERATE** | Bug | `send_email` checkbox non-functional | Add field to schema or remove checkbox |
+| ~~ISSUE-002~~ | ~~**MODERATE**~~ | ~~Bug~~ | ~~`send_email` checkbox non-functional~~ | ~~Resolved~~ |
 | BUG-003 | **MINOR** | Bug | Nested `<header>` tags in locations page | Close first `<header>` before second |
 | CONCERN-001 | **LOW** | Architecture | Unused `invite_user` endpoint | Deprecate or integrate with frontend |
 | GAP-001 | **LOW** | RBAC | `/team` accessible to MANAGER by URL | Add to `OWNER_ONLY_ROUTES` if desired |
@@ -366,6 +368,7 @@ const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation']
 - [x] Email validation works (`EmailStr` + duplicate check)
 - [x] Password generation is secure (`secrets.token_urlsafe`)
 - [x] Welcome email sent (branded HTML with credentials)
+- [x] Welcome email can be toggled via `send_email` checkbox (resolved)
 - [x] User limit enforced (`check_plan_limit` with `select_for_update`)
 
 ### Team Management Flow

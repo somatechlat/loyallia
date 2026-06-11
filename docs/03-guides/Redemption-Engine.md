@@ -145,8 +145,8 @@ Mounted under `/api/v1/scanner/v2/` via `apps.redemption.api`.
 
 **HTTP Codes:**
 - `200` — Success
-- `422` — Denied by rules (response body contains `denial_reasons`)
-- `404` — Pass not found or inactive
+- `422` — Denied by rules or pass not found/inactive (response body contains `denial_reasons`, including `pass_not_found` for `/transact/`)
+- `404` — Pass not found or inactive (used only by `/validate/`)
 - `403` — Permission denied (non-staff)
 
 ---

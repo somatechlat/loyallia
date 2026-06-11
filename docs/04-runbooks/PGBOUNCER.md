@@ -87,7 +87,7 @@ Connect to the PgBouncer admin console (the `edoburu/pgbouncer` image does not i
 
 ```bash
 docker run --rm --network loyallia_backend-net postgres:17.4-alpine \
-  psql -h loyallia-pgbouncer -p 6432 -U postgres pgbouncer
+  psql -h pgbouncer -p 6432 -U postgres pgbouncer
 ```
 
 Useful commands:

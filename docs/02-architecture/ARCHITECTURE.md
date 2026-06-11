@@ -36,7 +36,7 @@ graph TB
 
     subgraph "Loyallia Platform — Docker Network"
         subgraph "Reverse Proxy"
-            NX[Nginx<br/>Port 80/443<br/>SSL Termination]
+            NX[Nginx<br/>Port 80/443<br/>SSL Termination (dev HTTP only; prod uses host-level nginx)]
         end
 
         subgraph "Application Layer"
@@ -57,7 +57,7 @@ graph TB
         end
 
         subgraph "File Storage"
-            MIO[MinIO<br/>S3-Compatible Storage<br/>Logos, QR Codes, PKPass<br/>Port 33903/33904]
+            MIO[MinIO<br/>S3-Compatible Storage<br/>Logos, QR Codes<br/>Port 33903/33904]
         end
 
         subgraph "Security"
@@ -78,11 +78,10 @@ graph TB
     WEB -->|"2. Enrollment form"| C1
     WEB -->|"3. Pass generation request"| API
     API -->|"4. Queue pass job"| RD
-    CEL -->|"5. Generate PKPass"| MIO
-    CEL -->|"6. Send to Apple"| C2
-    CEL -->|"7. Send JWT to Google"| GW
+    CEL -->|"5. Generate PKPass bytes"| C2
+    CEL -->|"6. Generate Google JWT save URL"| GW
     GW --> C3
-    CEL -->|"8. Welcome push"| APN
+    CEL -->|"7. Welcome push"| APN
     CEL --> FCM
 
     S1 -->|"Scan customer pass QR"| NX
@@ -153,34 +152,33 @@ sequenceDiagram
     QR->>Browser: Opens enrollment URL
     Browser->>NX: GET /enroll/{program_slug}
     NX->>WEB: Route to enrollment page
-    WEB->>API: GET /api/v1/programs/{slug}/
-    API->>DB: Fetch program config + branding
-    DB-->>API: Program data
-    API-->>WEB: Program details (name, logo, colors, card type)
+    WEB->>API: GET /api/v1/cards/public/{card_id}/
+    API->>DB: Fetch card config + branding
+    DB-->>API: Card data
+    API-->>WEB: Card details (name, logo, colors, card type)
     WEB-->>Browser: Render enrollment form (branded)
 
     Customer->>Browser: Fills form (name, email, phone)
     Customer->>Browser: Accepts T&C and Privacy Policy
-    Browser->>NX: POST /api/v1/customers/enroll/
+    Browser->>NX: POST /api/v1/customers/enroll/?card_id={card_id}
     NX->>API: Forward request
 
-    API->>DB: Check duplicate enrollment (email + program)
+    API->>DB: Check duplicate enrollment (email + card)
     DB-->>API: No duplicate found
 
     API->>DB: Create Customer record
-    API->>DB: Create Pass record (serial_number, initial balance)
-    API->>RD: Queue: generate_pass_job(pass_id)
+    API->>DB: Create CustomerPass record (serial_number, initial balance)
+    API->>RD: Queue: generate_qr_for_pass(pass_id)
     API-->>Browser: 202 Accepted + pass_pending_url
 
-    Note over CEL,MIO: Async pass generation (target ≤5 seconds)
-    CEL->>DB: Fetch pass + customer + program data
-    CEL->>CEL: Generate PKPass file (Apple) + sign with cert
-    CEL->>CEL: Generate Google Wallet JWT (Android)
-    CEL->>MIO: Store PKPass file
+    Note over CEL,MIO: Async QR generation (target ≤5 seconds)
+    CEL->>DB: Fetch pass + customer + card data
+    CEL->>CEL: Generate PKPass bytes (Apple) + sign with cert
+    CEL->>CEL: Generate Google Wallet JWT save URL (Android)
+    CEL->>MIO: Store QR code image
     CEL->>DB: Update pass status = ACTIVE + store_urls
-    CEL->>RD: Queue: send_welcome_push(pass_id)
 
-    Browser->>NX: GET /api/v1/passes/{id}/status/ (polling or SSE)
+    Browser->>NX: GET /api/v1/wallet/status/{pass_id}/ (polling)
     API-->>Browser: {status: READY, apple_url, google_url}
 
     Browser-->>Customer: "Add to Wallet" button (Apple or Google)
@@ -206,13 +204,13 @@ sequenceDiagram
     participant Wallet as Customer Wallet
 
     Staff->>PWA: Opens camera / scans customer's Wallet pass QR
-    PWA->>NX: POST /api/v1/passes/validate/
-    Note right of PWA: {qr_token: "signed_token_xyz", action: "stamp", location_id: "loc_1"}
+    PWA->>NX: POST /scanner/v2/validate/
+    Note right of PWA: {qr_token: "signed_token_xyz"}
 
     NX->>API: Forward with Staff JWT
     API->>API: Verify Staff JWT (tenant + role check)
     API->>API: Verify QR token HMAC signature
-    API->>DB: Fetch Pass by serial_number
+    API->>DB: Fetch CustomerPass by serial_number
     DB-->>API: Pass data (customer, program, current_balance)
 
     API->>API: Validate: pass active? program active? not expired?
@@ -222,19 +220,19 @@ sequenceDiagram
         PWA-->>Staff: GREEN indicator + "Carlos M. — 4/9 Stamps"
 
         Staff->>PWA: Confirms "Add Stamp" button
-        PWA->>API: POST /api/v1/transactions/
-        Note right of PWA: {pass_id, action: "stamp_add", count: 1, staff_id, location_id}
+        PWA->>API: POST /scanner/v2/transact/
+        Note right of PWA: {qr_token, intent: "stamp_add", quantity: 1, location_id}
 
         API->>DB: Insert Transaction record
         API->>DB: Update Pass balance (stamps: 4 → 5)
-        API->>RD: Queue: update_wallet_pass(pass_id)
+        API->>RD: Queue: trigger_pass_update(pass_id)
         API-->>PWA: 201 Created + new_balance: 5
 
         PWA-->>Staff: "[OK] Stamp added. 5/9"
 
         CEL->>DB: Fetch updated pass data
         CEL->>CEL: Re-generate updated PKPass / Google JWT
-        CEL->>APN: Send pass update + push
+        CEL->>APN: notify_pass_updated (Apple background push)
         APN-->>Wallet: Pass updates in Wallet (5/9 stamps) [OK]
 
     else Pass is INVALID / EXPIRED / FRAUD
@@ -257,35 +255,33 @@ sequenceDiagram
     Wallet->>APN: Trigger location-based notification
     APN-->>Wallet: Show lock-screen notification<br/>"You're near [Business Name]!"
 
-    Note over CEL,APN: Android path (Firebase Geofencing):
-    Note over CEL,APN: Pass installation registers<br/>geofence via Firebase SDK
-    Note over CEL,APN: Android OS fires geofence → FCM push
+    Note over CEL,APN: Android geofencing is planned/future; not implemented.
 ```
 
 ## DIAGRAM 6 — SEQUENCE: AUTOMATION RULE EXECUTION
 
 ```mermaid
 sequenceDiagram
-    participant BEAT as Celery Beat (every 15min)
+    participant BEAT as Celery Beat (daily)
     participant CEL as Celery Worker
     participant DB as PostgreSQL
     participant RD as Redis
     participant APN as APN / FCM
 
-    BEAT->>CEL: Trigger: evaluate_automation_rules()
+    BEAT->>CEL: Trigger: evaluate_scheduled_automations()
 
-    CEL->>DB: SELECT active rules WHERE rule_type = 'scheduled'
+    CEL->>DB: SELECT active rules WHERE trigger = 'SCHEDULED_TIME'
     DB-->>CEL: [Rule: win_back (inactive 30d), Rule: expiry_alert (7d)]
 
     loop For each rule
         CEL->>DB: Find matching customers (filter by conditions)
         DB-->>CEL: [customer_id_1, customer_id_2, ...]
 
-        CEL->>DB: Check cooldown: last_execution < now - cooldown_window?
+        CEL->>DB: Check per-customer cooldown via AutomationExecution
         DB-->>CEL: Eligible customers
 
         loop For each eligible customer
-            CEL->>DB: Execute action (issue_stamp / send_push / etc.)
+            CEL->>DB: Execute action (SEND_NOTIFICATION, SEND_EMAIL, ISSUE_STAMP, etc.)
             CEL->>DB: Log AutomationExecution record
             CEL->>RD: Queue push delivery
         end
@@ -310,19 +306,17 @@ sequenceDiagram
 
     Owner->>DASH: Selects plan after trial (5 days)
     DASH->>API: POST /api/v1/billing/subscribe/
-    API->>GWY: Create session + process payment
-    GWY-->>API: gateway_subscription_id + status: active
-    API->>DB: Update Tenant (plan, gateway_subscription_id)
-    API-->>DASH: Subscription active [OK]
+    API->>DB: Create Subscription + Invoice with manual_verification_required: true
+    API-->>DASH: Subscription pending manual verification [OK]
 
     Note over BEAT,GWY: Monthly/Annual recurring billing
-    GWY->>API: Webhook: payment.approved
-    API->>DB: Record payment + create Invoice
+    GWY->>API: POST /api/v1/billing/payments/webhook/ (payment.approved)
+    API->>DB: Record payment + update Invoice
     API->>CEL: Queue: send_invoice_email(tenant_id)
     CEL->>SMTP: Send invoice PDF
 
     Note over GWY,CEL: Failed payment
-    GWY->>API: Webhook: payment.failed
+    GWY->>API: POST /api/v1/billing/payments/webhook/ (payment.failed)
     API->>DB: Mark payment_status = FAILED
     API->>CEL: Queue: notify_payment_failed(tenant_id)
     CEL->>SMTP: "Payment failed — please update billing"
@@ -340,18 +334,18 @@ flowchart TD
     D -->|No| F[Display branded enrollment form]
     F --> G[Customer fills: Name, Email, Phone]
     G --> H[Customer accepts T&C + Privacy Policy]
-    H --> I[Submit enrollment]
+    H --> I[POST /api/v1/customers/enroll/?card_id={card_id}]
     I --> J{Validation\nPassed?}
     J -->|No| K[Show field errors → Return to form]
-    J -->|Yes| L[Create Customer + Pass in DB]
-    L --> M[Queue async pass generation job]
+    J -->|Yes| L[Create Customer + CustomerPass in DB]
+    L --> M[Queue async QR generation job]
     M --> N{Device type?}
-    N -->|iOS| O[Generate PKPass + sign with Apple cert]
-    N -->|Android| P[Generate Google Wallet JWT]
-    O --> Q[Store PKPass in MinIO]
+    N -->|iOS| O[Generate PKPass bytes + sign with Apple cert]
+    N -->|Android| P[Generate Google Wallet JWT save URL]
+    O --> Q[Store QR code image in MinIO]
     P --> Q
     Q --> R[Update pass status = ACTIVE]
-    R --> S[Show Download Wallet Pass page]
+    R --> S[GET /api/v1/wallet/status/{pass_id}/]
     S --> T[Customer taps Add to Wallet]
     T --> U[Pass saved to Wallet [OK]]
     U --> V[Send welcome push notification]
@@ -373,7 +367,7 @@ flowchart TD
 
     E --> F[Open camera — scan customer Wallet QR]
     F --> G{Online?}
-    G -->|Yes| H[POST /api/v1/passes/validate/]
+    G -->|Yes| H[POST /scanner/v2/validate/]
     G -->|No| I[Offline validation with cached HMAC key]
     I --> J{Local signature valid?}
     J -->|No| K[RED — Invalid Pass]
@@ -398,7 +392,7 @@ flowchart TD
     W -->|Gift/Multipass| AA[Enter amount used → decrement balance]
     W -->|Membership/Corporate| BB[Confirm visit + show discount]
 
-    X & Y & Z & AA & BB --> CC[POST /api/v1/transactions/]
+    X & Y & Z & AA & BB --> CC[POST /scanner/v2/transact/]
     CC --> DD[DB updated + Wallet pass updated ≤30s]
     DD --> EE([Transaction Complete [OK]])
 ```
@@ -409,44 +403,53 @@ flowchart TD
 flowchart TD
     A([Manager creates push campaign]) --> B[Select: Title + Message + Image]
     B --> C[Select Target Audience]
-    C --> D{Audience type}
-    D -->|All customers| E[Fetch all active device tokens]
-    D -->|By card type| F[Filter tokens by card_type]
-    D -->|By segment| G[Filter tokens by segment criteria]
+    C --> D{Audience filters}
+    D -->|segment_id| E[Filter by segment]
+    D -->|target_program_ids| F[Filter by card/program]
+    D -->|target_device_type| G[Filter by iOS/Android]
+    D -->|target_wallet_platform| H[Filter by Apple/Google Wallet]
+    D -->|target_customer_ids| I[Filter by explicit customer list]
 
-    E & F & G --> H[Estimate reach count]
-    H --> I{Send now or\nschedule?}
-    I -->|Schedule| J[Set date/time + timezone]
-    I -->|Send now| K[Queue push job in Redis]
-    J --> L[Celery Beat triggers at scheduled time]
-    L --> K
+    E & F & G & H & I --> J[Estimate reach count]
+    J --> K{Send now or\nschedule?}
+    K -->|Schedule| L[Set date/time + timezone]
+    K -->|Send now| M[Queue campaign job in Redis]
+    L --> N[Celery Beat triggers at scheduled time]
+    N --> M
 
-    K --> M[Celery worker dequeues batch]
-    M --> N{Device OS}
-    N -->|iOS| O[Send via Apple APN HTTP/2]
-    N -->|Android| P[Send via Google FCM API]
+    M --> O[Celery worker dequeues batch]
+    O --> P{Campaign channel}
+    P -->|Wallet push| Q[send_wallet_notification_campaign]
+    P -->|WhatsApp| R[send_whatsapp_campaign]
 
-    O --> Q{Delivery result}
-    P --> Q
-    Q -->|Success| R[Log: delivered_count++]
-    Q -->|Invalid Token| S[Mark token invalid in DB]
-    Q -->|Failed| T[Retry up to 3x]
+    Q --> S{Device OS / platform}
+    S -->|iOS| T[Send via Apple APN HTTP/2]
+    S -->|Android| U[Send via Google FCM API]
+    S -->|Apple Wallet| V[notify_pass_updated (background push)]
+    S -->|Google Wallet| W[notify_pass_updated (Google Wallet push)]
 
-    R & S --> U[Update campaign stats]
-    T --> V{Retry count <= 3?}
-    V -->|Yes| M
-    V -->|No| W[Log permanent failure]
-    W --> U
+    T & U & V & W --> X{Delivery result}
+    X -->|Success| Y[Log: delivered_count++]
+    X -->|Invalid Token| Z[Mark token invalid in DB]
+    X -->|Failed| AA[Retry up to 3x]
 
-    U --> X([Campaign Complete — Show open rate in Dashboard])
+    Y & Z --> AB[Update campaign stats]
+    AA --> AC{Retry count <= 3?}
+    AC -->|Yes| O
+    AC -->|No| AD[Log permanent failure]
+    AD --> AB
+
+    AB --> AE([Campaign Complete — Show open rate in Dashboard])
 ```
 
 ## DIAGRAM 11 — DEPLOYMENT DIAGRAM (DOCKER COMPOSE)
 
+> **Note:** The diagram below is simplified. The real Compose topology uses three networks (`frontend-net`, `backend-net`, `monitoring-net`) and includes additional services not shown here: `postgres-replica`, `redis-sentinel`, `minio-init`, `vault`, `vault-init`, `whatsapp-bridge`, `prometheus`, `grafana`, `loki`, and `alertmanager`.
+
 ```mermaid
 graph TB
     subgraph "Host Machine"
-        subgraph "docker-compose network: loyallia-net"
+        subgraph "docker-compose networks: frontend-net, backend-net, monitoring-net"
             NX[nginx<br/>host :80/:443]
             API[api — Django<br/>container :8000 → host :33905]
             WEB[web — Next.js<br/>container :3000 → host :33906]
@@ -459,14 +462,17 @@ graph TB
             PGB[pgbouncer<br/>container :6432 → host :33901]
             RD[redis<br/>container :6379 → host :33902]
             MIO[minio<br/>container :9000/:9001 → host :33903/:33904]
+            VLT[vault<br/>container :8200 → host :33908]
         end
     end
 
     NX -->|proxy /api/*| API
     NX -->|proxy /*| WEB
+    NX -->|proxy /assets/*| MIO
     API -->|DB queries| PGB
     PGB --> PG
     API --> RD
+    API --> VLT
     CEL1 --> RD
     CEL2 --> RD
     CEL3 --> RD
@@ -481,11 +487,12 @@ graph TB
     style RD fill:#dc382d,color:#fff
     style MIO fill:#c72c48,color:#fff
     style NX fill:#009639,color:#fff
+    style VLT fill:#ffd814,color:#000
 ```
 
 ## DIAGRAM 12 — ENTITY RELATIONSHIP DIAGRAM (CORE TABLES)
 
-> ⚠️ **Source of truth:** The actual models are in `backend/apps/*/models.py`. This diagram is an approximation; always verify fields, table names, and relationships against the current Django models and migrations.
+> ⚠️ **Source of truth:** The actual models are in `backend/apps/*/models.py`. This diagram is **illustrative** and may not match current model fields, table names, or relationships. Always verify against the current Django models and migrations.
 
 ```mermaid
 erDiagram
@@ -493,10 +500,9 @@ erDiagram
         uuid id PK
         string name
         string slug
-        string plan
+        string status
         datetime trial_end
         bool is_active
-        string gateway_customer_id
         string timezone
         string country
     }
@@ -505,7 +511,7 @@ erDiagram
         uuid id PK
         uuid tenant_id FK
         string email
-        string password_hash
+        string password
         string role
         bool is_active
         datetime last_login
@@ -540,20 +546,27 @@ erDiagram
         string last_name
         string email
         string phone
-        string device_token_ios
-        string device_token_android
         datetime join_date
         bool is_active
     }
 
-    Pass {
+    PushDevice {
+        uuid id PK
+        uuid customer_id FK
+        string platform
+        string push_token
+        bool is_active
+    }
+
+    CustomerPass {
         uuid id PK
         uuid customer_id FK
         uuid program_id FK
         string serial_number
         jsonb balance_data
         string status
-        string pkpass_url
+        string apple_pass_url
+        string google_pass_url
         datetime issued_at
         datetime updated_at
     }
@@ -566,7 +579,7 @@ erDiagram
         uuid staff_id FK
         uuid location_id FK
         string type
-        decimal amount
+        decimal amount "null=True"
         jsonb metadata
         datetime created_at
     }
@@ -575,11 +588,18 @@ erDiagram
         uuid id PK
         uuid tenant_id FK
         string name
-        string trigger
+        string trigger_type
         jsonb conditions
         jsonb actions
         bool is_active
         int execution_count
+    }
+
+    AutomationExecution {
+        uuid id PK
+        uuid rule_id FK
+        uuid customer_id FK
+        datetime executed_at
     }
 
     PushCampaign {
@@ -594,10 +614,18 @@ erDiagram
         int open_count
     }
 
+    CampaignRun {
+        uuid id PK
+        uuid campaign_id FK
+        string channel
+        datetime started_at
+        datetime finished_at
+    }
+
     Subscription {
         uuid id PK
-        uuid tenant_id FK
-        string plan
+        uuid tenant_id FK "OneToOne"
+        uuid plan_id FK
         string gateway_subscription_id
         string status
         datetime period_start
@@ -611,12 +639,15 @@ erDiagram
     Tenant ||--o{ AutomationRule : "has"
     Tenant ||--o{ PushCampaign : "has"
     Tenant ||--|| Subscription : "has"
-    Customer ||--o{ Pass : "holds"
-    LoyaltyProgram ||--o{ Pass : "issues"
-    Pass ||--o{ Transaction : "records"
+    Customer ||--o{ PushDevice : "has"
+    Customer ||--o{ CustomerPass : "holds"
+    LoyaltyProgram ||--o{ CustomerPass : "issues"
+    CustomerPass ||--o{ Transaction : "records"
     Customer ||--o{ Transaction : "makes"
     User ||--o{ Transaction : "records"
     Location ||--o{ Transaction : "at"
+    AutomationRule ||--o{ AutomationExecution : "logs"
+    PushCampaign ||--o{ CampaignRun : "runs"
 ```
 
 ## APPENDIX A — Recent Architecture Changes (2026-05-06)
@@ -665,7 +696,7 @@ If migration `0007` is recorded in `django_migrations` but columns are missing f
 **Motivation:** SuperAdmin needed a way to update secrets at runtime without CLI access.
 
 **Changes:**
-- `common/vault.py` — added `write_secret(key, value)`:
+- `common/vault.py` — added `put_secret(key, value)`:
   - Reads current Vault data, merges new key, writes back via KV v2 API
   - Calls `clear_cache()` to force re-fetch
 - `apps/tenants/super_admin_api/platform.py` — added endpoint:

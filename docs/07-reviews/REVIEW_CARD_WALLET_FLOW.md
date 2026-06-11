@@ -1,11 +1,12 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Line references and resolved-status claims reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Loyallia-k2 Card/Wallet Flow Audit Report
 
 **Project:** Loyallia Intelligent Rewards Platform
 **Scope:** Complete card creation, wallet enrollment, pass generation, and distribution flow
-**Date:** 2025-01-21
+**Date:** 2025-01-21 (snapshot updated 2026-06-11)
 
 ---
 
@@ -80,7 +81,7 @@
 
 | # | Issue | File | Line | Severity |
 |---|-------|------|------|----------|
-| 2.5 | **Hardcoded customer name "Juan Pérez"** in WalletCardPreview for ALL card types | `WalletCardPreview.tsx` | 338, 357, 441 | High |
+| 2.5 | **Hardcoded customer name "Juan Pérez"** still used in campaign message preview | `MessageComposer.tsx` | 294 | High |
 | 2.6 | Review step shows raw `JSON.stringify()` for metadata - ugly UX | `ProgramReviewStep.tsx` | 86-89 | Medium |
 | 2.7 | Submit uses `window.location.href = '/programs'` instead of Next.js router | `new/page.tsx` | 117 | Low |
 | 2.8 | Error handling on submit only shows generic toast - no specific error message | `new/page.tsx` | 119 | Low |
@@ -288,7 +289,7 @@
 
 | # | Issue | File | Line | Severity |
 |---|-------|------|------|----------|
-| 8.1 | **Hardcoded "Juan Pérez"** as customer name in ALL wallet previews - should use actual customer data or placeholder | `WalletCardPreview.tsx` | 338, 357, 441 | High |
+| 8.1 | **Hardcoded "Juan Pérez"** in campaign message preview - should use actual customer data or placeholder | `MessageComposer.tsx` | ~294 | High |
 | 8.2 | Review step `JSON.stringify()` for metadata fields is developer-grade, not user-friendly | `ProgramReviewStep.tsx` | 88 | Medium |
 | 8.3 | Multiple `catch { }` empty blocks suppress errors silently | `new/page.tsx`, `enroll/page.tsx` | - | Medium |
 | 8.4 | Unused imports and variables (`_stripUploading`, `_iconUploading`) | `new/page.tsx` | 89, 93 | Low |
@@ -392,7 +393,7 @@
 
 ### Critical (Fix Before Production)
 
-1. **[R-1] Remove hardcoded "Juan Pérez"** from WalletCardPreview - replace with actual customer data or generic placeholder like "Miembro"
+1. **[R-1] Remove hardcoded "Juan Pérez"** from `MessageComposer.tsx` campaign preview - replace with actual customer data or generic placeholder like "Miembro"
 2. **[R-2] Add QR scan transaction E2E test** - test the complete scan -> transaction -> points flow
 3. **[R-3] Add tenant isolation check** in transaction processing to prevent cross-tenant scanning
 

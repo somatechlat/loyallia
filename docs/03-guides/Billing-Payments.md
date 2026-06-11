@@ -186,9 +186,9 @@ All billing endpoints are mounted under `/api/v1/billing/`.
 |---------|---------|-------------|
 | `PAYMENT_GATEWAY_ENABLED` | `false` (Vault) | Master switch |
 | `PAYMENT_GATEWAY_PROVIDER` | `manual` | `manual`, `disabled`, or custom registered provider |
-| `PAYMENT_GATEWAY_BASE_URL` | `""` | Provider API base |
-| `PAYMENT_GATEWAY_LOGIN` / `PAYMENT_GATEWAY_TRAN_KEY` | Vault | Provider credentials |
-| `PAYMENT_GATEWAY_WEBHOOK_SECRET` | Vault | Webhook signature verification |
+| `PAYMENT_GATEWAY_BASE_URL` | `""` | Provider API base (custom/third-party gateways only) |
+| `PAYMENT_GATEWAY_LOGIN` / `PAYMENT_GATEWAY_TRAN_KEY` | Vault | Provider credentials (custom/third-party gateways only) |
+| `PAYMENT_GATEWAY_WEBHOOK_SECRET` | Vault | Webhook signature verification (custom/third-party gateways only) |
 | `TAX_RATE_ECUADOR` | `0.15` | Ecuador IVA rate |
 | `TRIAL_DAYS` | `5` | Default trial length |
 
@@ -329,5 +329,5 @@ class InvoiceModelTest(TestCase):
 | `apps/billing/payment_models.py` | `Invoice`, `PaymentMethod`, `WebhookEvent` |
 | `apps/billing/api.py` | Billing API router |
 | `apps/billing/payment_gateway.py` | `BasePaymentGateway`, `ManualGateway`, `DisabledGateway`, factory |
-| `apps/billing/service.py` | `BillingService` helper logic |
+| `apps/billing/services.py` | `BillingService` helper logic |
 | `common/plan_enforcement.py` | `check_plan_limit()`, `resolve_limit()`, `usage_pct()`, `get_current_usage()` |

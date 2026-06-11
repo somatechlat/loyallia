@@ -69,7 +69,7 @@ The risk assessment identified the following high-priority risks driving control
 | **5.17** | **Redundancy of information processing facilities** | Yes | Critical components (PostgreSQL, Redis, Vault) require redundancy consideration. | Partial | PgBouncer for connection pooling; PostgreSQL streaming replica exists but failover is manual; Redis, Vault, and MinIO remain single-instance; **Planned:** Automated database failover (Patroni/repmgr) and Redis Sentinel |
 | **5.18** | **Compliance with legal and contractual requirements** | Yes | Loyallia must comply with LOPDP (Ecuador), GDPR (EU), and PCI-DSS obligations for payment data. | Partial | `docs/05-compliance/COMPLIANCE_CHECKLIST.md` covers LOPDP/GDPR; privacy policy and terms documented; **Planned:** Formal legal compliance register |
 | **5.19** | **Intellectual property rights** | Yes | Software code, branding, and PKPass certificates are intellectual property requiring protection. | Implemented | Proprietary codebase (private repo); Apple/Google Wallet certificates stored in Vault; copyright notices in source |
-| **5.20** | **Protection of records** | Yes | Audit logs, financial records, and customer data require protection per LOPDP 7-year retention. | Implemented | `backend/apps/audit/models.py` — immutable audit trail; `save()`/`delete()` overridden to prevent modification; 7-year retention stated |
+| **5.20** | **Protection of records** | Yes | Audit logs, financial records, and customer data require protection per LOPDP 7-year retention. | Partial | `backend/apps/audit/models.py` — immutable audit trail; `save()`/`delete()` overridden to prevent modification; 7-year retention stated. **Gap:** automated retention enforcement (archival/purge) is not implemented. |
 | **5.21** | **Privacy and protection of PII** | Yes | Core business requirement — Loyallia processes customer PII under LOPDP and GDPR. | Partial | Privacy policy documented; consent mechanisms in UI; data subject rights endpoints exist; **Planned:** DPIA template and ROPA document |
 | **5.22** | **Independent review of information security** | Yes | Periodic independent review required for ISO 27001 and to validate control effectiveness. | Planned | **Planned:** Annual external penetration test; quarterly internal security audit schedule |
 | **5.23** | **Compliance with security policies and standards** | Yes | Regular compliance reviews required to ensure policies remain effective. | Partial | `docs/05-compliance/COMPLIANCE_CHECKLIST.md` provides review framework; **Planned:** Quarterly compliance review cycle |
@@ -136,7 +136,7 @@ The risk assessment identified the following high-priority risks driving control
 | **8.10** | **Deletion of data** | Yes | Secure deletion required for customer data, backups, and tenant data upon request. | Partial | `DELETE /customers/{id}/` performs permanent delete; factory reset destroys tenant data; **Planned:** Cryptographic erasure for backups; data retention automation |
 | **8.11** | **Data masking** | Yes | PII must be masked in non-production environments and logs. | Partial | `JsonFormatter` excludes raw PII from logs; **Planned:** Email masking in logs (`u***@domain.com`); anonymized test data generation |
 | **8.12** | **Data leakage prevention** | Yes | DLP measures required to prevent unauthorized exfiltration of customer data. | Partial | Tenant isolation prevents cross-tenant leakage; rate limiting prevents bulk extraction; **Planned:** DLP monitoring for export anomalies |
-| **8.13** | **Information backup** | Yes | Regular backups required to protect against data loss. | Implemented | Daily automated backups (PostgreSQL, Redis, Vault, MinIO); weekly rescue packages; `age` encryption; offsite MinIO replication; `3-2-1` rule compliance (`docs/02-architecture/BACKUP_ARCHITECTURE.md`) |
+| **8.13** | **Information backup** | Yes | Regular backups required to protect against data loss. | Partial | Daily automated backups (PostgreSQL, Redis, Vault, MinIO); weekly rescue packages; `age` encryption; offsite sync. **Gap:** quarterly DR testing evidence and automated failover are not yet in place. |
 | **8.14** | **Redundancy of information processing facilities** | Yes | Redundancy required for critical processing facilities. | Partial | PgBouncer connection pooling; Redis caching; single primary PostgreSQL with one asynchronous streaming replica (manual failover); **Planned:** Automated failover (Patroni/repmgr) and Redis Sentinel |
 | **8.15** | **Logging** | Yes | Comprehensive logging required for security monitoring and incident investigation. | Implemented | Structured JSON logging (`JsonFormatter`); Sentry integration; request ID tracing; immutable audit trail (`backend/apps/audit/models.py`) |
 | **8.16** | **Monitoring activities** | Yes | Security-relevant events must be monitored in real-time. | Implemented | Grafana + Loki for log aggregation; Grafana alerting rules (`deploy/grafana/provisioning/alerting/rules.yml`); Sentry for exception tracking; rate limit violation logging |
@@ -165,19 +165,19 @@ The risk assessment identified the following high-priority risks driving control
 
 | Domain | Total Controls | Applicable | Not Applicable | Implemented | Partial | Planned |
 |--------|:--------------:|:----------:|:--------------:|:-----------:|:-------:|:-------:|
-| A.5 Organizational | 37 | 32 | 5 | 11 | 16 | 5 |
+| A.5 Organizational | 37 | 32 | 5 | 10 | 17 | 5 |
 | A.6 People | 8 | 8 | 0 | 0 | 3 | 5 |
 | A.7 Physical | 14 | 3 | 11 | 1 | 1 | 1 |
-| A.8 Technological | 34 | 33 | 1 | 20 | 10 | 3 |
-| **TOTAL** | **93** | **76** | **17** | **32** | **30** | **14** |
+| A.8 Technological | 34 | 33 | 1 | 19 | 11 | 3 |
+| **TOTAL** | **93** | **76** | **17** | **30** | **32** | **14** |
 
 ### Implementation Trend
 
 ```
-Implemented:  ████████████████████████████████████████  32 / 93 (34%)
-Partial:     ██████████████████████████████████████    30 / 93 (32%)
-Planned:     ██████████████████                        14 / 93 (15%)
-N/A:         ███████████████████████                   17 / 93 (18%)
+Implemented:  ██████████████████████████████████████    30 / 93 (32%)
+Partial:      ████████████████████████████████████████  32 / 93 (34%)
+Planned:      ██████████████████                        14 / 93 (15%)
+N/A:          ███████████████████████                   17 / 93 (18%)
 ```
 
 ---

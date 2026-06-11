@@ -1,7 +1,11 @@
+> **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Resolved-status claims and line references reflect the codebase at this date; verify against current HEAD before acting.
+> Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+
 # Loyallia Backend -- Comprehensive Architecture & Design Patterns Review
 
 **Reviewer:** Loyallia-K2 (Senior Software Architect)
-**Date:** 2025-01-28
+**Date:** 2025-01-28 (snapshot updated 2026-06-11)
 **Scope:** Django 5 + Django Ninja Multi-Tenant SaaS Architecture
 **Files Reviewed:** 30+ core architectural files
 
@@ -50,20 +54,7 @@ loyallia/backend/
 
 ### Anti-Patterns Found
 
-#### A. Duplicate Role Check Implementation
-- **Files:** `common/permissions.py:121-148` and `common/role_check.py:13-36`
-- **Issue:** Two nearly identical `require_role()` decorators exist. The one in `role_check.py` lacks the `as_tenant_request()` type-safety cast and imports `HttpError` inline (performance cost). `permissions.py` has the more robust version with proper typing.
-- **Recommendation:** Remove `common/role_check.py` entirely and consolidate on `common/permissions.py`. Update all imports.
-
-#### B. File Naming Inconsistency (`common/exceptions.py`)
-- **File:** `common/exceptions.py` (line 1-2 docstring)
-- **Issue:** The docstring says "Loyallia Pagination Utilities (common/exceptions.py -- actually pagination)". The file is named `exceptions.py` but contains **pagination utilities**, not exception classes. This is confusing.
-- **Recommendation:** Rename to `common/pagination.py` (there's already `common/pagination.py` -- check for duplication). The actual `common/exceptions.py` should contain custom exception classes.
-
-#### C. Schema Duplication
-- **Files:** `common/schemas.py:10-15` and `apps/authentication/schemas.py:71-74`
-- **Issue:** `MessageOut` schema is defined in both `common/schemas.py` and `apps/authentication/schemas.py`.
-- **Recommendation:** Remove the duplicate from `apps/authentication/schemas.py` and import from `common/schemas.py`.
+✅ **Resolved:** The duplicate `require_role()` decorator, the `common/exceptions.py` naming issue, and the duplicated `MessageOut` schema have all been cleaned up. `common/role_check.py` no longer exists, `common/exceptions.py` was removed, and `MessageOut` is only defined in `common/schemas.py`.
 
 ---
 
@@ -78,13 +69,10 @@ loyallia/backend/
 
 ### Anti-Patterns Found
 
-#### A. Import Placement Inside Router File
-- **File:** `apps/api/router.py`, lines 114-139
-- **Issue:** All router imports are placed at the **bottom** of the file (after health check endpoint definitions), mixed with router mounting code. This violates PEP 8 (imports at top) and makes the file harder to read.
-- **Recommendation:** Move all imports to the top of the file, below the `api` object creation.
+✅ **Resolved:** Router imports are now at the top of `apps/api/router.py`.
 
-#### B. Router Mounting Path Collision Risk
-- **File:** `apps/api/router.py`, lines 141-163
+#### A. Router Mounting Path Collision Risk
+- **File:** `apps/api/router.py`, router mounting section
 - **Issue:** Multiple routers share the same mounting prefix:
   - `/auth/` has 3 routers (`auth_router`, `phone_verify_router`, `users_router`)
   - `/tenants/` has 2 routers (`tenants_router`, `tenant_security_privacy_router`)
@@ -93,13 +81,13 @@ loyallia/backend/
 - **Impact:** If two routers define the same endpoint path (e.g., both have a `GET /` handler), Django Ninja will raise an error at startup or silently override. This is a maintenance risk.
 - **Recommendation:** Add integration tests that verify no URL collisions exist. Document which router owns which sub-paths.
 
-#### C. Direct Endpoint Registration vs. Router Mounting
-- **File:** `apps/api/router.py`, lines 186-208
+#### B. Direct Endpoint Registration vs. Router Mounting
+- **File:** `apps/api/router.py`, backward-compatible aliases section
 - **Issue:** Backward-compatible endpoints are registered directly on the `api` object instead of being part of a router. This mixes two architectural patterns (router-based and direct registration).
 - **Recommendation:** Move legacy aliases to a dedicated `legacy_router` and mount it appropriately. Add deprecation timeline.
 
-#### D. Webhook Endpoint in Central Router
-- **File:** `apps/api/router.py`, lines 167-182
+#### C. Webhook Endpoint in Central Router
+- **File:** `apps/api/router.py`, webhook handler section
 - **Issue:** The Mailjet webhook handler is defined inline in the router file instead of being in a dedicated webhooks module. This bloats the router file with business logic.
 - **Recommendation:** Move the webhook to `apps/notifications/api/webhooks.py` and import just the router.
 
@@ -166,26 +154,23 @@ loyallia/backend/
 ### Strengths
 
 1. **Three decorator patterns** clearly documented: `@require_active_subscription`, `@enforce_limit("customers")`, `@require_feature("ai_assistant")`.
-2. **TOCTOU race condition prevention** (line 295): `select_for_update()` on Subscription row prevents concurrent limit breaches.
-3. **Lazy lambda dispatch** (line 122-138): `get_current_usage()` uses a dispatch map with lazy lambdas to avoid counting unused models.
-4. **Dynamic imports** (line 147-157): `_count_monthly()` uses `importlib` to avoid circular imports between `common/` and `apps/`.
+2. **TOCTOU race condition prevention** (line ~353): `select_for_update()` on Subscription row prevents concurrent limit breaches.
+3. **Lazy lambda dispatch** (lines 108-133): `get_current_usage()` uses a dispatch map with lazy lambdas to avoid counting unused models.
+4. **Dynamic imports** (lines 148-154): `_count_monthly()` uses `importlib` to avoid circular imports between `common/` and `apps/`.
 5. **Comprehensive resource coverage**: 15 resource types mapped (customers, programs, locations, users, notifications, transactions, WhatsApp, SMS, emails, etc.).
-6. **Trial limit defaults** (lines 70-86): Hard limits for trial tenants prevent resource exhaustion attacks.
+6. **Trial limit defaults**: Hard limits for trial tenants are centralized in `apps.billing.models.TRIAL_LIMITS`.
 
 ### Anti-Patterns Found
 
 #### A. N+1 Query Risk in `get_tenant_limits()`
-- **File:** `common/plan_enforcement.py`, lines 54-107
+- **File:** `common/plan_enforcement.py`, lines 72-94
 - **Issue:** `get_tenant_limits()` does a `Subscription.objects.filter(tenant=tenant).first()` followed by `subscription.subscription_plan` (FK follow). If called multiple times per request (e.g., with stacked decorators), this can become N+1.
 - **Recommendation:** Add `select_related("subscription_plan")` to the query. Consider caching the result on `request` for the duration of the request.
 
-#### B. `check_plan_limit()` Always Acquires Row Lock
-- **File:** `common/plan_enforcement.py`, lines 294-295
-- **Issue:** `select_for_update()` is used even for read-only checks (e.g., listing customers where you just want to know if they can create more). This creates unnecessary lock contention.
-- **Recommendation:** Split into `check_plan_limit_read()` (no lock) and `check_plan_limit_write()` (with lock). The decorators should accept a parameter to control locking behavior.
+✅ **Resolved:** `check_plan_limit()` now accepts a `write` parameter; row locks (`select_for_update()`) are only acquired for write operations.
 
-#### C. Decorators Stack in Wrong Order Risk
-- **File:** `common/plan_enforcement.py`, lines 337-390
+#### B. Decorators Stack in Wrong Order Risk
+- **File:** `common/plan_enforcement.py`, decorator implementation section
 - **Issue:** The decorators don't use Django Ninja's `@decorate` mechanism. If a developer writes:
   ```python
   @enforce_limit("customers")
@@ -195,10 +180,7 @@ loyallia/backend/
   The `enforce_limit` runs before `require_active_subscription`, which means it tries to check limits on a tenant that might not have a subscription.
 - **Recommendation:** Document decorator ordering requirements clearly. Consider making `enforce_limit` internally call `require_active_subscription` logic first.
 
-#### D. Magic Numbers for Trial Limits
-- **File:** `common/plan_enforcement.py`, lines 71-85
-- **Issue:** Trial limits (500 customers, 50 programs, etc.) are hardcoded magic numbers.
-- **Recommendation:** Extract to a `TRIAL_LIMITS` constant at module level or make them PlatformSetting-driven.
+✅ **Resolved:** Trial limits are now centralized in `apps.billing.models.TRIAL_LIMITS`.
 
 ---
 
@@ -438,33 +420,27 @@ loyallia/backend/
 
 | # | Finding | File | Line |
 |---|---------|------|------|
-| 1 | Duplicate `require_role()` decorators create maintenance risk | `common/role_check.py` | 13-36 |
-| 2 | `select_for_update()` used for read-only plan checks (lock contention) | `common/plan_enforcement.py` | 295 |
-| 3 | File named `exceptions.py` contains pagination code | `common/exceptions.py` | 1-2 |
-| 4 | Two separate password reset flows (duplicated logic) | `apps/authentication/api.py` | 276-468 |
+| 1 | Two separate password reset flows (duplicated logic) | `apps/authentication/api.py` | 276-468 |
 
 ### High Priority (Fix Soon)
 
 | # | Finding | File | Line |
 |---|---------|------|------|
-| 5 | All router imports at bottom of file (PEP 8 violation) | `apps/api/router.py` | 114-139 |
-| 6 | Router path collision risk (multiple routers per prefix) | `apps/api/router.py` | 141-163 |
-| 7 | Local imports scattered throughout auth API | `apps/authentication/api.py` | 89, 178, 197, etc. |
-| 8 | CSP header set on API responses (unnecessary overhead) | `common/middleware.py` | 91 |
-| 9 | No `select_related("subscription_plan")` in plan limits | `common/plan_enforcement.py` | 62 |
-| 10 | `OptionalJWTAuth` duplicates 90% of `JWTAuth` | `common/permissions.py` | 77-95 |
-| 11 | `MessageOut` schema duplicated in auth schemas | `apps/authentication/schemas.py` | 71-74 |
+| 5 | Router path collision risk (multiple routers per prefix) | `apps/api/router.py` | router mounting section |
+| 6 | Local imports scattered throughout auth API | `apps/authentication/api.py` | multiple locations |
+| 7 | CSP header set on API responses (unnecessary overhead) | `common/middleware.py` | CSP middleware section |
+| 8 | No `select_related("subscription_plan")` in plan limits | `common/plan_enforcement.py` | ~80 |
+| 9 | `OptionalJWTAuth` duplicates 90% of `JWTAuth` | `common/permissions.py` | 77-95 |
 
 ### Medium Priority (Nice to Have)
 
 | # | Finding | File | Line |
 |---|---------|------|------|
-| 12 | Magic numbers for trial limits | `common/plan_enforcement.py` | 71-85 |
-| 13 | Inconsistent HTTP client (urllib vs httpx) | `common/vault.py` | 101-126 |
-| 14 | Apple Wallet API has no exception handlers | `loyallia/urls.py` | 22-37 |
-| 15 | Email body built with f-strings (i18n bypass) | `apps/authentication/api.py` | 305-310 |
-| 16 | Audit logging failures silently swallowed | `apps/authentication/api.py` | 190-191 |
-| 17 | No `request.auth` set (Django Ninja convention) | `common/permissions.py` | 65-66 |
+| 12 | Inconsistent HTTP client (urllib vs httpx) | `common/vault.py` | Vault client HTTP section |
+| 13 | Apple Wallet API has no exception handlers | `loyallia/urls.py` | Apple Wallet URL section |
+| 14 | Email body built with f-strings (i18n bypass) | `apps/authentication/api.py` | password-reset email section |
+| 15 | Audit logging failures silently swallowed | `apps/authentication/api.py` | audit log try/except blocks |
+| 16 | No `request.auth` set (Django Ninja convention) | `common/permissions.py` | authentication section |
 
 ---
 
@@ -498,26 +474,23 @@ loyallia/backend/
 
 ### Immediate Actions (Next Sprint)
 
-1. **Consolidate `require_role()`**: Remove `common/role_check.py`, update all imports to use `common/permissions.py`.
-2. **Fix `select_related` in plan enforcement**: Add `.select_related("subscription_plan")` to `get_tenant_limits()`.
-3. **Move router imports to top** of `apps/api/router.py`.
-4. **Add `select_related` for read-only plan checks**: Split `check_plan_limit()` into read/write variants.
+1. **Fix `select_related` in plan enforcement**: Add `.select_related("subscription_plan")` to `get_tenant_limits()`.
 
 ### Short-Term (Next Month)
 
-5. **Deprecate duplicate password reset flow**: Pick one (OTP-based recommended), add deprecation headers.
-6. **Rename `common/exceptions.py`**: Rename to `common/pagination.py` or merge with existing `common/pagination.py`.
-7. **Add Apple Wallet exception handlers**: Mirror the main API's error handlers.
-8. **Standardize on `httpx`**: Replace `urllib` in vault client with `httpx`.
-9. **Add HSTS/SSL settings** to production settings file.
+2. **Deprecate duplicate password reset flow**: Pick one (OTP-based recommended), add deprecation headers.
+3. **Add Apple Wallet exception handlers**: Mirror the main API's error handlers.
+4. **Standardize on `httpx`**: Replace `urllib` in vault client with `httpx`.
+
+✅ **Resolved:** `require_role()` consolidated, router imports moved to top, `check_plan_limit()` split via `write` parameter, `common/exceptions.py` removed, and HSTS/SSL settings added to production settings.
 
 ### Long-Term (Next Quarter)
 
-10. **Evaluate django-tenants** for database-level tenant isolation.
-11. **Add automatic tenant query filtering** via custom Manager/QuerySet.
-12. **Implement API versioning strategy** for v2 preparation.
-13. **Add Prometheus metrics endpoint** for production monitoring.
-14. **Consider CQRS** for analytics/aggregation queries.
+5. **Evaluate django-tenants** for database-level tenant isolation.
+6. **Add automatic tenant query filtering** via custom Manager/QuerySet.
+7. **Implement API versioning strategy** for v2 preparation.
+8. **Add Prometheus metrics endpoint** for production monitoring.
+9. **Consider CQRS** for analytics/aggregation queries.
 
 ---
 

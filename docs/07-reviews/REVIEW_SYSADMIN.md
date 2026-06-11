@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Resolved-status claims and line references reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # SysAdmin / SuperAdmin API - Comprehensive Security Review
@@ -125,7 +126,10 @@ The SysAdmin API is well-architected with defense-in-depth. No critical vulnerab
   - `"impersonated": True` (line 122) - flag for middleware detection
 - Standard JWT signed with `settings.JWT_SECRET_KEY` (line 124)
 
-**Finding [LOW]:** No explicit token revocation mechanism. The 60-minute expiry mitigates this, but there's no way to force-terminate an active impersonation session early.
+**Finding [LOW]:** ✅ RESOLVED — Explicit token revocation now exists.
+- **Endpoint:** `POST /impersonation/revoke` (`impersonation.py:156-185`) sets a `impersonation:{user_id}` revoked flag in cache.
+- **Validation:** `decode_access_token()` in `apps/authentication/tokens.py:177-182` checks the same `impersonation:{user_id}` cache key and rejects tokens flagged as revoked.
+- The 60-minute expiry remains as a backstop, but active sessions can now be terminated early.
 
 ### 2.4 Audit Logging
 
@@ -392,7 +396,7 @@ The SysAdmin API is well-architected with defense-in-depth. No critical vulnerab
 | # | Issue | Location | Recommendation |
 |---|-------|----------|----------------|
 | M1 | Duplicate payment confirmation endpoint | `billing.py:30` + `platform.py:455` | Remove one; consolidate to single endpoint |
-| M2 | No explicit impersonation token revocation | `impersonation.py:119-124` | Add a `/impersonation/revoke/` endpoint that blacklists active impersonation tokens in Redis |
+| ~~M2~~ | ~~No explicit impersonation token revocation~~ | ~~`impersonation.py:119-124`~~ | **RESOLVED** — `/impersonation/revoke/` exists and shares the correct cache key with token validation |
 | M3 | Tenant creation response includes temp_password | `tenants.py:237` | Consider removing from response body; it's already sent via email |
 
 ### Low Severity

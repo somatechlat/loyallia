@@ -28,7 +28,7 @@ Ley Orgánica de Protección de Datos Personales (LOPDP) — effective since May
 | L-05 | **Right to deletion (derecho de cancelación)** | PASS | `customers/api.py` — `DELETE /{customer_id}/` performs permanent delete. Requires OWNER role. Audit logged before deletion. | — |
 | L-06 | **Right to access (derecho de acceso)** | PASS | `customers/api.py` — `GET /{customer_id}/` returns full customer profile. `GET /export/` enables data portability. | — |
 | L-07 | **Right to rectification (derecho de rectificación)** | PASS | `customers/api.py` — `PATCH /{customer_id}/` allows updating all customer fields. Audit logged. | — |
-| L-08 | **Data portability** | PASS | `GET /api/v1/customers/export/` exports all customer data as CSV. `GET /api/v1/customers/segments/{id}/export/` exports segment data. Both OWNER-only with audit logging. | — |
+| L-08 | **Data portability** | PASS | `GET /api/v1/customers/export/` exports customer data as CSV; `GET /api/v1/tenants/privacy/data-export/` exports a full tenant ZIP. `GET /api/v1/customers/segments/{id}/export/` exports segment data. All are OWNER-only; segment export is not currently audit-logged. | — |
 | L-09 | **Audit trail completeness** | PASS | `AuditLog` model — immutable (`save()` rejects updates, `delete()` raises ValueError). Records WHO/WHAT/WHEN/WHERE/WHY. 7-year retention stated. Self-auditing on read operations. | — |
 | L-10 | **Audit trail immutability** | PASS | `audit/models.py` — `save()` checks `if self.pk and exists()` → raises `ValueError`. `delete()` always raises `ValueError`. | — |
 | L-11 | **Audit trail retention (7 years)** | PARTIAL | Retention period documented in model docstring and privacy policy, but **no automated purge/cleanup task** exists to enforce or verify the 7-year window. | **Remediation:** Create a Celery beat task that monitors audit log age and alerts when entries approach 7-year boundary. Consider archival strategy for entries beyond retention. |
@@ -82,7 +82,7 @@ If serving EU users (even one), GDPR applies.
 | V-06 | `POST /auth/verify-email/` | PASS | `VerifyEmailIn` — `EmailStr` + otp string. | — |
 | V-07 | `POST /auth/invite/` | PASS | `InviteIn` — `EmailStr`, role validated against allowed set (MANAGER, STAFF only). | — |
 | V-08 | `POST /auth/google/login/` | PASS | `GoogleTokenIn` — credential string. Audience validation against client_id. Email verified check. | — |
-| V-09 | `POST /auth/phone/verify/request/` | PASS | `PhoneVerifyRequestIn` — E.164 regex validation (`^\+[1-9]\d{7,14}$`). | — |
+| V-09 | `POST /api/v1/auth/phone/verify-phone/start/` | PASS | `PhoneVerifyRequestIn` — E.164 regex validation (`^\+[1-9]\d{7,14}$`). | — |
 | V-10 | `POST /customers/import/` | PASS | File size limit (default 10MB via `IMPORT_MAX_FILE_SIZE_BYTES`). Format validation (.csv/.xlsx only). Column validation. Email regex. Duplicate detection. Row-level error handling. | — |
 | V-11 | `POST /customers/enroll/` (public) | PASS | `CustomerCreateIn` — Pydantic validation, `EmailStr`, name validators, gender enum. Card ID validated against DB. | — |
 | V-12 | `PATCH /customers/{id}/` | PASS | `CustomerUpdateIn` — all optional fields, name validators, gender enum. | — |

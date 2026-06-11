@@ -1,13 +1,15 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Metrics and line references reflect the codebase at this date; re-count against current HEAD before claiming pass/fail.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Loyallia Code Quality Review — Loyallia-K2
 
 **Reviewer:** Senior Code Quality Engineer (Loyallia-K2)
 **Scope:** Full codebase — Python backend (`backend/`) + TypeScript frontend (`frontend/src/`)
-**Date:** 2025-07-08
-**Total files reviewed:** 260+ Python files, 85+ TypeScript/TSX files
+**Date:** 2025-07-08 (metrics updated 2026-06-11)
+**Total files reviewed:** 456 Python files, 249 TypeScript/TSX files
 **Commit baseline:** `loyallia-dev` branch (pre-production)
+> **Snapshot as of 2026-06-11:** Counts reflect the codebase at the time of this documentation audit.
 
 ---
 
@@ -64,14 +66,14 @@ Proper specific exceptions used consistently:
 - `HttpError(404, ...)` for not found
 - `User.DoesNotExist` for missing users
 - `ObjectDoesNotExist` for missing records
-- Custom exceptions in `common/exceptions.py`: `LoyaltyError`, `CardNotFoundError`, `InsufficientPointsError`, `DuplicateEnrollmentError`, `InvalidRedemptionError`
+- `common/exceptions.py` no longer exists; domain-specific exceptions are raised via Django/Ninja built-ins or defined close to the code that uses them.
 
 #### 4. Logging — PASS
-- 76 files import `logging`
-- ~371 logger usage lines
+- 99+ files import `logging`
+- ~521 logger usage lines
 - Proper log levels: `logger.debug`, `logger.info`, `logger.warning`, `logger.error`, `logger.exception`, `logger.critical`
 - JSON formatter for production (`common/logging_utils.py`)
-- No `print()` statements found in any backend code
+- Only 3 `print()` statements remain in backend code, all in `common/env_validation.py` for startup failure messages
 
 #### 5. Validation — PASS
 - Django Ninja Pydantic schemas used for all API inputs (e.g., `RegisterIn`, `LoginIn`, `ScanValidateIn`)
@@ -104,7 +106,7 @@ No bare `except:` statements found. All exceptions are specific:
 - `except KeyError`
 
 #### 9. No Print Statements — PASS
-Zero `print()` statements in any backend code. All output goes through `logging`.
+Zero `print()` statements in application code. The only 3 occurrences are in `common/env_validation.py` for startup validation failures and all output goes to `sys.stderr`. Additional `print()` statements exist in development/operational scripts (e.g., `clean_demo_data.py`, `scripts/vault_migration.py`), which are outside the application runtime path.
 
 #### 10. Import Organization — PASS
 Consistent ordering across all files:
@@ -167,20 +169,20 @@ TAX_RATE_ECUADOR = 0.15
 
 ### WARNINGS (Non-Critical, Should Fix)
 
-#### W1. F-strings in Logging Calls — 9 instances
-**Location:** Various (`notifications/service.py`, `tenants/api.py`, `tenants/tasks.py`)
+#### W1. F-strings in Logging Calls — 1 instance remaining
+**Location:** `apps/tenants/tasks.py`
 **Issue:** F-strings force eager string evaluation even when the log level is disabled.
 ```python
 # BAD (current):
-logger.warning(f"Google Wallet push failed: {e}")
+logger.exception(f"Failed to export data for tenant {tenant_id}: {str(e)}")
 
 # GOOD:
-logger.warning("Google Wallet push failed: %s", e)
+logger.exception("Failed to export data for tenant %s: %s", tenant_id, e)
 ```
 **Impact:** Minor performance overhead on hot paths.
-**Fix:** Replace all f-strings in logger calls with % formatting.
+**Fix:** Replace the remaining f-string in logger calls with % formatting.
 
-#### W2. Broad `except Exception` — 143 occurrences
+#### W2. Broad `except Exception` — ~230 occurrences
 **Location:** Infrastructure files (`common/vault.py`, `common/rate_limit.py`, `common/test_runner.py`, service layer files)
 **Issue:** Catches all exceptions indiscriminately, potentially masking bugs.
 **Mitigation:** Many are in infrastructure/fallback code where catching all errors is appropriate (e.g., cache miss fallback, rate limiter fails-open). However, some should be narrowed.
@@ -288,21 +290,22 @@ export const programSchema = z.object({ ... });
 ### WARNINGS (Non-Critical, Should Fix)
 
 #### W6. Large Component Files
-**Files exceeding 200 lines:**
+**Files exceeding 200 lines:** 99 files (snapshot as of 2026-06-11).
+**Largest frontend files:**
 | File | Lines | Issue |
 |------|-------|-------|
-| `app/(dashboard)/campaigns/page.tsx` | 557 | Should be split into sub-components |
-| `app/(dashboard)/automation/page.tsx` | 581 | Should be split into sub-components |
-| `app/(dashboard)/programs/new/page.tsx` | 556 | Should be split into sub-components |
-| `app/(auth)/register/page.tsx` | 566 | Should be split into sub-components |
-| `app/(dashboard)/customers/page.tsx` | 473 | Could be split |
-| `components/chat/Chatbot.tsx` | 393 | Consider splitting RichText, ChatMessage |
-| `app/(dashboard)/programs/page.tsx` | 278 | Acceptable |
-| `app/scanner/scan/page.tsx` | 232 | Acceptable for scanner UI |
+| `components/wallet/templates/registry.ts` | 926 | Should be split into semantic registries |
+| `components/wallet/constants.ts` | 726 | Should be split into card-types, industries, barcodes, colors |
+| `components/wallet/AppleWalletPreview.tsx` | 664 | Should be split into sub-components |
+| `app/(dashboard)/programs/[id]/page.tsx` | 611 | Should be split into sub-components |
+| `components/superadmin/plans/PlanModal.tsx` | 606 | Should be split into sub-components |
+| `app/(auth)/register/page.tsx` | 577 | Should be split into sub-components |
+| `components/wallet/GoogleWalletPreview.tsx` | 548 | Should be split into sub-components |
+| `components/wallet/studio/ImagesTab.tsx` | 536 | Should be split into sub-components |
 
 #### W7. Empty Catch Blocks in Some Places
 **Pattern:** `catch { /* no action */ }` in some async blocks.
-**Location:** `campaigns/page.tsx` line 74: `catch { /* no plan info — keep current default */ }`
+**Location:** `campaigns/page.tsx` and other dashboard pages contain silent catches for non-critical fallback cases.
 **Verdict:** Acceptable for non-critical fallback cases, but should at minimum log errors.
 
 #### W8. Inline SVGs Everywhere
@@ -357,8 +360,8 @@ The codebase demonstrates:
 ## RECOMMENDATIONS SUMMARY
 
 ### High Priority (Before Production)
-1. **Fix f-strings in logging calls** (9 instances) — Replace with % formatting
-2. **Review 143 `except Exception` occurrences** — Narrow to specific exceptions in business logic
+1. **Fix f-strings in logging calls** (1 instance remaining) — Replace with % formatting
+2. **Review ~230 `except Exception` occurrences** — Narrow to specific exceptions in business logic
 3. **Split large frontend components** (>500 lines) into sub-components
 
 ### Medium Priority (Post-Production)
@@ -377,22 +380,26 @@ The codebase demonstrates:
 
 | Metric | Value |
 |--------|-------|
-| Total Python files | ~260 |
-| Total TypeScript/TSX files | ~85 |
-| Lines of Python code | ~42,482 |
-| Lines of TypeScript code | ~17,563 |
+| Total Python files | 456 |
+| Total TypeScript/TSX files | 249 |
+| Lines of Python code | ~69,280 |
+| Lines of TypeScript code | ~50,220 |
 | Functions with type annotations | ~95% |
 | Functions with docstrings | ~90% |
 | API endpoints with auth checks | 100% |
 | Database queries with tenant filter | ~95% |
-| Logger usage lines | 371 |
-| F-string in logger calls | 9 |
-| Print statements | 0 |
+| Logger usage lines | ~521 |
+| F-string in logger calls | 1 |
+| Print statements | 3* |
 | Bare except: | 0 |
 | console.log in production | 0 |
+| console.error in production | 1 |
 | TODO/FIXME markers | 0 |
-| Emojis in source code | 0 |
-| Components >200 lines | 8 |
+| Emojis in source code | 0 (JSX/UI excluded) |
+| Components >200 lines | 99 |
+| Broad `except Exception` occurrences | ~230 |
+
+\* The 3 `print()` statements are in `common/env_validation.py` for startup validation errors.
 
 ---
 

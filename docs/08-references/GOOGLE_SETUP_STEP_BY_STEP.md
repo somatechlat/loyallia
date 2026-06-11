@@ -72,7 +72,8 @@ Esto da al sistema el `Client ID` y `Client Secret` para el login.
 | **Nombre** | `Loyallia Web App` |
 
 5. En **"Orígenes de JavaScript autorizados"**, hacé click en **"AGREGAR URI"** y agregá:
-   - `http://localhost:33906` (Next.js dev)
+   - `http://localhost:3000` (Next.js interno; este es el puerto que usa el código en desarrollo)
+   - `http://localhost:33906` (mismo Next.js, mapeado por Docker al host)
    - `http://localhost` (si accedés por Nginx en puerto 80)
    - `https://rewards.loyallia.com` (tu dominio real de producción)
    - Si tenés otro dominio, agregalo también.
@@ -217,7 +218,7 @@ Después de que yo configure todo, podés verificar en:
 |-------------|-----------------|-------------|
 | Google Wallet | 🟢 **Conectado** | `google_wallet_enabled=true`, Issuer ID presente y service account válido |
 | Google Wallet | 🔴 **Faltan credenciales** | Falta Issuer ID, service account o algún campo obligatorio |
-| Google OAuth | 🟢 **Datos cargados** | `google_oauth_client_id` y `google_oauth_client_secret` están en Vault (se editan dentro de la tarjeta Google Wallet) |
+| Google OAuth | 🟢 **Datos cargados** | `google_oauth_client_id` y `google_oauth_client_secret` están en Vault (se editan en la tarjeta Google Wallet o en la tarjeta dedicada de Google OAuth) |
 
 ---
 

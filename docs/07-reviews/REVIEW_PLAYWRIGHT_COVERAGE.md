@@ -1,4 +1,5 @@
 > **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> **Snapshot as of 2026-06-11:** Test file counts and test totals reflect the suite at this date; re-count against current `frontend/tests/e2e/suite` before claiming pass/fail.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
 # Playwright E2E Test Coverage Review — Loyallia Frontend
@@ -7,8 +8,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Test Files | 31 (numbered 01-32, skipping 24) |
-| Total Estimated Tests | ~230+ individual test cases |
+| Total Test Files | 32 (numbered 01-32) |
+| Total Estimated Tests | ~230+ individual test cases (snapshot) |
 | Roles Covered | OWNER, MANAGER, STAFF, SUPERADMIN |
 | Feature Areas | 16 |
 | Test Quality Grade | B+ (good coverage, some flaky patterns) |
@@ -672,6 +673,8 @@
 ---
 
 ## 7. Test Count Summary
+
+> **Snapshot as of 2026-06-11:** The counts below are historical estimates from the reviewed test run. Re-run `npx playwright test --list` for the current exact count.
 
 | Category | Count |
 |----------|-------|

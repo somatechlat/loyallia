@@ -29,7 +29,7 @@ The Loyallia backup and disaster recovery (DR) system provides automated, encryp
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **Data Backups** | `pg_dump`, `redis-cli BGSAVE`, `vault kv export`, `mc mirror` | Logical backups of PostgreSQL, Redis, Vault, and MinIO |
+| **Data Backups** | `pg_dump`, `redis-cli BGSAVE`, `vault kv list` + `vault kv get`, `mc mirror` | Logical backups of PostgreSQL, Redis, Vault, and MinIO |
 | **Cluster Snapshots** | Docker volume + container + network capture | Full system state for rapid clone/restore |
 | **Disaster Recovery** | Rescue packages (encrypted tarballs) | Complete stack rebuild from rescue files |
 | **Offsite Replication** | Avender MinIO S3 (`boto3`) | Geographic separation of encrypted backups |
@@ -63,7 +63,7 @@ The Loyallia backup system adheres to the **3-2-1 rule**:
 │   ┌─────────────┐                ┌─────────────┐          ┌─────────────┐   │
 │   │ PostgreSQL  │──pg_dump──────▶│  .age file  │─────────▶│  MinIO S3   │   │
 │   │ Redis       │──BGSAVE/RDB───▶│  .age file  │─────────▶│  MinIO S3   │   │
-│   │ Vault       │──kv export────▶│  .age file  │─────────▶│  MinIO S3   │   │
+│   │ Vault       │──kv list/get──▶│  .age file  │─────────▶│  MinIO S3   │   │
 │   │ MinIO       │──mc mirror────▶│  .age file  │─────────▶│  MinIO S3   │   │
 │   └─────────────┘                └─────────────┘          └─────────────┘   │
 │                                                                             │
@@ -80,7 +80,7 @@ The Loyallia backup system adheres to the **3-2-1 rule**:
 |------|---------------|----------|
 | **3 copies** | Primary data + local `.age` backup + offsite MinIO | Local disk + Avender S3 |
 | **2 media types** | Local filesystem (ext4/XFS) + S3 object storage | Host disk + MinIO bucket |
-| **1 offsite** | Avender MinIO server (`149.28.50.169:9100`) | Remote datacenter — credentials are currently hardcoded in `deploy/backups/lib/minio-client.sh`; rotate and move to Vault |
+| **1 offsite** | Avender MinIO server (`149.28.50.169:9100`) | Remote datacenter — **credentials are currently hardcoded in `deploy/backups/lib/minio-client.sh` and must be moved to Vault; do not change the script until migrated** |
 | **Encryption at rest** | `age` public-key encryption on all backups | All backup files |
 | **Encryption in transit** | HTTPS/TLS for MinIO upload/download | Network layer |
 | **Integrity verification** | SHA-256 checksums in rescue manifests | Rescue packages |
@@ -107,7 +107,7 @@ deploy/
 │   │   ├── env.sh                ← Dev paths & compose config
 │   │   ├── postgres.sh           ← docker compose exec pg_dump
 │   │   ├── redis.sh              ← docker compose exec BGSAVE
-│   │   ├── vault.sh              ← docker compose exec kv export
+│   │   ├── vault.sh              ← docker compose exec kv list + kv get
 │   │   ├── minio.sh              ← docker compose exec mc mirror
 │   │   ├── snapshot.sh           ← Full cluster snapshot
 │   │   ├── offsite-sync.sh       ← Upload to MinIO
@@ -122,7 +122,7 @@ deploy/
 │       ├── env.sh                ← Prod paths & compose config
 │       ├── postgres.sh           ← Host pg_dump (port 33900)
 │       ├── redis.sh              ← Host redis-cli BGSAVE (port 33902)
-│       ├── vault.sh              ← Host vault kv export + Raft snapshot
+│       ├── vault.sh              ← Host vault kv list + vault kv get + Raft snapshot
 │       ├── minio.sh              ← Host mc mirror (port 33903)
 │       ├── snapshot.sh           ← Full cluster snapshot
 │       ├── offsite-sync.sh       ← Upload to MinIO
@@ -317,6 +317,8 @@ The `deploy/backups/lib/encrypt.sh` library provides reusable functions:
 
 Encrypted backups are replicated to an **offsite MinIO server** hosted on Avender infrastructure for geographic redundancy.
 
+> **Security note:** Offsite MinIO credentials are currently hardcoded in `deploy/backups/lib/minio-client.sh`. They must be moved to Vault before production use. Do not modify the script as part of documentation corrections.
+
 ### Server Details
 
 | Property | Value |
@@ -403,7 +405,7 @@ The backup system integrates with the **Loyallia Sysadmin UI** for operational v
 |---------|----------|-------------|
 | **Factory Reset** | Settings → "Restaurar de Fábrica" | Wipes all tenant data while preserving platform infrastructure |
 | **OTP Verification** | Factory Reset dialog | Requires email/SMS OTP before destructive action |
-| **Health Dashboard** | `/api/v1/health/` | Returns JSON with `postgres`, `redis`, `minio` status |
+| **Health Dashboard** | `/api/v1/health/ready/` | Returns JSON checking database and cache readiness; `/api/v1/health/` returns status/version |
 | **Admin Recovery** | CLI only | `python manage.py recover_admin_access` resets superadmin password |
 
 ### Factory Reset Behavior (UI)

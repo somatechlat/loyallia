@@ -26,7 +26,7 @@
 |--------|--------|-------|
 | Backend API | 🟢 Healthy | Django 5 + Ninja, all endpoints operational |
 | Frontend | 🟢 Healthy | Next.js 14, SuperAdmin UI functional |
-| PostgreSQL | 🟢 Healthy | Primary + replica, migration 0007 applied |
+| PostgreSQL | 🟢 Healthy | Primary + replica, all Django migrations applied up to each app's latest migration |
 | Redis | 🟢 Healthy | Cache + Celery broker |
 | Vault | Verify locally | KV v2; do not print secret values |
 | Google Wallet | Verify locally | Service account and issuer live in Vault/local ignored files |
@@ -65,7 +65,7 @@ backend/           Django project
     customers/     Wallet pass engine (pass_engine/apple_pass.py, pass_engine/google_pass.py)
     billing/       Subscription plans, rate limits
     agent_api/     Enterprise AI API, call logging
-  common/          Shared utils (vault.py, plan_enforcement.py, messages.py)
+  common/          Shared utils (vault.py, plan_enforcement.py, messages/ package)
   loyallia/        Settings (base.py, development.py, production.py)
 frontend/          Next.js 14 app
   src/app/(dashboard)/superadmin/  SuperAdmin pages
@@ -88,9 +88,9 @@ certs/             Certificate files (real + dev)
 | **Account Deletion** | `apps/tenants/security_privacy_api.py`, `apps/authentication/api.py` | `delete_account` sets `is_active=False`, revokes all refresh tokens, schedules cascade delete. Frontend clears cookies before redirect. |
 | **MANAGER+ Enforcement** | `apps/customers/api.py`, `apps/cards/api.py`, `apps/automation/api.py`, `apps/api/upload_api.py` | Multiple endpoints now reject STAFF and require MANAGER or OWNER role. |
 | **Plan Enforcement** | `common/plan_enforcement.py` | Decorators enforce limits; `_count_api_calls_day()` uses `AgentAPICallLog` |
-| **Vault Write** | `common/vault.py` | `write_secret()` + `clear_cache()` for runtime secret updates |
+| **Vault Write** | `common/vault.py` | `put_secret()` + `clear_cache()` for runtime secret updates |
 | **Integration Diagnostics** | `apps/tenants/super_admin_api/platform.py` | `platform_integrations()` returns per-service diagnostics with `errors` array |
-| **Vault Secret Endpoint** | `apps/tenants/super_admin_api/platform.py` | `PUT /integrations/{key}/secret/` — writes single key to Vault, validates against `ALLOWED_KEYS` |
+| **Vault Secret Endpoint** | `apps/tenants/super_admin_api/platform.py` | `PUT /api/v1/admin/platform/integrations/{key}/secret/` — writes single key to Vault, validates against `ALLOWED_KEYS` |
 | **Migration & Seed Remediation** | `apps/*/migrations/`, `apps/billing/fixtures/subscription_plans.json`, `apps/tenants/fixtures/platform_settings.json`, `apps/*/management/commands/seed_*.py` | Data-creating migrations converted to no-ops; canonical JSON fixtures are the single source of truth. Seed commands read from fixtures. `--update-existing` flag supported. No hardcoded default passwords. Production startup no longer auto-runs seeds. |
 
 ### Frontend Changes
@@ -109,9 +109,9 @@ certs/             Certificate files (real + dev)
 
 | Change | File | Why |
 |--------|------|-----|
-| **Configurable Ports** | `docker-compose.yml` | All port bindings use `${DOCKER_BIND_HOST:-127.0.0.1}`. Set `DOCKER_BIND_HOST=0.0.0.0` for LAN/mobile testing. |
-| **SuperAdmin Hard Delete** | `apps/tenants/super_admin_api/tenants.py`, `apps/tenants/tasks.py` | Synchronous tenant hard-delete with justification requirement (min 10 chars) and audit logging. Extracted `hard_delete_tenant()` for reuse by Celery task and API. |
-| **PgBouncer Test Path** | `common/test_runner.py`, `loyallia/settings/test.py`, `loyallia/settings/test_integration.py` | Unit tests exercise `PgBouncerRouter`; integration tests run through real PgBouncer transaction mode. |
+| **Configurable Ports** | `docker-compose.yml` | Only nginx and alertmanager honor `${DOCKER_BIND_HOST:-127.0.0.1}`; all other dev ports hardcode `127.0.0.1`. Set `DOCKER_BIND_HOST=0.0.0.0` for LAN/mobile testing of nginx/alertmanager only. |
+| **SuperAdmin Hard Delete** | `apps/tenants/super_admin_api/tenants.py`, `apps/tenants/tasks.py` | `hard_delete_tenant()` is a synchronous helper in `apps/tenants/tasks.py` used by the SuperAdmin API. It requires a justification (min 10 chars) and writes an audit log. |
+| **PgBouncer Test Path** | `common/test_runner.py`, `loyallia/settings/test.py`, `loyallia/settings/test_integration.py` | Unit/integration tests disable `DATABASE_ROUTERS = []` and bypass PgBouncer; integration tests otherwise exercise the full Docker cluster. |
 | **E2E Modular Tests** | `frontend/tests/e2e/suite/*.spec.ts`, `playwright.config.ts` | 32 spec files tagged with module + role tags. Run any module in isolation (~1-2 min). |
 
 ---
@@ -135,7 +135,9 @@ curl -k -X POST -H "X-Vault-Token: <token>" -H "Content-Type: application/json" 
   -d '{"data": {"key": "value"}}'
 ```
 
-### Current Vault Keys
+### Selected Vault Keys
+
+The table below highlights commonly referenced keys. For the canonical allowlist per integration, see `backend/apps/tenants/super_admin_api/integration_config.py`.
 
 | Key | Value Source | Status |
 |-----|--------------|--------|
@@ -152,9 +154,10 @@ curl -k -X POST -H "X-Vault-Token: <token>" -H "Content-Type: application/json" 
 | `apple_wallet_enabled` | Vault/platform setting | Controls Apple Wallet availability |
 | `mailjet_api_key` | Vault | Required when Mailjet is enabled |
 | `mailjet_secret_key` | Vault | Required when Mailjet is enabled |
-| `mailjet_sender_email` | Vault | Required when Mailjet is enabled |
 | `jwt_secret_key` | Vault | Required for JWT signing |
 | `secret_key` | Vault | Required for Django |
+
+> `mailjet_sender_email` is a `PlatformSetting`, not a Vault key.
 
 ### Certificate Files in `certs/`
 Files tracked in Git (only Vault TLS files):
@@ -182,7 +185,7 @@ POST /api/v1/auth/google/login/   → Google Identity Services login (ID token)
 ```
 GET  /api/v1/admin/plans/                    → List all plans
 POST /api/v1/admin/plans/                    → Create plan
-PUT  /api/v1/admin/plans/{id}/               → Update plan
+PATCH /api/v1/admin/plans/{id}/              → Update plan
 DELETE /api/v1/admin/plans/{id}/             → Deactivate (blocked if active subs)
 GET  /api/v1/admin/platform/integrations/    → Integration status + diagnostics
 PUT  /api/v1/admin/platform/integrations/{key}/secret/  → Write Vault secret
@@ -263,8 +266,8 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 # Backend logs
 docker logs -f loyallia-api
 
-# Run migrations
-docker exec loyallia-api python manage.py migrate
+# Run migrations (use the direct DB to avoid PgBouncer transaction mode)
+docker exec loyallia-api python manage.py migrate --database=direct
 
 # Seed canonical data (run after migrations)
 docker exec loyallia-api python manage.py seed_subscription_plans
@@ -303,7 +306,6 @@ When running pytest on the host against the Docker cluster, export these first:
 ```bash
 export PGBOUNCER_URL="postgres://loyallia@localhost:33901/loyallia_dev"
 export DATABASE_DIRECT_URL="postgres://loyallia@localhost:33900/loyallia_dev"
-export DATABASE_URL="postgres://loyallia@localhost:33900/loyallia_dev"
 export VAULT_ADDR="https://localhost:33908"
 export VAULT_TOKEN="<root-token-from-.agents/vault_init_rescue.json>"
 export VAULT_SECRET_PATH="secret/data/loyallia/development"
@@ -329,7 +331,7 @@ Tests that create or delete data must use uniquely prefixed records and clean up
 - **File size limit:** Keep `.py` files under 650 lines; keep `.tsx` files focused and under 650 lines
 - **No FastAPI:** Django Ninja only
 - **No SQLAlchemy:** Django ORM + migrations only
-- **No hardcoded strings:** Use `common/messages.py` + `get_message()`
+- **No hardcoded strings:** Use `common/messages/` (package, e.g. `common/messages/__init__.py`) + `get_message()`
 - **No secrets in Git:** `.env`, `certs/*.pem`, `certs/*.key` are gitignored
 - **Tenant isolation:** ALL queries must filter by `tenant_id`
 - **Rate limits:** Enforced via `common/plan_enforcement.py` decorators

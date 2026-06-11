@@ -55,13 +55,13 @@ After running `seed_test_data`, test accounts are created for each role. See the
 seed command source for email/password values:
 `backend/apps/tenants/management/commands/seed_test_data.py`
 
-> **Never commit credentials to version control.** All passwords are set via
-> environment variables or the seed command.
+> **Never commit credentials to version control.** Demo-user passwords are set
+> only via the `--password` CLI argument of the seed command.
 
 ## Docker Commands
 
 ```bash
-# Start the entire stack (builds + migrates + seeds automatically)
+# Start the entire stack (builds + migrates + collects static)
 docker compose up -d --build
 
 # View logs (API + Frontend)
@@ -79,8 +79,8 @@ docker compose exec api python manage.py seed_subscription_plans
 # Seed synthetic demo data (manual re-run)
 docker compose exec api python manage.py seed_test_data
 
-# Re-seed (wipe + fresh data)
-docker compose exec api python manage.py seed_test_data --wipe
+# Re-seed (skips if demo data already exists; use --password to set demo-user passwords)
+docker compose exec api python manage.py seed_test_data --password <PASSWORD>
 
 # Run Django migrations
 docker compose exec api python manage.py migrate

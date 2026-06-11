@@ -45,7 +45,7 @@ All employees, contractors, and third-party service providers who participate in
 ### 1.2 Objectives
 
 1. **Availability:** Maintain platform availability at **≥ 99.9%** annual uptime, measured against the production SaaS environment.
-2. **Data Protection:** Achieve a Recovery Point Objective (RPO) of **≤ 24 hours** for both transactional data and object storage from the latest verified backup. A ≤ 5-minute RPO for transactional data would require continuous WAL archiving/shipping to a secondary site, which is not currently implemented.
+2. **Data Protection:** Achieve a Recovery Point Objective (RPO) of **≤ 24 hours** for both transactional data and object storage from the latest verified backup, assuming the previous daily backup and offsite sync completed successfully. A ≤ 5-minute RPO for transactional data would require continuous WAL archiving/shipping to a secondary site, which is not currently implemented.
 3. **Recovery Speed:** Achieve a Recovery Time Objective (RTO) of **≤ 4 hours** for both single-component failures and total cluster loss or datacenter-level incidents. The current infrastructure requires manual failover (streaming replica promotion, Redis/MinIO/Vault restore); a ≤ 30-minute single-component RTO would require automated failover tooling that is not currently deployed.
 4. **Verification:** Ensure all backup sets are automatically verified for integrity and restorability on a **daily** basis (verification timer runs at 06:00 UTC), with weekly offsite-integrity spot checks by the SRE Lead.
 5. **Resilience:** Maintain documented, tested, and automated recovery paths for all critical infrastructure components (PostgreSQL, Redis, Vault, MinIO, application tier).
@@ -150,19 +150,18 @@ The following functions are classified as **Critical** (business cannot operate 
 **Strategy:** Full DR rescue-package recovery on alternate infrastructure.
 
 1. **Pre-requisites maintained:**
-   - Daily encrypted full backups (PostgreSQL dump, Redis RDB, Vault secrets, MinIO objects, certificates, runtime configs) stored offsite on a secondary MinIO instance.
-   - Weekly encrypted rescue files (`vault_init_rescue.json`, runtime configs, certificates) stored offsite.
-   - Weekly `pg_basebackup` physical backups retained for 30 days.
-   - Cross-site MinIO bucket replication for object storage (`passes`, `assets`, `pg-backups`) when offsite sync is configured.
+   - Daily encrypted full backups (PostgreSQL dump, Redis RDB, Vault secrets, MinIO objects) stored offsite on a secondary MinIO instance.
+   - Weekly encrypted rescue files (`vault_init_rescue.json`, runtime configs, certificates, nginx configs, and a PostgreSQL `pg_dump --format=custom`) stored offsite.
+   - Offsite sync uploads encrypted `.age` files to the secondary MinIO instance via boto3 when configured; it does not use MinIO bucket replication.
 
 2. **Recovery sequence:**
    - Provision replacement server(s) in alternate region/cloud zone.
    - Download rescue files from offsite MinIO using `age`-encrypted transport.
    - Execute `deploy/disaster_recovery/production/recover.sh` (or development equivalent).
-   - Priority order: **Vault → PostgreSQL → Redis → MinIO → Application tier → Nginx → Monitoring**.
+   - Priority order: **Vault → PostgreSQL → Redis → Application tier → Nginx → Monitoring**. MinIO is restored from daily backups, not the rescue package.
 
 **RTO:** ≤ 4 hours  
-**RPO:** ≤ 24 hours (object storage and transactional DB from latest verified backup). Near-zero RPO requires automated WAL shipping to the secondary region, which is not currently implemented.
+**RPO:** ≤ 24 hours (object storage and transactional DB from latest verified backup), assuming the previous daily backup and offsite sync completed successfully. Near-zero RPO requires automated WAL shipping to the secondary region, which is not currently implemented.
 
 **Reference:** See `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §3.2 and `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` §7.5.
 
@@ -177,7 +176,7 @@ The following functions are classified as **Critical** (business cannot operate 
 
 2. **Eradication & Recovery:**
    - Do not pay ransoms. Recovery is performed exclusively from verified, offline (air-gapped or immutable) backups.
-   - Rescue files and offsite backups are encrypted with `age` and stored with write-once-read-many (WORM) lifecycle policies where supported.
+   - Rescue files and offsite backups are encrypted with `age`; WORM/object-lock lifecycle policies are not currently configured.
    - Before restoring, verify backup integrity checksums and GPG/age signatures to ensure the backup predates the infection.
    - Rebuild hosts from clean base images; re-run bootstrap scripts; restore data layers.
 
@@ -195,7 +194,7 @@ The following functions are classified as **Critical** (business cannot operate 
 - Loyallia production infrastructure is hosted on cloud infrastructure with availability-zone isolation. In the event of a zone or regional disaster, the DR plan assumes a cold-start into a secondary region.
 - DNS failover (manual or automated via provider) points traffic to the recovery region once health checks pass.
 - Offsite backups are stored in a geographically separate location with no shared power, cooling, or network fabric.
-- If both primary and secondary regions are impacted, recovery proceeds from the deepest offline archive (weekly `pg_basebackup` + rescue files), accepting an RPO of up to 7 days for the final fallback tier.
+- If both primary and secondary regions are impacted, recovery proceeds from the deepest offline archive (weekly rescue package containing a `pg_dump` logical dump), accepting an RPO of up to 7 days for the final fallback tier.
 
 ---
 
@@ -207,7 +206,7 @@ All backups must be verified automatically on a scheduled basis; manual verifica
 
 | Backup Type | Frequency | Verification Method | Owner |
 |-------------|-----------|---------------------|-------|
-| PostgreSQL `pg_dump` (daily) | Daily at 02:00 UTC (`loyallia-backup.timer`) | `pg_restore --list` + table-count validation in test DB (`deploy/backups/production/verify.sh`) | Automated |
+| PostgreSQL `pg_dump` (daily) | Daily at 02:00 UTC (`loyallia-backup.timer`) | File existence, age, and decryption test only (`deploy/backups/production/verify.sh`). No `pg_restore --list` or table-count validation is performed. | Automated |
 | PostgreSQL streaming replica | Continuous | Streaming lag check + `pg_isready` healthcheck | Automated |
 | Redis RDB + AOF | With AOF `appendfsync everysec` | `redis-check-rdb` + `redis-check-aof` when restoring | Manual during restore |
 | Vault rescue snapshot | Weekly at 03:00 UTC Sunday (`loyallia-rescue.timer`) | Snapshot decrypt + JSON schema validation (`deploy/disaster_recovery/production/verify_rescue.sh`) | Automated |
