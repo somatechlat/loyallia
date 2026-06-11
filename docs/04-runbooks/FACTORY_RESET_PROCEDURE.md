@@ -20,8 +20,8 @@
 - [ ] Confirm environment is `localhost` disposable development
 - [ ] Confirm `.agents/vault_init_rescue.json` exists and is valid JSON
 - [ ] Confirm `.agents/vault_secrets_rescue.json` exists
-- [ ] Confirm `.agents/pg_dump_rescue_YYYYMMDD.dump` exists (if data matters)
-- [ ] Confirm `.agents/certs_rescue_YYYYMMDD.txt` exists
+- [ ] Confirm `.agents/rescue/postgres_rescue_YYYYMMDD_HHMMSS.dump` exists (if data matters)
+- [ ] Confirm `.agents/rescue/certs_rescue_YYYYMMDD_HHMMSS.tar.gz` exists
 - [ ] Notify any other developers using this local instance
 - [ ] Export any data you need to keep
 
@@ -94,17 +94,18 @@ ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap-production.sh
 ```
 
 **This runs the Zero Trust Bootstrap sequence:**
-1. Check prerequisites (docker, compose)
-2. Generate secrets + auto-discover certificates from `certs/` → `.bootstrap_secrets.{mode}.env`
+1. Check prerequisites (docker, docker compose)
+2. Load or generate secrets → `.bootstrap_secrets.{mode}.env`
 3. Start Vault + vault-init (secrets injected via read-only volume, **NEVER via env vars**)
 4. Auto-save `init.json` to `.agents/vault_init_rescue.json`
 5. Auto-export Vault secrets to `.agents/vault_secrets_rescue.json`
 6. Start PostgreSQL, Redis, MinIO, PgBouncer, replica
 7. Run migrations + seeds (API container startup)
 8. Ensure SuperAdmin account exists
-9. Start Celery workers, Flower, WhatsApp bridge, Nginx, monitoring
-10. Securely cleanup temp volume
-11. Verify all containers healthy
+9. Start Celery workers, Flower, WhatsApp bridge, Nginx, Prometheus, Grafana, Loki
+10. Start Redis Sentinel
+11. Securely cleanup temp volume
+12. Verify all containers healthy
 
 **Idempotent:** Both scripts are fully idempotent. If interrupted, simply re-run — completed steps are skipped automatically.
 
@@ -125,8 +126,8 @@ docker compose ps
 curl -sf "http://localhost:33908/v1/sys/health?standbyok=true"
 
 # Idempotency check — seeds should skip existing
-docker exec loyallia-api python manage.py seed_platform_settings
-docker exec loyallia-api python manage.py seed_subscription_plans
+docker compose exec -T api python manage.py seed_platform_settings --mode=development
+docker compose exec -T api python manage.py seed_subscription_plans
 ```
 
 ---
@@ -159,14 +160,15 @@ docker cp loyallia-vault:/vault/file/init.json .agents/vault_init_rescue.json
 # Vault secrets
 bash scripts/export_local_vault.sh .agents/vault_secrets_rescue.json
 
-# PostgreSQL dump
-docker compose exec -T postgres pg_dump -U loyallia -d loyallia --format=custom --compress=9 > .agents/pg_dump_rescue_$(date +%Y%m%d).dump
+# PostgreSQL dump (custom format used by DR scripts)
+mkdir -p .agents/rescue
+docker compose exec -T postgres pg_dump -U loyallia -d loyallia --format=custom --compress=9 > .agents/rescue/postgres_rescue_$(date +%Y%m%d_%H%M%S).dump
 
 # Certificates (preserved in certs/ directory, also backed up as rescue)
-cat certs/apple_pass_new.key certs/passNew.pem certs/AppleWWDRCAG4.pem certs/loyalliarewardswallet-*.json > .agents/certs_rescue_$(date +%Y%m%d).txt
+tar czf .agents/rescue/certs_rescue_$(date +%Y%m%d_%H%M%S).tar.gz -C . certs/
 
 # Redis RDB
-docker cp loyallia-redis:/data/dump.rdb .agents/redis_rescue_$(date +%Y%m%d).rdb
+docker cp loyallia-redis:/data/dump.rdb .agents/rescue/redis_rescue_$(date +%Y%m%d_%H%M%S).rdb
 ```
 
 ---

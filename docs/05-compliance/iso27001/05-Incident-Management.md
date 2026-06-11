@@ -226,6 +226,8 @@ For **Medium** and **Low** incidents, the On-Call Engineer coordinates with the 
 | `SlowApiResponse` | Service Outage | Medium | No |
 | `CeleryQueueBacklog` | Service Outage | Medium | No |
 
+> Note: Prometheus alert rule names are defined in `deploy/alerts/`. Verify the exact rule names against the live Prometheus configuration before relying on this mapping.
+
 ### 6.3 Reporting Procedures
 
 #### 6.3.1 Automated Detection
@@ -425,11 +427,11 @@ Recovery restores normal operations using validated, clean systems.
 
 ### 8.4 Communication Templates
 
-Pre-approved templates are maintained in `docs/05-compliance/iso27001/templates/`:
-- `customer-breach-notification.md`
-- `regulatory-breach-notification-ecuador.md`
-- `internal-incident-update.md`
-- `holding-statement-media.md`
+Pre-approved communication templates are maintained in `deploy/alerting/` (if present) or managed by the Communications Lead:
+- Customer breach notification
+- Regulatory breach notification (Ecuador)
+- Internal incident update
+- Holding statement for media
 
 All external communications must be reviewed and approved by the Incident Commander, DPO, and Legal Counsel before distribution.
 
@@ -598,7 +600,7 @@ CAPA tracking is maintained in the Jira Security project with monthly review by 
 | LOY-SEC-008 | Audit Logging Standard | `backend/apps/audit/` log retention and immutability |
 | LOY-SEC-009 | Vulnerability Management Procedure | Patch and remediation coordination |
 | LOY-COM-010 | Data Breach Notification Procedure | Regulatory and customer notification templates |
-| LOY-OPS-011 | Monitoring and Alerting Runbook | Prometheus, Grafana, Loki, Alertmanager operations |
+| LOY-OPS-011 | Monitoring and Alerting Runbook | Prometheus, Grafana, Loki, Alertmanager operations (see `deploy/alerting/`). |
 
 ---
 

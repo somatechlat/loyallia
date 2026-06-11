@@ -22,7 +22,7 @@ Scripts here are intended to be run manually by operators with appropriate crede
 - `docker` CLI available
 - Environment variables set:
   ```bash
-  export VAULT_ADDR=https://vault:8200
+  export VAULT_ADDR=https://127.0.0.1:33908
   export VAULT_TOKEN=<app-token-or-root-token>
   ```
 
@@ -37,6 +37,8 @@ Scripts here are intended to be run manually by operators with appropriate crede
 | `jwt_secret_key` | `secrets.token_urlsafe(32)` | API, Celery workers |
 | `pass_hmac_secret` | `secrets.token_urlsafe(32)` | API, `celery-pass` |
 | `flower_basic_auth` | `loyallia:<random>` | Flower |
+
+> **Known limitation:** `rotate_secrets.sh` writes rotated values as top-level keys (e.g., `redis_password`, `minio_root_password`). The Loyallia application reads `redis_url` and MinIO credentials (`minio_access_key` / `minio_secret_key`) from Vault, so rotating `redis_password` or `minio_root_password` alone will not update those connection strings. After rotating these secrets, update the corresponding composite keys in Vault manually or via `deploy/vault/init.sh`.
 
 #### Backup Directory
 

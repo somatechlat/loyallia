@@ -71,10 +71,10 @@ Factory reset complete.
 ### Production Factory Reset
 
 ```bash
-./deploy/factory_reset/production/factory_reset.sh
+./deploy/factory_reset/production/factory_reset.sh --i-am-sure-production
 ```
 
-> ⚠️ **Extreme caution:** This will permanently delete production data. Ensure backups exist in `deploy/backups/` before proceeding.
+> ⚠️ **Extreme caution:** This will permanently delete production data. Ensure backups exist in `deploy/backups/` before proceeding. Production also requires typing the production domain `rewards.loyallia.com` in addition to `DESTROY`.
 
 ## Troubleshooting
 

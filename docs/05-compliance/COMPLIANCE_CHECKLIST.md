@@ -3,7 +3,7 @@
 **Audit Date:** 2026-04-29
 **Auditor:** Compliance & Data Protection Officer (Automated Review)
 **Scope:** Full codebase review — backend API, frontend, infrastructure, legal pages
-**Status:** 11 FAIL / 6 PARTIAL / 38 PASS
+**Status:** 10 FAIL / 6 PARTIAL / 39 PASS
 
 ## Table of Contents
 
@@ -28,7 +28,7 @@ Ley Orgánica de Protección de Datos Personales (LOPDP) — effective since May
 | L-05 | **Right to deletion (derecho de cancelación)** | PASS | `customers/api.py` — `DELETE /{customer_id}/` performs permanent delete. Requires OWNER role. Audit logged before deletion. | — |
 | L-06 | **Right to access (derecho de acceso)** | PASS | `customers/api.py` — `GET /{customer_id}/` returns full customer profile. `GET /export/` enables data portability. | — |
 | L-07 | **Right to rectification (derecho de rectificación)** | PASS | `customers/api.py` — `PATCH /{customer_id}/` allows updating all customer fields. Audit logged. | — |
-| L-08 | **Data portability** | PASS | `GET /export/` exports all customer data as CSV. `GET /segments/{id}/export/` exports segment data. Both OWNER-only with audit logging. | — |
+| L-08 | **Data portability** | PASS | `GET /api/v1/customers/export/` exports all customer data as CSV. `GET /api/v1/customers/segments/{id}/export/` exports segment data. Both OWNER-only with audit logging. | — |
 | L-09 | **Audit trail completeness** | PASS | `AuditLog` model — immutable (`save()` rejects updates, `delete()` raises ValueError). Records WHO/WHAT/WHEN/WHERE/WHY. 7-year retention stated. Self-auditing on read operations. | — |
 | L-10 | **Audit trail immutability** | PASS | `audit/models.py` — `save()` checks `if self.pk and exists()` → raises `ValueError`. `delete()` always raises `ValueError`. | — |
 | L-11 | **Audit trail retention (7 years)** | PARTIAL | Retention period documented in model docstring and privacy policy, but **no automated purge/cleanup task** exists to enforce or verify the 7-year window. | **Remediation:** Create a Celery beat task that monitors audit log age and alerts when entries approach 7-year boundary. Consider archival strategy for entries beyond retention. |
@@ -61,9 +61,9 @@ If serving EU users (even one), GDPR applies.
 | OWASP-02 | **A02: Cryptographic Failures** | PASS | Argon2 password hashing (strongest available). JWT with HS256 and separate secret key. HMAC-signed QR codes. TLS 1.2/1.3 enforced in Nginx. HTTPS-only in production. Vault for secrets management. | — |
 | OWASP-03 | **A03: Injection** | PASS | Django ORM (parameterized queries) throughout. Pydantic schema validation on all inputs. No raw SQL observed. CSV injection prevention (`_sanitize_csv_cell`). | — |
 | OWASP-04 | **A04: Insecure Design** | PASS | Multi-tenant architecture with strict isolation. Immutable audit trail. Refresh token rotation (B-002). Account lockout after failed attempts. Rate limiting middleware. | — |
-| OWASP-05 | **A05: Security Misconfiguration** | PASS | `DEBUG=False` in production. `SECRET_KEY` from Vault. Security headers in Nginx config (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy). HSTS preload. | — |
+| OWASP-05 | **A05: Security Misconfiguration** | PASS | `DEBUG=False` in production. `SECRET_KEY` from Vault. Security headers in production Nginx config (CSP, HSTS with `includeSubDomains`, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy). `preload` directive is not currently enabled. | — |
 | OWASP-06 | **A06: Vulnerable and Outdated Components** | PARTIAL | No `pip-audit` or `npm audit` in CI pipeline observed. Dependency versions not pinned in reviewed files. | **Remediation:** Add `pip-audit` and `npm audit --production` to CI. Pin dependency versions. Enable Dependabot/Renovate. |
-| OWASP-07 | **A07: Identification and Authentication Failures** | PASS | JWT with rotation. Refresh tokens are single-use (revoked after use). Account lockout. Password strength validation (min 8 chars, common password check). OTP-based email/phone verification. Google OAuth with audience validation. | — |
+| OWASP-07 | **A07: Identification and Authentication Failures** | PASS | JWT with rotation. Refresh tokens are single-use (revoked after use). Account lockout after 5 failed attempts (15-min lockout). Password validation: Django validators enforce 12+ chars with complexity, but registration schema enforces min 8 and password-reset schema enforces min 6. OTP-based email/phone verification. Google OAuth with audience validation. | — |
 | OWASP-08 | **A08: Software and Data Integrity Failures** | PASS | HMAC-signed QR codes. Webhook signature verification (`X-Payment-Signature`). Celery task serialization via JSON only. | — |
 | OWASP-09 | **A09: Security Logging and Monitoring Failures** | PASS | Structured JSON logging (`JsonFormatter`). Sentry integration (B-013). Immutable audit trail. Request ID tracing (B-011). Rate limit violation logging. | — |
 | OWASP-10 | **A10: Server-Side Request Forgery (SSRF)** | PASS | Google tokeninfo endpoint is hardcoded (`https://oauth2.googleapis.com/tokeninfo`). No user-controlled URLs used in server-side requests. MinIO endpoint from env config. | — |
@@ -74,16 +74,16 @@ If serving EU users (even one), GDPR applies.
 
 | # | Endpoint | Status | Evidence | Remediation |
 |---|----------|--------|----------|-------------|
-| V-01 | `POST /auth/register/` | PASS | `RegisterIn` — `EmailStr` validation, password min 8 chars, business_name required, field stripping. | — |
+| V-01 | `POST /auth/register/` | PASS | `RegisterIn` — `EmailStr` validation, password min 8 chars (schema-level; Django validators enforce 12+ when invoked), business_name required, field stripping. | — |
 | V-02 | `POST /auth/login/` | PASS | `LoginIn` — `EmailStr` + password string. No injection vector. | — |
 | V-03 | `POST /auth/refresh/` | PASS | `RefreshIn` — refresh_token string. Hashed before DB lookup. | — |
 | V-04 | `POST /auth/password-reset/request/` | PASS | `PasswordResetRequestIn` — `EmailStr`. Rate limited (3/hour). | — |
-| V-05 | `POST /auth/password-reset/confirm/` | PASS | `PasswordResetConfirmIn` — `EmailStr`, otp string, new_password min 8 chars. | — |
+| V-05 | `POST /auth/password-reset/confirm/` | PASS | `PasswordResetConfirmIn` — `EmailStr`, otp string, new_password min 6 chars (schema-level; Django validators enforce 12+ when invoked). | — |
 | V-06 | `POST /auth/verify-email/` | PASS | `VerifyEmailIn` — `EmailStr` + otp string. | — |
 | V-07 | `POST /auth/invite/` | PASS | `InviteIn` — `EmailStr`, role validated against allowed set (MANAGER, STAFF only). | — |
 | V-08 | `POST /auth/google/login/` | PASS | `GoogleTokenIn` — credential string. Audience validation against client_id. Email verified check. | — |
 | V-09 | `POST /auth/phone/verify/request/` | PASS | `PhoneVerifyRequestIn` — E.164 regex validation (`^\+[1-9]\d{7,14}$`). | — |
-| V-10 | `POST /customers/import/` | PASS | File size limit (5MB). Format validation (.csv/.xlsx only). Column validation. Email regex. Duplicate detection. Row-level error handling. | — |
+| V-10 | `POST /customers/import/` | PASS | File size limit (default 10MB via `IMPORT_MAX_FILE_SIZE_BYTES`). Format validation (.csv/.xlsx only). Column validation. Email regex. Duplicate detection. Row-level error handling. | — |
 | V-11 | `POST /customers/enroll/` (public) | PASS | `CustomerCreateIn` — Pydantic validation, `EmailStr`, name validators, gender enum. Card ID validated against DB. | — |
 | V-12 | `PATCH /customers/{id}/` | PASS | `CustomerUpdateIn` — all optional fields, name validators, gender enum. | — |
 | V-13 | `POST /notifications/send/` | PASS | `SendNotificationSchema` — Pydantic model with required fields. Tenant scoping. | — |
@@ -95,7 +95,7 @@ If serving EU users (even one), GDPR applies.
 
 | # | Check | Status | Evidence | Remediation |
 |---|-------|--------|----------|-------------|
-| V-17 | File size limit | PASS | `MAX_FILE_SIZE = 5 * 1024 * 1024` (5MB) enforced before pandas load. | — |
+| V-17 | File size limit | PASS | `IMPORT_MAX_FILE_SIZE_BYTES` defaults to 10MB (`CustomerImportService.MAX_FILE_SIZE`) and is enforced before pandas load. | — |
 | V-18 | File type validation | PASS | Extension check (`.csv`, `.xlsx`, `.xls`). pandas parsing with error handling. | — |
 | V-19 | CSV injection prevention | PASS | `_sanitize_csv_cell()` prefixes dangerous chars (`=`, `+`, `-`, `@`, `\t`, `\r`) with `'`. | — |
 | V-20 | Content-type validation | PARTIAL | Only extension-based check. No MIME type validation. | **Remediation:** Add `python-magic` or similar for MIME type verification alongside extension check. |
@@ -114,19 +114,19 @@ If serving EU users (even one), GDPR applies.
 
 | # | Endpoint Category | Status | Evidence | Remediation |
 |---|------------------|--------|----------|-------------|
-| R-01 | Login (`/auth/login`) | PASS | 5 req/min per IP. Redis-backed. | — |
+| R-01 | Login (`/auth/login`) | PASS | 60 req/min per IP (middleware). Redis-backed. | — |
 | R-02 | Registration (`/auth/register`) | PASS | 10 req/min per IP. | — |
-| R-03 | Phone verification (`/auth/phone/`) | PASS | 3 req/min per IP (SMS spam prevention). | — |
-| R-04 | Password reset | PASS | 3 req/hour per email (in-handler via cache). | — |
-| R-05 | General auth endpoints | PASS | 20 req/min per IP. | — |
+| R-03 | Phone verification (`/auth/phone/`) | PASS | 30 req/min per IP via middleware; additionally 5 starts per phone per 10 min and 5 check attempts per phone per 15 min (in-handler). | — |
+| R-04 | Password reset | PASS | 5 req/hour per IP (`FORGOT_PASSWORD_RATE_LIMIT_MAX=5`, window=3600 s); in-handler via cache. | — |
+| R-05 | General auth endpoints | PASS | 60 req/min per IP (catch-all `/api/v1/auth/`). | — |
 | R-06 | Wallet/PKPass endpoints | PASS | 30 req/min per IP (CPU protection). | — |
 | R-07 | Scanner endpoints | PASS | 120 req/min per user. | — |
-| R-08 | Analytics endpoints | PASS | 20 req/min per user. | — |
+| R-08 | Analytics endpoints | PASS | 60 req/min per user. | — |
 | R-09 | Notification endpoints | PASS | 30 req/min per user. | — |
 | R-10 | General API | PASS | 200 req/min per IP (catch-all). | — |
-| R-11 | Payment webhook | FAIL | **No rate limit on `/billing/webhook/`**. While HMAC verification prevents spoofing, a flood of valid-looking requests could still cause DoS. | **Remediation:** Add specific rate limit rule: `/api/v1/billing/webhook/` — 60 req/min per IP. |
+| R-11 | Payment webhook | PASS | 100 req/min per IP (`STRIPE_WEBHOOK_RATE_LIMIT_MAX=100`, window=60 s) via `@rate_limit` decorator on `/api/v1/billing/payments/webhook/`. HMAC signature verification also enforced. | — |
 | R-12 | Health check endpoint | PASS | Exempted from rate limiting (correct behavior). | — |
-| R-13 | Rate limit fail-open | PASS | Redis unavailable → requests pass through. Logged as warning. Prevents Redis failure from causing total outage. | — |
+| R-13 | Rate limit fail behavior | PASS | Auth endpoints fail CLOSED (HTTP 503) when Redis/cache is unavailable; non-auth endpoints fail open. Prevents brute force during Redis outages while preserving availability for public reads. | — |
 
 ## 7. Data Retention
 
@@ -135,7 +135,7 @@ If serving EU users (even one), GDPR applies.
 | DR-01 | **Audit log retention (7 years)** | PARTIAL | Retention period documented but no automated enforcement. No archival or purge mechanism. | **Remediation:** Implement: (1) Celery beat task to flag entries older than 7 years, (2) Archive to cold storage before deletion, (3) Alert compliance team at 6.5 years. |
 | DR-02 | **Refresh token cleanup** | PASS | Celery beat task `cleanup-expired-refresh-tokens` runs daily at 3 AM. Tokens revoked on password reset, user deactivation, and logout. | — |
 | DR-03 | **Customer data retention** | FAIL | **No automated retention policy.** Customer data persists indefinitely even after account closure. No configurable TTL. | **Remediation:** Implement configurable retention policy (e.g., 2 years after last activity). Add anonymization task for inactive customers. |
-| DR-04 | **Session data retention** | PASS | Django sessions backed by Redis with 5-minute default cache TTL. JWT access tokens expire in 60 minutes. Refresh tokens expire in 30 days with rotation. | — |
+| DR-04 | **Session data retention** | PASS | JWT access tokens expire in 60 minutes. Refresh tokens expire in 30 days with rotation and are cleaned up daily at 3 AM by Celery beat. Django default session engine is database-backed; the 5-minute Redis TTL is the default cache timeout, not the session timeout. | — |
 | DR-05 | **OTP data retention** | PASS | OTPs stored in Redis with 15-minute TTL. Verified OTPs are consumed (one-time use). | — |
 | DR-06 | **Campaign/notification data** | FAIL | **No retention policy for sent notifications.** Marketing notifications accumulate indefinitely. | **Remediation:** Implement archival task for notifications older than 1 year. Keep aggregate stats, purge message bodies. |
 
@@ -148,12 +148,11 @@ If serving EU users (even one), GDPR applies.
 | 3 | G-02 | HIGH | GDPR | No cookie consent withdrawal mechanism | P1 |
 | 4 | G-04 | HIGH | GDPR | No breach notification (same as L-14) | P0 |
 | 5 | OWASP-06 | MED | OWASP | No dependency vulnerability scanning in CI | P2 |
-| 6 | R-11 | MED | Rate Limiting | No rate limit on payment webhook | P1 |
-| 7 | DR-01 | MED | Retention | Audit log retention not enforced | P2 |
-| 8 | DR-03 | HIGH | Retention | No customer data retention policy | P1 |
-| 9 | DR-06 | MED | Retention | No notification data retention | P2 |
-| 10 | V-20 | LOW | Validation | No MIME type validation on uploads | P3 |
-| 11 | E-03 | LOW | Error Handling | PII in application logs | P2 |
+| 6 | DR-01 | MED | Retention | Audit log retention not enforced | P2 |
+| 7 | DR-03 | HIGH | Retention | No customer data retention policy | P1 |
+| 8 | DR-06 | MED | Retention | No notification data retention | P2 |
+| 9 | V-20 | LOW | Validation | No MIME type validation on uploads | P3 |
+| 10 | E-03 | LOW | Error Handling | PII in application logs | P2 |
 
 ## Priority Remediation Roadmap
 
@@ -164,7 +163,6 @@ If serving EU users (even one), GDPR applies.
 ### P1 — Pre-Production
 - [ ] Add granular cookie consent with reject option
 - [ ] Add cookie settings management panel
-- [ ] Add rate limit rule for payment webhook
 - [ ] Implement customer data retention policy with automated cleanup
 
 ### P2 — Post-Launch (30 days)

@@ -1,9 +1,12 @@
+> **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+
 # Loyallia Django Settings Completeness Audit
 
-> **Audit Date:** 2026-01-19
+> **Audit Date:** 2026-06-11 (snapshot; original audit 2026-01-19)
 > **Auditor:** Senior Django Configuration Specialist
-> **Server:** 140.82.15.48 (rewards.loyallia.com)
-> **Project Root:** `/opt/loyallia/backend/`
+> **Server:** 140.82.15.48 (rewards.loyallia.com) — historical reference only
+> **Project Root:** `/opt/loyallia/backend/` — historical reference only
 
 ---
 
@@ -20,19 +23,17 @@
 | Payment Gateway | PARTIAL | 5/10 |
 | Push Notifications | GOOD | 7/10 |
 | Wallets (Apple/Google) | GOOD | 7/10 |
-| Logging/Monitoring | PARTIAL | 5/10 |
+| Logging/Monitoring | GOOD | 7/10 |
 | Environment Separation | GOOD | 8/10 |
-| Health Checks | MISSING | 0/10 |
+| Health Checks | GOOD | 7/10 |
 | CORS Configuration | GOOD | 7/10 |
 | Rate Limiting | GOOD | 6/10 |
-| **Overall** | **PARTIAL** | **6.5/10** |
+| **Overall** | **PARTIAL** | **6.9/10** |
 
-### Critical Findings (5 Found)
+### Critical Findings (3 Found)
 1. **No `development_mode` setting exists** -- The project does NOT implement a `development_mode` toggle. PLATFORM_MODE is seeded as a PlatformSetting but is NOT consumed by payment/webhook logic.
 2. **No Stripe integration implemented** -- Payment gateway uses "manual" provider only. Stripe keys/settings are completely absent.
-3. **No health check / readiness / liveness endpoints** -- No Django health check app, no Kubernetes-ready probes.
-4. **No Prometheus metrics endpoint** -- Monitoring is limited to Sentry only.
-5. **CELERY_WORKERS and GUNICORN_THREADS not configurable via env** -- Hardcoded worker defaults.
+3. **CELERY_WORKERS and GUNICORN_THREADS not configurable via env** -- Hardcoded worker defaults.
 
 ---
 
@@ -281,10 +282,10 @@ celery.py          -> DJANGO_SETTINGS_MODULE="loyallia.settings.production"
 | Sentry DSN | Configurable via env, initialized in base.py | OK |
 | Sentry traces_sample_rate | Configurable via env (default 0.1) | OK |
 | Sentry environment | Configurable via env (default "production") | OK |
-| **Prometheus metrics** | **NOT IMPLEMENTED** | **MISSING** |
-| **Health check endpoint** | **NOT IMPLEMENTED** | **MISSING** |
-| **Readiness probe** | **NOT IMPLEMENTED** | **MISSING** |
-| **Liveness probe** | **NOT IMPLEMENTED** | **MISSING** |
+| **Prometheus metrics** | IMPLEMENTED | OK |
+| **Health check endpoint** | IMPLEMENTED (`/api/v1/health/`) | OK |
+| **Readiness probe** | IMPLEMENTED (`/api/v1/health/ready/`) | OK |
+| **Liveness probe** | IMPLEMENTED (`/api/v1/health/`) | OK |
 
 ### 2.14 Development
 
@@ -428,27 +429,23 @@ Plans are also seeded via migration `0008_seed_vital_plans.py` (idempotent, runs
 
 2. **Add Stripe payment gateway provider** -- The billing API mentions Stripe but no implementation exists. Add `StripeGateway` class implementing `BasePaymentGateway`.
 
-3. **Add health check endpoints** -- Create `/health/`, `/health/ready/`, `/health/live/` endpoints for Kubernetes probes and load balancer health checks.
+3. **Add Vault retry logic** -- Implement exponential backoff (3 retries: 1s, 2s, 4s) for Vault HTTP requests.
 
-4. **Add Prometheus metrics endpoint** -- Install `django-prometheus` or similar for `/metrics` endpoint with request counts, latency histograms, DB connection pool stats.
+4. **Make CELERY_WORKERS and GUNICORN_THREADS configurable** via environment variables.
 
 ### MEDIUM Priority
 
-5. **Add Vault retry logic** -- Implement exponential backoff (3 retries: 1s, 2s, 4s) for Vault HTTP requests.
+5. **Add Stripe-specific settings** to base.py and production.py (publishable key, secret key, webhook secret, sandbox mode).
 
-6. **Make CELERY_WORKERS and GUNICORN_THREADS configurable** via environment variables.
-
-7. **Add Stripe-specific settings** to base.py and production.py (publishable key, secret key, webhook secret, sandbox mode).
-
-8. **Add log file handlers** for persistent logging (not just console stdout).
+6. **Add log file handlers** for persistent logging (not just console stdout).
 
 ### LOW Priority
 
-9. **Create `local.py` settings file** template for developer convenience.
+7. **Create `local.py` settings file** template for developer convenience.
 
-10. **Add API timeout configuration** to settings (request timeout, DB query timeout).
+8. **Add API timeout configuration** to settings (request timeout, DB query timeout).
 
-11. **Consider adding a `STRIPE_WEBHOOK_SECRET` Vault key** to the production required vault keys list.
+9. **Consider adding a `STRIPE_WEBHOOK_SECRET` Vault key** to the production required vault keys list.
 
 ---
 

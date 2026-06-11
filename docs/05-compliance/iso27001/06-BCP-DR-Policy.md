@@ -45,9 +45,9 @@ All employees, contractors, and third-party service providers who participate in
 ### 1.2 Objectives
 
 1. **Availability:** Maintain platform availability at **≥ 99.9%** annual uptime, measured against the production SaaS environment.
-2. **Data Protection:** Achieve a Recovery Point Objective (RPO) of **≤ 5 minutes** for transactional data and **≤ 24 hours** for object storage, ensuring minimal data loss during any disruptive event.
-3. **Recovery Speed:** Achieve a Recovery Time Objective (RTO) of **≤ 30 minutes** for single-component failures and **≤ 4 hours** for total cluster loss or datacenter-level incidents.
-4. **Verification:** Ensure all backup sets are automatically verified for integrity and restorability on a **weekly** basis.
+2. **Data Protection:** Achieve a Recovery Point Objective (RPO) of **≤ 24 hours** for both transactional data and object storage from the latest verified backup. A ≤ 5-minute RPO for transactional data would require continuous WAL archiving/shipping to a secondary site, which is not currently implemented.
+3. **Recovery Speed:** Achieve a Recovery Time Objective (RTO) of **≤ 4 hours** for both single-component failures and total cluster loss or datacenter-level incidents. The current infrastructure requires manual failover (streaming replica promotion, Redis/MinIO/Vault restore); a ≤ 30-minute single-component RTO would require automated failover tooling that is not currently deployed.
+4. **Verification:** Ensure all backup sets are automatically verified for integrity and restorability on a **daily** basis (verification timer runs at 06:00 UTC), with weekly offsite-integrity spot checks by the SRE Lead.
 5. **Resilience:** Maintain documented, tested, and automated recovery paths for all critical infrastructure components (PostgreSQL, Redis, Vault, MinIO, application tier).
 6. **Compliance:** Satisfy contractual SLA obligations, Ecuadorian data-protection regulations (LOPDP), and PCI DSS availability requirements.
 
@@ -107,14 +107,14 @@ The following functions are classified as **Critical** (business cannot operate 
 
 | Function | RTO | RPO | Recovery Mechanism |
 |----------|-----|-----|--------------------|
-| Transaction processing | ≤ 30 min | ≤ 5 min | Patroni automatic failover (hot standby); PITR from WAL archive if corruption. |
-| Authn / Authz | ≤ 30 min | ≤ 5 min | PostgreSQL + Redis session restoration; Vault unseal if sealed. |
-| Wallet pass delivery | ≤ 1 hour | ≤ 24 hours | MinIO erasure coding heals drive failures; mirror restore from secondary MinIO. |
-| Notifications | ≤ 1 hour | ≤ 6 hours | Redis Sentinel failover; Celery queue rebuild from persisted tasks. |
-| Payment processing | ≤ 30 min | ≤ 5 min | Same as transaction processing; PCI DSS compensating controls require fast recovery. |
-| Campaign engine | ≤ 2 hours | ≤ 5 min | Database restoration; application restart via Docker Compose. |
-| Analytics / reporting | ≤ 4 hours | ≤ 24 hours | Rebuild from OLAP snapshots or re-ingest from transactional DB. |
-| Secrets management | ≤ 1 hour | 0 | Vault Raft snapshot restore + rescue-file re-import; auto-unseal via AWS KMS. |
+| Transaction processing | ≤ 4 hours | ≤ 24 hours | Manual promotion of the streaming replica or restore from latest verified `pg_dump` + WAL archive. |
+| Authn / Authz | ≤ 4 hours | ≤ 24 hours | PostgreSQL restore or replica promotion; Redis reconstructs from application caches; Vault restore from rescue file. |
+| Wallet pass delivery | ≤ 4 hours | ≤ 24 hours | MinIO restore from offsite mirror or recreate passes from source data. |
+| Notifications | ≤ 4 hours | ≤ 24 hours | Redis restore from RDB snapshot or reconstruct Celery queues; notification history may be rebuilt from DB logs. |
+| Payment processing | ≤ 4 hours | ≤ 24 hours | Same as transaction processing; PCI DSS compensating controls require fast recovery. |
+| Campaign engine | ≤ 4 hours | ≤ 24 hours | Database restoration; application restart via Docker Compose. |
+| Analytics / reporting | ≤ 4 hours | ≤ 24 hours | Rebuild from transactional DB or re-ingest from persisted data. |
+| Secrets management | ≤ 4 hours | 0 | Vault rescue-file re-import; manual unseal with age-encrypted rescue package. |
 
 ### 3.3 Dependencies
 
@@ -127,7 +127,7 @@ The following functions are classified as **Critical** (business cannot operate 
 | Payment processing | PostgreSQL, Vault (gateway credentials), external PSP | Tenant financial reconciliation, PCI DSS audit logs |
 | Campaign engine | PostgreSQL, Redis, Celery workers | Notification services, analytics |
 | Analytics | PostgreSQL, Prometheus, Grafana | Tenant dashboards, management reports |
-| Secrets management | Vault Raft storage, AWS KMS (auto-unseal), TLS certificates | Every other service |
+| Secrets management | Single Vault container, age-encrypted rescue files, TLS certificates | Every other service |
 
 ---
 
@@ -135,12 +135,12 @@ The following functions are classified as **Critical** (business cannot operate 
 
 ### 4.1 Infrastructure Failure (Single Component)
 
-**Strategy:** Automated failover and self-healing, with documented manual fallback.
+**Strategy:** Documented manual recovery with partial automated restart. Production currently runs a single primary PostgreSQL with one asynchronous streaming replica, a single Redis instance, a single Vault container, and a single MinIO node.
 
-- **PostgreSQL:** Patroni-managed cluster with synchronous replication to a hot standby. Automatic promotion on primary failure (< 30 s). If both nodes fail, restore from latest `pg_dump` + WAL archives (20–30 min).
-- **Redis:** Redis Sentinel monitors primary and replica. Automatic failover (< 10 s). If all nodes fail, restore from RDB snapshot (5–10 min).
-- **MinIO:** Erasure coding tolerates up to N/2 drive failures; automatic healing. If full cluster is lost, restore from cross-site `mc mirror` replica (15–30 min).
-- **Vault:** HA Raft cluster with AWS KMS auto-unseal. If cluster is lost, restore from encrypted Raft snapshot + `vault_init_rescue.json` (10–15 min).
+- **PostgreSQL:** One asynchronous streaming replica (`postgres-replica`) is maintained via `pg_basebackup`. Failover is manual: promote the replica or restore from latest verified `pg_dump` + WAL archives. Automatic promotion is not implemented.
+- **Redis:** Single Redis instance with AOF persistence. If it fails, restore from RDB/AOF backup or reconstruct from application caches.
+- **MinIO:** Single MinIO node. If it fails, restore from offsite mirror or recreate objects from source.
+- **Vault:** Single Vault container. Recovery is from the encrypted rescue snapshot (`vault_init_rescue.json` + age-decrypted secrets), followed by manual unseal.
 - **Application Containers:** Docker Compose restart policy (`unless-stopped`). If host fails, redeploy on replacement host using bootstrap scripts.
 
 **Reference:** See `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` §7.1–7.4 and `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §3.
@@ -150,9 +150,10 @@ The following functions are classified as **Critical** (business cannot operate 
 **Strategy:** Full DR rescue-package recovery on alternate infrastructure.
 
 1. **Pre-requisites maintained:**
-   - Daily encrypted rescue files (Vault init, secrets, PostgreSQL dump, Redis RDB, certificates, runtime configs) stored offsite on a secondary MinIO instance.
+   - Daily encrypted full backups (PostgreSQL dump, Redis RDB, Vault secrets, MinIO objects, certificates, runtime configs) stored offsite on a secondary MinIO instance.
+   - Weekly encrypted rescue files (`vault_init_rescue.json`, runtime configs, certificates) stored offsite.
    - Weekly `pg_basebackup` physical backups retained for 30 days.
-   - Cross-site MinIO bucket replication for object storage (`passes`, `assets`, `pg-backups`).
+   - Cross-site MinIO bucket replication for object storage (`passes`, `assets`, `pg-backups`) when offsite sync is configured.
 
 2. **Recovery sequence:**
    - Provision replacement server(s) in alternate region/cloud zone.
@@ -161,7 +162,7 @@ The following functions are classified as **Critical** (business cannot operate 
    - Priority order: **Vault → PostgreSQL → Redis → MinIO → Application tier → Nginx → Monitoring**.
 
 **RTO:** ≤ 4 hours  
-**RPO:** ≤ 24 hours (object storage); ≤ 5 minutes (transactional DB via WAL archive if secondary region has near-real-time WAL shipping).
+**RPO:** ≤ 24 hours (object storage and transactional DB from latest verified backup). Near-zero RPO requires automated WAL shipping to the secondary region, which is not currently implemented.
 
 **Reference:** See `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §3.2 and `docs/09-archive/BACKUP_DISASTER_RECOVERY.md` §7.5.
 
@@ -185,7 +186,7 @@ The following functions are classified as **Critical** (business cannot operate 
    - Rotate all secrets, API keys, and certificates regardless of apparent compromise.
    - LOPDP breach notification within 72 hours if personal data is affected.
 
-**Reference:** See `deploy/backups/breach_notification.py` and `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §5.
+**Reference:** See `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` §5 and the Incident Management Procedure.
 
 ### 4.4 Natural Disaster (Earthquake, Flood, Power Grid Failure)
 
@@ -206,12 +207,12 @@ All backups must be verified automatically on a scheduled basis; manual verifica
 
 | Backup Type | Frequency | Verification Method | Owner |
 |-------------|-----------|---------------------|-------|
-| PostgreSQL `pg_dump` (daily) | Daily at 06:00 UTC | `pg_restore --list` + table-count validation in test DB | Automated (`deploy/backups/production/verify.sh`) |
-| PostgreSQL `pg_basebackup` (weekly) | Weekly at 04:00 UTC | Standby streaming lag check + `pg_verifybackup` | Automated |
-| Redis RDB + AOF | Every 6 hours | `redis-check-rdb` + `redis-check-aof` | Automated |
-| Vault Raft snapshot | Every 6 hours | Snapshot decrypt + `vault operator raft snapshot inspect` | Automated |
-| MinIO mirror | Daily | `mc diff` between primary and secondary | Automated |
-| Rescue files | After every creation | `verify.sh` checksums + JSON schema validation | Automated |
+| PostgreSQL `pg_dump` (daily) | Daily at 02:00 UTC (`loyallia-backup.timer`) | `pg_restore --list` + table-count validation in test DB (`deploy/backups/production/verify.sh`) | Automated |
+| PostgreSQL streaming replica | Continuous | Streaming lag check + `pg_isready` healthcheck | Automated |
+| Redis RDB + AOF | With AOF `appendfsync everysec` | `redis-check-rdb` + `redis-check-aof` when restoring | Manual during restore |
+| Vault rescue snapshot | Weekly at 03:00 UTC Sunday (`loyallia-rescue.timer`) | Snapshot decrypt + JSON schema validation (`deploy/disaster_recovery/production/verify_rescue.sh`) | Automated |
+| MinIO mirror | Daily as part of full backup | `mc diff` between primary and secondary when configured | Automated when offsite sync is enabled |
+| Rescue files | After every creation | `verify_rescue.sh` checksums + JSON schema validation | Automated |
 | Offsite integrity | Weekly | Download and decrypt a random sample; restore to test environment | SRE Lead |
 
 **Failure Handling:** If any automated verification fails, Alertmanager pages the Primary On-Call SRE within 5 minutes. The SRE must investigate and resolve the failure within 4 hours, or escalate to the Infrastructure Lead.
@@ -223,8 +224,8 @@ All backups must be verified automatically on a scheduled basis; manual verifica
 Recovery procedures are maintained in three layers:
 
 1. **Automated Scripts:**
-   - `deploy/disaster_recovery/create_rescue_files.sh` — generates a complete rescue package.
-   - `deploy/disaster_recovery/recover_from_rescue.sh` — performs full-environment recovery (development or production).
+   - `deploy/disaster_recovery/production/create_rescue.sh` / `.../development/create_rescue.sh` — generates a complete rescue package.
+   - `deploy/disaster_recovery/production/recover.sh` / `.../development/recover.sh` — performs full-environment recovery.
    - `deploy/backups/restore` — component-level restore (`--postgres`, `--redis`, `--vault`, `--minio`, `--snapshot`).
 
 2. **Runbooks:**
@@ -243,11 +244,11 @@ All recovery procedures require two-person control for production:
 
 | Scenario | Failover Type | Trigger | Procedure |
 |----------|---------------|---------|-----------|
-| PostgreSQL primary failure | Automatic | Patroni health check fails | Patroni promotes standby; PgBouncer reconnects automatically. |
-| Redis primary failure | Automatic | Sentinel detects 5-second unavailability | Sentinel elects replica; Django `django-redis` reconnects. |
-| MinIO node failure | Automatic | MinIO internal health check | Erasure coding reconstructs data; no operator action. |
+| PostgreSQL primary failure | Manual | Primary health check fails | Promote streaming replica or restore from latest verified `pg_dump`; reconfigure PgBouncer. |
+| Redis failure | Manual | Redis health check fails | Restore from RDB/AOF backup or reconstruct from application caches. |
+| MinIO failure | Manual | MinIO health check fails | Restore from offsite mirror or recreate objects from source. |
 | Full datacenter / region | Manual | CISO or SRE Lead declares disaster | DNS cutover to secondary region after rescue-package recovery and health-check validation. |
-| Vault seal event (KMS failure) | Semi-automatic | Vault health endpoint returns `sealed:true` | If AWS KMS is unavailable, manual unseal with Shamir keys from offline safe. |
+| Vault seal event | Manual | Vault health endpoint returns `sealed:true` | Manual unseal with rescue keys from offline safe. |
 
 **Failback:** After a failover to a secondary region or standby system, traffic must not be returned to the primary until:
 1. Root cause is remediated.
@@ -265,7 +266,7 @@ All recovery procedures require two-person control for production:
 |----------|-----------|-------|-------|------------------|
 | **Table-top walkthrough** | Quarterly | Review scenario matrix, decision tree, and escalation paths with BCM team. | CISO | All participants can locate playbooks and state their roles without reference. |
 | **Component restore drill** | Quarterly (rotating component) | Restore PostgreSQL, Redis, Vault, or MinIO from latest backup into an isolated test environment. | SRE Lead | RTO target met; data integrity checks pass; no errors in logs. |
-| **Full environment recovery drill** | Semi-annually | Execute `recover_from_rescue.sh` on a clean VM; bring application to full health. | Infrastructure Lead | End-to-end RTO ≤ 4 hours; API health checks pass; synthetic transaction succeeds. |
+| **Full environment recovery drill** | Semi-annually | Execute `deploy/disaster_recovery/production/recover.sh` on a clean VM; bring application to full health. | Infrastructure Lead | End-to-end RTO ≤ 4 hours; API health checks pass; synthetic transaction succeeds. |
 | **Offsite backup restore** | Annually | Download rescue files from offsite MinIO, decrypt, and restore on cold hardware. | SRE Lead + Security Lead | Recovery succeeds without primary-site dependencies; signatures verify. |
 | **Failover / failback drill** | Annually | Perform DNS cutover to DR site, run synthetic load, cut back. | Infrastructure Lead | Zero data loss during failback; no customer-visible errors. |
 
@@ -365,7 +366,7 @@ Any change to this policy or its subordinate procedures must follow the standard
 
 - New engineering hires complete BCM/DR orientation within their first 30 days, including a walkthrough of `docs/04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md` and hands-on rescue-file verification.
 - All SRE staff must successfully complete at least one component-restore drill per quarter.
-- BCM team roles and contact details are updated in `deploy/alerting/ESCALATION.md` whenever personnel change.
+- BCM team roles and contact details are maintained in the runbook referenced by `deploy/alerting/` and updated whenever personnel change.
 
 ---
 
@@ -380,7 +381,6 @@ Any change to this policy or its subordinate procedures must follow the standard
 | DR Scripts | `deploy/disaster_recovery/` | Rescue-file creation and automated full-environment recovery. |
 | Factory Reset Scripts | `deploy/factory_reset/` | Production and development factory-reset automation. |
 | Bootstrap Scripts | `deploy/bootstrap/` | Zero-trust full environment rebuild from scratch. |
-| Monitoring & Alerting | `deploy/alerting/ESCALATION.md` | Escalation paths and on-call rotation. |
 | Access Control Policy | `docs/05-compliance/iso27001/04-Access-Control-Policy.md` | Roles and permissions for DR execution. |
 | Risk Assessment | `docs/05-compliance/iso27001/02-Risk-Assessment.md` | Identified risks informing BIA priorities. |
 

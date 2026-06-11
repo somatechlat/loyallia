@@ -68,7 +68,7 @@ Prometheus loads these rules automatically via its configuration (usually mounte
 
 ```yaml
 volumes:
-  - ./deploy/alerts:/etc/prometheus/rules:ro
+  - ./deploy/alerts:/etc/prometheus/alerts:ro
 ```
 
 ### Validation
@@ -95,6 +95,5 @@ Use the Prometheus UI (`/graph`) to evaluate the `expr` of any rule manually bef
 ## Related Docs
 
 - [`deploy/alertmanager/`](../alertmanager/) — Alert routing and receiver configuration
-- [`deploy/alerting/`](../alerting/) — On-call escalation procedures
 - [`deploy/grafana/`](../grafana/) — Grafana alerting rules and visual dashboards
 - [`deploy/bootstrap/full-deploy.sh`](../bootstrap/full-deploy.sh) — Deployment orchestrator

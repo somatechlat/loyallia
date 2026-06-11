@@ -49,7 +49,7 @@ This document defines the **information security risk assessment and risk treatm
 | Domain | In Scope |
 |--------|----------|
 | **Assets** | Customer PII, payment tokens, wallet credentials (PKPass / Google Wallet), application code, infrastructure configurations, audit logs, backup archives |
-| **Systems** | Django REST API, Next.js frontend, PostgreSQL (primary + replica), Redis Sentinel, MinIO S3, HashiCorp Vault, Celery workers, Nginx reverse proxy |
+| **Systems** | Django REST API, Next.js frontend, PostgreSQL (primary + asynchronous streaming replica), Redis (single instance), MinIO S3, HashiCorp Vault (single instance), Celery workers, Nginx reverse proxy |
 | **Processes** | Tenant onboarding, customer enrollment, campaign management, payment processing, pass issuance, data export, backup/DR, incident response |
 | **Locations** | Primary production environment (Ecuador-based), offsite MinIO S3 (Avender), local development environments |
 | **Personnel** | Engineering team, SRE/Ops, customer support, business tenants, end customers |
@@ -120,7 +120,7 @@ Both Likelihood and Impact are scored on a **1–5 ordinal scale**. The product 
 
 The following risks were identified through:
 - Review of the 2026-04-29 compliance audit (11 FAIL findings)
-- Architecture review (Docker-based microservices, PostgreSQL replication, Redis Sentinel, MinIO S3, Vault)
+- Architecture review (Docker-based microservices, PostgreSQL streaming replication, single-instance Redis, MinIO S3, single-instance Vault)
 - Threat modeling of the loyalty platform data flows
 - Analysis of third-party dependencies and supply chain
 
@@ -131,7 +131,7 @@ The following risks were identified through:
 | **R-01** | Data Breach | Unauthorized access to customer PII due to missing breach detection and notification mechanisms (LOPDP Art. 44 / GDPR Art. 33-34). No automated incident alerting exists. | 4 | 5 | **20** | **Critical** | Customer database, audit logs | RBAC, tenant isolation, TLS, Vault secrets management |
 | **R-02** | Compliance Violation | GDPR cookie consent fails to provide reject option or granular categories (G-01, G-02). Consent withdrawal mechanism absent. | 4 | 4 | **16** | **Critical** | Web application, consent records | CookieConsent.tsx banner, localStorage persistence |
 | **R-03** | Data Loss | No automated customer data retention policy (DR-03). Customer PII persists indefinitely after account closure, increasing breach surface and violating storage limitation. | 4 | 4 | **16** | **Critical** | PostgreSQL customer tables | Manual deletion endpoint exists; no automation |
-| **R-04** | Service Availability | DDoS or resource exhaustion attack against payment webhook endpoint (R-11). No rate limiting on `/billing/webhook/` could cause cascading failure. | 3 | 4 | **12** | **High** | API availability, payment processing | HMAC signature verification on webhooks |
+| **R-04** | Service Availability | DDoS or resource exhaustion attack against payment webhook endpoint. Rate limit exists (100 req/min per IP) but a determined volumetric attack could still overwhelm upstream bandwidth or the application tier. | 2 | 4 | **8** | **Medium** | API availability, payment processing | HMAC signature verification; `@rate_limit` on `/api/v1/billing/payments/webhook/` |
 | **R-05** | Third-Party Vendor | Dependency vulnerabilities in Python/Node.js packages without CI scanning (OWASP-06). Unpinned versions increase supply-chain risk. | 4 | 3 | **12** | **High** | Application codebase, container images | Manual dependency updates; no automated scanning |
 | **R-06** | Data Corruption | Audit log retention (7 years) is not enforced (DR-01, L-11). Lack of automated purge/archival risks unbounded storage growth and potential tampering window. | 3 | 4 | **12** | **High** | Audit logs, compliance evidence | Immutable audit model (save/delete blocked) |
 | **R-07** | Insider Threat | Privileged user (SRE/Engineer) abuses Vault or PostgreSQL access to exfiltrate tenant data. No separation of duties for backup decryption keys. | 3 | 4 | **12** | **High** | Vault, PostgreSQL, backup archives | RBAC, age-encrypted backups, audit logging |
@@ -141,7 +141,7 @@ The following risks were identified through:
 | **R-11** | Service Availability | Primary database failure without tested failover. PostgreSQL replication exists but automated promotion procedure is not exercised monthly. | 3 | 4 | **12** | **High** | PostgreSQL primary, tenant operations | Streaming replication, PgBouncer connection pooling |
 | **R-12** | Natural Disaster | Earthquake or regional outage affecting primary data center. Single-region deployment with offsite backups but untested full-stack DR recovery time. | 2 | 5 | **10** | **High** | All production infrastructure | 3-2-1 backup rule, age-encrypted offsite MinIO, rescue packages |
 | **R-13** | Data Loss | No retention policy for sent marketing notifications (DR-06). Unbounded accumulation of message bodies increases recovery complexity. | 3 | 3 | **9** | **Medium** | Notification history, MinIO objects | None for notification archival |
-| **R-14** | Data Corruption | Redis Sentinel failover during high-load campaign. Cache inconsistency could lead to duplicate stamp issuance or incorrect balance calculations. | 3 | 3 | **9** | **Medium** | Redis cache, customer loyalty balances | Redis Sentinel with 3-node cluster |
+| **R-14** | Data Corruption | Single Redis instance failure or restart during high-load campaign. Cache inconsistency could lead to duplicate stamp issuance or incorrect balance calculations. | 3 | 3 | **9** | **Medium** | Redis cache, customer loyalty balances | Single Redis instance with AOF persistence; no Sentinel cluster |
 | **R-15** | Third-Party Vendor | Wallet credential compromise (Apple/Google certificates). Loss or leakage of `.p12` or JWT signer keys would allow pass forgery. | 2 | 4 | **8** | **Medium** | PKPass credentials, Google Wallet issuer keys | Vault storage, HMAC-signed QR codes, `inject_wallet_credentials.py` |
 | **R-16** | Data Breach | Tenant isolation failure due to middleware bypass. Direct database access or ORM filter omission could expose cross-tenant data. | 2 | 4 | **8** | **Medium** | Multi-tenant data boundary | `TenantMiddleware`, `@require_role()`, query scoping |
 | **R-17** | Service Availability | MinIO S3 storage exhaustion due to unbounded QR code / logo generation. No object lifecycle policy on bucket. | 3 | 2 | **6** | **Medium** | MinIO object storage, service availability | Manual monitoring via Grafana |
@@ -169,7 +169,7 @@ The following risks were identified through:
 | **R-01** | CISO / DPO | 🔽 Reduce | Implement: (1) Sentry-based incident detection with PII-safe alerting; (2) automated email template for affected users; (3) escalation playbook with 72-hour SLA; (4) registration as data processor with Superintendencia. | A.5.24 (Information security incident management planning and preparation), A.5.25 (Assessment and decision on information security events), A.5.26 (Response to information security incidents), A.8.1 (User endpoint devices) | 2 | 4 | 8 | Medium | 2026-06-15 |
 | **R-02** | Frontend Lead / DPO | 🔽 Reduce | Redesign `CookieConsent.tsx`: add "Rechazar No Esenciales" button, implement granular categories (Essential / Analytics / Marketing), store consent with timestamp, add cookie settings modal accessible from footer. | A.5.34 (Privacy and protection of PII), A.8.1 (User endpoint devices), A.5.37 (Documented operating procedures) | 1 | 3 | 3 | Low | 2026-06-20 |
 | **R-03** | Backend Lead / DPO | 🔽 Reduce | Implement configurable retention policy: (1) default 2-year TTL after last customer activity; (2) Celery beat task for anonymization; (3) OWNER-triggered permanent delete workflow; (4) retention dashboard for compliance team. | A.5.33 (Protection of records), A.5.34 (Privacy and protection of PII), A.8.1 (User endpoint devices), A.5.37 (Documented operating procedures) | 2 | 3 | 6 | Medium | 2026-06-30 |
-| **R-04** | SRE Lead | 🔽 Reduce | Add rate limit rule: `/api/v1/billing/webhook/` — 60 req/min per source IP. Implement webhook queue (Redis-backed) with circuit breaker to absorb bursts. | A.5.29 (Information security during disruption), A.8.20 (Networks security), A.8.21 (Security of network services), A.5.36 (Compliance with policies, rules and standards for information processing) | 2 | 3 | 6 | Medium | 2026-06-10 |
+| **R-04** | SRE Lead | 🔽 Reduce | Rate limit is already implemented on `/api/v1/billing/payments/webhook/` (100 req/min per IP). Harden further by adding a Redis-backed webhook queue with circuit breaker to absorb bursts, and upstream volumetric DDoS protection. | A.5.29 (Information security during disruption), A.8.20 (Networks security), A.8.21 (Security of network services), A.5.36 (Compliance with policies, rules and standards for information processing) | 2 | 4 | 8 | Medium | 2026-06-10 |
 | **R-05** | DevOps Lead | 🔽 Reduce | Add `pip-audit` and `npm audit --production` to CI pipeline. Pin all dependency versions. Enable Dependabot or Renovate for automated PRs on CVEs. Maintain SBOM. | A.5.20 (Information security in development and support processes), A.5.21 (Security of development and test environments), A.8.8 (Management of technical vulnerabilities), A.5.37 (Documented operating procedures) | 2 | 3 | 6 | Medium | 2026-06-30 |
 | **R-06** | Compliance Officer | 🔽 Reduce | Create Celery beat task to flag audit entries approaching 7-year boundary at 6.5 years. Implement archive-to-cold-storage (MinIA Glacier class) before deletion. Alert compliance team. | A.5.33 (Protection of records), A.5.34 (Privacy and protection of PII), A.8.1 (User endpoint devices), A.5.37 (Documented operating procedures) | 2 | 3 | 6 | Medium | 2026-07-15 |
 | **R-07** | CISO / SRE Lead | 🔽 Reduce | Enforce: (1) just-in-time Vault access with audit logging; (2) separate backup encryption keys held by Compliance Officer (2-of-3 Shamir optional); (3) quarterly access review; (4) privileged session recording for production shell access. | A.5.15 (Access control), A.5.18 (Access rights), A.5.24 (Information security incident management planning and preparation), A.8.2 (Privileged access rights), A.8.5 (Secure authentication), A.8.12 (Data leakage prevention) | 2 | 3 | 6 | Medium | 2026-07-31 |
@@ -198,9 +198,9 @@ After application of the risk treatment plan, the residual risk profile is as fo
 | Risk Level | Pre-Treatment Count | Post-Treatment Count | Change |
 |------------|---------------------|----------------------|--------|
 | **Critical** | 2 | 0 | −2 |
-| **High** | 10 | 0 | −10 |
-| **Medium** | 6 | 8 | +2 |
-| **Low** | 2 | 12 | +10 |
+| **High** | 9 | 0 | −9 |
+| **Medium** | 7 | 9 | +2 |
+| **Low** | 2 | 11 | +9 |
 | **Total** | **20** | **20** | — |
 
 ### Residual Risk Matrix (Post-Treatment)
@@ -210,7 +210,7 @@ After application of the risk treatment plan, the residual risk profile is as fo
 | **5 Almost Certain** | — | — | — | — | — |
 | **4 Likely** | — | — | — | — | — |
 | **3 Possible** | — | — | — | — | — |
-| **2 Unlikely** | — | R-04, R-09 | R-01, R-03, R-05, R-06, R-07, R-10, R-11 | R-12 | — |
+| **2 Unlikely** | — | R-09 | R-01, R-03, R-05, R-06, R-07, R-10, R-11 | R-04, R-12 | — |
 | **1 Rare** | — | — | R-02, R-08, R-13, R-14, R-15, R-16, R-17, R-18, R-19, R-20 | — | — |
 
 ### Highest Residual Risks (Post-Treatment)

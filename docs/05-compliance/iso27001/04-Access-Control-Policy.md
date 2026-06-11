@@ -36,7 +36,7 @@ Critical functions are divided among different roles to reduce the risk of fraud
 - **Database schema changes** are routed through a dedicated migration database user, separate from application runtime credentials.
 
 ### 2.4 Defence in Depth
-Access controls are enforced at multiple layers: network (IP-based rate limiting), application (JWT authentication, role checks), database (per-tenant row-level security patterns), and infrastructure (Vault policies, PgBouncer connection pooling).
+Access controls are enforced at multiple layers: network (IP-based rate limiting), application (JWT authentication, role checks, tenant-scoped query filtering), and infrastructure (Vault policies, PgBouncer connection pooling). PostgreSQL row-level security is not currently enabled.
 
 ---
 
@@ -167,19 +167,21 @@ All local user passwords must comply with the following requirements, enforced a
 
 | Requirement | Specification | Enforcement |
 |---|---|---|
-| Minimum length | 12 characters | `MinimumLengthValidator` (min_length=12) |
-| Complexity | Mixed case, digits, and special characters | `ComplexityValidator` (custom) |
+| Minimum length | 12 characters | `MinimumLengthValidator` (min_length=12) in `AUTH_PASSWORD_VALIDATORS` |
+| Complexity | Mixed case, digits, and special characters | `common.validators.ComplexityValidator` in `AUTH_PASSWORD_VALIDATORS` |
 | Common passwords | Rejection of known weak passwords | `CommonPasswordValidator` |
 | Numeric-only | Prohibited | `NumericPasswordValidator` |
 | User similarity | Must not closely match user attributes | `UserAttributeSimilarityValidator` |
 | Hashing algorithm | Argon2 (primary), PBKDF2 (fallback) | `PASSWORD_HASHERS` setting |
 | Storage | Hashed only; plain-text storage prohibited | Django `AbstractBaseUser` |
 
+**Note on API-level enforcement:** The backend `AUTH_PASSWORD_VALIDATORS` enforce 12 characters when `validate_password` is invoked (e.g., Django admin/forms). The public REST schemas enforce their own minima: `RegisterIn` requires ≥ 8 characters, `ResetPasswordIn` requires ≥ 6 characters, and `ChangePasswordIn` has no schema-level minimum.
+
 ### 7.2 Password Lifecycle
 - **Expiry** — User passwords do not have a forced expiry period. Password changes are triggered only upon suspected compromise or user request, consistent with NIST SP 800-63B guidance.
-- **History** — Users cannot reuse their last **5** passwords.
+- **History** — No password history enforcement is currently implemented in the codebase. Reuse of the last **5** passwords is a planned control but is not active.
 - **Reset** — Password resets are initiated via a time-limited, single-use token sent to the verified email address. Tokens expire after **24 hours**.
-- **Transmission** — Passwords are transmitted exclusively over TLS 1.2 or higher.
+- **Transmission** — Passwords are transmitted exclusively over TLS 1.2 or higher in production (host-level nginx).
 
 ### 7.3 Multi-Factor Authentication (MFA)
 - **OTP via SMS** — Twilio Verify is used for phone-based OTP. Enabled for `SUPER_ADMIN` and optionally for tenant users based on tenant settings.
@@ -264,7 +266,7 @@ Auth endpoints **fail closed** (HTTP 503) if the rate-limiting backend is unavai
 
 ### 10.2 Tenant Isolation
 - Tenant context is resolved from the authenticated user’s foreign key (`user.tenant`), never from client-supplied headers or parameters. This prevents tenant spoofing.
-- PostgreSQL implements per-tenant row-level security patterns (tenant-scoped queries) to ensure database-level isolation.
+- Tenant isolation is enforced at the application layer: every tenant-scoped query filters by `tenant=request.tenant`. PostgreSQL row-level security (RLS) is not currently enabled.
 - `SUPER_ADMIN` users have `tenant=NULL` and cannot access tenant data directly without impersonation.
 
 ### 10.3 Audit Logging
@@ -275,7 +277,7 @@ All access control events are recorded in the audit subsystem:
 - Impersonation (success and failure) with justification
 - Password resets
 
-Audit logs are retained for **3 years** and are tamper-evident via append-only storage.
+Audit logs are retained for **7 years** (per `apps/audit/models.py` and the privacy policy) and are tamper-evident via application-level immutability (`save()` and `delete()` are blocked).
 
 ---
 

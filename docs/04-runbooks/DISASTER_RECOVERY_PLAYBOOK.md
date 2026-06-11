@@ -94,7 +94,7 @@ Development recovery uses `docker compose` commands and stores data in project-r
 
 - Docker and Docker Compose installed
 - Repository cloned locally
-- `.env` file present
+- Bootstrap secrets file (`.bootstrap_secrets.{development,production}.env`) and/or `.env` if your environment uses one
 - `age` private key available (`AGE_PRIVATE_KEY_FILE` set or key in `~/.config/age/`)
 
 #### Full DR Recovery (Development)
@@ -133,7 +133,7 @@ bash deploy/disaster_recovery/development/recover.sh
 ./deploy/backups/restore --postgres
 
 # Restore only PostgreSQL from offsite
-./deploy/backups/restore --postgres --offsite --date=2026-06-02
+# ./deploy/backups/restore --postgres --offsite --date=2026-06-02 (not yet implemented)
 
 # Restore only Redis
 ./deploy/backups/restore --redis
@@ -168,11 +168,11 @@ Production recovery uses host binaries (`pg_dump`, `redis-cli`, `vault`, `mc`) a
 
 #### Prerequisites
 
-- Ubuntu 22.04 LTS server
+- Ubuntu 24.04 LTS server
 - Docker and Docker Compose v2 installed
-- Host binaries installed: `pg_dump`, `redis-cli`, `vault`, `mc`, `age`
+- Host binaries installed: `pg_dump`, `redis-cli`, `vault`, `age`
 - `age` private key available
-- Offsite MinIO credentials available (in `deploy/backups/lib/minio-client.sh`)
+- Offsite MinIO endpoint and credentials are configured in `deploy/backups/lib/minio-client.sh`
 
 #### Full DR Recovery (Production) — New Hardware
 
@@ -197,41 +197,49 @@ cp /secure/backup/.env /opt/loyallia/.env
 
 # Step 6: Download rescue files from offsite MinIO
 mkdir -p /var/backups/loyallia/rescue
+DATE_PREFIX="loyallia/production/YYYY/MM/DD"
 
+# List the daily prefix, then download each file by its exact object key.
+./deploy/backups/lib/minio-client.sh list "${DATE_PREFIX}/"
+
+# Example downloads (replace YYYY/MM/DD and timestamps with actual values):
+# Offsite keys use the `rescue/` prefix because the encrypted rescue package
+# is uploaded from `/var/backups/loyallia/rescue/`.
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/vault_init_rescue.json.age \
+    "${DATE_PREFIX}/rescue/vault_init_rescue.json.age" \
     /var/backups/loyallia/rescue/vault_init_rescue.json.age
 
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/vault_secrets_rescue.json.age \
+    "${DATE_PREFIX}/rescue/vault_secrets_rescue.json.age" \
     /var/backups/loyallia/rescue/vault_secrets_rescue.json.age
 
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/vault_raft_snapshot.snap.age \
+    "${DATE_PREFIX}/rescue/vault_raft_snapshot.snap.age" \
     /var/backups/loyallia/rescue/vault_raft_snapshot.snap.age
 
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/postgres_rescue_*.dump.age \
-    /var/backups/loyallia/rescue/
+    "${DATE_PREFIX}/rescue/postgres_rescue_YYYYMMDD_HHMMSS.dump.age" \
+    /var/backups/loyallia/rescue/postgres_rescue_YYYYMMDD_HHMMSS.dump.age
 
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/redis_rescue_*.rdb.age \
-    /var/backups/loyallia/rescue/
+    "${DATE_PREFIX}/rescue/redis_rescue_YYYYMMDD_HHMMSS.rdb.age" \
+    /var/backups/loyallia/rescue/redis_rescue_YYYYMMDD_HHMMSS.rdb.age
 
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/certs_rescue_*.tar.gz.age \
-    /var/backups/loyallia/rescue/
+    "${DATE_PREFIX}/rescue/certs_rescue_YYYYMMDD_HHMMSS.tar.gz.age" \
+    /var/backups/loyallia/rescue/certs_rescue_YYYYMMDD_HHMMSS.tar.gz.age
 
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/runtime_rescue_*.tar.gz.age \
-    /var/backups/loyallia/rescue/
+    "${DATE_PREFIX}/rescue/runtime_rescue_YYYYMMDD_HHMMSS.tar.gz.age" \
+    /var/backups/loyallia/rescue/runtime_rescue_YYYYMMDD_HHMMSS.tar.gz.age
 
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/nginx_rescue_*.tar.gz.age \
-    /var/backups/loyallia/rescue/
+    "${DATE_PREFIX}/rescue/nginx_rescue_YYYYMMDD_HHMMSS.tar.gz.age" \
+    /var/backups/loyallia/rescue/nginx_rescue_YYYYMMDD_HHMMSS.tar.gz.age
 
+# The manifest is stored unencrypted alongside the rescue package
 ./deploy/backups/lib/minio-client.sh download \
-    loyallia/production/rescue/rescue_manifest.json \
+    "${DATE_PREFIX}/rescue/rescue_manifest.json" \
     /var/backups/loyallia/rescue/rescue_manifest.json
 
 # Step 7: Run automated production recovery
@@ -257,7 +265,7 @@ bash deploy/disaster_recovery/production/recover.sh
 ./deploy/backups/restore --postgres
 
 # Restore from offsite
-./deploy/backups/restore --postgres --offsite --date=2026-06-02
+# ./deploy/backups/restore --postgres --offsite --date=2026-06-02 (not yet implemented)
 
 # Restore Redis
 ./deploy/backups/restore --redis

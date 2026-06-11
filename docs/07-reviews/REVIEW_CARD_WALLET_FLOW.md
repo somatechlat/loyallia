@@ -1,3 +1,6 @@
+> **Estado del documento (2026-06-11):** Revisión basada en el código y documentación vigente.
+> Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
+
 # Loyallia-k2 Card/Wallet Flow Audit Report
 
 **Project:** Loyallia Intelligent Rewards Platform

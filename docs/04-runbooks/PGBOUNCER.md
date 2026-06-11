@@ -83,10 +83,11 @@ docker compose restart pgbouncer
 
 ### Admin Console
 
-Connect to the PgBouncer admin console (from inside the container network):
+Connect to the PgBouncer admin console (the `edoburu/pgbouncer` image does not include `psql`; use a PostgreSQL client container):
 
 ```bash
-docker compose exec pgbouncer psql -p 6432 -U postgres pgbouncer
+docker run --rm --network loyallia_backend-net postgres:17.4-alpine \
+  psql -h loyallia-pgbouncer -p 6432 -U postgres pgbouncer
 ```
 
 Useful commands:

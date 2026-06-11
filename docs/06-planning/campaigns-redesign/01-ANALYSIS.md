@@ -1,17 +1,25 @@
 # 📋 Documento 1: Análisis de Problemas + Propuesta de Arquitectura
 
-## Problemas identificados en el UI actual de Campañas
+> ⚠️ **Estado del documento (2026-06-11):** Este análisis describe la UI **histórica**
+> de campañas (formulario inline en `frontend/src/app/(dashboard)/campaigns/page.tsx`).
+> La implementación actual ya utiliza el asistente (`CampaignWizard`) con los pasos
+> **Canal → Audiencia → Contenido** (3 pasos). Algunos problemas mencionados aquí
+> (formulario saturado, tarjetas idénticas, etc.) ya fueron resueltos; otros detalles
+> técnicos (nombres de endpoints, campos del modelo) deben verificarse contra el
+> código real. Véase `frontend/src/components/campaigns/CampaignWizard.tsx`.
 
-Análisis basado en el código de `frontend/src/app/(dashboard)/campaigns/page.tsx`.
+## Problemas identificados en el UI histórico de Campañas
+
+Análisis basado en el código histórico de `frontend/src/app/(dashboard)/campaigns/page.tsx` (el archivo actual solo monta `CampaignWizard`).
 
 ---
 
 ### 🔴 Problema 1: "No programs available" / Programas vacíos
 
-**Ubicación:** `page.tsx` líneas 553-583
+**Ubicación:** `page.tsx` (UI histórico)
 
 **Qué pasa:** El grid de programas puede mostrar `No programs available` o tarjetas vacías porque:
-- Los programas se cargan en un `useEffect` separado (líneas 88-92) pero no hay estado de carga
+- Los programas se cargan en un `useEffect` separado pero no hay estado de carga
 - No hay manejo de error visual si la API falla
 - Las tarjetas de programa no muestran conteo de miembros, solo el nombre
 
@@ -37,7 +45,7 @@ Análisis basado en el código de `frontend/src/app/(dashboard)/campaigns/page.t
 
 ### 🔴 Problema 2: Device Type duplicado / Confusión con Wallet Platform
 
-**Ubicación:** `page.tsx` líneas 392-398 (WalletPlatformSelector) y 586-598 (Device Type dropdown)
+**Ubicación:** `page.tsx` (UI histórico: WalletPlatformSelector y Device Type dropdown)
 
 **Qué pasa:**
 - Cuando el canal es **Wallet**, aparece un selector "Wallet Platform" (Apple/Google/Ambos)
@@ -69,7 +77,7 @@ Análisis basado en el código de `frontend/src/app/(dashboard)/campaigns/page.t
 
 ### 🔴 Problema 3: Formulario inline saturado (~15 controles simultáneos)
 
-**Ubicación:** `page.tsx` líneas 232-611 (todo el formulario inline)
+**Ubicación:** `page.tsx` (UI histórico: formulario inline completo)
 
 **Qué pasa:** Todo el flujo de creación está en una sola pantalla:
 1. Selector de tipo de campaña (4 botones grandes)
@@ -128,7 +136,7 @@ Análisis basado en el código de `frontend/src/app/(dashboard)/campaigns/page.t
 
 ### 🔴 Problema 4: Segmentos y Programas usan componentes idénticos
 
-**Ubicación:** `page.tsx` líneas 486-582
+**Ubicación:** `page.tsx` (UI histórico)
 
 **Qué pasa:**
 - Las tarjetas de segmento (`all`, `vip`, `active`...) y las tarjetas de programa tienen el EXACTO MISMO diseño visual
@@ -151,20 +159,21 @@ Análisis basado en el código de `frontend/src/app/(dashboard)/campaigns/page.t
 
 ---
 
-## 🏗️ Propuesta de Arquitectura: Wizard de 4 Pasos
+## 🏗️ Propuesta de Arquitectura: Wizard de Pantalla Completa
 
-Convertir la creación de campañas en un **wizard de pantalla completa** (como `EditProgramModal.tsx`), con pasos claros y progresivos.
+Convertir la creación de campañas en un **wizard progresivo** (como `EditProgramModal.tsx`),
+con pasos claros. La implementación actual (`CampaignWizard.tsx`) usa **3 pasos**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  ❌  Cancelar                                                   │
 │                                                                 │
-│    ① Canal ●──────  ② Audiencia ○──────  ③ Contenido ○──────  ④ Revisar ○  │
-│    (activo)         (bloqueado)         (bloqueado)        (bloqueado)       │
+│    ① Canal ●──────  ② Audiencia ○──────  ③ Contenido ○        │
+│    (activo)         (bloqueado)         (bloqueado)             │
 │                                                                 │
 │  ╔═══════════════════════════════════════════════════════════╗  │
 │  ║                                                           ║  │
-│  ║   CONTENIDO DEL PASO ACTIVO (ocupa toda la pantalla)     ║  │
+│  ║   CONTENIDO DEL PASO ACTIVO                               ║  │
 │  ║                                                           ║  │
 │  ║   [Email] [Wallet] [WhatsApp] [SMS]                       ║  │
 │  ║                                                           ║  │
@@ -174,11 +183,13 @@ Convertir la creación de campañas en un **wizard de pantalla completa** (como 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Reglas del wizard:
+### Reglas del wizard implementado:
 1. **Canal primero** — Determina qué opciones aparecen después
-2. **Audiencia en segundo** — Programa → Plataforma → Segmento (jerarquía lógica)
-3. **Contenido en tercero** — Solo después de saber a quién va dirigido
-4. **Revisar al final** — Resumen claro antes de enviar
+2. **Audiencia en segundo** — Programa → Plataforma (solo Wallet) → Segmento (jerarquía lógica)
+3. **Contenido en tercero** — Composición del mensaje, preview y programación
+
+> Nota: El paso 4 "Revisar" del diseño original se fusionó con el paso 3; el envío
+> inmediato o programado se realiza desde el paso de contenido.
 
 ### Resumen sticky en cada paso:
 Siempre visible arriba, mostrando las decisiones ya tomadas:
@@ -190,12 +201,13 @@ Siempre visible arriba, mostrando las decisiones ya tomadas:
 
 ## Comparativa rápida
 
-| Aspecto | UI Actual | UI Propuesta |
+| Aspecto | UI histórica | UI actual (CampaignWizard) |
 |---------|-----------|--------------|
 | Controles visibles | ~15 simultáneos | 3-5 por paso |
 | Jerarquía | Plana (todo al mismo nivel) | Progresiva (pasos) |
 | Contexto de programa | Desconectado del segmento | Programa primero, luego segmento |
 | Contadores | Solo por segmento (sin filtrar) | Dinámicos (programa + plataforma + segmento) |
 | Wallet vs Device | Dos controles duplicados | Solo Wallet Platform |
-| Selección manual | No existe | Modal con tabla y checkboxes |
-| Preview | Solo Wallet | Todos los canales |
+| Selección manual | No existía | Modal con tabla y checkboxes |
+| Exclusiones manuales | No existía | Soportado en AudienceSelector |
+| Preview | Solo Wallet | Wallet + Email (según canal) |

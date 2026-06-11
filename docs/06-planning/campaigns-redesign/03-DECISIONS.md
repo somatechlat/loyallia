@@ -1,14 +1,22 @@
 # 📐 Documento 3: Decisiones de UX + Especificaciones Técnicas
 
+> ⚠️ **Estado del documento (2026-06-11):** Las decisiones de UX reflejan el
+> diseño adoptado. Algunos detalles técnicos y endpoints han cambiado en la
+> implementación real; se han corregido más abajo. Verificar siempre contra
+> `backend/apps/notifications/models/campaigns.py`,
+> `backend/apps/notifications/api/campaigns.py`,
+> `backend/apps/cards/api.py` y
+> `frontend/src/components/campaigns/CampaignWizard.tsx`.
+
 ## Decisiones de diseño y sus justificaciones
 
 ---
 
 ### 1. ¿Por qué eliminar el dropdown "Device Type"?
 
-**Problema actual:** El UI muestra dos controles que se solapan:
-- `WalletPlatformSelector` (Apple/Google/Ambos) — líneas 392-398
-- Dropdown `targetDeviceType` (iOS/Android/Ambos) — líneas 586-598
+**Problema actual (UI histórico):** El UI mostraba dos controles que se solapan:
+- `WalletPlatformSelector` (Apple/Google/Ambos)
+- Dropdown `targetDeviceType` (iOS/Android/Ambos)
 
 **Análisis:**
 | Canal | Wallet Platform aplica | Device Type aplica |
@@ -20,7 +28,7 @@
 
 **Decisión:** Eliminar `targetDeviceType` del frontend por completo. El backend ya filtra correctamente por `target_wallet_platform` en `apply_campaign_filters`. Si en el futuro se necesita filtrar por device type para push notifications genéricas, se agrega entonces.
 
-**Backend impacto:** Ninguno. El campo `target_device_type` en `CampaignCreateIn` puede seguir existiendo con default `"both"` para backwards compatibility, pero el frontend no lo envía.
+**Backend impacto:** Ninguno. El campo `target_device_type` en `CampaignCreateIn` sigue existiendo con default `"both"` para backwards compatibility; el frontend lo envía siempre como `"both"` y el usuario no lo ve ni lo controla.
 
 ---
 
@@ -54,44 +62,42 @@ Universo total de clientes
 
 ### 3. ¿Cómo funcionan los contadores dinámicos?
 
-**Flujo de datos:**
+**Flujo de datos real:**
 
 ```
 Usuario selecciona "Café Rewards"
          │
          ▼
     Frontend llama:
-    GET /api/v1/programs/{cafe_id}/members/count/
-    └── Response: { total: 1240, apple: 890, google: 350 }
+    GET /api/v1/programs/{cafe_id}/member-count/
+    └── Response: { count: <total>, active_count: <active> }
          │
          ▼
-    Las tarjetas de segmento se actualizan:
-    GET /api/v1/programs/{cafe_id}/members/count/?wallet_platform=both&segment=all
-    GET /api/v1/programs/{cafe_id}/members/count/?wallet_platform=both&segment=vip
-    GET /api/v1/programs/{cafe_id}/members/count/?wallet_platform=both&segment=active
-    ... (una llamada por segmento, o una sola batch)
+    Las tarjetas de segmento se actualizan con UNA sola llamada:
+    GET /api/v1/programs/{cafe_id}/segment-counts/?wallet_platform=apple
+    └── Response: {
+          "counts": {
+            "all": 890,
+            "vip": 32,
+            "active": 480,
+            "at_risk": 89,
+            "inactive": 210,
+            "new": 120,
+            "most_active": 45
+          }
+        }
          │
          ▼
     Usuario cambia a "Apple Wallet"
          │
          ▼
-    Se repiten las llamadas con wallet_platform=apple
+    Se repite la llamada con wallet_platform=apple
     Los contadores se actualizan en tiempo real
 ```
 
-**Optimización:** Se puede hacer UNA sola llamada batch:
-```
-GET /api/v1/programs/{id}/segment-counts/?wallet_platform=apple
-Response: {
-  "all": 890,
-  "vip": 32,
-  "active": 480,
-  "at_risk": 89,
-  "inactive": 210,
-  "new": 120,
-  "most_active": 45
-}
-```
+> Nota: El endpoint de conteo de miembros del programa devuelve
+> `{ count, active_count }`, **no** `{ total, apple_wallet, google_wallet }`.
+> Los desgloses por plataforma se obtienen de `segment-counts`.
 
 **Debounce:** Las llamadas se hacen con debounce de 300ms para no saturar el backend mientras el usuario cambia opciones rápidamente.
 
@@ -103,14 +109,17 @@ Response: {
 1. `total_visits` (descendente)
 2. `total_spent` (descendente, tie-breaker)
 
-**Implementación backend:**
+**Implementación backend (ya existe):**
 ```python
-# En segment_api.py, nuevo segmento "most_active"
-"most_active": {
-    "name": "Clientes más activos",
-    "description": "Top 15% de clientes por actividad",
-    "filter": {"is_active": True},
-    "extra": "most_active",
+# backend/apps/customers/segment_api.py
+_BUILTIN_SEGMENTS = {
+    ...
+    "most_active": {
+        "name": "Más activos",
+        "description": "Top 15% de clientes por actividad (visitas y gasto)",
+        "filter": {"is_active": True},
+        "extra": "most_active",
+    },
 }
 
 # En _apply_segment_filter:
@@ -118,7 +127,7 @@ elif extra == "most_active":
     count = base.count()
     if count == 0:
         return base.none()
-    threshold = max(1, int(count * 0.15))
+    threshold = max(1, int(count * MOST_ACTIVE_PERCENTILE))
     return base.order_by("-total_visits", "-total_spent")[:threshold]
 ```
 
@@ -131,16 +140,21 @@ elif extra == "most_active":
 **Flujo:**
 1. Usuario elige Programa + Plataforma (ej: Café Rewards + Apple)
 2. Hace click en "PERSONALIZADO..."
-3. Se abre modal con la lista de 890 clientes (ya filtrados)
+3. Se abre modal con la lista de clientes (ya filtrados)
 4. El usuario puede:
    - Buscar por nombre/email/teléfono
    - Seleccionar/desseleccionar con checkboxes
    - "Seleccionar todos visibles" (solo la página actual)
    - Paginar (25 por página)
 5. Al confirmar, se guardan los `customer_ids` seleccionados
-6. El wizard muestra "✓ 47 clientes seleccionados manualmente"
+6. El wizard muestra "✓ N clientes seleccionados manualmente"
 
-**Backend:** Se envía `target_customer_ids: [...]` en el payload de campaña. Esto tiene PRIORIDAD sobre segmento y programa en `apply_campaign_filters`.
+**Exclusión manual:** También es posible abrir el modal en modo "Exclusión" para
+quitar clientes específicos de un segmento/programa mayor. Los IDs excluidos se
+restan del conteo final en el frontend.
+
+**Backend:** Se envía `target_customer_ids: [...]` en el payload de campaña. Esto
+tiene PRIORIDAD sobre segmento y programa en `apply_campaign_filters`.
 
 ---
 
@@ -155,20 +169,26 @@ elif extra == "most_active":
 
 ---
 
-### 7. ¿Por qué wizard de pantalla completa en lugar de modal?
+### 7. ¿Por qué wizard en modal grande en lugar de formulario inline?
 
 **Alternativa considerada:** Modal tipo `ProgramMembersModal` (max-w-4xl)
 
-**Problema:** En un modal no caben:
+**Problema:** En un modal pequeño no caben:
 - Grid de programas (3+ tarjetas)
 - Selector de plataforma
 - Grid de segmentos (7+ tarjetas)
 - Resumen dinámico
 - Todo en una sola pantalla
 
-**Decisión:** Wizard de pantalla completa (como `EditProgramModal.tsx`: `w-[96vw] h-[92vh]`). Esto da espacio suficiente para cada paso sin scroll excesivo.
+**Decisión:** Wizard en modal de pantalla completa (`w-[96vw] h-[92vh]`) con 3 pasos:
+1. **Canal**
+2. **Audiencia** (programa → plataforma → segmento)
+3. **Contenido** (título, mensaje, preview, programación y envío)
 
-**Excepción:** La selección manual de clientes SÍ es un modal porque es una tabla grande que necesita su propio espacio.
+Esto da espacio suficiente para cada paso sin scroll excesivo.
+
+**Excepción:** La selección manual de clientes SÍ es un modal secundario porque es
+una tabla grande que necesita su propio espacio.
 
 ---
 
@@ -178,29 +198,29 @@ elif extra == "most_active":
 
 | Feature | Estado | Archivo |
 |---------|--------|---------|
-| Modelo `CampaignRun` con `target_programs` | ✅ Listo | `campaigns.py` |
-| Modelo `CampaignRun` con `target_wallet_platform` | ✅ Listo | `campaigns.py` |
-| Modelo `CampaignRun` con `target_customers` | ✅ Listo | `campaigns.py` |
-| API `createCampaign` con todos los campos | ✅ Listo | `campaigns.py` |
-| Filtros `apply_campaign_filters` | ✅ Listo | `segment_api.py` |
-| Celery tasks por canal | ✅ Listo | `tasks/campaigns.py` |
-| Segmentos builtin (all, vip, active, etc.) | ✅ Listo | `segment_api.py` |
-| Endpoint de miembros de programa | ✅ Listo | `programsApi.members()` |
+| Modelo `CampaignRun` con `target_programs` | ✅ Listo | `backend/apps/notifications/models/campaigns.py` |
+| Modelo `CampaignRun` con `target_wallet_platforms` | ✅ Listo | `backend/apps/notifications/models/campaigns.py` |
+| Modelo `CampaignRun` con `target_customers` | ✅ Listo | `backend/apps/notifications/models/campaigns.py` |
+| API `createCampaign` con todos los campos | ✅ Listo | `backend/apps/notifications/api/campaigns.py` |
+| Filtros `apply_campaign_filters` | ✅ Listo | `backend/apps/customers/segment_api.py` |
+| Celery tasks por canal | ✅ Listo | `backend/apps/notifications/tasks/campaigns.py` |
+| Segmentos builtin (all, vip, active, most_active, etc.) | ✅ Listo | `backend/apps/customers/segment_api.py` |
+| Endpoint de miembros de programa | ✅ Listo | `/api/v1/programs/{id}/members/` |
+| Endpoint de conteo de segmentos por programa | ✅ Listo | `/api/v1/programs/{id}/segment-counts/` |
 
-### Qué necesita EXTENSIÓN:
+### Qué necesita EXTENSIÓN / corrección:
 
 | Feature | Cambio | Archivo |
 |---------|--------|---------|
-| Miembros filtrados por wallet platform | Agregar query param | `backend/apps/cards/api.py` |
-| Conteo por segmento dentro de programa | Nuevo endpoint | `backend/apps/cards/api.py` |
-| Segmento "most_active" | Agregar a `_BUILTIN_SEGMENTS` | `backend/apps/customers/segment_api.py` |
+| Conteo de miembros por wallet platform | El endpoint `member-count` devuelve `{count, active_count}`; el frontend espera desglose por plataforma | `backend/apps/cards/api.py` o `frontend/src/components/campaigns/AudienceSelector.tsx` |
+| Filtro `wallet_platform` en miembros de programa | Existe como query param en `AudienceSelector` pero `program_members` no lo aplica | `backend/apps/cards/services.py` |
 
 ### Qué NO se usa más:
 
 | Feature | Razón |
 |---------|-------|
-| Dropdown `targetDeviceType` | Redundante con Wallet Platform |
-| Formulario inline en page.tsx | Reemplazado por wizard |
+| Dropdown `targetDeviceType` | Redundante con Wallet Platform; el frontend envía `"both"` por compatibilidad |
+| Formulario inline en page.tsx | Reemplazado por `CampaignWizard` |
 | Segment cards en grid actual | Reemplazados por wizard paso 2 |
 | Program cards en grid actual | Reemplazados por wizard paso 2 |
 
@@ -209,22 +229,23 @@ elif extra == "most_active":
 ## Checklist de implementación (Fase 2)
 
 ### Backend
-- [ ] Extender `programs.members` endpoint con `wallet_platform` filter
-- [ ] Crear endpoint `programs/{id}/segment-counts/` para contadores dinámicos
-- [ ] Agregar segmento `most_active` a `_BUILTIN_SEGMENTS`
+- [x] Crear endpoint `programs/{id}/segment-counts/` para contadores dinámicos
+- [x] Agregar segmento `most_active` a `_BUILTIN_SEGMENTS`
+- [ ] Extender `programs.members` endpoint con `wallet_platform` filter (parcial: usado en frontend pero no filtrado en backend)
+- [ ] Corregir desfase: `member-count` devuelve `{count, active_count}`; frontend espera `{total, apple_wallet, google_wallet}`
 - [ ] Tests para filtros combinados
 
 ### Frontend
-- [ ] Crear componente `CampaignWizard` (contenedor de 4 pasos)
-- [ ] Crear componente `StepIndicator` (barra de progreso 1-2-3-4)
-- [ ] Crear componente `ChannelSelector` (Paso 1)
-- [ ] Crear componente `AudienceSelector` (Paso 2: programa + plataforma + segmento)
-- [ ] Crear componente `CustomerPickerModal` (selección manual)
-- [ ] Crear componente `MessageComposer` (Paso 3: título, mensaje, preview)
-- [ ] Crear componente `CampaignReview` (Paso 4: resumen y envío)
-- [ ] Reescribir `campaigns/page.tsx` para usar wizard
-- [ ] Extender `api.ts` con nuevos helpers
-- [ ] Agregar traducciones i18n
+- [x] Crear componente `CampaignWizard` (contenedor de 3 pasos)
+- [x] Crear componente `CampaignWizardStepIndicator` (barra de progreso 1-2-3)
+- [x] Crear componente `ChannelSelector` (Paso 1)
+- [x] Crear componente `AudienceSelector` (Paso 2: programa + plataforma + segmento + exclusión manual)
+- [x] Crear componente `CustomerPicker` (selección/exclusión manual)
+- [x] Crear componente `MessageComposer` (Paso 3: título, mensaje, preview, programación y envío)
+- [x] Reescribir `campaigns/page.tsx` para usar wizard
+- [x] Extender `api.ts` con nuevos helpers
+- [x] Agregar traducciones i18n
+- [ ] Componente `CampaignReview` separado (el resumen se muestra en `MessageComposer` y en la barra sticky)
 
 ### Tests
 - [ ] E2E: Flujo completo wizard

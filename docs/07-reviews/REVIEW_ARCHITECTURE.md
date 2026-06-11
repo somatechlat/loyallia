@@ -393,8 +393,8 @@ loyallia/backend/
 
 ### Missing/Recommended
 
-1. **HSTS header**: Not mentioned in settings. Add `SECURE_HSTS_SECONDS` in production.
-2. **SSL redirect**: Add `SECURE_SSL_REDIRECT` in production settings.
+1. **HSTS header**: ✅ Now implemented in `loyallia/settings/production.py` (`SECURE_HSTS_SECONDS`, `SECURE_HSTS_INCLUDE_SUBDOMAINS`, `SECURE_HSTS_PRELOAD`).
+2. **SSL redirect**: ✅ Now implemented in `loyallia/settings/production.py` (`SECURE_SSL_REDIRECT`).
 3. **No automatic tenant query filtering**: Relies on developer discipline (see above).
 
 ### Performance (Grade: B+)
