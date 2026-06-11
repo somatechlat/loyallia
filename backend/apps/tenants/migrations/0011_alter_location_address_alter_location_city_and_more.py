@@ -8,173 +8,333 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenants', '0010_alter_tenant_logo_url'),
+        ("tenants", "0010_alter_tenant_logo_url"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='location',
-            name='address',
-            field=models.TextField(blank=True, default='', help_text='Physical or mailing address.'),
+            model_name="location",
+            name="address",
+            field=models.TextField(
+                blank=True, default="", help_text="Physical or mailing address."
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='city',
-            field=models.CharField(blank=True, default='', help_text='City name.', max_length=100),
+            model_name="location",
+            name="city",
+            field=models.CharField(
+                blank=True, default="", help_text="City name.", max_length=100
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='country',
-            field=models.CharField(default='EC', help_text='Country code (ISO 3166-1 alpha-2).', max_length=2),
+            model_name="location",
+            name="country",
+            field=models.CharField(
+                default="EC",
+                help_text="Country code (ISO 3166-1 alpha-2).",
+                max_length=2,
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='is_active',
-            field=models.BooleanField(default=True, help_text='Whether this record is currently active.'),
+            model_name="location",
+            name="is_active",
+            field=models.BooleanField(
+                default=True, help_text="Whether this record is currently active."
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='is_primary',
-            field=models.BooleanField(default=False, help_text='Whether this is the primary location.'),
+            model_name="location",
+            name="is_primary",
+            field=models.BooleanField(
+                default=False, help_text="Whether this is the primary location."
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='latitude',
-            field=models.DecimalField(blank=True, decimal_places=6, help_text='Geographic latitude.', max_digits=9, null=True),
+            model_name="location",
+            name="latitude",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=6,
+                help_text="Geographic latitude.",
+                max_digits=9,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='longitude',
-            field=models.DecimalField(blank=True, decimal_places=6, help_text='Geographic longitude.', max_digits=9, null=True),
+            model_name="location",
+            name="longitude",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=6,
+                help_text="Geographic longitude.",
+                max_digits=9,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='name',
-            field=models.CharField(help_text='Name of this record.', max_length=200),
+            model_name="location",
+            name="name",
+            field=models.CharField(help_text="Name of this record.", max_length=200),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='phone',
-            field=models.CharField(blank=True, default='', help_text='Phone number.', max_length=20),
+            model_name="location",
+            name="phone",
+            field=models.CharField(
+                blank=True, default="", help_text="Phone number.", max_length=20
+            ),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='tenant',
-            field=models.ForeignKey(help_text='The business this record belongs to.', on_delete=django.db.models.deletion.CASCADE, related_name='locations', to='tenants.tenant'),
+            model_name="location",
+            name="tenant",
+            field=models.ForeignKey(
+                help_text="The business this record belongs to.",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="locations",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AlterField(
-            model_name='platformsetting',
-            name='description',
-            field=models.CharField(blank=True, help_text='Description of this record.', max_length=255),
+            model_name="platformsetting",
+            name="description",
+            field=models.CharField(
+                blank=True, help_text="Description of this record.", max_length=255
+            ),
         ),
         migrations.AlterField(
-            model_name='platformsetting',
-            name='key',
-            field=models.CharField(db_index=True, help_text='Unique setting key.', max_length=100, unique=True),
+            model_name="platformsetting",
+            name="key",
+            field=models.CharField(
+                db_index=True,
+                help_text="Unique setting key.",
+                max_length=100,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='platformsetting',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True, help_text='Timestamp for updated.'),
+            model_name="platformsetting",
+            name="updated_at",
+            field=models.DateTimeField(
+                auto_now=True, help_text="Timestamp for updated."
+            ),
         ),
         migrations.AlterField(
-            model_name='platformsetting',
-            name='value',
-            field=models.TextField(help_text='Setting value.'),
+            model_name="platformsetting",
+            name="value",
+            field=models.TextField(help_text="Setting value."),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='address',
-            field=models.TextField(blank=True, default='', help_text='Physical or mailing address.'),
+            model_name="tenant",
+            name="address",
+            field=models.TextField(
+                blank=True, default="", help_text="Physical or mailing address."
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='city',
-            field=models.CharField(blank=True, default='', help_text='City name.', max_length=100, verbose_name='Ciudad'),
+            model_name="tenant",
+            name="city",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="City name.",
+                max_length=100,
+                verbose_name="Ciudad",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='country',
-            field=models.CharField(default='EC', help_text='Country code (ISO 3166-1 alpha-2).', max_length=2),
+            model_name="tenant",
+            name="country",
+            field=models.CharField(
+                default="EC",
+                help_text="Country code (ISO 3166-1 alpha-2).",
+                max_length=2,
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='email',
-            field=models.EmailField(blank=True, default='', help_text='Email address.', max_length=254, verbose_name='Email corporativo'),
+            model_name="tenant",
+            name="email",
+            field=models.EmailField(
+                blank=True,
+                default="",
+                help_text="Email address.",
+                max_length=254,
+                verbose_name="Email corporativo",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='industry',
-            field=models.CharField(choices=[('food_beverage', 'Alimentos y Bebidas'), ('retail', 'Comercio Minorista'), ('fashion', 'Moda y Textiles'), ('health_beauty', 'Salud y Belleza'), ('entertainment', 'Entretenimiento'), ('services', 'Servicios Profesionales'), ('education', 'Educación'), ('automotive', 'Automotriz'), ('hospitality', 'Hotelería y Turismo'), ('technology', 'Tecnología'), ('other', 'Otro')], default='other', help_text='Industry or sector.', max_length=30, verbose_name='Industria'),
+            model_name="tenant",
+            name="industry",
+            field=models.CharField(
+                choices=[
+                    ("food_beverage", "Alimentos y Bebidas"),
+                    ("retail", "Comercio Minorista"),
+                    ("fashion", "Moda y Textiles"),
+                    ("health_beauty", "Salud y Belleza"),
+                    ("entertainment", "Entretenimiento"),
+                    ("services", "Servicios Profesionales"),
+                    ("education", "Educación"),
+                    ("automotive", "Automotriz"),
+                    ("hospitality", "Hotelería y Turismo"),
+                    ("technology", "Tecnología"),
+                    ("other", "Otro"),
+                ],
+                default="other",
+                help_text="Industry or sector.",
+                max_length=30,
+                verbose_name="Industria",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='is_active',
-            field=models.BooleanField(default=True, help_text='Whether this record is currently active.'),
+            model_name="tenant",
+            name="is_active",
+            field=models.BooleanField(
+                default=True, help_text="Whether this record is currently active."
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='legal_rep_cedula',
-            field=models.CharField(blank=True, default='', help_text='National ID of the legal representative.', max_length=10, validators=[apps.tenants.models.validate_cedula], verbose_name='Cédula del representante'),
+            model_name="tenant",
+            name="legal_rep_cedula",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="National ID of the legal representative.",
+                max_length=10,
+                validators=[apps.tenants.models.validate_cedula],
+                verbose_name="Cédula del representante",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='legal_rep_name',
-            field=models.CharField(blank=True, default='', help_text='Name of the legal representative.', max_length=200, verbose_name='Representante legal'),
+            model_name="tenant",
+            name="legal_rep_name",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Name of the legal representative.",
+                max_length=200,
+                verbose_name="Representante legal",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='logo_url',
-            field=models.URLField(blank=True, default='', help_text='URL of the logo image.', max_length=2000),
+            model_name="tenant",
+            name="logo_url",
+            field=models.URLField(
+                blank=True,
+                default="",
+                help_text="URL of the logo image.",
+                max_length=2000,
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='name',
-            field=models.CharField(help_text='Name of this record.', max_length=200, verbose_name='Nombre comercial'),
+            model_name="tenant",
+            name="name",
+            field=models.CharField(
+                help_text="Name of this record.",
+                max_length=200,
+                verbose_name="Nombre comercial",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='phone',
-            field=models.CharField(blank=True, default='', help_text='Phone number.', max_length=20),
+            model_name="tenant",
+            name="phone",
+            field=models.CharField(
+                blank=True, default="", help_text="Phone number.", max_length=20
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='plan',
-            field=models.CharField(choices=[('trial', 'Trial Gratuito'), ('full', 'FULL'), ('suspended', 'Suspendido')], default='trial', help_text='Subscription or pricing plan.', max_length=20),
+            model_name="tenant",
+            name="plan",
+            field=models.CharField(
+                choices=[
+                    ("trial", "Trial Gratuito"),
+                    ("full", "FULL"),
+                    ("suspended", "Suspendido"),
+                ],
+                default="trial",
+                help_text="Subscription or pricing plan.",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='primary_color',
-            field=models.CharField(default='#1a1a2e', help_text='Primary brand color in HEX.', max_length=7),
+            model_name="tenant",
+            name="primary_color",
+            field=models.CharField(
+                default="#1a1a2e", help_text="Primary brand color in HEX.", max_length=7
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='province',
-            field=models.CharField(blank=True, choices=[('azuay', 'Azuay'), ('bolivar', 'Bolívar'), ('canar', 'Cañar'), ('carchi', 'Carchi'), ('chimborazo', 'Chimborazo'), ('cotopaxi', 'Cotopaxi'), ('el_oro', 'El Oro'), ('esmeraldas', 'Esmeraldas'), ('galapagos', 'Galápagos'), ('guayas', 'Guayas'), ('imbabura', 'Imbabura'), ('loja', 'Loja'), ('los_rios', 'Los Ríos'), ('manabi', 'Manabí'), ('morona_santiago', 'Morona Santiago'), ('napo', 'Napo'), ('orellana', 'Orellana'), ('pastaza', 'Pastaza'), ('pichincha', 'Pichincha'), ('santa_elena', 'Santa Elena'), ('santo_domingo', 'Santo Domingo de los Tsáchilas'), ('sucumbios', 'Sucumbíos'), ('tungurahua', 'Tungurahua'), ('zamora_chinchipe', 'Zamora Chinchipe')], default='', help_text='Province or state.', max_length=30, verbose_name='Provincia'),
+            model_name="tenant",
+            name="province",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("azuay", "Azuay"),
+                    ("bolivar", "Bolívar"),
+                    ("canar", "Cañar"),
+                    ("carchi", "Carchi"),
+                    ("chimborazo", "Chimborazo"),
+                    ("cotopaxi", "Cotopaxi"),
+                    ("el_oro", "El Oro"),
+                    ("esmeraldas", "Esmeraldas"),
+                    ("galapagos", "Galápagos"),
+                    ("guayas", "Guayas"),
+                    ("imbabura", "Imbabura"),
+                    ("loja", "Loja"),
+                    ("los_rios", "Los Ríos"),
+                    ("manabi", "Manabí"),
+                    ("morona_santiago", "Morona Santiago"),
+                    ("napo", "Napo"),
+                    ("orellana", "Orellana"),
+                    ("pastaza", "Pastaza"),
+                    ("pichincha", "Pichincha"),
+                    ("santa_elena", "Santa Elena"),
+                    ("santo_domingo", "Santo Domingo de los Tsáchilas"),
+                    ("sucumbios", "Sucumbíos"),
+                    ("tungurahua", "Tungurahua"),
+                    ("zamora_chinchipe", "Zamora Chinchipe"),
+                ],
+                default="",
+                help_text="Province or state.",
+                max_length=30,
+                verbose_name="Provincia",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='secondary_color',
-            field=models.CharField(default='#16213e', help_text='Secondary brand color in HEX.', max_length=7),
+            model_name="tenant",
+            name="secondary_color",
+            field=models.CharField(
+                default="#16213e",
+                help_text="Secondary brand color in HEX.",
+                max_length=7,
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='slug',
-            field=models.SlugField(help_text='URL-friendly unique identifier.', max_length=100, unique=True, verbose_name='Slug único'),
+            model_name="tenant",
+            name="slug",
+            field=models.SlugField(
+                help_text="URL-friendly unique identifier.",
+                max_length=100,
+                unique=True,
+                verbose_name="Slug único",
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='timezone',
-            field=models.CharField(default='America/Guayaquil', help_text='Timezone identifier.', max_length=50),
+            model_name="tenant",
+            name="timezone",
+            field=models.CharField(
+                default="America/Guayaquil",
+                help_text="Timezone identifier.",
+                max_length=50,
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='trial_end',
-            field=models.DateTimeField(blank=True, help_text='End date of the trial period.', null=True),
+            model_name="tenant",
+            name="trial_end",
+            field=models.DateTimeField(
+                blank=True, help_text="End date of the trial period.", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='tenant',
-            name='website',
-            field=models.URLField(blank=True, default='', help_text='Website URL.'),
+            model_name="tenant",
+            name="website",
+            field=models.URLField(blank=True, default="", help_text="Website URL."),
         ),
     ]

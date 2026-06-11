@@ -10,6 +10,7 @@
 'use client';
 
 import React from 'react';
+import toast from 'react-hot-toast';
 import { useWalletStudio } from '@/hooks/useWalletStudio';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useAutoSave } from '@/hooks/useAutoSave';
@@ -17,6 +18,8 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSessionRecovery, persistSessionState } from '@/hooks/useSessionRecovery';
 import { useI18n } from '@/lib/i18n';
 import { useDesignScore } from '@/hooks/useDesignScore';
+import { generatePreviewPass, triggerDownload, openGoogleSaveUrl } from '@/components/wallet/services/export';
+
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
@@ -25,17 +28,19 @@ import { SaveTemplateModal } from './SaveTemplateModal';
 import { AIChatModal } from './AIChatModal';
 import { MobileBottomSheet } from './MobileBottomSheet';
 import { ErrorBoundary } from './ErrorBoundary';
+
 import type { WalletPassStudioState, CardTypeConfig, PlatformView } from '@/components/wallet/types/unified-state';
 import type { WalletTemplate } from '@/components/wallet/types/templates';
 import type { AIVariation } from '@/hooks/useAI';
 
 export interface WalletStudioProps {
   initialState?: Partial<WalletPassStudioState>;
+  programId?: string;
   onSave?: (state: WalletPassStudioState) => void;
   onSaveAsTemplate?: (state: WalletPassStudioState) => void;
 }
 
-export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletStudioProps) {
+export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
   const designScoreResult = useDesignScore(studio.state);
@@ -158,11 +163,41 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
     [setUndoableState]
   );
 
-  const handleExport = React.useCallback(() => {
-    // Placeholder for export — will be wired in a later phase
-    // eslint-disable-next-line no-console
-    console.log('Export triggered');
-  }, []);
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const handleExport = React.useCallback(async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const platform = displayState.ui.platformView === 'google' ? 'google' : 'apple';
+      const payload: Record<string, unknown> = { platform };
+      if (programId) {
+        payload.program_id = programId;
+      } else {
+        // For new programs, serialize the studio state
+        const { buildWalletDesignMetadata } = await import('@/components/wallet/serialization');
+        payload.studio_state = buildWalletDesignMetadata(displayState);
+      }
+      const result = await generatePreviewPass(payload as { platform: 'apple' | 'google'; program_id?: string; studio_state?: Record<string, unknown> });
+      if (result.message && !result.download_url && !result.save_url) {
+        toast.error(result.message);
+        return;
+      }
+      if (platform === 'apple' && result.download_url) {
+        triggerDownload(result.download_url, `${displayState.name || 'preview'}.pkpass`);
+        toast.success(t('wallet.studio.export.appleSuccess'));
+      } else if (platform === 'google' && result.save_url) {
+        openGoogleSaveUrl(result.save_url);
+        toast.success(t('wallet.studio.export.googleSuccess'));
+      } else {
+        toast.error(t('wallet.studio.export.error'));
+      }
+    } catch (err) {
+      toast.error(t('wallet.studio.export.error'));
+    } finally {
+      setIsExporting(false);
+    }
+  }, [isExporting, programId, displayState, t]);
 
   const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = React.useState(false);
   const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
@@ -268,12 +303,10 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
   }, []);
 
   const handleConfirmSaveTemplate = React.useCallback(
-    (name: string, description: string) => {
+    (_name: string, _description: string) => {
       setIsSaveTemplateModalOpen(false);
       onSaveAsTemplate?.(displayState);
       sessionRecovery.clearRecovery();
-      // eslint-disable-next-line no-console
-      console.log('Template saved:', { name, description });
     },
     [onSaveAsTemplate, displayState, sessionRecovery]
   );
@@ -389,6 +422,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
           onSave={handleSave}
           onSaveAsTemplate={handleSaveAsTemplate}
           onExport={handleExport}
+          isExporting={isExporting}
           onAIGenerate={handleAIGenerate}
           isModified={displayState.ui.isModified}
         />
@@ -403,11 +437,12 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
               state={displayState}
               platformView={effectivePlatformView}
               showBack={displayState.ui.showBack}
+              zoom={displayState.ui.zoom}
             />
           </div>
 
-          {/* Sidebar — hidden on mobile, narrower on tablet */}
-          <div className="hidden md:flex flex-shrink-0 md:w-[280px] lg:w-[360px]">
+          {/* Sidebar — hidden on mobile, wider on desktop */}
+          <div className="hidden md:flex flex-shrink-0 h-full md:w-[340px] lg:w-[420px] xl:w-[460px]">
             <StudioSidebar
               state={displayState}
               updateColors={wrappedUpdateColors}
@@ -419,13 +454,14 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
               updateAppleConfig={wrappedUpdateAppleConfig}
               updateGoogleConfig={wrappedUpdateGoogleConfig}
               updateUI={wrappedUpdateUI}
+              onOpenAI={() => setIsAIModalOpen(true)}
             />
           </div>
         </div>
 
         {/* Auto-save indicator */}
         {autoSave.lastSaved && (
-          <div className="absolute bottom-3 right-3 md:right-[292px] lg:right-[372px] z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 md:right-[352px] lg:right-[432px] xl:right-[472px] z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
             {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
           </div>
         )}
@@ -463,6 +499,7 @@ export function WalletStudio({ initialState, onSave, onSaveAsTemplate }: WalletS
             updateAppleConfig={wrappedUpdateAppleConfig}
             updateGoogleConfig={wrappedUpdateGoogleConfig}
             updateUI={wrappedUpdateUI}
+            onOpenAI={() => setIsAIModalOpen(true)}
           />
         </MobileBottomSheet>
 

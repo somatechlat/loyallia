@@ -6,18 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0012_populate_customerpass_tenant'),
+        ("customers", "0012_populate_customerpass_tenant"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='customer',
-            name='created_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who created this record.', null=True, verbose_name='Creado por'),
+            model_name="customer",
+            name="created_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who created this record.",
+                null=True,
+                verbose_name="Creado por",
+            ),
         ),
         migrations.AddField(
-            model_name='customer',
-            name='updated_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who last updated this record.', null=True, verbose_name='Actualizado por'),
+            model_name="customer",
+            name="updated_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who last updated this record.",
+                null=True,
+                verbose_name="Actualizado por",
+            ),
         ),
     ]

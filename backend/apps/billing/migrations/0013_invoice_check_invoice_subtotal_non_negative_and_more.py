@@ -6,29 +6,44 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0012_alter_invoice_invoice_number_and_more'),
-        ('tenants', '0011_alter_location_address_alter_location_city_and_more'),
+        ("billing", "0012_alter_invoice_invoice_number_and_more"),
+        ("tenants", "0011_alter_location_address_alter_location_city_and_more"),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='invoice',
-            constraint=models.CheckConstraint(condition=models.Q(('subtotal__gte', 0)), name='check_invoice_subtotal_non_negative'),
+            model_name="invoice",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("subtotal__gte", 0)),
+                name="check_invoice_subtotal_non_negative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='invoice',
-            constraint=models.CheckConstraint(condition=models.Q(('tax_amount__gte', 0)), name='check_invoice_tax_amount_non_negative'),
+            model_name="invoice",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("tax_amount__gte", 0)),
+                name="check_invoice_tax_amount_non_negative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='invoice',
-            constraint=models.CheckConstraint(condition=models.Q(('total__gte', 0)), name='check_invoice_total_non_negative'),
+            model_name="invoice",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("total__gte", 0)),
+                name="check_invoice_total_non_negative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='subscriptionplan',
-            constraint=models.CheckConstraint(condition=models.Q(('price_monthly__gte', 0)), name='check_plan_price_monthly_non_negative'),
+            model_name="subscriptionplan",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("price_monthly__gte", 0)),
+                name="check_plan_price_monthly_non_negative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='subscriptionplan',
-            constraint=models.CheckConstraint(condition=models.Q(('price_annual__gte', 0)), name='check_plan_price_annual_non_negative'),
+            model_name="subscriptionplan",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("price_annual__gte", 0)),
+                name="check_plan_price_annual_non_negative",
+            ),
         ),
     ]

@@ -160,7 +160,7 @@ def revoke_impersonation(request):
 
     user_id = str(request.user.id)
     cache_key = f"impersonation:{user_id}"
-    cache.set(cache_key, "revoked", timeout=3600)
+    cache.set(cache_key, "revoked", timeout=settings.CACHE_TTL_IMPERSONATION_REVOKED)
 
     try:
         from apps.audit.models import AuditAction, AuditStatus

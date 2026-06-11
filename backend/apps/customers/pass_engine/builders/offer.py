@@ -2,6 +2,8 @@
 Offer pass builders for Google Wallet.
 """
 
+from django.conf import settings
+
 from apps.tenants.models import PlatformSetting
 from common.messages import get_message
 
@@ -37,7 +39,12 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
     ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
 
     title = google_cfg.get("programName") or card.name
-    hex_color = google_cfg.get("hexBackgroundColor") or (_get_wallet_studio(card).get("colors") or {}).get("background") or card.background_color or "#1A1A2E"
+    hex_color = (
+        google_cfg.get("hexBackgroundColor")
+        or (_get_wallet_studio(card).get("colors") or {}).get("background")
+        or card.background_color
+        or "#1A1A2E"
+    )
 
     payload = {
         "id": class_id,
@@ -47,9 +54,7 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
         "redemptionChannel": "BOTH",
         "titleImage": {
             "sourceUri": {"uri": logo_uri},
-            "contentDescription": {
-                "defaultValue": {"language": "es", "value": title}
-            },
+            "contentDescription": {"defaultValue": {"language": "es", "value": title}},
         },
         "hexBackgroundColor": hex_color,
         "reviewStatus": "UNDER_REVIEW",
@@ -82,16 +87,34 @@ def _build_offer_object(
 
     # Start with V2-designed modules and append card-type-specific ones
     text_modules = [
-        {"header": get_message("WALLET_LABEL_BUSINESS"), "body": tenant.name, "id": "tenant_name"},
-        {"header": get_message("WALLET_LABEL_OFFER"), "body": program_name, "id": "program_name"},
+        {
+            "header": get_message("WALLET_LABEL_BUSINESS"),
+            "body": tenant.name,
+            "id": "tenant_name",
+        },
+        {
+            "header": get_message("WALLET_LABEL_OFFER"),
+            "body": program_name,
+            "id": "program_name",
+        },
     ] + _build_v2_text_modules_data(card, customer_pass, customer, tenant)
 
     if card.card_type == "referral_pass":
         text_modules.append(
-            {"header": get_message("WALLET_LABEL_REFERRALS"), "body": str(customer_pass.referral_count_val), "id": "referral_count"}
+            {
+                "header": get_message("WALLET_LABEL_REFERRALS"),
+                "body": str(customer_pass.referral_count_val),
+                "id": "referral_count",
+            }
         )
         ref_code = customer.referral_code or customer_pass.qr_code or "N/A"
-        text_modules.append({"header": get_message("WALLET_LABEL_CODE"), "body": ref_code, "id": "ref_code"})
+        text_modules.append(
+            {
+                "header": get_message("WALLET_LABEL_CODE"),
+                "body": ref_code,
+                "id": "ref_code",
+            }
+        )
         text_modules.append(
             {
                 "header": get_message("WALLET_LABEL_REWARD"),
@@ -105,9 +128,19 @@ def _build_offer_object(
         discount_pct = str(customer_pass.corporate_discount)
         company = pass_data.get("company_name", metadata.get("company_name", card.name))
         text_modules.append(
-            {"header": get_message("WALLET_LABEL_CORPORATE_DISCOUNT"), "body": f"{discount_pct}%", "id": "corporate_discount"}
+            {
+                "header": get_message("WALLET_LABEL_CORPORATE_DISCOUNT"),
+                "body": f"{discount_pct}%",
+                "id": "corporate_discount",
+            }
         )
-        text_modules.append({"header": get_message("WALLET_LABEL_COMPANY"), "body": company, "id": "company_name"})
+        text_modules.append(
+            {
+                "header": get_message("WALLET_LABEL_COMPANY"),
+                "body": company,
+                "id": "company_name",
+            }
+        )
     elif card.card_type == "discount":
         tiers = metadata.get("tiers", [])
         current_tier = customer_pass.discount_tier or pass_data.get("discount_tier", "")
@@ -120,9 +153,19 @@ def _build_offer_object(
             current_tier = tiers[0].get("tier_name", "Básico")
             current_discount = tiers[0].get("discount_percentage", 0)
         text_modules.append(
-            {"header": get_message("WALLET_LABEL_CURRENT_TIER"), "body": current_tier or get_message("WALLET_LABEL_BASIC"), "id": "current_tier"}
+            {
+                "header": get_message("WALLET_LABEL_CURRENT_TIER"),
+                "body": current_tier or get_message("WALLET_LABEL_BASIC"),
+                "id": "current_tier",
+            }
         )
-        text_modules.append({"header": get_message("WALLET_LABEL_DISCOUNT"), "body": f"{current_discount}%", "id": "current_discount"})
+        text_modules.append(
+            {
+                "header": get_message("WALLET_LABEL_DISCOUNT"),
+                "body": f"{current_discount}%",
+                "id": "current_discount",
+            }
+        )
     elif card.card_type == "coupon":
         usage_limit = metadata.get(
             "usage_limit", metadata.get("usage_limit_per_customer", 1)
@@ -135,7 +178,13 @@ def _build_offer_object(
                 "id": "coupon_uses",
             }
         )
-        text_modules.append({"header": get_message("WALLET_LABEL_VALID_UNTIL"), "body": str(coupon_end), "id": "coupon_valid_until"})
+        text_modules.append(
+            {
+                "header": get_message("WALLET_LABEL_VALID_UNTIL"),
+                "body": str(coupon_end),
+                "id": "coupon_valid_until",
+            }
+        )
         text_modules.append(
             {
                 "header": get_message("WALLET_LABEL_TERMS"),
@@ -151,7 +200,9 @@ def _build_offer_object(
         "barcode": {
             "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,
-            "alternateText": customer_pass.qr_code[:10],
+            "alternateText": customer_pass.qr_code[
+                : settings.PASS_GOOGLE_QR_TRUNCATE_LENGTH
+            ],
         },
         "textModulesData": text_modules,
     }
@@ -172,7 +223,10 @@ def _build_offer_object(
         obj["heroImage"] = {
             "sourceUri": {"uri": hero_uri},
             "contentDescription": {
-                "defaultValue": {"language": "es", "value": get_message("WALLET_BANNER_OF", name=program_name)}
+                "defaultValue": {
+                    "language": "es",
+                    "value": get_message("WALLET_BANNER_OF", name=program_name),
+                }
             },
         }
 
@@ -224,17 +278,23 @@ def _build_offer_object(
             if tier.get("tier_name") == current_tier:
                 current_discount = tier.get("discount_percentage", 0)
                 break
-        obj["details"] = get_message("WALLET_OFFER_DETAILS_DISCOUNT", discount=current_discount)
+        obj["details"] = get_message(
+            "WALLET_OFFER_DETAILS_DISCOUNT", discount=current_discount
+        )
 
     if card.card_type == "corporate_discount":
         discount_pct = str(customer_pass.corporate_discount)
-        obj["details"] = get_message("WALLET_OFFER_DETAILS_CORPORATE", discount=discount_pct)
+        obj["details"] = get_message(
+            "WALLET_OFFER_DETAILS_CORPORATE", discount=discount_pct
+        )
 
     # Links: V2 back-content links
     v2_links = _build_v2_links_module_data(card)
     if v2_links:
         obj.setdefault("linksModuleData", {"uris": []})
-        obj["linksModuleData"]["uris"] = obj["linksModuleData"].get("uris", []) + v2_links
+        obj["linksModuleData"]["uris"] = (
+            obj["linksModuleData"].get("uris", []) + v2_links
+        )
 
     _apply_google_advanced_to_object(card, obj)
     return obj

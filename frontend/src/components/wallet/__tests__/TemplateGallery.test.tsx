@@ -125,7 +125,8 @@ describe('TemplateGallery', () => {
   it('opens preview modal when clicking a template card', () => {
     render(<TemplateGallery {...baseProps} />);
     const card = screen.getByTestId('template-card-cafe-classico-sellos');
-    fireEvent.click(card);
+    const btn = card.querySelector('button');
+    fireEvent.click(btn!);
     expect(screen.getByTestId('preview-large')).toBeDefined();
     expect(screen.getByTestId('preview-use-btn')).toBeDefined();
   });
@@ -133,7 +134,8 @@ describe('TemplateGallery', () => {
   it('calls onSelectTemplate when clicking preview use button', () => {
     render(<TemplateGallery {...baseProps} />);
     const card = screen.getByTestId('template-card-cafe-classico-sellos');
-    fireEvent.click(card);
+    const btn = card.querySelector('button');
+    fireEvent.click(btn!);
     const useBtn = screen.getByTestId('preview-use-btn');
     fireEvent.click(useBtn);
     expect(baseProps.onSelectTemplate).toHaveBeenCalledTimes(1);
@@ -145,7 +147,8 @@ describe('TemplateGallery', () => {
   it('closes preview modal when clicking close button', () => {
     render(<TemplateGallery {...baseProps} />);
     const card = screen.getByTestId('template-card-cafe-classico-sellos');
-    fireEvent.click(card);
+    const btn = card.querySelector('button');
+    fireEvent.click(btn!);
     expect(screen.getByTestId('preview-large')).toBeDefined();
     const closeBtn = screen.getByTestId('preview-close-btn');
     fireEvent.click(closeBtn);

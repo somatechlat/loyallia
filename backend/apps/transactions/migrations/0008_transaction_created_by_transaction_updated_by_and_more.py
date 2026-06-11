@@ -7,25 +7,43 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customers', '0013_customer_created_by_customer_updated_by'),
-        ('tenants', '0011_alter_location_address_alter_location_city_and_more'),
-        ('transactions', '0007_alter_enrollment_card_alter_enrollment_customer_and_more'),
+        ("customers", "0013_customer_created_by_customer_updated_by"),
+        ("tenants", "0011_alter_location_address_alter_location_city_and_more"),
+        (
+            "transactions",
+            "0007_alter_enrollment_card_alter_enrollment_customer_and_more",
+        ),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='transaction',
-            name='created_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who created this record.', null=True, verbose_name='Creado por'),
+            model_name="transaction",
+            name="created_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who created this record.",
+                null=True,
+                verbose_name="Creado por",
+            ),
         ),
         migrations.AddField(
-            model_name='transaction',
-            name='updated_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who last updated this record.', null=True, verbose_name='Actualizado por'),
+            model_name="transaction",
+            name="updated_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who last updated this record.",
+                null=True,
+                verbose_name="Actualizado por",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='transaction',
-            constraint=models.CheckConstraint(condition=models.Q(('amount__gte', 0), ('amount__isnull', True), _connector='OR'), name='check_transaction_amount_non_negative'),
+            model_name="transaction",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("amount__gte", 0), ("amount__isnull", True), _connector="OR"
+                ),
+                name="check_transaction_amount_non_negative",
+            ),
         ),
     ]

@@ -8,6 +8,8 @@ import urllib.error
 import urllib.request
 from datetime import datetime
 
+from django.conf import settings
+
 from apps.backup.services.config import temp_backup_dir
 
 logger = logging.getLogger(__name__)
@@ -43,7 +45,9 @@ def backup_vault(job_id: str) -> dict:
         ssl_context = _build_ssl_context()
 
         req = urllib.request.Request(url, headers=headers, method="GET")
-        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
+        with urllib.request.urlopen(
+            req, timeout=settings.BACKUP_VAULT_TIMEOUT, context=ssl_context
+        ) as response:
             body = response.read().decode("utf-8")
 
         secrets_data = json.loads(body)
@@ -93,7 +97,9 @@ def restore_vault(vault_file: str) -> bool:
         headers = {"X-Vault-Token": vault_token, "Content-Type": "application/json"}
 
         req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
+        with urllib.request.urlopen(
+            req, timeout=settings.BACKUP_VAULT_TIMEOUT, context=ssl_context
+        ) as response:
             if response.status in (200, 204):
                 logger.info("restore: Vault KV secrets restored")
                 return True

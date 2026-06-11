@@ -74,7 +74,9 @@ def set_security_pin(request, payload: SecurityPinIn):
             status="success",
         )
     except Exception as e:
-        logger.warning("Failed to log set_security_pin audit action: %s", e, exc_info=True)
+        logger.warning(
+            "Failed to log set_security_pin audit action: %s", e, exc_info=True
+        )
 
     return {"success": True, "message": get_message("SECURITY_PIN_SET")}
 

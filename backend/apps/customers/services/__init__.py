@@ -167,7 +167,9 @@ def create_customer(tenant, data: dict) -> Customer:
     )
 
 
-def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Customer, bool, bool]:
+def public_enroll(
+    card: Card, customer_data: dict
+) -> tuple[CustomerPass, Customer, bool, bool]:
     """Public endpoint for customer self-enrollment via QR code scan.
 
     Does NOT overwrite existing customer profile data — only creates/updates the pass.
@@ -192,7 +194,7 @@ def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Custom
 
     existing_pass = CustomerPass.objects.filter(customer=customer, card=card).first()
     if existing_pass:
-        return existing_pass, customer, True
+        return existing_pass, customer, True, created
 
     standard_fields = {
         "first_name",
@@ -248,7 +250,7 @@ def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Custom
                 exc_info=True,
             )
 
-    return pass_obj, customer, False
+    return pass_obj, customer, False, created
 
 
 def resend_pass_email(card: Card, email: str, base_url: str) -> dict:

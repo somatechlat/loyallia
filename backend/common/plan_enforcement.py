@@ -123,7 +123,7 @@ def get_current_usage(tenant, resource: str) -> int:
         "automations": lambda: _count_automations(tenant),
         "automation_executions_day": lambda: _count_automation_executions_today(tenant),
         "ai_queries_month": lambda: _count_monthly(
-            "apps.tenants.models", "AIQueryLog", tenant, month_start
+            "apps.ai.models", "AIQueryLog", tenant, month_start
         ),
         "api_calls_day": lambda: _count_api_calls_today(tenant),
         "exports_month": lambda: _count_exports_month(tenant, month_start),
@@ -289,21 +289,21 @@ def _count_wallet_templates(tenant) -> int:
 def _count_wallet_pass_updates_month(tenant) -> int:
     """Count wallet pass updates this month.
 
-    PERF: Single COUNT query on WalletPass filtered by updated_at.
+    PERF: Single COUNT query on WalletPassOperationLog filtered by tenant + date.
     """
     from django.db import ProgrammingError
 
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     try:
-        from apps.wallet.models import WalletPass
+        from apps.wallet.models import WalletPassOperationLog
 
-        return WalletPass.objects.filter(
+        return WalletPassOperationLog.objects.filter(
             tenant=tenant,
-            updated_at__gte=month_start,
+            created_at__gte=month_start,
         ).count()
     except (ImportError, ProgrammingError):
-        logger.warning("WalletPass model unavailable; returning usage=0.")
+        logger.warning("WalletPassOperationLog model unavailable; returning usage=0.")
         return 0
 
 

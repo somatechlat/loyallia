@@ -34,6 +34,7 @@ AI_PATH_PREFIXES = (
     "/api/v1/ai/suggest-colors/",
     "/api/v1/ai/critique-design/",
     "/api/v1/ai/suggest-stamp-icons/",
+    "/api/v1/ai/suggest-layout/",
 )
 
 

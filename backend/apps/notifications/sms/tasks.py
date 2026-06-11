@@ -21,18 +21,19 @@ Security (SEC):
 import logging
 
 from celery import shared_task
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=300,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_EXTRA_LONG,
     queue="sms_delivery",
     name="apps.notifications.tasks.send_sms_campaign",
-    soft_time_limit=1800,  # 30 minutes for large campaigns
-    time_limit=1860,
+    soft_time_limit=settings.CELERY_SOFT_TIME_LIMIT_NOTIFICATIONS_SMS,
+    time_limit=settings.CELERY_TIME_LIMIT_NOTIFICATIONS_SMS,
 )
 def send_sms_campaign(
     self,
@@ -131,7 +132,9 @@ def send_sms_campaign(
     failed = 0
 
     try:
-        for customer in audience.iterator(chunk_size=50):
+        for customer in audience.iterator(
+            chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL
+        ):
             # Defensive: skip customers without a valid phone number
             if not customer.phone:
                 failed += 1

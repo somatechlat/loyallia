@@ -142,7 +142,9 @@ def is_bridge_available() -> bool:
         return False
 
 
-def check_whatsapp_cooldown(phone: str, cooldown_seconds: int = 3600) -> bool:
+def check_whatsapp_cooldown(
+    phone: str, cooldown_seconds: int = settings.WHATSAPP_COOLDOWN_SECONDS
+) -> bool:
     """Check if a phone number is within the cooldown period.
 
     Uses Redis to track the last sent time per phone number.

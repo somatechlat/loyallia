@@ -64,52 +64,6 @@ function CutLinePreview({ style }: { style: CouponCardConfig['cutLineStyle'] }) 
   );
 }
 
-function CouponPreview({ config }: { config: CouponCardConfig }) {
-  const discountLabel = config.discountType === 'percentage' ? `${config.discountValue}%` : `$${config.discountValue}`;
-
-  return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <span
-          className={`text-xs font-bold px-2 py-1 rounded ${
-            config.discountBadgeStyle === 'circle'
-              ? 'rounded-full w-10 h-10 flex items-center justify-center'
-              : config.discountBadgeStyle === 'banner'
-                ? 'rounded-none w-full text-center'
-                : config.discountBadgeStyle === 'tag'
-                  ? 'rounded-l-none border-l-4 border-blue-500'
-                  : 'rounded-full'
-          } bg-blue-600 text-white`}
-        >
-          {discountLabel} OFF
-        </span>
-        {config.offerTag && (
-          <span className="text-[10px] text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 rounded">
-            {config.offerTag}
-          </span>
-        )}
-      </div>
-      <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
-        {config.couponDescription || 'Descripción del cupón'}
-      </p>
-      {config.specialPromotionText && (
-        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-          {config.specialPromotionText}
-        </p>
-      )}
-      <CutLinePreview style={config.cutLineStyle} />
-      <div className="flex items-center justify-between text-[10px] text-neutral-500 dark:text-neutral-400">
-        <span>
-          {typeof config.couponExpiry === 'number'
-            ? `Vence en ${config.couponExpiry} días`
-            : 'Sin vencimiento'}
-        </span>
-        <span>Límite: {config.usageLimitPerCustomer} por cliente</span>
-      </div>
-    </div>
-  );
-}
-
 export function CouponTab({ config, onChange }: CouponTabProps) {
   const handleNumberChange = useCallback(
     (field: keyof CouponCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,21 +90,21 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
   );
 
   return (
-    <div className="space-y-5">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
         Configuración de Cupón
       </h3>
 
       {/* Discount type */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Tipo de descuento
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button
             type="button"
             onClick={() => handleDiscountTypeChange('percentage')}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+            className={`flex-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
               config.discountType === 'percentage'
                 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                 : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -162,7 +116,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           <button
             type="button"
             onClick={() => handleDiscountTypeChange('fixed_amount')}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+            className={`flex-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
               config.discountType === 'fixed_amount'
                 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                 : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -175,8 +129,8 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       </div>
 
       {/* Discount value */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Valor del descuento
         </label>
         <div className="flex items-center gap-2">
@@ -186,18 +140,18 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             max={config.discountType === 'percentage' ? 100 : 999999}
             value={config.discountValue}
             onChange={handleNumberChange('discountValue', 0, config.discountType === 'percentage' ? 100 : 999999)}
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             data-testid="discount-value-input"
           />
-          <span className="text-sm text-neutral-500 dark:text-neutral-400 w-8">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400 w-8">
             {config.discountType === 'percentage' ? '%' : '$'}
           </span>
         </div>
       </div>
 
       {/* Usage limit */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Límite de uso por cliente
         </label>
         <input
@@ -206,28 +160,43 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           max={999}
           value={config.usageLimitPerCustomer}
           onChange={handleNumberChange('usageLimitPerCustomer', 1, 999)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           data-testid="usage-limit-input"
         />
       </div>
 
       {/* Coupon description */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Descripción del cupón
         </label>
         <textarea
           value={config.couponDescription}
           onChange={handleTextChange('couponDescription')}
           rows={3}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           data-testid="coupon-description-input"
         />
       </div>
 
+      {/* Push message */}
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+          Mensaje push
+        </label>
+        <input
+          type="text"
+          value={config.pushMessage}
+          onChange={handleTextChange('pushMessage')}
+          placeholder="Ej: ¡Nueva oferta disponible!"
+          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          data-testid="push-message-input"
+        />
+      </div>
+
       {/* Special promotion text */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Texto promocional especial
         </label>
         <input
@@ -235,21 +204,21 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           value={config.specialPromotionText}
           onChange={handleTextChange('specialPromotionText')}
           placeholder="Ej: ¡Solo por tiempo limitado!"
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           data-testid="promotion-text-input"
         />
       </div>
 
       {/* Expiry */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Vencimiento
         </label>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => onChange({ couponExpiry: 'unlimited' })}
-            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+            className={`flex-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
               config.couponExpiry === 'unlimited'
                 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                 : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -258,7 +227,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           >
             Ilimitado
           </button>
-          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700">
+          <div className="flex-1 flex items-center gap-2 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
             <input
               type="number"
               min={1}
@@ -270,17 +239,45 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
                 }
               }}
               placeholder="Días"
-              className="w-full text-sm text-neutral-800 dark:text-neutral-100 bg-transparent focus:outline-none"
+              className="w-full text-xs text-neutral-800 dark:text-neutral-100 bg-transparent focus:outline-none"
               data-testid="expiry-days-input"
             />
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">días</span>
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap">días</span>
           </div>
         </div>
       </div>
 
+      {/* Start/End dates */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+            Fecha de inicio
+          </label>
+          <input
+            type="date"
+            value={config.couponStartDate ?? ''}
+            onChange={(e) => onChange({ couponStartDate: e.target.value || undefined })}
+            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="coupon-start-date-input"
+          />
+        </div>
+        <div className="space-y-0.5">
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+            Fecha de fin
+          </label>
+          <input
+            type="date"
+            value={config.couponEndDate ?? ''}
+            onChange={(e) => onChange({ couponEndDate: e.target.value || undefined })}
+            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="coupon-end-date-input"
+          />
+        </div>
+      </div>
+
       {/* Cut line style */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Estilo de línea de corte
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -289,7 +286,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
               key={opt.value}
               type="button"
               onClick={() => onChange({ cutLineStyle: opt.value })}
-              className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors ${
+              className={`flex flex-col items-center gap-0.5 p-1 rounded-md border transition-colors ${
                 config.cutLineStyle === opt.value
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                   : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -304,8 +301,8 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       </div>
 
       {/* Discount badge style */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Estilo de insignia de descuento
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -314,7 +311,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
               key={opt.value}
               type="button"
               onClick={() => onChange({ discountBadgeStyle: opt.value })}
-              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
                 config.discountBadgeStyle === opt.value
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                   : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -328,8 +325,8 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       </div>
 
       {/* Offer tag */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
           Etiqueta de oferta
         </label>
         <input
@@ -337,17 +334,9 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           value={config.offerTag}
           onChange={handleTextChange('offerTag')}
           placeholder="Ej: FLASH SALE"
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           data-testid="offer-tag-input"
         />
-      </div>
-
-      {/* Live preview */}
-      <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
-        </label>
-        <CouponPreview config={config} />
       </div>
     </div>
   );

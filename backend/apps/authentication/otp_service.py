@@ -20,6 +20,7 @@ import secrets
 from abc import ABC, abstractmethod
 from typing import Any
 
+from django.conf import settings
 from django.core.cache import cache
 
 from apps.notifications.sms.client import send_sms
@@ -30,9 +31,9 @@ from common.vault import get_secret
 logger = logging.getLogger(__name__)
 
 OTP_REDIS_PREFIX = "otp:"
-OTP_TTL_SECONDS = 300  # 5 minutes
-OTP_MAX_ATTEMPTS = 3
-OTP_ATTEMPT_WINDOW = 3600  # 1 hour
+OTP_TTL_SECONDS = settings.OTP_TTL_SECONDS
+OTP_MAX_ATTEMPTS = settings.OTP_MAX_ATTEMPTS
+OTP_ATTEMPT_WINDOW = settings.AUTH_RATE_LIMIT_CACHE_TTL
 
 
 class OTPStrategy(ABC):

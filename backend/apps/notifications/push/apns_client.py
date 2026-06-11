@@ -159,7 +159,7 @@ def send_apns_message(
 
     try:
         # httpx HTTP/2 requires h2 package: pip install httpx[http2]
-        with httpx.Client(http2=True, timeout=10.0) as client:
+        with httpx.Client(http2=True, timeout=settings.APNS_HTTP2_TIMEOUT) as client:
             response = client.post(url, json=payload, headers=headers)
 
         if response.status_code == 200:

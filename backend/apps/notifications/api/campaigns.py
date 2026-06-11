@@ -172,21 +172,18 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         except ValueError:
             raise HttpError(
                 400,
-                get_message_for_request(
-                    "VALIDATION_INVALID_DATETIME", request
-                ),
+                get_message_for_request("VALIDATION_INVALID_DATETIME", request),
             )
 
         if scheduled_time < timezone.now():
             raise HttpError(
                 400,
-                get_message_for_request(
-                    "VALIDATION_FUTURE_DATETIME", request
-                ),
+                get_message_for_request("VALIDATION_FUTURE_DATETIME", request),
             )
 
+        channel = data.channel or "email"
         task_kwargs = build_campaign_task_kwargs(
-            channel=data.channel,
+            channel=channel,
             title=data.title,
             message=data.message,
             segment_id=data.segment_id,
@@ -200,7 +197,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         )
 
         schedule_campaign_dispatch(
-            channel=data.channel,
+            channel=channel,
             tenant_id=str(tenant.id),
             kwargs=task_kwargs,
             scheduled_at=scheduled_time,
@@ -211,7 +208,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
             action="CREATE",
             resource_type="campaign",
             details={
-                "channel": data.channel,
+                "channel": channel,
                 "segment_id": data.segment_id,
                 "title": data.title,
                 "schedule_type": "scheduled",
@@ -225,8 +222,9 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         }
 
     # -- Immediate dispatch (existing flow) -----------------------------------
+    channel = data.channel or "email"
     task_kwargs = build_campaign_task_kwargs(
-        channel=data.channel,
+        channel=channel,
         title=data.title,
         message=data.message,
         segment_id=data.segment_id,
@@ -239,28 +237,26 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         target_customer_ids=data.target_customer_ids,
     )
 
-    if data.channel == "email":
+    if channel == "email":
         check_feature_access(tenant, "email_campaigns")
         check_plan_limit(tenant, "emails_month", write=True)
-    elif data.channel == "wallet":
+    elif channel == "wallet":
         check_feature_access(tenant, "wallet_campaigns")
         check_plan_limit(tenant, "wallet_pushes_month", write=True)
-    elif data.channel == "whatsapp":
+    elif channel == "whatsapp":
         check_feature_access(tenant, "whatsapp_campaigns")
         check_plan_limit(tenant, "whatsapp_day", write=True)
-    elif data.channel == "sms":
+    elif channel == "sms":
         check_feature_access(tenant, "sms_campaigns")
         check_plan_limit(tenant, "sms_day", write=True)
     else:
         raise HttpError(
             400,
-            get_message_for_request(
-                "CAMPAIGN_INVALID_CHANNEL", request
-            ),
+            get_message_for_request("CAMPAIGN_INVALID_CHANNEL", request),
         )
 
     result = dispatch_campaign_immediately(
-        channel=data.channel,
+        channel=channel,
         tenant_id=str(tenant.id),
         kwargs=task_kwargs,
     )
@@ -270,7 +266,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         action="CREATE",
         resource_type="campaign",
         details={
-            "channel": data.channel,
+            "channel": channel,
             "segment_id": data.segment_id,
             "title": data.title,
         },

@@ -7,98 +7,162 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backup', '0001_initial'),
+        ("backup", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='backupjob',
-            name='backup_type',
-            field=models.CharField(choices=[('full', 'full'), ('incremental', 'incremental'), ('manual', 'manual')], default='full', help_text='Type of backup operation.', max_length=20),
+            model_name="backupjob",
+            name="backup_type",
+            field=models.CharField(
+                choices=[
+                    ("full", "full"),
+                    ("incremental", "incremental"),
+                    ("manual", "manual"),
+                ],
+                default="full",
+                help_text="Type of backup operation.",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='completed_at',
-            field=models.DateTimeField(blank=True, help_text='Timestamp for completed.', null=True),
+            model_name="backupjob",
+            name="completed_at",
+            field=models.DateTimeField(
+                blank=True, help_text="Timestamp for completed.", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='compression_enabled',
-            field=models.BooleanField(default=True, help_text='Whether the backup is compressed.'),
+            model_name="backupjob",
+            name="compression_enabled",
+            field=models.BooleanField(
+                default=True, help_text="Whether the backup is compressed."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, db_index=True, help_text='Timestamp for created.'),
+            model_name="backupjob",
+            name="created_at",
+            field=models.DateTimeField(
+                auto_now_add=True, db_index=True, help_text="Timestamp for created."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='encryption_enabled',
-            field=models.BooleanField(default=True, help_text='Whether the backup is encrypted.'),
+            model_name="backupjob",
+            name="encryption_enabled",
+            field=models.BooleanField(
+                default=True, help_text="Whether the backup is encrypted."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='error_message',
-            field=models.TextField(blank=True, default='', help_text='Error message or details.'),
+            model_name="backupjob",
+            name="error_message",
+            field=models.TextField(
+                blank=True, default="", help_text="Error message or details."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='file_path',
-            field=models.CharField(blank=True, default='', help_text='Local file path of the backup.', max_length=500),
+            model_name="backupjob",
+            name="file_path",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Local file path of the backup.",
+                max_length=500,
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='file_size_bytes',
-            field=models.BigIntegerField(blank=True, help_text='Size of the backup file in bytes.', null=True),
+            model_name="backupjob",
+            name="file_size_bytes",
+            field=models.BigIntegerField(
+                blank=True, help_text="Size of the backup file in bytes.", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, help_text='Unique identifier for this record.', primary_key=True, serialize=False),
+            model_name="backupjob",
+            name="id",
+            field=models.UUIDField(
+                default=uuid.uuid4,
+                editable=False,
+                help_text="Unique identifier for this record.",
+                primary_key=True,
+                serialize=False,
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='include_media',
-            field=models.BooleanField(default=True, help_text='Whether media files are included.'),
+            model_name="backupjob",
+            name="include_media",
+            field=models.BooleanField(
+                default=True, help_text="Whether media files are included."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='include_vault',
-            field=models.BooleanField(default=True, help_text='Whether vault secrets are included.'),
+            model_name="backupjob",
+            name="include_vault",
+            field=models.BooleanField(
+                default=True, help_text="Whether vault secrets are included."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='retry_count',
-            field=models.IntegerField(default=0, help_text='Number of retry attempts.'),
+            model_name="backupjob",
+            name="retry_count",
+            field=models.IntegerField(default=0, help_text="Number of retry attempts."),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='s3_key',
-            field=models.CharField(blank=True, default='', help_text='Object key in S3-compatible storage.', max_length=500),
+            model_name="backupjob",
+            name="s3_key",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Object key in S3-compatible storage.",
+                max_length=500,
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='started_at',
-            field=models.DateTimeField(blank=True, help_text='Timestamp for started.', null=True),
+            model_name="backupjob",
+            name="started_at",
+            field=models.DateTimeField(
+                blank=True, help_text="Timestamp for started.", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='status',
-            field=models.CharField(choices=[('pending', 'pending'), ('running', 'running'), ('completed', 'completed'), ('failed', 'failed'), ('verified', 'verified'), ('corrupted', 'corrupted')], db_index=True, default='pending', help_text='Current status of this record.', max_length=20),
+            model_name="backupjob",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "pending"),
+                    ("running", "running"),
+                    ("completed", "completed"),
+                    ("failed", "failed"),
+                    ("verified", "verified"),
+                    ("corrupted", "corrupted"),
+                ],
+                db_index=True,
+                default="pending",
+                help_text="Current status of this record.",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True, help_text='Timestamp for updated.'),
+            model_name="backupjob",
+            name="updated_at",
+            field=models.DateTimeField(
+                auto_now=True, help_text="Timestamp for updated."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='verification_details',
-            field=models.TextField(blank=True, default='', help_text='Details of the verification result.'),
+            model_name="backupjob",
+            name="verification_details",
+            field=models.TextField(
+                blank=True, default="", help_text="Details of the verification result."
+            ),
         ),
         migrations.AlterField(
-            model_name='backupjob',
-            name='verification_status',
-            field=models.CharField(default='pending', help_text='Current verification status.', max_length=20),
+            model_name="backupjob",
+            name="verification_status",
+            field=models.CharField(
+                default="pending",
+                help_text="Current verification status.",
+                max_length=20,
+            ),
         ),
     ]

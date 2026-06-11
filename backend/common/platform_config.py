@@ -30,7 +30,9 @@ def get_platform_config(key: str, fallback: str = "") -> str:
         if value:
             return value
     except Exception as e:
-        logger.debug("PlatformSetting unavailable for key '%s' (%s), using fallback.", key, e)
+        logger.debug(
+            "PlatformSetting unavailable for key '%s' (%s), using fallback.", key, e
+        )
     # Fallback to Django settings attribute if it exists
     if fallback:
         return fallback

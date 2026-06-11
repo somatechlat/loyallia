@@ -10,6 +10,7 @@ from contextlib import suppress
 from typing import Any
 
 import pandas as pd
+from django.conf import settings
 from django.db import transaction
 from django.utils.dateparse import parse_date
 
@@ -23,8 +24,8 @@ class CustomerImportService:
     """Service to handle customer database imports."""
 
     # AGENT.md business rule: max import file size 10MB, max 50,000 rows.
-    MAX_FILE_SIZE = 10 * 1024 * 1024
-    MAX_ROWS = 50_000
+    MAX_FILE_SIZE = settings.IMPORT_MAX_FILE_SIZE_BYTES
+    MAX_ROWS = settings.IMPORT_MAX_ROWS
 
     # Supported gender mappings for normalization
     GENDER_MAP = {
@@ -181,7 +182,9 @@ class CustomerImportService:
                 else ""
             )
             phone = (
-                re.sub(r"[^\d\+\- ]", "", str(row.get(col_map["phone"], "")))[:20]
+                re.sub(r"[^\d\+\- ]", "", str(row.get(col_map["phone"], "")))[
+                    : settings.CUSTOMER_PHONE_MAX_LENGTH
+                ]
                 if col_map["phone"]
                 else ""
             )
@@ -199,7 +202,9 @@ class CustomerImportService:
                 gender = self.GENDER_MAP.get(gender_raw, "")
 
             notes = (
-                str(row.get(col_map["notes"], ""))[:2000] if col_map["notes"] else ""
+                str(row.get(col_map["notes"], ""))[: settings.CUSTOMER_NOTES_MAX_LENGTH]
+                if col_map["notes"]
+                else ""
             )
 
             total_spent = 0.0
@@ -246,7 +251,9 @@ class CustomerImportService:
             with transaction.atomic():
                 for customer in customers_to_create:
                     customer.referral_code = customer.generate_referral_code()
-                Customer.objects.bulk_create(customers_to_create, batch_size=500)
+                Customer.objects.bulk_create(
+                    customers_to_create, batch_size=settings.BULK_CREATE_BATCH_SIZE
+                )
 
         return {
             "success": True,

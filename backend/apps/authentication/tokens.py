@@ -61,7 +61,8 @@ def _load_keys() -> tuple[str, str]:
                 _signing_key = get_secret("jwt_private_key")
             except Exception as e:
                 logger.warning(
-                    "RS256 configured but private key not found. Falling back to HS256: %s", e
+                    "RS256 configured but private key not found. Falling back to HS256: %s",
+                    e,
                 )
                 _signing_key = settings.JWT_SECRET_KEY
                 _verification_key = settings.JWT_SECRET_KEY

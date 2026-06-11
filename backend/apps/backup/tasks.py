@@ -38,10 +38,8 @@ from apps.backup.services.verification import verify_backup as verify_backup_svc
 
 logger = logging.getLogger(__name__)
 
-_MAX_RETRIES = 3
 _RETRY_DELAY = 120
 _BACKUP_QUEUE = "default"
-_BACKUP_TIMEOUT = 1800
 
 
 def _project_root() -> Path:
@@ -58,12 +56,12 @@ def _restore_script() -> Path:
 
 @shared_task(
     bind=True,
-    max_retries=_MAX_RETRIES,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
     default_retry_delay=_RETRY_DELAY,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.run_full_backup",
-    time_limit=_BACKUP_TIMEOUT,
-    soft_time_limit=_BACKUP_TIMEOUT - 60,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_LONG,
+    soft_time_limit=settings.CELERY_TIME_LIMIT_BACKUP_LONG - 60,
 )
 def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
     """Orchestrate a complete platform backup via unified CLI."""
@@ -91,7 +89,7 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
             capture_output=True,
             text=True,
             cwd=str(_project_root()),
-            timeout=_BACKUP_TIMEOUT,
+            timeout=settings.CELERY_TIME_LIMIT_BACKUP_LONG,
         )
         success = result.returncode == 0
 
@@ -131,12 +129,12 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=_MAX_RETRIES,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
     default_retry_delay=_RETRY_DELAY,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.run_selective_backup_task",
-    time_limit=900,
-    soft_time_limit=840,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_STANDARD,
+    soft_time_limit=settings.CELERY_SOFT_TIME_LIMIT_BACKUP_STANDARD,
 )
 def run_selective_backup_task(
     self, component: str, tenant_id: str = "", manual: bool = False
@@ -168,7 +166,7 @@ def run_selective_backup_task(
             capture_output=True,
             text=True,
             cwd=str(_project_root()),
-            timeout=900,
+            timeout=settings.HTTP_TIMEOUT_BACKUP_CLI,
         )
         success = result.returncode == 0
 
@@ -205,11 +203,11 @@ def run_selective_backup_task(
 
 @shared_task(
     bind=True,
-    max_retries=_MAX_RETRIES,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
     default_retry_delay=_RETRY_DELAY,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.backup_postgresql",
-    time_limit=900,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_STANDARD,
 )
 def backup_postgresql(self, job_id: str) -> dict:
     """Celery wrapper for PostgreSQL backup service."""
@@ -222,11 +220,11 @@ def backup_postgresql(self, job_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=_MAX_RETRIES,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
     default_retry_delay=_RETRY_DELAY,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.backup_redis",
-    time_limit=300,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_SHORT,
 )
 def backup_redis(self, job_id: str) -> dict:
     """Celery wrapper for Redis backup service."""
@@ -239,11 +237,11 @@ def backup_redis(self, job_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=_MAX_RETRIES,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
     default_retry_delay=_RETRY_DELAY,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.backup_vault",
-    time_limit=300,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_SHORT,
 )
 def backup_vault(self, job_id: str) -> dict:
     """Celery wrapper for Vault backup service."""
@@ -256,11 +254,11 @@ def backup_vault(self, job_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=_MAX_RETRIES,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
     default_retry_delay=_RETRY_DELAY,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.backup_media",
-    time_limit=1800,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_LONG,
 )
 def backup_media(self, job_id: str) -> dict:
     """Celery wrapper for Media backup service."""
@@ -273,11 +271,11 @@ def backup_media(self, job_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=60,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_MEDIUM,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.verify_backup",
-    time_limit=600,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_MEDIUM,
 )
 def verify_backup(self, component_results: list, job_id: str) -> dict:
     """Celery wrapper for backup verification service.
@@ -293,11 +291,11 @@ def verify_backup(self, component_results: list, job_id: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=2,
-    default_retry_delay=60,
+    max_retries=settings.CELERY_MAX_RETRIES_LOW,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_MEDIUM,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.cleanup_old_backups",
-    time_limit=600,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_MEDIUM,
 )
 def cleanup_old_backups(self) -> dict:
     """Celery wrapper for backup cleanup service."""
@@ -310,11 +308,11 @@ def cleanup_old_backups(self) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=300,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_EXTRA_LONG,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.restore_from_backup_task",
-    time_limit=3600,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_RESTORE,
 )
 def restore_from_backup_task(
     self, backup_id: str, s3_key: str, target_tenant_id: str = ""
@@ -332,11 +330,11 @@ def restore_from_backup_task(
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=60,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_MEDIUM,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.run_restore_task",
-    time_limit=3600,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_RESTORE,
 )
 def run_restore_task(self, component: str, source: str, date: str) -> dict:
     """Celery wrapper for unified restore CLI.
@@ -387,11 +385,11 @@ def run_restore_task(self, component: str, source: str, date: str) -> dict:
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=30,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
     queue=_BACKUP_QUEUE,
     name="apps.backup.tasks.list_restore_options_task",
-    time_limit=300,
+    time_limit=settings.CELERY_TIME_LIMIT_BACKUP_SHORT,
 )
 def list_restore_options_task(self) -> dict:
     """Celery wrapper that calls the unified restore CLI with --list."""
@@ -402,7 +400,7 @@ def list_restore_options_task(self) -> dict:
             capture_output=True,
             text=True,
             cwd=str(_project_root()),
-            timeout=300,
+            timeout=settings.HTTP_TIMEOUT_BACKUP_CLI_SHORT,
         )
 
         stdout = result.stdout

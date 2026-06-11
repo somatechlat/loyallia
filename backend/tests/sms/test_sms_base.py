@@ -21,7 +21,12 @@ def _get_twilio_test_credentials():
     if not from_number:
         return None
 
-    use_test = (get_secret("twilio_use_test_mode") or "").strip().lower() in {"1", "true", "yes", "on"}
+    use_test = (get_secret("twilio_use_test_mode") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     if use_test:
         sid = get_secret("twilio_test_account_sid")
         token = get_secret("twilio_test_auth_token")

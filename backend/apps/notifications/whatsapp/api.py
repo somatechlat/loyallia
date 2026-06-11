@@ -189,7 +189,9 @@ def disconnect_session(request, tenant_id: str):
                 status=AuditStatus.SUCCESS,
             )
         except Exception as audit_exc:
-            logger.warning("Failed to audit WhatsApp disconnect: %s", audit_exc, exc_info=True)
+            logger.warning(
+                "Failed to audit WhatsApp disconnect: %s", audit_exc, exc_info=True
+            )
 
         return MessageOut(success=True, message=get_message("WHATSAPP_DISCONNECTED"))
     except Exception as exc:
@@ -350,7 +352,9 @@ def session_webhook(request, payload: SessionWebhookIn):
         logger.warning(
             "SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id
         )
-        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Invalid tenant_id"))
+        raise HttpError(
+            400, get_message("VALIDATION_ERROR", detail="Invalid tenant_id")
+        )
 
     try:
         from apps.tenants.models import Tenant

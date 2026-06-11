@@ -170,9 +170,9 @@ def verify_email_with_otp(email: str, otp: str) -> dict:
 
     cache_key = f"otp_attempts:verify_email:{email}"
     attempts = cache.get(cache_key, 0)
-    if attempts >= 5:
+    if attempts >= settings.OTP_MAX_ATTEMPTS:
         return {"error": "RATE_LIMITED"}
-    cache.set(cache_key, attempts + 1, 900)
+    cache.set(cache_key, attempts + 1, settings.CACHE_TTL_OTP)
 
     if not verify_otp(email, otp, "verify_email"):
         return {"error": "INVALID_OTP"}
@@ -199,9 +199,9 @@ def send_password_reset(email: str) -> dict:
 
     cache_key = f"pwd_reset_rate:{email}"
     attempts = cache.get(cache_key, 0)
-    if attempts >= 3:
+    if attempts >= settings.AUTH_PWD_RESET_MAX_ATTEMPTS:
         return {"success": True}
-    cache.set(cache_key, attempts + 1, 3600)
+    cache.set(cache_key, attempts + 1, settings.AUTH_RATE_LIMIT_CACHE_TTL)
 
     try:
         user = User.objects.get(email=email, is_active=True)
@@ -270,9 +270,9 @@ def verify_google_token(credential: str, client_ip: str) -> dict:
 
     cache_key = f"gauth_rate:{client_ip}"
     attempt_count = cache.get(cache_key, 0)
-    if attempt_count >= 20:
+    if attempt_count >= settings.AUTH_GOOGLE_OAUTH_MAX_ATTEMPTS:
         return {"error": "RATE_LIMITED"}
-    cache.set(cache_key, attempt_count + 1, 3600)
+    cache.set(cache_key, attempt_count + 1, settings.AUTH_RATE_LIMIT_CACHE_TTL)
 
     client_id = settings.GOOGLE_OAUTH_CLIENT_ID
     if not client_id:
@@ -282,7 +282,7 @@ def verify_google_token(credential: str, client_ip: str) -> dict:
         resp = httpx.get(
             "https://oauth2.googleapis.com/tokeninfo",
             params={"id_token": credential},
-            timeout=10.0,
+            timeout=settings.HTTP_TIMEOUT_AUTH_EXTERNAL,
         )
         if resp.status_code != 200:
             logger.warning(
@@ -339,9 +339,7 @@ def google_login_or_register(
         return {"user": user}
     except User.DoesNotExist:
         if is_login_only:
-            logger.warning(
-                "Google OAuth login failed: unregistered user %s", email
-            )
+            logger.warning("Google OAuth login failed: unregistered user %s", email)
             return {"error": "USER_NOT_FOUND"}
 
     business_name = business_name.strip()

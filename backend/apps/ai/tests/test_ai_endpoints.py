@@ -6,26 +6,83 @@ Makes REAL HTTP calls to the Groq API.
 """
 
 import json
+from unittest import mock
 
 from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
+from apps.ai.services import KimiService
 from apps.authentication.models import User
 from apps.authentication.tokens import create_access_token
 from apps.billing.models import Subscription, SubscriptionPlan
 from apps.tenants.models import Tenant
 
 
+def _mock_chat_completion(system_prompt, user_prompt, json_schema, temperature=0.7):
+    """Mock chat completion returning realistic responses for all schemas."""
+    return {
+        "variations": [
+            {
+                "name": "Test Variation",
+                "description": "Test description",
+                "confidence": 0.9,
+                "design": {
+                    "background_color": "#000000",
+                    "foreground_color": "#FFFFFF",
+                    "accent_color": "#FF0000",
+                    "header_image": "",
+                    "logo_position": "top",
+                    "fields_layout": "standard",
+                    "font_family": "system",
+                },
+            }
+        ],
+        "palettes": [
+            {
+                "name": "Test Palette",
+                "primary": "#000000",
+                "secondary": "#FFFFFF",
+                "background": "#000000",
+                "text": "#FFFFFF",
+                "accent": "#FF0000",
+            }
+        ],
+        "suggestions": ["Increase contrast", "Add logo"],
+        "score": 75,
+        "icons": ["coffee", "star", "heart", "gift", "badge", "crown"],
+        "layout": {
+            "name": "Standard",
+            "description": "Standard layout",
+            "logo_position": "top",
+            "field_arrangement": "grid",
+            "header_style": "banner",
+            "footer_style": "minimal",
+            "reasoning": "Standard layout works best",
+        },
+        "_tokens_used": {
+            "prompt_tokens": 100,
+            "completion_tokens": 200,
+            "total_tokens": 300,
+            "cached_tokens": 0,
+        },
+    }
+
+
 @override_settings(
     CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 )
 class AIEndpointTests(TestCase):
-    """Tests for /api/v1/ai/* endpoints with REAL API calls."""
+    """Tests for /api/v1/ai/* endpoints with mocked chat completions."""
 
     def setUp(self):
         self.client = Client()
         cache.clear()
+
+        self._patch = mock.patch.object(
+            KimiService, "_call_chat_completion", side_effect=_mock_chat_completion
+        )
+        self._patch.start()
 
         self.tenant = Tenant.objects.create(
             name="AI Test Cafe",
@@ -60,6 +117,7 @@ class AIEndpointTests(TestCase):
 
     def tearDown(self):
         cache.clear()
+        self._patch.stop()
 
     def _post(self, url_name, payload):
         """Helper to POST JSON with JWT auth."""
@@ -134,10 +192,57 @@ class AIEndpointTests(TestCase):
         self.assertIsInstance(data["data"], list)
         self.assertGreaterEqual(data["tokens_used"]["total_tokens"], 1)
 
+    def test_suggest_layout_success(self):
+        response = self._post(
+            "ai_suggest_layout",
+            {
+                "design_data": {
+                    "background_color": "#000000",
+                    "foreground_color": "#FFFFFF",
+                },
+                "card_type": "stamp",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertIsInstance(data["data"], dict)
+        self.assertIn("name", data["data"])
+        self.assertIn("reasoning", data["data"])
+        self.assertGreaterEqual(data["tokens_used"]["total_tokens"], 1)
+
+    def test_suggest_layout_missing_design_data(self):
+        response = self._post(
+            "ai_suggest_layout",
+            {"card_type": "stamp"},
+        )
+        self.assertEqual(response.status_code, 422)
+        data = response.json()
+        self.assertFalse(data["success"])
+
+    def test_quota_returned_in_response(self):
+        response = self._post(
+            "ai_generate_template",
+            {
+                "description": "A cozy coffee shop",
+                "card_type": "stamp",
+                "industry": "cafe",
+                "language": "es",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("quota", data)
+        self.assertIsInstance(data["quota"]["used"], int)
+        self.assertIsInstance(data["quota"]["limit"], int)
+        self.assertEqual(data["quota"]["limit"], 100)
+
     def test_unauthenticated_request_fails(self):
         response = self.client.post(
             reverse("ai_generate_template"),
-            data=json.dumps({"description": "x", "card_type": "stamp", "industry": "cafe"}),
+            data=json.dumps(
+                {"description": "x", "card_type": "stamp", "industry": "cafe"}
+            ),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
@@ -145,7 +250,9 @@ class AIEndpointTests(TestCase):
     def test_invalid_token_fails(self):
         response = self.client.post(
             reverse("ai_generate_template"),
-            data=json.dumps({"description": "x", "card_type": "stamp", "industry": "cafe"}),
+            data=json.dumps(
+                {"description": "x", "card_type": "stamp", "industry": "cafe"}
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION="Bearer invalidtoken",
         )

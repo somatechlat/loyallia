@@ -7,6 +7,8 @@ import re
 import shutil
 import subprocess
 
+from django.conf import settings
+
 from apps.backup.services.config import (
     get_backup_settings,
     get_minio_config,
@@ -166,8 +168,6 @@ def execute_restore(component: str, source: str, date: str) -> dict:
     """
     from pathlib import Path
 
-    from django.conf import settings
-
     project_root = Path(settings.BASE_DIR).parent
     restore_script = project_root / "deploy" / "backups" / "restore"
 
@@ -194,7 +194,7 @@ def execute_restore(component: str, source: str, date: str) -> dict:
         text=True,
         capture_output=True,
         cwd=str(project_root),
-        timeout=3600,
+        timeout=settings.HTTP_TIMEOUT_BACKUP_RESTORE,
     )
 
     return {

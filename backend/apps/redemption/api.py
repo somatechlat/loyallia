@@ -21,6 +21,7 @@ from common.permissions import is_staff_or_above, jwt_auth
 from common.rate_limit import rate_limit
 
 from .command import RedemptionCommand
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ class RedemptionOut(BaseModel):
 
 
 @router.post("/validate/", auth=jwt_auth, summary="Validar código QR (v2)")
-@rate_limit(key_prefix="scanner_validate", max_requests=120, window_seconds=60)
+@rate_limit(key_prefix="scanner_validate", max_requests=settings.SCANNER_VALIDATE_RATE_LIMIT_MAX, window_seconds=settings.SCANNER_VALIDATE_RATE_LIMIT_WINDOW)
 def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
     """Validate a QR code and return pass state (read-only, v2 engine).
 
@@ -110,7 +111,7 @@ def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
 
 
 @router.post("/transact/", auth=jwt_auth, summary="Registrar transacción (v2)")
-@rate_limit(key_prefix="scanner_transact", max_requests=120, window_seconds=60)
+@rate_limit(key_prefix="scanner_transact", max_requests=settings.SCANNER_VALIDATE_RATE_LIMIT_MAX, window_seconds=settings.SCANNER_VALIDATE_RATE_LIMIT_WINDOW)
 def transact_v2(request: HttpRequest, data: ScanTransactIn):
     """Record a transaction via the new RedemptionGateway.
 
@@ -178,7 +179,7 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
                 "success": False,
                 "denial_reasons": result.denial_reasons,
                 "rules_evaluated": result.rules_evaluated,
-            },
+            },  # type: ignore[reportArgumentType]
         )
 
     return {

@@ -351,7 +351,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
             400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF")
         )
 
-    if User.objects.filter(email=payload.email).exists():
+    if User.objects.filter(email=payload.email, tenant=request.tenant).exists():
         raise HttpError(
             400, get_message("VALIDATION_ERROR", detail="Email ya registrado")
         )
@@ -480,7 +480,11 @@ def update_team_member(request, user_id: str, payload: TeamMemberUpdateIn):
             resource_type="user",
             resource_id=str(member.id),
             tenant_id=request.tenant.id,
-            details={"email": member.email, "role": member.role, "is_active": member.is_active},
+            details={
+                "email": member.email,
+                "role": member.role,
+                "is_active": member.is_active,
+            },
             status=AuditStatus.SUCCESS,
         )
     except Exception as e:

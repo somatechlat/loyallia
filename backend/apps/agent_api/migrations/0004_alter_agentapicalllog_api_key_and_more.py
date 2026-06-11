@@ -8,84 +8,156 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agent_api', '0003_rename_loyallia_ag_tenant__5f8caa_idx_loyallia_ag_tenant__552533_idx'),
-        ('tenants', '0011_alter_location_address_alter_location_city_and_more'),
+        (
+            "agent_api",
+            "0003_rename_loyallia_ag_tenant__5f8caa_idx_loyallia_ag_tenant__552533_idx",
+        ),
+        ("tenants", "0011_alter_location_address_alter_location_city_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='agentapicalllog',
-            name='api_key',
-            field=models.ForeignKey(blank=True, help_text='Unique key or identifier.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='call_logs', to='agent_api.agentapikey', verbose_name='Clave de API'),
+            model_name="agentapicalllog",
+            name="api_key",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Unique key or identifier.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="call_logs",
+                to="agent_api.agentapikey",
+                verbose_name="Clave de API",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapicalllog',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, help_text='Timestamp for created.', verbose_name='Fecha de llamada'),
+            model_name="agentapicalllog",
+            name="created_at",
+            field=models.DateTimeField(
+                auto_now_add=True,
+                help_text="Timestamp for created.",
+                verbose_name="Fecha de llamada",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapicalllog',
-            name='id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, help_text='Unique identifier for this record.', primary_key=True, serialize=False),
+            model_name="agentapicalllog",
+            name="id",
+            field=models.UUIDField(
+                default=uuid.uuid4,
+                editable=False,
+                help_text="Unique identifier for this record.",
+                primary_key=True,
+                serialize=False,
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapicalllog',
-            name='method',
-            field=models.CharField(help_text='HTTP method used.', max_length=10, verbose_name='Método HTTP'),
+            model_name="agentapicalllog",
+            name="method",
+            field=models.CharField(
+                help_text="HTTP method used.", max_length=10, verbose_name="Método HTTP"
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapicalllog',
-            name='status_code',
-            field=models.PositiveSmallIntegerField(blank=True, help_text='HTTP response status code.', null=True, verbose_name='Código de respuesta'),
+            model_name="agentapicalllog",
+            name="status_code",
+            field=models.PositiveSmallIntegerField(
+                blank=True,
+                help_text="HTTP response status code.",
+                null=True,
+                verbose_name="Código de respuesta",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapicalllog',
-            name='tenant',
-            field=models.ForeignKey(help_text='The business this record belongs to.', on_delete=django.db.models.deletion.CASCADE, related_name='agent_api_call_logs', to='tenants.tenant', verbose_name='Negocio'),
+            model_name="agentapicalllog",
+            name="tenant",
+            field=models.ForeignKey(
+                help_text="The business this record belongs to.",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="agent_api_call_logs",
+                to="tenants.tenant",
+                verbose_name="Negocio",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, help_text='Timestamp for created.'),
+            model_name="agentapikey",
+            name="created_at",
+            field=models.DateTimeField(
+                auto_now_add=True, help_text="Timestamp for created."
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='created_by_id',
-            field=models.UUIDField(help_text='ID of the user who created this record.', verbose_name='Creado por (user_id)'),
+            model_name="agentapikey",
+            name="created_by_id",
+            field=models.UUIDField(
+                help_text="ID of the user who created this record.",
+                verbose_name="Creado por (user_id)",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='expires_at',
-            field=models.DateTimeField(blank=True, help_text='Timestamp for expires.', null=True, verbose_name='Expira en'),
+            model_name="agentapikey",
+            name="expires_at",
+            field=models.DateTimeField(
+                blank=True,
+                help_text="Timestamp for expires.",
+                null=True,
+                verbose_name="Expira en",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, help_text='Unique identifier for this record.', primary_key=True, serialize=False),
+            model_name="agentapikey",
+            name="id",
+            field=models.UUIDField(
+                default=uuid.uuid4,
+                editable=False,
+                help_text="Unique identifier for this record.",
+                primary_key=True,
+                serialize=False,
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='is_active',
-            field=models.BooleanField(default=True, help_text='Whether this record is currently active.', verbose_name='Activo'),
+            model_name="agentapikey",
+            name="is_active",
+            field=models.BooleanField(
+                default=True,
+                help_text="Whether this record is currently active.",
+                verbose_name="Activo",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='key_hash',
-            field=models.CharField(help_text='Hashed credential for security.', max_length=64, unique=True, verbose_name='Hash SHA-256'),
+            model_name="agentapikey",
+            name="key_hash",
+            field=models.CharField(
+                help_text="Hashed credential for security.",
+                max_length=64,
+                unique=True,
+                verbose_name="Hash SHA-256",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='last_used_at',
-            field=models.DateTimeField(blank=True, help_text='Timestamp for last used.', null=True, verbose_name='Último uso'),
+            model_name="agentapikey",
+            name="last_used_at",
+            field=models.DateTimeField(
+                blank=True,
+                help_text="Timestamp for last used.",
+                null=True,
+                verbose_name="Último uso",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='tenant',
-            field=models.ForeignKey(help_text='The business this record belongs to.', on_delete=django.db.models.deletion.CASCADE, related_name='agent_api_keys', to='tenants.tenant', verbose_name='Negocio'),
+            model_name="agentapikey",
+            name="tenant",
+            field=models.ForeignKey(
+                help_text="The business this record belongs to.",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="agent_api_keys",
+                to="tenants.tenant",
+                verbose_name="Negocio",
+            ),
         ),
         migrations.AlterField(
-            model_name='agentapikey',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True, help_text='Timestamp for updated.'),
+            model_name="agentapikey",
+            name="updated_at",
+            field=models.DateTimeField(
+                auto_now=True, help_text="Timestamp for updated."
+            ),
         ),
     ]

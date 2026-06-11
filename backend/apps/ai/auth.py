@@ -31,7 +31,11 @@ def jwt_required(view_func: Callable) -> Callable:
         auth_header = request.META.get("HTTP_AUTHORIZATION", "")
         if not auth_header.startswith("Bearer "):
             return JsonResponse(
-                {"success": False, "error": "AUTH_REQUIRED", "message": get_message("AUTH_PERMISSION_DENIED")},
+                {
+                    "success": False,
+                    "error": "AUTH_REQUIRED",
+                    "message": get_message("AUTH_PERMISSION_DENIED"),
+                },
                 status=401,
             )
 
@@ -39,7 +43,11 @@ def jwt_required(view_func: Callable) -> Callable:
         payload = decode_access_token(token)
         if payload is None:
             return JsonResponse(
-                {"success": False, "error": "AUTH_INVALID_TOKEN", "message": get_message("AUTH_PERMISSION_DENIED")},
+                {
+                    "success": False,
+                    "error": "AUTH_INVALID_TOKEN",
+                    "message": get_message("AUTH_PERMISSION_DENIED"),
+                },
                 status=401,
             )
 
@@ -52,7 +60,11 @@ def jwt_required(view_func: Callable) -> Callable:
             )
         except User.DoesNotExist:
             return JsonResponse(
-                {"success": False, "error": "AUTH_USER_NOT_FOUND", "message": get_message("AUTH_PERMISSION_DENIED")},
+                {
+                    "success": False,
+                    "error": "AUTH_USER_NOT_FOUND",
+                    "message": get_message("AUTH_PERMISSION_DENIED"),
+                },
                 status=401,
             )
 

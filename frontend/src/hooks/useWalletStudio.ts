@@ -24,6 +24,7 @@ import type {
 import type { WalletTemplate } from '@/components/wallet/types/templates';
 import { getDefaultCardTypeConfig } from '@/components/wallet/types/card-type-config';
 import { DEFAULT_COLORS, DEFAULT_BARCODE } from '@/components/wallet/constants';
+import { getDefaultBackContent, isBackContentEmptyOrDefault } from '@/components/wallet/utils/back-content-defaults';
 
 export interface UseWalletStudioReturn {
   state: WalletPassStudioState;
@@ -61,7 +62,7 @@ export function createDefaultState(): WalletPassStudioState {
     fields: [],
     cardTypeConfig: getDefaultCardTypeConfig('stamp'),
     barcode: { ...DEFAULT_BARCODE },
-    backContent: { fields: [], links: [], detailImages: [] },
+    backContent: getDefaultBackContent('stamp'),
     apple: {
       passStyle: 'storeCard',
       description: '',
@@ -199,9 +200,13 @@ export function useWalletStudio(
   const setCardType = useCallback((cardType: CardType) => {
     setState((prev: WalletPassStudioState) => {
       const config = getDefaultCardTypeConfig(cardType);
+      const shouldPopulateBack = isBackContentEmptyOrDefault(prev.backContent);
+      const nextBackContent = shouldPopulateBack ? getDefaultBackContent(cardType) : prev.backContent;
+
       return mergeState(prev, {
         cardType,
         cardTypeConfig: config,
+        backContent: nextBackContent,
         apple: {
           ...prev.apple,
           passStyle: config.cardType === 'coupon' ? 'coupon' : config.cardType === 'multipass' ? 'eventTicket' : 'storeCard',

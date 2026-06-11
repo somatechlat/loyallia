@@ -13,9 +13,9 @@ import decimal
 import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from django.conf import settings
 
-COST_PER_1K_TOKENS = decimal.Decimal("0.003")
+logger = logging.getLogger(__name__)
 
 
 class CostTrackerError(Exception):
@@ -65,7 +65,10 @@ class CostTracker:
         response_data = response_data or {}
 
         total_tokens = tokens_used.get("total_tokens", 0)
-        cost_usd = decimal.Decimal(total_tokens) * COST_PER_1K_TOKENS / decimal.Decimal("1000")
+        cost_per_1k = getattr(
+            settings, "AI_COST_PER_1K_TOKENS", decimal.Decimal("0.003")
+        )
+        cost_usd = decimal.Decimal(total_tokens) * cost_per_1k / decimal.Decimal("1000")
         cost_usd = cost_usd.quantize(decimal.Decimal("0.000001"))
 
         try:
@@ -122,10 +125,37 @@ class CostTracker:
             )
             count = qs.aggregate(count=django_models.Count("id"))["count"]
         except Exception as exc:
-            logger.warning("Failed to compute daily requests for tenant %s: %s", tenant_id, exc)
+            logger.warning(
+                "Failed to compute daily requests for tenant %s: %s", tenant_id, exc
+            )
             return 0
 
         return count or 0
+
+    def get_today_spend(self, tenant_id: int) -> decimal.Decimal:
+        """Return the total AI cost for a tenant today.
+
+        Used for daily budget blocking and spend dashboards.
+        """
+        from django.db import models as django_models
+        from django.utils import timezone
+
+        now = timezone.now()
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        try:
+            qs = self._model.objects.filter(
+                tenant_id=tenant_id,
+                created_at__gte=start_of_day,
+            )
+            total = qs.aggregate(total=django_models.Sum("cost_usd"))["total"]
+        except Exception as exc:
+            logger.warning(
+                "Failed to compute today spend for tenant %s: %s", tenant_id, exc
+            )
+            return decimal.Decimal("0")
+
+        return total or decimal.Decimal("0")
 
     def get_monthly_cost(self, tenant_id: int) -> decimal.Decimal:
         """Return the total AI cost for a tenant in the current month.
@@ -145,7 +175,16 @@ class CostTracker:
             )
             total = qs.aggregate(total=django_models.Sum("cost_usd"))["total"]
         except Exception as exc:
-            logger.warning("Failed to compute monthly cost for tenant %s: %s", tenant_id, exc)
+            logger.warning(
+                "Failed to compute monthly cost for tenant %s: %s", tenant_id, exc
+            )
             return decimal.Decimal("0")
 
         return total or decimal.Decimal("0")
+
+
+def check_budget(tenant, daily_limit: float = 50.0) -> bool:
+    """Return False if daily spend >= $50. Called by views before serving."""
+    tracker = CostTracker()
+    today_spend = tracker.get_today_spend(tenant.id)
+    return today_spend < decimal.Decimal(str(daily_limit))

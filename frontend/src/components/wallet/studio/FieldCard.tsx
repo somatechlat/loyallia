@@ -1,68 +1,32 @@
 /**
- * Field card with inline editing.
- *
- * - header / primary / back fields are always expanded inline.
- * - secondary / auxiliary fields start as a compact row; clicking expands
- *   to full inline editing.
+ * Expanded inline field card — SRS-003 §8.3.
+ * All fields are always expanded; no compact mode, no modal.
  */
 
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { UnifiedField, CardType } from '@/components/wallet/types/unified-state';
+import type { FieldDataType } from '@/components/wallet/types/unified-field';
 import { DynamicTemplatePicker } from './DynamicTemplatePicker';
-import { NotificationConfigPanel } from './NotificationConfigPanel';
+import { NotificationConfigInline } from './NotificationConfigInline';
 
 export interface FieldCardProps {
   field: UnifiedField;
   cardType: CardType;
-  isCompact?: boolean;
-  showAdvanced?: boolean;
-  onUpdate: (updated: UnifiedField) => void;
-  onDelete: () => void;
+  onUpdateField: (id: string, partial: Partial<UnifiedField>) => void;
+  onDeleteField: (id: string) => void;
+  onToggleVisibility: (id: string, visible: boolean) => void;
 }
 
 const ALIGNMENT_OPTIONS = [
-  { value: 'PKTextAlignmentLeft' as const, label: 'Izquierda' },
-  { value: 'PKTextAlignmentCenter' as const, label: 'Centro' },
-  { value: 'PKTextAlignmentRight' as const, label: 'Derecha' },
+  { value: 'PKTextAlignmentLeft' as const, labelKey: 'wallet.studio.field.alignLeft' },
+  { value: 'PKTextAlignmentCenter' as const, labelKey: 'wallet.studio.field.alignCenter' },
+  { value: 'PKTextAlignmentRight' as const, labelKey: 'wallet.studio.field.alignRight' },
 ] as const;
 
-/* ── Inline template picker (dropdown only) ───────────────────────── */
-
-function InlineTemplatePicker({
-  value,
-  onChange,
-  cardType,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  cardType: CardType;
-}) {
-  return (
-    <DynamicTemplatePicker
-      value={value}
-      onChange={onChange}
-      cardType={cardType}
-      hideInput
-      buttonLabel={
-        <span className="inline-flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-            <path d="M12 11h4" />
-            <path d="M12 16h4" />
-            <path d="M8 11h.01" />
-            <path d="M8 16h.01" />
-          </svg>
-          Plantillas ▼
-        </span>
-      }
-    />
-  );
-}
-
-/* ── Shared icons ─────────────────────────────────────────────────── */
+/* ── Icons ────────────────────────────────────────────────────────── */
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -112,10 +76,11 @@ function DeleteIcon({ className }: { className?: string }) {
   );
 }
 
-function ChevronUpIcon({ className }: { className?: string }) {
+function BellIcon({ className, active }: { className?: string; active?: boolean }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m18 15-6-6-6 6" />
+    <svg className={className} viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
     </svg>
   );
 }
@@ -125,389 +90,209 @@ function ChevronUpIcon({ className }: { className?: string }) {
 export function FieldCard({
   field,
   cardType,
-  isCompact = false,
-  showAdvanced = true,
-  onUpdate,
-  onDelete,
+  onUpdateField,
+  onDeleteField,
+  onToggleVisibility,
 }: FieldCardProps) {
-  const [isExpanded, setIsExpanded] = useState(!isCompact);
+  const { t } = useI18n();
+  const [expandedNotifications, setExpandedNotifications] = useState<Record<string, boolean>>({});
 
   const isVisible = field.showOnApple || field.showOnGoogle;
   const isPrimary = field.fieldGroup === 'primary';
-
-  const handleToggleVisibility = useCallback(() => {
-    const next = !isVisible;
-    onUpdate({ ...field, showOnApple: next, showOnGoogle: next });
-  }, [field, isVisible, onUpdate]);
-
-  const handleToggleApple = useCallback(() => {
-    onUpdate({ ...field, showOnApple: !field.showOnApple });
-  }, [field, onUpdate]);
-
-  const handleToggleGoogle = useCallback(() => {
-    onUpdate({ ...field, showOnGoogle: !field.showOnGoogle });
-  }, [field, onUpdate]);
-
-  const handleToggleDynamic = useCallback(() => {
-    onUpdate({ ...field, isDynamic: !field.isDynamic });
-  }, [field, onUpdate]);
-
-  const handleLabelChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      onUpdate({ ...field, label: e.target.value });
-    },
-    [field, onUpdate]
+  const notificationsActive = Boolean(
+    (typeof field.notifications?.appleChangeMessage === 'object' && field.notifications.appleChangeMessage?.enabled) ||
+    (typeof field.notifications?.appleChangeMessage === 'string' && field.notifications.appleChangeMessage) ||
+    (typeof field.notifications?.googleMessage === 'object' && field.notifications.googleMessage?.enabled) ||
+    (typeof field.notifications?.googleMessage === 'string' && field.notifications.googleMessage)
   );
+
+  const handleToggleNotifications = useCallback((fieldId: string) => {
+    setExpandedNotifications((prev) => ({ ...prev, [fieldId]: !prev[fieldId] }));
+  }, []);
 
   const handleValueChange = useCallback(
     (value: string) => {
-      onUpdate({ ...field, value });
+      onUpdateField(field.id, { value });
     },
-    [field, onUpdate]
+    [field.id, onUpdateField]
   );
-
-  const handleAlignmentChange = useCallback(
-    (alignment: (typeof ALIGNMENT_OPTIONS)[number]['value']) => {
-      onUpdate({ ...field, appleOptions: { ...field.appleOptions, textAlignment: alignment } });
-    },
-    [field, onUpdate]
-  );
-
-  const handleNotificationChange = useCallback(
-    (notifications: UnifiedField['notifications']) => {
-      onUpdate({ ...field, notifications });
-    },
-    [field, onUpdate]
-  );
-
-  /* ── Compact row (secondary / auxiliary only) ───────────────────── */
-
-  if (isCompact && !isExpanded) {
-    return (
-      <div
-        className="group flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors cursor-pointer"
-        onClick={() => setIsExpanded(true)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setIsExpanded(true);
-          }
-        }}
-        aria-label={`Field ${field.label}: ${field.value}`}
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', field.id);
-          e.dataTransfer.effectAllowed = 'move';
-        }}
-      >
-        {/* Drag handle */}
-        <div
-          className="flex-shrink-0 text-neutral-300 dark:text-neutral-600 cursor-grab active:cursor-grabbing"
-          aria-label="Drag to reorder"
-          role="button"
-          tabIndex={-1}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <DragHandleIcon className="w-4 h-4" />
-        </div>
-
-        {/* Visibility checkbox */}
-        <input
-          type="checkbox"
-          checked={isVisible}
-          onChange={(e) => {
-            e.stopPropagation();
-            handleToggleVisibility();
-          }}
-          className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-          aria-label="Show field"
-          onClick={(e) => e.stopPropagation()}
-        />
-
-        {/* Label : Value */}
-        <div className="flex-1 min-w-0 flex items-center gap-2 truncate">
-          <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">
-            {field.label || 'Sin etiqueta'}
-          </span>
-          <span className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
-            {field.value || <span className="italic opacity-60">Sin valor</span>}
-          </span>
-        </div>
-
-        {/* Apple toggle */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToggleApple();
-          }}
-          className={`flex-shrink-0 p-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            field.showOnApple
-              ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-700'
-              : 'text-neutral-300 dark:text-neutral-600'
-          }`}
-          aria-label={field.showOnApple ? 'Visible on Apple Wallet' : 'Hidden on Apple Wallet'}
-          aria-pressed={field.showOnApple}
-          title={field.showOnApple ? 'Visible on Apple Wallet' : 'Hidden on Apple Wallet'}
-        >
-          <AppleIcon className="w-4 h-4" />
-        </button>
-
-        {/* Google toggle */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToggleGoogle();
-          }}
-          className={`flex-shrink-0 p-1 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            field.showOnGoogle
-              ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-700'
-              : 'text-neutral-300 dark:text-neutral-600'
-          }`}
-          aria-label={field.showOnGoogle ? 'Visible on Google Wallet' : 'Hidden on Google Wallet'}
-          aria-pressed={field.showOnGoogle}
-          title={field.showOnGoogle ? 'Visible on Google Wallet' : 'Hidden on Google Wallet'}
-        >
-          <GoogleIcon className="w-4 h-4" />
-        </button>
-
-        {/* Delete */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="flex-shrink-0 p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 opacity-0 group-hover:opacity-100"
-          aria-label="Delete field"
-          title="Delete field"
-        >
-          <DeleteIcon className="w-4 h-4" />
-        </button>
-      </div>
-    );
-  }
-
-  /* ── Expanded inline editor ─────────────────────────────────────── */
 
   return (
     <div
-      className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-3 space-y-3"
+      className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2 space-y-2"
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', field.id);
         e.dataTransfer.effectAllowed = 'move';
       }}
     >
-      {/* Top row: drag handle + visibility + label + actions */}
-      <div className="flex items-center gap-2">
+      {/* Row 1: Drag handle + visibility + label + delete */}
+      <div className="flex items-center gap-1.5">
         <div
           className="flex-shrink-0 text-neutral-300 dark:text-neutral-600 cursor-grab active:cursor-grabbing"
-          aria-label="Drag to reorder"
+          aria-label={t('wallet.studio.field.drag')}
           role="button"
           tabIndex={-1}
         >
-          <DragHandleIcon className="w-4 h-4" />
+          <DragHandleIcon className="w-3.5 h-3.5" />
         </div>
 
         <input
           type="checkbox"
           checked={isVisible}
-          onChange={handleToggleVisibility}
-          className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-          aria-label="Show field"
+          onChange={(e) => onToggleVisibility(field.id, e.target.checked)}
+          className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+          aria-label={t('wallet.studio.field.visible')}
         />
 
-        <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">
-          {field.label || 'Campo sin etiqueta'}
-        </span>
-
-        <div className="ml-auto flex items-center gap-1">
-          {isCompact && (
-            <button
-              type="button"
-              onClick={() => setIsExpanded(false)}
-              className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              aria-label="Collapse field"
-              title="Collapse field"
-            >
-              <ChevronUpIcon className="w-4 h-4" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onDelete}
-            className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
-            aria-label="Delete field"
-            title="Delete field"
-          >
-            <DeleteIcon className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Label */}
-      <div className="space-y-1">
-        <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-          Etiqueta:
-        </label>
         <input
           type="text"
           value={field.label}
-          onChange={handleLabelChange}
-          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Etiqueta del campo"
+          onChange={(e) => onUpdateField(field.id, { label: e.target.value })}
+          className="flex-1 min-w-0 text-sm font-medium bg-transparent border-b border-neutral-200 dark:border-neutral-700 focus:border-blue-500 outline-none px-1 text-neutral-900 dark:text-neutral-100"
+          placeholder={t('wallet.studio.field.placeholder.label')}
         />
+
+        <button
+          type="button"
+          onClick={() => onDeleteField(field.id)}
+          className="flex-shrink-0 p-0.5 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all focus:outline-none focus:ring-1 focus:ring-red-500"
+          aria-label={t('common.delete')}
+          title={t('common.delete')}
+          data-testid="field-delete-btn"
+        >
+          <DeleteIcon className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      {/* Value */}
-      <div className="space-y-1">
-        <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-          Valor:
-        </label>
+      {/* Row 2: Value + template picker */}
+      <div className="flex items-center gap-2">
         {field.isDynamic ? (
           <DynamicTemplatePicker
             value={field.value}
             onChange={handleValueChange}
             cardType={cardType}
+            hideInput={false}
           />
         ) : (
           <input
             type="text"
             value={field.value}
-            onChange={(e) => handleValueChange(e.target.value)}
-            className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Valor del campo"
+            onChange={(e) => onUpdateField(field.id, { value: e.target.value })}
+            className="flex-1 min-w-0 text-sm bg-transparent border-b border-neutral-200 dark:border-neutral-700 focus:border-blue-500 outline-none px-1 text-neutral-900 dark:text-neutral-100"
+            placeholder={t('wallet.studio.field.placeholder.value')}
           />
         )}
+        <DynamicTemplatePicker
+          value={field.value}
+          onChange={handleValueChange}
+          cardType={cardType}
+          hideInput
+          buttonLabel={
+            <span className="inline-flex items-center gap-1 text-xs">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <path d="M12 11h4" />
+                <path d="M12 16h4" />
+                <path d="M8 11h.01" />
+                <path d="M8 16h.01" />
+              </svg>
+              {t('wallet.studio.field.templates')}
+            </span>
+          }
+        />
       </div>
 
-      {/* Template picker + Dynamic + Delete row */}
-      {showAdvanced && (
-        <div className="flex flex-wrap items-center gap-3">
-          <InlineTemplatePicker value={field.value} onChange={handleValueChange} cardType={cardType} />
+      {/* Row 3: Data type + Dynamic + Platform toggles + Notifications */}
+      <div className="flex items-center gap-3 text-xs flex-wrap">
+        <select
+          value={field.dataType}
+          onChange={(e) => onUpdateField(field.id, { dataType: e.target.value as FieldDataType })}
+          className="text-xs bg-neutral-100 dark:bg-neutral-800 rounded px-2 py-1 border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-neutral-100"
+        >
+          <option value="text">{t('wallet.studio.field.type.text')}</option>
+          <option value="date">{t('wallet.studio.field.type.date')}</option>
+          <option value="number">{t('wallet.studio.field.type.number')}</option>
+          <option value="currency">{t('wallet.studio.field.type.currency')}</option>
+          <option value="url">{t('wallet.studio.field.type.url')}</option>
+          <option value="phone">{t('wallet.studio.field.type.phone')}</option>
+          <option value="email">{t('wallet.studio.field.type.email')}</option>
+        </select>
 
-          <label className="inline-flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={field.isDynamic}
-              onChange={handleToggleDynamic}
-              className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-xs text-neutral-700 dark:text-neutral-300">Dinámico</span>
-          </label>
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={field.isDynamic}
+            onChange={(e) => onUpdateField(field.id, { isDynamic: e.target.checked })}
+            className="w-3 h-3 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-neutral-700 dark:text-neutral-300">{t('wallet.studio.field.dynamic')}</span>
+        </label>
+
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={field.showOnApple}
+            onChange={(e) => onUpdateField(field.id, { showOnApple: e.target.checked })}
+            className="w-3 h-3 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+          />
+          <AppleIcon className="w-3.5 h-3.5" />
+        </label>
+
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={field.showOnGoogle}
+            onChange={(e) => onUpdateField(field.id, { showOnGoogle: e.target.checked })}
+            className="w-3 h-3 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+          />
+          <GoogleIcon className="w-3.5 h-3.5" />
+        </label>
+
+        <button
+          type="button"
+          onClick={() => handleToggleNotifications(field.id)}
+          className={`p-0.5 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+            notificationsActive ? 'text-blue-500' : 'text-neutral-400 hover:text-neutral-600'
+          }`}
+          aria-label={t('wallet.studio.field.notification')}
+          title={t('wallet.studio.field.notification')}
+        >
+          <BellIcon className="w-3.5 h-3.5" active={notificationsActive} />
+        </button>
+      </div>
+
+      {/* Row 4: Primary field alignment */}
+      {isPrimary && (
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          <span className="text-neutral-600 dark:text-neutral-400">{t('wallet.studio.field.alignment')}</span>
+          {ALIGNMENT_OPTIONS.map((opt) => (
+            <label key={opt.value} className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="radio"
+                name={`align-${field.id}`}
+                checked={field.appleOptions?.textAlignment === opt.value}
+                onChange={() =>
+                  onUpdateField(field.id, {
+                    appleOptions: { ...field.appleOptions, textAlignment: opt.value },
+                  })
+                }
+                className="w-3 h-3 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-neutral-700 dark:text-neutral-300">{t(opt.labelKey)}</span>
+            </label>
+          ))}
         </div>
       )}
 
-      {/* Platform toggles */}
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleToggleApple}
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            field.showOnApple
-              ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-700'
-              : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-400'
-          }`}
-          aria-label={field.showOnApple ? 'Visible on Apple Wallet' : 'Hidden on Apple Wallet'}
-          aria-pressed={field.showOnApple}
-          title={field.showOnApple ? 'Visible on Apple Wallet' : 'Hidden on Apple Wallet'}
-        >
-          <AppleIcon className="w-3.5 h-3.5" />
-          {field.showOnApple ? '✓' : ''}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleToggleGoogle}
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            field.showOnGoogle
-              ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-700'
-              : 'text-neutral-300 dark:text-neutral-600 hover:text-neutral-400'
-          }`}
-          aria-label={field.showOnGoogle ? 'Visible on Google Wallet' : 'Hidden on Google Wallet'}
-          aria-pressed={field.showOnGoogle}
-          title={field.showOnGoogle ? 'Visible on Google Wallet' : 'Hidden on Google Wallet'}
-        >
-          <GoogleIcon className="w-3.5 h-3.5" />
-          {field.showOnGoogle ? '✓' : ''}
-        </button>
-      </div>
-
-      {/* Primary-only extras */}
-      {isPrimary && (
-        <div className="space-y-3 pt-1 border-t border-neutral-200 dark:border-neutral-700">
-          {/* Alignment */}
-          <div className="space-y-2">
-            <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-              Alineación:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {ALIGNMENT_OPTIONS.map((opt) => {
-                const selected = field.appleOptions.textAlignment === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => handleAlignmentChange(opt.value)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      selected
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                        : 'border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800'
-                    }`}
-                  >
-                    <span className={selected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-400'}>
-                      {selected ? '●' : '○'}
-                    </span>
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Notification toggle */}
-          {showAdvanced && (
-            <div className="space-y-2">
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={Boolean(
-                    field.notifications.appleChangeMessage || field.notifications.googleMessage
-                  )}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      onUpdate({
-                        ...field,
-                        notifications: {
-                          appleChangeMessage: field.notifications.appleChangeMessage ?? '¡Nuevo sello!',
-                          googleMessage: field.notifications.googleMessage ?? 'Tu tarjeta ha sido actualizada',
-                        },
-                      });
-                    } else {
-                      onUpdate({ ...field, notifications: {} });
-                    }
-                  }}
-                  className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  Enviar notificación:
-                </span>
-              </label>
-
-              {Boolean(
-                field.notifications.appleChangeMessage || field.notifications.googleMessage
-              ) && (
-                <NotificationConfigPanel
-                  notifications={field.notifications}
-                  onChange={handleNotificationChange}
-                />
-              )}
-            </div>
-          )}
+      {/* Expanded: Inline notification config */}
+      {expandedNotifications[field.id] && (
+        <div className="border-t border-neutral-200 dark:border-neutral-700 pt-2 mt-1">
+          <NotificationConfigInline
+            notifications={field.notifications}
+            onUpdate={(updates) => onUpdateField(field.id, { notifications: updates })}
+          />
         </div>
       )}
     </div>

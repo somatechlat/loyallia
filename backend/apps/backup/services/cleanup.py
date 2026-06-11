@@ -6,6 +6,7 @@ import shutil
 import time
 from datetime import timedelta
 
+from django.conf import settings
 from django.utils import timezone
 
 from apps.backup.services.config import get_minio_config
@@ -51,7 +52,7 @@ def cleanup_old_backups() -> dict:
         )
         s3_bucket = PlatformSetting.get("backup_s3_bucket", "loyallia-backups")
 
-        for job in expired_jobs.iterator(chunk_size=50):
+        for job in expired_jobs.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL):
             if job.s3_key:
                 try:
                     s3.delete_object(Bucket=s3_bucket, Key=job.s3_key)

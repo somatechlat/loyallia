@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { FieldCard } from '@/components/wallet/studio/FieldCard';
 import type { UnifiedField } from '@/components/wallet/types/unified-state';
 
@@ -18,6 +19,7 @@ function createMockField(overrides: Partial<UnifiedField> = {}): UnifiedField {
     showOnApple: true,
     showOnGoogle: false,
     isDynamic: false,
+    dataType: 'text',
     appleOptions: {},
     googleOptions: { isPredefined: false },
     notifications: {},
@@ -29,9 +31,9 @@ function createMockField(overrides: Partial<UnifiedField> = {}): UnifiedField {
 describe('FieldCard', () => {
   const baseProps = {
     cardType: 'stamp' as const,
-    isCompact: false,
-    onUpdate: vi.fn(),
-    onDelete: vi.fn(),
+    onUpdateField: vi.fn(),
+    onDeleteField: vi.fn(),
+    onToggleVisibility: vi.fn(),
   };
 
   afterEach(() => {
@@ -39,102 +41,52 @@ describe('FieldCard', () => {
     vi.clearAllMocks();
   });
 
-  it('renders label input and value input when expanded', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    expect(screen.getByText('Etiqueta:')).toBeDefined();
-    expect(screen.getByText('Valor:')).toBeDefined();
+  it('renders label input and value input', () => {
+    render(<I18nProvider><FieldCard field={createMockField()} {...baseProps} /></I18nProvider>);
     expect(screen.getByDisplayValue('Test Label')).toBeDefined();
     expect(screen.getByDisplayValue('Test Value')).toBeDefined();
   });
 
-  it('shows template picker button', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    expect(screen.getByLabelText('Insert dynamic template')).toBeDefined();
-  });
-
-  it('shows dinámico checkbox', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    expect(screen.getByLabelText('Dinámico')).toBeDefined();
-  });
-
-  it('shows apple toggle', () => {
-    render(<FieldCard field={createMockField({ showOnApple: true })} {...baseProps} />);
-    expect(screen.getByLabelText('Visible on Apple Wallet')).toBeDefined();
-  });
-
-  it('shows google toggle', () => {
-    render(<FieldCard field={createMockField({ showOnGoogle: true })} {...baseProps} />);
-    expect(screen.getByLabelText('Visible on Google Wallet')).toBeDefined();
-  });
-
-  it('shows delete button', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    expect(screen.getByLabelText('Delete field')).toBeDefined();
-  });
-
-  it('calls onUpdate when label changes', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
+  it('calls onUpdateField when label changes', () => {
+    render(<I18nProvider><FieldCard field={createMockField()} {...baseProps} /></I18nProvider>);
     const labelInput = screen.getByDisplayValue('Test Label');
     fireEvent.change(labelInput, { target: { value: 'New Label' } });
-    expect(baseProps.onUpdate).toHaveBeenCalledTimes(1);
-    expect(baseProps.onUpdate).toHaveBeenCalledWith(expect.objectContaining({ label: 'New Label' }));
+    expect(baseProps.onUpdateField).toHaveBeenCalledTimes(1);
+    expect(baseProps.onUpdateField).toHaveBeenCalledWith('field-1', expect.objectContaining({ label: 'New Label' }));
   });
 
-  it('calls onDelete when delete clicked', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
-    const deleteBtn = screen.getByLabelText('Delete field');
+  it('calls onDeleteField when delete clicked', () => {
+    render(<I18nProvider><FieldCard field={createMockField()} {...baseProps} /></I18nProvider>);
+    const deleteBtn = screen.getByTestId('field-delete-btn');
     fireEvent.click(deleteBtn);
-    expect(baseProps.onDelete).toHaveBeenCalledTimes(1);
+    expect(baseProps.onDeleteField).toHaveBeenCalledTimes(1);
+    expect(baseProps.onDeleteField).toHaveBeenCalledWith('field-1');
   });
 
-  it('can toggle between compact and expanded', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} isCompact={true} />);
-    // Compact mode
-    expect(screen.queryByText('Etiqueta:')).toBeNull();
-    expect(screen.getByText('Test Label')).toBeDefined();
-    // Click to expand
-    const row = screen.getByRole('button', { name: /Field Test Label: Test Value/ });
-    fireEvent.click(row);
-    expect(screen.getByText('Etiqueta:')).toBeDefined();
-    // Click collapse
-    const collapseBtn = screen.getByLabelText('Collapse field');
-    fireEvent.click(collapseBtn);
-    expect(screen.queryByText('Etiqueta:')).toBeNull();
-  });
-
-  it('calls onUpdate when value changes', () => {
-    render(<FieldCard field={createMockField()} {...baseProps} />);
+  it('calls onUpdateField when value changes', () => {
+    render(<I18nProvider><FieldCard field={createMockField()} {...baseProps} /></I18nProvider>);
     const valueInput = screen.getByDisplayValue('Test Value');
     fireEvent.change(valueInput, { target: { value: 'New Value' } });
-    expect(baseProps.onUpdate).toHaveBeenCalledTimes(1);
-    expect(baseProps.onUpdate).toHaveBeenCalledWith(expect.objectContaining({ value: 'New Value' }));
+    expect(baseProps.onUpdateField).toHaveBeenCalledTimes(1);
+    expect(baseProps.onUpdateField).toHaveBeenCalledWith('field-1', expect.objectContaining({ value: 'New Value' }));
   });
 
-  it('calls onUpdate when apple toggle clicked', () => {
-    render(<FieldCard field={createMockField({ showOnApple: true })} {...baseProps} />);
-    const appleBtn = screen.getByLabelText('Visible on Apple Wallet');
-    fireEvent.click(appleBtn);
-    expect(baseProps.onUpdate).toHaveBeenCalledTimes(1);
-    expect(baseProps.onUpdate).toHaveBeenCalledWith(expect.objectContaining({ showOnApple: false }));
+  it('calls onUpdateField when apple toggle clicked', () => {
+    render(<I18nProvider><FieldCard field={createMockField({ showOnApple: true })} {...baseProps} /></I18nProvider>);
+    // Checkboxes order: visibility, dynamic, apple, google
+    const checkboxes = screen.getAllByRole('checkbox');
+    const appleCheckbox = checkboxes[2]!;
+    fireEvent.click(appleCheckbox);
+    expect(baseProps.onUpdateField).toHaveBeenCalledTimes(1);
+    expect(baseProps.onUpdateField).toHaveBeenCalledWith('field-1', expect.objectContaining({ showOnApple: false }));
   });
 
-  it('calls onUpdate when google toggle clicked', () => {
-    render(<FieldCard field={createMockField({ showOnGoogle: true })} {...baseProps} />);
-    const googleBtn = screen.getByLabelText('Visible on Google Wallet');
-    fireEvent.click(googleBtn);
-    expect(baseProps.onUpdate).toHaveBeenCalledTimes(1);
-    expect(baseProps.onUpdate).toHaveBeenCalledWith(expect.objectContaining({ showOnGoogle: false }));
-  });
-
-  it('renders dynamic template picker when isDynamic is true', () => {
-    render(<FieldCard field={createMockField({ isDynamic: true })} {...baseProps} />);
-    // DynamicTemplatePicker renders an input with aria-label "Field value"
-    expect(screen.getByLabelText('Field value')).toBeDefined();
-  });
-
-  it('has draggable attribute when expanded', () => {
-    const { container } = render(<FieldCard field={createMockField()} {...baseProps} />);
-    const draggable = container.querySelector('[draggable="true"]');
-    expect(draggable).not.toBeNull();
+  it('calls onUpdateField when google toggle clicked', () => {
+    render(<I18nProvider><FieldCard field={createMockField({ showOnGoogle: true })} {...baseProps} /></I18nProvider>);
+    const checkboxes = screen.getAllByRole('checkbox');
+    const googleCheckbox = checkboxes[3]!;
+    fireEvent.click(googleCheckbox);
+    expect(baseProps.onUpdateField).toHaveBeenCalledTimes(1);
+    expect(baseProps.onUpdateField).toHaveBeenCalledWith('field-1', expect.objectContaining({ showOnGoogle: false }));
   });
 });

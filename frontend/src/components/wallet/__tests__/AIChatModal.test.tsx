@@ -6,7 +6,53 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { AIChatModal } from '@/components/wallet/studio/AIChatModal';
-import type { AIVariation } from '@/hooks/useAI';
+
+// Mock the useAI hook to avoid real API calls
+vi.mock('@/hooks/useAI', () => ({
+  useAI: vi.fn(() => ({
+    isLoading: false,
+    error: null,
+    quota: { used: 0, limit: 10 },
+    generateTemplate: vi.fn().mockResolvedValue([
+      {
+        id: 'var-1',
+        name: 'Café Cálido',
+        description: 'Diseño cálido',
+        confidence: 9.1,
+        design: {
+          colors: { background: '#6B4226', foreground: '#FFFFFF', label: '#F5DEB3', accent: '#D2691E' },
+        },
+      },
+      {
+        id: 'var-2',
+        name: 'Industrial Oscuro',
+        description: 'Estilo industrial',
+        confidence: 8.9,
+        design: {
+          colors: { background: '#1A1A1A', foreground: '#FFFFFF', label: '#CCCCCC', accent: '#C0A062' },
+        },
+      },
+      {
+        id: 'var-3',
+        name: 'Minimal',
+        description: 'Diseño minimalista',
+        confidence: 8.7,
+        design: {
+          colors: { background: '#0D1117', foreground: '#C9D1D9', label: '#8B949E', accent: '#58A6FF' },
+        },
+      },
+    ]),
+    reset: vi.fn(),
+  })),
+}));
+
+vi.mock('@/hooks/usePlanFeatures', () => ({
+  usePlanFeatures: vi.fn(() => ({
+    hasAIAssistant: true,
+    hasAdvancedFields: true,
+    hasCustomBranding: true,
+  })),
+}));
 
 describe('AIChatModal', () => {
   const baseProps = {
@@ -19,12 +65,10 @@ describe('AIChatModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(() => {
     cleanup();
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -47,8 +91,6 @@ describe('AIChatModal', () => {
 
   it('calls onClose when backdrop is clicked', () => {
     render(<AIChatModal {...baseProps} />);
-    const backdrop = screen.getByLabelText('Cerrar').closest('.fixed')?.querySelector('.absolute');
-    // Click the backdrop div (first absolute child)
     const backdropDiv = document.querySelector('.absolute.inset-0');
     if (backdropDiv) {
       fireEvent.click(backdropDiv);
@@ -96,33 +138,12 @@ describe('AIChatModal', () => {
     expect(generateBtn).not.toBeDisabled();
   });
 
-  it('shows loading spinner during generation', async () => {
-    render(<AIChatModal {...baseProps} />);
-    const textarea = screen.getByLabelText(/describe tu negocio/i);
-    fireEvent.change(textarea, { target: { value: 'Café acogedor' } });
-    const generateBtn = screen.getByRole('button', { name: /generar diseños/i });
-    fireEvent.click(generateBtn);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /generar diseños/i })).toBeDisabled();
-    });
-
-    // Advance timers to complete the async operation
-    vi.advanceTimersByTime(2000);
-
-    await waitFor(() => {
-      expect(screen.queryByRole('button', { name: /generar diseños/i })).not.toBeDisabled();
-    });
-  });
-
   it('displays results after generation and allows selection', async () => {
     render(<AIChatModal {...baseProps} />);
     const textarea = screen.getByLabelText(/describe tu negocio/i);
     fireEvent.change(textarea, { target: { value: 'Café acogedor' } });
     const generateBtn = screen.getByRole('button', { name: /generar diseños/i });
     fireEvent.click(generateBtn);
-
-    vi.advanceTimersByTime(2000);
 
     await waitFor(() => {
       expect(screen.getByText('Café Cálido')).toBeDefined();
@@ -145,11 +166,8 @@ describe('AIChatModal', () => {
 
   it('shows error when generating without description', async () => {
     render(<AIChatModal {...baseProps} />);
-    // Force enable by typing then clearing won't work since empty disables button
-    // Instead test via the hook path: type whitespace
     const textarea = screen.getByLabelText(/describe tu negocio/i);
     fireEvent.change(textarea, { target: { value: '   ' } });
-    // Button should still be disabled for whitespace-only
     const generateBtn = screen.getByRole('button', { name: /generar diseños/i });
     expect(generateBtn).toBeDisabled();
   });

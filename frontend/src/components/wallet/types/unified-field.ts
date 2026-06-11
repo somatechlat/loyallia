@@ -34,8 +34,9 @@ export type NumberStyle =
 
 export type LinkType = 'website' | 'email' | 'phone' | 'map' | 'social';
 
+export type FieldDataType = 'text' | 'date' | 'number' | 'currency' | 'url' | 'phone' | 'email';
+
 export interface AppleFieldOptions {
-  changeMessage?: string;
   textAlignment?: TextAlignment;
   dateStyle?: DateStyle;
   timeStyle?: TimeStyle;
@@ -50,9 +51,23 @@ export interface GoogleFieldOptions {
   textModulesId?: string;
 }
 
+export interface AppleChangeMessageConfig {
+  enabled: boolean;
+  message: string;
+}
+
+export interface GoogleMessageConfig {
+  enabled: boolean;
+  header: string;
+  body: string;
+  trigger: 'onChange' | 'scheduled' | 'beforeExpiry';
+  daysBeforeExpiry?: number;
+  durationDays?: number;
+}
+
 export interface FieldNotifications {
-  appleChangeMessage?: string;
-  googleMessage?: string;
+  appleChangeMessage?: AppleChangeMessageConfig;
+  googleMessage?: GoogleMessageConfig;
 }
 
 export interface FieldFormatting {
@@ -71,6 +86,7 @@ export interface UnifiedField {
   showOnGoogle: boolean;
   isDynamic: boolean;
   dynamicTemplate?: string;
+  dataType: FieldDataType;
   appleOptions: AppleFieldOptions;
   googleOptions: GoogleFieldOptions;
   notifications: FieldNotifications;

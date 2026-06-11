@@ -168,7 +168,7 @@ def logout(request: HttpRequest, payload: LogoutIn):
     the RefreshToken object into Python memory.
     """
     token_hash = hash_token(payload.refresh_token)
-    services.revoke_refresh_tokens(token_hash, request.user)
+    services.revoke_refresh_tokens(token_hash, request.user)  # type: ignore[reportArgumentType]
     try:
         from apps.audit.models import AuditAction
         from apps.audit.service import log_action
@@ -221,7 +221,7 @@ def verify_email(request: HttpRequest, payload: VerifyEmailIn):
     response=MessageOut,
     summary="Solicitar restablecimiento de contrasena",
 )
-@rate_limit(key_prefix="forgot_password", max_requests=5, window_seconds=3600)
+@rate_limit(key_prefix="forgot_password", max_requests=settings.FORGOT_PASSWORD_RATE_LIMIT_MAX, window_seconds=settings.FORGOT_PASSWORD_RATE_LIMIT_WINDOW)
 def forgot_password(request: HttpRequest, payload: ForgotPasswordIn):
     """Send a password reset email with a one-time token.
 
@@ -238,7 +238,9 @@ def forgot_password(request: HttpRequest, payload: ForgotPasswordIn):
 )
 def reset_password(request: HttpRequest, payload: ResetPasswordIn):
     """Validate the reset token and set a new password."""
-    result = services.reset_user_password(payload.uid, payload.token, payload.new_password)
+    result = services.reset_user_password(
+        payload.uid, payload.token, payload.new_password
+    )
 
     if "error" in result:
         raise HttpError(400, get_message("AUTH_RESET_INVALID"))

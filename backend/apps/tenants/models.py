@@ -7,7 +7,6 @@ Ecuadorian business fields for SRI compliance.
 from __future__ import annotations
 
 import logging
-import re
 from contextlib import suppress
 
 from django.conf import settings
@@ -17,101 +16,10 @@ from django.utils import timezone
 
 from common.models import TimestampedModel
 
+from .enums import EcuadorProvince, EntityType, IndustryType, Plan
+from .validators import validate_cedula, validate_ruc
+
 logger = logging.getLogger(__name__)
-
-# VALIDATORS Ecuadorian Identity Documents
-
-
-def validate_ruc(value: str) -> None:
-    """Validate Ecuadorian RUC (Registro Único de Contribuyentes).
-    Rules: 13 digits. First 2 = province (01-24, or 30 for foreign).
-    Last 3 digits must be '001' for natural persons.
-    """
-    if not re.match(r"^\d{13}$", value):
-        raise ValidationError("El RUC debe tener exactamente 13 dígitos numéricos.")
-    province = int(value[:2])
-    if province < 1 or (province > 24 and province not in (30,)):
-        raise ValidationError(
-            f"Los primeros 2 dígitos del RUC ({value[:2]}) no corresponden a una provincia válida."
-        )
-
-
-def validate_cedula(value: str) -> None:
-    """Validate Ecuadorian Cédula de Identidad.
-    Rules: 10 digits. Province (01-24). Module 10 check.
-    """
-    if not re.match(r"^\d{10}$", value):
-        raise ValidationError("La cédula debe tener exactamente 10 dígitos numéricos.")
-    province = int(value[:2])
-    if province < 1 or province > 24:
-        raise ValidationError(
-            f"Los primeros 2 dígitos ({value[:2]}) no corresponden a una provincia válida."
-        )
-    # Module-10 verification
-    coefficients = [2, 1, 2, 1, 2, 1, 2, 1, 2]
-    total = 0
-    for i in range(9):
-        product = int(value[i]) * coefficients[i]
-        total += product - 9 if product > 9 else product
-    check = (10 - (total % 10)) % 10
-    if check != int(value[9]):
-        raise ValidationError("El dígito verificador de la cédula no es válido.")
-
-
-# ENUMS
-
-
-class Plan(models.TextChoices):
-    TRIAL = "trial", "Trial Gratuito"
-    FULL = "full", "FULL"
-    SUSPENDED = "suspended", "Suspendido"
-
-
-class IndustryType(models.TextChoices):
-    FOOD_BEVERAGE = "food_beverage", "Alimentos y Bebidas"
-    RETAIL = "retail", "Comercio Minorista"
-    FASHION = "fashion", "Moda y Textiles"
-    HEALTH_BEAUTY = "health_beauty", "Salud y Belleza"
-    ENTERTAINMENT = "entertainment", "Entretenimiento"
-    SERVICES = "services", "Servicios Profesionales"
-    EDUCATION = "education", "Educación"
-    AUTOMOTIVE = "automotive", "Automotriz"
-    HOSPITALITY = "hospitality", "Hotelería y Turismo"
-    TECHNOLOGY = "technology", "Tecnología"
-    OTHER = "other", "Otro"
-
-
-class EcuadorProvince(models.TextChoices):
-    AZUAY = "azuay", "Azuay"
-    BOLIVAR = "bolivar", "Bolívar"
-    CANAR = "canar", "Cañar"
-    CARCHI = "carchi", "Carchi"
-    CHIMBORAZO = "chimborazo", "Chimborazo"
-    COTOPAXI = "cotopaxi", "Cotopaxi"
-    EL_ORO = "el_oro", "El Oro"
-    ESMERALDAS = "esmeraldas", "Esmeraldas"
-    GALAPAGOS = "galapagos", "Galápagos"
-    GUAYAS = "guayas", "Guayas"
-    IMBABURA = "imbabura", "Imbabura"
-    LOJA = "loja", "Loja"
-    LOS_RIOS = "los_rios", "Los Ríos"
-    MANABI = "manabi", "Manabí"
-    MORONA_SANTIAGO = "morona_santiago", "Morona Santiago"
-    NAPO = "napo", "Napo"
-    ORELLANA = "orellana", "Orellana"
-    PASTAZA = "pastaza", "Pastaza"
-    PICHINCHA = "pichincha", "Pichincha"
-    SANTA_ELENA = "santa_elena", "Santa Elena"
-    SANTO_DOMINGO = "santo_domingo", "Santo Domingo de los Tsáchilas"
-    SUCUMBIOS = "sucumbios", "Sucumbíos"
-    TUNGURAHUA = "tungurahua", "Tungurahua"
-    ZAMORA_CHINCHIPE = "zamora_chinchipe", "Zamora Chinchipe"
-
-
-class EntityType(models.TextChoices):
-    NATURAL = "natural", "Persona Natural"
-    JURIDICA = "juridica", "Persona Jurídica (Empresa)"
-
 
 # TENANT MODEL
 
@@ -548,7 +456,9 @@ class PlatformSetting(models.Model):
         default=False,
         help_text="If True, a container restart is needed for full effect",
     )
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True, help_text="Timestamp for created.")
+    created_at = models.DateTimeField(
+        auto_now_add=True, db_index=True, help_text="Timestamp for created."
+    )
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
@@ -620,7 +530,11 @@ class PlatformSetting(models.Model):
                 )
                 refreshed += 1
             except Exception as e:
-                logger.debug("PlatformSetting cache refresh failed for key %s: %s", setting.key, e)
+                logger.debug(
+                    "PlatformSetting cache refresh failed for key %s: %s",
+                    setting.key,
+                    e,
+                )
                 failed += 1
 
         return {"refreshed": refreshed, "failed": failed, "total": refreshed + failed}

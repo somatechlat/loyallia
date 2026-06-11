@@ -48,8 +48,10 @@ class CardCreateIn(BaseModel):
         if v is not None:
             import json
 
+            from django.conf import settings
+
             size = len(json.dumps(v))
-            if size > 10240:
+            if size > settings.CARD_METADATA_MAX_SIZE_BYTES:
                 raise ValueError(
                     f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
                 )
@@ -64,8 +66,17 @@ class CardCreateIn(BaseModel):
                         raise ValueError("Each form_field must be an object")
                     if not field.get("id"):
                         raise ValueError("Each form_field must have an 'id'")
-                    if field.get("type") not in ("text", "email", "tel", "date", "select", "number"):
-                        raise ValueError(f"Invalid form_field type: {field.get('type')}")
+                    if field.get("type") not in (
+                        "text",
+                        "email",
+                        "tel",
+                        "date",
+                        "select",
+                        "number",
+                    ):
+                        raise ValueError(
+                            f"Invalid form_field type: {field.get('type')}"
+                        )
                 # Ensure mandatory enrollment fields exist
                 # Accept either a single 'name' field or 'first_name' + 'last_name'
                 field_ids = {f.get("id") for f in form_fields}
@@ -119,8 +130,10 @@ class CardUpdateIn(BaseModel):
         if v is not None:
             import json
 
+            from django.conf import settings
+
             size = len(json.dumps(v))
-            if size > 10240:
+            if size > settings.CARD_METADATA_MAX_SIZE_BYTES:
                 raise ValueError(
                     f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
                 )
@@ -135,8 +148,17 @@ class CardUpdateIn(BaseModel):
                         raise ValueError("Each form_field must be an object")
                     if not field.get("id"):
                         raise ValueError("Each form_field must have an 'id'")
-                    if field.get("type") not in ("text", "email", "tel", "date", "select", "number"):
-                        raise ValueError(f"Invalid form_field type: {field.get('type')}")
+                    if field.get("type") not in (
+                        "text",
+                        "email",
+                        "tel",
+                        "date",
+                        "select",
+                        "number",
+                    ):
+                        raise ValueError(
+                            f"Invalid form_field type: {field.get('type')}"
+                        )
                 # Ensure mandatory enrollment fields exist
                 # Accept either a single 'name' field or 'first_name' + 'last_name'
                 field_ids = {f.get("id") for f in form_fields}
@@ -296,7 +318,9 @@ def update_program(
         if msg == "PROGRAM_DUPLICATE_NAME":
             raise HttpError(400, get_message(msg))
         if msg.startswith("VALIDATION_ERROR:"):
-            raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg.split(":", 1)[1]))
+            raise HttpError(
+                400, get_message("VALIDATION_ERROR", detail=msg.split(":", 1)[1])
+            )
         raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     log_action(
@@ -304,7 +328,9 @@ def update_program(
         action="UPDATE",
         resource_type="program",
         resource_id=str(card.id),
-        details={"updated_fields": [k for k, v in data.model_dump().items() if v is not None]},
+        details={
+            "updated_fields": [k for k, v in data.model_dump().items() if v is not None]
+        },
     )
     return CardOut.from_model(card)
 
@@ -404,7 +430,11 @@ def program_member_count(request: TenantRequest, program_id: str) -> dict:
     return services.program_member_count(card)
 
 
-@router.get("/{program_id}/segment-counts/", auth=jwt_auth, summary="Contar segmentos del programa")
+@router.get(
+    "/{program_id}/segment-counts/",
+    auth=jwt_auth,
+    summary="Contar segmentos del programa",
+)
 def program_segment_counts(
     request: TenantRequest,
     program_id: str,
@@ -434,7 +464,12 @@ def program_segment_counts(
     return {"counts": counts}
 
 
-@router.get("/{program_id}/members/", auth=jwt_auth, response=dict, summary="Miembros del programa")
+@router.get(
+    "/{program_id}/members/",
+    auth=jwt_auth,
+    response=dict,
+    summary="Miembros del programa",
+)
 def program_members(
     request: TenantRequest,
     program_id: str,

@@ -17,8 +17,7 @@ import { ColorsTab } from './ColorsTab';
 import { CardTypeTab } from './CardTypeTab';
 import { BackDesignTab } from './BackDesignTab';
 import { AdvancedTab } from './AdvancedTab';
-import { DesignScore } from './DesignScore';
-import { useDesignScore } from '@/hooks/useDesignScore';
+
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -31,6 +30,7 @@ export interface StudioSidebarProps {
   updateAppleConfig: (config: Partial<AppleSpecificConfig>) => void;
   updateGoogleConfig: (config: Partial<GoogleSpecificConfig>) => void;
   updateUI: (ui: Partial<WalletPassStudioState['ui']>) => void;
+  onOpenAI?: () => void;
 }
 
 /* ── Icon components ─────────────────────────────────────────────── */
@@ -269,11 +269,11 @@ export function StudioSidebar({
   updateAppleConfig: _updateAppleConfig,
   updateGoogleConfig: _updateGoogleConfig,
   updateUI,
+  onOpenAI,
 }: StudioSidebarProps) {
   const { t } = useI18n();
   const activeTab = state.ui.activeTab;
   const cardTypeConfig = getCardTypeTabConfig(state.cardType);
-  const designScore = useDesignScore(state);
 
   // Build ordered tab list: images, cardType, fields, back, barcode, colors, advanced
   const allTabs: TabConfig[] = [
@@ -287,7 +287,7 @@ export function StudioSidebar({
   ];
 
   return (
-    <aside className="w-full md:w-[280px] lg:w-[360px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800">
+    <aside className="w-full md:w-[340px] lg:w-[420px] xl:w-[460px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800">
       {/* Tab strip */}
       <div className="flex border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
         {allTabs.map((tab) => {
@@ -298,7 +298,7 @@ export function StudioSidebar({
               type="button"
               onClick={() => updateUI({ activeTab: tab.id as WalletPassStudioState['ui']['activeTab'] })}
               className={`
-                flex-1 min-w-[48px] flex flex-col items-center justify-center gap-1 py-3 px-2 text-[10px] font-medium transition-colors
+                flex-1 min-w-[56px] flex flex-col items-center justify-center gap-1 py-3 px-2 text-[10px] font-medium transition-colors
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset
                 ${isActive
                   ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/10'
@@ -314,10 +314,10 @@ export function StudioSidebar({
         })}
       </div>
 
-      {/* Tab content area */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Tab content area — compact, no scroll by default */}
+      <div className="flex-1 overflow-y-auto p-3">
         {activeTab === 'images' && (
-          <ImagesTab images={state.images} onUpdateImages={updateImages} />
+          <ImagesTab images={state.images} onUpdateImages={updateImages} onOpenAI={onOpenAI} />
         )}
         {activeTab === 'cardType' && (
           <CardTypeTab
@@ -357,8 +357,6 @@ export function StudioSidebar({
           />
         )}
       </div>
-
-      <DesignScore result={designScore} />
     </aside>
   );
 }

@@ -6,18 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('automation', '0004_alter_automation_action_and_more'),
+        ("automation", "0004_alter_automation_action_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='automation',
-            name='created_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who created this record.', null=True, verbose_name='Creado por'),
+            model_name="automation",
+            name="created_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who created this record.",
+                null=True,
+                verbose_name="Creado por",
+            ),
         ),
         migrations.AddField(
-            model_name='automation',
-            name='updated_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who last updated this record.', null=True, verbose_name='Actualizado por'),
+            model_name="automation",
+            name="updated_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who last updated this record.",
+                null=True,
+                verbose_name="Actualizado por",
+            ),
         ),
     ]

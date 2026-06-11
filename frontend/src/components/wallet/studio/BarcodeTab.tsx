@@ -5,9 +5,8 @@
 
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import type { BarcodeConfig, BarcodeFormat } from '@/components/wallet/types/unified-state';
-import { BarcodeSvg } from '@/components/wallet/BarcodeRenderer';
 
 export interface BarcodeTabProps {
   barcode: BarcodeConfig;
@@ -20,27 +19,6 @@ const FORMAT_CARDS: { format: BarcodeFormat; label: string }[] = [
   { format: 'PDF417', label: 'PDF417' },
   { format: 'CODE128', label: 'Code 128' },
 ];
-
-const EXTRA_FORMATS = [
-  { label: 'Data Matrix', note: 'Solo Google Wallet' },
-  { label: 'Rotating Barcode', note: 'Solo Google Wallet (seguridad extra)' },
-];
-
-function formatToBarcodeSvgType(format: BarcodeFormat): string {
-  switch (format) {
-    case 'CODE128':
-      return 'code_128';
-    case 'PDF417':
-      return 'pdf417';
-    case 'AZTEC':
-      return 'aztec';
-    case 'DATA_MATRIX':
-      return 'data_matrix';
-    case 'QR_CODE':
-    default:
-      return 'qr_code';
-  }
-}
 
 /* ── Simplified SVG representations for the format selector cards ── */
 
@@ -119,23 +97,6 @@ function RadioUncheckedSvg() {
   );
 }
 
-function MobileIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
-      <path d="M12 18h.01" />
-    </svg>
-  );
-}
-
 function getMiniSvg(format: BarcodeFormat) {
   switch (format) {
     case 'QR_CODE':
@@ -154,8 +115,6 @@ function getMiniSvg(format: BarcodeFormat) {
 /* ── Component ── */
 
 export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
-  const svgType = useMemo(() => formatToBarcodeSvgType(barcode.format), [barcode.format]);
-
   const isRectangular = barcode.format === 'PDF417' || barcode.format === 'CODE128';
 
   const handleFormatSelect = useCallback(
@@ -187,169 +146,48 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
   const includeTimestamp = barcode.message.includes('{timestamp}');
 
   return (
-    <div className="space-y-6">
-      {/* ── FORMATO DE CÓDIGO ── */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <span role="img" aria-label="chart">
-            📊
-          </span>
-          FORMATO DE CÓDIGO
-        </h3>
-
-        <div className="grid grid-cols-4 gap-2">
+    <div className="space-y-3">
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">Formato de Código</h3>
+        <div className="grid grid-cols-4 gap-1.5">
           {FORMAT_CARDS.map((card) => {
             const isSelected = barcode.format === card.format;
             return (
-              <button
-                key={card.format}
-                type="button"
-                onClick={() => handleFormatSelect(card.format)}
-                className={`flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors ${
-                  isSelected
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-neutral-800'
-                }`}
-                aria-pressed={isSelected}
-              >
-                <div className="w-8 h-8 flex items-center justify-center">
-                  {getMiniSvg(card.format)}
-                </div>
-                <span className="text-[10px] font-medium text-neutral-700 dark:text-neutral-300 leading-tight">
-                  {card.label}
-                </span>
-                <span
-                  className={`${
-                    isSelected
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-neutral-400 dark:text-neutral-500'
-                  }`}
-                >
-                  {isSelected ? <RadioCheckedSvg /> : <RadioUncheckedSvg />}
-                </span>
+              <button key={card.format} type="button" onClick={() => handleFormatSelect(card.format)} className={`flex flex-col items-center gap-1 rounded-lg border p-1.5 transition-colors ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 bg-white dark:bg-neutral-800'}`} aria-pressed={isSelected}>
+                <div className="w-6 h-6 flex items-center justify-center">{getMiniSvg(card.format)}</div>
+                <span className="text-[9px] font-medium text-neutral-700 dark:text-neutral-300">{card.label}</span>
+                <span className={isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-400 dark:text-neutral-500'}>{isSelected ? <RadioCheckedSvg /> : <RadioUncheckedSvg />}</span>
               </button>
             );
           })}
         </div>
-
         {isRectangular && (
-          <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
-            <span className="text-base leading-none mt-0.5" role="img" aria-label="warning">
-              ⚠️
-            </span>
-            <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-              PDF417 y Code 128 son rectangulares. En Apple Coupon/StoreCard, esto reduce el espacio
-              para campos a 4 total.
-            </p>
+          <div className="flex items-start gap-1.5 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-2">
+            <span className="text-sm leading-none mt-0.5">⚠️</span>
+            <p className="text-[10px] text-amber-800 dark:text-amber-300">PDF417 y Code 128 reducen espacio para campos a 4 total.</p>
           </div>
         )}
+      </section>
 
-        <div className="space-y-1.5">
-          {EXTRA_FORMATS.map((extra) => (
-            <div
-              key={extra.label}
-              className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400"
-            >
-              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[10px] font-medium text-neutral-700 dark:text-neutral-300">
-                {extra.label}
-              </span>
-              <span>— {extra.note}</span>
-            </div>
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">Contenido del Código</h3>
+        <div className="space-y-1">
+          {[
+            { checked: includeCustomerId, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{customer_id}', e.target.checked), label: 'ID cliente: {customer_id}' },
+            { checked: includeProgramId, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{program_id}', e.target.checked), label: 'ID programa: {program_id}' },
+            { checked: includeTimestamp, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{timestamp}', e.target.checked), label: 'Timestamp' },
+          ].map((item, i) => (
+            <label key={i} className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
+              <input type="checkbox" checked={item.checked} onChange={item.onChange} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+              <span>{item.label}</span>
+            </label>
           ))}
         </div>
-      </div>
-
-      {/* ── CONTENIDO DEL CÓDIGO ── */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <span role="img" aria-label="memo">
-            📝
-          </span>
-          CONTENIDO DEL CÓDIGO
-        </h3>
-
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeCustomerId}
-              onChange={(e) => handleToggleVar('{customer_id}', e.target.checked)}
-              className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span>
-              ID de cliente: {'{customer_id}'}
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeProgramId}
-              onChange={(e) => handleToggleVar('{program_id}', e.target.checked)}
-              className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span>
-              ID de programa: {'{program_id}'}
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeTimestamp}
-              onChange={(e) => handleToggleVar('{timestamp}', e.target.checked)}
-              className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span>Timestamp</span>
-          </label>
+        <div className="space-y-0.5">
+          <label htmlFor="barcode-alt-text" className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Texto legible</label>
+          <input id="barcode-alt-text" type="text" value={barcode.altText ?? ''} onChange={(e) => onUpdateBarcode({ altText: e.target.value || undefined })} placeholder="0000 0000 0000" className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="barcode-alt-text"
-            className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider"
-          >
-            Texto legible
-          </label>
-          <input
-            id="barcode-alt-text"
-            type="text"
-            value={barcode.altText ?? ''}
-            onChange={(e) => onUpdateBarcode({ altText: e.target.value || undefined })}
-            placeholder="0000 0000 0000"
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* ── VISTA PREVIA ── */}
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <span role="img" aria-label="eye">
-            👁️
-          </span>
-          VISTA PREVIA
-        </h3>
-
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center justify-center w-48 h-48 bg-white rounded-lg border border-neutral-100 dark:border-neutral-700">
-            <BarcodeSvg type={svgType} size={160} />
-          </div>
-          {barcode.altText && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{barcode.altText}</p>
-          )}
-          <p className="text-[11px] text-neutral-400 dark:text-neutral-500 font-mono truncate max-w-[280px]">
-            {barcode.message || '{customer_id}-{program_id}-{timestamp}'}
-          </p>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-          >
-            <MobileIcon className="w-4 h-4" />
-            Probar en dispositivo
-          </button>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

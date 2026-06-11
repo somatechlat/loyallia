@@ -16,6 +16,7 @@ import time
 from typing import Any
 
 import jwt  # PyJWT
+from django.conf import settings
 
 from apps.customers.pass_engine.builders import (
     _build_gift_card_class,
@@ -79,9 +80,7 @@ def get_google_wallet_diagnostics() -> dict:
         issuer_id and issuer_id not in ("", "n/a", "dummy_issuer_id")
     )
     if not diagnostics["issuer_id_present"]:
-        diagnostics["errors"].append(
-            get_message("WALLET_DIAG_MISSING_ISSUER_ID")
-        )
+        diagnostics["errors"].append(get_message("WALLET_DIAG_MISSING_ISSUER_ID"))
 
     sa_json_str = get_secret("google_service_account_json", default="")
     diagnostics["service_account_present"] = bool(sa_json_str)
@@ -266,7 +265,9 @@ def send_push_notification(
 
     message_body = body
     if action_url:
-        message_body = f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
+        message_body = (
+            f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
+        )
 
     message_id = f"msg_{int(time.time())}"
     message_payload = {
@@ -288,7 +289,7 @@ def send_push_notification(
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {access_token}",
             },
-            timeout=10.0,
+            timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET,
         )
         if response.status_code in (200, 201):
             logger.info(
@@ -356,7 +357,10 @@ def update_loyalty_class(card, base_url: str = "") -> dict:
 
     try:
         patch_resp = httpx.patch(
-            f"{api_base_url}/{class_id}", json=payload, headers=headers, timeout=10.0
+            f"{api_base_url}/{class_id}",
+            json=payload,
+            headers=headers,
+            timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET,
         )
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Class patched successfully: %s", class_id)
@@ -364,7 +368,10 @@ def update_loyalty_class(card, base_url: str = "") -> dict:
         if patch_resp.status_code == 404:
             logger.info("Class %s not found  creating via POST", class_id)
             post_resp = httpx.post(
-                api_base_url, json=payload, headers=headers, timeout=10.0
+                api_base_url,
+                json=payload,
+                headers=headers,
+                timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET,
             )
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Class created: %s", class_id)
@@ -441,7 +448,10 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
 
     try:
         patch_resp = httpx.patch(
-            f"{api_base_url}/{object_id}", json=payload, headers=headers, timeout=10.0
+            f"{api_base_url}/{object_id}",
+            json=payload,
+            headers=headers,
+            timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET,
         )
         if patch_resp.status_code in (200, 201):
             logger.info("Google Wallet Object patched: %s", object_id)
@@ -453,7 +463,10 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
             # Object doesn't exist yet create it
             logger.info("Object %s not found  creating via POST", object_id)
             post_resp = httpx.post(
-                api_base_url, json=payload, headers=headers, timeout=10.0
+                api_base_url,
+                json=payload,
+                headers=headers,
+                timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET,
             )
             if post_resp.status_code in (200, 201):
                 logger.info("Google Wallet Object created: %s", object_id)
@@ -506,7 +519,9 @@ def delete_wallet_class(card) -> dict:
     headers = {"Authorization": f"Bearer {access_token}"}
 
     try:
-        resp = httpx.delete(url, headers=headers, timeout=10.0)
+        resp = httpx.delete(
+            url, headers=headers, timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET
+        )
         if resp.status_code in (200, 204):
             logger.info("Google Wallet Class deleted: %s", class_id)
             return {"success": True}
@@ -548,7 +563,9 @@ def send_push_notification_to_class(
 
     message_body = body
     if action_url:
-        message_body = f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
+        message_body = (
+            f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
+        )
 
     message_payload = {
         "message": {
@@ -567,7 +584,7 @@ def send_push_notification_to_class(
             url,
             json=message_payload,
             headers={"Authorization": f"Bearer {access_token}"},
-            timeout=10.0,
+            timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET,
         )
         return {
             "success": response.status_code in (200, 201),

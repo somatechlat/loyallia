@@ -1,0 +1,17 @@
+{
+  "include": ["."],
+  "exclude": [
+    "**/migrations",
+    "**/venv",
+    "**/.venv",
+    "**/staticfiles",
+    "**/__pycache__"
+  ],
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "reportAttributeAccessIssue": "warning",
+  "reportOptionalSubscript": "warning"
+}

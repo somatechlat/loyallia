@@ -12,24 +12,30 @@ export const API_CONFIG = {
   TIMEOUT: 30000,
 } as const;
 
-/** Build a QR code image URL via a configurable service (default: quickchart.io) */
+/** Build a QR code image URL via a configurable service (no hardcoded fallback) */
 export function getQrUrl(text: string, size: number = APP_CONFIG.QR_CODE_SIZE): string {
-  const base = process.env.NEXT_PUBLIC_QR_SERVICE_URL || 'https://quickchart.io';
+  const base = process.env.NEXT_PUBLIC_QR_SERVICE_URL || '';
+  if (!base) {
+    throw new Error('NEXT_PUBLIC_QR_SERVICE_URL is not configured');
+  }
   return `${base}/qr?text=${encodeURIComponent(text)}&size=${size}&margin=2&dark=1a1a2e&light=ffffff&ecLevel=M&format=png`;
 }
 
-/** Build a WhatsApp share link via a configurable base URL (default: wa.me) */
+/** Build a WhatsApp share link via a configurable base URL (no hardcoded fallback) */
 export function getWhatsAppShareUrl(text: string): string {
-  const base = process.env.NEXT_PUBLIC_WHATSAPP_SHARE_URL || 'https://wa.me';
+  const base = process.env.NEXT_PUBLIC_WHATSAPP_SHARE_URL || '';
+  if (!base) {
+    throw new Error('NEXT_PUBLIC_WHATSAPP_SHARE_URL is not configured');
+  }
   return `${base}/?text=${encodeURIComponent(text)}`;
 }
 
-/** Nominatim geocoding base URLs (configurable, with OpenStreetMap defaults) */
-export const NOMINATIM_URL = process.env.NEXT_PUBLIC_NOMINATIM_URL || 'https://nominatim.openstreetmap.org/search';
-export const NOMINATIM_REVERSE_URL = process.env.NEXT_PUBLIC_NOMINATIM_REVERSE_URL || 'https://nominatim.openstreetmap.org/reverse';
+/** Nominatim geocoding base URLs (configurable, no hardcoded fallback) */
+export const NOMINATIM_URL = process.env.NEXT_PUBLIC_NOMINATIM_URL || '';
+export const NOMINATIM_REVERSE_URL = process.env.NEXT_PUBLIC_NOMINATIM_REVERSE_URL || '';
 
-/** Leaflet icon CDN prefix (configurable, with unpkg default) */
-export const LEAFLET_ICON_URL = process.env.NEXT_PUBLIC_LEAFLET_ICON_URL || 'https://unpkg.com/leaflet@1.9.4/dist/images';
+/** Leaflet icon CDN prefix (configurable, no hardcoded fallback) */
+export const LEAFLET_ICON_URL = process.env.NEXT_PUBLIC_LEAFLET_ICON_URL || '';
 
 /** App-wide numeric constants to replace magic numbers */
 export const APP_CONFIG = {

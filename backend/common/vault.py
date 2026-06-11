@@ -16,6 +16,8 @@ import time
 import urllib.error
 import urllib.request
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 # Vault connection parameters from environment
@@ -136,7 +138,7 @@ def _fetch_vault_secrets() -> dict:
         try:
             req = urllib.request.Request(url, headers=headers, method="GET")
             with urllib.request.urlopen(
-                req, timeout=5, context=ssl_context
+                req, timeout=settings.HTTP_TIMEOUT_VAULT_READ, context=ssl_context
             ) as response:
                 body = json.loads(response.read().decode("utf-8"))
                 secrets = body.get("data", {}).get("data", {})
@@ -268,7 +270,9 @@ def put_secret(vault_key: str, value: str) -> bool:
         req = urllib.request.Request(
             url, data=payload, headers=patch_headers, method="PATCH"
         )
-        with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
+        with urllib.request.urlopen(
+            req, timeout=settings.HTTP_TIMEOUT_VAULT_WRITE, context=ssl_context
+        ) as response:
             if response.status in (200, 204):
                 logger.info(
                     "Vault: patched secret '%s' in %s", vault_key, VAULT_SECRET_PATH
@@ -298,7 +302,9 @@ def put_secret(vault_key: str, value: str) -> bool:
         req = urllib.request.Request(
             url, data=fallback_payload, headers=headers, method="POST"
         )
-        with urllib.request.urlopen(req, timeout=5, context=ssl_context) as response:
+        with urllib.request.urlopen(
+            req, timeout=settings.HTTP_TIMEOUT_VAULT_WRITE, context=ssl_context
+        ) as response:
             if response.status in (200, 204):
                 logger.info(
                     "Vault: merge-wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH

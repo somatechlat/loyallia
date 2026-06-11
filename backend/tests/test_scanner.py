@@ -64,7 +64,7 @@ class TestScannerValidation:
         from apps.transactions.api import ScanValidateIn
 
         data = ScanValidateIn(qr_code=qr_code)
-        result = validate_qr(request, data)
+        result = validate_qr(request, data)  # type: ignore[reportArgumentType]
 
         assert result["is_valid"] is True
         assert result["customer"]["email"] == customer.email
@@ -159,7 +159,7 @@ class TestScannerAuthorization:
 
         request = _FakeRequest(tenant, staff)
 
-        result = validate_qr(request, ScanValidateIn(qr_code=cp.qr_code))
+        result = validate_qr(request, ScanValidateIn(qr_code=cp.qr_code))  # type: ignore[reportArgumentType]
         assert result["is_valid"] is True
 
     def test_owner_can_access_validate(self, db):
@@ -178,7 +178,7 @@ class TestScannerAuthorization:
 
         # OWNER is allowed; invalid QR returns 404 after auth passes
         with pytest.raises(HttpError) as exc_info:
-            validate_qr(request, ScanValidateIn(qr_code="INVALID_QR"))
+            validate_qr(request, ScanValidateIn(qr_code="INVALID_QR"))  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 404
 
     def test_manager_can_access_validate(self, db):
@@ -197,7 +197,7 @@ class TestScannerAuthorization:
 
         # MANAGER is allowed; invalid QR returns 404 after auth passes
         with pytest.raises(HttpError) as exc_info:
-            validate_qr(request, ScanValidateIn(qr_code="INVALID_QR"))
+            validate_qr(request, ScanValidateIn(qr_code="INVALID_QR"))  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 404
 
     def test_superadmin_cannot_access_validate(self, db):
@@ -212,7 +212,7 @@ class TestScannerAuthorization:
         request = _FakeRequest(tenant, superadmin)
 
         with pytest.raises(HttpError) as exc_info:
-            validate_qr(request, ScanValidateIn(qr_code="ANY"))
+            validate_qr(request, ScanValidateIn(qr_code="ANY"))  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 403
 
     def test_staff_can_access_transact(self, db):
@@ -235,8 +235,8 @@ class TestScannerAuthorization:
         )
 
         # Use the real gateway — no mocking
-        result = transact(request, data)
-        assert result["success"] is True
+        result = transact(request, data)  # type: ignore[reportArgumentType]  # type: ignore[reportArgumentType]
+        assert result["success"] is True  # type: ignore[reportIndexIssue]
 
     def test_owner_can_access_transact(self, db):
         """OWNER role should be allowed to transact (is_staff_or_above includes OWNER)."""
@@ -258,7 +258,7 @@ class TestScannerAuthorization:
 
         # OWNER is allowed; invalid QR causes 422 (pass not found) after auth passes
         with pytest.raises(HttpError) as exc_info:
-            transact(request, data)
+            transact(request, data)  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 422
 
     def test_manager_can_access_transact(self, db):
@@ -281,7 +281,7 @@ class TestScannerAuthorization:
 
         # MANAGER is allowed; invalid QR causes 422 (pass not found) after auth passes
         with pytest.raises(HttpError) as exc_info:
-            transact(request, data)
+            transact(request, data)  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 422
 
     def test_superadmin_cannot_access_transact(self, db):
@@ -303,7 +303,7 @@ class TestScannerAuthorization:
         )
 
         with pytest.raises(HttpError) as exc_info:
-            transact(request, data)
+            transact(request, data)  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 403
 
     def test_staff_can_search_customers(self, db):
@@ -316,7 +316,7 @@ class TestScannerAuthorization:
 
         request = _FakeRequest(tenant, staff)
 
-        result = search_customer(request, "john")
+        result = search_customer(request, "john")  # type: ignore[reportArgumentType]
         assert len(result["results"]) >= 1
         assert result["results"][0]["email"] == "john@test.com"
 
@@ -330,7 +330,7 @@ class TestScannerAuthorization:
 
         request = _FakeRequest(tenant, owner)
 
-        result = search_customer(request, "john")
+        result = search_customer(request, "john")  # type: ignore[reportArgumentType]
         assert len(result["results"]) >= 1
         assert result["results"][0]["email"] == "john@test.com"
 
@@ -346,7 +346,7 @@ class TestScannerAuthorization:
         request = _FakeRequest(tenant, superadmin)
 
         with pytest.raises(HttpError) as exc_info:
-            search_customer(request, "john")
+            search_customer(request, "john")  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 403
 
 

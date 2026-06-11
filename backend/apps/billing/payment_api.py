@@ -27,11 +27,18 @@ from common.messages import get_message
 from common.permissions import jwt_auth, require_role
 from common.rate_limit import rate_limit
 from common.request import require_tenant
+from django.conf import settings
 
 logger = logging.getLogger("loyallia.billing")
 
 
-def _audit_payment_action(request, action: str, resource_type: str, resource_id: str, details: dict | None = None):
+def _audit_payment_action(
+    request,
+    action: str,
+    resource_type: str,
+    resource_id: str,
+    details: dict | None = None,
+):
     """Helper to log payment-related audit actions, swallowing errors."""
     try:
         from apps.audit.models import AuditAction, AuditStatus
@@ -115,8 +122,15 @@ def add_payment_method(request: HttpRequest, data: AddPaymentMethodSchema):
         )
 
     _audit_payment_action(
-        request, "create", "payment_method", str(pm.id),
-        {"card_brand": pm.card_brand, "last_four": pm.card_last_four, "is_default": pm.is_default},
+        request,
+        "create",
+        "payment_method",
+        str(pm.id),
+        {
+            "card_brand": pm.card_brand,
+            "last_four": pm.card_last_four,
+            "is_default": pm.is_default,
+        },
     )
 
     return {
@@ -158,7 +172,10 @@ def remove_payment_method(request: HttpRequest, payment_method_id: str):
     pm.save(update_fields=["is_active", "updated_at"])
 
     _audit_payment_action(
-        request, "delete", "payment_method", payment_method_id,
+        request,
+        "delete",
+        "payment_method",
+        payment_method_id,
         {"card_brand": pm.card_brand, "last_four": pm.card_last_four},
     )
 
@@ -191,8 +208,15 @@ def set_default_payment_method(request: HttpRequest, payment_method_id: str):
         pm.save(update_fields=["is_default", "updated_at"])
 
     _audit_payment_action(
-        request, "update", "payment_method", payment_method_id,
-        {"card_brand": pm.card_brand, "last_four": pm.card_last_four, "is_default": True},
+        request,
+        "update",
+        "payment_method",
+        payment_method_id,
+        {
+            "card_brand": pm.card_brand,
+            "last_four": pm.card_last_four,
+            "is_default": True,
+        },
     )
 
     return {"success": True, "message": get_message("BILLING_DEFAULT_PM_SET")}
@@ -267,7 +291,7 @@ def get_invoice(request: HttpRequest, invoice_id: str):
 
 
 @router.post("/webhook/", summary="Payment Gateway Webhook")
-@rate_limit(key_prefix="stripe_webhook", max_requests=100, window_seconds=60)
+@rate_limit(key_prefix="stripe_webhook", max_requests=settings.STRIPE_WEBHOOK_RATE_LIMIT_MAX, window_seconds=settings.STRIPE_WEBHOOK_RATE_LIMIT_WINDOW)
 def payment_webhook(request: HttpRequest):
     """
     Receive and process payment gateway webhook events.
@@ -338,7 +362,9 @@ def payment_webhook(request: HttpRequest):
             try:
                 gateway.process_webhook(event_type, payload.get("data", {}))
             except Exception as e:
-                logger.exception("Webhook processing failed for event %s: %s", event_id, e)
+                logger.exception(
+                    "Webhook processing failed for event %s: %s", event_id, e
+                )
                 WebhookEvent.objects.filter(event_id=event_id).delete()
                 raise
     except IntegrityError:

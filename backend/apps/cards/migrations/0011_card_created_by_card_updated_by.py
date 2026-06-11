@@ -6,18 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0010_alter_card_background_color_alter_card_barcode_type_and_more'),
+        ("cards", "0010_alter_card_background_color_alter_card_barcode_type_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='card',
-            name='created_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who created this record.', null=True, verbose_name='Creado por'),
+            model_name="card",
+            name="created_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who created this record.",
+                null=True,
+                verbose_name="Creado por",
+            ),
         ),
         migrations.AddField(
-            model_name='card',
-            name='updated_by',
-            field=models.UUIDField(blank=True, help_text='ID of the user who last updated this record.', null=True, verbose_name='Actualizado por'),
+            model_name="card",
+            name="updated_by",
+            field=models.UUIDField(
+                blank=True,
+                help_text="ID of the user who last updated this record.",
+                null=True,
+                verbose_name="Actualizado por",
+            ),
         ),
     ]

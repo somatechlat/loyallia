@@ -30,6 +30,7 @@ class AIQueryLog(TimestampedModel):
         SUGGEST_COLORS = "suggest-colors", "Suggest Colors"
         CRITIQUE_DESIGN = "critique-design", "Critique Design"
         SUGGEST_STAMP_ICONS = "suggest-stamp-icons", "Suggest Stamp Icons"
+        SUGGEST_LAYOUT = "suggest-layout", "Suggest Layout"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(

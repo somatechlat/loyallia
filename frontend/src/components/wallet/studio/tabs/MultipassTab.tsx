@@ -19,70 +19,6 @@ const INDICATOR_STYLES: Array<{ value: NonNullable<MultipassCardConfig['indicato
   { value: 'minimal', label: 'Minimal' },
 ];
 
-function MultipassPreview({ config }: { config: MultipassCardConfig }) {
-  const used = 3;
-  const remaining = Math.max(0, config.bundleSize - used);
-
-  return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-              <path d="M13 5v2" />
-              <path d="M13 17v2" />
-              <path d="M13 11v2" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-              {config.passTypeLabel || 'Multi-Pase'}
-            </p>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-              {config.bundleSize} pases
-            </p>
-          </div>
-        </div>
-        {config.bundlePrice > 0 && (
-          <span className="text-sm font-bold text-neutral-800 dark:text-neutral-100">
-            ${config.bundlePrice}
-          </span>
-        )}
-      </div>
-
-      {/* Indicator */}
-      <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700">
-        {config.indicatorStyle === 'numeric' && (
-          <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
-            <span>Usados: {used}</span>
-            <span>Restantes: {remaining}</span>
-          </div>
-        )}
-        {config.indicatorStyle === 'visual' && (
-          <div className="flex gap-1 flex-wrap">
-            {Array.from({ length: config.bundleSize }, (_, i) => (
-              <div
-                key={i}
-                className={`w-4 h-4 rounded-sm ${
-                  i < used
-                    ? 'bg-neutral-300 dark:bg-neutral-600'
-                    : 'bg-purple-500'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-        {config.indicatorStyle === 'minimal' && (
-          <div className="text-center text-xs text-neutral-600 dark:text-neutral-400">
-            {remaining} / {config.bundleSize}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function MultipassTab({ config, onChange }: MultipassTabProps) {
   const handleNumberChange = useCallback(
     (field: keyof MultipassCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,14 +38,14 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
   );
 
   return (
-    <div className="space-y-5">
-      <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
         Configuración de Multi-Pase
       </h3>
 
       {/* Bundle size */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Tamaño del paquete
         </label>
         <input
@@ -118,14 +54,14 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
           max={100}
           value={config.bundleSize}
           onChange={handleNumberChange('bundleSize', 1, 100)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="bundle-size-input"
         />
       </div>
 
       {/* Bundle price */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Precio del paquete
         </label>
         <input
@@ -133,14 +69,14 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
           min={0}
           value={config.bundlePrice}
           onChange={handleNumberChange('bundlePrice', 0, 999999)}
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="bundle-price-input"
         />
       </div>
 
       {/* Pass type label */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Etiqueta del tipo de pase
         </label>
         <input
@@ -148,14 +84,14 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
           value={config.passTypeLabel}
           onChange={handleTextChange('passTypeLabel')}
           placeholder="Ej: Clases de yoga"
-          className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="pass-label-input"
         />
       </div>
 
       {/* Ticket icon */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Icono de ticket
         </label>
         <IconPicker
@@ -166,8 +102,8 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
       </div>
 
       {/* Punch icon */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Icono de perforación
         </label>
         <IconPicker
@@ -178,8 +114,8 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
       </div>
 
       {/* Bundle badge style */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Estilo de insignia del paquete
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -188,7 +124,7 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
               key={style}
               type="button"
               onClick={() => onChange({ bundleBadgeStyle: style })}
-              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`px-2 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 config.bundleBadgeStyle === style
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                   : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -202,8 +138,8 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
       </div>
 
       {/* Used/remaining indicator style */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           Estilo de indicador usado/restante
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -212,7 +148,7 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
               key={opt.value}
               type="button"
               onClick={() => onChange({ indicatorStyle: opt.value })}
-              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`px-2 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 config.indicatorStyle === opt.value
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                   : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
@@ -223,14 +159,6 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Live preview */}
-      <div className="space-y-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-4">
-        <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Vista previa
-        </label>
-        <MultipassPreview config={config} />
       </div>
     </div>
   );

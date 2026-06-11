@@ -1,19 +1,20 @@
 'use client';
 import { useState } from 'react';
-import { programsApi } from '@/lib/api';
+import { programsApi, walletTemplatesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
 
 import {
-  CardTypeIcon, CARD_TYPES, DESIGN_TEMPLATES, defaultMeta,
+  CardTypeIcon, CARD_TYPES, defaultMeta,
 } from '@/components/programs/constants';
 
 import TypeConfig from '@/components/programs/TypeConfig';
-import WalletCardPreview from '@/components/programs/WalletCardPreview';
-import { BarcodeTypeSelector } from '@/components/programs/WalletCardPreview';
 import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
 import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
+import { DesignScore } from '@/components/wallet/studio/DesignScore';
+import { useDesignScore } from '@/hooks/useDesignScore';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 import { createDefaultState } from '@/hooks/useWalletStudio';
 import { buildWalletDesignMetadata } from '@/components/wallet/serialization';
@@ -25,6 +26,7 @@ import type { ZodError } from 'zod';
 
 
 export default function NewProgramPage() {
+  const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hoveredType, setHoveredType] = useState<string | null>(null);
@@ -44,8 +46,8 @@ export default function NewProgramPage() {
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
-  const [selectedTemplate, setSelectedTemplate] = useState('midnight');
   const [coordError] = useState(false);
+  const designScore = useDesignScore(walletDesign);
 
   // Derive preview platform from V2 state
   const walletProvider: 'apple' | 'google' = walletDesign.ui.platformView === 'google' ? 'google' : 'apple';
@@ -63,14 +65,6 @@ export default function NewProgramPage() {
     defaults.ui.platformView = walletDesign.ui.platformView;
     setWalletDesign(defaults);
   };
-
-  const handleTemplateSelect = (template: typeof DESIGN_TEMPLATES[0]) => {
-    setSelectedTemplate(template.id);
-    if (template.id !== 'custom') {
-      setForm(f => ({ ...f, background_color: template.bg, text_color: template.text }));
-    }
-  };
-
 
   const validateStep = (targetStep: number): boolean => {
     setValidationErrors({});
@@ -123,7 +117,7 @@ export default function NewProgramPage() {
         ...legacyImages,
         metadata: { ...meta, ...walletMetadata }
       });
-      toast.success('¡Programa creado exitosamente!');
+      toast.success(t('programs.new.toast.created'));
       setCreatedProgram({ id: resp.data.id, name: resp.data.name });
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
@@ -134,7 +128,7 @@ export default function NewProgramPage() {
       } else if (typeof detail === 'string') {
         msg = detail;
       } else {
-        msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || 'Error al crear el programa';
+        msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || t('programs.new.toast.createError');
       }
       toast.error(msg);
     } finally {
@@ -142,9 +136,10 @@ export default function NewProgramPage() {
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {createdProgram ? (
+  // Success view
+  if (createdProgram) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="card p-8 text-center space-y-6 animate-fade-in max-w-2xl mx-auto">
           <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
             <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -152,68 +147,75 @@ export default function NewProgramPage() {
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-surface-900 dark:text-white">¡Programa creado!</h1>
-            <p className="text-surface-500 mt-1">&quot;{createdProgram.name}&quot; está listo para recibir clientes.</p>
+            <h1 className="text-2xl font-bold text-surface-900 dark:text-white">{t('programs.new.created.title')}</h1>
+            <p className="text-surface-500 mt-1">{t('programs.new.created.subtitle', { name: createdProgram.name })}</p>
           </div>
 
           <div className="bg-surface-50 dark:bg-surface-900/50 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
-            <h3 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">Código QR de inscripción</h3>
+            <h3 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">{t('programs.new.created.qrTitle')}</h3>
             <div className="flex justify-center mb-3">
               <img
                 src={getQrUrl(`${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`, 256)}
-                alt="QR de inscripción"
+                alt={t('programs.new.created.qrAlt')}
                 className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
               />
             </div>
             <p className="text-xs text-surface-500 mb-3">
-              Escanea este código o comparte el enlace para inscribir clientes.
+              {t('programs.new.created.qrHint')}
             </p>
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => {
                   const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`;
                   navigator.clipboard.writeText(url);
-                  toast.success('¡Enlace copiado!');
+                  toast.success(t('programs.new.created.copySuccess'));
                 }}
                 className="btn-secondary text-sm"
               >
-                Copiar enlace
+                {t('programs.new.created.copyLink')}
               </button>
               <a
-                href={getWhatsAppShareUrl(`¡Únete a nuestro programa de fidelización! ${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`)}
+                href={getWhatsAppShareUrl(`${t('programs.new.created.whatsappShareText', { name: createdProgram.name })} ${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn text-sm bg-emerald-500 hover:bg-emerald-600 text-white"
               >
-                WhatsApp
+                {t('programs.new.created.whatsapp')}
               </a>
             </div>
           </div>
 
           <div className="flex gap-3 justify-center">
-            <a href="/programs" className="btn-secondary text-sm">← Ver todos los programas</a>
-            <a href={`/programs/${createdProgram.id}`} className="btn-primary text-sm">Ver programa →</a>
+            <a href="/programs" className="btn-secondary text-sm">{t('programs.new.created.viewAll')}</a>
+            <a href={`/programs/${createdProgram.id}`} className="btn-primary text-sm">{t('programs.new.created.viewProgram')}</a>
           </div>
         </div>
-      ) : (
-        <>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Nuevo Programa de Fidelización</h1>
-          <p className="page-subtitle">Configura tu programa paso a paso</p>
-        </div>
-        <Link href="/programs" className="btn-ghost text-sm" id="back-to-programs">
-          ← Volver a programas
-        </Link>
       </div>
+    );
+  }
 
-      <StepBar step={step} />
+  return (
+    <div className="space-y-6">
+      {/* Header + StepBar */}
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">{t('programs.new.title')}</h1>
+            <p className="page-subtitle">{t('programs.new.subtitle')}</p>
+          </div>
+          <Link href="/programs" className="btn-ghost text-sm" id="back-to-programs">
+            {t('programs.new.backToPrograms')}
+          </Link>
+        </div>
+
+        <StepBar step={step} />
+      </div>
 
       {/* Step 0: card type selection */}
       {step === 0 && (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-lg font-bold text-surface-900 dark:text-white">Selecciona el tipo de programa</h2>
-          <p className="text-sm text-surface-500">Puedes crear múltiples programas combinando diferentes tipos. <span className="text-brand-500">Pasa el mouse sobre cada tipo para ver una vista previa.</span></p>
+        <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
+          <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step0.title')}</h2>
+          <p className="text-sm text-surface-500">{t('programs.new.step0.hint')} <span className="text-brand-500">{t('programs.new.step0.hoverHint')}</span></p>
           <div className="relative flex gap-6">
             {/* Left: Type Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
@@ -241,7 +243,7 @@ export default function NewProgramPage() {
                 </button>
               ))}
             </div>
-            {/* Right: Preview Panel (desktop only) — shows hovered OR selected type */}
+            {/* Right: Preview Panel (desktop only) */}
             <div className="hidden lg:flex items-start justify-center w-[220px] flex-shrink-0 sticky top-8" id="hover-preview-panel">
               <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full">
                 {hoveredType || form.card_type ? (
@@ -250,7 +252,7 @@ export default function NewProgramPage() {
                   </div>
                 ) : (
                   <div className="w-full h-[370px] flex items-center justify-center text-center">
-                    <p className="text-xs text-surface-500 dark:text-surface-400">👆 Pasa el mouse sobre un tipo de programa para ver una vista previa de la tarjeta</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400">{t('programs.new.step0.hoverPrompt')}</p>
                   </div>
                 )}
               </div>
@@ -261,17 +263,17 @@ export default function NewProgramPage() {
 
       {/* Step 1: type-specific config */}
       {step === 1 && (
-        <div className="card p-6 space-y-4 animate-fade-in">
+        <div className="max-w-4xl mx-auto card p-6 space-y-4 animate-fade-in">
           <div className="flex items-center gap-3 mb-2">
             <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-brand-600" />
             <div>
-              <h2 className="text-lg font-bold text-surface-900 dark:text-white">Configurar: {selectedType?.label}</h2>
+              <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: selectedType?.label ?? '' })}</h2>
               <p className="text-xs text-surface-500">{selectedType?.desc}</p>
             </div>
           </div>
           <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />
 
-          {/* Form Builder — dynamic enrollment fields */}
+          {/* Form Builder */}
           <div className="border-t border-surface-200 dark:border-surface-700 pt-5 mt-5">
             <FormBuilder
               fields={(meta.form_fields as FormField[]) || []}
@@ -283,198 +285,155 @@ export default function NewProgramPage() {
 
       {/* Step 2: design, templates, logo upload, and preview */}
       {step === 2 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
-          {/* Left: Form */}
-          <div className="space-y-6">
-            {/* Name + Description */}
-            <div className="card p-6 space-y-4">
-              <h2 className="text-lg font-bold text-surface-900 dark:text-white">Nombre y descripción</h2>
+        <div className="space-y-6 animate-fade-in">
+          {/* Name + Description */}
+          <div className="max-w-4xl mx-auto card p-6 space-y-4">
+            <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step2.nameDescTitle', { defaultValue: 'Nombre y descripción' })}</h2>
+            <div>
+              <label className="label" htmlFor="program-name">{t('programs.new.step2.nameLabel')}</label>
+              <input
+                id="program-name"
+                type="text"
+                required
+                maxLength={200}
+                className={`input ${validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                placeholder={t('programs.new.step2.namePlaceholder')}
+                value={form.name}
+                onChange={e => {
+                  setValidationErrors(prev => { const n = { ...prev }; delete n.name; return n; });
+                  setForm(f => ({ ...f, name: e.target.value }));
+                }}
+                aria-invalid={!!validationErrors.name}
+              />
+              {validationErrors.name && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.name}</p>}
+            </div>
+            <div>
+              <label className="label" htmlFor="program-desc">{t('programs.new.step2.descLabel')}</label>
+              <textarea
+                id="program-desc"
+                className={`input min-h-[80px] resize-none ${validationErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                maxLength={1000}
+                placeholder={t('programs.new.step2.descPlaceholder')}
+                value={form.description}
+                onChange={e => {
+                  setValidationErrors(prev => { const n = { ...prev }; delete n.description; return n; });
+                  setForm(f => ({ ...f, description: e.target.value }));
+                }}
+                aria-invalid={!!validationErrors.description}
+              />
+              {validationErrors.description && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.description}</p>}
+            </div>
+          </div>
+
+          {/* Geofences Manager */}
+          <div className="max-w-4xl mx-auto card p-6 space-y-4">
+            <div className="flex justify-between items-center mb-2">
               <div>
-                <label className="label" htmlFor="program-name">Nombre del programa</label>
-                <input
-                  id="program-name"
-                  type="text"
-                  required
-                  maxLength={200}
-                  className={`input ${validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                  placeholder="Ej: Café Frecuente"
-                  value={form.name}
-                  onChange={e => {
-                    setValidationErrors(prev => { const n = { ...prev }; delete n.name; return n; });
-                    setForm(f => ({ ...f, name: e.target.value }));
-                  }}
-                  aria-invalid={!!validationErrors.name}
-                />
-                {validationErrors.name && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.name}</p>}
+                <h2 className="text-base font-bold text-surface-900 dark:text-white">{t('programs.new.step2.locationsTitle')}</h2>
+                <p className="text-xs text-surface-500 mt-1">{t('programs.new.step2.locationsHint')}</p>
               </div>
-              <div>
-                <label className="label" htmlFor="program-desc">Descripción</label>
-                <textarea
-                  id="program-desc"
-                  className={`input min-h-[80px] resize-none ${validationErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                  maxLength={1000}
-                  placeholder="Describe las reglas y beneficios..."
-                  value={form.description}
-                  onChange={e => {
-                    setValidationErrors(prev => { const n = { ...prev }; delete n.description; return n; });
-                    setForm(f => ({ ...f, description: e.target.value }));
-                  }}
-                  aria-invalid={!!validationErrors.description}
-                />
-                {validationErrors.description && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.description}</p>}
-              </div>
+              <button type="button" onClick={() => setForm(f => ({...f, locations: [...f.locations, {lat: 0, lng: 0, name: ''}]}))} className="btn-secondary text-xs shrink-0 self-start mt-1">
+                + {t('programs.new.step2.addLocation')}
+              </button>
             </div>
 
-            {/* Geofences Manager */}
-            <div className="card p-6 space-y-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h2 className="text-base font-bold text-surface-900 dark:text-white">Ubicaciones y Geocercas (Wallet GPS)</h2>
-                  <p className="text-xs text-surface-500 mt-1">La tarjeta aparecerá en la pantalla de bloqueo cuando el cliente esté cerca de tu tienda (para NFC y Alertas).</p>
-                </div>
-                <button type="button" onClick={() => setForm(f => ({...f, locations: [...f.locations, {lat: 0, lng: 0, name: ''}]}))} className="btn-secondary text-xs shrink-0 self-start mt-1">
-                  + Agregar
-                </button>
-              </div>
-
-              {/* Location validation errors summary */}
-              {Object.keys(validationErrors).some(k => k.startsWith('locations')) && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
-                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Corrige las ubicaciones:</p>
-                  {Object.entries(validationErrors).filter(([k]) => k.startsWith('locations')).map(([k, msg]) => (
-                    <p key={k} className="text-xs text-red-600 dark:text-red-400">{msg}</p>
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {form.locations.map((loc, i) => (
-                  <div key={i} className="flex gap-2 items-center bg-surface-50 p-2 rounded-lg border border-surface-200 dark:border-surface-700">
-                    <input type="text" className="input flex-1 text-sm py-1" placeholder="Ej: Sucursal Centro" value={loc.name} onChange={e => {
-                      const newLocs = [...form.locations];
-                      newLocs[i]!.name = e.target.value;
-                      setForm({...form, locations: newLocs});
-                    }} />
-                    <input type="number" step="any" min={-90} max={90} className="input w-24 text-sm py-1" placeholder="Lat (-0.18)" value={loc.lat || ''} onChange={e => {
-                      const newLocs = [...form.locations];
-                      const v = parseFloat(e.target.value);
-                      newLocs[i]!.lat = isNaN(v) ? 0 : Math.max(-90, Math.min(90, v));
-                      setForm({...form, locations: newLocs});
-                    }} />
-                    <input type="number" step="any" min={-180} max={180} className="input w-24 text-sm py-1" placeholder="Lng (-78.48)" value={loc.lng || ''} onChange={e => {
-                      const newLocs = [...form.locations];
-                      const v = parseFloat(e.target.value);
-                      newLocs[i]!.lng = isNaN(v) ? 0 : Math.max(-180, Math.min(180, v));
-                      setForm({...form, locations: newLocs});
-                    }} />
-                    <button type="button" className="text-red-400 hover:text-red-600 px-1" title="Eliminar" onClick={() => {
-                      const newLocs = [...form.locations];
-                      newLocs.splice(i, 1);
-                      setForm({...form, locations: newLocs});
-                    }}>✕</button>
-                  </div>
-                ))}
-                {coordError && <p className="text-xs text-red-500 mt-2">Las coordenadas deben estar entre -90/90 (lat) y -180/180 (lng)</p>}
-                {form.locations.length === 0 && (
-                  <p className="text-xs text-brand-600 italic mt-2 bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2">
-                    <span>i</span> Agrega la ubicacion de tu negocio para activar las alertas de Wallet de Apple/Google.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Wallet Designer — Full visual customization */}
-            <WalletStudio
-              initialState={walletDesign}
-              onSave={(state) => setWalletDesign(state)}
-              onSaveAsTemplate={(s) => console.log('Save as template', s)}
-            />
-
-            {/* Barcode Type Selector */}
-            <BarcodeTypeSelector
-              value={form.barcode_type}
-              onChange={(v) => setForm(f => ({ ...f, barcode_type: v }))}
-            />
-
-            {/* Design Templates */}
-            <div className="card p-6 space-y-4">
-              <h2 className="text-base font-bold text-surface-900 dark:text-white">Plantilla de diseño</h2>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {DESIGN_TEMPLATES.map(t => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => handleTemplateSelect(t)}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all
-                      ${selectedTemplate === t.id
-                        ? 'border-brand-500 shadow-glow'
-                        : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
-                      }`}
-                    id={`template-${t.id}`}
-                  >
-                    {t.id === 'custom' ? (
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 border border-white/50" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-lg border border-white/20" style={{ backgroundColor: t.bg }} />
-                    )}
-                    <span className="text-[9px] text-surface-600 font-medium">{t.name}</span>
-                  </button>
+            {/* Location validation errors summary */}
+            {Object.keys(validationErrors).some(k => k.startsWith('locations')) && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium">{t('programs.new.step2.locationErrors')}</p>
+                {Object.entries(validationErrors).filter(([k]) => k.startsWith('locations')).map(([k, msg]) => (
+                  <p key={k} className="text-xs text-red-600 dark:text-red-400">{msg}</p>
                 ))}
               </div>
+            )}
 
-              {/* Custom colors — show if custom template selected */}
-              {selectedTemplate === 'custom' && (
-                <div className="grid grid-cols-2 gap-4 mt-2 pt-4 border-t border-surface-100">
-                  <div>
-                    <label className="label text-xs">Color de fondo</label>
-                    <div className="flex items-center gap-3">
-                      <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200 dark:border-surface-700"
-                        value={form.background_color} onChange={e => setForm(f => ({ ...f, background_color: e.target.value }))} />
-                      <span className="text-xs font-mono text-surface-500">{form.background_color}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="label text-xs">Color de texto</label>
-                    <div className="flex items-center gap-3">
-                      <input type="color" className="w-10 h-8 rounded-lg cursor-pointer border border-surface-200 dark:border-surface-700"
-                        value={form.text_color} onChange={e => setForm(f => ({ ...f, text_color: e.target.value }))} />
-                      <span className="text-xs font-mono text-surface-500">{form.text_color}</span>
-                    </div>
-                  </div>
+            <div className="space-y-3">
+              {form.locations.map((loc, i) => (
+                <div key={i} className="flex gap-2 items-center bg-surface-50 p-2 rounded-lg border border-surface-200 dark:border-surface-700">
+                  <input type="text" className="input flex-1 text-sm py-1" placeholder={t('programs.new.step2.locationNamePlaceholder')} value={loc.name} onChange={e => {
+                    const newLocs = [...form.locations];
+                    newLocs[i]!.name = e.target.value;
+                    setForm({...form, locations: newLocs});
+                  }} />
+                  <input type="number" step="any" min={-90} max={90} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLatPlaceholder')} value={loc.lat || ''} onChange={e => {
+                    const newLocs = [...form.locations];
+                    const v = parseFloat(e.target.value);
+                    newLocs[i]!.lat = isNaN(v) ? 0 : Math.max(-90, Math.min(90, v));
+                    setForm({...form, locations: newLocs});
+                  }} />
+                  <input type="number" step="any" min={-180} max={180} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLngPlaceholder')} value={loc.lng || ''} onChange={e => {
+                    const newLocs = [...form.locations];
+                    const v = parseFloat(e.target.value);
+                    newLocs[i]!.lng = isNaN(v) ? 0 : Math.max(-180, Math.min(180, v));
+                    setForm({...form, locations: newLocs});
+                  }} />
+                  <button type="button" className="text-red-400 hover:text-red-600 px-1" title={t('programs.new.step2.deleteLocation')} onClick={() => {
+                    const newLocs = [...form.locations];
+                    newLocs.splice(i, 1);
+                    setForm({...form, locations: newLocs});
+                  }}>✕</button>
                 </div>
+              ))}
+              {coordError && <p className="text-xs text-red-500 mt-2">{t('programs.new.step2.coordError')}</p>}
+              {form.locations.length === 0 && (
+                <p className="text-xs text-brand-600 italic mt-2 bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2">
+                  <span>i</span> {t('programs.new.step2.locationHint')}
+                </p>
               )}
             </div>
           </div>
 
-          {/* Right: Live Wallet Preview */}
-          <div className="sticky top-24 self-start bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">
-            <WalletCardPreview
-              form={form}
-              selectedType={selectedType}
-              barcodeType={form.barcode_type}
-              walletPlatform={walletProvider}
-              onWalletPlatformChange={setWalletProvider}
-              walletDesign={walletDesign}
-            />
+          {/* Wallet Designer — FULL WIDTH, FULL HEIGHT */}
+          <div className="px-0 lg:px-2">
+            <div className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 shadow-lg" style={{ height: 'calc(100vh - 140px)', minHeight: 800 }}>
+              <WalletStudio
+                initialState={walletDesign}
+                onSave={(state) => setWalletDesign(state)}
+                onSaveAsTemplate={async (s) => {
+                  try {
+                    await walletTemplatesApi.create({
+                      name: s.name || 'Plantilla sin nombre',
+                      description: '',
+                      card_type: s.cardType,
+                      industry: s.industry,
+                      design_state: s as unknown as Record<string, unknown>,
+                      include_back_content: true,
+                      tags: [],
+                    });
+                    toast.success(t('wallet.studio.saveTemplateSuccess') || 'Plantilla guardada correctamente');
+                  } catch (err: any) {
+                    const msg = err?.response?.data?.detail || err?.message || 'Error al guardar plantilla';
+                    toast.error(msg);
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Design Score — below preview area */}
+          <div className="max-w-4xl mx-auto">
+            <DesignScore result={designScore} />
           </div>
         </div>
       )}
 
       {/* Step 3: review */}
       {step === 3 && (
-        <ProgramReviewStep
-          form={form}
-          meta={meta}
-          selectedType={selectedType}
-          walletProvider={walletProvider}
-          setWalletProvider={setWalletProvider}
-          appleWalletConfig={appleWalletConfig}
-          walletDesign={walletDesign}
-        />
+        <div className="max-w-4xl mx-auto animate-fade-in">
+          <ProgramReviewStep
+            form={form}
+            meta={meta}
+            selectedType={selectedType}
+            walletProvider={walletProvider}
+            setWalletProvider={setWalletProvider}
+            appleWalletConfig={appleWalletConfig}
+            walletDesign={walletDesign}
+          />
+        </div>
       )}
 
       {/* Navigation buttons */}
-      <div className="flex justify-between pt-4">
+      <div className="max-w-4xl mx-auto flex justify-between pt-4">
         <button
           type="button"
           onClick={() => {
@@ -484,7 +443,7 @@ export default function NewProgramPage() {
           className={`btn-secondary ${step === 0 ? 'invisible' : ''}`}
           id="wizard-prev"
         >
-          ← Anterior
+          {t('programs.new.nav.prev')}
         </button>
 
         {step < 3 ? (
@@ -492,7 +451,7 @@ export default function NewProgramPage() {
             type="button"
             onClick={() => {
               if (!validateStep(step)) {
-                toast.error('Corrige los errores antes de continuar');
+                toast.error(t('programs.new.nav.validationError'));
                 return;
               }
               setStep(s => s + 1);
@@ -501,7 +460,7 @@ export default function NewProgramPage() {
             disabled={!canNext()}
             id="wizard-next"
           >
-            Siguiente →
+            {t('programs.new.nav.next')}
           </button>
         ) : (
           <button
@@ -511,12 +470,10 @@ export default function NewProgramPage() {
             disabled={loading || !form.name}
             id="submit-program"
           >
-            {loading ? <span className="spinner w-4 h-4" /> : 'Crear Programa'}
+            {loading ? <span className="spinner w-4 h-4" /> : t('programs.new.nav.create')}
           </button>
         )}
       </div>
-        </>
-      )}
     </div>
   );
 }

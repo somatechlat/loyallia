@@ -167,7 +167,9 @@ def get_visit_metrics(request, days: int = DEFAULT_PERIOD_DAYS):
 
 # Top Buyers
 @router.get("/top-buyers/", auth=jwt_auth, summary="Get top buyers")
-def get_top_buyers(request, limit: int = DEFAULT_TOP_BUYERS_LIMIT, days: int = DEFAULT_PERIOD_DAYS):
+def get_top_buyers(
+    request, limit: int = DEFAULT_TOP_BUYERS_LIMIT, days: int = DEFAULT_PERIOD_DAYS
+):
     """Top N buyers by total spend. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))

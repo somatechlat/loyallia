@@ -45,7 +45,9 @@ def get_default_sender_name(fallback: str = "Loyallia") -> str:
         if value:
             return value
     except Exception as e:
-        logger.debug("PlatformSetting mailjet_sender_name unavailable (%s), using fallback.", e)
+        logger.debug(
+            "PlatformSetting mailjet_sender_name unavailable (%s), using fallback.", e
+        )
     return fallback
 
 

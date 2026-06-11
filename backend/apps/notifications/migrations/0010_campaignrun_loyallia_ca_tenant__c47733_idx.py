@@ -6,15 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cards', '0012_card_loyallia_ca_tenant__90dc30_idx_and_more'),
-        ('customers', '0014_customerpass_loyallia_cu_tenant__a39d50_idx_and_more'),
-        ('notifications', '0009_campaignrun_created_by_campaignrun_updated_by'),
-        ('tenants', '0011_alter_location_address_alter_location_city_and_more'),
+        ("cards", "0012_card_loyallia_ca_tenant__90dc30_idx_and_more"),
+        ("customers", "0014_customerpass_loyallia_cu_tenant__a39d50_idx_and_more"),
+        ("notifications", "0009_campaignrun_created_by_campaignrun_updated_by"),
+        ("tenants", "0011_alter_location_address_alter_location_city_and_more"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='campaignrun',
-            index=models.Index(fields=['tenant', 'status'], name='loyallia_ca_tenant__c47733_idx'),
+            model_name="campaignrun",
+            index=models.Index(
+                fields=["tenant", "status"], name="loyallia_ca_tenant__c47733_idx"
+            ),
         ),
     ]

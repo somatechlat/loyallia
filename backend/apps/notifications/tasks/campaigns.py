@@ -7,18 +7,19 @@ Wallet push notification campaigns and WhatsApp campaign delivery.
 import logging
 
 from celery import shared_task
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=300,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_EXTRA_LONG,
     queue="default",
     name="apps.notifications.tasks.send_wallet_notification_campaign",
-    soft_time_limit=600,
-    time_limit=660,
+    soft_time_limit=settings.CELERY_SOFT_TIME_LIMIT_NOTIFICATIONS_CAMPAIGN,
+    time_limit=settings.CELERY_TIME_LIMIT_NOTIFICATIONS_CAMPAIGN,
 )
 def send_wallet_notification_campaign(
     self,
@@ -199,7 +200,9 @@ def send_wallet_notification_campaign(
         for cp in all_passes:
             passes_by_customer.setdefault(str(cp.customer_id), []).append(cp)
 
-        for customer in audience.iterator(chunk_size=50):
+        for customer in audience.iterator(
+            chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL
+        ):
             passes = passes_by_customer.get(str(customer.id), [])
             if not passes:
                 continue
@@ -346,12 +349,12 @@ def send_wallet_notification_campaign(
 
 @shared_task(
     bind=True,
-    max_retries=1,
-    default_retry_delay=300,
+    max_retries=settings.CELERY_MAX_RETRIES_MINIMAL,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_EXTRA_LONG,
     queue="whatsapp_delivery",
     name="apps.notifications.tasks.send_whatsapp_campaign",
-    soft_time_limit=3600,  # 1 hour for large campaigns
-    time_limit=3660,
+    soft_time_limit=settings.CELERY_SOFT_TIME_LIMIT_NOTIFICATIONS_CAMPAIGN_LARGE,
+    time_limit=settings.CELERY_TIME_LIMIT_NOTIFICATIONS_CAMPAIGN_LARGE,
 )
 def send_whatsapp_campaign(
     self,
@@ -441,7 +444,7 @@ def send_whatsapp_campaign(
     succeeded = 0
     failed = 0
 
-    for customer in audience.iterator(chunk_size=50):
+    for customer in audience.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL):
         # Create delivery log row (status=QUEUED)
         delivery_log = CampaignDeliveryLog.objects.create(
             campaign_run=campaign_run,

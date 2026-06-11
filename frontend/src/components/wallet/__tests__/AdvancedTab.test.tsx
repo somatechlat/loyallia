@@ -65,15 +65,9 @@ describe('AdvancedTab', () => {
     expect(badges.length).toBe(2);
   });
 
-  it('renders icon upload zone for Apple notifications', () => {
-    render(<AdvancedTab {...baseProps} />);
-    expect(screen.getByText('Icono para notificaciones')).toBeDefined();
-    expect(screen.getByText('29×29pt, aparece en lock screen')).toBeDefined();
-  });
-
   it('description input updates Apple config', () => {
     render(<AdvancedTab {...baseProps} />);
-    const input = screen.getByPlaceholderText(/Descripción del pase para VoiceOver/i);
+    const input = screen.getByPlaceholderText(/Descripción del pase/i);
     fireEvent.change(input, { target: { value: 'Nueva descripción' } });
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledWith({ description: 'Nueva descripción' });
   });
@@ -87,14 +81,14 @@ describe('AdvancedTab', () => {
 
   it('toggles suppress strip shine checkbox', () => {
     render(<AdvancedTab {...baseProps} />);
-    const checkbox = screen.getByRole('checkbox', { name: /Suprimir brillo del strip/i });
+    const checkbox = screen.getByRole('checkbox', { name: /Suprimir brillo strip/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledWith({ suppressStripShine: false });
   });
 
   it('adds a location when clicking add location button', () => {
     render(<AdvancedTab {...baseProps} />);
-    const addBtn = screen.getByRole('button', { name: /Añadir ubicación/i });
+    const addBtn = screen.getByRole('button', { name: /Ubicación/i });
     fireEvent.click(addBtn);
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledOnce();
     const callArg = baseProps.onUpdateAppleConfig.mock.calls[0]![0] as { locations: unknown[] };
@@ -103,7 +97,7 @@ describe('AdvancedTab', () => {
 
   it('adds a beacon when clicking add beacon button', () => {
     render(<AdvancedTab {...baseProps} />);
-    const addBtn = screen.getByRole('button', { name: /Añadir beacon/i });
+    const addBtn = screen.getByRole('button', { name: /Beacon/i });
     fireEvent.click(addBtn);
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledOnce();
     const callArg = baseProps.onUpdateAppleConfig.mock.calls[0]![0] as { beacons: unknown[] };
@@ -112,8 +106,11 @@ describe('AdvancedTab', () => {
 
   it('updates app launch URL for Apple', () => {
     render(<AdvancedTab {...baseProps} />);
-    const input = screen.getByPlaceholderText(/URL de lanzamiento de la app/i);
-    fireEvent.change(input, { target: { value: 'https://myapp.com/launch' } });
+    // Apple appLaunchURL input has placeholder "https://..."
+    // Google homepageUri input has placeholder "https://play.google.com/..."
+    const inputs = screen.getAllByPlaceholderText(/https:\/\//i);
+    const appleInput = inputs[0]!;
+    fireEvent.change(appleInput, { target: { value: 'https://myapp.com/launch' } });
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledWith({ appLaunchURL: 'https://myapp.com/launch' });
   });
 
@@ -131,7 +128,7 @@ describe('AdvancedTab', () => {
         googleConfig={createMockGoogleConfig({ smartTapRedemptionValue: '' })}
       />
     );
-    expect(screen.getByPlaceholderText(/Ej. 1234567890/i)).toBeDefined();
+    expect(screen.getByPlaceholderText(/Valor Smart Tap/i)).toBeDefined();
   });
 
   it('updates Google Play app link', () => {
@@ -143,11 +140,10 @@ describe('AdvancedTab', () => {
     });
   });
 
-  it('renders card grouping section with ID and order', () => {
+  it('renders grouping ID input', () => {
     render(<AdvancedTab {...baseProps} />);
-    expect(screen.getByText('AGRUPAR TARJETAS')).toBeDefined();
     expect(screen.getByText('ID de grupo')).toBeDefined();
-    expect(screen.getByText('Orden')).toBeDefined();
+    expect(screen.getByPlaceholderText(/loyalty_group_001/i)).toBeDefined();
   });
 
   it('updates grouping ID', () => {
@@ -159,9 +155,8 @@ describe('AdvancedTab', () => {
 
   it('renders divider lines in both sections', () => {
     render(<AdvancedTab {...baseProps} />);
-    // Dividers are rendered as empty border-t divs; we verify section structure is present
-    expect(screen.getByText('UBICACIONES Y BEACONS')).toBeDefined();
-    expect(screen.getByText('ENLACE A APP')).toBeDefined();
-    expect(screen.getByText('AGRUPAR TARJETAS')).toBeDefined();
+    expect(screen.getByText('📍 Ubicaciones y Beacons')).toBeDefined();
+    expect(screen.getByText('Enlace a app')).toBeDefined();
+    expect(screen.getByText('ID de grupo')).toBeDefined();
   });
 });

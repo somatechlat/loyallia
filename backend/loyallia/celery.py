@@ -33,9 +33,7 @@ def get_backup_schedule():
         hour = PlatformSetting.get_int("backup_hour", 3)
         minute = PlatformSetting.get_int("backup_minute", 0)
     except Exception as e:
-        logging.getLogger(__name__).warning(
-            "Backup schedule fallback: %s", e
-        )
+        logging.getLogger(__name__).warning("Backup schedule fallback: %s", e)
         frequency = "daily"
         hour = 3
         minute = 0

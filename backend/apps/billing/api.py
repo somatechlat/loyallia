@@ -177,9 +177,7 @@ def get_subscription(request: HttpRequest):
         "billing_cycle": subscription.billing_cycle,
         "status": subscription.status,
         "status_display": get_message_for_request(
-            SUBSCRIPTION_STATUS_CODES.get(
-                subscription.status, subscription.status
-            ),
+            SUBSCRIPTION_STATUS_CODES.get(subscription.status, subscription.status),
             request,
         ),
         "is_access_allowed": subscription.is_access_allowed,

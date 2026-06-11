@@ -28,6 +28,7 @@ function makeField(overrides: Partial<UnifiedField> & { id: string }): UnifiedFi
     showOnApple: true,
     showOnGoogle: true,
     isDynamic: false,
+    dataType: 'text',
     appleOptions: {},
     googleOptions: { isPredefined: false },
     notifications: {},
@@ -68,7 +69,7 @@ describe('validateFieldGroupLimits', () => {
 
     const auxiliary = result.find((r) => r.group === 'auxiliary');
     expect(auxiliary!.current).toBe(1);
-    expect(auxiliary!.max).toBe(4);
+    expect(auxiliary!.max).toBe(5);
   });
 
   it('flags invalid when limit exceeded', () => {
@@ -121,6 +122,7 @@ describe('canAddFieldToGroup', () => {
       makeField({ id: 'a2', fieldGroup: 'auxiliary' }),
       makeField({ id: 'a3', fieldGroup: 'auxiliary' }),
       makeField({ id: 'a4', fieldGroup: 'auxiliary' }),
+      makeField({ id: 'a5', fieldGroup: 'auxiliary' }),
     ];
     expect(canAddFieldToGroup(fields, 'auxiliary', 'stamp')).toBe(false);
   });

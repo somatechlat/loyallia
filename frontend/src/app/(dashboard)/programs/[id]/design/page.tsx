@@ -3,7 +3,8 @@
 import { useParams } from 'next/navigation';
 import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
 import { useState, useEffect } from 'react';
-import { programsApi } from '@/lib/api';
+import { programsApi, walletTemplatesApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 import { createDefaultState } from '@/hooks/useWalletStudio';
 import { parseWalletDesignFromMetadata } from '@/components/wallet/serialization';
@@ -58,8 +59,25 @@ export default function ProgramDesignPage() {
       <div className="flex-1 overflow-hidden">
         <WalletStudio
           initialState={walletDesign}
+          programId={programId}
           onSave={(state) => setWalletDesign(state)}
-          onSaveAsTemplate={(s) => console.log('Save as template', s)}
+          onSaveAsTemplate={async (s) => {
+            try {
+              await walletTemplatesApi.create({
+                name: s.name || 'Plantilla sin nombre',
+                description: '',
+                card_type: s.cardType,
+                industry: s.industry,
+                design_state: s as unknown as Record<string, unknown>,
+                include_back_content: true,
+                tags: [],
+              });
+              toast.success('Plantilla guardada correctamente');
+            } catch (err: any) {
+              const msg = err?.response?.data?.detail || err?.message || 'Error al guardar plantilla';
+              toast.error(msg);
+            }
+          }}
         />
       </div>
     </div>

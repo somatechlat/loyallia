@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 def slugify_business(name: str) -> str:
     """Generate a unique slug from business name. Handles race conditions."""
     slug_base = re.sub(r"[^a-z0-9]+", "-", name.lower().strip()).strip("-")
-    slug = slug_base[:80]
+    slug = slug_base[: settings.SLUG_MAX_LENGTH]
     counter = 1
     candidate = slug
-    max_attempts = 20
+    max_attempts = settings.SLUG_MAX_ATTEMPTS
     for _ in range(max_attempts):
         try:
             # Atomic check-and-create: attempt to insert, catch IntegrityError on conflict
@@ -48,7 +48,7 @@ def slugify_business(name: str) -> str:
     # Fallback: append UUID suffix if all attempts exhausted
     import uuid
 
-    return f"{slug[:60]}-{uuid.uuid4().hex[:8]}"
+    return f"{slug[:settings.SLUG_MAX_LENGTH - 20]}-{uuid.uuid4().hex[:settings.SLUG_FALLBACK_UUID_LEN]}"
 
 
 def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
@@ -82,8 +82,10 @@ def store_otp(email: str, otp: str, purpose: str) -> None:
     from django.core.cache import cache
 
     salt = secrets.token_hex(16)
-    cache.set(f"otp:{purpose}:{email}", _hash_otp(otp, salt), timeout=900)
-    cache.set(f"otp_salt:{purpose}:{email}", salt, timeout=900)
+    cache.set(
+        f"otp:{purpose}:{email}", _hash_otp(otp, salt), timeout=settings.CACHE_TTL_OTP
+    )
+    cache.set(f"otp_salt:{purpose}:{email}", salt, timeout=settings.CACHE_TTL_OTP)
 
 
 def verify_otp(email: str, otp: str, purpose: str) -> bool:
@@ -106,7 +108,7 @@ def verify_otp(email: str, otp: str, purpose: str) -> bool:
         return False
 
     attempts = cache.get(attempts_key, 0)
-    if attempts >= 5:
+    if attempts >= settings.OTP_MAX_ATTEMPTS:
         cache.delete(key)
         cache.delete(salt_key)
         return False
@@ -117,7 +119,7 @@ def verify_otp(email: str, otp: str, purpose: str) -> bool:
         cache.delete(attempts_key)
         return True
 
-    cache.set(attempts_key, attempts + 1, 900)
+    cache.set(attempts_key, attempts + 1, settings.CACHE_TTL_OTP)
     return False
 
 

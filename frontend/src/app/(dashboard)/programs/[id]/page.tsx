@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { programsApi } from '@/lib/api';
+import { programsApi, walletTemplatesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { UserRole } from '@/types';
@@ -471,7 +471,23 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
               <WalletStudio
                 initialState={walletDesign}
                 onSave={(state) => setWalletDesign(state)}
-                onSaveAsTemplate={(s) => console.log('Save as template', s)}
+                onSaveAsTemplate={async (s) => {
+                  try {
+                    await walletTemplatesApi.create({
+                      name: s.name || 'Plantilla sin nombre',
+                      description: '',
+                      card_type: s.cardType,
+                      industry: s.industry,
+                      design_state: s as unknown as Record<string, unknown>,
+                      include_back_content: true,
+                      tags: [],
+                    });
+                    toast.success(t('wallet.studio.saveTemplateSuccess') || 'Plantilla guardada correctamente');
+                  } catch (err: any) {
+                    const msg = err?.response?.data?.detail || err?.message || 'Error al guardar plantilla';
+                    toast.error(msg);
+                  }
+                }}
               />
             </div>
             <div className="sticky top-24 self-start bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">
