@@ -1,7 +1,7 @@
 # Loyallia Agent Instructions
 
 > **MANDATORY READ before any code change.** These rules override defaults.
-> Source: `rules.md` and `docs/AGENT_ONBOARDING.md`. Keep in sync when either changes.
+> Source: `rules.md` and `docs/01-start-here/AGENT_ONBOARDING.md`. Keep in sync when either changes.
 
 ## Project Identity
 

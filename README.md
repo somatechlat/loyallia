@@ -9,11 +9,12 @@
 
 | Document | Path | Description |
 |----------|------|-------------|
-| **SRS (Complete)** | `docs/SRS_Loyallia_COMPLETE.md` | Full ISO/IEC 29148:2018 Software Requirements Specification |
-| **Architecture & Diagrams** | `docs/ARCHITECTURE.md` | System architecture, sequence diagrams, flowcharts, ERD (Mermaid) |
-| **Port Authority** | `docs/PORT_AUTHORITY.md` | Development port map |
-| **Audit Report** | `docs/audit/2026-04-29_FULL_AUDIT.md` | Full codebase audit — 241 findings |
-| **Handoff** | `HANDOFF.md` | Current project status and remaining work |
+| **Documentation Index** | `docs/00-index.md` | Master index of all project documentation |
+| **SRS (Complete)** | `docs/06-planning/SRS_Loyallia_COMPLETE.md` | Full ISO/IEC 29148:2018 Software Requirements Specification |
+| **Architecture & Diagrams** | `docs/02-architecture/ARCHITECTURE.md` | System architecture, sequence diagrams, flowcharts, ERD (Mermaid) |
+| **Port Authority** | `docs/08-references/PORT_AUTHORITY.md` | Development port map |
+| **Audit Report** | `docs/07-reviews/audit/FULL_SYSTEM_AUDIT_REPORT.md` | Latest full codebase audit report |
+| **Handoff** | `docs/09-archive/docs/09-archive/HANDOFF.md` | Historical handoff (archived) |
 | **Docker Compose** | `docker-compose.yml` | Full local/staging stack — all open source |
 
 ---
@@ -75,7 +76,7 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 | Layer | Technology |
 |-------|-----------|
 | Backend API | Django 5 + Django Ninja |
-| ORM | Django ORM + PostgreSQL 16 |
+| ORM | Django ORM + PostgreSQL 17 |
 | Dashboard | Next.js 14 (React 18) |
 | Scanner | Progressive Web App (browser-based) |
 | Task Queue | Celery 5 + Redis 7 |
@@ -133,7 +134,7 @@ To update credentials via UI:
 
 | Port  | Service           | Internal Port | Notes              |
 |-------|-------------------|---------------|--------------------|
-| 33900 | PostgreSQL 16     | 5432          | Primary database   |
+| 33900 | PostgreSQL 17     | 5432          | Primary database   |
 | 33901 | PgBouncer         | 6432          | Connection pooling |
 | 33902 | Redis 7           | 6379          | Cache + Celery     |
 | 33903 | MinIO (API)       | 9000          | File storage       |
