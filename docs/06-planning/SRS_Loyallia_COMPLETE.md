@@ -134,11 +134,11 @@ Loyallia is a standalone, cloud-native, multi-tenant SaaS platform. It integrate
 | Component | Technology |
 |-----------|-----------|
 | Backend API | Django 5.x + Django Ninja |
-| Database | PostgreSQL 16 |
+| Database | PostgreSQL 17 |
 | Cache | Redis 7 |
 | Task Queue | Celery 5 + Celery Beat |
 | Dashboard Frontend | Next.js 14 (React 18) |
-| Mobile Scanner App | React Native 0.73 |
+| Mobile Scanner App | Next.js PWA (html5-qrcode) |
 | Pass Signing | Python `passlib` / `wallet` library |
 | Push (iOS) | Apple APN via `aioapns` or `httpx` HTTP/2 |
 | Push (Android) | Firebase Admin SDK |
@@ -190,9 +190,9 @@ Multi-tenant SaaS with strict per-tenant data isolation (`tenant_id` FK on all b
 |-------|-----------|-----------|
 | API Framework | Django 5 + Django Ninja | Project mandate; mature ORM; fastest Django REST layer |
 | ORM | Django ORM | Project mandate; no SQLAlchemy |
-| Mobile | React Native | Single codebase for iOS + Android |
+| Mobile Scanner | Next.js PWA | Staff scanner via browser camera, no app install required |
 | Dashboard | Next.js 14 | SSR for fast load; React ecosystem |
-| Database | PostgreSQL 16 | ACID; JSONB for pass metadata |
+| Database | PostgreSQL 17 | ACID; JSONB for pass metadata |
 | Cache/Queue | Redis 7 + Celery 5 | Async pass generation, push delivery, geo-push jobs |
 | Pass Files | Python wallet library | PKPass signing; Google JWT signing |
 | File Storage | MinIO (S3-compatible) | Self-hosted; open source |
@@ -201,15 +201,21 @@ Multi-tenant SaaS with strict per-tenant data isolation (`tenant_id` FK on all b
 
 ### 4.3 Port Authority
 
+> **Note:** Internal ports are container-native (8000, 3000, etc.). External ports use the 33900+ range for host mapping. See `docs/08-references/PORT_AUTHORITY.md` for the authoritative port table.
+
 | Service | Internal Port | External Port |
 |---------|--------------|---------------|
-| Django API | 8000 | 8000 |
-| Next.js Dashboard | 3000 | 3000 |
-| PostgreSQL | 5432 | 5432 (internal only) |
-| Redis | 6379 | 6379 (internal only) |
-| MinIO | 9000 / 9001 | 9000 / 9001 |
+| Django API | 8000 | 33905 |
+| Next.js Dashboard | 3000 | 33906 |
+| PostgreSQL | 5432 | 33900 (internal only) |
+| PgBouncer | 6432 | 33901 |
+| Redis | 6379 | 33902 (internal only) |
+| MinIO | 9000 / 9001 | 33903 / 33904 |
+| Flower (Celery monitor) | 5555 | 33907 |
+| Vault | 8200 | 33908 |
+| Prometheus | 9090 | 33909 |
+| Grafana | 3000 | 33910 |
 | Nginx | 80 / 443 | 80 / 443 |
-| Flower (Celery monitor) | 5555 | 5555 |
 
 ## 5. MODULE 1 — AUTHENTICATION & MULTI-TENANT MANAGEMENT
 
@@ -235,7 +241,7 @@ Manage tenant onboarding, user authentication, role-based access control, and te
 | Req ID | Requirement | Priority |
 |--------|-------------|----------|
 | LYL-FR-AUTH-010 | System SHALL authenticate users via email + password | MUST |
-| LYL-FR-AUTH-011 | System SHALL issue JWT access token (15-min expiry) and refresh token (30-day expiry) | MUST |
+| LYL-FR-AUTH-011 | System SHALL issue JWT access token (60-min expiry) and refresh token (30-day expiry) | MUST |
 | LYL-FR-AUTH-012 | System SHALL support optional MFA via TOTP (Google Authenticator compatible) | SHOULD |
 | LYL-FR-AUTH-013 | System SHALL implement rate limiting: 5 failed login attempts → 15-minute lockout | MUST |
 | LYL-FR-AUTH-014 | System SHALL provide password reset via email OTP link (valid 30 minutes) | MUST |

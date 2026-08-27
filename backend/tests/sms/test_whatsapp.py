@@ -7,6 +7,7 @@ Tests for:
 
 from django.test import TestCase
 
+from apps.automation.engine import _execute_send_whatsapp
 from apps.automation.models import (
     AutomationAction,
 )
@@ -34,7 +35,7 @@ class AutomationSendWhatsAppTest(TestCase):
             action=AutomationAction.SEND_WHATSAPP,
             action_config={"title": "Promo", "message": "Visit us today!"},
         )
-        result = auto._execute_send_whatsapp(self.customer, {})
+        result = _execute_send_whatsapp(auto, self.customer, {})
         # Real is_bridge_available() checks the bridge health.
         # If bridge is not configured, it returns False and method returns False.
         self.assertIsInstance(result, bool)
@@ -47,7 +48,7 @@ class AutomationSendWhatsAppTest(TestCase):
             action=AutomationAction.SEND_WHATSAPP,
             action_config={"title": "Hi", "message": "Test"},
         )
-        result = auto._execute_send_whatsapp(self.customer, {})
+        result = _execute_send_whatsapp(auto, self.customer, {})
         self.assertIsInstance(result, bool)
 
     def test_send_whatsapp_no_phone(self):
@@ -57,5 +58,5 @@ class AutomationSendWhatsAppTest(TestCase):
             action=AutomationAction.SEND_WHATSAPP,
             action_config={"message": "Test"},
         )
-        result = auto._execute_send_whatsapp(customer_no_phone, {})
+        result = _execute_send_whatsapp(auto, customer_no_phone, {})
         self.assertFalse(result)

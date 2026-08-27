@@ -8,6 +8,12 @@ Tests for:
 
 from django.test import TestCase
 
+from apps.automation.engine import (
+    _execute_send_email,
+    _execute_send_sms,
+    _execute_send_wallet,
+    _execute_send_whatsapp,
+)
 from apps.automation.models import (
     AutomationAction,
     AutomationTrigger,
@@ -46,7 +52,7 @@ class AutomationSendEmailTest(TestCase):
             action=AutomationAction.SEND_EMAIL,
             action_config={"title": "Welcome!", "message": "Thanks for joining"},
         )
-        result = auto._execute_send_email(self.customer, {})
+        result = _execute_send_email(auto, self.customer, {})
         # Real email backend executes (console in dev). Method returns True on success.
         self.assertTrue(result)
 
@@ -57,7 +63,7 @@ class AutomationSendEmailTest(TestCase):
             action=AutomationAction.SEND_EMAIL,
             action_config={"title": "Hi", "message": "Hello"},
         )
-        result = auto._execute_send_email(customer_no_email, {})
+        result = _execute_send_email(auto, customer_no_email, {})
         self.assertFalse(result)
 
     def test_send_email_smtp_failure_returns_false(self):
@@ -69,7 +75,7 @@ class AutomationSendEmailTest(TestCase):
             action_config={"title": "Hi", "message": "World"},
         )
         # Real execution: if SMTP fails, method catches and returns False
-        result = auto._execute_send_email(self.customer, {})
+        result = _execute_send_email(auto, self.customer, {})
         # In dev with console backend, this succeeds. In production SMTP, failures are caught.
         self.assertIsInstance(result, bool)
 
@@ -99,7 +105,7 @@ class AutomationSendSMSTest(TestCase):
             action=AutomationAction.SEND_SMS,
             action_config={"title": "Promo", "message": "50% off today!"},
         )
-        result = auto._execute_send_sms(self.customer, {})
+        result = _execute_send_sms(auto, self.customer, {})
         self.assertIsInstance(result, bool)
 
     def test_send_sms_no_phone_returns_false(self):
@@ -109,7 +115,7 @@ class AutomationSendSMSTest(TestCase):
             action=AutomationAction.SEND_SMS,
             action_config={"message": "Test"},
         )
-        result = auto._execute_send_sms(customer_no_phone, {})
+        result = _execute_send_sms(auto, customer_no_phone, {})
         self.assertFalse(result)
 
     def test_send_sms_not_configured_returns_false(self):
@@ -123,7 +129,7 @@ class AutomationSendSMSTest(TestCase):
             action=AutomationAction.SEND_SMS,
             action_config={"message": "Test"},
         )
-        result = auto._execute_send_sms(self.customer, {})
+        result = _execute_send_sms(auto, self.customer, {})
         self.assertFalse(result)
 
         clear_test_overrides()
@@ -144,7 +150,7 @@ class AutomationSendWalletTest(TestCase):
             action=AutomationAction.SEND_WALLET,
             action_config={"title": "New Offer!", "message": "Check your wallet"},
         )
-        result = auto._execute_send_wallet(self.customer, {})
+        result = _execute_send_wallet(auto, self.customer, {})
         # Google/Apple push functions return False gracefully when not configured.
         # The method returns push_sent (False if none succeeded).
         self.assertIsInstance(result, bool)
@@ -156,7 +162,7 @@ class AutomationSendWalletTest(TestCase):
             action=AutomationAction.SEND_WALLET,
             action_config={"title": "Hi", "message": "Test"},
         )
-        result = auto._execute_send_wallet(customer2, {})
+        result = _execute_send_wallet(auto, customer2, {})
         self.assertFalse(result)
 
 

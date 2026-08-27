@@ -11,6 +11,12 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.analytics.models import CustomerAnalytics
+from apps.automation.engine import (
+    _execute_issue_reward,
+    _execute_send_email,
+    _execute_send_sms,
+    _execute_update_segment,
+)
 from apps.automation.models import (
     AutomationAction,
     AutomationExecution,
@@ -342,7 +348,7 @@ class AutomationActionTest(TestCase):
             action=AutomationAction.SEND_EMAIL,
             action_config={"subject": "Hello", "body": "World"},
         )
-        result = auto._execute_send_email(self.customer, {})
+        result = _execute_send_email(auto, self.customer, {})
         self.assertTrue(result)
 
     def test_send_sms_action_returns_bool(self):
@@ -353,7 +359,7 @@ class AutomationActionTest(TestCase):
             action=AutomationAction.SEND_SMS,
             action_config={"message": "Hi"},
         )
-        result = auto._execute_send_sms(self.customer, {})
+        result = _execute_send_sms(auto, self.customer, {})
         # Result is bool regardless of whether Twilio is configured
         self.assertIsInstance(result, bool)
         # If Twilio is not configured, should return False
@@ -366,7 +372,7 @@ class AutomationActionTest(TestCase):
             action=AutomationAction.ISSUE_REWARD,
             action_config={"program_id": str(self.card.id)},
         )
-        result = auto._execute_issue_reward(self.customer, {})
+        result = _execute_issue_reward(auto, self.customer, {})
         # Should succeed since customer has a pass for the card
         self.assertIsInstance(result, bool)
 
@@ -376,7 +382,7 @@ class AutomationActionTest(TestCase):
             action=AutomationAction.ISSUE_REWARD,
             action_config={"program_id": str(uuid.uuid4())},
         )
-        result = auto._execute_issue_reward(self.customer, {})
+        result = _execute_issue_reward(auto, self.customer, {})
         self.assertFalse(result)
 
     def test_update_segment_action(self):
@@ -385,7 +391,7 @@ class AutomationActionTest(TestCase):
             action=AutomationAction.UPDATE_SEGMENT,
             action_config={"new_segment": "vip"},
         )
-        result = auto._execute_update_segment(self.customer, {})
+        result = _execute_update_segment(auto, self.customer, {})
         self.assertTrue(result)
         analytics = CustomerAnalytics.objects.get(customer=self.customer)
         self.assertEqual(analytics.segment, "vip")
@@ -396,7 +402,7 @@ class AutomationActionTest(TestCase):
             action=AutomationAction.UPDATE_SEGMENT,
             action_config={},
         )
-        result = auto._execute_update_segment(self.customer, {})
+        result = _execute_update_segment(auto, self.customer, {})
         self.assertFalse(result)
 
 

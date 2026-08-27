@@ -33,6 +33,7 @@
 - Cache TTL: 5 minutes. Call `clear_cache()` after Vault writes.
 - Vault writes (`put_secret`) must be SUPER_ADMIN-only, audited, and validated against allowlists.
 - `certs/` directory may contain real local credentials. Never add them to Git.
+- Development and production bootstrap secrets MUST use separate credentials. A dev compromise must not grant access to production services.
 
 ## Backend Standards
 

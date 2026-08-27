@@ -52,7 +52,7 @@ x-common-env: &common-env
   # WhatsApp Bridge (LYL-SRS-006)
   WHATSAPP_BRIDGE_URL: http://whatsapp-bridge:3001
 services:
-  # PostgreSQL 16 primary database (localhost:33900, 1.5GB)
+  # PostgreSQL 17 primary database (localhost:33900, 1.5GB)
   # WAL archiving, tuned memory, persistent volume
   postgres:
     image: postgres:17.4-alpine
