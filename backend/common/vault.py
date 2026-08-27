@@ -138,7 +138,7 @@ def _fetch_vault_secrets() -> dict:
         try:
             req = urllib.request.Request(url, headers=headers, method="GET")
             with urllib.request.urlopen(
-                req, timeout=settings.HTTP_TIMEOUT_VAULT_READ, context=ssl_context
+                req, timeout=getattr(settings, "HTTP_TIMEOUT_VAULT_READ", 5), context=ssl_context
             ) as response:
                 body = json.loads(response.read().decode("utf-8"))
                 secrets = body.get("data", {}).get("data", {})
@@ -271,7 +271,7 @@ def put_secret(vault_key: str, value: str) -> bool:
             url, data=payload, headers=patch_headers, method="PATCH"
         )
         with urllib.request.urlopen(
-            req, timeout=settings.HTTP_TIMEOUT_VAULT_WRITE, context=ssl_context
+            req, timeout=getattr(settings, "HTTP_TIMEOUT_VAULT_WRITE", 5), context=ssl_context
         ) as response:
             if response.status in (200, 204):
                 logger.info(
@@ -303,7 +303,7 @@ def put_secret(vault_key: str, value: str) -> bool:
             url, data=fallback_payload, headers=headers, method="POST"
         )
         with urllib.request.urlopen(
-            req, timeout=settings.HTTP_TIMEOUT_VAULT_WRITE, context=ssl_context
+            req, timeout=getattr(settings, "HTTP_TIMEOUT_VAULT_WRITE", 5), context=ssl_context
         ) as response:
             if response.status in (200, 204):
                 logger.info(

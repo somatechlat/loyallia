@@ -69,6 +69,7 @@ If any required context is missing and cannot be discovered from the repo, ask b
 - Do not wipe Vault secrets.
 - Vault writes must be SUPER_ADMIN-only, allowlisted, validated, and audited.
 - Files under `certs/` may contain real local credentials. Do not add those credentials to Git.
+- Development and production bootstrap secrets (`.bootstrap_secrets.*.env`) MUST use separate credentials. A dev environment compromise must not grant access to production services.
 
 ## SysAdmin And Destructive Operations
 

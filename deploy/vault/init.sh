@@ -384,9 +384,19 @@ status_json=$(vault_status_json)
 if [ -n "$status_json" ]; then
     init_val=$(printf "%s" "$status_json" | json_extract_bool "initialized")
     sealed_val=$(printf "%s" "$status_json" | json_extract_bool "sealed")
-    if [ "$init_val" = "true" ] && [ "$sealed_val" = "false" ] && [ -f /vault/runtime/app-token ]; then
-        log_info "Vault already initialized and unsealed. App token exists. Skipping."
-        exit 0
+        if [ "$init_val" = "true" ] && [ "$sealed_val" = "false" ] && [ -f /vault/runtime/app-token ]; then
+        # Validate the existing token by testing an authenticated Vault API call
+        _test_token=$(cat /vault/runtime/app-token 2>/dev/null || true)
+        if [ -n "$_test_token" ] && wget --no-check-certificate --quiet -O /dev/null \
+            --header="X-Vault-Token: $_test_token" \
+            "$VAULT_ADDR/v1/auth/token/lookup-self" 2>/dev/null; then
+            log_info "Vault already initialized and unsealed. App token is valid. Skipping."
+            exit 0
+        else
+            log_warn "App token exists but is invalid or expired. Re-creating..."
+            # Remove stale runtime files so they get re-created below
+            rm -f /vault/runtime/app-token /vault/runtime/loyallia-app.hcl
+        fi
     fi
 fi
 

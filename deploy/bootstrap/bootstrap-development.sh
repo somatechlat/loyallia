@@ -219,12 +219,25 @@ start_vault() {
     fi
 
     # ── vault-init container ──
+    # Capture old token before vault-init runs to detect re-creation
+    local _vault_init_old_token=""
+    _vault_init_old_token="$(docker exec loyallia-vault cat /vault/runtime/app-token 2>/dev/null || true)"
+
     if vault_init_completed; then
         local exit_code
         exit_code="$(docker inspect loyallia-vault-init --format '{{.State.ExitCode}}' 2>/dev/null || echo 1)"
         if [ "$exit_code" -eq 0 ]; then
-            skip "vault-init already completed successfully."
-            return 0
+            # Even if vault-init exited 0, verify the app token is actually valid
+            local _vtoken=""
+            _vtoken="$(docker exec loyallia-vault cat /vault/runtime/app-token 2>/dev/null || true)"
+            if [ -n "$_vtoken" ] && curl -sf -k -o /dev/null -H "X-Vault-Token: $_vtoken" \
+                "https://127.0.0.1:33908/v1/auth/token/lookup-self" 2>/dev/null; then
+                skip "vault-init already completed successfully. App token is valid."
+                return 0
+            else
+                warn "vault-init exited 0 but app token is invalid. Removing and retrying..."
+                docker rm -f loyallia-vault-init 2>/dev/null || true
+            fi
         else
             warn "Previous vault-init failed (exit $exit_code). Removing and retrying..."
             docker rm -f loyallia-vault-init 2>/dev/null || true
@@ -265,6 +278,15 @@ start_vault() {
     fi
 
     docker compose logs vault-init --tail=5
+
+    # Check if vault-init re-created the app token (invalid → re-seeded)
+    local _old_token="${_vault_init_old_token:-}"
+    local _new_token=""
+    _new_token="$(docker exec loyallia-vault cat /vault/runtime/app-token 2>/dev/null || true)"
+    if [ -n "$_old_token" ] && [ -n "$_new_token" ] && [ "$_old_token" != "$_new_token" ]; then
+        warn "App token was re-created by vault-init. Restarting dependent services..."
+        docker compose restart api celery-pass celery-push celery-default celery-beat flower 2>/dev/null || true
+    fi
 }
 
 auto_create_rescue_files() {
