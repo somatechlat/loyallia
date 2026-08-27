@@ -91,7 +91,7 @@ api.get = function getDeduped<T = unknown, R = import('axios').AxiosResponse<T>,
   }
   const promise = _originalGet<T, R, D>(url, config).finally(() => {
     inflight.delete(key);
-  });
+  }) as Promise<R>;
   inflight.set(key, promise);
   return promise;
 };
