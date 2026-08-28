@@ -40,6 +40,9 @@ class CardCreateIn(BaseModel):
     icon_url: str | None = ""
     metadata: dict | None = Field(default_factory=dict)
     locations: list | None = Field(default_factory=list)
+    stamps_required: int | None = None
+    reward_description: str | None = None
+    provider: str | None = None
 
     @field_validator("metadata")
     @classmethod
@@ -122,6 +125,9 @@ class CardUpdateIn(BaseModel):
     is_active: bool | None = None
     is_published: bool | None = None
     locations: list | None = None
+    stamps_required: int | None = None
+    reward_description: str | None = None
+    provider: str | None = None
 
     @field_validator("metadata")
     @classmethod

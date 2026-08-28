@@ -185,6 +185,14 @@ def trigger_manual_backup(request: HttpRequest, payload: TriggerBackupIn):
 @require_role("SUPER_ADMIN")
 def get_backup_detail(request: HttpRequest, backup_id: str):
     """Get a single backup job by its UUID."""
+    import uuid as _uuid
+
+    try:
+        _uuid.UUID(backup_id)
+    except (ValueError, AttributeError):
+        from django.http import Http404
+
+        raise Http404("Not found")
     job = get_object_or_404(BackupJob, id=backup_id)
 
     _audit(
@@ -207,6 +215,14 @@ def get_backup_detail(request: HttpRequest, backup_id: str):
 @require_role("SUPER_ADMIN")
 def verify_backup_endpoint(request: HttpRequest, backup_id: str):
     """Run verification on an existing backup job."""
+    import uuid as _uuid
+
+    try:
+        _uuid.UUID(backup_id)
+    except (ValueError, AttributeError):
+        from django.http import Http404
+
+        raise Http404("Not found")
     job = get_object_or_404(BackupJob, id=backup_id)
 
     if job.status not in (
@@ -260,6 +276,14 @@ def restore_from_backup(
     payload: RestoreFromBackupIn,
 ):
     """Restore the platform from a backup."""
+    import uuid as _uuid
+
+    try:
+        _uuid.UUID(backup_id)
+    except (ValueError, AttributeError):
+        from django.http import Http404
+
+        raise Http404("Not found")
     job = get_object_or_404(BackupJob, id=backup_id)
 
     if not payload.confirm:

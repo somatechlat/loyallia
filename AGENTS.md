@@ -60,10 +60,20 @@
   ```
 - **Integration tests:** Use `--ds=loyallia.settings.test_integration` through PgBouncer.
 - **Frontend unit:** `cd frontend && npm run test:unit`
-- **Frontend E2E:** `cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test`
+- **Frontend E2E (local):** `cd frontend && PLAYWRIGHT_BASE_URL=http://localhost:33906 npx playwright test`
+- **Frontend E2E (production):**
+  ```bash
+  export PLAYWRIGHT_BASE_URL=https://rewards.loyallia.com
+  export E2E_ALLOW_HOSTS=rewards.loyallia.com
+  cd frontend && npx playwright test --project=full
+  ```
 - **Do NOT** run tests against standalone PostgreSQL, SQLite, or host venv.
 - Playwright tests must NOT mutate Vault secrets, factory reset, or seed demo data.
 - Mutating E2E tests must use uniquely prefixed records and clean up ONLY those records.
+- Production E2E tests MUST run with `--workers=1` (serial execution only).
+- Production E2E test users are isolated in `e2e-production-tenant` (Enterprise plan).
+- See `docs/03-guides/PRODUCTION_E2E_TESTING.md` for full guide.
+- See `docs/04-runbooks/E2E_TESTING_RUNBOOK.md` for step-by-step runbook.
 
 ## Quality Gates (MUST PASS before claiming ready)
 

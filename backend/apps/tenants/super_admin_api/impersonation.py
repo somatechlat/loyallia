@@ -182,4 +182,4 @@ def revoke_impersonation(request):
         request.user.email,
         user_id,
     )
-    return {"message": get_message("SUCCESS", detail="Impersonation revoked")}
+    return {"message": "Impersonation revoked successfully"}

@@ -107,6 +107,20 @@ If any required context is missing and cannot be discovered from the repo, ask b
 - Tests must fail fast when required environment variables are missing.
 - Role tests must include positive paths, forbidden-role checks, cross-tenant checks, and validation/error checks.
 
+### Production E2E Testing Rules
+
+- Production E2E tests MUST use `E2E_ALLOW_HOSTS=rewards.loyallia.com` to bypass safety block.
+- Production E2E tests MUST run with `--workers=1` (serial execution only).
+- Production E2E tests MUST NOT modify real business data (only E2E tenant data).
+- Production E2E tests MUST NOT run factory reset or seed demo.
+- Production E2E test users are isolated in `e2e-production-tenant` (Enterprise plan).
+- Production E2E credentials are in `.auth/e2e-credentials.json` (git-ignored).
+- Always verify Vault is unsealed before running production E2E tests.
+- Always verify container health before running production E2E tests.
+- Clean up any orphaned test data after test runs.
+- See `docs/03-guides/PRODUCTION_E2E_TESTING.md` for full guide.
+- See `docs/04-runbooks/E2E_TESTING_RUNBOOK.md` for step-by-step runbook.
+
 ## Quality Gates
 
 Backend gates before merge or release:
