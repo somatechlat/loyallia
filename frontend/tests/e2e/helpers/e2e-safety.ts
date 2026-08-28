@@ -47,9 +47,16 @@ export async function loginRole(request: APIRequestContext, role: E2ERole): Prom
   const { getE2ERoleCredential } = await import('./e2e-test-config');
   const baseURL = getE2EBaseURL();
   const { email, password } = getE2ERoleCredential(role);
-  const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
+
+  // Retry loop for transient 503s (Gunicorn worker exhaustion)
+  let response;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    response = await request.post(`${baseURL}/api/v1/auth/login/`, {
+      data: { email, password },
+    });
+    if (response.status() === 200) break;
+    if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+  }
 
   expect(response.status(), `Login API should return 200 for ${role}`).toBe(200);
   const body = await response.json();
@@ -63,9 +70,16 @@ export async function loginOwnerContext(
   const { getE2ERoleCredential } = await import('./e2e-test-config');
   const baseURL = getE2EBaseURL();
   const { email, password } = getE2ERoleCredential('owner');
-  const response = await request.post(`${baseURL}/api/v1/auth/login/`, {
-    data: { email, password },
-  });
+
+  // Retry loop for transient 503s
+  let response;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    response = await request.post(`${baseURL}/api/v1/auth/login/`, {
+      data: { email, password },
+    });
+    if (response.status() === 200) break;
+    if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+  }
 
   expect(response.status(), 'Owner login API should return 200').toBe(200);
   const body = await response.json();

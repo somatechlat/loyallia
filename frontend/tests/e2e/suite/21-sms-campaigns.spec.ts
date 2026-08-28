@@ -288,7 +288,7 @@ test.describe('SMS Campaign RBAC — MANAGER blocked @manager @campaigns', () =>
     expect(resp.status()).toBe(403);
   });
 
-  test('MANAGER does NOT have "Campañas" in navigation @manager', async ({ page }) => {
+  test('MANAGER does NOT have "Campañas" in navigation via SMS @manager', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     const navLink = page.locator('nav, aside').getByText('Campañas');
     await expect(navLink).toHaveCount(0);
