@@ -31,6 +31,20 @@ def create_program(tenant, data: dict) -> Card:
     if Card.objects.filter(tenant=tenant, name=data["name"]).exists():
         raise ValueError("PROGRAM_DUPLICATE_NAME")
 
+    metadata = data.get("metadata", {})
+
+    stamps_required = data.get("stamps_required")
+    if stamps_required is not None:
+        metadata["stamps_required"] = stamps_required
+
+    reward_description = data.get("reward_description")
+    if reward_description is not None:
+        metadata["reward_description"] = reward_description
+
+    provider = data.get("provider")
+    if provider is not None:
+        metadata["provider"] = provider
+
     return Card.objects.create(
         tenant=tenant,
         card_type=data["card_type"],
@@ -42,7 +56,8 @@ def create_program(tenant, data: dict) -> Card:
         text_color=data.get("text_color", "#ffffff"),
         strip_image_url=data.get("strip_image_url", ""),
         icon_url=data.get("icon_url", ""),
-        metadata=data.get("metadata", {}),
+        stamps_required=stamps_required,
+        metadata=metadata,
         locations=data.get("locations", []),
     )
 
@@ -104,6 +119,27 @@ def update_program(card: Card, data: dict, tenant) -> Card:
     if data.get("is_published") is not None:
         card.is_published = data["is_published"]
         update_fields.append("is_published")
+
+    if data.get("stamps_required") is not None:
+        card.stamps_required = data["stamps_required"]
+        update_fields.append("stamps_required")
+        if card.metadata is None:
+            card.metadata = {}
+        card.metadata["stamps_required"] = data["stamps_required"]
+
+    if data.get("reward_description") is not None:
+        if card.metadata is None:
+            card.metadata = {}
+        card.metadata["reward_description"] = data["reward_description"]
+        if "metadata" not in update_fields:
+            update_fields.append("metadata")
+
+    if data.get("provider") is not None:
+        if card.metadata is None:
+            card.metadata = {}
+        card.metadata["provider"] = data["provider"]
+        if "metadata" not in update_fields:
+            update_fields.append("metadata")
 
     if update_fields:
         try:

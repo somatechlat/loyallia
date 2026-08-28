@@ -32,6 +32,8 @@
     "test:e2e:billing": "playwright test --project=billing",
     "test:e2e:external": "playwright test --project=external-providers",
     "test:e2e:ci": "playwright test --project=auth --project=programs --project=customers --project=superadmin --project=role-isolation",
+    "test:e2e:prod": "playwright test --config=playwright.production.config.ts --project=full",
+    "test:e2e:prod:smoke": "playwright test --config=playwright.production.config.ts --project=auth --project=programs --project=customers --project=role-isolation",
     "test:all": "npm run typecheck && npm run test:unit && npm run build && npm run test:e2e"
   },
   "dependencies": {

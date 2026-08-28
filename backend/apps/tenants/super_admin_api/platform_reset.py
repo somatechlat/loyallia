@@ -82,18 +82,32 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
         logger.warning("Failed to audit demo seed: %s", e, exc_info=True)
 
     output = StringIO()
-    call_command("seed_development_data", generate=True, stdout=output, stderr=output)
+    try:
+        call_command("seed_development_data", generate=True, stdout=output, stderr=output)
+    except Exception as exc:
+        from common.environment_guard import EnvironmentGuardError
+
+        if isinstance(exc, EnvironmentGuardError):
+            raise HttpError(403, get_message("ADMIN_FACTORY_PRODUCTION_BLOCKED"))
+        raise
 
     # DEMO ONLY: Seed real Ecuadorian business data
     import secrets
 
     demo_password = secrets.token_urlsafe(16)
-    call_command(
-        "seed_ecuador_businesses",
-        password=demo_password,
-        stdout=output,
-        stderr=output,
-    )
+    try:
+        call_command(
+            "seed_ecuador_businesses",
+            password=demo_password,
+            stdout=output,
+            stderr=output,
+        )
+    except Exception as exc:
+        from common.environment_guard import EnvironmentGuardError
+
+        if isinstance(exc, EnvironmentGuardError):
+            raise HttpError(403, get_message("ADMIN_FACTORY_PRODUCTION_BLOCKED"))
+        raise
 
     logger.info("SUPER_ADMIN %s triggered demo data seed", _request_user(request).email)
     return SeedDemoDataOut(
