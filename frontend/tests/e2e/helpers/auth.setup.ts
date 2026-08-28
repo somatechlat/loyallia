@@ -35,12 +35,19 @@ setup('authenticate all roles', async ({ page, context, request }) => {
     // Clear all cookies from previous iterations
     await context.clearCookies();
 
-    // Login via API directly (most reliable — no browser form interaction needed)
-    const loginResp = await request.post(`${API_URL}/api/v1/auth/login/`, {
-      data: { email: user.email, password: user.password },
-    });
+    // Login via API directly with retry for transient 503s (Gunicorn worker exhaustion)
+    let loginResp;
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      loginResp = await request.post(`${API_URL}/api/v1/auth/login/`, {
+        data: { email: user.email, password: user.password },
+      });
+      if (loginResp.status() === 200) break;
+      lastError = `Attempt ${attempt}: HTTP ${loginResp.status()}`;
+      if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+    }
 
-    expect(loginResp.status(), `Login API should return 200 for ${user.email}`).toBe(200);
+    expect(loginResp.status(), `Login API should return 200 for ${user.email} (last: ${lastError})`).toBe(200);
     const body = await loginResp.json();
     const accessToken = body.access_token;
     const refreshToken = body.refresh_token;
@@ -86,5 +93,10 @@ setup('authenticate all roles', async ({ page, context, request }) => {
     const fs = require('fs');
     fs.mkdirSync('.auth', { recursive: true });
     fs.writeFileSync(user.file, JSON.stringify(state, null, 2));
+
+    // Delay between logins to avoid Gunicorn worker exhaustion
+    if (user !== users[users.length - 1]) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
   }
 });
