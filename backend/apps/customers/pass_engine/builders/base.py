@@ -10,6 +10,7 @@ from django.conf import settings
 
 from apps.tenants.models import PlatformSetting
 from common.messages import get_message
+from common.platform_config import get_platform_config
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +104,7 @@ def _resolve_url(url: str, base_url: str) -> str:
             return _public_placeholder_for_url(url)
         return url
     if url.startswith("/"):
-        # Resolve relative URL using base_url, or fall back to platform config
         if not base_url:
-            from django.conf import settings
-
-            from common.platform_config import get_platform_config
-
             base_url = get_platform_config(
                 "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
             )

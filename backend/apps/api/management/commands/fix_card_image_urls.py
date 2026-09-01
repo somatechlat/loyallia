@@ -55,5 +55,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"  {c}")
 
         self.stdout.write(
-            self.style.SUCCESS(f"\nDone. Updated {updated} card(s) with absolute image URLs.")
+            self.style.SUCCESS(
+                f"\nDone. Updated {updated} card(s) with absolute image URLs."
+            )
         )
