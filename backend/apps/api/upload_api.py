@@ -124,7 +124,9 @@ def upload_file(request, file: UploadedFile):
         public_base = get_platform_config(
             "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
         ).rstrip("/")
-        public_url = f"{public_base}/assets/{path}" if public_base else f"/assets/{path}"
+        public_url = (
+            f"{public_base}/assets/{path}" if public_base else f"/assets/{path}"
+        )
 
         return {"success": True, "url": public_url}
 

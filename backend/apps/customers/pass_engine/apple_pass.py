@@ -376,7 +376,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
         s3_key = None
         if url.startswith("/assets/"):
-            s3_key = url[len("/assets/"):]
+            s3_key = url[len("/assets/") :]
         elif url.startswith("http"):
             # Extract S3 key from absolute MinIO URL if it matches our endpoint
             from urllib.parse import urlparse
@@ -411,9 +411,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
                 )
                 content = response["Body"].read()
                 if len(content) > settings.PASS_IMAGE_MAX_DOWNLOAD_BYTES:
-                    logger.warning(
-                        "Image too large (%d bytes): %s", len(content), url
-                    )
+                    logger.warning("Image too large (%d bytes): %s", len(content), url)
                     return None
                 return content
             except Exception as exc:
@@ -450,11 +448,9 @@ def generate_pkpass(customer_pass) -> bytes | None:
 
         return None
 
-    wallet_studio = _get_wallet_studio(card)
     v2_images = wallet_studio.get("images") or {}
 
     def _image_url(asset) -> str:
-        """Extract URL from an ImageAsset dict or return as-is if string."""
         if isinstance(asset, dict):
             return asset.get("url") or ""
         if isinstance(asset, str):
