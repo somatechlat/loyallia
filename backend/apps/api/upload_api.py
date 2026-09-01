@@ -117,8 +117,14 @@ def upload_file(request, file: UploadedFile):
         # Save to S3/MinIO
         path = default_storage.save(filename, file)
 
-        # Return relative URL so it works via nginx proxy on any origin (localhost, IP, domain)
-        public_url = f"/assets/{path}"
+        # Build absolute URL so wallet pass generation can fetch images via HTTP.
+        # Relative URLs work in browsers but fail server-side during .pkpass/JWT generation.
+        from common.platform_config import get_platform_config
+
+        public_base = get_platform_config(
+            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+        ).rstrip("/")
+        public_url = f"{public_base}/assets/{path}" if public_base else f"/assets/{path}"
 
         return {"success": True, "url": public_url}
 
@@ -157,13 +163,21 @@ def list_assets(request):
             Prefix=prefix,
         )
 
+        # Build absolute base URL for consistent image URLs
+        from common.platform_config import get_platform_config
+
+        public_base = get_platform_config(
+            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+        ).rstrip("/")
+
         assets: list[dict[str, Any]] = []
         for obj in response.get("Contents", []):
             key = obj["Key"]
             name = key.split("/")[-1]
+            url = f"{public_base}/assets/{key}" if public_base else f"/assets/{key}"
             assets.append(
                 {
-                    "url": f"/assets/{key}",
+                    "url": url,
                     "name": name,
                     "size": obj["Size"],
                     "last_modified": obj["LastModified"].isoformat(),

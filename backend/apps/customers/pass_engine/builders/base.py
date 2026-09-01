@@ -103,6 +103,18 @@ def _resolve_url(url: str, base_url: str) -> str:
             return _public_placeholder_for_url(url)
         return url
     if url.startswith("/"):
+        # Resolve relative URL using base_url, or fall back to platform config
+        if not base_url:
+            from django.conf import settings
+
+            from common.platform_config import get_platform_config
+
+            base_url = get_platform_config(
+                "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+            )
+        if not base_url:
+            logger.warning("Cannot resolve relative URL %s: no base_url available", url)
+            return url
         resolved = base_url.rstrip("/") + url
         if _is_local_or_private_url(resolved):
             return _public_placeholder_for_url(url)

@@ -34,7 +34,6 @@ from apps.customers.pass_engine.apple_pass_builders import (
     _build_locations,
 )
 from apps.customers.pass_engine.apple_v2_builders import _get_wallet_studio
-from common.platform_config import get_platform_config
 
 logger = logging.getLogger(__name__)
 
@@ -364,34 +363,78 @@ def generate_pkpass(customer_pass) -> bytes | None:
     v2_colors = wallet_studio.get("colors") or {}
     bg_color = v2_colors.get("background") or card.background_color or "#1A1A2E"
 
-    async def _fetch_image_bytes_async(url: str) -> bytes | None:
-        """Async fetch image bytes from a URL with SSRF protection."""
+    def _fetch_image_from_storage(url: str) -> bytes | None:
+        """Fetch image bytes directly from MinIO/S3 storage.
+
+        Handles three URL formats:
+        1. Relative /assets/... paths → reads directly from MinIO bucket
+        2. Absolute MinIO/S3 URLs → reads directly from bucket
+        3. External HTTPS URLs → falls back to HTTP fetch
+        """
         if not url:
             return None
-        if url.startswith("/"):
-            public_base = get_platform_config(
-                "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
-            ).rstrip("/")
-            if public_base:
-                url = public_base + url
-            else:
-                logger.warning(
-                    "Cannot resolve relative image URL %s: PUBLIC_BASE_URL not set", url
+
+        s3_key = None
+        if url.startswith("/assets/"):
+            s3_key = url[len("/assets/"):]
+        elif url.startswith("http"):
+            # Extract S3 key from absolute MinIO URL if it matches our endpoint
+            from urllib.parse import urlparse
+
+            parsed = urlparse(url)
+            minio_host = urlparse(settings.MINIO_ENDPOINT).hostname or ""
+            if parsed.hostname == minio_host or (
+                minio_host in ("localhost", "127.0.0.1")
+                and parsed.port == urlparse(settings.MINIO_ENDPOINT).port
+            ):
+                # Strip bucket prefix from path: /assets/uploads/... → uploads/...
+                path = parsed.path.lstrip("/")
+                bucket = settings.MINIO_BUCKET_ASSETS
+                if path.startswith(f"{bucket}/"):
+                    s3_key = path[len(f"{bucket}/") :]
+                else:
+                    s3_key = path
+
+        if s3_key:
+            try:
+                import boto3
+
+                client = boto3.client(
+                    "s3",
+                    endpoint_url=settings.MINIO_ENDPOINT,
+                    aws_access_key_id=settings.MINIO_ACCESS_KEY,
+                    aws_secret_access_key=settings.MINIO_SECRET_KEY,
+                    region_name=getattr(settings, "MINIO_REGION_NAME", "us-east-1"),
                 )
-                return None
-        try:
-            from common.url_validator import SSRFError, validate_external_url
+                response = client.get_object(
+                    Bucket=settings.MINIO_BUCKET_ASSETS, Key=s3_key
+                )
+                content = response["Body"].read()
+                if len(content) > settings.PASS_IMAGE_MAX_DOWNLOAD_BYTES:
+                    logger.warning(
+                        "Image too large (%d bytes): %s", len(content), url
+                    )
+                    return None
+                return content
+            except Exception as exc:
+                logger.warning(
+                    "Failed to fetch image from storage (key=%s): %s", s3_key, exc
+                )
 
-            validate_external_url(url, allow_http=False)
+        # Fallback: fetch external HTTPS URL via HTTP (non-relative, non-MinIO)
+        if url.startswith("https://"):
+            try:
+                from common.url_validator import SSRFError, validate_external_url
 
-            import httpx
+                validate_external_url(url, allow_http=False)
 
-            async with httpx.AsyncClient(
-                timeout=settings.HTTP_TIMEOUT_APPLE_WALLET,
-                follow_redirects=False,
-                max_redirects=0,
-            ) as client:
-                resp = await client.get(url)
+                import httpx
+
+                resp = httpx.get(
+                    url,
+                    timeout=settings.HTTP_TIMEOUT_APPLE_WALLET,
+                    follow_redirects=False,
+                )
                 if resp.status_code == 200:
                     content = resp.content
                     if len(content) > settings.PASS_IMAGE_MAX_DOWNLOAD_BYTES:
@@ -400,10 +443,11 @@ def generate_pkpass(customer_pass) -> bytes | None:
                         )
                         return None
                     return content
-        except SSRFError as exc:
-            logger.warning("SSRF blocked for image URL %s: %s", url, exc)
-        except Exception as exc:
-            logger.warning("Failed to fetch image from %s: %s", url, exc)
+            except SSRFError as exc:
+                logger.warning("SSRF blocked for image URL %s: %s", url, exc)
+            except Exception as exc:
+                logger.warning("Failed to fetch image from %s: %s", url, exc)
+
         return None
 
     wallet_studio = _get_wallet_studio(card)
@@ -438,29 +482,13 @@ def generate_pkpass(customer_pass) -> bytes | None:
         strip_url = None
         strip_2x_url = None
 
-    # Fetch all images concurrently to avoid sequential blocking in request threads
-    import asyncio
-
-    from asgiref.sync import async_to_sync
-
-    async def _fetch_all_images():
-        return await asyncio.gather(
-            _fetch_image_bytes_async(logo_url),
-            _fetch_image_bytes_async(logo_2x_url or logo_3x_url),
-            _fetch_image_bytes_async(icon_url),
-            _fetch_image_bytes_async(icon_2x_url),
-            _fetch_image_bytes_async(strip_url or ""),
-            _fetch_image_bytes_async(strip_2x_url or ""),
-        )
-
-    (
-        logo_bytes,
-        logo_2x_bytes,
-        icon_bytes,
-        icon_2x_bytes,
-        strip_bytes,
-        strip_2x_bytes,
-    ) = async_to_sync(_fetch_all_images)()
+    # Fetch all images directly from MinIO storage (synchronous — no HTTP round-trip)
+    logo_bytes = _fetch_image_from_storage(logo_url)
+    logo_2x_bytes = _fetch_image_from_storage(logo_2x_url or logo_3x_url)
+    icon_bytes = _fetch_image_from_storage(icon_url)
+    icon_2x_bytes = _fetch_image_from_storage(icon_2x_url)
+    strip_bytes = _fetch_image_from_storage(strip_url or "")
+    strip_2x_bytes = _fetch_image_from_storage(strip_2x_url or "")
 
     from PIL import Image
 
