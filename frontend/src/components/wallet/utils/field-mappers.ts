@@ -30,12 +30,10 @@ export interface ApplePassField {
   attributedValue?: string;
 }
 
-/** Normalize legacy flat-string notifications to structured config. */
+/** Extract Apple change message from structured config. */
 function getAppleChangeMessage(field: UnifiedField): string | undefined {
   const cfg = field.notifications?.appleChangeMessage;
-  if (!cfg) return undefined;
-  // Backward compat: old flat string
-  if (typeof cfg === 'string') return cfg;
+  if (!cfg || typeof cfg === 'string') return undefined;
   return cfg.enabled ? cfg.message : undefined;
 }
 
