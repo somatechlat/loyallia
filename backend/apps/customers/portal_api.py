@@ -15,6 +15,7 @@ import logging
 import secrets
 from typing import Any
 
+from django.conf import settings
 from django.db import transaction
 from django.http import HttpRequest
 from ninja import Router, Schema
@@ -28,7 +29,6 @@ from apps.customers.portal_auth import (
 from apps.customers.services.portal_email import send_portal_password_email
 from common.messages import get_message, get_message_for_request
 from common.rate_limit import check_rate_limit
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -180,7 +180,9 @@ def generate_portal_password(
 
     # Rate limit before any DB query to prevent timing attacks
     allowed, _ = check_rate_limit(
-        f"portal_password:{email}", max_requests=settings.PORTAL_PASSWORD_RATE_LIMIT_MAX, window_seconds=settings.PORTAL_PASSWORD_RATE_LIMIT_WINDOW
+        f"portal_password:{email}",
+        max_requests=settings.PORTAL_PASSWORD_RATE_LIMIT_MAX,
+        window_seconds=settings.PORTAL_PASSWORD_RATE_LIMIT_WINDOW,
     )
     if not allowed:
         # Return same message as non-existent email to prevent enumeration

@@ -261,7 +261,9 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     """
     email = data.email.strip().lower()
     allowed, _ = check_rate_limit(
-        f"resend_pass_email:{email}", max_requests=settings.RESEND_PASS_EMAIL_RATE_LIMIT_MAX, window_seconds=settings.RESEND_PASS_EMAIL_RATE_LIMIT_WINDOW
+        f"resend_pass_email:{email}",
+        max_requests=settings.RESEND_PASS_EMAIL_RATE_LIMIT_MAX,
+        window_seconds=settings.RESEND_PASS_EMAIL_RATE_LIMIT_WINDOW,
     )
     if not allowed:
         return MessageOut(success=False, message=get_message("RATE_LIMIT_EXCEEDED"))
@@ -277,8 +279,6 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     if hasattr(request, "build_absolute_uri"):
         base_url = request.build_absolute_uri("/").rstrip("/")
     else:
-        from django.conf import settings
-
         from common.platform_config import get_platform_config
 
         base_url = get_platform_config(

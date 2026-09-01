@@ -8,6 +8,7 @@ import json
 import logging
 import time
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -27,7 +28,6 @@ from common.messages import get_message
 from common.permissions import jwt_auth, require_role
 from common.rate_limit import rate_limit
 from common.request import require_tenant
-from django.conf import settings
 
 logger = logging.getLogger("loyallia.billing")
 
@@ -291,7 +291,11 @@ def get_invoice(request: HttpRequest, invoice_id: str):
 
 
 @router.post("/webhook/", summary="Payment Gateway Webhook")
-@rate_limit(key_prefix="stripe_webhook", max_requests=settings.STRIPE_WEBHOOK_RATE_LIMIT_MAX, window_seconds=settings.STRIPE_WEBHOOK_RATE_LIMIT_WINDOW)
+@rate_limit(
+    key_prefix="stripe_webhook",
+    max_requests=settings.STRIPE_WEBHOOK_RATE_LIMIT_MAX,
+    window_seconds=settings.STRIPE_WEBHOOK_RATE_LIMIT_WINDOW,
+)
 def payment_webhook(request: HttpRequest):
     """
     Receive and process payment gateway webhook events.

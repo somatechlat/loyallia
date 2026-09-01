@@ -83,7 +83,9 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
 
     output = StringIO()
     try:
-        call_command("seed_development_data", generate=True, stdout=output, stderr=output)
+        call_command(
+            "seed_development_data", generate=True, stdout=output, stderr=output
+        )
     except Exception as exc:
         from common.environment_guard import EnvironmentGuardError
 

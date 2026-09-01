@@ -12,7 +12,6 @@ from apps.automation.engine import (
     _execute_send_email,
     _execute_send_sms,
     _execute_send_wallet,
-    _execute_send_whatsapp,
 )
 from apps.automation.models import (
     AutomationAction,

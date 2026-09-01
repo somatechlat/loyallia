@@ -221,7 +221,11 @@ def verify_email(request: HttpRequest, payload: VerifyEmailIn):
     response=MessageOut,
     summary="Solicitar restablecimiento de contrasena",
 )
-@rate_limit(key_prefix="forgot_password", max_requests=settings.FORGOT_PASSWORD_RATE_LIMIT_MAX, window_seconds=settings.FORGOT_PASSWORD_RATE_LIMIT_WINDOW)
+@rate_limit(
+    key_prefix="forgot_password",
+    max_requests=settings.FORGOT_PASSWORD_RATE_LIMIT_MAX,
+    window_seconds=settings.FORGOT_PASSWORD_RATE_LIMIT_WINDOW,
+)
 def forgot_password(request: HttpRequest, payload: ForgotPasswordIn):
     """Send a password reset email with a one-time token.
 
