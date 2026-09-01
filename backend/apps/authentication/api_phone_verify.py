@@ -102,7 +102,9 @@ def verify_phone_check(request, payload: PhoneVerifyCheckIn):
     """
     phone = payload.phone.strip()
     allowed, _ = check_rate_limit(
-        f"verify_phone_check:{phone}", max_requests=settings.PHONE_VERIFY_RATE_LIMIT_MAX, window_seconds=settings.PHONE_VERIFY_RATE_LIMIT_WINDOW
+        f"verify_phone_check:{phone}",
+        max_requests=settings.PHONE_VERIFY_RATE_LIMIT_MAX,
+        window_seconds=settings.PHONE_VERIFY_RATE_LIMIT_WINDOW,
     )
     if not allowed:
         return PhoneVerifyCheckOut(
