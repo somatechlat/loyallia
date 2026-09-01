@@ -110,7 +110,7 @@ def _fetch_vault_secrets() -> dict:
     url = f"{VAULT_ADDR}/v1/{VAULT_SECRET_PATH}"
     headers = {"X-Vault-Token": vault_token}
 
-    # TLS verification: use Vault CA certificate when available
+    # TLS verification: require Vault CA certificate
     ssl_context = ssl.create_default_context()
     vault_ca_cert = os.environ.get("VAULT_CACERT", "/vault/certs/vault.crt")
     vault_skip_verify = os.environ.get("VAULT_SKIP_VERIFY", "").lower() in (
@@ -122,14 +122,16 @@ def _fetch_vault_secrets() -> dict:
     if vault_skip_verify:
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
+        logger.warning(
+            "Vault: VAULT_SKIP_VERIFY is enabled — TLS verification disabled (insecure)"
+        )
     elif vault_ca_cert and os.path.isfile(vault_ca_cert):
         ssl_context.load_verify_locations(vault_ca_cert)
     else:
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        logger.warning(
-            "Vault: CA certificate not found at %s — TLS verification disabled",
-            vault_ca_cert,
+        raise RuntimeError(
+            f"Vault: CA certificate not found at {vault_ca_cert}. "
+            "Set VAULT_CACERT or provide the certificate at /vault/certs/vault.crt. "
+            "TLS verification cannot be disabled in production."
         )
 
     # Retry with exponential backoff (3 attempts: 1s, 2s, 4s)
@@ -253,17 +255,15 @@ def put_secret(vault_key: str, value: str) -> bool:
         "Content-Type": "application/merge-patch+json",
     }
 
-    # TLS verification: use Vault CA certificate when available
+    # TLS verification: require Vault CA certificate
     ssl_context = ssl.create_default_context()
     vault_ca_cert = os.environ.get("VAULT_CACERT", "/vault/certs/vault.crt")
     if vault_ca_cert and os.path.isfile(vault_ca_cert):
         ssl_context.load_verify_locations(vault_ca_cert)
     else:
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        logger.warning(
-            "Vault: CA certificate not found at %s — TLS verification disabled",
-            vault_ca_cert,
+        raise RuntimeError(
+            f"Vault: CA certificate not found at {vault_ca_cert}. "
+            "Set VAULT_CACERT or provide the certificate at /vault/certs/vault.crt."
         )
 
     payload = json.dumps({"data": {vault_key: value}}).encode("utf-8")
