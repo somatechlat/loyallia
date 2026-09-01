@@ -50,7 +50,7 @@ function getDefaultFields(t: (key: string) => string): FormField[] {
 }
 
 function generateId() {
-  return `field_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  return `field_${crypto.randomUUID()}`;
 }
 
 /**

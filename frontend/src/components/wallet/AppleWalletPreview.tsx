@@ -56,10 +56,17 @@ function buildContext(
   customerName: string | undefined,
   t: (key: string) => string
 ): Record<string, string | undefined> {
-  // Default fallback values
+  // Default fallback values — synced with backend _resolve_v2_dynamic_value tokens
   const defaults: Record<string, string | undefined> = {
     customer_name: customerName || t('wallet.preview.customer'),
+    first_name: customerName?.split(' ')[0] || '',
+    last_name: customerName?.split(' ').slice(1).join(' ') || '',
+    email: '',
     program_name: form.name || t('wallet.preview.programName'),
+    card_name: form.name || '',
+    business_name: t('wallet.preview.company'),
+    tenant_name: t('wallet.preview.company'),
+    merchant_name: t('wallet.preview.company'),
     description: form.description || '',
     stamp_count: '0',
     stamps_required: '10',
@@ -68,26 +75,35 @@ function buildContext(
     cashback_percentage: '5',
     membership_tier: t('wallet.studio.vip.defaultName'),
     referral_code: 'REF-XXXX',
+    referral_count: '0',
     referrals_made: '0',
     discount_percentage: '5',
     discount_tier: t('wallet.studio.vip.badgeBronze'),
+    current_tier: t('wallet.studio.vip.badgeBronze'),
     gift_balance: '0.00',
+    balance: '0.00',
+    points: '0',
     affiliate_code: 'AFIL-001',
     enrolled_date: '01/01/2025',
     benefits: t('wallet.studio.vip.perks'),
     company_name: t('wallet.preview.company'),
     corporate_discount: '10',
     coupon_usage: '0 / 1',
+    coupon_redemption_count: '0',
     coupon_end_date: t('wallet.preview.validUntilDate'),
     coupon_terms: t('wallet.preview.terms'),
+    usage_limit: '1',
     referrer_reward: t('wallet.preview.reward'),
     multipass_remaining: '10',
+    bundle_remaining: '10',
     bundle_size: '10',
     bundle_price: '25.00',
     stamp_display: '0 / 10',
     perks: t('wallet.studio.vip.perks'),
     expiry_days: '365',
     tiers_list: `${t('wallet.studio.vip.badgeBronze')} 5%, ${t('wallet.studio.vip.badgeSilver')} 10%, ${t('wallet.studio.vip.badgeGold')} 15%`,
+    qr_code: '0000 0000 0000',
+    account_id: '00000000',
   };
 
   if (!cardTypeConfig) return defaults;
@@ -454,7 +470,7 @@ export function AppleWalletCard({
         {/* Strip image */}
         {hasStrip && (
           <div className="relative w-full shrink-0" style={{ aspectRatio: '375/123' }}>
-            <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" />
+            <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
           </div>
         )}
@@ -468,6 +484,7 @@ export function AppleWalletCard({
                 src={walletDesign?.appleLogoUrl || walletDesign?.appleLogo2xUrl || logoPreview!}
                 alt={t('wallet.studio.images.logo')}
                 className="w-full h-full object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
           ) : (
@@ -483,6 +500,7 @@ export function AppleWalletCard({
                 src={walletDesign?.appleIconUrl || walletDesign?.appleIcon2xUrl}
                 alt={t('wallet.studio.images.icon')}
                 className="w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
           )}
@@ -517,6 +535,7 @@ export function AppleWalletCard({
               src={walletDesign?.appleThumbnailUrl || walletDesign?.appleThumbnail2xUrl || heroImage}
               alt={t('wallet.studio.images.icon')}
               className="w-9 h-9 rounded object-cover border border-white/10 shadow-sm shrink-0"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           )}
         </div>

@@ -89,7 +89,7 @@ function ImageIcon({ className = 'w-4 h-4' }: { className?: string }) {
 
 function createEmptyBackField(order: number): BackField {
   return {
-    id: `back-field-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `back-field-${crypto.randomUUID()}`,
     label: '',
     value: '',
     isLink: false,
@@ -99,7 +99,7 @@ function createEmptyBackField(order: number): BackField {
 
 function createEmptyBackLink(): BackLink {
   return {
-    id: `back-link-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `back-link-${crypto.randomUUID()}`,
     type: 'website',
     url: '',
     label: '',
@@ -315,7 +315,7 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
         if (existing) return;
         const defaults = QUICK_LINK_DEFAULTS.find((d) => d.label === label);
         const newLink: BackLink = {
-          id: `back-link-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: `back-link-${crypto.randomUUID()}`,
           type: defaults?.type ?? 'website',
           url: defaults?.defaultUrl ?? '',
           label,

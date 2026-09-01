@@ -10,7 +10,7 @@ import type { CardType } from '@/components/wallet/types/unified-state';
 
 function makeBackField(label: string, value: string, id?: string): BackField {
   return {
-    id: id || `back-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: id || `back-${crypto.randomUUID()}`,
     label,
     value,
     isLink: false,
@@ -19,7 +19,7 @@ function makeBackField(label: string, value: string, id?: string): BackField {
 }
 
 function makeBackLink(type: LinkType, url: string, label: string): BackLink {
-  return { id: `link-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, type, url, label };
+  return { id: `link-${crypto.randomUUID()}`, type, url, label };
 }
 
 const TERMS_LABEL = 'TÉRMINOS Y CONDICIONES';
