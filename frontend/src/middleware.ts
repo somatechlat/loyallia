@@ -1,26 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-/**
- * Security middleware for route protection.
- * Redirects unauthenticated users to /login and authenticated users away from auth pages.
- */
 export function middleware(request: NextRequest) {
     const token = request.cookies.get('access_token')?.value;
     const { pathname } = request.nextUrl;
 
-    // Public routes (bypass auth check)
     const publicRoutes = ['/', '/about', '/pricing', '/contact', '/privacy', '/terms', '/portal'];
-
-    // Protected routes — require authentication
     const protectedRoutes = [
         '/dashboard', '/billing', '/campaigns', '/programs',
         '/customers', '/locations', '/users', '/automation',
         '/analytics', '/notifications', '/wallet', '/settings',
         '/team', '/scanner', '/superadmin', '/onboarding',
     ];
-
-    // Auth-only routes — redirect authenticated users away
     const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
 
     const isPublic = publicRoutes.some(r => pathname === r || pathname.startsWith(r + '/'));
@@ -29,16 +20,41 @@ export function middleware(request: NextRequest) {
     const isProtected = protectedRoutes.some(r => pathname.startsWith(r));
     const isAuthRoute = authRoutes.some(r => pathname.startsWith(r));
 
-    // Unauthenticated users trying to access protected routes → redirect to login
     if (isProtected && !token) {
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(loginUrl);
     }
 
-    // Authenticated users trying to access auth routes → redirect to dashboard
     if (isAuthRoute && token) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    if (token && isProtected) {
+        try {
+            const parts = token.split('.');
+            if (parts.length === 3 && parts[1]) {
+                const payload = JSON.parse(atob(parts[1]));
+                const role = (payload.role || '') as string;
+
+                if (role === 'staff' && !pathname.startsWith('/scanner')) {
+                    return NextResponse.redirect(new URL('/scanner/scan', request.url));
+                }
+                if (role === 'superadmin' && !pathname.startsWith('/superadmin')) {
+                    return NextResponse.redirect(new URL('/superadmin', request.url));
+                }
+                if (role !== 'superadmin' && pathname.startsWith('/superadmin')) {
+                    return NextResponse.redirect(new URL('/', request.url));
+                }
+                const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation'];
+                const isOwnerOnly = OWNER_ONLY_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+                if (isOwnerOnly && role !== 'owner' && role !== 'superadmin') {
+                    return NextResponse.redirect(new URL('/', request.url));
+                }
+            }
+        } catch {
+            // Invalid token — let layout handle it
+        }
     }
 
     return NextResponse.next();

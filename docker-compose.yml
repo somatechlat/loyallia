@@ -721,7 +721,6 @@ services:
       context: ./services/whatsapp-bridge
       dockerfile: Dockerfile
     container_name: loyallia-whatsapp-bridge
-    user: root
     environment:
       DJANGO_WEBHOOK_URL: http://api:8000
       REDIS_PASSWORD_FILE: /run/loyallia-vault/redis_password
