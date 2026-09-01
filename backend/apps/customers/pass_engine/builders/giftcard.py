@@ -79,7 +79,8 @@ def _build_gift_card_object(
     class_id = f"{issuer_id}.giftcard-{card.id}"
     object_id = f"{issuer_id}.giftcard-pass-{customer_pass.id}"
     metadata = card.metadata or {}
-    balance = str(customer_pass.gift_balance_val)
+    raw_balance = customer_pass.gift_balance_val
+    balance = str(raw_balance if raw_balance is not None else 0)
     v2_images = _get_wallet_studio(card).get("images") or {}
     google_cfg = _get_v2_google_config(card)
     program_name = google_cfg.get("programName") or card.name
@@ -105,7 +106,7 @@ def _build_gift_card_object(
         "balance": {
             "micros": int(
                 float(balance) * settings.PASS_GOOGLE_GIFTCARD_MICROS_MULTIPLIER
-            ),
+            ) if balance and balance != "None" else 0,
             "currencyCode": metadata.get("currency", "USD"),
         },
         "barcode": {

@@ -50,7 +50,14 @@ function buildContext(
 ): Record<string, string | undefined> {
   const defaults: Record<string, string | undefined> = {
     customer_name: customerName || t('wallet.preview.customer'),
+    first_name: customerName?.split(' ')[0] || '',
+    last_name: customerName?.split(' ').slice(1).join(' ') || '',
+    email: '',
     program_name: form.name || t('wallet.preview.programName'),
+    card_name: form.name || '',
+    business_name: t('wallet.preview.company'),
+    tenant_name: t('wallet.preview.company'),
+    merchant_name: t('wallet.preview.company'),
     description: form.description || '',
     stamp_count: '0',
     stamps_required: '10',
@@ -59,22 +66,35 @@ function buildContext(
     cashback_percentage: '5',
     membership_tier: t('wallet.studio.vip.defaultName'),
     referral_code: 'REF-XXXX',
+    referral_count: '0',
     referrals_made: '0',
     discount_percentage: '5',
     discount_tier: t('wallet.studio.vip.badgeBronze'),
+    current_tier: t('wallet.studio.vip.badgeBronze'),
     gift_balance: '0.00',
+    balance: '0.00',
+    points: '0',
     affiliate_code: 'AFIL-001',
     enrolled_date: '01/01/2025',
     benefits: t('wallet.studio.vip.perks'),
     company_name: t('wallet.preview.company'),
     corporate_discount: '10',
+    coupon_usage: '0 / 1',
+    coupon_redemption_count: '0',
+    coupon_end_date: t('wallet.preview.validUntilDate'),
+    coupon_terms: t('wallet.preview.terms'),
+    usage_limit: '1',
+    referrer_reward: t('wallet.preview.reward'),
     multipass_remaining: '10',
+    bundle_remaining: '10',
     bundle_size: '10',
     bundle_price: '25.00',
     stamp_display: '0 / 10',
     perks: t('wallet.studio.vip.perks'),
     expiry_days: '365',
     tiers_list: `${t('wallet.studio.vip.badgeBronze')} 5%, ${t('wallet.studio.vip.badgeSilver')} 10%, ${t('wallet.studio.vip.badgeGold')} 15%`,
+    qr_code: '0000 0000 0000',
+    account_id: '00000000',
   };
 
   if (!cardTypeConfig) return defaults;
@@ -325,7 +345,7 @@ export function GoogleWalletCard({
         {/* Hero image */}
         {heroImage && (
           <div className="relative w-full shrink-0" style={{ aspectRatio: '16/7' }}>
-            <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" />
+            <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
           </div>
         )}
@@ -334,7 +354,7 @@ export function GoogleWalletCard({
         <div className="flex flex-col items-center px-4 relative z-10 shrink-0" style={{ marginTop: heroImage ? -28 : 12 }}>
           <div className="w-14 h-14 rounded-[18px] overflow-hidden border-2 border-white/10 shadow-lg bg-neutral-900">
             {logoImage ? (
-              <img src={logoImage} alt={t('wallet.studio.images.logo')} className="w-full h-full object-cover" />
+              <img src={logoImage} alt={t('wallet.studio.images.logo')} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-white/10">
                 <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7" />
@@ -353,7 +373,7 @@ export function GoogleWalletCard({
         {wideLogoImage && (
           <div className="px-4 pb-1 shrink-0">
             <div className="w-full h-10 rounded-lg overflow-hidden border border-white/10">
-              <img src={wideLogoImage} alt={t('wallet.studio.images.wideLogo')} className="w-full h-full object-contain" />
+              <img src={wideLogoImage} alt={t('wallet.studio.images.wideLogo')} className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             </div>
           </div>
         )}
@@ -405,7 +425,7 @@ export function GoogleWalletCard({
         {imageModuleImage && (
           <div className="px-3 pt-2 pb-1 shrink-0">
             <div className="w-full rounded-xl overflow-hidden border border-white/10 shadow-sm">
-              <img src={imageModuleImage} alt={t('wallet.studio.images.imageModule')} className="w-full h-auto object-cover" />
+              <img src={imageModuleImage} alt={t('wallet.studio.images.imageModule')} className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             </div>
           </div>
         )}
@@ -472,7 +492,7 @@ export function GoogleWalletBackCard({
         <div className="px-4 py-3 flex items-center gap-3 shrink-0 border-b border-white/10">
           <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-sm bg-neutral-900 flex-shrink-0">
             {logoImage ? (
-              <img src={logoImage} alt={t('wallet.studio.images.logo')} className="w-full h-full object-cover" />
+              <img src={logoImage} alt={t('wallet.studio.images.logo')} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-white/10">
                 <span className="text-xs opacity-50">{form.name?.charAt(0) || 'L'}</span>

@@ -69,14 +69,33 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     if locations:
         payload["locations"] = locations
 
-    # Default branding module (always present); V2 fields appended on the object.
+    # V2 text modules on class — static back-content fields only (no customer context)
+    wallet_studio = _get_wallet_studio(card)
+    back_content = wallet_studio.get("backContent") or {}
+    back_fields = back_content.get("fields") if isinstance(back_content, dict) else []
+    if not isinstance(back_fields, list):
+        back_fields = []
+    v2_class_modules = []
+    for idx, back_field in enumerate(back_fields):
+        if not isinstance(back_field, dict):
+            continue
+        if back_field.get("isLink"):
+            continue
+        header = back_field.get("label", "")
+        body = back_field.get("value", "")
+        field_id = back_field.get("id") or f"back_field_{idx}"
+        if header or body:
+            v2_class_modules.append({"header": header, "body": body, "id": field_id})
     payload["textModulesData"] = [
         {
             "header": "",
             "body": get_message("WALLET_POWERED_BY"),
             "id": "loyallia_branding",
-        }
+        },
+        *v2_class_modules,
     ]
+    # V2 links on class
+    v2_class_links = _build_v2_links_module_data(card)
     payload["linksModuleData"] = {
         "uris": [
             {
@@ -92,6 +111,7 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
                 "description": get_message("WALLET_ENROLL_HERE"),
                 "id": "enroll_link",
             },
+            *v2_class_links,
         ]
     }
     return payload
@@ -265,7 +285,8 @@ def _build_points_for_type(card, customer_pass) -> dict:
             "balance": {"string": f"{remaining} / {bundle_size}"},
         }
     elif card.card_type == "cashback":
-        balance = str(customer_pass.cashback_balance_val)
+        raw_balance = customer_pass.cashback_balance_val
+        balance = str(raw_balance if raw_balance is not None else 0)
         return {
             "label": get_message("WALLET_LABEL_CREDIT"),
             "balance": {"string": f"${balance}"},

@@ -27,7 +27,7 @@ const FIELD_GROUPS: FieldGroup[] = ['header', 'primary', 'secondary', 'auxiliary
 
 function createEmptyField(group: FieldGroup, order: number): UnifiedField {
   return {
-    id: `field-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `field-${crypto.randomUUID()}`,
     label: '',
     value: '',
     fieldGroup: group,

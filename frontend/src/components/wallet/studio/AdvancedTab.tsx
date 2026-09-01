@@ -40,7 +40,7 @@ function TrashIcon({ className = 'w-4 h-4' }: { className?: string }) {
 
 function createEmptyLocation(): LocationConfig {
   return {
-    id: `loc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `loc-${crypto.randomUUID()}`,
     latitude: 0,
     longitude: 0,
   };
@@ -48,7 +48,7 @@ function createEmptyLocation(): LocationConfig {
 
 function createEmptyBeacon(): BeaconConfig {
   return {
-    id: `beacon-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `beacon-${crypto.randomUUID()}`,
     uuid: '',
     major: 0,
     minor: 0,

@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { deepEqual } from 'fast-equals';
 import type {
   WalletPassStudioState,
   CardType,
@@ -266,14 +267,23 @@ export function useWalletStudio(
       if (!field) return prev;
       const duplicated: UnifiedField = {
         ...field,
-        id: `${field.id}-copy-${Date.now()}`,
+        id: `${crypto.randomUUID()}`,
         label: `${field.label} (copia)`,
         order: field.order + 1,
       };
       const idx = prev.fields.findIndex((f) => f.id === id);
       const newFields = [...prev.fields];
       newFields.splice(idx + 1, 0, duplicated);
-      return mergeState(prev, { fields: newFields });
+      // Reindex order for all fields in the same group to avoid order collisions
+      const group = field.fieldGroup;
+      let orderCounter = 0;
+      const reindexed = newFields.map((f) => {
+        if (f.fieldGroup === group) {
+          return { ...f, order: orderCounter++ };
+        }
+        return f;
+      });
+      return mergeState(prev, { fields: reindexed });
     });
   }, []);
 
@@ -288,18 +298,27 @@ export function useWalletStudio(
 
   const nudgeField = useCallback(
     (id: string, direction: 'up' | 'down' | 'left' | 'right', amount: number) => {
+      // Fields use `order` for positioning, not x/y coordinates.
+      // 'up'/'down' reorder within the group; 'left'/'right' are no-ops.
+      if (direction !== 'up' && direction !== 'down') return;
       setState((prev: WalletPassStudioState) => {
         const field = prev.fields.find((f) => f.id === id);
         if (!field) return prev;
-        const x = (field as unknown as Record<string, number>).x ?? 0;
-        const y = (field as unknown as Record<string, number>).y ?? 0;
-        const deltas = { up: [0, -amount], down: [0, amount], left: [-amount, 0], right: [amount, 0] };
-        const delta = deltas[direction] ?? [0, 0];
-        const dx = delta[0] ?? 0;
-        const dy = delta[1] ?? 0;
-        const updatedField = { ...field, x: x + dx, y: y + dy } as UnifiedField;
+        const groupFields = prev.fields
+          .filter((f) => f.fieldGroup === field.fieldGroup)
+          .sort((a, b) => a.order - b.order);
+        const index = groupFields.findIndex((f) => f.id === id);
+        const newIndex = direction === 'up' ? index - amount : index + amount;
+        if (newIndex < 0 || newIndex >= groupFields.length) return prev;
+        const reordered = [...groupFields];
+        const [moved] = reordered.splice(index, 1);
+        reordered.splice(newIndex, 0, moved!);
+        const reindexed = reordered.map((f, idx) => ({ ...f, order: idx }));
         return mergeState(prev, {
-          fields: prev.fields.map((f) => (f.id === id ? updatedField : f)),
+          fields: prev.fields.map((f) => {
+            const updated = reindexed.find((r) => r.id === f.id);
+            return updated ?? f;
+          }),
         });
       });
     },
@@ -311,8 +330,7 @@ export function useWalletStudio(
     setSelectedFieldId(null);
   }, []);
 
-  const isModified =
-    JSON.stringify(state) !== JSON.stringify({ ...initialRef.current, ui: { ...initialRef.current.ui, isModified: state.ui.isModified } });
+  const isModified = !deepEqual(state, { ...initialRef.current, ui: { ...initialRef.current.ui, isModified: state.ui.isModified } });
 
   return {
     state,

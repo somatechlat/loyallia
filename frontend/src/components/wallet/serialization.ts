@@ -125,7 +125,7 @@ function parseV1(v1: Record<string, unknown>, metadata: Record<string, unknown>)
   Object.entries(appleFieldsV1).forEach(([group, groupFields]) => {
     groupFields?.forEach((f) => {
       fields.push({
-        id: `field-${f.key || Math.random().toString(36).slice(2)}`,
+        id: `field-${f.key || crypto.randomUUID()}`,
         label: f.label,
         value: f.value,
         fieldGroup: (groupMap[group] || group) as any,
@@ -150,7 +150,7 @@ function parseV1(v1: Record<string, unknown>, metadata: Record<string, unknown>)
   googleRowsV1.forEach((row) => {
     row.items.forEach((item) => {
       fields.push({
-        id: `field-${item.id || Math.random().toString(36).slice(2)}`,
+        id: `field-${item.id || crypto.randomUUID()}`,
         label: item.label,
         value: item.displayName,
         fieldGroup: 'primary',
