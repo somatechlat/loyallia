@@ -135,7 +135,7 @@ def _map_v2_field_to_apple(field: dict, context: dict) -> dict:
     }
 
     apple_options = field.get("appleOptions", {}) or {}
-    # Structured notification config takes precedence; fall back to legacy flat string
+    # Structured notification config takes precedence
     notifications = field.get("notifications", {}) or {}
     apple_change_cfg = notifications.get("appleChangeMessage")
     if isinstance(apple_change_cfg, dict) and apple_change_cfg.get("enabled"):

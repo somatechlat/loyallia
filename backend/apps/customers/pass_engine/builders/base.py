@@ -146,24 +146,6 @@ def _get_google_locations(card) -> list:
     return locations
 
 
-def _get_wallet_design(card) -> dict:
-    """Return the wallet_design dict from card metadata, if any."""
-    metadata = card.metadata or {}
-    if isinstance(metadata, dict):
-        return metadata.get("wallet_design", {}) or {}
-    return {}
-
-
-def _get_google_images(card) -> dict:
-    """Return the google_images dict from the card's wallet design."""
-    return _get_wallet_design(card).get("google_images", {}) or {}
-
-
-def _get_google_advanced(card) -> dict:
-    """Return the google_advanced dict from the card's wallet design."""
-    return _get_wallet_design(card).get("google_advanced", {}) or {}
-
-
 # ---------------------------------------------------------------------------
 # WalletStudio V2 helpers
 # ---------------------------------------------------------------------------
@@ -449,10 +431,53 @@ def _transform_google_rows(rows: list) -> list:
     return result
 
 
+def _derive_google_rows_from_fields(fields: list) -> list:
+    """Derive Google Wallet row structure from V2 UnifiedField list.
+
+    Groups fields by fieldGroup and creates row entries compatible with
+    _transform_google_rows().
+    """
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    for field in fields:
+        if not isinstance(field, dict):
+            continue
+        if not field.get("showOnGoogle", True):
+            continue
+        group = field.get("fieldGroup", "primary")
+        groups[group].append(field)
+
+    rows = []
+    group_order = ["header", "primary", "secondary", "auxiliary", "back"]
+    for group_name in group_order:
+        group_fields = sorted(groups.get(group_name, []), key=lambda f: f.get("order", 0))
+        if not group_fields:
+            continue
+        items = []
+        for field in group_fields:
+            items.append({
+                "id": field.get("id", ""),
+                "fieldPath": f"class.{group_name}[{len(items)}]",
+                "label": field.get("label", ""),
+                "displayName": field.get("label", ""),
+            })
+        row_type = "oneItem" if len(items) == 1 else "twoItems" if len(items) == 2 else "threeItems"
+        rows.append({"id": group_name, "type": row_type, "items": items[:3]})
+
+    return rows
+
+
 def _apply_card_template_override(card, payload: dict) -> None:
-    """Add cardTemplateOverride from wallet_design.google_rows if available."""
-    wallet_design = _get_wallet_design(card)
-    google_rows = wallet_design.get("google_rows")
+    """Add cardTemplateOverride from WalletStudio V2 google rows if available."""
+    wallet_studio = _get_wallet_studio(card)
+    google_cfg = wallet_studio.get("google", {}) or {}
+    google_rows = google_cfg.get("rows")
+    if not google_rows or not isinstance(google_rows, list):
+        # Derive rows from V2 fields
+        fields = wallet_studio.get("fields") or []
+        if fields and isinstance(fields, list):
+            google_rows = _derive_google_rows_from_fields(fields)
     if google_rows and isinstance(google_rows, list):
         payload["cardTemplateOverride"] = {
             "cardRowTemplateInfos": _transform_google_rows(google_rows)
@@ -480,7 +505,7 @@ def _normalize_review_status(value: str | None) -> str | None:
 def _normalize_multiple_devices(value: Any) -> str | None:
     """Normalize allowMultipleUsers to valid Google Wallet API enum values.
 
-    Handles both boolean (legacy) and string (current) values.
+    Handles both boolean and string values.
     Maps frontend 'MULTIPLE_USERS' → API 'MULTIPLE_HOLDERS'.
     """
     if value is None:
@@ -504,14 +529,8 @@ def _normalize_multiple_devices(value: Any) -> str | None:
 
 
 def _apply_google_advanced_to_class(card, payload: dict) -> None:
-    """Apply google_advanced settings relevant to class payloads.
-
-    Prefers WalletStudio V2 google config; falls back to legacy google_advanced
-    for older cards.
-    """
-    v2_google = _get_v2_google_config(card)
-    legacy = _get_google_advanced(card)
-    advanced = v2_google if v2_google else legacy
+    """Apply WalletStudio V2 google config to class payloads."""
+    advanced = _get_v2_google_config(card)
     if not advanced:
         return
 
@@ -564,13 +583,8 @@ def _apply_google_advanced_to_class(card, payload: dict) -> None:
 
 
 def _apply_google_advanced_to_object(card, payload: dict) -> None:
-    """Apply google_advanced settings relevant to object payloads.
-
-    Prefers WalletStudio V2 google config; falls back to legacy google_advanced.
-    """
-    v2_google = _get_v2_google_config(card)
-    legacy = _get_google_advanced(card)
-    advanced = v2_google if v2_google else legacy
+    """Apply WalletStudio V2 google config to object payloads."""
+    advanced = _get_v2_google_config(card)
     if not advanced:
         return
     if advanced.get("messages") and isinstance(advanced["messages"], list):
