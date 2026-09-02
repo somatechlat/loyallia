@@ -131,11 +131,6 @@ services:
       VAULT_APP_SECRET_PATH: loyallia/production
 
   # ═══════════════════════════════════════════════════════════════════════
-  # NGINX — Production: Host nginx handles 80/443, container has NO port bind
-  # ───────────────────────────────────────────────────────────────────────
-  # The host-level nginx (deploy/rewards.loyallia.com.conf) manages SSL,
-  # rate limiting, and proxies directly to container ports 33905/33906.
-  # The container nginx must NOT bind to host ports 80/443.
+  # NGINX — REMOVED: Host nginx handles all traffic on 80/443.
+  # No container nginx. Host nginx config: deploy/rewards.loyallia.com.conf
   # ═══════════════════════════════════════════════════════════════════════
-  nginx:
-    ports: !reset []
