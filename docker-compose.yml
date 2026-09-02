@@ -834,48 +834,49 @@ services:
         reservations:
           memory: 64M
 
-  # Nginx reverse proxy and security headers
-  nginx:
-    image: nginx:1.28.0-alpine
-    container_name: loyallia-nginx
-    ports:
-      # Development: HTTP only. Production uses host-level nginx with SSL (see docker-compose.prod.yml)
-      - "${DOCKER_BIND_HOST:-127.0.0.1}:80:80"
-    volumes:
-      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - api
-      - web
-    networks:
-      - frontend-net
-      - backend-net
-    restart: unless-stopped
-    # LYL-M-INFRA-018: Container hardening
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETUID
-      - SETGID
-      - NET_BIND_SERVICE  # Required for port 80/443
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.50"
-        reservations:
-          memory: 64M
-      # LYL-H-INFRA-014: Rolling deployment
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-        failure_action: rollback
-      rollback_config:
-        parallelism: 1
-        order: start-first
+  # ═══════════════════════════════════════════════════════════════════════
+  # NGINX — REMOVED: Production uses host-level nginx only (port 80/443).
+  # Container nginx caused CSP conflicts and duplicate proxy layers.
+  # See deploy/rewards.loyallia.com.conf for host nginx configuration.
+  # ═══════════════════════════════════════════════════════════════════════
+  # nginx:
+  #   image: nginx:1.28.0-alpine
+  #   container_name: loyallia-nginx
+  #   ports:
+  #     - "${DOCKER_BIND_HOST:-127.0.0.1}:80:80"
+  #   volumes:
+  #     - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - api
+  #     - web
+  #   networks:
+  #     - frontend-net
+  #     - backend-net
+  #   restart: unless-stopped
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   cap_drop:
+  #     - ALL
+  #   cap_add:
+  #     - CHOWN
+  #     - SETUID
+  #     - SETGID
+  #     - NET_BIND_SERVICE
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M
+  #         cpus: "0.50"
+  #       reservations:
+  #         memory: 64M
+  #     update_config:
+  #       parallelism: 1
+  #       delay: 10s
+  #       order: start-first
+  #       failure_action: rollback
+  #     rollback_config:
+  #       parallelism: 1
+  #       order: start-first
 
   # Prometheus metrics collection (localhost:33909, 512M)
   prometheus:
