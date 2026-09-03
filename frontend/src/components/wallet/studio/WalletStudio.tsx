@@ -43,26 +43,27 @@ export interface WalletStudioProps {
 export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
-  const designScoreResult = useDesignScore(studio.state);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
     studio.state,
     { maxHistory: 50 }
   );
 
+  // Override studio.state with undoable state for rendering
+  const displayState = undoableState;
+
+  // Score the DISPLAY state (not the frozen studio.state) so the design
+  // score updates live as the user edits colors, images, fields, etc.
+  const designScoreResult = useDesignScore(displayState);
+
   // Sync studio state into undo/redo when studio state changes externally
+  // (e.g. setCardType, applyTemplate, resetState)
   const prevStudioStateRef = React.useRef(studio.state);
   React.useEffect(() => {
     if (studio.state !== prevStudioStateRef.current) {
       prevStudioStateRef.current = studio.state;
-      // Only push if it's meaningfully different from current undoable state
-      if (JSON.stringify(studio.state) !== JSON.stringify(undoableState)) {
-        setUndoableState(studio.state);
-      }
+      setUndoableState(studio.state);
     }
-  }, [studio.state, undoableState, setUndoableState]);
-
-  // Override studio.state with undoable state for rendering
-  const displayState = undoableState;
+  }, [studio.state, setUndoableState]);
 
   // Wire updaters to go through undo/redo
   const wrappedUpdateColors = React.useCallback(
