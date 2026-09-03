@@ -15,16 +15,25 @@
  * Runs in the 'designer' project (OWNER role).
  */
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
-import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
+import { getE2EBaseURL } from '../helpers/e2e-safety';
+import { readFileSync } from 'node:fs';
 
 test.use({ storageState: '.auth/owner.json' });
 
-/** Login as owner and cache the token for API calls. */
+/** Read the owner JWT token from the auth storage state (set by auth.setup.ts). */
 let _ownerToken: string | null = null;
-async function getOwnerToken(request: APIRequestContext): Promise<string> {
+function getOwnerToken(): string {
   if (_ownerToken) return _ownerToken;
-  _ownerToken = await loginRole(request, 'owner');
-  return _ownerToken;
+  try {
+    const state = JSON.parse(readFileSync('.auth/owner.json', 'utf-8'));
+    const cookies: Array<{ name: string; value: string }> = state.cookies ?? [];
+    const accessCookie = cookies.find((c) => c.name === 'access_token');
+    if (accessCookie) {
+      _ownerToken = accessCookie.value;
+      return _ownerToken!;
+    }
+  } catch { /* ignore */ }
+  throw new Error('Could not read owner token from .auth/owner.json. Did auth.setup run?');
 }
 
 const BASE_API = getE2EBaseURL();
@@ -45,7 +54,7 @@ const BLUE_PNG = Buffer.from(
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function createProgram(request: APIRequestContext): Promise<string> {
-  const token = await getOwnerToken(request);
+  const token = getOwnerToken();
   const name = `${UNIQUE_PREFIX} ${Date.now()}`;
   const resp = await request.post(`${BASE_API}/api/v1/programs/`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -112,7 +121,7 @@ test.describe('Preview — Image uploads @preview', () => {
       expect(src!.length).toBeGreaterThan(0);
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -130,7 +139,7 @@ test.describe('Preview — Image uploads @preview', () => {
       await expect(stripImg).toBeVisible({ timeout: 10000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -154,7 +163,7 @@ test.describe('Preview — Image uploads @preview', () => {
       expect(count).toBeGreaterThanOrEqual(2);
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -185,7 +194,7 @@ test.describe('Preview — Color changes @preview', () => {
       expect(hasColor).toBeTruthy();
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -206,7 +215,7 @@ test.describe('Preview — Color changes @preview', () => {
       await expect(previewCard).toBeVisible({ timeout: 5000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -247,7 +256,7 @@ test.describe('Preview — Field changes @preview', () => {
       await expect(canvasText.getByText('E2E Preview Field')).toBeVisible({ timeout: 10000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -282,7 +291,7 @@ test.describe('Preview — Field changes @preview', () => {
       await expect(page.getByText('Temp Remove Field')).not.toBeVisible({ timeout: 5000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -307,7 +316,7 @@ test.describe('Preview — Barcode changes @preview', () => {
       await expect(barcodeArea).toBeVisible({ timeout: 5000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -332,7 +341,7 @@ test.describe('Preview — Platform toggle @preview', () => {
       await expect(page.getByText(/Google Wallet/i).first()).not.toBeVisible({ timeout: 3000 }).catch(() => {});
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -350,7 +359,7 @@ test.describe('Preview — Platform toggle @preview', () => {
       await expect(page.getByText(/Apple Wallet/i).first()).not.toBeVisible({ timeout: 3000 }).catch(() => {});
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -368,7 +377,7 @@ test.describe('Preview — Platform toggle @preview', () => {
       await expect(page.getByText(/Google Wallet/i).first()).toBeVisible({ timeout: 5000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -388,7 +397,7 @@ test.describe('Preview — Program name @preview', () => {
       await expect(initialName).toBeVisible({ timeout: 10000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -414,7 +423,7 @@ test.describe('Preview — Stamp config @preview', () => {
       await expect(canvas.getByText(/0.*7/).first()).toBeVisible({ timeout: 5000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -450,7 +459,7 @@ test.describe('Preview — Undo/Redo @preview', () => {
       expect(styleAfter!.toLowerCase()).not.toContain('#ff0000');
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -479,7 +488,7 @@ test.describe('Preview — Undo/Redo @preview', () => {
       expect(style!.toLowerCase()).toContain('#ff0000');
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -489,7 +498,7 @@ test.describe('Preview — Undo/Redo @preview', () => {
 
 test.describe('Preview — Save and reload @preview', () => {
   test('saved design reloads into preview correctly', async ({ page }) => {
-    const token = await getOwnerToken(page.request);
+    const token = getOwnerToken();
     const programId = await createProgram(page.request);
     try {
       await openDesigner(page, programId);
@@ -542,7 +551,7 @@ test.describe('Preview — Back content @preview', () => {
       await expect(canvasArea(page)).toBeVisible({ timeout: 5000 });
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   });
@@ -558,7 +567,7 @@ test.describe('Preview — Card type rendering @preview', () => {
 
   for (const cardType of cardTypes) {
     test(`${cardType} card type renders preview without crashing`, async ({ page, request }) => {
-      const token = await getOwnerToken(request);
+      const token = getOwnerToken();
       const name = `${UNIQUE_PREFIX} ${cardType} ${Date.now()}`;
       const resp = await request.post(`${BASE_API}/api/v1/programs/`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -599,7 +608,7 @@ test.describe('Preview — Card type rendering @preview', () => {
 // ── CLEANUP ──────────────────────────────────────────────────────────────────
 
 test.afterAll(async ({ request }) => {
-  const token = await getOwnerToken(request);
+  const token = getOwnerToken();
   const resp = await request.get(`${BASE_API}/api/v1/programs/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
