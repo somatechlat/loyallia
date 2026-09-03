@@ -101,6 +101,7 @@ function ColorPickerPopover({
   onChange: (color: string) => void;
   label: string;
 }) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const nativeInputRef = useRef<HTMLInputElement>(null);
