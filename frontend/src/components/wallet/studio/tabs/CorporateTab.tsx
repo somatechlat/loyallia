@@ -5,6 +5,8 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
+import { useCallback } from 'react';
 import type { CorporateDiscountCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
 
@@ -20,6 +22,7 @@ const BADGE_STYLES: Array<{ value: CorporateDiscountCardConfig['badgeStyle']; la
 ];
 
 export function CorporateTab({ config, onChange }: CorporateTabProps) {
+  const { t } = useI18n();
   const handleNumberChange = useCallback(
     (field: keyof CorporateDiscountCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value);
@@ -40,13 +43,13 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Descuento Corporativo
+        t('wallet.studio.corporate.configTitle')
       </h3>
 
       {/* Company name */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Nombre de la empresa
+          t('wallet.studio.corporate.companyName')
         </label>
         <input
           type="text"
@@ -61,7 +64,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
       {/* Company logo URL */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          URL del logo de la empresa
+          t('wallet.studio.corporate.companyLogoUrl')
         </label>
         <input
           type="text"
@@ -76,7 +79,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
       {/* Corporate discount percentage */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Porcentaje de descuento corporativo
+          t('wallet.studio.corporate.discountPercentage')
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -112,7 +115,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
             data-testid="employee-id-toggle"
           />
           <span className="text-xs text-neutral-700 dark:text-neutral-300">
-            Requiere ID de empleado
+            t('wallet.studio.corporate.requireEmployeeId')
           </span>
         </label>
       </div>
@@ -120,7 +123,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
       {/* Building icon */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Icono de edificio
+          t('wallet.studio.corporate.buildingIcon')
         </label>
         <IconPicker
           value={config.buildingIcon ?? ''}
@@ -132,7 +135,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
       {/* Department badge */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Insignia de departamento
+          t('wallet.studio.corporate.departmentBadge')
         </label>
         <IconPicker
           value={config.departmentBadge ?? ''}
@@ -144,7 +147,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
       {/* ID badge color */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Color de insignia ID
+          t('wallet.studio.corporate.idBadgeColor')
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -161,7 +164,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
       {/* Badge style */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          Estilo de insignia
+          t('wallet.studio.corporate.badgeStyle')
         </label>
         <div className="flex gap-2">
           {BADGE_STYLES.map((opt) => (
@@ -193,7 +196,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
             data-testid="security-seal-toggle"
           />
           <span className="text-xs text-neutral-700 dark:text-neutral-300">
-            Sello de seguridad
+            t('wallet.studio.corporate.securitySeal')
           </span>
         </label>
       </div>

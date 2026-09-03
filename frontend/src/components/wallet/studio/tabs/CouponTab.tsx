@@ -6,24 +6,25 @@
 
 import React, { useCallback } from 'react';
 import type { CouponCardConfig } from '@/components/wallet/types/card-type-config';
+import { useI18n } from '@/lib/i18n';
 
 export interface CouponTabProps {
   config: CouponCardConfig;
   onChange: (config: Partial<CouponCardConfig>) => void;
 }
 
-const CUT_LINE_OPTIONS: Array<{ value: CouponCardConfig['cutLineStyle']; label: string }> = [
-  { value: 'dashed', label: 'Discontinua' },
-  { value: 'dotted', label: 'Punteada' },
-  { value: 'solid', label: 'Sólida' },
-  { value: 'zigzag', label: 'Zigzag' },
+const CUT_LINE_OPTIONS: Array<{ value: CouponCardConfig['cutLineStyle']; labelKey: string }> = [
+  { value: 'dashed', labelKey: 'wallet.studio.coupon.dashed' },
+  { value: 'dotted', labelKey: 'wallet.studio.coupon.dotted' },
+  { value: 'solid', labelKey: 'wallet.studio.coupon.solid' },
+  { value: 'zigzag', labelKey: 'wallet.studio.coupon.zigzag' },
 ];
 
-const BADGE_STYLE_OPTIONS: Array<{ value: CouponCardConfig['discountBadgeStyle']; label: string }> = [
-  { value: 'pill', label: 'Píldora' },
-  { value: 'banner', label: 'Banner' },
-  { value: 'circle', label: 'Círculo' },
-  { value: 'tag', label: 'Etiqueta' },
+const BADGE_STYLE_OPTIONS: Array<{ value: CouponCardConfig['discountBadgeStyle']; labelKey: string }> = [
+  { value: 'pill', labelKey: 'wallet.studio.coupon.pill' },
+  { value: 'banner', labelKey: 'wallet.studio.coupon.banner' },
+  { value: 'circle', labelKey: 'wallet.studio.coupon.circle' },
+  { value: 'tag', labelKey: 'wallet.studio.coupon.tag' },
 ];
 
 function CutLinePreview({ style }: { style: CouponCardConfig['cutLineStyle'] }) {
@@ -65,6 +66,7 @@ function CutLinePreview({ style }: { style: CouponCardConfig['cutLineStyle'] }) 
 }
 
 export function CouponTab({ config, onChange }: CouponTabProps) {
+  const { t } = useI18n();
   const handleNumberChange = useCallback(
     (field: keyof CouponCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value);
@@ -92,13 +94,12 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Cupón
+        {t('wallet.studio.coupon.title')}
       </h3>
 
-      {/* Discount type */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Tipo de descuento
+          {t('wallet.studio.coupon.discountType')}
         </label>
         <div className="flex gap-1">
           <button
@@ -111,7 +112,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             }`}
             data-testid="discount-type-percentage"
           >
-            Porcentaje
+            {t('wallet.studio.coupon.percentage')}
           </button>
           <button
             type="button"
@@ -123,15 +124,14 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             }`}
             data-testid="discount-type-fixed"
           >
-            Monto fijo
+            {t('wallet.studio.coupon.fixedAmount')}
           </button>
         </div>
       </div>
 
-      {/* Discount value */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Valor del descuento
+          {t('wallet.studio.coupon.discountValue')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -149,10 +149,9 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
         </div>
       </div>
 
-      {/* Usage limit */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Límite de uso por cliente
+          {t('wallet.studio.coupon.usageLimit')}
         </label>
         <input
           type="number"
@@ -165,10 +164,9 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
         />
       </div>
 
-      {/* Coupon description */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Descripción del cupón
+          {t('wallet.studio.coupon.description')}
         </label>
         <textarea
           value={config.couponDescription}
@@ -179,40 +177,37 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
         />
       </div>
 
-      {/* Push message */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Mensaje push
+          {t('wallet.studio.coupon.pushMessage')}
         </label>
         <input
           type="text"
           value={config.pushMessage}
           onChange={handleTextChange('pushMessage')}
-          placeholder="Ej: ¡Nueva oferta disponible!"
+          placeholder={t('wallet.studio.coupon.pushPlaceholder')}
           className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           data-testid="push-message-input"
         />
       </div>
 
-      {/* Special promotion text */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Texto promocional especial
+          {t('wallet.studio.coupon.promoText')}
         </label>
         <input
           type="text"
           value={config.specialPromotionText}
           onChange={handleTextChange('specialPromotionText')}
-          placeholder="Ej: ¡Solo por tiempo limitado!"
+          placeholder={t('wallet.studio.coupon.promoPlaceholder')}
           className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           data-testid="promotion-text-input"
         />
       </div>
 
-      {/* Expiry */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Vencimiento
+          {t('wallet.studio.coupon.expiry')}
         </label>
         <div className="flex gap-2">
           <button
@@ -225,7 +220,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             }`}
             data-testid="expiry-unlimited"
           >
-            Ilimitado
+            {t('wallet.studio.coupon.unlimited')}
           </button>
           <div className="flex-1 flex items-center gap-2 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
             <input
@@ -238,20 +233,19 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
                   onChange({ couponExpiry: value });
                 }
               }}
-              placeholder="Días"
+              placeholder={t('wallet.studio.coupon.daysPlaceholder')}
               className="w-full text-xs text-neutral-800 dark:text-neutral-100 bg-transparent focus:outline-none"
               data-testid="expiry-days-input"
             />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap">días</span>
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{t('wallet.studio.coupon.days')}</span>
           </div>
         </div>
       </div>
 
-      {/* Start/End dates */}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-            Fecha de inicio
+            {t('wallet.studio.coupon.startDate')}
           </label>
           <input
             type="date"
@@ -263,7 +257,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
         </div>
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-            Fecha de fin
+            {t('wallet.studio.coupon.endDate')}
           </label>
           <input
             type="date"
@@ -275,10 +269,9 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
         </div>
       </div>
 
-      {/* Cut line style */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Estilo de línea de corte
+          {t('wallet.studio.coupon.cutLineStyle')}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {CUT_LINE_OPTIONS.map((opt) => (
@@ -294,16 +287,15 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
               data-testid={`cut-line-${opt.value}`}
             >
               <CutLinePreview style={opt.value} />
-              <span className="text-[10px] text-neutral-600 dark:text-neutral-400">{opt.label}</span>
+              <span className="text-[10px] text-neutral-600 dark:text-neutral-400">{t(opt.labelKey)}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Discount badge style */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Estilo de insignia de descuento
+          {t('wallet.studio.coupon.badgeStyle')}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {BADGE_STYLE_OPTIONS.map((opt) => (
@@ -318,22 +310,21 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
               }`}
               data-testid={`badge-style-${opt.value}`}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Offer tag */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-          Etiqueta de oferta
+          {t('wallet.studio.coupon.offerTag')}
         </label>
         <input
           type="text"
           value={config.offerTag}
           onChange={handleTextChange('offerTag')}
-          placeholder="Ej: FLASH SALE"
+          placeholder={t('wallet.studio.coupon.offerPlaceholder')}
           className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           data-testid="offer-tag-input"
         />
