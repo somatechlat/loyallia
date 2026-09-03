@@ -23,7 +23,7 @@ export default function CustomerTable({
   onDelete,
 }: CustomerTableProps) {
   const { t, locale } = useI18n();
-  const dateLocale = locale === "en" ? "en-US" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "es-EC";
+  const dateLocale = locale === "en" ? "en-US" : "es-EC";
   const colSpan = canManageCustomers ? 8 : 7;
 
   return (
