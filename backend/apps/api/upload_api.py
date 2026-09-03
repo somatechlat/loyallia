@@ -18,7 +18,7 @@ from ninja.files import UploadedFile
 from PIL import Image, UnidentifiedImageError
 
 from common.messages import get_message
-from common.permissions import is_manager_or_owner, jwt_auth
+from common.permissions import is_manager_or_owner, is_super_admin, jwt_auth
 from common.request import as_tenant_request
 
 try:
@@ -64,9 +64,9 @@ def upload_file(request, file: UploadedFile):
     """
     Uploads an image (logo, strip) to cloud storage and returns the public URL.
     Only allows image files up to 5MB.
-    MANAGER+ only.
+    MANAGER+ or platform SUPER_ADMIN.
     """
-    if not is_manager_or_owner(request):
+    if not (is_manager_or_owner(request) or is_super_admin(request)):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     request = as_tenant_request(request)
     filename = _sanitize_filename(file.name or "")
@@ -141,9 +141,9 @@ def upload_file(request, file: UploadedFile):
 def list_assets(request):
     """
     Lists previously uploaded images for the current tenant from MinIO/S3.
-    MANAGER+ only.
+    MANAGER+ or platform SUPER_ADMIN.
     """
-    if not is_manager_or_owner(request):
+    if not (is_manager_or_owner(request) or is_super_admin(request)):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     request = as_tenant_request(request)
     tenant_dirname = str(request.tenant.id) if request.tenant else "platform"

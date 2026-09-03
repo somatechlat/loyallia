@@ -646,6 +646,7 @@ services:
     volumes:
       - ./backend:/app
       - vault_runtime:/run/loyallia-vault:ro
+      - ./certs:/app/certs:ro
     depends_on:
       postgres:
         condition: service_healthy

@@ -121,6 +121,8 @@ services:
   celery-beat:
     environment:
       <<: *production-backend-env
+    volumes:
+      - ./certs:/app/certs:ro
 
   flower:
     environment:
