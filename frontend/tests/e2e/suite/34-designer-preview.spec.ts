@@ -578,7 +578,7 @@ test.describe('Preview — Card type rendering @preview', () => {
           barcode_type: 'qr_code',
           background_color: '#1a1a2e',
           text_color: '#ffffff',
-          metadata: { wallet_provider: 'both' },
+          metadata: { wallet_provider: 'both', stamps_required: 10, reward_description: 'Free coffee' },
         },
       });
       // Some card types require additional metadata and may return 400/422
