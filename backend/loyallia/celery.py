@@ -7,10 +7,20 @@ Workers use this module: celery -A loyallia worker ...
 import logging
 import os
 
-from celery import Celery
-from celery.schedules import crontab
+import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "loyallia.settings.production")
+
+# Ensure Django's app registry (INSTALLED_APPS) is populated BEFORE any
+# third-party model import. Without this, spinning up the beat process with
+# `--scheduler django_celery_beat.schedulers:DatabaseScheduler` imports
+# django_celery_beat.models before the registry is ready, crashing with the
+# Python 3.13 error: "Model class ... doesn't declare an explicit app_label
+# and isn't in an application in INSTALLED_APPS."
+django.setup()
+
+from celery import Celery
+from celery.schedules import crontab
 
 app = Celery("loyallia")  # type: ignore[operator]
 
