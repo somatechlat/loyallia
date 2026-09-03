@@ -15,8 +15,11 @@ export async function uploadFile(file: File, showToast = true): Promise<string |
     const { data } = await api.post('/api/v1/upload/', fd);
     if (showToast) toast.success('Archivo subido');
     return data.url || null;
-  } catch {
-    if (showToast) toast.error('Error al subir archivo');
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const detail = err?.response?.data?.detail || err?.response?.data?.error || err?.message;
+    console.error('[uploadFile] Upload failed:', status, detail);
+    if (showToast) toast.error(`Error al subir archivo: ${detail || status || 'desconocido'}`);
     return null;
   }
 }
