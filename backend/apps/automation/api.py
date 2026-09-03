@@ -32,20 +32,6 @@ router = Router()
 
 
 # Pydantic Schemas
-class AutomationSchema(BaseModel):
-    """Public automation representation for list and detail views."""
-
-    id: str
-    name: str
-    description: str
-    trigger: str
-    action: str
-    is_active: bool
-    total_executions: int
-    last_executed: str | None = None
-    created_at: str
-
-
 class CreateAutomationSchema(BaseModel):
     """Schema for creating a new automation workflow."""
 

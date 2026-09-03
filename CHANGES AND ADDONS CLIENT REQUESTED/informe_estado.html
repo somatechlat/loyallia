@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe de Estado - Loyallia</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 25mm 18mm;
+    @bottom-center {
+      content: "Loyallia — Informe de Estado Confidencial";
+      font-size: 8px;
+      color: #94a3b8;
+    }
+    @bottom-right {
+      content: "Página " counter(page) " de " counter(pages);
+      font-size: 8px;
+      color: #94a3b8;
+    }
+  }
+  @page :first { margin-top: 0; @bottom-center { content: none; } @bottom-right { content: none; } }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; color: #1e293b; line-height: 1.6; font-size: 11pt; }
+
+  /* ── COVER ── */
+  .cover { height: 297mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #2563eb 100%); color: white; margin: -20mm -18mm 0 -18mm; padding: 40mm 30mm; page-break-after: always; position: relative; overflow: hidden; }
+  .cover::before { content: ''; position: absolute; top: -50%; right: -30%; width: 600px; height: 600px; border-radius: 50%; background: rgba(59,130,246,0.15); }
+  .cover::after { content: ''; position: absolute; bottom: -40%; left: -20%; width: 500px; height: 500px; border-radius: 50%; background: rgba(16,185,129,0.1); }
+  .cover-logo { font-size: 42pt; font-weight: 800; letter-spacing: -1px; margin-bottom: 8mm; position: relative; z-index: 1; }
+  .cover-logo span { color: #60a5fa; }
+  .cover-subtitle { font-size: 16pt; font-weight: 300; opacity: 0.9; margin-bottom: 15mm; position: relative; z-index: 1; }
+  .cover-title { font-size: 22pt; font-weight: 700; margin-bottom: 5mm; position: relative; z-index: 1; }
+  .cover-date { font-size: 12pt; opacity: 0.7; position: relative; z-index: 1; }
+  .cover-line { width: 80px; height: 3px; background: #60a5fa; margin: 10mm auto; position: relative; z-index: 1; }
+
+  /* ── HEADINGS ── */
+  h1 { font-size: 20pt; color: #0f172a; margin: 12mm 0 5mm; padding-bottom: 3mm; border-bottom: 3px solid #2563eb; }
+  h2 { font-size: 14pt; color: #1e3a5f; margin: 8mm 0 4mm; }
+  h3 { font-size: 11pt; color: #334155; margin: 5mm 0 3mm; }
+
+  /* ── SECTIONS ── */
+  .section { page-break-inside: avoid; margin-bottom: 6mm; }
+  .page-break { page-break-before: always; }
+
+  /* ── CARDS ── */
+  .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 5mm; margin: 4mm 0; }
+  .card-blue { border-left: 4px solid #2563eb; background: #eff6ff; }
+  .card-green { border-left: 4px solid #10b981; background: #ecfdf5; }
+  .card-amber { border-left: 4px solid #f59e0b; background: #fffbeb; }
+  .card-red { border-left: 4px solid #ef4444; background: #fef2f2; }
+  .card-purple { border-left: 4px solid #8b5cf6; background: #f5f3ff; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: flex; gap: 4mm; margin: 5mm 0; }
+  .stat-box { flex: 1; text-align: center; padding: 5mm 3mm; border-radius: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; }
+  .stat-number { font-size: 22pt; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 8pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2mm; }
+  .stat-blue .stat-number { color: #2563eb; }
+  .stat-green .stat-number { color: #10b981; }
+  .stat-amber .stat-number { color: #f59e0b; }
+  .stat-red .stat-number { color: #ef4444; }
+  .stat-purple .stat-number { color: #8b5cf6; }
+
+  /* ── TABLES ── */
+  table { width: 100%; border-collapse: collapse; margin: 4mm 0; font-size: 9.5pt; }
+  th { background: #1e3a5f; color: white; padding: 3mm 4mm; text-align: left; font-weight: 600; }
+  td { padding: 2.5mm 4mm; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  tr:hover td { background: #eff6ff; }
+
+  /* ── STATUS BADGES ── */
+  .badge { display: inline-block; padding: 1mm 3mm; border-radius: 4px; font-size: 8pt; font-weight: 600; white-space: nowrap; }
+  .badge-done { background: #dcfce7; color: #166534; }
+  .badge-partial { background: #fef3c7; color: #92400e; }
+  .badge-pending { background: #fee2e2; color: #991b1b; }
+  .badge-new { background: #ede9fe; color: #5b21b6; }
+
+  /* ── TIMELINE ── */
+  .timeline { margin: 5mm 0; }
+  .timeline-day { display: flex; margin-bottom: 3mm; page-break-inside: avoid; }
+  .timeline-marker { width: 40px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+  .timeline-dot { width: 14px; height: 14px; border-radius: 50%; background: #2563eb; border: 3px solid #dbeafe; flex-shrink: 0; }
+  .timeline-dot.week2 { background: #10b981; border-color: #d1fae5; }
+  .timeline-line { flex: 1; width: 2px; background: #e2e8f0; margin-top: 2mm; }
+  .timeline-content { flex: 1; padding: 0 0 0 4mm; }
+  .timeline-title { font-weight: 700; font-size: 10pt; color: #0f172a; }
+  .timeline-meta { font-size: 8pt; color: #64748b; margin-bottom: 1mm; }
+  .timeline-tasks { font-size: 9pt; color: #334155; }
+  .timeline-tasks li { margin-bottom: 1mm; padding-left: 2mm; }
+
+  /* ── FEATURE LIST ── */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin: 4mm 0; }
+  .feature-item { display: flex; align-items: flex-start; gap: 2mm; padding: 2.5mm; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 9pt; }
+  .feature-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9pt; flex-shrink: 0; margin-top: 1px; }
+  .feature-icon.done { background: #dcfce7; color: #166534; }
+  .feature-icon.partial { background: #fef3c7; color: #92400e; }
+  .feature-icon.pending { background: #fee2e2; color: #991b1b; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-container { margin: 4mm 0; }
+  .progress-bar-bg { height: 18px; background: #e2e8f0; border-radius: 9px; overflow: hidden; display: flex; }
+  .progress-segment { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 7pt; font-weight: 700; color: white; }
+  .progress-legend { display: flex; gap: 5mm; margin-top: 2mm; font-size: 8pt; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 2mm; vertical-align: middle; }
+
+  /* ── PIE CHART (CSS) ── */
+  .chart-container { display: flex; align-items: center; gap: 6mm; margin: 4mm 0; }
+  .chart-legend { font-size: 9pt; }
+  .chart-legend-item { display: flex; align-items: center; gap: 2mm; margin-bottom: 2mm; }
+  .chart-legend-color { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ── NOTE BOX ── */
+  .note-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 4mm; margin: 4mm 0; font-size: 9pt; }
+  .note-box strong { color: #1e40af; }
+
+  /* ── UTILITIES ── */
+  p { margin-bottom: 3mm; }
+  ul, ol { padding-left: 6mm; margin-bottom: 3mm; }
+  li { margin-bottom: 1.5mm; }
+  .text-muted { color: #64748b; }
+  .text-small { font-size: 9pt; }
+  .mt-2 { margin-top: 4mm; }
+  .mb-2 { margin-bottom: 4mm; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- COVER PAGE -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">loyal<span>lia</span></div>
+  <div class="cover-line"></div>
+  <div class="cover-title">Informe de Estado del Proyecto</div>
+  <div class="cover-subtitle">Análisis de Funcionalidades, Brechas y Cronograma de Desarrollo</div>
+  <div class="cover-line"></div>
+  <div class="cover-date">Julio 2026 &nbsp;|&nbsp; Documento Confidencial</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- TABLE OF CONTENTS -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h1>Contenido</h1>
+<ol style="font-size: 11pt; line-height: 2.2;">
+  <li>Resumen Ejecutivo</li>
+  <li>Estado Actual del Sistema</li>
+  <li>Análisis de Brechas por Área</li>
+  <li>Cronograma de Desarrollo (10 Días)</li>
+  <li>Funcionalidades Futuras</li>
+  <li>Conclusiones y Próximos Pasos</li>
+</ol>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- 1. RESUMEN EJECUTIVO -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h1>1. Resumen Ejecutivo</h1>
+
+<p>Este informe presenta el estado actual de la plataforma <strong>Loyallia</strong>, un sistema de fidelización de clientes que incluye tarjetas de lealtad digitales, campañas de marketing y análisis de datos. Se realizó un análisis completo comparando lo que el cliente solicitó con lo que el sistema ofrece hoy.</p>
+
+<div class="stats-row">
+  <div class="stat-box stat-green">
+    <div class="stat-number">3</div>
+    <div class="stat-label">Funcionalidades<br>Completas</div>
+  </div>
+  <div class="stat-box stat-amber">
+    <div class="stat-number">11</div>
+    <div class="stat-label">Funcionalidades<br>Parciales</div>
+  </div>
+  <div class="stat-box stat-red">
+    <div class="stat-number">7</div>
+    <div class="stat-label">Funcionalidades<br>Nuevas Grandes</div>
+  </div>
+  <div class="stat-box stat-blue">
+    <div class="stat-number">6</div>
+    <div class="stat-label">Ajustes<br>Menores</div>
+  </div>
+</div>
+
+<div class="progress-container">
+  <div class="progress-bar-bg">
+    <div class="progress-segment" style="width:10%; background:#10b981;">10%</div>
+    <div class="progress-segment" style="width:37%; background:#f59e0b;">37%</div>
+    <div class="progress-segment" style="width:23%; background:#ef4444;">23%</div>
+    <div class="progress-segment" style="width:30%; background:#94a3b8;">30%</div>
+  </div>
+  <div class="progress-legend">
+    <span><span class="legend-dot" style="background:#10b981;"></span>Completas</span>
+    <span><span class="legend-dot" style="background:#f59e0b;"></span>Parciales (mejorables)</span>
+    <span><span class="legend-dot" style="background:#ef4444;"></span>Sin implementar</span>
+    <span><span class="legend-dot" style="background:#94a3b8;"></span>Ajustes menores</span>
+  </div>
+</div>
+
+<div class="card card-blue">
+  <strong>📌 Hallazgo principal:</strong> El sistema Loyallia tiene una base sólida con 12 tipos de tarjetas de fidelización, dashboard con métricas, sistema de campañas multicanal y gestión de clientes. Sin embargo, existen <strong>27 áreas de mejora</strong> identificadas que van desde ajustes de textos hasta funcionalidades nuevas completas. Se propone un plan de 10 días laborales para implementar las mejoras más impactantes.
+</div>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- 2. ESTADO ACTUAL DEL SISTEMA -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h1>2. Estado Actual del Sistema</h1>
+<p>A continuación se describe cada módulo de Loyallia y qué funcionalidades tiene implementadas hoy.</p>
+
+<!-- 2.1 Dashboard -->
+<h2>2.1 Panel de Control (Dashboard)</h2>
+<div class="card card-green">
+  <h3>✅ Lo que SÍ funciona</h3>
+  <div class="feature-grid">
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>4 Indicadores principales:</strong> Clientes Totales, Programas Activos, Transacciones, Notificaciones Enviadas</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Filtros de fecha:</strong> Hoy, 7 días, 4 semanas, 6 meses, 12 meses, Mes hasta la fecha, Personalizado</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Pestaña Ganancias:</strong> Ingresos brutos, por fidelización, por referencias, nuevas visitas, visitas repetidas</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Pestaña Visitas:</strong> Visitas totales, clientes únicos, nuevos, recurrentes, que no regresaron, tasa de retorno</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Top 15 Compradores:</strong> Lista de los clientes que más compran con botón para enviarles notificación</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Demografías:</strong> Gráficos de edad y género de los clientes</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Campañas:</strong> Campañas enviadas, notificaciones abiertas, tasas de apertura y clic</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Gráfico de tendencias:</strong> Ingresos, transacciones y nuevos clientes en el tiempo</div></div>
+  </div>
+</div>
+
+<div class="card card-amber">
+  <h3>⚠️ Lo que necesita ajustes</h3>
+  <ul>
+    <li><strong>Filtros de fecha:</strong> Están funcionando pero el cliente desea que estén posicionados arriba de los 4 indicadores principales</li>
+    <li><strong>Fecha actual:</strong> Se muestra al final de la página, el cliente quiere verla de forma más prominente</li>
+    <li><strong>Indicador de referencias:</strong> Actualmente es un cálculo estimado (15% de nuevos clientes), no usa datos reales</li>
+    <li><strong>Filtro por programa:</strong> La sección de visitas no permite filtrar por tipo de programa (sellos, cupones, etc.)</li>
+  </ul>
+</div>
+
+<!-- 2.2 Programas -->
+<h2>2.2 Programas de Fidelización</h2>
+<div class="card card-green">
+  <h3>✅ Lo que SÍ funciona</h3>
+  <div class="feature-grid">
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>12 tipos de tarjetas:</strong> Sellos, Cashback/Puntos, Cupón, Afiliación, Descuento por Niveles, Certificado de Regalo, Membresía VIP, Corporativo, Referidos, Multipase, Visita, Puntos</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Vista por estados:</strong> Tarjetas activas, borradores e inactivas separadas con colores distintos</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Vista previa hover:</strong> Al pasar el mouse sobre un tipo de tarjeta se muestra cómo se vería</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Formulario de inscripción:</strong> Configurable con campos de nombre, email, teléfono y campos personalizados</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Diseño de tarjeta:</strong> Editor visual con colores, imágenes y vista previa en tiempo real</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Vista Apple/Google:</strong> Toggle para ver cómo se ve en Apple Wallet y Google Wallet</div></div>
+  </div>
+</div>
+
+<div class="card card-amber">
+  <h3>⚠️ Lo que necesita ajustes</h3>
+  <ul>
+    <li><strong>Nombre del botón:</strong> Actualmente dice "Crear nuevo programa", debe decir "Crear nueva tarjeta"</li>
+    <li><strong>Descripciones de tipos:</strong> Los textos descriptivos de cada tipo de tarjeta necesitan actualización para ser más claros</li>
+    <li><strong>Selector QR/Barras:</strong> Ninguna tarjeta permite elegir entre código QR o código de barras</li>
+    <li><strong>Formulario:</strong> Los campos usan "Requerido/Único" en vez de "Obligatorio/Opcional"</li>
+  </ul>
+</div>
+
+<!-- 2.3 Tarjeta de Sellos -->
+<h2>2.3 Tarjeta de Sellos</h2>
+<div class="card card-green">
+  <h3>✅ Lo que SÍ funciona</h3>
+  <div class="feature-grid">
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Tipo de sello:</strong> Por visita o por consumo (con monto configurable)</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Sellos al emitir:</strong> Cuántos sellos recibe el cliente al agregar la tarjeta</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Límite diario:</strong> Número máximo de sellos por día</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Cumpleaños:</strong> Sellos extra en el cumpleaños del cliente</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Vencimiento:</strong> Ilimitado o por número de días, con fecha inicio/fin</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Forma del sello:</strong> Círculo, cuadrado, estrella, corazón, diamante, hexágono</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Recompensa:</strong> Texto descriptivo de la recompensa al completar</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Iconos:</strong> Biblioteca de más de 100 iconos genéricos por categoría</div></div>
+  </div>
+</div>
+
+<div class="card card-amber">
+  <h3>⚠️ Lo que necesita ajustes</h3>
+  <ul>
+    <li><strong>Código QR/Barras:</strong> No permite elegir entre QR o código de barras</li>
+    <li><strong>Nombre interno:</strong> No hay campo para nombre interno de gestión (solo nombre público)</li>
+    <li><strong>Guardar como borrador:</strong> No se puede guardar como borrador desde la configuración</li>
+    <li><strong>Textos de ayuda:</strong> No hay textos explicativos flotantes para las opciones</li>
+    <li><strong>Imágenes personalizadas:</strong> Solo se pueden elegir iconos predefinidos, no subir imágenes propias de sellos</li>
+  </ul>
+</div>
+
+<!-- 2.4 Tarjeta de Cupón -->
+<h2>2.4 Tarjeta de Cupón de Descuento</h2>
+<div class="card card-green">
+  <h3>✅ Lo que SÍ funciona</h3>
+  <div class="feature-grid">
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Tipo fijo:</strong> Descuento en monto fijo con símbolo $</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Tipo porcentual:</strong> Descuento en porcentaje con símbolo %</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Vencimiento:</strong> Ilimitado o por número de días, con fecha inicio/fin</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Mensaje push:</strong> Texto personalizado de notificación</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Descripción:</strong> Campo para describir el cupón y sus condiciones</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Límite de uso:</strong> Cuántas veces puede usar un cliente el cupón</div></div>
+  </div>
+</div>
+
+<div class="card card-amber">
+  <h3>⚠️ Lo que necesita ajustes</h3>
+  <ul>
+    <li><strong>Promoción especial:</strong> El campo existe pero no está presentado como una tercera opción clara junto a fijo y porcentual</li>
+    <li><strong>Decimales en porcentaje:</strong> No permite ingresar valores como 15.5%</li>
+    <li><strong>Textos de ayuda:</strong> No hay tooltips explicativos para cada tipo de descuento</li>
+    <li><strong>Código QR/Barras:</strong> No permite elegir entre QR o código de barras</li>
+    <li><strong>Imagen del cupón:</strong> Está en la sección de configuración, debería estar en diseño</li>
+    <li><strong>Validación de fechas:</strong> No valida que la fecha fin sea posterior a la fecha inicio</li>
+  </ul>
+</div>
+
+<!-- 2.5 Campañas -->
+<h2>2.5 Sistema de Campañas</h2>
+<div class="card card-green">
+  <h3>✅ Lo que SÍ funciona</h3>
+  <div class="feature-grid">
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>4 canales:</strong> Push (Apple/Google), Email, SMS, WhatsApp</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Segmentación:</strong> Por programa, plataforma, dispositivo y audiencia personalizada</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Asistente de creación:</strong> Wizard de 3 pasos para crear campañas</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Vista previa:</strong> Preview de cómo se ve la notificación en el celular</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Métricas:</strong> Enviados, entregados, fallidos, leídos, tasas de apertura y clic</div></div>
+    <div class="feature-item"><div class="feature-icon done">✓</div><div><strong>Automatización:</strong> Reglas automáticas por eventos (cumpleaños, inactividad, etc.)</div></div>
+  </div>
+</div>
+
+<!-- 2.6 Autenticación -->
+<h2>2.6 Seguridad y Sesión</h2>
+<div class="card card-red">
+  <h3>🔴 Problema Detectado</h3>
+  <p>El reporte indica que los usuarios son <strong>expulsados de la plataforma después de 10-15 minutos</strong> de inactividad, obligándolos a iniciar sesión nuevamente. Este es el problema más urgente que afecta la experiencia del usuario.</p>
+  <p><strong>Causa probable:</strong> Existe un ajuste de "tiempo de sesión" configurado en el sistema pero que no se está usando correctamente, combinado con un posible error en el mecanismo de renovación automática de la sesión.</p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- 3. ANÁLISIS DE BRECHAS -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h1>3. Análisis de Brechas por Área</h1>
+<p>Se identificaron <strong>27 áreas de mejora</strong> agrupadas por funcionalidad. Cada una indica si está completa, parcialmente implementada o sin implementar.</p>
+
+<!-- Dashboard Brechas -->
+<h2>3.1 Dashboard</h2>
+<table>
+  <thead>
+    <tr><th>Funcionalidad Solicitada</th><th>Estado Actual</th><th>Estado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Filtros de fecha posicionados arriba de los indicadores</td><td>Los filtros existen pero están debajo del encabezado</td><td><span class="badge badge-partial">Parcial</span></td></tr>
+    <tr><td>Mostrar fecha actual de forma prominente</td><td>Se muestra al final de la página</td><td><span class="badge badge-partial">Parcial</span></td></tr>
+    <tr><td>Indicador de referencias con datos reales</td><td>Usa un cálculo estimado del 15%</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Filtro por tipo de programa en visitas</td><td>No existe</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+  </tbody>
+</table>
+
+<!-- Tarjetas Brechas -->
+<h2>3.2 Tarjetas de Fidelización</h2>
+<table>
+  <thead>
+    <tr><th>Funcionalidad Solicitada</th><th>Estado Actual</th><th>Estado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Selector de código QR o código de barras</td><td>No existe en ningún tipo de tarjeta</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Textos de ayuda (tooltips) en configuración</td><td>No existen</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Nombre interno para gestión de programas</td><td>Solo existe nombre público</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Guardar como borrador desde configuración</td><td>No disponible</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Cambiar botón a "Crear nueva tarjeta"</td><td>Dice "Crear nuevo programa"</td><td><span class="badge badge-partial">Parcial</span></td></tr>
+    <tr><td>Actualizar descripciones de tipos de tarjeta</td><td>Textos actuales son técnicos</td><td><span class="badge badge-partial">Parcial</span></td></tr>
+    <tr><td>Formulario: Obligatorio/Opcional (mutuamente excluyente)</td><td>Usa Requerido/Único como checkboxes independientes</td><td><span class="badge badge-partial">Parcial</span></td></tr>
+  </tbody>
+</table>
+
+<!-- Diseño Brechas -->
+<h2>3.3 Diseño de Tarjetas</h2>
+<table>
+  <thead>
+    <tr><th>Funcionalidad Solicitada</th><th>Estado Actual</th><th>Estado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Herramienta de recorte de imágenes (zoom, mover, girar)</td><td>No existe — solo previsualización CSS</td><td><span class="badge badge-new">Nueva</span></td></tr>
+    <tr><td>Subir imagen personalizada para sellos</td><td>Solo se pueden elegir iconos predefinidos</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Color de fondo del área de sellos (separado del fondo)</td><td>No existe como opción separada</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Color de texto separado del fondo</td><td>Existe parcialmente en algunos tipos</td><td><span class="badge badge-partial">Parcial</span></td></tr>
+    <tr><td>Color de fondo del área central del cupón</td><td>No existe</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+    <tr><td>Pasar imágenes automáticamente de Apple a Google Wallet</td><td>No sincroniza — el usuario debe subir dos veces</td><td><span class="badge badge-pending">Pendiente</span></td></tr>
+  </tbody>
+</table>
+
+<!-- Sección Info Tarjeta -->
+<h2>3.4 Sección "Información de Tarjeta" (Atrás del Pase)</h2>
+<div class="card card-purple">
+  <p><strong>Esta funcionalidad NO existe actualmente.</strong> Se trata de una nueva sección que muestra la información detallada del pase cuando el usuario hace clic en "ver detalles" dentro de Apple Wallet o Google Wallet. Incluye: términos de uso, fecha de expiración, próximo nivel, puntos, sucursales, información del emisor y número de serie.</p>
+  <p><span class="badge badge-new">Funcionalidad Nueva</span> — Requiere desarrollo completo para todos los tipos de tarjeta.</p>
+</div>
+
+<!-- Cupón Vinculado -->
+<h2>3.5 Cupón Vinculado a Otra Tarjeta</h2>
+<div class="card card-purple">
+  <p><strong>Esta funcionalidad NO existe actualmente.</strong> Permite que después de usar un cupón, la tarjeta se transforme automáticamente en una tarjeta de fidelización diferente. El cliente selecciona a qué tarjeta existente se convertirá.</p>
+  <p><span class="badge badge-new">Funcionalidad Nueva</span> — Requiere desarrollo completo.</p>
+</div>
+
+<!-- Niveles -->
+<h2>3.6 Sistema de Niveles Múltiples</h2>
+<div class="card card-purple">
+  <p><strong>Actualmente solo existe 1 nivel</strong> en las tarjetas de Cashback/Puntos. El cliente solicita poder crear 4-5 niveles (ej: Bronce, Plata, Oro, Platino) cada uno con: nombre personalizado, monto de gasto para alcanzarlo, y porcentaje de beneficio. El cliente debe visualizar en su tarjeta el nivel actual y su progreso (ej: "300/500 puntos").</p>
+  <p><span class="badge badge-new">Funcionalidad Nueva</span> — Requiere diseño de sistema de niveles.</p>
+</div>
+
+<!-- Horas Felices -->
+<h2>3.7 Horas Felices (Multiplicador de Puntos)</h2>
+<div class="card card-purple">
+  <p><strong>Esta funcionalidad NO existe.</strong> Permite configurar multiplicadores de puntos en horarios y días específicos (ej: "Los martes de 2pm-5pm los puntos se duplican").</p>
+  <p><span class="badge badge-new">Funcionalidad Nueva</span> — Requiere desarrollo completo.</p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- 4. CRONOGRAMA -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h1>4. Cronograma de Desarrollo (10 Días Laborales)</h1>
+<p>Plan de trabajo distribuido en 2 semanas, de lunes a viernes, con 8 horas de desarrollo por día. Las tareas están ordenadas por prioridad de impacto para el cliente.</p>
+
+<!-- Week 1 -->
+<h2 style="color: #2563eb;">Semana 1 — 28 de Julio al 1 de Agosto</h2>
+
+<div class="timeline">
+  <!-- Day 1 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 1 — Lunes 28 de Julio</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🔴 Prioridad Alta</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Corregir problema de sesión:</strong> Diagnosticar y reparar el error que expulsa a los usuarios después de 10-15 minutos</li>
+          <li><strong>Actualizar textos de botones:</strong> Cambiar "Crear nuevo programa" por "Crear nueva tarjeta"</li>
+          <li><strong>Actualizar descripciones:</strong> Modificar los textos de los 12 tipos de tarjetas para que sean más claros para el usuario</li>
+          <li><strong>Corregir formulario:</strong> Cambiar "Requerido/Único" por "Obligatorio/Opcional" con comportamiento mutualmente excluyente</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 2 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 2 — Martes 29 de Julio</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🔴 Prioridad Alta</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Reorganizar dashboard:</strong> Mover los filtros de fecha a la posición superior (sobre los 4 indicadores)</li>
+          <li><strong>Mostrar fecha prominente:</strong> Agregar la fecha actual en formato "Hoy - 28 de Julio 2026" en una posición visible</li>
+          <li><strong>Corregir métrica de referencias:</strong> Conectar el indicador con datos reales en vez del cálculo estimado del 15%</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 3 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 3 — Miércoles 30 de Julio</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟡 Prioridad Media</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Agregar filtro por programa:</strong> Implementar selector de tipo de programa en la sección de Visitas del dashboard</li>
+          <li><strong>Selector QR/Barras — Tarjeta de Sellos:</strong> Agregar opción para elegir entre código QR o código de barras con vista previa</li>
+          <li><strong>Selector QR/Barras — Tarjeta de Cupón:</strong> Mismo selector para tarjetas de cupón</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 4 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 4 — Jueves 31 de Julio</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟡 Prioridad Media</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Selector QR/Barras — Resto de tarjetas:</strong> Cashback, Gift Card, Descuento por Niveles y demás tipos</li>
+          <li><strong>Textos de ayuda en Sellos:</strong> Agregar tooltips explicativos para las opciones de tipo de sello (visita vs consumo)</li>
+          <li><strong>Nombre interno:</strong> Agregar campo de "nombre interno" para gestión del programa</li>
+          <li><strong>Borrador desde configuración:</strong> Permitir guardar como borrador sin publicar</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 5 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 5 — Viernes 1 de Agosto</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟡 Prioridad Media</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Tipos de cupón:</strong> Presentar claramente las 3 opciones (Fijo, Porcentual, Promoción especial) como selección visual</li>
+          <li><strong>Decimales en porcentaje:</strong> Permitir valores como 15.5% en descuento porcentual</li>
+          <li><strong>Textos de ayuda en Cupón:</strong> Agregar los 8 textos de ayuda especificados por el cliente</li>
+          <li><strong>Validación de fechas:</strong> Validar que fecha fin sea posterior a fecha inicio en todas las tarjetas</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Week 2 -->
+<h2 style="color: #10b981;">Semana 2 — 4 al 8 de Agosto</h2>
+
+<div class="timeline">
+  <!-- Day 6 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot week2"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 6 — Lunes 4 de Agosto</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟡 Prioridad Media</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Configuración de push en Cupón:</strong> Configurar notificación push con título, descripción, emojis, contador de caracteres y botón guardar</li>
+          <li><strong>Configuración de push en Sellos:</strong> Agregar notificación push predeterminada al descargar la tarjeta</li>
+          <li><strong>Textos de ayuda en push:</strong> Agregar tooltips explicativos para la sección de notificación</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 7 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot week2"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 7 — Martes 5 de Agosto</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟡 Prioridad Media</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Push en resto de tarjetas:</strong> Agregar configuración de notificación push a Cashback, Gift Card, Descuento, etc.</li>
+          <li><strong>Selector de imágenes:</strong> Mover la carga de imagen del cupón de "Configuración" a "Diseño" con especificaciones de dimensiones</li>
+          <li><strong>Especificaciones de imagen:</strong> Mostrar dimensiones en px, peso máximo y formato aceptado para cada tipo de imagen</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 8 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot week2"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 8 — Miércoles 6 de Agosto</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟢 Prioridad Normal</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Colores en Sellos:</strong> Agregar selector de color para el fondo del área de sellos (separado del fondo general)</li>
+          <li><strong>Colores en Cupón:</strong> Agregar selector de color de texto y fondo del área central del cupón</li>
+          <li><strong>Colores en Cashback:</strong> Verificar y completar selectores de color</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 9 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot week2"></div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 9 — Jueves 7 de Agosto</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟢 Prioridad Normal</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Preview Apple/Google en selección de tipo:</strong> Agregar toggle de plataforma en la vista previa hover del paso 1</li>
+          <li><strong>Comportamiento del mockup:</strong> Verificar que el mockup del celular sea sticky (se quede fijo) en todas las tarjetas</li>
+          <li><strong>Sincronización de imágenes Apple→Google:</strong> Implementar copia automática de imágenes al cambiar de plataforma</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day 10 -->
+  <div class="timeline-day">
+    <div class="timeline-marker">
+      <div class="timeline-dot week2"></div>
+    </div>
+    <div class="timeline-content">
+      <div class="timeline-title">Día 10 — Viernes 8 de Agosto</div>
+      <div class="timeline-meta">⏱ 8 horas &nbsp;|&nbsp; 🟢 Prioridad Normal</div>
+      <div class="timeline-tasks">
+        <ul>
+          <li><strong>Revisión general:</strong> Verificar que todas las funcionalidades implementadas funcionen correctamente</li>
+          <li><strong>Testing:</strong> Pruebas de cada tipo de tarjeta con los nuevos cambios</li>
+          <li><strong>Corrección de errores:</strong> Resolver cualquier bug encontrado durante las pruebas</li>
+          <li><strong>Documentación:</strong> Preparar resumen de cambios para entrega al cliente</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note-box">
+  <strong>📋 Nota importante:</strong> Este cronograma cubre las <strong>mejoras de alto y medio impacto</strong> que son viables en 10 días laborales. Las funcionalidades grandes (Sección de Información de Tarjeta, Sistema de Niveles Múltiples, Cupón Vinculado, Herramienta de Recorte de Imágenes, Política de Privacidad por Programa, Horas Felices y Límite de Ubicaciones por Plan) requieren un segundo fase de desarrollo.
+</div>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- 5. FUNCIONALIDADES FUTURAS -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h1>5. Funcionalidades Futuras</h1>
+<p>Las siguientes funcionalidades fueron solicitadas por el cliente pero requieren un desarrollo más extenso. Se recomienda planificarlas en una segunda fase.</p>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>Funcionalidad</th><th>Descripción</th><th>Esfuerzo Estimado</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>Información de Tarjeta</strong></td>
+      <td>Sección "atrás del pase" con términos de uso, próximas recompensas, niveles, sucursales, información del emisor y número de serie. Para Apple Wallet y Google Wallet.</td>
+      <td><span class="badge badge-new">5-7 días</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Herramienta de Recorte</strong></td>
+      <td>Editor de imágenes con zoom, movimiento, rotación 360° y reinicio. Para sellos, logos, iconos y fondos.</td>
+      <td><span class="badge badge-new">4-5 días</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Sistema de Niveles</strong></td>
+      <td>4-5 niveles configurables (Bronce, Plata, Oro) con nombre, umbral de gasto, multiplicador y progreso visual en la tarjeta.</td>
+      <td><span class="badge badge-new">5-6 días</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>Cupón Vinculado</strong></td>
+      <td>Después de usar un cupón, la tarjeta se transforma automáticamente en una tarjeta de fidelización diferente seleccionada por el usuario.</td>
+      <td><span class="badge badge-new">3-4 días</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>Política de Privacidad</strong></td>
+      <td>Checkbox de aceptación y texto de privacidad configurables por cada programa de fidelización.</td>
+      <td><span class="badge badge-new">3-4 días</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>Horas Felices</strong></td>
+      <td>Multiplicador de puntos en horarios y días de la semana específicos.</td>
+      <td><span class="badge badge-new">3-4 días</span></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>Límite de Ubicaciones</strong></td>
+      <td>Limitar sucursales según el plan contratado. Opción de comprar ubicaciones adicionales por $10.</td>
+      <td><span class="badge badge-new">4-5 días</span></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><strong>Puntos Permanentes</strong></td>
+      <td>Opción de que los puntos nunca venzan, a diferencia de los puntos con tiempo de expiración.</td>
+      <td><span class="badge badge-new">2 días</span></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><strong>Imágenes Personalizadas de Sellos</strong></td>
+      <td>Permitir al usuario subir su propia imagen para los sellos activos e inactivos, con herramienta de recorte.</td>
+      <td><span class="badge badge-new">3-4 días</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- 6. CONCLUSIONES -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h1>6. Conclusiones y Próximos Pasos</h1>
+
+<div class="card card-blue">
+  <h2>Estado General del Proyecto</h2>
+  <p>La plataforma Loyallia cuenta con una <strong>base funcional sólida</strong>. Los módulos principales están construidos y operativos: dashboard con métricas, 12 tipos de tarjetas de fidelización, sistema de campañas multicanal, gestión de clientes y seguridad con autenticación.</p>
+  <p>Las mejoras solicitadas por el cliente son <strong>viables y razonables</strong>. La mayoría son ajustes de UX, mejoras de textos y funcionalidades complementarias. Un número menor son funcionalidades completamente nuevas que requieren diseño y desarrollo desde cero.</p>
+</div>
+
+<h2>Próximos Pasos Recomendados</h2>
+
+<div class="card card-green">
+  <h3>Fase 1 — Inmediata (10 días, 28 Julio - 8 Agosto)</h3>
+  <ul>
+    <li>Resolver el problema de sesión que afecta a todos los usuarios</li>
+    <li>Implementar las mejoras de UX en dashboard y tarjetas</li>
+    <li>Agregar selectores QR/Barras en todos los tipos de tarjeta</li>
+    <li>Mejorar textos, tooltips y formularios</li>
+    <li>Configurar notificaciones push en todas las tarjetas</li>
+  </ul>
+</div>
+
+<div class="card card-amber">
+  <h3>Fase 2 — Seguimiento (3-4 semanas)</h3>
+  <ul>
+    <li>Desarrollar la Sección de Información de Tarjeta (atrás del pase)</li>
+    <li>Implementar el sistema de niveles múltiples</li>
+    <li>Crear la herramienta de recorte de imágenes</li>
+    <li>Desarrollar el cupón vinculado a otra tarjeta</li>
+  </ul>
+</div>
+
+<div class="card card-purple">
+  <h3>Fase 3 — Futuras</h3>
+  <ul>
+    <li>Política de privacidad por programa</li>
+    <li>Horas felices (multiplicador de puntos)</li>
+    <li>Límite de ubicaciones por plan</li>
+    <li>Puntos permanentes</li>
+  </ul>
+</div>
+
+<div style="margin-top: 15mm; text-align: center; color: #64748b; font-size: 9pt;">
+  <div style="width: 60px; height: 2px; background: #2563eb; margin: 0 auto 5mm;"></div>
+  <p><strong>Loyallia</strong> — Informe de Estado del Proyecto</p>
+  <p>Julio 2026 &nbsp;|&nbsp; Documento Confidencial</p>
+  <p style="margin-top: 3mm;">Generado automáticamente &nbsp;|&nbsp; Para uso interno del equipo y cliente</p>
+</div>
+
+</body>
+</html>

@@ -52,9 +52,7 @@ class StatusOut(Schema):
     messages_remaining: int = 200
 
 
-class MessageOut(Schema):
-    success: bool
-    message: str = ""
+from common.schemas import MessageOut  # noqa: E402
 
 
 class DeliveryWebhookIn(Schema):

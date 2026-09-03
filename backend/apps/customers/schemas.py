@@ -128,9 +128,6 @@ class ResendPassIn(BaseModel):
     card_id: str
 
 
-class MessageOut(BaseModel):
-    success: bool
-    message: str
 
 
 class CustomerSearchOut(BaseModel):

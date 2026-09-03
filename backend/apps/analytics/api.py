@@ -48,13 +48,6 @@ logger = logging.getLogger(__name__)
 
 
 # Pydantic Schemas
-class AnalyticsDateRange(BaseModel):
-    """ISO date range filter for analytics queries."""
-
-    start_date: str  # ISO format
-    end_date: str  # ISO format
-
-
 class CustomerAnalyticsSchema(BaseModel):
     """Serialized customer analytics metrics."""
 

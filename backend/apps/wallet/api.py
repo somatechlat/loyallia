@@ -11,10 +11,12 @@ from datetime import datetime
 from typing import Any
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
 from apps.wallet.models import WalletPassOperationLog, WalletTemplate
+from common.messages import get_message
 from common.permissions import jwt_auth
 from common.plan_enforcement import enforce_limit, require_feature
 
@@ -95,7 +97,7 @@ def create_template(request, payload: WalletTemplateIn):
     tenant, user = _get_tenant_and_user(request)
 
     if WalletTemplate.objects.filter(tenant=tenant, owner=user, name=payload.name).exists():
-        raise HttpError(409, "A template with this name already exists.")
+        raise HttpError(409, get_message("WALLET_TEMPLATE_NAME_EXISTS"))
 
     template = WalletTemplate.objects.create(
         tenant=tenant,
@@ -136,7 +138,7 @@ def update_template(request, template_id: str, payload: WalletTemplateUpdateIn):
 
     if payload.name is not None:
         if WalletTemplate.objects.filter(tenant=tenant, owner=user, name=payload.name).exclude(id=template_id).exists():
-            raise HttpError(409, "A template with this name already exists.")
+            raise HttpError(409, get_message("WALLET_TEMPLATE_NAME_EXISTS"))
         template.name = payload.name
 
     if payload.description is not None:
@@ -187,7 +189,7 @@ def use_template(request, template_id: str):
     tenant, user = _get_tenant_and_user(request)
     template = get_object_or_404(WalletTemplate, id=template_id, tenant=tenant, owner=user)
     template.usage_count += 1
-    template.last_used_at = datetime.now()
+    template.last_used_at = timezone.now()
     template.save(update_fields=["usage_count", "last_used_at"])
     WalletPassOperationLog.objects.create(
         tenant=tenant,

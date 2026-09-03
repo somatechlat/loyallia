@@ -224,9 +224,7 @@ class CardOut(BaseModel):
         )
 
 
-class MessageOut(BaseModel):
-    success: bool
-    message: str
+from common.schemas import MessageOut  # noqa: E402
 
 
 class CardListOut(BaseModel):

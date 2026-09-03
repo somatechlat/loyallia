@@ -48,6 +48,10 @@ from common.request import require_tenant
 
 logger = logging.getLogger("loyallia.plan_enforcement")
 
+# Threshold at which a plan limit is considered "unlimited".
+# Plans with limits >= this value are treated as having no cap.
+UNLIMITED_THRESHOLD = 999999
+
 
 # UTILITY FUNCTIONS (extracted from billing/api.py and billing/service.py)
 
@@ -61,7 +65,7 @@ def resolve_limit(subscription, resource: str) -> int:
 
 def usage_pct(used: int, limit: int) -> float:
     """Return usage percentage capped at 100.0, or 0.0 for unlimited/invalid limits."""
-    if limit <= 0 or limit >= 999999:
+    if limit <= 0 or limit >= UNLIMITED_THRESHOLD:
         return 0.0
     return min(round(used / limit * 100, 1), 100.0)
 

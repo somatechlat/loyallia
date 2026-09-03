@@ -104,11 +104,6 @@ class LocationUpdateIn(BaseModel):
     is_primary: bool | None = None
 
 
-class MessageOut(BaseModel):
-    success: bool
-    message: str
-
-
 class TeamMemberOut(BaseModel):
     id: str
     email: str
