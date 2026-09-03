@@ -20,6 +20,7 @@ from common.messages import get_message
 from common.permissions import is_manager_or_owner, is_owner, jwt_auth
 from common.plan_enforcement import check_plan_limit, require_active_subscription
 from common.request import TenantRequest, require_tenant
+from common.schemas import MessageOut  # noqa: F401 -- re-exported for other modules
 
 logger = logging.getLogger(__name__)
 
@@ -222,9 +223,6 @@ class CardOut(BaseModel):
                 enrollments_count if enrollments_count is not None else CustomerPass.objects.filter(card=card).count()
             ),
         )
-
-
-from common.schemas import MessageOut  # noqa: E402
 
 
 class CardListOut(BaseModel):

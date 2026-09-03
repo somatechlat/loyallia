@@ -5,6 +5,7 @@ Loyallia Tenants API Schemas (Pydantic models)
 from pydantic import BaseModel, EmailStr
 
 from apps.tenants.models import Location, Tenant
+from common.schemas import MessageOut  # noqa: F401 -- re-exported for other modules
 
 
 class TenantOut(BaseModel):

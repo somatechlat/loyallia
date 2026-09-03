@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 
 from apps.customers.models import Customer, CustomerPass
 from common.messages import get_message
+from common.schemas import MessageOut  # noqa: F401 -- re-exported for other modules
 
 
 class CustomerCreateIn(BaseModel):
@@ -126,8 +127,6 @@ class CustomerPassOut(BaseModel):
 class ResendPassIn(BaseModel):
     email: EmailStr
     card_id: str
-
-
 
 
 class CustomerSearchOut(BaseModel):
