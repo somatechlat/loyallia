@@ -34,18 +34,6 @@ const nextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          { key: 'Content-Security-Policy', value: [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "img-src 'self' data: blob: https: http:",
-            "font-src 'self' https://fonts.gstatic.com",
-            "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://rewards.loyallia.com https://*.tile.openstreetmap.org",
-            "frame-src 'self' https://accounts.google.com",
-            "object-src 'none'",
-            "base-uri 'self'",
-            "form-action 'self'",
-          ].join('; ') },
         ],
       },
     ];
