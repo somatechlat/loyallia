@@ -35,9 +35,7 @@ class ProgramMemberCountTest(TestCase):
 
         make_customer_pass(c_apple, card, apple_pass_id="pass-apple-1")
         make_customer_pass(c_google, card, google_pass_id="pass-google-1")
-        make_customer_pass(
-            c_both, card, apple_pass_id="pass-apple-2", google_pass_id="pass-google-2"
-        )
+        make_customer_pass(c_both, card, apple_pass_id="pass-apple-2", google_pass_id="pass-google-2")
 
         from apps.cards.api import program_member_count
 
@@ -78,9 +76,7 @@ class MostActiveSegmentTest(TestCase):
         tenant = make_tenant()
         customers = []
         for i in range(20):
-            c = make_customer(
-                tenant, email=f"user{i}@test.com", total_visits=i, total_spent=i * 10
-            )
+            c = make_customer(tenant, email=f"user{i}@test.com", total_visits=i, total_spent=i * 10)
             customers.append(c)
 
         qs = Customer.objects.filter(tenant=tenant)

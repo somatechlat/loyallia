@@ -76,9 +76,7 @@ class AgentAPIKey(models.Model):
         verbose_name="Creado por (user_id)",
         help_text="ID of the user who created this record.",
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text="Timestamp for created."
-    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:

@@ -37,24 +37,16 @@ class BillingService:
         from apps.tenants.models import PlatformSetting
 
         tax_rate = Decimal(
-            str(
-                PlatformSetting.get_float(
-                    "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
-                )
-            )
+            str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
         )
-        trial_days = PlatformSetting.get_int(
-            "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
-        )
+        trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
         plans = SubscriptionPlan.objects.filter(is_active=True)
         result = []
 
         for plan in plans:
             annual_monthly = (
-                (plan.price_annual / 12).quantize(Decimal("0.01"))
-                if plan.price_annual > 0
-                else Decimal("0.00")
+                (plan.price_annual / 12).quantize(Decimal("0.01")) if plan.price_annual > 0 else Decimal("0.00")
             )
             result.append(
                 {
@@ -119,9 +111,7 @@ class BillingService:
 
         # Store payment method if provided
         if card_data and card_data.get("card_token"):
-            PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(
-                is_default=False
-            )
+            PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(is_default=False)
             PaymentMethod.objects.create(
                 tenant=tenant,
                 gateway_token=card_data.get("card_token", ""),
@@ -148,9 +138,7 @@ class BillingService:
             "status": subscription.status,
             "billing_cycle": subscription.billing_cycle,
             "current_period_end": (
-                subscription.current_period_end.isoformat()
-                if subscription.current_period_end
-                else None
+                subscription.current_period_end.isoformat() if subscription.current_period_end else None
             ),
         }
 
@@ -172,12 +160,8 @@ class BillingService:
         total_programs = Card.objects.filter(tenant=tenant).count()
         total_users = tenant.users.filter(is_active=True).count()
         total_locations = tenant.locations.count()
-        monthly_txns = Transaction.objects.filter(
-            tenant=tenant, created_at__gte=month_start
-        ).count()
-        monthly_notifs = Notification.objects.filter(
-            tenant=tenant, created_at__gte=month_start
-        ).count()
+        monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
+        monthly_notifs = Notification.objects.filter(tenant=tenant, created_at__gte=month_start).count()
 
         subscription = Subscription.objects.filter(tenant=tenant).first()
 
@@ -185,54 +169,37 @@ class BillingService:
             "customers": {
                 "used": total_customers,
                 "limit": resolve_limit(subscription, "customers"),
-                "percentage": usage_pct(
-                    total_customers, resolve_limit(subscription, "customers")
-                ),
-                "is_over_limit": total_customers
-                >= resolve_limit(subscription, "customers"),
+                "percentage": usage_pct(total_customers, resolve_limit(subscription, "customers")),
+                "is_over_limit": total_customers >= resolve_limit(subscription, "customers"),
             },
             "programs": {
                 "used": total_programs,
                 "limit": resolve_limit(subscription, "programs"),
-                "percentage": usage_pct(
-                    total_programs, resolve_limit(subscription, "programs")
-                ),
-                "is_over_limit": total_programs
-                >= resolve_limit(subscription, "programs"),
+                "percentage": usage_pct(total_programs, resolve_limit(subscription, "programs")),
+                "is_over_limit": total_programs >= resolve_limit(subscription, "programs"),
             },
             "users": {
                 "used": total_users,
                 "limit": resolve_limit(subscription, "users"),
-                "percentage": usage_pct(
-                    total_users, resolve_limit(subscription, "users")
-                ),
+                "percentage": usage_pct(total_users, resolve_limit(subscription, "users")),
                 "is_over_limit": total_users >= resolve_limit(subscription, "users"),
             },
             "locations": {
                 "used": total_locations,
                 "limit": resolve_limit(subscription, "locations"),
-                "percentage": usage_pct(
-                    total_locations, resolve_limit(subscription, "locations")
-                ),
-                "is_over_limit": total_locations
-                >= resolve_limit(subscription, "locations"),
+                "percentage": usage_pct(total_locations, resolve_limit(subscription, "locations")),
+                "is_over_limit": total_locations >= resolve_limit(subscription, "locations"),
             },
             "transactions_month": {
                 "used": monthly_txns,
                 "limit": resolve_limit(subscription, "transactions_month"),
-                "percentage": usage_pct(
-                    monthly_txns, resolve_limit(subscription, "transactions_month")
-                ),
-                "is_over_limit": monthly_txns
-                >= resolve_limit(subscription, "transactions_month"),
+                "percentage": usage_pct(monthly_txns, resolve_limit(subscription, "transactions_month")),
+                "is_over_limit": monthly_txns >= resolve_limit(subscription, "transactions_month"),
             },
             "notifications_month": {
                 "used": monthly_notifs,
                 "limit": resolve_limit(subscription, "notifications_month"),
-                "percentage": usage_pct(
-                    monthly_notifs, resolve_limit(subscription, "notifications_month")
-                ),
-                "is_over_limit": monthly_notifs
-                >= resolve_limit(subscription, "notifications_month"),
+                "percentage": usage_pct(monthly_notifs, resolve_limit(subscription, "notifications_month")),
+                "is_over_limit": monthly_notifs >= resolve_limit(subscription, "notifications_month"),
             },
         }

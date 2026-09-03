@@ -28,9 +28,7 @@ class BirthdayTriggerTaskTest(TestCase):
 
         today = date.today()
         tenant = make_tenant()
-        make_customer(
-            tenant, date_of_birth=today.replace(year=1990), email="bday@test.com"
-        )
+        make_customer(tenant, date_of_birth=today.replace(year=1990), email="bday@test.com")
         make_automation(
             tenant,
             trigger=AutomationTrigger.BIRTHDAY_COMING,

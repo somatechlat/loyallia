@@ -27,9 +27,7 @@ class CustomerPortalAccount(models.Model):
         editable=False,
         help_text="Unique identifier for this record.",
     )
-    email = models.EmailField(
-        unique=True, verbose_name="Correo electrónico", help_text="Email address."
-    )
+    email = models.EmailField(unique=True, verbose_name="Correo electrónico", help_text="Email address.")
     password = models.CharField(
         max_length=128,
         blank=True,
@@ -42,9 +40,7 @@ class CustomerPortalAccount(models.Model):
         verbose_name="Cuenta activa",
         help_text="Whether this record is currently active.",
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text="Timestamp for created."
-    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -82,12 +78,8 @@ class Customer(TimestampedModel):
     )
 
     # Contact Information
-    first_name = models.CharField(
-        max_length=100, verbose_name="Nombre", help_text="First name."
-    )
-    last_name = models.CharField(
-        max_length=100, verbose_name="Apellido", help_text="Last name."
-    )
+    first_name = models.CharField(max_length=100, verbose_name="Nombre", help_text="First name.")
+    last_name = models.CharField(max_length=100, verbose_name="Apellido", help_text="Last name.")
     email = models.EmailField(
         validators=[EmailValidator()],
         verbose_name="Correo electrónico",
@@ -248,12 +240,8 @@ class Customer(TimestampedModel):
         logger = logging.getLogger(__name__)
 
         for _attempt in range(settings.SLUG_MAX_ATTEMPTS):
-            code = "".join(
-                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8)
-            )
-            if not Customer.objects.filter(
-                tenant=self.tenant, referral_code=code
-            ).exists():
+            code = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            if not Customer.objects.filter(tenant=self.tenant, referral_code=code).exists():
                 return code
 
         fallback = uuid.uuid4().hex[:12].upper()
@@ -502,11 +490,7 @@ class CustomerPass(models.Model):
     @property
     def stamp_count_val(self) -> int:
         """Current stamp count for stamp cards (prefers typed column)."""
-        return (
-            self.stamp_count
-            if self.stamp_count > 0
-            else self.get_pass_field("stamp_count", 0)
-        )
+        return self.stamp_count if self.stamp_count > 0 else self.get_pass_field("stamp_count", 0)
 
     @property
     def cashback_balance_val(self) -> Decimal:
@@ -530,11 +514,7 @@ class CustomerPass(models.Model):
     @property
     def gift_balance_val(self) -> Decimal:
         """Current gift certificate balance (prefers typed column)."""
-        return (
-            self.gift_balance
-            if self.gift_balance > 0
-            else Decimal(str(self.get_pass_field("gift_balance", "0")))
-        )
+        return self.gift_balance if self.gift_balance > 0 else Decimal(str(self.get_pass_field("gift_balance", "0")))
 
     @property
     def membership_expiry(self) -> datetime | None:
@@ -552,32 +532,22 @@ class CustomerPass(models.Model):
     @property
     def referral_count_val(self) -> int:
         """Number of successful referrals (prefers typed column)."""
-        return (
-            self.referral_count
-            if self.referral_count > 0
-            else self.get_pass_field("referral_count", 0)
-        )
+        return self.referral_count if self.referral_count > 0 else self.get_pass_field("referral_count", 0)
 
     @property
     def multipass_remaining_val(self) -> int:
         """Remaining prepaid stamps in multipass (prefers typed column)."""
         return (
-            self.multipass_remaining
-            if self.multipass_remaining > 0
-            else self.get_pass_field("multipass_remaining", 0)
+            self.multipass_remaining if self.multipass_remaining > 0 else self.get_pass_field("multipass_remaining", 0)
         )
 
-    def process_transaction(
-        self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1
-    ) -> dict:
+    def process_transaction(self, transaction_type: str, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
         """Process a transaction for this pass. Delegates to the service layer."""
         from apps.customers.services.pass_transactions import process_pass_transaction
 
         return process_pass_transaction(self, transaction_type, amount, quantity)
 
-    def _process_stamp_transaction(
-        self, amount: Decimal = Decimal("0"), quantity: int = 1
-    ) -> dict:
+    def _process_stamp_transaction(self, amount: Decimal = Decimal("0"), quantity: int = 1) -> dict:
         return self.process_transaction("stamp", amount, quantity)
 
     def _process_coupon_transaction(self) -> dict:
@@ -624,9 +594,7 @@ class ApplePassRegistration(models.Model):
         help_text="The customer loyalty pass.",
     )
 
-    registered_at = models.DateTimeField(
-        auto_now_add=True, help_text="Timestamp for registered."
-    )
+    registered_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for registered.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
@@ -646,4 +614,6 @@ class ApplePassRegistration(models.Model):
 
     def __str__(self) -> str:
         """Return a human-readable string representation."""
-        return f"Apple Registration: device {self.device_library_id[-8:]} → pass {getattr(self, 'customer_pass_id', '')}"
+        return (
+            f"Apple Registration: device {self.device_library_id[-8:]} → pass {getattr(self, 'customer_pass_id', '')}"
+        )

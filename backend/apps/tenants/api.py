@@ -95,9 +95,7 @@ def get_plan_features(request):
             "whatsapp_today": get_current_usage(tenant, "whatsapp_day"),
             "emails_this_month": get_current_usage(tenant, "emails_month"),
             "sms_today": get_current_usage(tenant, "sms_day"),
-            "wallet_pushes_this_month": get_current_usage(
-                tenant, "wallet_pushes_month"
-            ),
+            "wallet_pushes_this_month": get_current_usage(tenant, "wallet_pushes_month"),
             "customers": get_current_usage(tenant, "customers"),
         }
 
@@ -112,16 +110,12 @@ def get_plan_features(request):
 # TENANT ENDPOINTS
 
 
-@router.get(
-    "/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual"
-)
+@router.get("/me/", auth=jwt_auth, response=TenantOut, summary="Perfil del negocio actual")
 def get_tenant(request):
     return TenantOut.from_tenant(request.tenant)
 
 
-@router.patch(
-    "/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio"
-)
+@router.patch("/me/", auth=jwt_auth, response=TenantOut, summary="Actualizar perfil del negocio")
 def update_tenant(request, payload: TenantUpdateIn):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -158,9 +152,7 @@ def update_tenant(request, payload: TenantUpdateIn):
     return TenantOut.from_tenant(tenant)
 
 
-@router.get(
-    "/settings/", auth=jwt_auth, response=TenantOut, summary="Configuración del negocio"
-)
+@router.get("/settings/", auth=jwt_auth, response=TenantOut, summary="Configuración del negocio")
 def get_tenant_settings(request):
     return get_tenant(request)
 
@@ -217,9 +209,7 @@ def create_location(request, payload: LocationCreateIn):
     )
 
     if payload.is_primary:
-        Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(
-            is_primary=False
-        )
+        Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(is_primary=False)
 
     return LocationOut.from_location(loc)
 
@@ -246,9 +236,7 @@ def update_location(request, location_id: str):
         payload = LocationUpdateIn(**body)
     except Exception as e:
         logger.error("Invalid request body: %s", e)
-        raise HttpError(
-            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
-        )
+        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
 
     update_fields = ["updated_at"]
 
@@ -277,9 +265,7 @@ def update_location(request, location_id: str):
         loc.is_primary = payload.is_primary
         update_fields.append("is_primary")
         if payload.is_primary:
-            Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(
-                is_primary=False
-            )
+            Location.objects.filter(tenant=request.tenant).exclude(id=loc.id).update(is_primary=False)
 
     loc.save(update_fields=update_fields)
     return LocationOut.from_location(loc)
@@ -322,11 +308,7 @@ def list_team(request):
 
     from apps.authentication.models import User
 
-    users = (
-        User.objects.filter(tenant=request.tenant)
-        .exclude(role="SUPER_ADMIN")
-        .order_by("-date_joined")
-    )
+    users = User.objects.filter(tenant=request.tenant).exclude(role="SUPER_ADMIN").order_by("-date_joined")
     return [TeamMemberOut.from_user(u) for u in users]
 
 
@@ -347,14 +329,10 @@ def add_team_member(request, payload: TeamMemberCreateIn):
     from apps.authentication.models import User, UserManager, UserRole
 
     if payload.role not in (UserRole.MANAGER, UserRole.STAFF):
-        raise HttpError(
-            400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF")
-        )
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Role must be MANAGER or STAFF"))
 
     if User.objects.filter(email=payload.email, tenant=request.tenant).exists():
-        raise HttpError(
-            400, get_message("VALIDATION_ERROR", detail="Email ya registrado")
-        )
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Email ya registrado"))
 
     temp_password = secrets.token_urlsafe(8)
     user = cast(UserManager, User.objects).create_user(
@@ -392,9 +370,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
     return {
         "success": True,
-        "message": get_message(
-            "TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"
-        ),
+        "message": get_message("TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"),
         "user_id": str(user.id),
     }
 

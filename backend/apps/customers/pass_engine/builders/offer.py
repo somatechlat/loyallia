@@ -32,9 +32,7 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
     google_cfg = _get_v2_google_config(card)
 
     logo_uri = _resolve_url(
-        _get_v2_image_url(v2_images, "logo")
-        or _get_v2_image_url(v2_images, "logo2x")
-        or card.logo_url,
+        _get_v2_image_url(v2_images, "logo") or _get_v2_image_url(v2_images, "logo2x") or card.logo_url,
         base_url,
     ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
 
@@ -71,9 +69,7 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
     return payload
 
 
-def _build_offer_object(
-    customer_pass, card, customer, tenant, base_url: str = ""
-) -> dict:
+def _build_offer_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
     """Build a Google Wallet OfferObject instance."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.offer-{card.id}"
@@ -118,9 +114,7 @@ def _build_offer_object(
         text_modules.append(
             {
                 "header": get_message("WALLET_LABEL_REWARD"),
-                "body": metadata.get(
-                    "referrer_reward", pass_data.get("referrer_reward", "")
-                ),
+                "body": metadata.get("referrer_reward", pass_data.get("referrer_reward", "")),
                 "id": "referrer_reward",
             }
         )
@@ -167,9 +161,7 @@ def _build_offer_object(
             }
         )
     elif card.card_type == "coupon":
-        usage_limit = metadata.get(
-            "usage_limit", metadata.get("usage_limit_per_customer", 1)
-        )
+        usage_limit = metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1))
         coupon_end = metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
         text_modules.append(
             {
@@ -200,9 +192,7 @@ def _build_offer_object(
         "barcode": {
             "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,
-            "alternateText": customer_pass.qr_code[
-                : settings.PASS_GOOGLE_QR_TRUNCATE_LENGTH
-            ],
+            "alternateText": customer_pass.qr_code[: settings.PASS_GOOGLE_QR_TRUNCATE_LENGTH],
         },
         "textModulesData": text_modules,
     }
@@ -214,9 +204,7 @@ def _build_offer_object(
         hero_uri = _resolve_url(google_hero["url"], base_url)
     if not hero_uri:
         hero_uri = _resolve_url(
-            _get_v2_image_url(v2_images, "strip")
-            or _get_v2_image_url(v2_images, "strip2x")
-            or card.strip_image_url,
+            _get_v2_image_url(v2_images, "strip") or _get_v2_image_url(v2_images, "strip2x") or card.strip_image_url,
             base_url,
         )
     if hero_uri:
@@ -260,13 +248,7 @@ def _build_offer_object(
         coupon_end = metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
         if coupon_end:
             obj["validTimeInterval"] = {
-                "start": {
-                    "date": (
-                        customer_pass.enrolled_at.isoformat()
-                        if customer_pass.enrolled_at
-                        else ""
-                    )
-                },
+                "start": {"date": (customer_pass.enrolled_at.isoformat() if customer_pass.enrolled_at else "")},
                 "end": {"date": coupon_end},
             }
 
@@ -278,23 +260,17 @@ def _build_offer_object(
             if tier.get("tier_name") == current_tier:
                 current_discount = tier.get("discount_percentage", 0)
                 break
-        obj["details"] = get_message(
-            "WALLET_OFFER_DETAILS_DISCOUNT", discount=current_discount
-        )
+        obj["details"] = get_message("WALLET_OFFER_DETAILS_DISCOUNT", discount=current_discount)
 
     if card.card_type == "corporate_discount":
         discount_pct = str(customer_pass.corporate_discount)
-        obj["details"] = get_message(
-            "WALLET_OFFER_DETAILS_CORPORATE", discount=discount_pct
-        )
+        obj["details"] = get_message("WALLET_OFFER_DETAILS_CORPORATE", discount=discount_pct)
 
     # Links: V2 back-content links
     v2_links = _build_v2_links_module_data(card)
     if v2_links:
         obj.setdefault("linksModuleData", {"uris": []})
-        obj["linksModuleData"]["uris"] = (
-            obj["linksModuleData"].get("uris", []) + v2_links
-        )
+        obj["linksModuleData"]["uris"] = obj["linksModuleData"].get("uris", []) + v2_links
 
     _apply_google_advanced_to_object(card, obj)
     return obj

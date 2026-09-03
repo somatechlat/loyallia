@@ -76,7 +76,7 @@ export default function SettingsPage() {
       toast.error(t("settings.loadError"));
     }
     finally { setLoading(false); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadTenant uses stable refs (t, api); intentionally created once
   }, []);
 
   useEffect(() => { loadTenant(); }, [loadTenant]);

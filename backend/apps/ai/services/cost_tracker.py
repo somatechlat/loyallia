@@ -65,9 +65,7 @@ class CostTracker:
         response_data = response_data or {}
 
         total_tokens = tokens_used.get("total_tokens", 0)
-        cost_per_1k = getattr(
-            settings, "AI_COST_PER_1K_TOKENS", decimal.Decimal("0.003")
-        )
+        cost_per_1k = getattr(settings, "AI_COST_PER_1K_TOKENS", decimal.Decimal("0.003"))
         cost_usd = decimal.Decimal(total_tokens) * cost_per_1k / decimal.Decimal("1000")
         cost_usd = cost_usd.quantize(decimal.Decimal("0.000001"))
 
@@ -125,9 +123,7 @@ class CostTracker:
             )
             count = qs.aggregate(count=django_models.Count("id"))["count"]
         except Exception as exc:
-            logger.warning(
-                "Failed to compute daily requests for tenant %s: %s", tenant_id, exc
-            )
+            logger.warning("Failed to compute daily requests for tenant %s: %s", tenant_id, exc)
             return 0
 
         return count or 0
@@ -150,9 +146,7 @@ class CostTracker:
             )
             total = qs.aggregate(total=django_models.Sum("cost_usd"))["total"]
         except Exception as exc:
-            logger.warning(
-                "Failed to compute today spend for tenant %s: %s", tenant_id, exc
-            )
+            logger.warning("Failed to compute today spend for tenant %s: %s", tenant_id, exc)
             return decimal.Decimal("0")
 
         return total or decimal.Decimal("0")
@@ -175,9 +169,7 @@ class CostTracker:
             )
             total = qs.aggregate(total=django_models.Sum("cost_usd"))["total"]
         except Exception as exc:
-            logger.warning(
-                "Failed to compute monthly cost for tenant %s: %s", tenant_id, exc
-            )
+            logger.warning("Failed to compute monthly cost for tenant %s: %s", tenant_id, exc)
             return decimal.Decimal("0")
 
         return total or decimal.Decimal("0")

@@ -118,9 +118,7 @@ class OptionalCustomerJWTAuth(HttpBearer):
         try:
             return CustomerJWTAuth().authenticate(request, token)
         except Exception as e:
-            logging.getLogger(__name__).debug(
-                "OptionalCustomerJWTAuth suppressed: %s", e
-            )
+            logging.getLogger(__name__).debug("OptionalCustomerJWTAuth suppressed: %s", e)
             return None
 
 

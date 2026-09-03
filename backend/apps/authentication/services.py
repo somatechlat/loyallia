@@ -57,9 +57,7 @@ def register_user(payload: dict) -> dict:
         try:
             with transaction.atomic():
                 slug = slugify_business(payload["business_name"])
-                tenant = Tenant.objects.create(
-                    name=payload["business_name"].strip(), slug=slug
-                )
+                tenant = Tenant.objects.create(name=payload["business_name"].strip(), slug=slug)
                 tenant.activate_trial()
                 user_manager = cast(UserManager, User.objects)
                 user = user_manager.create_user(
@@ -111,9 +109,7 @@ def authenticate_user(email: str, password: str) -> dict:
     if user.is_locked:
         if user.locked_until is None:
             return {"error": "ACCOUNT_LOCKED", "minutes": 15}
-        remaining = max(
-            0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60)
-        )
+        remaining = max(0, int((user.locked_until - dj_timezone.now()).total_seconds() / 60))
         return {"error": "ACCOUNT_LOCKED", "minutes": remaining}
 
     if not user.is_active:
@@ -156,9 +152,9 @@ def rotate_refresh_token(token_hash: str) -> dict:
 
 def revoke_refresh_tokens(token_hash: str, user: User) -> None:
     """Revoke the given refresh token for a user."""
-    RefreshToken.objects.filter(
-        token_hash=token_hash, user=user, revoked_at__isnull=True
-    ).update(revoked_at=dj_timezone.now())
+    RefreshToken.objects.filter(token_hash=token_hash, user=user, revoked_at__isnull=True).update(
+        revoked_at=dj_timezone.now()
+    )
 
 
 def verify_email_with_otp(email: str, otp: str) -> dict:
@@ -253,9 +249,7 @@ def reset_user_password(uid: str, token: str, new_password: str) -> dict:
     with transaction.atomic():
         user.set_password(new_password)
         user.save(update_fields=["password", "updated_at"])
-        RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(
-            revoked_at=dj_timezone.now()
-        )
+        RefreshToken.objects.filter(user=user, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
     logger.info("Password reset completed for %s", user.email)
     return {"success": True}
 
@@ -285,9 +279,7 @@ def verify_google_token(credential: str, client_ip: str) -> dict:
             timeout=settings.HTTP_TIMEOUT_AUTH_EXTERNAL,
         )
         if resp.status_code != 200:
-            logger.warning(
-                "Google token verification failed: status=%s", resp.status_code
-            )
+            logger.warning("Google token verification failed: status=%s", resp.status_code)
             return {"error": "GOOGLE_AUTH_FAILED"}
         google_data = resp.json()
     except httpx.HTTPError as exc:

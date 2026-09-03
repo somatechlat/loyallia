@@ -174,9 +174,7 @@ class CustomerService:
             ValueError: If already enrolled
         """
         if CustomerPass.objects.filter(customer=customer, card=card).exists():
-            raise ValueError(
-                f"Customer {customer.email} is already enrolled in {card.name}"
-            )
+            raise ValueError(f"Customer {customer.email} is already enrolled in {card.name}")
 
         with transaction.atomic():
             pass_obj = CustomerPass.objects.create(customer=customer, card=card)

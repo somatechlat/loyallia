@@ -53,11 +53,7 @@ class TenantMiddleware:
 
         # PERF: no DB query user.tenant was loaded by JWTAuth's select_related
         user = getattr(request, "user", None)
-        if (
-            user is not None
-            and hasattr(user, "is_authenticated")
-            and user.is_authenticated
-        ):
+        if user is not None and hasattr(user, "is_authenticated") and user.is_authenticated:
             tenant = getattr(user, "tenant", None)
             if tenant is not None:
                 # SEC: tenant derived from User FK, not from request headers

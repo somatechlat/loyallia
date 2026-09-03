@@ -64,9 +64,7 @@ router = Router()
 # AUTH ENDPOINTS
 
 
-@router.post(
-    "/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio"
-)
+@router.post("/register/", auth=None, response=RegisterOut, summary="Registrar nuevo negocio")
 def register(request: HttpRequest, payload: RegisterIn):
     """Create a new tenant (business) with its OWNER user atomically.
 
@@ -80,9 +78,7 @@ def register(request: HttpRequest, payload: RegisterIn):
             success=True,
             message=get_message(
                 "TENANT_CREATED",
-                days=PlatformSetting.get_int(
-                    "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
-                ),
+                days=PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)),
             ),
             tenant_id="",
             user_id="",
@@ -127,11 +123,7 @@ def login(request: HttpRequest, payload: LoginIn):
             action=AuditAction.LOGIN,
             resource_type="user",
             resource_id=str(user.id),
-            tenant_id=(
-                str(getattr(user, "tenant_id", None))
-                if getattr(user, "tenant_id", None)
-                else None
-            ),
+            tenant_id=(str(getattr(user, "tenant_id", None)) if getattr(user, "tenant_id", None) else None),
             details={"method": "email"},
             status="success",
         )
@@ -140,9 +132,7 @@ def login(request: HttpRequest, payload: LoginIn):
     return tokens
 
 
-@router.post(
-    "/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso"
-)
+@router.post("/refresh/", auth=None, response=RefreshOut, summary="Renovar token de acceso")
 def refresh_token(request: HttpRequest, payload: RefreshIn):
     """Validate refresh token and issue a new access+refresh pair.
 
@@ -178,11 +168,7 @@ def logout(request: HttpRequest, payload: LogoutIn):
             action=AuditAction.LOGOUT,
             resource_type="user",
             resource_id=str(request.user.id),
-            tenant_id=(
-                str(request.tenant.id)
-                if hasattr(request, "tenant") and request.tenant
-                else None
-            ),
+            tenant_id=(str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None),
             details={"method": "refresh_token_revocation"},
             status="success",
         )
@@ -242,9 +228,7 @@ def forgot_password(request: HttpRequest, payload: ForgotPasswordIn):
 )
 def reset_password(request: HttpRequest, payload: ResetPasswordIn):
     """Validate the reset token and set a new password."""
-    result = services.reset_user_password(
-        payload.uid, payload.token, payload.new_password
-    )
+    result = services.reset_user_password(payload.uid, payload.token, payload.new_password)
 
     if "error" in result:
         raise HttpError(400, get_message("AUTH_RESET_INVALID"))

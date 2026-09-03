@@ -26,9 +26,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
     Generates an asynchronous ZIP bundle containing all tenant data and
     delivers a download link via email to the authorized requester.
     """
-    logger.info(
-        f"Starting data export for tenant {tenant_id} requested by {user_email}"
-    )
+    logger.info(f"Starting data export for tenant {tenant_id} requested by {user_email}")
     try:
         tenant = Tenant.objects.get(id=tenant_id)
         user = User.objects.get(email=user_email)
@@ -36,8 +34,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
         # SEC: Cross-tenant guard -- verify the user belongs to the tenant being exported
         if str(user.tenant_id) != str(tenant_id):
             logger.warning(
-                "SECURITY: Cross-tenant export blocked -- user %s (tenant %s) "
-                "requested export of tenant %s",
+                "SECURITY: Cross-tenant export blocked -- user %s (tenant %s) " "requested export of tenant %s",
                 user_email,
                 user.tenant_id,
                 tenant_id,
@@ -49,9 +46,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
         zip_filename = f"export_{tenant.id}_{uuid4().hex[:8]}.zip"
         storage_path = f"exports/{tenant.id}/{zip_filename}"
         export_buffer = generate_tenant_export(tenant)
-        saved_path = default_storage.save(
-            storage_path, ContentFile(export_buffer.getvalue())
-        )
+        saved_path = default_storage.save(storage_path, ContentFile(export_buffer.getvalue()))
 
         download_url = default_storage.url(saved_path)
         if not download_url.startswith("http"):
@@ -69,9 +64,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
             body_html=body,
         )
 
-        logger.info(
-            f"Export successful for tenant {tenant_id}. Email sent to {user_email}."
-        )
+        logger.info(f"Export successful for tenant {tenant_id}. Email sent to {user_email}.")
 
     except Exception as e:
         logger.exception(f"Failed to export data for tenant {tenant_id}: {str(e)}")
@@ -85,9 +78,7 @@ def export_tenant_data(tenant_id: str, user_email: str):
             )
 
 
-def hard_delete_tenant(
-    tenant_id: str, *, require_scheduled_deletion: bool = True
-) -> str:
+def hard_delete_tenant(tenant_id: str, *, require_scheduled_deletion: bool = True) -> str:
     """
     Synchronously hard-delete ALL tenant data.
 
@@ -245,6 +236,4 @@ def delete_tenant_cascade(self, tenant_id: str):
             },
         )
 
-    logger.info(
-        "Cascade deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id
-    )
+    logger.info("Cascade deletion COMPLETE for tenant '%s' (%s)", tenant_name, tenant_id)

@@ -29,9 +29,7 @@ def test_development_accepts_development_db_and_vault():
     original = os.environ.get("VAULT_SECRET_PATH")
     _setenv("VAULT_SECRET_PATH", f"secret/data/{DEVELOPMENT_VAULT_MARKER}")
     try:
-        errors = validate_settings_environment(
-            mode="development", databases=_db(DEVELOPMENT_DB_NAME)
-        )
+        errors = validate_settings_environment(mode="development", databases=_db(DEVELOPMENT_DB_NAME))
         assert errors == []
     finally:
         if original is None:
@@ -44,9 +42,7 @@ def test_development_rejects_production_db_and_vault():
     original = os.environ.get("VAULT_SECRET_PATH")
     _setenv("VAULT_SECRET_PATH", f"secret/data/{PRODUCTION_VAULT_MARKER}")
     try:
-        errors = validate_settings_environment(
-            mode="development", databases=_db(PRODUCTION_DB_NAME)
-        )
+        errors = validate_settings_environment(mode="development", databases=_db(PRODUCTION_DB_NAME))
         assert {error.code for error in errors} == {
             "dev_uses_production_vault",
             "dev_uses_production_db",
@@ -79,9 +75,7 @@ def test_production_accepts_production_db_and_vault():
         f"postgres://loyallia@pgbouncer:6432/{PRODUCTION_DB_NAME}",
     )
     try:
-        errors = validate_settings_environment(
-            mode="production", databases=_db(PRODUCTION_DB_NAME)
-        )
+        errors = validate_settings_environment(mode="production", databases=_db(PRODUCTION_DB_NAME))
         assert errors == []
     finally:
         for k, v in originals.items():
@@ -95,9 +89,7 @@ def test_production_rejects_development_db_and_vault():
     original = os.environ.get("VAULT_SECRET_PATH")
     _setenv("VAULT_SECRET_PATH", f"secret/data/{DEVELOPMENT_VAULT_MARKER}")
     try:
-        errors = validate_settings_environment(
-            mode="production", databases=_db(DEVELOPMENT_DB_NAME)
-        )
+        errors = validate_settings_environment(mode="production", databases=_db(DEVELOPMENT_DB_NAME))
         assert {error.code for error in errors} == {
             "prod_uses_development_vault",
             "prod_uses_development_db",
@@ -142,6 +134,4 @@ def test_production_database_state_rejects_user_password_vault_keys():
         secret_loader=_password_secret,
         e2e_user_exists=_no_e2e,
     )
-    assert any(
-        error.code == "prod_contains_user_password_vault_key" for error in errors
-    )
+    assert any(error.code == "prod_contains_user_password_vault_key" for error in errors)

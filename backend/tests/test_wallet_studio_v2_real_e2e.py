@@ -153,9 +153,7 @@ def vault_cleanup():
 def test_real_v2_wallet_studio_apple_and_google(db, card_type):
     """Real end-to-end: create a V2 card and generate Apple + Google passes."""
     tenant = make_tenant(name=f"Real E2E {card_type.label}")
-    customer = make_customer(
-        tenant, first_name="Jane", last_name="Doe", email="jane.doe@example.com"
-    )
+    customer = make_customer(tenant, first_name="Jane", last_name="Doe", email="jane.doe@example.com")
     card_name = f"V2 {card_type.label}"
     v2_studio = _make_v2_wallet_studio(card_name, card_type.value)
     card = make_card(tenant, card_type=card_type, metadata={"wallet_studio": v2_studio})
@@ -199,11 +197,7 @@ def test_real_v2_wallet_studio_apple_and_google(db, card_type):
         "passType",
     }
     style_key = next(
-        (
-            k
-            for k in pass_json
-            if k not in known_keys and isinstance(pass_json[k], dict)
-        ),
+        (k for k in pass_json if k not in known_keys and isinstance(pass_json[k], dict)),
         None,
     )
     assert style_key is not None, f"No pass style dict found for {card_type.value}"
@@ -220,9 +214,7 @@ def test_real_v2_wallet_studio_apple_and_google(db, card_type):
     assert present_groups, f"No V2 field groups for {card_type.value}"
 
     all_values = str(pass_json)
-    assert (
-        "Jane Doe" in all_values
-    ), f"Dynamic customer_name not resolved for {card_type.value}"
+    assert "Jane Doe" in all_values, f"Dynamic customer_name not resolved for {card_type.value}"
 
     back_fields = style_dict.get("backFields", [])
     link_field = next((f for f in back_fields if f.get("key") == "website"), None)
@@ -241,9 +233,7 @@ def test_real_v2_wallet_studio_apple_and_google(db, card_type):
     jwt_token = url.split("/save/")[1]
     payload_b64 = jwt_token.split(".")[1]
     payload_b64 += "=" * (4 - len(payload_b64) % 4)
-    payload = json.loads(
-        __import__("base64").urlsafe_b64decode(payload_b64).decode("utf-8")
-    )
+    payload = json.loads(__import__("base64").urlsafe_b64decode(payload_b64).decode("utf-8"))
 
     wallet_payload = payload.get("payload", {})
     class_key = next((k for k in wallet_payload if "Classes" in k), None)
@@ -260,14 +250,7 @@ def test_real_v2_wallet_studio_apple_and_google(db, card_type):
 
     text_modules = google_object.get("textModulesData", [])
     module_bodies = {m.get("body", "") for m in text_modules}
-    assert (
-        "Jane Doe" in module_bodies
-    ), f"Dynamic customer_name missing in Google modules for {card_type.value}"
+    assert "Jane Doe" in module_bodies, f"Dynamic customer_name missing in Google modules for {card_type.value}"
 
-    link_uris = {
-        link.get("uri", "")
-        for link in google_object.get("linksModuleData", {}).get("uris", [])
-    }
-    assert (
-        "https://example.com/terms" in link_uris
-    ), f"V2 back link missing in Google links for {card_type.value}"
+    link_uris = {link.get("uri", "") for link in google_object.get("linksModuleData", {}).get("uris", [])}
+    assert "https://example.com/terms" in link_uris, f"V2 back link missing in Google links for {card_type.value}"

@@ -87,7 +87,7 @@ export function useAutomations() {
           })),
         );
       })
-      .catch(() => {});
+      .catch((err) => console.warn('[useAutomations] Failed to load programs:', err));
   }, [load]);
 
   const toggle = useCallback(

@@ -84,9 +84,7 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         }
         target_status = plan_status_map.get(plan)
         if target_status:
-            tenant_ids = Subscription.objects.filter(status=target_status).values_list(
-                "tenant_id", flat=True
-            )
+            tenant_ids = Subscription.objects.filter(status=target_status).values_list("tenant_id", flat=True)
             qs = qs.filter(id__in=tenant_ids)
         else:
             qs = qs.filter(plan=plan)
@@ -109,9 +107,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
     if User.objects.filter(email=payload.owner_email).exists():
         raise HttpError(
             400,
-            get_message(
-                "VALIDATION_ERROR", detail="Email ya registrado en la plataforma"
-            ),
+            get_message("VALIDATION_ERROR", detail="Email ya registrado en la plataforma"),
         )
 
     try:
@@ -128,18 +124,14 @@ def create_tenant(request, payload: CreateTenantWizardIn):
             if not plan_obj.is_active:
                 raise HttpError(
                     400,
-                    get_message(
-                        "VALIDATION_ERROR", detail="Plan seleccionado no está activo"
-                    ),
+                    get_message("VALIDATION_ERROR", detail="Plan seleccionado no está activo"),
                 )
             # SEC-H5: Validate plan capacity — prevent over-subscription
             active_sub_count = Subscription.objects.filter(
                 subscription_plan=plan_obj,
                 status__in=[SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE],
             ).count()
-            plan_capacity = PlatformSetting.get_int(
-                f"PLAN_CAPACITY_{plan_obj.slug.upper()}", 0
-            )
+            plan_capacity = PlatformSetting.get_int(f"PLAN_CAPACITY_{plan_obj.slug.upper()}", 0)
             if plan_capacity > 0 and active_sub_count >= plan_capacity:
                 raise HttpError(
                     400,
@@ -199,11 +191,7 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                     is_primary=loc.is_primary or (i == 0),
                 )
 
-            sub_status = (
-                SubscriptionStatus.TRIALING
-                if plan_slug == "trial"
-                else SubscriptionStatus.ACTIVE
-            )
+            sub_status = SubscriptionStatus.TRIALING if plan_slug == "trial" else SubscriptionStatus.ACTIVE
             is_trial = sub_status == SubscriptionStatus.TRIALING
 
             sub = Subscription.objects.create(
@@ -213,13 +201,10 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 billing_cycle=payload.billing_cycle,
                 status=sub_status,
                 trial_start=dj_timezone.now() if is_trial else None,
-                trial_end=(
-                    dj_timezone.now() + timedelta(days=trial_days) if is_trial else None
-                ),
+                trial_end=(dj_timezone.now() + timedelta(days=trial_days) if is_trial else None),
                 current_period_start=dj_timezone.now() if not is_trial else None,
                 current_period_end=(
-                    dj_timezone.now()
-                    + timedelta(days=365 if payload.billing_cycle == "annual" else 30)
+                    dj_timezone.now() + timedelta(days=365 if payload.billing_cycle == "annual" else 30)
                     if not is_trial
                     else None
                 ),
@@ -287,9 +272,7 @@ def update_tenant_admin(request, tenant_id: str):
         payload = TenantAdminUpdateIn(**body)
     except Exception as e:
         logger.error("Invalid request body: %s", e)
-        raise HttpError(
-            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
-        )
+        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
 
     update_fields = ["updated_at"]
     #
@@ -334,9 +317,7 @@ def list_tenant_locations(request, tenant_id: str):
     """List all locations belonging to a tenant."""
     _require_super_admin(request)
     tenant = _get_tenant_or_404(tenant_id)
-    return [
-        LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)
-    ]
+    return [LocationOut.from_location(loc) for loc in Location.objects.filter(tenant=tenant)]
 
 
 @router.post(
@@ -530,9 +511,9 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     subscription = Subscription.objects.filter(tenant=tenant).first()
     if subscription and subscription.trial_start:
         max_trial_end = subscription.trial_start + timedelta(days=90)
-        proposed_end = max(
-            subscription.trial_end or dj_timezone.now(), dj_timezone.now()
-        ) + timedelta(days=payload.days)
+        proposed_end = max(subscription.trial_end or dj_timezone.now(), dj_timezone.now()) + timedelta(
+            days=payload.days
+        )
         if proposed_end > max_trial_end:
             raise HttpError(
                 400,
@@ -590,9 +571,7 @@ def set_whatsapp_override(request, tenant_id: str):
         payload = WhatsAppOverrideIn(**body)
     except Exception as e:
         logger.error("Invalid request body: %s", e)
-        raise HttpError(
-            422, get_message("VALIDATION_ERROR", detail="Invalid request body")
-        )
+        raise HttpError(422, get_message("VALIDATION_ERROR", detail="Invalid request body"))
 
     if payload.daily_limit_override < 0 or payload.daily_limit_override > 200:
         raise HttpError(

@@ -52,8 +52,7 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
         "{stamps_required}": str(total_stamps),
         "{reward_description}": reward,
         "{stamp_display}": stamps_display,
-        "{affiliate_code}": customer_pass.qr_code
-        or str(pass_data.get("affiliate_code", "N/A")),
+        "{affiliate_code}": customer_pass.qr_code or str(pass_data.get("affiliate_code", "N/A")),
         "{enrolled_date}": enrolled_date or str(pass_data.get("enrolled_date", "")),
         "{benefits}": (
             ", ".join(metadata.get("benefits", []))
@@ -77,9 +76,7 @@ def _substitute_fields(fields: dict, card, customer_pass) -> dict:
             for item in value:
                 if isinstance(item, dict) and "value" in item:
                     new_item = dict(item)
-                    new_item["value"] = _substitute_template_values(
-                        str(item["value"]), card, customer_pass
-                    )
+                    new_item["value"] = _substitute_template_values(str(item["value"]), card, customer_pass)
                     result[key].append(new_item)
                 else:
                     result[key].append(item)
@@ -118,9 +115,7 @@ def _build_locations(card) -> list:
                     {
                         "latitude": float(loc.latitude),
                         "longitude": float(loc.longitude),
-                        "relevantText": get_message(
-                            "WALLET_NEAR_LOCATION", name=loc.name
-                        ),
+                        "relevantText": get_message("WALLET_NEAR_LOCATION", name=loc.name),
                     }
                 )
         except (ValueError, TypeError):

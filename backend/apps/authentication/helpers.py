@@ -40,9 +40,7 @@ def slugify_business(name: str) -> str:
             if not Tenant.objects.filter(slug=candidate).exists():
                 return candidate
         except Exception as e:
-            logger.warning(
-                "Slug check failed for candidate %s: %s", candidate, e, exc_info=True
-            )
+            logger.warning("Slug check failed for candidate %s: %s", candidate, e, exc_info=True)
         candidate = f"{slug}-{counter}"
         counter += 1
     # Fallback: append UUID suffix if all attempts exhausted
@@ -82,9 +80,7 @@ def store_otp(email: str, otp: str, purpose: str) -> None:
     from django.core.cache import cache
 
     salt = secrets.token_hex(16)
-    cache.set(
-        f"otp:{purpose}:{email}", _hash_otp(otp, salt), timeout=settings.CACHE_TTL_OTP
-    )
+    cache.set(f"otp:{purpose}:{email}", _hash_otp(otp, salt), timeout=settings.CACHE_TTL_OTP)
     cache.set(f"otp_salt:{purpose}:{email}", salt, timeout=settings.CACHE_TTL_OTP)
 
 
@@ -132,13 +128,9 @@ def issue_tokens(user: User) -> dict:
         role=user.role,
     )
     refresh_str = create_refresh_token_string()
-    expires_at = dj_timezone.now() + timedelta(
-        days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS
-    )
+    expires_at = dj_timezone.now() + timedelta(days=settings.JWT_REFRESH_TOKEN_LIFETIME_DAYS)
     with transaction.atomic():
-        RefreshToken.objects.create(
-            user=user, token_hash=hash_token(refresh_str), expires_at=expires_at
-        )
+        RefreshToken.objects.create(user=user, token_hash=hash_token(refresh_str), expires_at=expires_at)
         user.last_login = dj_timezone.now()
         user.save(update_fields=["last_login"])
     return {

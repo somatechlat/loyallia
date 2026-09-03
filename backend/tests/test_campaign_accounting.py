@@ -37,9 +37,7 @@ class CampaignAccountingTest(TestCase):
         self.assertEqual(run.tenant, tenant)
         self.assertEqual(run.channel, NotificationChannel.EMAIL)
         self.assertEqual(run.status, CampaignStatus.COMPLETED)
-        self.assertEqual(
-            CampaignDeliveryLog.objects.filter(campaign_run=run).count(), 2
-        )
+        self.assertEqual(CampaignDeliveryLog.objects.filter(campaign_run=run).count(), 2)
         self.assertEqual(get_current_usage(tenant, "emails_month"), 2)
 
     def test_wallet_campaign_creates_run_delivery_logs_and_usage(self):
@@ -66,7 +64,5 @@ class CampaignAccountingTest(TestCase):
         self.assertEqual(run.channel, NotificationChannel.WALLET)
         self.assertEqual(run.status, CampaignStatus.COMPLETED)
         self.assertEqual(run.total_recipients, 2)
-        self.assertEqual(
-            CampaignDeliveryLog.objects.filter(campaign_run=run).count(), 2
-        )
+        self.assertEqual(CampaignDeliveryLog.objects.filter(campaign_run=run).count(), 2)
         self.assertEqual(get_current_usage(tenant, "wallet_pushes_month"), 2)

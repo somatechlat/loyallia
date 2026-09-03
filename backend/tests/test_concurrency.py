@@ -203,9 +203,7 @@ class GiftBalanceRaceConditionTest(TransactionTestCase):
         def redeem(amount):
             try:
                 fresh_cp = CustomerPass.objects.get(pk=cp.pk)
-                result = fresh_cp.process_transaction(
-                    "gift", amount=Decimal(str(amount))
-                )
+                result = fresh_cp.process_transaction("gift", amount=Decimal(str(amount)))
                 results.append(result["pass_updated"])
             except Exception as e:
                 logging.getLogger(__name__).debug("Gift balance redeem failed: %s", e)

@@ -48,21 +48,13 @@ class Command(BaseCommand):
             for field in model._meta.fields:
                 col = field.column
                 if (table, col) not in db_columns:
-                    mismatches.append(
-                        (model._meta.label, table, col, field.get_internal_type())
-                    )
+                    mismatches.append((model._meta.label, table, col, field.get_internal_type()))
 
         if not mismatches:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    "Schema verification passed: all model fields exist as columns."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS("Schema verification passed: all model fields exist as columns."))
             return
 
-        self.stdout.write(
-            self.style.WARNING(f"Schema mismatches found: {len(mismatches)}")
-        )
+        self.stdout.write(self.style.WARNING(f"Schema mismatches found: {len(mismatches)}"))
         for label, table, col, typ in mismatches:
             self.stdout.write(f"  MISSING: {label}.{col} ({typ}) on table {table}")
 
@@ -74,9 +66,7 @@ class Command(BaseCommand):
             for _label, table, col, typ in mismatches:
                 sql = self._generate_column_sql(col, typ)
                 if sql:
-                    stmt = (
-                        f'ALTER TABLE "{table}" ADD COLUMN IF NOT EXISTS "{col}" {sql}'
-                    )
+                    stmt = f'ALTER TABLE "{table}" ADD COLUMN IF NOT EXISTS "{col}" {sql}'
                     self.stdout.write(f"  Executing: {stmt}")
                     cursor.execute(stmt)
 

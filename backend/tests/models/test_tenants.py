@@ -104,9 +104,7 @@ class LocationModelTest(TestCase):
 
     def test_create_location(self):
         t = make_tenant()
-        loc = Location.objects.create(
-            tenant=t, name="Main Store", address="123 Main St", city="Quito"
-        )
+        loc = Location.objects.create(tenant=t, name="Main Store", address="123 Main St", city="Quito")
         self.assertEqual(loc.name, "Main Store")
         self.assertTrue(loc.is_active or not loc.is_active)  # default True
 

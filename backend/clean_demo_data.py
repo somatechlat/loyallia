@@ -85,9 +85,7 @@ def main():
     print()
 
     total_deleted = 0
-    superadmin_id = (
-        User.objects.filter(email=SUPERADMIN_EMAIL).values_list("id", flat=True).first()
-    )
+    superadmin_id = User.objects.filter(email=SUPERADMIN_EMAIL).values_list("id", flat=True).first()
 
     with transaction.atomic():
         # Phase 1: Delete child records with FK dependencies FIRST
@@ -96,14 +94,10 @@ def main():
         print()
 
         # RefreshToken → FK to User
-        total_deleted += delete_model_qs(
-            RefreshToken.objects.exclude(user_id=superadmin_id), "refresh tokens"
-        )
+        total_deleted += delete_model_qs(RefreshToken.objects.exclude(user_id=superadmin_id), "refresh tokens")
 
         # CampaignDeliveryLog → FK to CampaignRun, Customer
-        total_deleted += delete_model_qs(
-            CampaignDeliveryLog.objects.all(), "campaign delivery logs"
-        )
+        total_deleted += delete_model_qs(CampaignDeliveryLog.objects.all(), "campaign delivery logs")
 
         # Notification → FK to Customer, Tenant
         total_deleted += delete_model_qs(Notification.objects.all(), "notifications")
@@ -112,9 +106,7 @@ def main():
         total_deleted += delete_model_qs(CampaignRun.objects.all(), "campaign runs")
 
         # WhatsAppSession → OneToOne to Tenant
-        total_deleted += delete_model_qs(
-            WhatsAppSession.objects.all(), "WhatsApp sessions"
-        )
+        total_deleted += delete_model_qs(WhatsAppSession.objects.all(), "WhatsApp sessions")
 
         # Transaction → FK to CustomerPass, Location, User
         total_deleted += delete_model_qs(Transaction.objects.all(), "transactions")
@@ -123,19 +115,13 @@ def main():
         total_deleted += delete_model_qs(CustomerPass.objects.all(), "customer passes")
 
         # CustomerAnalytics → FK to Customer, Tenant
-        total_deleted += delete_model_qs(
-            CustomerAnalytics.objects.all(), "customer analytics"
-        )
+        total_deleted += delete_model_qs(CustomerAnalytics.objects.all(), "customer analytics")
 
         # ProgramAnalytics → FK to Card, Tenant
-        total_deleted += delete_model_qs(
-            ProgramAnalytics.objects.all(), "program analytics"
-        )
+        total_deleted += delete_model_qs(ProgramAnalytics.objects.all(), "program analytics")
 
         # DailyAnalytics → FK to Tenant
-        total_deleted += delete_model_qs(
-            DailyAnalytics.objects.all(), "daily analytics"
-        )
+        total_deleted += delete_model_qs(DailyAnalytics.objects.all(), "daily analytics")
 
         # Automation → FK to Tenant
         total_deleted += delete_model_qs(Automation.objects.all(), "automations")
@@ -166,9 +152,7 @@ def main():
         total_deleted += delete_model_qs(Location.objects.all(), "locations")
 
         # User (non-SUPER_ADMIN) → FK to Tenant (nullable)
-        total_deleted += delete_model_qs(
-            User.objects.exclude(email=SUPERADMIN_EMAIL), "non-SUPER_ADMIN users"
-        )
+        total_deleted += delete_model_qs(User.objects.exclude(email=SUPERADMIN_EMAIL), "non-SUPER_ADMIN users")
 
         # Tenant
         total_deleted += delete_model_qs(Tenant.objects.all(), "tenants")
@@ -227,9 +211,7 @@ def main():
     if plans.count() != 4:
         errors.append(f"Expected 4 plans, found {plans.count()}")
     if settings.count() < 3:
-        errors.append(
-            f"Expected at least 3 platform settings, found {settings.count()}"
-        )
+        errors.append(f"Expected at least 3 platform settings, found {settings.count()}")
     if Tenant.objects.count() != 0:
         errors.append(f"Expected 0 tenants, found {Tenant.objects.count()}")
     if Customer.objects.count() != 0:

@@ -30,9 +30,7 @@ def _load_certificate(name: str, value: str) -> None:
     try:
         x509.load_pem_x509_certificate(value.encode("utf-8"))
     except ValueError as exc:
-        raise CommandError(
-            f"Vault key '{name}' is not a valid PEM certificate."
-        ) from exc
+        raise CommandError(f"Vault key '{name}' is not a valid PEM certificate.") from exc
 
 
 def _load_private_key(name: str, value: str, passphrase: str = "") -> None:
@@ -40,9 +38,7 @@ def _load_private_key(name: str, value: str, passphrase: str = "") -> None:
     try:
         serialization.load_pem_private_key(value.encode("utf-8"), password=password)
     except (TypeError, ValueError) as exc:
-        raise CommandError(
-            f"Vault key '{name}' is not a valid PEM private key."
-        ) from exc
+        raise CommandError(f"Vault key '{name}' is not a valid PEM private key.") from exc
 
 
 def _is_truthy(value: object) -> bool:
@@ -57,17 +53,13 @@ def _load_nfc_public_key(name: str, value: str) -> None:
             serialization.load_pem_public_key(raw_value.encode("utf-8"))
             return
         except ValueError as exc:
-            raise CommandError(
-                f"Vault key '{name}' is not a valid PEM public key."
-            ) from exc
+            raise CommandError(f"Vault key '{name}' is not a valid PEM public key.") from exc
 
     try:
         der_bytes = base64.b64decode(raw_value, validate=True)
         serialization.load_der_public_key(der_bytes)
     except (ValueError, TypeError) as exc:
-        raise CommandError(
-            f"Vault key '{name}' is not a valid Base64 DER public key."
-        ) from exc
+        raise CommandError(f"Vault key '{name}' is not a valid Base64 DER public key.") from exc
 
 
 class Command(BaseCommand):
@@ -78,18 +70,10 @@ class Command(BaseCommand):
         if not secrets:
             raise CommandError("Vault returned no secrets or is unreachable.")
 
-        required_keys = (
-            IDENTIFIER_KEYS
-            + CERTIFICATE_KEYS
-            + [key for key, _passphrase_key in PRIVATE_KEY_KEYS]
-        )
-        missing = [
-            key for key in required_keys if not str(secrets.get(key, "")).strip()
-        ]
+        required_keys = IDENTIFIER_KEYS + CERTIFICATE_KEYS + [key for key, _passphrase_key in PRIVATE_KEY_KEYS]
+        missing = [key for key in required_keys if not str(secrets.get(key, "")).strip()]
         if missing:
-            raise CommandError(
-                "Missing Apple Wallet Vault keys: " + ", ".join(sorted(missing))
-            )
+            raise CommandError("Missing Apple Wallet Vault keys: " + ", ".join(sorted(missing)))
 
         for key in IDENTIFIER_KEYS:
             if not str(secrets[key]).strip():
@@ -99,16 +83,12 @@ class Command(BaseCommand):
             _load_certificate(key, str(secrets[key]))
 
         for key, passphrase_key in PRIVATE_KEY_KEYS:
-            _load_private_key(
-                key, str(secrets[key]), str(secrets.get(passphrase_key, ""))
-            )
+            _load_private_key(key, str(secrets[key]), str(secrets.get(passphrase_key, "")))
 
         nfc_enabled = _is_truthy(secrets.get(NFC_ENABLED_KEY, ""))
         nfc_public_key = str(secrets.get(NFC_PUBLIC_KEY, "")).strip()
         if nfc_enabled and not nfc_public_key:
-            raise CommandError(
-                f"Vault key '{NFC_PUBLIC_KEY}' is required when '{NFC_ENABLED_KEY}' is enabled."
-            )
+            raise CommandError(f"Vault key '{NFC_PUBLIC_KEY}' is required when '{NFC_ENABLED_KEY}' is enabled.")
         if nfc_public_key:
             _load_nfc_public_key(NFC_PUBLIC_KEY, nfc_public_key)
 

@@ -23,9 +23,7 @@ logger = logging.getLogger(__name__)
 # Vault connection parameters from environment
 VAULT_ADDR = os.environ.get("VAULT_ADDR", "")
 VAULT_TOKEN_FILE = os.environ.get("VAULT_TOKEN_FILE", "")
-VAULT_SECRET_PATH = os.environ.get(
-    "VAULT_SECRET_PATH", "secret/data/loyallia/development"
-)
+VAULT_SECRET_PATH = os.environ.get("VAULT_SECRET_PATH", "secret/data/loyallia/development")
 
 # Cache TTL in seconds (default 300 = 5 minutes)
 VAULT_CACHE_TTL = int(os.environ.get("VAULT_CACHE_TTL", "300"))
@@ -122,9 +120,7 @@ def _fetch_vault_secrets() -> dict:
     if vault_skip_verify:
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
-        logger.warning(
-            "Vault: VAULT_SKIP_VERIFY is enabled — TLS verification disabled (insecure)"
-        )
+        logger.warning("Vault: VAULT_SKIP_VERIFY is enabled — TLS verification disabled (insecure)")
     elif vault_ca_cert and os.path.isfile(vault_ca_cert):
         ssl_context.load_verify_locations(vault_ca_cert)
     else:
@@ -146,27 +142,19 @@ def _fetch_vault_secrets() -> dict:
             ) as response:
                 body = json.loads(response.read().decode("utf-8"))
                 secrets = body.get("data", {}).get("data", {})
-                logger.info(
-                    "Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH
-                )
+                logger.info("Vault: loaded %d secrets from %s", len(secrets), VAULT_SECRET_PATH)
                 _secrets_cache = secrets
                 _cache_fetched_at = now
                 return secrets
         except urllib.error.URLError as exc:
             last_exc = exc
-            logger.warning(
-                "Vault: connection failed (attempt %d/3): %s", attempt + 1, exc.reason
-            )
+            logger.warning("Vault: connection failed (attempt %d/3): %s", attempt + 1, exc.reason)
         except (json.JSONDecodeError, KeyError) as exc:
             last_exc = exc
-            logger.warning(
-                "Vault: invalid response format (attempt %d/3): %s", attempt + 1, exc
-            )
+            logger.warning("Vault: invalid response format (attempt %d/3): %s", attempt + 1, exc)
         except Exception as exc:
             last_exc = exc
-            logger.warning(
-                "Vault: unexpected error (attempt %d/3): %s", attempt + 1, exc
-            )
+            logger.warning("Vault: unexpected error (attempt %d/3): %s", attempt + 1, exc)
 
         if attempt < 2:
             sleep_seconds = 2**attempt  # 1s, 2s
@@ -183,9 +171,7 @@ def fetch_vault_secrets() -> dict:
     return _fetch_vault_secrets().copy()
 
 
-def get_secret(
-    vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False
-) -> str:
+def get_secret(vault_key: str, env_fallback: str = "", default: str = "", strict: bool = False) -> str:
     """
     Retrieve a secret value.
 
@@ -269,18 +255,14 @@ def put_secret(vault_key: str, value: str) -> bool:
     payload = json.dumps({"data": {vault_key: value}}).encode("utf-8")
 
     try:
-        req = urllib.request.Request(
-            url, data=payload, headers=patch_headers, method="PATCH"
-        )
+        req = urllib.request.Request(url, data=payload, headers=patch_headers, method="PATCH")
         with urllib.request.urlopen(
             req,
             timeout=getattr(settings, "HTTP_TIMEOUT_VAULT_WRITE", 5),
             context=ssl_context,
         ) as response:
             if response.status in (200, 204):
-                logger.info(
-                    "Vault: patched secret '%s' in %s", vault_key, VAULT_SECRET_PATH
-                )
+                logger.info("Vault: patched secret '%s' in %s", vault_key, VAULT_SECRET_PATH)
                 _publish_shared_cache_invalidation()
                 clear_cache()
                 return True
@@ -288,9 +270,7 @@ def put_secret(vault_key: str, value: str) -> bool:
         if exc.code not in (404, 405, 415):
             logger.error("Vault: patch failed (%s).", exc.reason)
             return False
-        logger.warning(
-            "Vault: patch unsupported or path missing; falling back to merge write."
-        )
+        logger.warning("Vault: patch unsupported or path missing; falling back to merge write.")
     except urllib.error.URLError as exc:
         logger.error("Vault: patch failed (%s).", exc.reason)
         return False
@@ -303,18 +283,14 @@ def put_secret(vault_key: str, value: str) -> bool:
     fallback_payload = json.dumps({"data": existing}).encode("utf-8")
 
     try:
-        req = urllib.request.Request(
-            url, data=fallback_payload, headers=headers, method="POST"
-        )
+        req = urllib.request.Request(url, data=fallback_payload, headers=headers, method="POST")
         with urllib.request.urlopen(
             req,
             timeout=getattr(settings, "HTTP_TIMEOUT_VAULT_WRITE", 5),
             context=ssl_context,
         ) as response:
             if response.status in (200, 204):
-                logger.info(
-                    "Vault: merge-wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH
-                )
+                logger.info("Vault: merge-wrote secret '%s' to %s", vault_key, VAULT_SECRET_PATH)
                 _publish_shared_cache_invalidation()
                 clear_cache()
                 return True

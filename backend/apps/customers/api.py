@@ -85,9 +85,7 @@ def search_customers(
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     tenant = require_tenant(request)
-    results = services.search_customers(
-        tenant, query, program_ids, device_type, wallet_platform
-    )
+    results = services.search_customers(tenant, query, program_ids, device_type, wallet_platform)
 
     return [
         CustomerSearchOut(
@@ -133,9 +131,7 @@ def create_customer(request: HttpRequest, data: CustomerCreateIn) -> CustomerOut
     return CustomerOut.from_model(customer)
 
 
-@router.post(
-    "/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)"
-)
+@router.post("/import/", auth=jwt_auth, summary="Importar clientes desde archivo (XLSX, CSV)")
 def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     """
     Import customers from an Excel or CSV file. OWNER only.
@@ -184,12 +180,8 @@ def import_customers(request: HttpRequest, file: UploadedFile) -> dict:
     return result
 
 
-@router.post(
-    "/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente"
-)
-def enroll_customer_public(
-    request: HttpRequest, card_id: str, customer_data: CustomerCreateIn
-) -> CustomerPassOut:
+@router.post("/enroll/", response=CustomerPassOut, summary="Auto-inscripcion de cliente")
+def enroll_customer_public(request: HttpRequest, card_id: str, customer_data: CustomerCreateIn) -> CustomerPassOut:
     """Public endpoint for customer self-enrollment via QR code scan.
 
     Rate limited to 10 enrollments per hour per IP address.
@@ -223,9 +215,7 @@ def enroll_customer_public(
         check_plan_limit(card.tenant, "customers", write=True)
 
     try:
-        pass_obj, customer, already_enrolled, _is_new = services.public_enroll(
-            card, customer_data.model_dump()
-        )
+        pass_obj, customer, already_enrolled, _is_new = services.public_enroll(card, customer_data.model_dump())
     except ValueError as exc:
         raise HttpError(400, get_message("VALIDATION_ERROR", detail=str(exc)))
 
@@ -241,10 +231,7 @@ def enroll_customer_public(
             "customer_id": str(customer.id),
             "card_id": str(card.id),
             "enrollment_method": "qr_scan",
-            "is_new_customer": Customer.objects.filter(
-                tenant=card.tenant, email=customer_data.email
-            ).count()
-            == 1,
+            "is_new_customer": Customer.objects.filter(tenant=card.tenant, email=customer_data.email).count() == 1,
         },
     )
     return CustomerPassOut.from_model(pass_obj)
@@ -281,9 +268,7 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
     else:
         from common.platform_config import get_platform_config
 
-        base_url = get_platform_config(
-            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
-        )
+        base_url = get_platform_config("public_base_url", getattr(settings, "PUBLIC_BASE_URL", ""))
 
     try:
         result = services.resend_pass_email(card, data.email, base_url)
@@ -295,24 +280,18 @@ def resend_pass_email(request: HttpRequest, data: ResendPassIn) -> MessageOut:
             raise HttpError(404, get_message("PASS_NOT_FOUND"))
         raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
-    return MessageOut(
-        success=True, message=get_message("PASS_RESENT", email=result["email"])
-    )
+    return MessageOut(success=True, message=get_message("PASS_RESENT", email=result["email"]))
 
 
 # CUSTOMER CRUD
 
 
-@router.get(
-    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente"
-)
+@router.get("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Perfil del cliente")
 def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
     """Customer profile with pass and transaction history. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
 
     log_action(
         request=request,
@@ -325,19 +304,13 @@ def get_customer(request: HttpRequest, customer_id: str) -> CustomerOut:
     return CustomerOut.from_model(customer)
 
 
-@router.patch(
-    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
-)
+@router.patch("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
-def update_customer(
-    request: HttpRequest, customer_id: str, data: CustomerUpdateIn
-) -> CustomerOut:
+def update_customer(request: HttpRequest, customer_id: str, data: CustomerUpdateIn) -> CustomerOut:
     """Update customer information. MANAGER+ can edit; OWNER only for hard delete."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
 
     customer, update_fields = services.update_customer(customer, data.model_dump())
 
@@ -353,28 +326,20 @@ def update_customer(
     return CustomerOut.from_model(customer)
 
 
-@router.put(
-    "/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente"
-)
+@router.put("/{customer_id}/", auth=jwt_auth, response=CustomerOut, summary="Actualizar cliente")
 @require_active_subscription
-def replace_customer(
-    request: HttpRequest, customer_id: str, data: CustomerUpdateIn
-) -> CustomerOut:
+def replace_customer(request: HttpRequest, customer_id: str, data: CustomerUpdateIn) -> CustomerOut:
     """Compatibility alias for clients that send PUT for partial customer updates."""
     return update_customer(request, customer_id, data)
 
 
-@router.delete(
-    "/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente"
-)
+@router.delete("/{customer_id}/", auth=jwt_auth, summary="Eliminar cliente permanentemente")
 @require_active_subscription
 def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
     """Permanent delete of a customer and all associated data. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
 
     log_action(
         request=request,
@@ -395,15 +360,11 @@ def delete_customer(request: HttpRequest, customer_id: str) -> HttpResponse:
     response=list[CustomerPassOut],
     summary="Pases del cliente",
 )
-def get_customer_passes(
-    request: HttpRequest, customer_id: str
-) -> list[CustomerPassOut]:
+def get_customer_passes(request: HttpRequest, customer_id: str) -> list[CustomerPassOut]:
     """Get all passes for a customer. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    customer = get_object_or_404(
-        Customer, id=customer_id, tenant=require_tenant(request)
-    )
+    customer = get_object_or_404(Customer, id=customer_id, tenant=require_tenant(request))
     passes = services.get_customer_passes(customer)
     return [CustomerPassOut.from_model(pass_obj) for pass_obj in passes]
 
@@ -414,9 +375,7 @@ def get_customer_passes(
     response=CustomerPassOut,
     summary="Inscribir cliente en programa",
 )
-def enroll_customer(
-    request: HttpRequest, customer_id: str, card_id: str
-) -> CustomerPassOut:
+def enroll_customer(request: HttpRequest, customer_id: str, card_id: str) -> CustomerPassOut:
     """Enroll customer in a loyalty program. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -429,9 +388,7 @@ def enroll_customer(
     except ValueError as exc:
         msg = str(exc)
         if msg == "ALREADY_ENROLLED":
-            raise HttpError(
-                400, get_message("ENROLLMENT_DUPLICATE", email=customer.email)
-            )
+            raise HttpError(400, get_message("ENROLLMENT_DUPLICATE", email=customer.email))
         raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     return CustomerPassOut.from_model(pass_obj)

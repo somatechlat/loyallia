@@ -34,9 +34,7 @@ def evaluate_trigger_for_customer(
     from apps.customers.models import Customer
 
     try:
-        customer = Customer.objects.select_related("tenant").get(
-            id=uuid.UUID(customer_id)
-        )
+        customer = Customer.objects.select_related("tenant").get(id=uuid.UUID(customer_id))
     except Customer.DoesNotExist:
         logger.error("evaluate_trigger: customer %s not found", customer_id)
         return {"success": False}
@@ -87,9 +85,7 @@ def evaluate_scheduled_automations() -> dict:
             is_active=True,
         )
 
-        for customer in customers.iterator(
-            chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT
-        ):
+        for customer in customers.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT):
             if not automation.can_execute_for_customer(customer):
                 continue
 
@@ -174,9 +170,7 @@ def evaluate_birthday_triggers() -> dict:
             is_active=True,
         ).select_related("tenant")
 
-        for customer in customers.iterator(
-            chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT
-        ):
+        for customer in customers.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT):
             count = fire_trigger(
                 trigger="birthday_coming",
                 customer=customer,
@@ -242,9 +236,7 @@ def evaluate_points_threshold_triggers() -> dict:
             ).distinct()
 
         triggered = 0
-        for customer in qualifying.iterator(
-            chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT
-        ):
+        for customer in qualifying.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_DEFAULT):
             count = fire_trigger(
                 trigger="points_threshold",
                 customer=customer,

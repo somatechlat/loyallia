@@ -104,18 +104,10 @@ class Command(BaseCommand):
             if any(str(secrets.get(key, "")).strip() for key in keys):
                 required.extend(keys)
 
-        missing = [
-            key
-            for key in sorted(set(required))
-            if not str(secrets.get(key, "")).strip()
-        ]
+        missing = [key for key in sorted(set(required)) if not str(secrets.get(key, "")).strip()]
         if missing:
-            raise CommandError(
-                "Missing required Vault keys: " + ", ".join(sorted(missing))
-            )
+            raise CommandError("Missing required Vault keys: " + ", ".join(sorted(missing)))
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Vault readiness passed for {len(required)} keys. Values were not printed."
-            )
+            self.style.SUCCESS(f"Vault readiness passed for {len(required)} keys. Values were not printed.")
         )

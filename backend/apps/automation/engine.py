@@ -50,9 +50,9 @@ def check_points_threshold(automation, customer) -> bool:
     from apps.transactions.models import Transaction
 
     customer_points = (
-        Transaction.objects.filter(
-            customer=customer, tenant=automation.tenant
-        ).aggregate(total=models.Sum("points"))["total"]
+        Transaction.objects.filter(customer=customer, tenant=automation.tenant).aggregate(total=models.Sum("points"))[
+            "total"
+        ]
         or 0
     )
     logger.debug(
@@ -119,9 +119,7 @@ def check_milestone(automation, customer) -> bool:
     if min_visits <= 0 and min_points <= 0:
         return True  # No milestone configured, always pass
 
-    aggregates = Transaction.objects.filter(
-        customer=customer, tenant=automation.tenant
-    ).aggregate(
+    aggregates = Transaction.objects.filter(customer=customer, tenant=automation.tenant).aggregate(
         count=models.Count("id"),
         total_points=models.Sum("points"),
     )
@@ -212,8 +210,7 @@ def fire_trigger(
 
         if not trigger_passes:
             logger.debug(
-                "fire_trigger: trigger condition not met for automation=%s "
-                "customer=%s trigger=%s",
+                "fire_trigger: trigger condition not met for automation=%s " "customer=%s trigger=%s",
                 automation.id,
                 customer.id,
                 automation.trigger,
@@ -315,9 +312,7 @@ def _execute_send_notification(automation, customer, context) -> bool:
 
     title = automation.action_config.get("title", "Notificación automática")
     message = automation.action_config.get("message", "")
-    notification_type = automation.action_config.get(
-        "notification_type", NotificationType.SYSTEM
-    )
+    notification_type = automation.action_config.get("notification_type", NotificationType.SYSTEM)
 
     notification = Notification.objects.create(
         tenant=automation.tenant,
@@ -386,9 +381,7 @@ def _execute_send_email(automation, customer, context) -> bool:
     except Exception as exc:
         import logging
 
-        logging.getLogger(__name__).error(
-            "Automation email failed for %s: %s", customer.id, exc
-        )
+        logging.getLogger(__name__).error("Automation email failed for %s: %s", customer.id, exc)
         return False
 
 
@@ -402,9 +395,7 @@ def _execute_send_sms(automation, customer, context) -> bool:
     if not is_sms_available():
         import logging
 
-        logging.getLogger(__name__).warning(
-            "Twilio SMS not configured  cannot send automation SMS"
-        )
+        logging.getLogger(__name__).warning("Twilio SMS not configured  cannot send automation SMS")
         return False
 
     title = automation.action_config.get("title", "")
@@ -426,9 +417,7 @@ def _execute_send_whatsapp(automation, customer, context) -> bool:
     if not is_bridge_available():
         import logging
 
-        logging.getLogger(__name__).warning(
-            "WhatsApp bridge not available  cannot send automation message"
-        )
+        logging.getLogger(__name__).warning("WhatsApp bridge not available  cannot send automation message")
         return False
 
     # Enforce daily WhatsApp plan limit (prevents automation bypass)
@@ -449,9 +438,7 @@ def _execute_send_whatsapp(automation, customer, context) -> bool:
     if check_whatsapp_cooldown(customer.phone):
         import logging
 
-        logging.getLogger(__name__).info(
-            "WhatsApp automation cooldown: skipping %s", customer.phone
-        )
+        logging.getLogger(__name__).info("WhatsApp automation cooldown: skipping %s", customer.phone)
         return False
 
     title = automation.action_config.get("title", "")
@@ -468,9 +455,7 @@ def _execute_send_whatsapp(automation, customer, context) -> bool:
     except Exception as exc:
         import logging
 
-        logging.getLogger(__name__).error(
-            "Automation WhatsApp failed for %s: %s", customer.id, exc
-        )
+        logging.getLogger(__name__).error("Automation WhatsApp failed for %s: %s", customer.id, exc)
         return False
 
 
@@ -481,9 +466,7 @@ def _execute_send_wallet(automation, customer, context) -> bool:
     """
     from apps.customers.models import CustomerPass
 
-    passes = CustomerPass.objects.filter(
-        customer=customer, is_active=True
-    ).select_related("card", "card__tenant")
+    passes = CustomerPass.objects.filter(customer=customer, is_active=True).select_related("card", "card__tenant")
 
     if not passes.exists():
         return False
@@ -510,9 +493,7 @@ def _execute_send_wallet(automation, customer, context) -> bool:
 
                 from apps.tenants.models import PlatformSetting
 
-                dashboard_url = PlatformSetting.get(
-                    "dashboard_url", settings.PUBLIC_BASE_URL
-                )
+                dashboard_url = PlatformSetting.get("dashboard_url", settings.PUBLIC_BASE_URL)
                 action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
                 send_google_push_notification_async.delay(  # type: ignore[reportCallIssue]
                     str(pass_obj.id),
@@ -523,9 +504,7 @@ def _execute_send_wallet(automation, customer, context) -> bool:
             except Exception as exc:
                 import logging
 
-                logging.getLogger(__name__).warning(
-                    "Google wallet enqueue failed for pass %s: %s", pass_obj.id, exc
-                )
+                logging.getLogger(__name__).warning("Google wallet enqueue failed for pass %s: %s", pass_obj.id, exc)
 
         # Apple Wallet
         if wallet_platform in ("apple", "both"):
@@ -540,9 +519,7 @@ def _execute_send_wallet(automation, customer, context) -> bool:
             except Exception as exc:
                 import logging
 
-                logging.getLogger(__name__).warning(
-                    "Apple wallet push failed for pass %s: %s", pass_obj.id, exc
-                )
+                logging.getLogger(__name__).warning("Apple wallet push failed for pass %s: %s", pass_obj.id, exc)
 
     return push_sent
 

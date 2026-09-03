@@ -51,9 +51,7 @@ def _generate_placeholder_icon(
         draw = ImageDraw.Draw(img)
         letter = name[0].upper() if name else "L"
         try:
-            font = ImageFont.truetype(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size // 2
-            )
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size // 2)
         except OSError:
             font = ImageFont.load_default()
         bbox = draw.textbbox((0, 0), letter, font=font)
@@ -88,9 +86,7 @@ def _generate_placeholder_logo(
         letter = name[0].upper() if name else "L"
         font_size = min(width, height) // 2
         try:
-            font = ImageFont.truetype(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size
-            )
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
         except OSError:
             font = ImageFont.load_default()
         bbox = draw.textbbox((0, 0), letter, font=font)
@@ -111,11 +107,7 @@ def _minimal_png() -> bytes:
 
     def _chunk(chunk_type: bytes, data: bytes) -> bytes:
         raw = chunk_type + data
-        return (
-            struct.pack(">I", len(data))
-            + raw
-            + struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
-        )
+        return struct.pack(">I", len(data)) + raw + struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
 
     signature = b"\x89PNG\r\n\x1a\n"
     ihdr = _chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0))

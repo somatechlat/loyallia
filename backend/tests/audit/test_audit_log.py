@@ -209,21 +209,15 @@ class QuantityValidationTest(TestCase):
 
     def test_quantity_zero_raises(self):
         with self.assertRaises(ValueError) as ctx:
-            self.pass_obj.process_transaction(
-                "stamp_earned", amount=Decimal("10"), quantity=0
-            )
+            self.pass_obj.process_transaction("stamp_earned", amount=Decimal("10"), quantity=0)
         self.assertIn("positive integer", str(ctx.exception))
 
     def test_quantity_negative_raises(self):
         with self.assertRaises(ValueError):
-            self.pass_obj.process_transaction(
-                "stamp_earned", amount=Decimal("10"), quantity=-1
-            )
+            self.pass_obj.process_transaction("stamp_earned", amount=Decimal("10"), quantity=-1)
 
     def test_quantity_one_works(self):
-        result = self.pass_obj.process_transaction(
-            "stamp_earned", amount=Decimal("10"), quantity=1
-        )
+        result = self.pass_obj.process_transaction("stamp_earned", amount=Decimal("10"), quantity=1)
         self.assertTrue(result["pass_updated"])
 
 
@@ -248,18 +242,14 @@ class StampMultiCycleTest(TestCase):
 
     def test_single_cycle(self):
         # 0 + 10 = 1 cycle, 0 remaining
-        result = cast(Any, self.pass_obj)._process_stamp_transaction(
-            Decimal("10"), quantity=10
-        )
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=10)
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 1)
 
     def test_multi_cycle(self):
         # 0 + 25 = 2 cycles, 5 remaining
-        result = cast(Any, self.pass_obj)._process_stamp_transaction(
-            Decimal("10"), quantity=25
-        )
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=25)
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 5)
         self.assertEqual(result["reward_count"], 2)
@@ -270,9 +260,7 @@ class StampMultiCycleTest(TestCase):
         self.pass_obj.save(update_fields=["pass_data"])
         self.pass_obj.refresh_from_db()
 
-        result = cast(Any, self.pass_obj)._process_stamp_transaction(
-            Decimal("10"), quantity=17
-        )
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=17)
         self.assertTrue(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 2)
@@ -280,17 +268,13 @@ class StampMultiCycleTest(TestCase):
     def test_no_stamps_lost_large_quantity(self):
         """Previously, stamps beyond one cycle were lost."""
         # 0 + 100 = 10 cycles, 0 remaining
-        result = cast(Any, self.pass_obj)._process_stamp_transaction(
-            Decimal("10"), quantity=100
-        )
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=100)
         self.assertEqual(result["new_stamp_count"], 0)
         self.assertEqual(result["reward_count"], 10)
 
     def test_partial_cycle(self):
         # 0 + 7 = 0 cycles, 7 remaining
-        result = cast(Any, self.pass_obj)._process_stamp_transaction(
-            Decimal("10"), quantity=7
-        )
+        result = cast(Any, self.pass_obj)._process_stamp_transaction(Decimal("10"), quantity=7)
         self.assertFalse(result["reward_earned"])
         self.assertEqual(result["new_stamp_count"], 7)
 

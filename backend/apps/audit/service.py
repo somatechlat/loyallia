@@ -133,9 +133,7 @@ def log_impersonation(
     Raises ValueError if justification is empty.
     """
     if not justification or len(justification.strip()) < 10:
-        raise ValueError(
-            "Impersonation requires a justification of at least 10 characters."
-        )
+        raise ValueError("Impersonation requires a justification of at least 10 characters.")
 
     return log_action(
         request=request,

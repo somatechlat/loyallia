@@ -110,21 +110,15 @@ def get_current_usage(tenant, resource: str) -> int:
         "programs": lambda: Card.objects.filter(tenant=tenant).count(),
         "locations": lambda: tenant.locations.count(),
         "users": lambda: tenant.users.filter(is_active=True).count(),
-        "notifications_month": lambda: _count_monthly(
-            "apps.notifications.models", "Notification", tenant, month_start
-        ),
-        "transactions_month": lambda: _count_monthly(
-            "apps.transactions.models", "Transaction", tenant, month_start
-        ),
+        "notifications_month": lambda: _count_monthly("apps.notifications.models", "Notification", tenant, month_start),
+        "transactions_month": lambda: _count_monthly("apps.transactions.models", "Transaction", tenant, month_start),
         "whatsapp_day": lambda: _get_whatsapp_today(tenant),
         "emails_month": lambda: _count_emails_month(tenant, month_start),
         "sms_day": lambda: _count_sms_today(tenant),
         "wallet_pushes_month": lambda: _count_wallet_pushes_month(tenant, month_start),
         "automations": lambda: _count_automations(tenant),
         "automation_executions_day": lambda: _count_automation_executions_today(tenant),
-        "ai_queries_month": lambda: _count_monthly(
-            "apps.ai.models", "AIQueryLog", tenant, month_start
-        ),
+        "ai_queries_month": lambda: _count_monthly("apps.ai.models", "AIQueryLog", tenant, month_start),
         "api_calls_day": lambda: _count_api_calls_today(tenant),
         "exports_month": lambda: _count_exports_month(tenant, month_start),
         "wallet_templates": lambda: _count_wallet_templates(tenant),
@@ -149,9 +143,7 @@ def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> in
 
     module = importlib.import_module(module_path)
     model_class = getattr(module, model_name)
-    return model_class.objects.filter(
-        tenant=tenant, created_at__gte=month_start
-    ).count()
+    return model_class.objects.filter(tenant=tenant, created_at__gte=month_start).count()
 
 
 def _get_whatsapp_today(tenant) -> int:
@@ -443,9 +435,7 @@ def require_active_subscription(func):
         tenant = require_tenant(request)
         subscription = Subscription.objects.filter(tenant=tenant).first()
         if not subscription or not subscription.is_access_allowed:
-            return _django_json_response_from_http_error(
-                HttpError(402, get_message("BILLING_PLAN_REQUIRED"))
-            )
+            return _django_json_response_from_http_error(HttpError(402, get_message("BILLING_PLAN_REQUIRED")))
         return func(request, *args, **kwargs)
 
     return _ninja_safe_wrap(func, wrapper)

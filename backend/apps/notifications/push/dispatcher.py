@@ -46,9 +46,7 @@ def dispatch_push(notification: "Notification") -> int:
         "action_url": notification.action_url or "",
     }
     if hasattr(notification, "notification_data") and notification.notification_data:
-        payload_data.update(
-            {k: str(v) for k, v in notification.notification_data.items()}
-        )
+        payload_data.update({k: str(v) for k, v in notification.notification_data.items()})
 
     delivered = 0
 

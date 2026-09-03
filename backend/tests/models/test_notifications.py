@@ -42,9 +42,7 @@ class CampaignRunModelTest(TestCase):
 
     def test_delivery_rate_zero_sent(self):
         tenant = make_tenant()
-        run = CampaignRun.objects.create(
-            tenant=tenant, channel=NotificationChannel.SMS, title="T"
-        )
+        run = CampaignRun.objects.create(tenant=tenant, channel=NotificationChannel.SMS, title="T")
         self.assertEqual(run.delivery_rate, 0.0)
 
     def test_delivery_rate_calculated(self):
@@ -60,9 +58,7 @@ class CampaignRunModelTest(TestCase):
 
     def test_read_rate_zero_delivered(self):
         tenant = make_tenant()
-        run = CampaignRun.objects.create(
-            tenant=tenant, channel=NotificationChannel.SMS, title="T"
-        )
+        run = CampaignRun.objects.create(tenant=tenant, channel=NotificationChannel.SMS, title="T")
         self.assertEqual(run.read_rate, 0.0)
 
     def test_read_rate_calculated(self):
@@ -101,9 +97,7 @@ class CampaignRunModelTest(TestCase):
 
     def test_duration_minutes_none_when_missing(self):
         tenant = make_tenant()
-        run = CampaignRun.objects.create(
-            tenant=tenant, channel=NotificationChannel.SMS, title="T"
-        )
+        run = CampaignRun.objects.create(tenant=tenant, channel=NotificationChannel.SMS, title="T")
         self.assertIsNone(run.duration_minutes)
 
 
@@ -112,9 +106,7 @@ class CampaignDeliveryLogModelTest(TestCase):
 
     def test_create_defaults(self):
         tenant = make_tenant()
-        run = CampaignRun.objects.create(
-            tenant=tenant, channel=NotificationChannel.SMS, title="T"
-        )
+        run = CampaignRun.objects.create(tenant=tenant, channel=NotificationChannel.SMS, title="T")
         customer = make_customer(tenant)
         log = CampaignDeliveryLog.objects.create(
             campaign_run=run,
@@ -128,9 +120,7 @@ class CampaignDeliveryLogModelTest(TestCase):
 
     def test_status_transitions(self):
         tenant = make_tenant()
-        run = CampaignRun.objects.create(
-            tenant=tenant, channel=NotificationChannel.SMS, title="T"
-        )
+        run = CampaignRun.objects.create(tenant=tenant, channel=NotificationChannel.SMS, title="T")
         customer = make_customer(tenant)
         log = CampaignDeliveryLog.objects.create(campaign_run=run, customer=customer)
 
@@ -150,9 +140,7 @@ class CampaignDeliveryLogModelTest(TestCase):
         from django.db import IntegrityError
 
         tenant = make_tenant()
-        run = CampaignRun.objects.create(
-            tenant=tenant, channel=NotificationChannel.SMS, title="T"
-        )
+        run = CampaignRun.objects.create(tenant=tenant, channel=NotificationChannel.SMS, title="T")
         customer = make_customer(tenant)
         CampaignDeliveryLog.objects.create(campaign_run=run, customer=customer)
         with self.assertRaises(IntegrityError):
@@ -160,9 +148,7 @@ class CampaignDeliveryLogModelTest(TestCase):
 
     def test_customer_null_allowed(self):
         tenant = make_tenant()
-        run = CampaignRun.objects.create(
-            tenant=tenant, channel=NotificationChannel.SMS, title="T"
-        )
+        run = CampaignRun.objects.create(tenant=tenant, channel=NotificationChannel.SMS, title="T")
         log = CampaignDeliveryLog.objects.create(
             campaign_run=run,
             customer=None,
@@ -193,23 +179,15 @@ class PushDeviceModelTest(TestCase):
 
         tenant = make_tenant()
         customer = make_customer(tenant)
-        PushDevice.objects.create(
-            customer=customer, device_type="ios", device_token="same"
-        )
+        PushDevice.objects.create(customer=customer, device_type="ios", device_token="same")
         with self.assertRaises(IntegrityError):
-            PushDevice.objects.create(
-                customer=customer, device_type="android", device_token="same"
-            )
+            PushDevice.objects.create(customer=customer, device_type="android", device_token="same")
 
     def test_multi_device_per_customer(self):
         tenant = make_tenant()
         customer = make_customer(tenant)
-        d1 = PushDevice.objects.create(
-            customer=customer, device_type="ios", device_token="t1"
-        )
-        d2 = PushDevice.objects.create(
-            customer=customer, device_type="android", device_token="t2"
-        )
+        d1 = PushDevice.objects.create(customer=customer, device_type="ios", device_token="t1")
+        d2 = PushDevice.objects.create(customer=customer, device_type="android", device_token="t2")
         self.assertEqual(customer.devices.count(), 2)
         self.assertEqual(d1.device_type, "ios")
         self.assertEqual(d2.device_type, "android")
@@ -217,9 +195,7 @@ class PushDeviceModelTest(TestCase):
     def test_push_failures_increment(self):
         tenant = make_tenant()
         customer = make_customer(tenant)
-        device = PushDevice.objects.create(
-            customer=customer, device_type="web", device_token="t"
-        )
+        device = PushDevice.objects.create(customer=customer, device_type="web", device_token="t")
         device.push_failures = 3
         device.save()
         device.refresh_from_db()
@@ -241,9 +217,7 @@ class WhatsAppSessionModelTest(TestCase):
 
     def test_connected_str(self):
         tenant = make_tenant()
-        session = WhatsAppSession.objects.create(
-            tenant=tenant, is_connected=True, phone_number="+593991111111"
-        )
+        session = WhatsAppSession.objects.create(tenant=tenant, is_connected=True, phone_number="+593991111111")
         self.assertIn("[ON]", str(session))
         self.assertIn("+593991111111", str(session))
 
@@ -270,40 +244,30 @@ class WhatsAppSessionModelTest(TestCase):
 
     def test_plan_daily_limit_with_override(self):
         tenant = make_tenant()
-        session = WhatsAppSession.objects.create(
-            tenant=tenant, daily_limit_override=150
-        )
+        session = WhatsAppSession.objects.create(tenant=tenant, daily_limit_override=150)
         self.assertEqual(session.plan_daily_limit, 150)
 
     def test_effective_daily_limit_warmup(self):
         tenant = make_tenant()
-        session = WhatsAppSession.objects.create(
-            tenant=tenant, daily_limit_override=200, warmup_day=0
-        )
+        session = WhatsAppSession.objects.create(tenant=tenant, daily_limit_override=200, warmup_day=0)
         # base=20, ceiling=200, warmup_day=0 -> min(200, 20) = 20
         self.assertEqual(session.effective_daily_limit, 20)
 
     def test_effective_daily_limit_fully_warmed(self):
         tenant = make_tenant()
-        session = WhatsAppSession.objects.create(
-            tenant=tenant, daily_limit_override=200, warmup_day=7
-        )
+        session = WhatsAppSession.objects.create(tenant=tenant, daily_limit_override=200, warmup_day=7)
         self.assertEqual(session.effective_daily_limit, 200)
 
     def test_messages_remaining_today(self):
         tenant = make_tenant()
-        session = WhatsAppSession.objects.create(
-            tenant=tenant, daily_limit_override=100, warmup_day=7
-        )
+        session = WhatsAppSession.objects.create(tenant=tenant, daily_limit_override=100, warmup_day=7)
         session.messages_sent_today = 30
         session.save()
         self.assertEqual(session.messages_remaining_today, 70)
 
     def test_messages_remaining_cannot_be_negative(self):
         tenant = make_tenant()
-        session = WhatsAppSession.objects.create(
-            tenant=tenant, daily_limit_override=50, warmup_day=7
-        )
+        session = WhatsAppSession.objects.create(tenant=tenant, daily_limit_override=50, warmup_day=7)
         session.messages_sent_today = 100
         session.save()
         self.assertEqual(session.messages_remaining_today, 0)

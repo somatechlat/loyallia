@@ -37,9 +37,7 @@ class StampEarnStrategy(BaseRedemptionStrategy):
             violations.append("invalid_quantity")
         return violations
 
-    def _compute_mutation(
-        self, locked_pass: "CustomerPass", context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> PassStateMutation:
         """Compute stamp accumulation and reward readiness."""
         metadata = context.card.metadata or {}
 
@@ -50,9 +48,7 @@ class StampEarnStrategy(BaseRedemptionStrategy):
         except (TypeError, ValueError):
             stamps_required = 10
 
-        current_stamps = locked_pass.stamp_count or locked_pass.pass_data.get(
-            "stamp_count", 0
-        )
+        current_stamps = locked_pass.stamp_count or locked_pass.pass_data.get("stamp_count", 0)
         added = context.quantity
         new_stamps = current_stamps + added
 
@@ -104,9 +100,7 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
             violations.append("reward_not_ready")
         return violations
 
-    def _compute_mutation(
-        self, locked_pass: "CustomerPass", context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> PassStateMutation:
         """Compute the reward consumption and state reset."""
         if not self._is_reward_ready(locked_pass):
             return PassStateMutation(
@@ -130,9 +124,8 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
     @staticmethod
     def _is_reward_ready(customer_pass: "CustomerPass") -> bool:
         """Check whether the pass has a reward ready for redemption."""
-        return (
-            customer_pass.lifecycle_state == CustomerPass.LifecycleState.REWARD_READY
-            or customer_pass.pass_data.get("reward_ready", False)
+        return customer_pass.lifecycle_state == CustomerPass.LifecycleState.REWARD_READY or customer_pass.pass_data.get(
+            "reward_ready", False
         )
 
     def _resolve_intent(self, context: RedemptionContext) -> str:

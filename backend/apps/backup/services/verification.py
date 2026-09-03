@@ -93,15 +93,11 @@ def pack_and_upload_archive(component_results: list, job_id: str) -> str:
     files_to_archive = [
         result["file_path"]
         for result in component_results
-        if isinstance(result, dict)
-        and result.get("file_path")
-        and os.path.exists(result["file_path"])
+        if isinstance(result, dict) and result.get("file_path") and os.path.exists(result["file_path"])
     ]
 
     if not files_to_archive:
-        logger.warning(
-            "pack_and_upload_archive: no files to archive for job %s", job_id
-        )
+        logger.warning("pack_and_upload_archive: no files to archive for job %s", job_id)
         return ""
 
     subprocess.run(

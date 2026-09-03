@@ -92,9 +92,7 @@ def _get_cache_ttl(key: str, window_seconds: int) -> int:
     return ttl
 
 
-def check_rate_limit(
-    key: str, max_requests: int, window_seconds: int
-) -> tuple[bool, int]:
+def check_rate_limit(key: str, max_requests: int, window_seconds: int) -> tuple[bool, int]:
     """Check a custom rate limit key using Redis (preferred) or Django cache.
 
     Returns (allowed, ttl) where *allowed* is True when the request is within
@@ -140,9 +138,7 @@ def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) ->
             redis_client.expire(key, window_seconds)
         return current <= max_requests
     except Exception as e:
-        logger.warning(
-            "Rate limiter: Redis INCR failed (%s). Falling back to cache.", e
-        )
+        logger.warning("Rate limiter: Redis INCR failed (%s). Falling back to cache.", e)
         return _check_rate_limit_cache(key, max_requests, window_seconds)
 
 
@@ -305,9 +301,7 @@ class RateLimitMiddleware:
             return cache
         except Exception as e:
             self._cache_available = False
-            logger.warning(
-                "Rate limiter: Cache backend unavailable (%s). Failing open.", e
-            )
+            logger.warning("Rate limiter: Cache backend unavailable (%s). Failing open.", e)
             return None
 
     def __call__(self, request: HttpRequest):
@@ -371,9 +365,7 @@ class RateLimitMiddleware:
                         current_count = 1
             except Exception as e:
                 # Cache error fail open
-                logger.warning(
-                    "Rate limiter: Cache operation error (%s). Failing open.", e
-                )
+                logger.warning("Rate limiter: Cache operation error (%s). Failing open.", e)
                 break
 
             if current_count > max_requests:
@@ -419,9 +411,7 @@ from typing import TypeVar  # noqa: E402
 F = TypeVar("F", bound=Callable)
 
 
-def rate_limit(
-    key_prefix: str, max_requests: int, window_seconds: int
-) -> Callable[[F], F]:
+def rate_limit(key_prefix: str, max_requests: int, window_seconds: int) -> Callable[[F], F]:
     """Decorator for endpoint-level rate limiting using Redis (preferred) or Django cache.
 
     Uses Redis INCR + EXPIRE for atomic, distributed rate counting.

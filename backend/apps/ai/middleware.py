@@ -85,7 +85,7 @@ def _check_limit(key: str, max_requests: int, window_seconds: int) -> tuple[bool
             if _ttl_func is not None:
                 ttl = _ttl_func(key) or window_seconds
         except Exception:
-            pass
+            logger.warning("Rate limit cache TTL lookup failed for key '%s', using default window", key, exc_info=True)
         return False, max(1, ttl)
 
     return True, 0
@@ -114,9 +114,7 @@ class AIRateLimitMiddleware:
 
         # Hourly check
         hourly_key = f"ai:rl:hourly:{user_key}"
-        allowed_hourly, retry_hourly = _check_limit(
-            hourly_key, AI_HOURLY_LIMIT, AI_HOURLY_WINDOW
-        )
+        allowed_hourly, retry_hourly = _check_limit(hourly_key, AI_HOURLY_LIMIT, AI_HOURLY_WINDOW)
         if not allowed_hourly:
             logger.warning(
                 "AI hourly rate limit exceeded: path=%s user=%s",
@@ -137,9 +135,7 @@ class AIRateLimitMiddleware:
 
         # Daily check
         daily_key = f"ai:rl:daily:{user_key}"
-        allowed_daily, retry_daily = _check_limit(
-            daily_key, AI_DAILY_LIMIT, AI_DAILY_WINDOW
-        )
+        allowed_daily, retry_daily = _check_limit(daily_key, AI_DAILY_LIMIT, AI_DAILY_WINDOW)
         if not allowed_daily:
             logger.warning(
                 "AI daily rate limit exceeded: path=%s user=%s",

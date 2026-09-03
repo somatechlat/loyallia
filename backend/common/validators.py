@@ -22,19 +22,13 @@ class ComplexityValidator:
     def validate(self, password, user=None):
         errors = []
         if not re.search(r"[A-Z]", password):
-            errors.append(
-                _("La contraseña debe contener al menos una letra mayúscula.")
-            )
+            errors.append(_("La contraseña debe contener al menos una letra mayúscula."))
         if not re.search(r"[a-z]", password):
-            errors.append(
-                _("La contraseña debe contener al menos una letra minúscula.")
-            )
+            errors.append(_("La contraseña debe contener al menos una letra minúscula."))
         if not re.search(r"[0-9]", password):
             errors.append(_("La contraseña debe contener al menos un dígito."))
         if not re.search(self.SPECIAL_CHARS, password):
-            errors.append(
-                _("La contraseña debe contener al menos un carácter especial.")
-            )
+            errors.append(_("La contraseña debe contener al menos un carácter especial."))
         if errors:
             raise ValidationError(errors, code="password_complexity")
 

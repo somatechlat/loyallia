@@ -139,11 +139,7 @@ class TimeWindowValidator(RuleValidator):
         # Absolute date range
         valid_from = rules.get("valid_from")
         if valid_from is not None:
-            dt_from = (
-                parse_datetime(str(valid_from))
-                if isinstance(valid_from, str)
-                else valid_from
-            )
+            dt_from = parse_datetime(str(valid_from)) if isinstance(valid_from, str) else valid_from
             if dt_from is not None and scanned < dt_from:
                 violations.append(
                     RuleViolation(
@@ -157,11 +153,7 @@ class TimeWindowValidator(RuleValidator):
 
         valid_until = rules.get("valid_until")
         if valid_until is not None:
-            dt_until = (
-                parse_datetime(str(valid_until))
-                if isinstance(valid_until, str)
-                else valid_until
-            )
+            dt_until = parse_datetime(str(valid_until)) if isinstance(valid_until, str) else valid_until
             if dt_until is not None and scanned > dt_until:
                 violations.append(
                     RuleViolation(
@@ -217,9 +209,7 @@ class TimeWindowValidator(RuleValidator):
                         )
                     )
             except (ValueError, TypeError):
-                logger.warning(
-                    "Invalid allowed_hours config: %s", allowed_hours, exc_info=True
-                )
+                logger.warning("Invalid allowed_hours config: %s", allowed_hours, exc_info=True)
 
         return violations
 
@@ -270,10 +260,7 @@ class LocationValidator(RuleValidator):
 
         if allowed_locations is not None:
             allowed_set = {str(loc) for loc in allowed_locations}
-            if (
-                context.location_id is None
-                or str(context.location_id) not in allowed_set
-            ):
+            if context.location_id is None or str(context.location_id) not in allowed_set:
                 violations.append(
                     RuleViolation(
                         rule_code="allowed_locations",

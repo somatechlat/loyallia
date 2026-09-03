@@ -35,9 +35,7 @@ def backup_media(job_id: str) -> dict:
 
         media_dir = os.path.join(tmp_dir, "media")
         os.makedirs(media_dir, exist_ok=True)
-        buckets = [
-            b for b in (minio_cfg["bucket_passes"], minio_cfg["bucket_assets"]) if b
-        ]
+        buckets = [b for b in (minio_cfg["bucket_passes"], minio_cfg["bucket_assets"]) if b]
         total_files = 0
         total_bytes = 0
 
@@ -62,9 +60,7 @@ def backup_media(job_id: str) -> dict:
             except ClientError as exc:
                 error_code = exc.response.get("Error", {}).get("Code", "Unknown")
                 if error_code == "NoSuchBucket":
-                    logger.warning(
-                        "backup_media: bucket '%s' does not exist, skipping", bucket
-                    )
+                    logger.warning("backup_media: bucket '%s' does not exist, skipping", bucket)
                     continue
                 raise
 
@@ -114,9 +110,7 @@ def restore_media(media_tar: str) -> bool:
         )
 
         tmp_dir = temp_backup_dir("media_restore")
-        subprocess.run(
-            ["tar", "-xzf", media_tar, "-C", tmp_dir], check=True, capture_output=True
-        )
+        subprocess.run(["tar", "-xzf", media_tar, "-C", tmp_dir], check=True, capture_output=True)
 
         media_root = os.path.join(tmp_dir, "media")
         for root, _dirs, files in os.walk(media_root):
@@ -125,9 +119,7 @@ def restore_media(media_tar: str) -> bool:
                 relative_path = os.path.relpath(local_path, media_root)
                 parts = relative_path.split(os.sep, 1)
                 bucket, s3_key = (
-                    (parts[0], parts[1])
-                    if len(parts) == 2
-                    else (minio_cfg["bucket_assets"], relative_path)
+                    (parts[0], parts[1]) if len(parts) == 2 else (minio_cfg["bucket_assets"], relative_path)
                 )
                 try:
                     s3.upload_file(local_path, bucket, s3_key)

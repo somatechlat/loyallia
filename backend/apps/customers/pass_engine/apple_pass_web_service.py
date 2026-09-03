@@ -87,16 +87,12 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
     try:
-        return CustomerPass.objects.select_related(
-            "card", "card__tenant", "customer"
-        ).get(id=serial_number)
+        return CustomerPass.objects.select_related("card", "card__tenant", "customer").get(id=serial_number)
     except CustomerPass.DoesNotExist:
         logger.warning("Apple Web Service: Pass not found: serial=%s", serial_number)
         return None
     except Exception as exc:
-        logger.error(
-            "Apple Web Service: Error looking up pass %s: %s", serial_number, exc
-        )
+        logger.error("Apple Web Service: Error looking up pass %s: %s", serial_number, exc)
         return None
 
 
@@ -251,9 +247,7 @@ def list_updated_passes(
     from apps.customers.models import ApplePassRegistration
 
     # Verify the device is registered for at least one pass
-    if not ApplePassRegistration.objects.filter(
-        device_library_id=device_library_id
-    ).exists():
+    if not ApplePassRegistration.objects.filter(device_library_id=device_library_id).exists():
         logger.warning(
             "Apple Web Service: Device not registered  device=%s",
             device_library_id[-8:],
@@ -371,9 +365,7 @@ def get_updated_pass(
         content_type="application/vnd.apple.pkpass",
         status=200,
     )
-    response["Content-Disposition"] = (
-        f'attachment; filename="pass-{serial_number}.pkpass"'
-    )
+    response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
 
     # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:

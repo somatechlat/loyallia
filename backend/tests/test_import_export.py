@@ -65,9 +65,7 @@ class TestCustomerImportService:
         service = CustomerImportService(tenant)
         result = service.process_import(file_obj, "test.txt")
         assert result["success"] is False
-        assert (
-            "format" in result["error"].lower() or "invalido" in result["error"].lower()
-        )
+        assert "format" in result["error"].lower() or "invalido" in result["error"].lower()
 
     def test_import_rejects_empty_file(self, db):
         """Import should reject empty files."""
@@ -133,7 +131,9 @@ class TestCustomerImportService:
         plan = make_plan()
         make_subscription(tenant, plan=plan)
 
-        csv_content = "nombre,email,genero\nJohn,john@test.com,masculino\nJane,jane@test.com,femenino\nAlex,alex@test.com,otro"
+        csv_content = (
+            "nombre,email,genero\nJohn,john@test.com,masculino\nJane,jane@test.com,femenino\nAlex,alex@test.com,otro"
+        )
         file_obj = io.BytesIO(csv_content.encode("utf-8"))
 
         service = CustomerImportService(tenant)
@@ -153,9 +153,7 @@ class TestCustomerImportService:
         tenant = make_tenant()
         plan = make_plan()
         make_subscription(tenant, plan=plan)
-        big_content = "nombre,email\n" + "\n".join(
-            [f"User{i},user{i}@test.com" for i in range(100)]
-        )
+        big_content = "nombre,email\n" + "\n".join([f"User{i},user{i}@test.com" for i in range(100)])
         file_obj = io.BytesIO(big_content.encode("utf-8"))
         service = CustomerImportService(tenant)
         result = service.process_import(file_obj, "big.csv")

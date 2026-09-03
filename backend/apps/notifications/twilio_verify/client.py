@@ -51,9 +51,7 @@ except ImportError as exc:  # pragma: no cover
 class VerifyServiceError(Exception):
     """Raised when Twilio Verify API returns a non-2xx response."""
 
-    def __init__(
-        self, message: str, code: int | None = None, twilio_code: str | None = None
-    ):
+    def __init__(self, message: str, code: int | None = None, twilio_code: str | None = None):
         super().__init__(message)
         self.code = code
         self.twilio_code = twilio_code
@@ -91,13 +89,9 @@ class VerifyClient:
             test_sid = get_secret("twilio_test_account_sid", default="")
             test_token = get_secret("twilio_test_auth_token", default="")
             if test_sid and test_token:
-                logger.warning(
-                    "Twilio Verify: using TEST credentials (test mode enabled)"
-                )
+                logger.warning("Twilio Verify: using TEST credentials (test mode enabled)")
                 return test_sid, test_token
-            logger.warning(
-                "Twilio Verify: test mode enabled but test credentials missing, falling back"
-            )
+            logger.warning("Twilio Verify: test mode enabled but test credentials missing, falling back")
 
         api_key_sid = get_secret("twilio_api_key_sid", default="")
         api_key_secret = get_secret("twilio_api_key_secret", default="")
@@ -141,9 +135,7 @@ class VerifyClient:
         try:
             username, password = cls._get_credentials()
             sid = cls._get_service_sid()
-            enabled = (
-                get_secret("twilio_verify_enabled", default="false").lower() == "true"
-            )
+            enabled = get_secret("twilio_verify_enabled", default="false").lower() == "true"
         except VerifyServiceError:
             return False
         return bool(username and password and sid and enabled)
@@ -265,9 +257,7 @@ class VerifyClient:
             payload["tags"] = json.dumps(tags)
 
         try:
-            verification = client.verify.v2.services(sid).verifications.create(
-                **payload
-            )
+            verification = client.verify.v2.services(sid).verifications.create(**payload)
         except Exception as exc:
             logger.error("Twilio Verify start failed: %s", exc)
             raise VerifyServiceError(
@@ -363,9 +353,7 @@ class VerifyClient:
         sid = service_sid or self._get_service_sid()
 
         try:
-            verification = (
-                client.verify.v2.services(sid).verifications(verification_sid).fetch()
-            )
+            verification = client.verify.v2.services(sid).verifications(verification_sid).fetch()
         except Exception as exc:
             logger.error("Twilio Verify fetch failed: %s", exc)
             raise VerifyServiceError(
@@ -395,11 +383,7 @@ class VerifyClient:
         sid = service_sid or self._get_service_sid()
 
         try:
-            verification = (
-                client.verify.v2.services(sid)
-                .verifications(verification_sid)
-                .update(status="canceled")
-            )
+            verification = client.verify.v2.services(sid).verifications(verification_sid).update(status="canceled")
         except Exception as exc:
             logger.error("Twilio Verify cancel failed: %s", exc)
             raise VerifyServiceError(
@@ -429,11 +413,7 @@ class VerifyClient:
         sid = service_sid or self._get_service_sid()
 
         try:
-            verification = (
-                client.verify.v2.services(sid)
-                .verifications(verification_sid)
-                .update(status="approved")
-            )
+            verification = client.verify.v2.services(sid).verifications(verification_sid).update(status="approved")
         except Exception as exc:
             logger.error("Twilio Verify approve failed: %s", exc)
             raise VerifyServiceError(

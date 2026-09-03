@@ -18,9 +18,7 @@ def validate_ruc(value: str) -> None:
         raise ValidationError("El RUC debe tener exactamente 13 dígitos numéricos.")
     province = int(value[:2])
     if province < 1 or (province > 24 and province not in (30,)):
-        raise ValidationError(
-            f"Los primeros 2 dígitos del RUC ({value[:2]}) no corresponden a una provincia válida."
-        )
+        raise ValidationError(f"Los primeros 2 dígitos del RUC ({value[:2]}) no corresponden a una provincia válida.")
 
 
 def validate_cedula(value: str) -> None:
@@ -32,9 +30,7 @@ def validate_cedula(value: str) -> None:
         raise ValidationError("La cédula debe tener exactamente 10 dígitos numéricos.")
     province = int(value[:2])
     if province < 1 or province > 24:
-        raise ValidationError(
-            f"Los primeros 2 dígitos ({value[:2]}) no corresponden a una provincia válida."
-        )
+        raise ValidationError(f"Los primeros 2 dígitos ({value[:2]}) no corresponden a una provincia válida.")
     # Module-10 verification
     coefficients = [2, 1, 2, 1, 2, 1, 2, 1, 2]
     total = 0

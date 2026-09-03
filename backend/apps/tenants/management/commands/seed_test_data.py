@@ -57,9 +57,7 @@ class Command(BaseCommand):
 
         enforce_settings_environment(mode="development", databases=settings.DATABASES)
         if not settings.DEBUG:
-            raise CommandError(
-                "Refusing to seed test data outside DEBUG development mode."
-            )
+            raise CommandError("Refusing to seed test data outside DEBUG development mode.")
 
         self.stdout.write("Starting massive data seed process (Ecuador context)...")
 
@@ -74,12 +72,8 @@ class Command(BaseCommand):
             self._seed_data(seed_password)
 
         self.stdout.write(self.style.SUCCESS("Successfully seeded massive test data!"))
-        self.stdout.write(
-            "Demo tenant users were created with the operator-provided local seed password."
-        )
-        self.stdout.write(
-            "SuperAdmin password is not created or reset by this seed command."
-        )
+        self.stdout.write("Demo tenant users were created with the operator-provided local seed password.")
+        self.stdout.write("SuperAdmin password is not created or reset by this seed command.")
         self.stdout.write("  Owner: owner@example.com")
 
     def _seed_data(self, seed_password: str):
@@ -103,11 +97,7 @@ class Command(BaseCommand):
 
         # Idempotency guard: skip if demo data already exists
         if Customer.objects.filter(tenant=tenant).exists():
-            self.stdout.write(
-                self.style.NOTICE(
-                    "Demo data already exists for Café El Ritmo. Skipping seed."
-                )
-            )
+            self.stdout.write(self.style.NOTICE("Demo data already exists for Café El Ritmo. Skipping seed."))
             return
 
         # 2. SuperAdmin
@@ -212,9 +202,7 @@ class Command(BaseCommand):
 
         # 5. Billing Active Enterprise subscription
 
-        enterprise_plan = SubscriptionPlan.objects.filter(
-            slug="enterprise", is_active=True
-        ).first()
+        enterprise_plan = SubscriptionPlan.objects.filter(slug="enterprise", is_active=True).first()
         sub, _ = Subscription.objects.get_or_create(
             tenant=tenant,
             defaults={
@@ -349,9 +337,7 @@ class Command(BaseCommand):
                 first_name=first,
                 last_name=full_last,
                 phone=phone,
-                date_of_birth=(
-                    now - timedelta(days=365 * random.randint(18, 55))
-                ).date(),
+                date_of_birth=(now - timedelta(days=365 * random.randint(18, 55))).date(),
             )
             Customer.objects.filter(id=c.id).update(created_at=c_date)
             customers.append(c)
@@ -445,20 +431,12 @@ class Command(BaseCommand):
         self.stdout.write("  -> Hidratando analítica de series de tiempo (90 días)...")
         for day_offset in range(90, -1, -1):
             target_date = (now - timedelta(days=day_offset)).date()
-            daily_tx = Transaction.objects.filter(
-                tenant=tenant, created_at__date=target_date
-            )
+            daily_tx = Transaction.objects.filter(tenant=tenant, created_at__date=target_date)
 
             tx_count = daily_tx.count()
-            daily_rev = daily_tx.aggregate(Sum("amount"))["amount__sum"] or Decimal(
-                "0.00"
-            )
-            new_customers = Customer.objects.filter(
-                tenant=tenant, created_at__date=target_date
-            ).count()
-            new_enrollments = CustomerPass.objects.filter(
-                card__tenant=tenant, enrolled_at__date=target_date
-            ).count()
+            daily_rev = daily_tx.aggregate(Sum("amount"))["amount__sum"] or Decimal("0.00")
+            new_customers = Customer.objects.filter(tenant=tenant, created_at__date=target_date).count()
+            new_enrollments = CustomerPass.objects.filter(card__tenant=tenant, enrolled_at__date=target_date).count()
             rewards_issued = daily_tx.filter(
                 transaction_type__in=[
                     TransactionType.STAMP_EARNED,
@@ -489,9 +467,7 @@ class Command(BaseCommand):
 
         self.stdout.write("  -> Calculando segmentación de clientes...")
         for c in Customer.objects.filter(tenant=tenant):
-            analytics, _ = CustomerAnalytics.objects.get_or_create(
-                customer=c, tenant=tenant
-            )
+            analytics, _ = CustomerAnalytics.objects.get_or_create(customer=c, tenant=tenant)
             analytics.update_metrics()
 
         for p in Card.objects.filter(tenant=tenant):
@@ -603,7 +579,5 @@ class Command(BaseCommand):
             total_notifs += len(notifs)
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas"
-            )
+            self.style.SUCCESS(f"  -> Creadas {total_notifs} notificaciones en {len(campaigns)} campañas")
         )

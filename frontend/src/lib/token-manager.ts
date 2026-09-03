@@ -89,9 +89,11 @@ class TokenManager {
       const delay = Math.max(msUntilExpiry - APP_CONFIG.TOKEN_REFRESH_BUFFER_MS, APP_CONFIG.MIN_REFRESH_INTERVAL_MS);
 
       this.refreshTimer = setTimeout(() => {
-        this.refresh().catch(() => {});
+        this.refresh().catch((err) => console.warn('[TokenManager] Proactive refresh failed:', err));
       }, delay);
-    } catch {}
+    } catch (err) {
+      console.warn('[TokenManager] Failed to schedule proactive refresh:', err);
+    }
   }
 
   /** Cancel any pending refresh timer. Safe to call repeatedly. */

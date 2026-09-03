@@ -91,9 +91,7 @@ class AuditLog(models.Model):
         verbose_name="Email del actor",
         help_text="Email of the actor who performed the action.",
     )
-    actor_role = models.CharField(
-        max_length=20, verbose_name="Rol del actor", help_text="Role of the actor."
-    )
+    actor_role = models.CharField(max_length=20, verbose_name="Rol del actor", help_text="Role of the actor.")
 
     # WHAT
     action = models.CharField(

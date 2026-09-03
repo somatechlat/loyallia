@@ -230,9 +230,7 @@ class TestRoleBoundariesAPI(TestCase):
     def _request(self, user):
         from django.test import RequestFactory
 
-        req = RequestFactory().post(
-            "/api/v1/test/", data=b"{}", content_type="application/json"
-        )
+        req = RequestFactory().post("/api/v1/test/", data=b"{}", content_type="application/json")
         req.user = user
         req.tenant = self.tenant
         return req
@@ -255,9 +253,7 @@ class TestRoleBoundariesAPI(TestCase):
         from apps.tenants.schemas import TeamMemberCreateIn
 
         req = self._request(self.manager)
-        payload = TeamMemberCreateIn(
-            email="x@test.com", first_name="X", last_name="Y", role="STAFF"
-        )
+        payload = TeamMemberCreateIn(email="x@test.com", first_name="X", last_name="Y", role="STAFF")
         with self.assertRaises(HttpError) as ctx:
             add_team_member(req, payload)
         self.assertEqual(ctx.exception.status_code, 403)

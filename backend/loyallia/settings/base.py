@@ -159,9 +159,7 @@ AUTH_USER_MODEL = "authentication.User"
 # 12+ chars with complexity requirements.
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 12},
@@ -276,18 +274,14 @@ JWT_REFRESH_TOKEN_LIFETIME_DAYS = 30
 #
 # For RS256, set JWT_PRIVATE_KEY_PATH and JWT_PUBLIC_KEY_PATH (or use Vault).
 JWT_ALGORITHM = config("JWT_ALGORITHM", default="HS256")
-JWT_SECRET_KEY = get_secret(
-    "jwt_secret_key", default=SECRET_KEY
-)  # B-001: Separate from Django SECRET_KEY
+JWT_SECRET_KEY = get_secret("jwt_secret_key", default=SECRET_KEY)  # B-001: Separate from Django SECRET_KEY
 # Fallback: read from Vault runtime file for resilient container startup
 if JWT_SECRET_KEY == SECRET_KEY:
     _vault_jwt_file = "/run/loyallia-vault/jwt_secret_key"
     if os.path.isfile(_vault_jwt_file):
         with open(_vault_jwt_file, encoding="utf-8") as _f:
             JWT_SECRET_KEY = _f.read().strip()
-JWT_PRIVATE_KEY_PATH = config(
-    "JWT_PRIVATE_KEY_PATH", default=""
-)  # RS256 private key file
+JWT_PRIVATE_KEY_PATH = config("JWT_PRIVATE_KEY_PATH", default="")  # RS256 private key file
 JWT_PUBLIC_KEY_PATH = config("JWT_PUBLIC_KEY_PATH", default="")  # RS256 public key file
 
 # PASS SIGNING
@@ -299,12 +293,8 @@ def vault_bool(key: str, env_name: str = "", default: bool = False) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
 
 
-APPLE_WALLET_ENABLED = vault_bool(
-    "apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False
-)
-GOOGLE_WALLET_ENABLED = vault_bool(
-    "google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True
-)
+APPLE_WALLET_ENABLED = vault_bool("apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False)
+GOOGLE_WALLET_ENABLED = vault_bool("google_wallet_enabled", "GOOGLE_WALLET_ENABLED", default=True)
 
 APPLE_PASS_TYPE_IDENTIFIER = get_secret(
     "apple_pass_type_identifier",
@@ -325,9 +315,7 @@ PASS_WEB_SERVICE_URL = config(
 # APNs token-based auth (JWT) for push notifications to iOS
 # Separate from the PassKit signing certificates above
 APPLE_APNS_KEY_ID = config("APPLE_APNS_KEY_ID", default="")
-APPLE_APNS_AUTH_KEY_PATH = config(
-    "APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8"
-)
+APPLE_APNS_AUTH_KEY_PATH = config("APPLE_APNS_AUTH_KEY_PATH", default="/app/certs/apns_auth_key.p8")
 
 # Google Wallet service account JSON is loaded directly from Vault at runtime.
 # Legacy filesystem path removed  credentials are never stored on disk in production.
@@ -335,9 +323,7 @@ GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", default="")
 
 # PAYMENT GATEWAY (Pluggable Manual / Disabled)
 
-PAYMENT_GATEWAY_ENABLED = vault_bool(
-    "payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False
-)
+PAYMENT_GATEWAY_ENABLED = vault_bool("payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False)
 PAYMENT_GATEWAY_PROVIDER = get_secret(
     "payment_gateway_provider",
     default="manual",
@@ -371,9 +357,7 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@loyallia.com"
 
 # WHATSAPP BRIDGE
 
-WHATSAPP_BRIDGE_URL = config(
-    "WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001"
-)
+WHATSAPP_BRIDGE_URL = config("WHATSAPP_BRIDGE_URL", default="http://whatsapp-bridge:3001")
 WHATSAPP_BRIDGE_API_KEY = get_secret(
     "whatsapp_bridge_api_key",
     default="",
@@ -391,9 +375,7 @@ TWILIO_MAX_PER_DAY = config("TWILIO_MAX_PER_DAY", default=200, cast=int)
 # TWILIO VERIFY v2 ()
 
 TWILIO_VERIFY_SERVICE_SID = get_secret("twilio_verify_service_sid", default="")
-TWILIO_VERIFY_ENABLED = (
-    get_secret("twilio_verify_enabled", default="false").lower() == "true"
-)
+TWILIO_VERIFY_ENABLED = get_secret("twilio_verify_enabled", default="false").lower() == "true"
 TWILIO_VERIFY_DEFAULT_CHANNEL = get_secret(
     "twilio_verify_default_channel",
     default="sms",
@@ -441,9 +423,7 @@ SESSION_COOKIE_SAMESITE = "Lax"
 TRIAL_DAYS = config("TRIAL_DAYS", default=5, cast=int)
 GEO_PUSH_COOLDOWN_HOURS = config("GEO_PUSH_COOLDOWN_HOURS", default=4, cast=int)
 GEO_FENCE_RADIUS_METERS = config("GEO_FENCE_RADIUS_METERS", default=100, cast=int)
-TAX_RATE_ECUADOR = config(
-    "TAX_RATE_ECUADOR", default=0.15, cast=float
-)  # Ecuador IVA 15%
+TAX_RATE_ECUADOR = config("TAX_RATE_ECUADOR", default=0.15, cast=float)  # Ecuador IVA 15%
 
 # GOOGLE OAUTH 2.0 (Social Login) Google Identity Services (GIS)
 
@@ -476,9 +456,7 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:33906")
 # Provider-agnostic settings loaded from Vault; editable via PlatformSetting.
 
 AI_API_KEY = get_secret("ai_api_key", default="")
-AI_API_BASE_URL = get_secret(
-    "ai_api_base_url", default="https://api.groq.com/openai/v1"
-)
+AI_API_BASE_URL = get_secret("ai_api_base_url", default="https://api.groq.com/openai/v1")
 AI_MODEL = get_secret("ai_model", default="openai/gpt-oss-120b")
 _ai_max_tokens = get_secret("AI_MAX_TOKENS", default="4096")
 AI_MAX_TOKENS = int(_ai_max_tokens) if _ai_max_tokens else 4096
@@ -487,9 +465,7 @@ _ai_timeout = get_secret("AI_TIMEOUT_SECONDS", default="30")
 AI_TIMEOUT_SECONDS = int(_ai_timeout) if _ai_timeout else 30
 AI_ENABLED = bool(AI_API_KEY)
 _ai_cost = get_secret("ai_cost_per_1k_tokens", default="0.003")
-AI_COST_PER_1K_TOKENS = (
-    decimal.Decimal(_ai_cost) if _ai_cost else decimal.Decimal("0.003")
-)
+AI_COST_PER_1K_TOKENS = decimal.Decimal(_ai_cost) if _ai_cost else decimal.Decimal("0.003")
 
 # SENTRY Error Tracking (B-013)
 

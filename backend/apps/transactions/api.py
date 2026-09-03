@@ -128,9 +128,9 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     transaction_id = result.get("transaction_id")
     if transaction_id:
         try:
-            txn = Transaction.objects.select_related(
-                "customer_pass__customer", "customer_pass__card"
-            ).get(id=transaction_id)
+            txn = Transaction.objects.select_related("customer_pass__customer", "customer_pass__card").get(
+                id=transaction_id
+            )
             _customer_id = str(txn.customer_pass.customer.id)
             _card_type = txn.customer_pass.card.card_type
         except Transaction.DoesNotExist:
@@ -157,9 +157,7 @@ def transact(request: TenantRequest, data: ScanTransactIn):
 
         try:
             if transaction_id:
-                txn = Transaction.objects.select_related("customer_pass").get(
-                    id=transaction_id
-                )
+                txn = Transaction.objects.select_related("customer_pass").get(id=transaction_id)
                 cast(Any, trigger_pass_update).delay(str(txn.customer_pass.id))
         except Exception as e:
             logging.getLogger(__name__).warning(
@@ -183,9 +181,7 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     return _serialize_json_value(result)
 
 
-@scanner_router.get(
-    "/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono"
-)
+@scanner_router.get("/customer/search/", auth=jwt_auth, summary="Buscar cliente por email o teléfono")
 def search_customer(request: TenantRequest, query: str):
     """Search customer by name/email/phone for remote stamp issuance.
 
@@ -268,9 +264,7 @@ def list_transactions(request: TenantRequest, limit: int = 50, offset: int = 0):
                 "card_name": transaction.customer_pass.card.name,
                 "amount": str(transaction.amount) if transaction.amount else None,
                 "quantity": transaction.quantity,
-                "staff_name": (
-                    transaction.staff.get_full_name() if transaction.staff else None
-                ),
+                "staff_name": (transaction.staff.get_full_name() if transaction.staff else None),
                 "created_at": transaction.created_at.isoformat(),
             }
         )
@@ -293,9 +287,7 @@ def get_transaction(request: TenantRequest, transaction_id: str):
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     # SEC: tenant=request.tenant prevents cross-tenant access
-    transaction = get_object_or_404(
-        Transaction, id=transaction_id, tenant=request.tenant
-    )
+    transaction = get_object_or_404(Transaction, id=transaction_id, tenant=request.tenant)
 
     log_action(
         request=request,
@@ -350,9 +342,7 @@ class RemoteIssueIn(BaseModel):
     notes: str = ""
 
 
-@router.post(
-    "/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota"
-)
+@router.post("/remote-issue/", auth=jwt_auth, summary="Emitir recompensa de forma remota")
 def remote_issue(request: TenantRequest, data: RemoteIssueIn):
     """Issue stamps/rewards remotely without a QR scan.
 
@@ -379,25 +369,19 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
 
     # SEC: tenant-scoped customer lookup
     try:
-        customer = Customer.objects.get(
-            id=customer_uuid, tenant=request.tenant, is_active=True
-        )
+        customer = Customer.objects.get(id=customer_uuid, tenant=request.tenant, is_active=True)
     except Customer.DoesNotExist:
         raise HttpError(404, get_message("NOT_FOUND"))
 
     # SEC: tenant-scoped pass lookup via customer ownership
     try:
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(customer=customer, card_id=card_uuid, is_active=True)
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            customer=customer, card_id=card_uuid, is_active=True
+        )
     except CustomerPass.DoesNotExist:
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
-    staff_id = (
-        str(cast(User, request.user).id)
-        if hasattr(request, "user") and request.user
-        else None
-    )
+    staff_id = str(cast(User, request.user).id) if hasattr(request, "user") and request.user else None
 
     command = RedemptionCommand(
         tenant_id=str(require_tenant(request).id),
@@ -439,9 +423,7 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
     return {
         "transaction_id": result.transaction_id,
         "success": True,
-        "message": get_message(
-            "TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name
-        ),
+        "message": get_message("TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name),
         "pass_updated": result.pass_updated,
         "reward_earned": result.reward_earned,
         "reward_description": result.reward_description,

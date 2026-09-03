@@ -182,9 +182,7 @@ class EnrollmentEndpointTest(TestCase):
         self.card = _make_card(self.tenant, card_type="stamp")
         self.factory = RequestFactory()
 
-    @override_settings(
-        CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
-    )
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
     def test_rate_limiting_applied(self):
         """Enrollment endpoint should reject excessive requests with 429."""
         import json
@@ -226,9 +224,7 @@ class EnrollmentEndpointTest(TestCase):
             content_type="application/json",
         )
         self.assertEqual(resp1.status_code, 200)
-        customer = Customer.objects.get(
-            email="re-enroll@loyallia.com", tenant=self.tenant
-        )
+        customer = Customer.objects.get(email="re-enroll@loyallia.com", tenant=self.tenant)
         self.assertEqual(customer.first_name, "Original")
 
         # Enroll same customer in a different card data must not be overwritten

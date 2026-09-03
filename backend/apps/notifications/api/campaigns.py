@@ -78,9 +78,7 @@ def list_campaigns(request: TenantRequest) -> dict:
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[
-        :50
-    ]
+    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[:50]
     if runs:
         return {
             "campaigns": [
@@ -88,9 +86,7 @@ def list_campaigns(request: TenantRequest) -> dict:
                     "id": str(run.id),
                     "title": run.title or "Sin título",
                     "message": run.message_preview or "",
-                    "segment": SEGMENT_NAMES.get(
-                        run.segment_id, run.segment_id or "all"
-                    ),
+                    "segment": SEGMENT_NAMES.get(run.segment_id, run.segment_id or "all"),
                     "status": run.status,
                     "sent_count": run.sent_count,
                     "failed_count": run.failed_count,
@@ -166,9 +162,7 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         from django.utils import timezone
 
         try:
-            scheduled_time = datetime.fromisoformat(
-                data.scheduled_at.replace("Z", "+00:00")
-            )
+            scheduled_time = datetime.fromisoformat(data.scheduled_at.replace("Z", "+00:00"))
         except ValueError:
             raise HttpError(
                 400,

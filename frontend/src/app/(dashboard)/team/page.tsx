@@ -32,7 +32,7 @@ export default function TeamPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchTeam(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchTeam(); // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchTeam uses stable refs (t, api); intentionally created once
   }, []);
 
   const isOwner = user?.role === UserRole.OWNER;

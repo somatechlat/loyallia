@@ -56,9 +56,7 @@ class Automation(TimestampedModel):
     )
 
     # Basic info
-    name = models.CharField(
-        max_length=200, verbose_name="Nombre", help_text="Name of this record."
-    )
+    name = models.CharField(max_length=200, verbose_name="Nombre", help_text="Name of this record.")
     description = models.TextField(
         blank=True,
         default="",
@@ -206,9 +204,7 @@ class Automation(TimestampedModel):
 
         # Check if customer is in target programs
         if self.target_programs.exists():
-            customer_programs = customer.passes.filter(
-                card__in=self.target_programs, is_active=True
-            )
+            customer_programs = customer.passes.filter(card__in=self.target_programs, is_active=True)
             if not customer_programs.exists():
                 return False
 
@@ -218,16 +214,12 @@ class Automation(TimestampedModel):
             from django.utils import timezone
 
             last_for_customer = (
-                AutomationExecution.objects.filter(
-                    automation=self, customer=customer, success=True
-                )
+                AutomationExecution.objects.filter(automation=self, customer=customer, success=True)
                 .order_by("-executed_at")
                 .first()
             )
             if last_for_customer:
-                cooldown_end = last_for_customer.executed_at + timedelta(
-                    hours=self.cooldown_hours
-                )
+                cooldown_end = last_for_customer.executed_at + timedelta(hours=self.cooldown_hours)
                 if timezone.now() < cooldown_end:
                     return False
 
@@ -247,26 +239,18 @@ class Automation(TimestampedModel):
         if self.max_executions_per_day is not None:
             from django.utils import timezone
 
-            today_start = timezone.now().replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            executions_today = AutomationExecution.objects.filter(
-                automation=self, executed_at__gte=today_start
-            ).count()
+            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            executions_today = AutomationExecution.objects.filter(automation=self, executed_at__gte=today_start).count()
             if executions_today >= self.max_executions_per_day:
                 return False
 
-        execution_context = {
-            k: v for k, v in (context or {}).items() if not str(k).startswith("_")
-        }
+        execution_context = {k: v for k, v in (context or {}).items() if not str(k).startswith("_")}
         try:
             success = False
 
             from apps.automation import engine
 
-            success = engine.execute_automation_action(
-                self, self.action, customer, context
-            )
+            success = engine.execute_automation_action(self, self.action, customer, context)
 
             if success:
                 # Use F() to prevent lost updates under concurrency
@@ -333,14 +317,10 @@ class AutomationExecution(models.Model):
         verbose_name="Contexto de ejecución",
         help_text="Execution context stored as JSON.",
     )
-    success = models.BooleanField(
-        verbose_name="Éxito", help_text="Whether the execution or operation succeeded."
-    )
+    success = models.BooleanField(verbose_name="Éxito", help_text="Whether the execution or operation succeeded.")
 
     # Timestamps
-    executed_at = models.DateTimeField(
-        auto_now_add=True, help_text="Timestamp when this execution occurred."
-    )
+    executed_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when this execution occurred.")
 
     class Meta:
         """Model metadata and database configuration."""
@@ -355,9 +335,7 @@ class AutomationExecution(models.Model):
         ]
 
     def __repr__(self) -> str:
-        return (
-            f"<AutomationExecution: {self.automation.name} → {self.customer.full_name}>"
-        )
+        return f"<AutomationExecution: {self.automation.name} → {self.customer.full_name}>"
 
     def __str__(self) -> str:
         """Return a human-readable string representation."""

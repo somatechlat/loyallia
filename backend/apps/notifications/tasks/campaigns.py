@@ -75,12 +75,7 @@ def send_wallet_notification_campaign(
         target_wallet_platform=target_wallet_platform,
         target_customer_ids=target_customer_ids,
     )
-    total = (
-        CustomerPass.objects.filter(customer__in=audience, is_active=True)
-        .values("customer_id")
-        .distinct()
-        .count()
-    )
+    total = CustomerPass.objects.filter(customer__in=audience, is_active=True).values("customer_id").distinct().count()
 
     logger.info(
         "Wallet campaign: tenant=%s segment=%s audience=%d",
@@ -141,32 +136,24 @@ def send_wallet_notification_campaign(
                 else:
                     from apps.tenants.models import PlatformSetting
 
-                    dashboard_url = PlatformSetting.get(
-                        "dashboard_url", settings.PUBLIC_BASE_URL
-                    )
+                    dashboard_url = PlatformSetting.get("dashboard_url", settings.PUBLIC_BASE_URL)
                     broadcast_url = f"{dashboard_url}/enroll/{str(card.id)}"
 
                 if wallet_platform in ("google", "both"):
                     # Google Wallet broadcast
-                    result = send_push_notification_to_class(
-                        card, header=title, body=message, action_url=broadcast_url
-                    )
+                    result = send_push_notification_to_class(card, header=title, body=message, action_url=broadcast_url)
                     if result.get("success"):
                         logger.info("Google broadcast push sent for card %s", card.name)
                         if result.get("message_id"):
                             broadcast_message_ids[str(card.id)] = result["message_id"]
                     else:
-                        error_msg = result.get("error") or result.get(
-                            "response", "Unknown error"
-                        )
+                        error_msg = result.get("error") or result.get("response", "Unknown error")
                         logger.error(
                             "Google broadcast push FAILED for card %s: %s",
                             card.name,
                             error_msg,
                         )
-                        error_summary += (
-                            f"Google push failed for {card.name}: {error_msg}; "
-                        )
+                        error_summary += f"Google push failed for {card.name}: {error_msg}; "
 
                 if wallet_platform in ("apple", "both"):
                     # Apple Wallet broadcast send empty APNs push to all registered devices
@@ -193,16 +180,14 @@ def send_wallet_notification_campaign(
                         error_summary += f"Apple broadcast failed for {card.name}: {str(exc)[:100]}; "
 
         # Pre-fetch all active CustomerPass records for the audience to avoid N+1
-        all_passes = CustomerPass.objects.filter(
-            customer__in=audience, is_active=True
-        ).select_related("card", "card__tenant")
+        all_passes = CustomerPass.objects.filter(customer__in=audience, is_active=True).select_related(
+            "card", "card__tenant"
+        )
         passes_by_customer: dict[str, list] = {}
         for cp in all_passes:
             passes_by_customer.setdefault(str(cp.customer_id), []).append(cp)
 
-        for customer in audience.iterator(
-            chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL
-        ):
+        for customer in audience.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL):
             passes = passes_by_customer.get(str(customer.id), [])
             if not passes:
                 continue
@@ -235,12 +220,8 @@ def send_wallet_notification_campaign(
                         else:
                             from apps.tenants.models import PlatformSetting
 
-                            dashboard_url = PlatformSetting.get(
-                                "dashboard_url", settings.PUBLIC_BASE_URL
-                            )
-                            pass_action_url = (
-                                f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
-                            )
+                            dashboard_url = PlatformSetting.get("dashboard_url", settings.PUBLIC_BASE_URL)
+                            pass_action_url = f"{dashboard_url}/enroll/{str(pass_obj.card.id)}"
                         if wallet_platform in ("google", "both"):
                             # Google Wallet individual push
                             result = send_push_notification(
@@ -253,9 +234,7 @@ def send_wallet_notification_campaign(
                                 push_sent += 1
                                 logger.info("Google push sent to pass %s", pass_obj.id)
                                 if result.get("message_id"):
-                                    delivery_log.external_message_id = result[
-                                        "message_id"
-                                    ]
+                                    delivery_log.external_message_id = result["message_id"]
 
                         if wallet_platform in ("apple", "both"):
                             # Apple Wallet individual push trigger pass re-download
@@ -268,9 +247,7 @@ def send_wallet_notification_campaign(
                                 apple_push_sent += apple_count
                                 if apple_count == 0:
                                     failed += 1
-                                    error_summary += (
-                                        f"Apple push failed for pass {pass_obj.id}; "
-                                    )
+                                    error_summary += f"Apple push failed for pass {pass_obj.id}; "
                             except Exception as exc:
                                 logger.warning(
                                     "Apple push failed for pass %s: %s",
@@ -285,12 +262,8 @@ def send_wallet_notification_campaign(
                     first_pass = passes.first()
                     card_id = str(first_pass.card.id) if first_pass else ""
                     if card_id and card_id in broadcast_message_ids:
-                        delivery_log.external_message_id = broadcast_message_ids[
-                            card_id
-                        ]
-                delivery_log.save(
-                    update_fields=["status", "sent_at", "external_message_id"]
-                )
+                        delivery_log.external_message_id = broadcast_message_ids[card_id]
+                delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
                 succeeded += 1
 
             except Exception as exc:
@@ -461,9 +434,7 @@ def send_whatsapp_campaign(
                 delivery_log.status = DeliveryStatus.FAILED
                 delivery_log.failed_at = timezone.now()
                 delivery_log.error_code = "COOLDOWN"
-                delivery_log.error_message = (
-                    "Número en período de enfriamiento (1 hora)"
-                )
+                delivery_log.error_message = "Número en período de enfriamiento (1 hora)"
                 delivery_log.save(
                     update_fields=[
                         "status",
@@ -547,9 +518,7 @@ def send_whatsapp_campaign(
                 delivery_log.status = DeliveryStatus.FAILED
                 delivery_log.failed_at = timezone.now()
                 delivery_log.error_code = "BRIDGE_UNAVAILABLE"
-                delivery_log.error_message = (
-                    "Puente WhatsApp no disponible  creada notificación in-app"
-                )
+                delivery_log.error_message = "Puente WhatsApp no disponible  creada notificación in-app"
                 delivery_log.save(
                     update_fields=[
                         "status",
@@ -566,9 +535,7 @@ def send_whatsapp_campaign(
     campaign_run.status = CampaignStatus.COMPLETED
     campaign_run.completed_at = timezone.now()
     if not bridge_available:
-        campaign_run.error_summary = (
-            "Bridge unavailable  messages created as in-app notifications"
-        )
+        campaign_run.error_summary = "Bridge unavailable  messages created as in-app notifications"
     campaign_run.save(
         update_fields=[
             "sent_count",

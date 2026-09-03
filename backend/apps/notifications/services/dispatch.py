@@ -103,9 +103,7 @@ def build_campaign_task_kwargs(
     return kwargs
 
 
-def schedule_campaign_dispatch(
-    channel: str, tenant_id: str, kwargs: dict, scheduled_at: datetime
-) -> None:
+def schedule_campaign_dispatch(channel: str, tenant_id: str, kwargs: dict, scheduled_at: datetime) -> None:
     """Schedule a campaign dispatch via Celery send_task.
 
     Args:
@@ -121,9 +119,7 @@ def schedule_campaign_dispatch(
     if task_fn is None:
         raise HttpError(
             400,
-            get_message(
-                "VALIDATION_ERROR", detail="Canal no válido para programación."
-            ),
+            get_message("VALIDATION_ERROR", detail="Canal no válido para programación."),
         )
 
     kwargs = dict(kwargs)
@@ -167,30 +163,22 @@ def dispatch_campaign_immediately(channel: str, tenant_id: str, kwargs: dict) ->
     if channel == "email":
         return {
             "success": True,
-            "message": get_message(
-                "CAMPAIGN_EMAIL_STARTED", segment=kwargs.get("segment_id", "")
-            ),
+            "message": get_message("CAMPAIGN_EMAIL_STARTED", segment=kwargs.get("segment_id", "")),
         }
     elif channel == "wallet":
         return {
             "success": True,
-            "message": get_message(
-                "CAMPAIGN_WALLET_STARTED", segment=kwargs.get("segment_id", "")
-            ),
+            "message": get_message("CAMPAIGN_WALLET_STARTED", segment=kwargs.get("segment_id", "")),
         }
     elif channel == "whatsapp":
         return {
             "success": True,
-            "message": get_message(
-                "CAMPAIGN_WHATSAPP_STARTED", segment=kwargs.get("segment_id", "")
-            ),
+            "message": get_message("CAMPAIGN_WHATSAPP_STARTED", segment=kwargs.get("segment_id", "")),
         }
     elif channel == "sms":
         return {
             "success": True,
-            "message": get_message(
-                "SMS_CAMPAIGN_STARTED", segment=kwargs.get("segment_id", "")
-            ),
+            "message": get_message("SMS_CAMPAIGN_STARTED", segment=kwargs.get("segment_id", "")),
         }
 
     raise HttpError(

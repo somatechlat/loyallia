@@ -106,11 +106,7 @@ def get_backup_status(request: HttpRequest):
         .first()
     )
 
-    last_successful = (
-        BackupJob.objects.filter(status=BackupJobStatus.VERIFIED.value)
-        .order_by("-created_at")
-        .first()
-    )
+    last_successful = BackupJob.objects.filter(status=BackupJobStatus.VERIFIED.value).order_by("-created_at").first()
 
     _audit(
         request,
@@ -125,9 +121,7 @@ def get_backup_status(request: HttpRequest):
         completed_backups=completed,
         failed_backups=failed,
         pending_backups=pending,
-        last_successful_at=(
-            last_successful.created_at.isoformat() if last_successful else None
-        ),
+        last_successful_at=(last_successful.created_at.isoformat() if last_successful else None),
     )
 
 

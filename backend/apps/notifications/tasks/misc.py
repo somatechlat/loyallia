@@ -11,9 +11,7 @@ from celery import shared_task
 logger = logging.getLogger(__name__)
 
 
-@shared_task(
-    queue="push_delivery", name="apps.notifications.tasks.send_birthday_notifications"
-)
+@shared_task(queue="push_delivery", name="apps.notifications.tasks.send_birthday_notifications")
 def send_birthday_notifications() -> dict:
     """Daily scheduled task: send birthday greetings to customers.
 
@@ -35,9 +33,7 @@ def send_birthday_notifications() -> dict:
     sent = 0
     for customer in customers:
         try:
-            notification = NotificationService.send_birthday_notification(
-                customer=customer, tenant=customer.tenant
-            )
+            notification = NotificationService.send_birthday_notification(customer=customer, tenant=customer.tenant)
             if notification:
                 sent += 1
         except Exception as exc:
@@ -46,9 +42,7 @@ def send_birthday_notifications() -> dict:
     return {"sent": sent, "date": str(today)}
 
 
-@shared_task(
-    queue="push_delivery", name="apps.notifications.tasks.send_inactive_reminders"
-)
+@shared_task(queue="push_delivery", name="apps.notifications.tasks.send_inactive_reminders")
 def send_inactive_reminders(days_inactive: int = 30) -> dict:
     """Daily scheduled task: re-engage customers who haven't visited recently.
 
@@ -72,9 +66,7 @@ def send_inactive_reminders(days_inactive: int = 30) -> dict:
     sent = 0
     for customer in customers:
         try:
-            notification = NotificationService.send_reminder_notification(
-                customer=customer, tenant=customer.tenant
-            )
+            notification = NotificationService.send_reminder_notification(customer=customer, tenant=customer.tenant)
             if notification:
                 sent += 1
         except Exception as exc:

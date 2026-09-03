@@ -33,9 +33,7 @@ def execute_trigger_webhook(automation, customer, context) -> bool:
         "trigger": automation.trigger,
         "trigger_config": automation.trigger_config,
         "timestamp": timezone.now().isoformat(),
-        "context": {
-            k: v for k, v in (context or {}).items() if not str(k).startswith("_")
-        },
+        "context": {k: v for k, v in (context or {}).items() if not str(k).startswith("_")},
     }
 
     try:

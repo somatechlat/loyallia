@@ -141,10 +141,7 @@ def generate_tenant_export(tenant) -> io.BytesIO:
         _write_json(
             zf,
             "tenant_info.json",
-            {
-                field: _clean_value(getattr(tenant, field, None))
-                for field in tenant_fields
-            },
+            {field: _clean_value(getattr(tenant, field, None)) for field in tenant_fields},
         )
 
         owner = User.objects.filter(tenant=tenant, role="OWNER").first()

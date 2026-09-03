@@ -13,12 +13,7 @@ from pathlib import Path
 
 
 def _credentials_path() -> Path:
-    return (
-        Path(__file__).resolve().parents[2]
-        / "frontend"
-        / ".auth"
-        / "e2e-credentials.json"
-    )
+    return Path(__file__).resolve().parents[2] / "frontend" / ".auth" / "e2e-credentials.json"
 
 
 def load_e2e_credentials() -> dict:

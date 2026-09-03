@@ -55,9 +55,7 @@ class CardCreateIn(BaseModel):
 
             size = len(json.dumps(v))
             if size > settings.CARD_METADATA_MAX_SIZE_BYTES:
-                raise ValueError(
-                    f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
-                )
+                raise ValueError(f"Metadata too large ({size} bytes). Maximum allowed is 10KB.")
 
             # Validate form_fields schema if present
             form_fields = v.get("form_fields")
@@ -77,9 +75,7 @@ class CardCreateIn(BaseModel):
                         "select",
                         "number",
                     ):
-                        raise ValueError(
-                            f"Invalid form_field type: {field.get('type')}"
-                        )
+                        raise ValueError(f"Invalid form_field type: {field.get('type')}")
                 # Ensure mandatory enrollment fields exist
                 # Accept either a single 'name' field or 'first_name' + 'last_name'
                 field_ids = {f.get("id") for f in form_fields}
@@ -140,9 +136,7 @@ class CardUpdateIn(BaseModel):
 
             size = len(json.dumps(v))
             if size > settings.CARD_METADATA_MAX_SIZE_BYTES:
-                raise ValueError(
-                    f"Metadata too large ({size} bytes). Maximum allowed is 10KB."
-                )
+                raise ValueError(f"Metadata too large ({size} bytes). Maximum allowed is 10KB.")
 
             # Validate form_fields schema if present
             form_fields = v.get("form_fields")
@@ -162,9 +156,7 @@ class CardUpdateIn(BaseModel):
                         "select",
                         "number",
                     ):
-                        raise ValueError(
-                            f"Invalid form_field type: {field.get('type')}"
-                        )
+                        raise ValueError(f"Invalid form_field type: {field.get('type')}")
                 # Ensure mandatory enrollment fields exist
                 # Accept either a single 'name' field or 'first_name' + 'last_name'
                 field_ids = {f.get("id") for f in form_fields}
@@ -227,9 +219,7 @@ class CardOut(BaseModel):
             created_at=card.created_at.isoformat(),
             updated_at=card.updated_at.isoformat(),
             enrollments_count=(
-                enrollments_count
-                if enrollments_count is not None
-                else CustomerPass.objects.filter(card=card).count()
+                enrollments_count if enrollments_count is not None else CustomerPass.objects.filter(card=card).count()
             ),
         )
 
@@ -247,9 +237,7 @@ class CardListOut(BaseModel):
 # ENDPOINTS
 
 
-@router.get(
-    "/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización"
-)
+@router.get("/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización")
 def list_programs(request: TenantRequest) -> CardListOut:
     """Returns all loyalty programs for the current tenant. MANAGER+ only."""
     tenant = require_tenant(request)
@@ -263,9 +251,7 @@ def list_programs(request: TenantRequest) -> CardListOut:
     )
 
 
-@router.post(
-    "/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización"
-)
+@router.post("/", auth=jwt_auth, response=CardOut, summary="Crear programa de fidelización")
 @require_active_subscription
 def create_program(request: TenantRequest, data: CardCreateIn) -> CardOut:
     """Create a new loyalty program. OWNER only."""
@@ -295,9 +281,7 @@ def create_program(request: TenantRequest, data: CardCreateIn) -> CardOut:
     return CardOut.from_model(card)
 
 
-@router.get(
-    "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa"
-)
+@router.get("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Detalle de programa")
 def get_program(request: TenantRequest, program_id: str) -> CardOut:
     """Returns a single loyalty program. MANAGER+ only."""
     if not is_manager_or_owner(request):
@@ -306,12 +290,8 @@ def get_program(request: TenantRequest, program_id: str) -> CardOut:
     return CardOut.from_model(card)
 
 
-@router.patch(
-    "/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa"
-)
-def update_program(
-    request: TenantRequest, program_id: str, data: CardUpdateIn
-) -> CardOut:
+@router.patch("/{program_id}/", auth=jwt_auth, response=CardOut, summary="Actualizar programa")
+def update_program(request: TenantRequest, program_id: str, data: CardUpdateIn) -> CardOut:
     """Update a loyalty program. OWNER only."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -324,9 +304,7 @@ def update_program(
         if msg == "PROGRAM_DUPLICATE_NAME":
             raise HttpError(400, get_message(msg))
         if msg.startswith("VALIDATION_ERROR:"):
-            raise HttpError(
-                400, get_message("VALIDATION_ERROR", detail=msg.split(":", 1)[1])
-            )
+            raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg.split(":", 1)[1]))
         raise HttpError(400, get_message("VALIDATION_ERROR", detail=msg))
 
     log_action(
@@ -334,9 +312,7 @@ def update_program(
         action="UPDATE",
         resource_type="program",
         resource_id=str(card.id),
-        details={
-            "updated_fields": [k for k, v in data.model_dump().items() if v is not None]
-        },
+        details={"updated_fields": [k for k, v in data.model_dump().items() if v is not None]},
     )
     return CardOut.from_model(card)
 
@@ -425,9 +401,7 @@ def delete_program(request: TenantRequest, program_id: str) -> HttpResponse:
     return HttpResponse(status=204)
 
 
-@router.get(
-    "/{program_id}/member-count/", auth=jwt_auth, summary="Contar miembros del programa"
-)
+@router.get("/{program_id}/member-count/", auth=jwt_auth, summary="Contar miembros del programa")
 def program_member_count(request: TenantRequest, program_id: str) -> dict:
     """Returns member count for a program. MANAGER+ only."""
     if not is_manager_or_owner(request):
@@ -518,9 +492,7 @@ def program_stats(request: TenantRequest, program_id: str) -> dict:
     return services.program_stats(card)
 
 
-@router.get(
-    "/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)"
-)
+@router.get("/{slug}/public/", auth=None, summary="Info pública del programa (para enrollment)")
 def public_program(request: TenantRequest, slug: str) -> dict:
     """
     Public program info for the enrollment page. No authentication required.

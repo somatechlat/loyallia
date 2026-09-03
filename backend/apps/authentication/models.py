@@ -66,12 +66,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text="The business this record belongs to.",
     )
     email = models.EmailField(unique=True, help_text="Email address.")
-    first_name = models.CharField(
-        max_length=100, blank=True, default="", help_text="First name."
-    )
-    last_name = models.CharField(
-        max_length=100, blank=True, default="", help_text="Last name."
-    )
+    first_name = models.CharField(max_length=100, blank=True, default="", help_text="First name.")
+    last_name = models.CharField(max_length=100, blank=True, default="", help_text="Last name.")
     role = models.CharField(
         max_length=20,
         choices=UserRole.choices,
@@ -80,15 +76,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text="Role or permission level.",
     )
 
-    is_active = models.BooleanField(
-        default=True, help_text="Whether this record is currently active."
-    )
+    is_active = models.BooleanField(default=True, help_text="Whether this record is currently active.")
     is_staff = models.BooleanField(
         default=False, help_text="Whether the user can access the Django admin."
     )  # Django admin access
-    is_email_verified = models.BooleanField(
-        default=False, help_text="Whether the email address has been verified."
-    )
+    is_email_verified = models.BooleanField(default=False, help_text="Whether the email address has been verified.")
 
     # Phone verification
     phone_number = models.CharField(
@@ -98,9 +90,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name="Teléfono",
         help_text="E.164 format: +593991234567",
     )
-    is_phone_verified = models.BooleanField(
-        default=False, help_text="Whether the phone number has been verified."
-    )
+    is_phone_verified = models.BooleanField(default=False, help_text="Whether the phone number has been verified.")
 
     # Invitation tracking
     invited_by = models.ForeignKey(
@@ -117,17 +107,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         default="",
         help_text="Token for tracking invitations.",
     )
-    invitation_accepted_at = models.DateTimeField(
-        null=True, blank=True, help_text="When the invitation was accepted."
-    )
+    invitation_accepted_at = models.DateTimeField(null=True, blank=True, help_text="When the invitation was accepted.")
 
     # Failed login tracking
-    failed_login_count = models.SmallIntegerField(
-        default=0, help_text="Number of consecutive failed login attempts."
-    )
-    locked_until = models.DateTimeField(
-        null=True, blank=True, help_text="Account lockout expiration time."
-    )
+    failed_login_count = models.SmallIntegerField(default=0, help_text="Number of consecutive failed login attempts.")
+    locked_until = models.DateTimeField(null=True, blank=True, help_text="Account lockout expiration time.")
 
     # i18n user language preference (REQ-I18N-001)
     preferred_language = models.CharField(
@@ -148,9 +132,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     date_joined = models.DateTimeField(auto_now_add=True, help_text="Date joined.")
-    last_login = models.DateTimeField(
-        null=True, blank=True, help_text="Timestamp of the last successful login."
-    )
+    last_login = models.DateTimeField(null=True, blank=True, help_text="Timestamp of the last successful login.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     objects = UserManager()
@@ -287,16 +269,10 @@ class RefreshToken(models.Model):
         unique=True,
         help_text="Token for authentication or verification.",
     )  # SHA-256 hash
-    device_name = models.CharField(
-        max_length=200, blank=True, default="", help_text="Name of the device."
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text="Timestamp for created."
-    )
+    device_name = models.CharField(max_length=200, blank=True, default="", help_text="Name of the device.")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
     expires_at = models.DateTimeField(help_text="Timestamp for expires.")
-    revoked_at = models.DateTimeField(
-        null=True, blank=True, help_text="Timestamp for revoked."
-    )
+    revoked_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp for revoked.")
 
     class Meta:
         """Model metadata and database configuration."""
