@@ -38,15 +38,36 @@ export interface WalletStudioProps {
   programId?: string;
   onSave?: (state: WalletPassStudioState) => void;
   onSaveAsTemplate?: (state: WalletPassStudioState) => void;
+  /** External name override (e.g. from program creation wizard form). Synced live into preview. */
+  externalName?: string;
+  /** External description override. Synced live into preview. */
+  externalDescription?: string;
 }
 
-export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate }: WalletStudioProps) {
+export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate, externalName, externalDescription }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
     studio.state,
     { maxHistory: 50 }
   );
+
+  // Sync external name/description changes into the live preview state
+  const prevExternalNameRef = React.useRef(externalName);
+  const prevExternalDescRef = React.useRef(externalDescription);
+  React.useEffect(() => {
+    const nameChanged = externalName !== undefined && externalName !== prevExternalNameRef.current;
+    const descChanged = externalDescription !== undefined && externalDescription !== prevExternalDescRef.current;
+    if (nameChanged || descChanged) {
+      prevExternalNameRef.current = externalName;
+      prevExternalDescRef.current = externalDescription;
+      setUndoableState((prev: WalletPassStudioState) => ({
+        ...prev,
+        ...(nameChanged ? { name: externalName! } : {}),
+        ...(descChanged ? { apple: { ...prev.apple, description: externalDescription! } } : {}),
+      }));
+    }
+  }, [externalName, externalDescription, setUndoableState]);
 
   // Override studio.state with undoable state for rendering
   const displayState = undoableState;
@@ -406,7 +427,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
               className="px-3 py-1 rounded-md bg-amber-100 dark:bg-amber-800 hover:bg-amber-200 dark:hover:bg-amber-700 font-medium text-xs"
               data-testid="recovery-recover-btn"
             >
-              Recuperar
+              {t('wallet.studio.recovery.recover')}
             </button>
           </div>
         )}
@@ -491,7 +512,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         <MobileBottomSheet
           isOpen={isBottomSheetOpen}
           onClose={() => setIsBottomSheetOpen(false)}
-          title="Editor"
+          title={t('wallet.studio.mobile.editor')}
         >
           <StudioSidebar
             state={displayState}

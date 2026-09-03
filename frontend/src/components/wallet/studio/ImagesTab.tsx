@@ -129,7 +129,7 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
 
 async function uploadWalletImage(file: File): Promise<ImageAsset> {
   const url = await uploadFile(file, false);
-  if (!url) throw new Error('Error al subir la imagen');
+  if (!url) throw new Error('UPLOAD_FAILED');
   const dimensions = await getImageDimensions(file);
   return { url, width: dimensions.width, height: dimensions.height };
 }
@@ -254,9 +254,9 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
     try {
       const asset = await uploadWalletImage(file);
       onChange(asset);
-    } catch (err: any) {
-      const msg = err?.message || t('wallet.studio.upload.uploadError');
-      setError(msg);
+    } catch (err: unknown) {
+      console.error('[ImagesTab] Upload failed:', err);
+      setError(t('wallet.studio.upload.uploadError'));
       revokeBlob(objectUrl);
       setLocalPreview(null);
     } finally {
@@ -367,14 +367,21 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI }: ImagesTabProps) 
   const handleAdditionalUpload = useCallback(async (file: File, type: 'icon' | 'thumbnail' | 'background' | 'wideLogo') => {
     const validation = validateFile(file, DEFAULT_ACCEPT, DEFAULT_MAX_SIZE_MB);
     if (!validation.valid) return;
-    const asset = await uploadWalletImage(file);
-    const patch: Partial<WalletImages> = {};
-    if (type === 'icon') { patch.icon = asset; patch.icon2x = asset; }
-    if (type === 'thumbnail') { patch.thumbnail = asset; patch.thumbnail2x = asset; }
-    if (type === 'background') { patch.background = asset; }
-    if (type === 'wideLogo') { patch.wideLogo = asset; }
-    onUpdateImages(patch);
-  }, [onUpdateImages]);
+    try {
+      const asset = await uploadWalletImage(file);
+      const patch: Partial<WalletImages> = {};
+      if (type === 'icon') { patch.icon = asset; patch.icon2x = asset; }
+      if (type === 'thumbnail') { patch.thumbnail = asset; patch.thumbnail2x = asset; }
+      if (type === 'background') { patch.background = asset; }
+      if (type === 'wideLogo') { patch.wideLogo = asset; }
+      onUpdateImages(patch);
+    } catch (err: unknown) {
+      const msg = err instanceof Error && err.message === 'UPLOAD_FAILED'
+        ? t('wallet.studio.upload.uploadError')
+        : t('wallet.studio.upload.uploadError');
+      console.error('[ImagesTab] Additional image upload failed:', err);
+    }
+  }, [onUpdateImages, t]);
 
   const additionalImages = [
     { id: 'icon-upload', label: t('wallet.studio.images.iconApple'), note: t('wallet.studio.images.iconAppleDesc'), type: 'icon' as const },

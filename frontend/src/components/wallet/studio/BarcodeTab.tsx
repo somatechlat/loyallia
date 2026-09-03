@@ -148,7 +148,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
   return (
     <div className="space-y-3">
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
-        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">Formato de Código</h3>
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">{t('wallet.studio.barcode.formatTitle')}</h3>
         <div className="grid grid-cols-4 gap-1.5">
           {FORMAT_CARDS.map((card) => {
             const isSelected = barcode.format === card.format;
@@ -164,18 +164,18 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
         {isRectangular && (
           <div className="flex items-start gap-1.5 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-2">
             <span className="text-sm leading-none mt-0.5">⚠️</span>
-            <p className="text-[10px] text-amber-800 dark:text-amber-300">PDF417 y Code 128 reducen espacio para campos a 4 total.</p>
+            <p className="text-[10px] text-amber-800 dark:text-amber-300">{t('wallet.studio.barcode.pdf17Warning')}</p>
           </div>
         )}
       </section>
 
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
-        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">Contenido del Código</h3>
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">{t('wallet.studio.barcode.contentTitle')}</h3>
         <div className="space-y-1">
           {[
-            { checked: includeCustomerId, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{customer_id}', e.target.checked), label: 'ID cliente: {customer_id}' },
-            { checked: includeProgramId, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{program_id}', e.target.checked), label: 'ID programa: {program_id}' },
-            { checked: includeTimestamp, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{timestamp}', e.target.checked), label: 'Timestamp' },
+            { checked: includeCustomerId, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{customer_id}', e.target.checked), label: t('wallet.studio.barcode.customerId') },
+            { checked: includeProgramId, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{program_id}', e.target.checked), label: t('wallet.studio.barcode.programId') },
+            { checked: includeTimestamp, onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleToggleVar('{timestamp}', e.target.checked), label: t('wallet.studio.barcode.timestamp') },
           ].map((item, i) => (
             <label key={i} className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer">
               <input type="checkbox" checked={item.checked} onChange={item.onChange} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
@@ -184,7 +184,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
           ))}
         </div>
         <div className="space-y-0.5">
-          <label htmlFor="barcode-alt-text" className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Texto legible</label>
+          <label htmlFor="barcode-alt-text" className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.barcode.readableText')}</label>
           <input id="barcode-alt-text" type="text" value={barcode.altText ?? ''} onChange={(e) => onUpdateBarcode({ altText: e.target.value || undefined })} placeholder="0000 0000 0000" className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </section>

@@ -52,9 +52,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
+          <h2 className="text-lg font-semibold mb-2">Algo salió mal</h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 text-center max-w-xs">
-            An unexpected error occurred in the studio. You can try resetting the view.
+            Ocurrió un error inesperado en el estudio. Puedes intentar restablecer la vista.
           </p>
           {this.state.error && (
             <pre className="text-xs bg-neutral-100 dark:bg-neutral-900 p-3 rounded-md mb-4 max-w-xs overflow-auto text-red-600 dark:text-red-400">
@@ -67,7 +67,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             data-testid="error-boundary-reset"
           >
-            Try again
+            Intentar de nuevo
           </button>
         </div>
       );

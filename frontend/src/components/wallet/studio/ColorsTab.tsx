@@ -25,11 +25,11 @@ interface ColorFieldConfig {
   description: string;
 }
 
-const COLOR_FIELDS: ColorFieldConfig[] = [
-  { key: 'background', label: 'Fondo', description: 'Color de fondo de la tarjeta' },
-  { key: 'foreground', label: 'Texto', description: 'Color del texto principal' },
-  { key: 'label', label: 'Etiquetas', description: 'Color de las etiquetas de campo' },
-  { key: 'accent', label: 'Acento', description: 'Color de acento y elementos destacados' },
+const COLOR_FIELDS: Array<{ key: ColorKey; labelKey: string; descKey: string }> = [
+  { key: 'background', labelKey: 'wallet.studio.colors.background', descKey: 'wallet.studio.colors.backgroundDesc' },
+  { key: 'foreground', labelKey: 'wallet.studio.colors.foreground', descKey: 'wallet.studio.colors.foregroundDesc' },
+  { key: 'label', labelKey: 'wallet.studio.colors.label', descKey: 'wallet.studio.colors.labelDesc' },
+  { key: 'accent', labelKey: 'wallet.studio.colors.accent', descKey: 'wallet.studio.colors.accentDesc' },
 ];
 
 function CopyIcon({ className }: { className?: string }) {
@@ -140,7 +140,7 @@ function ColorPickerPopover({
         onClick={() => setIsOpen((v) => !v)}
         className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-700 cursor-pointer overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
         style={{ backgroundColor: value }}
-        aria-label={`Selector de color ${label}`}
+        aria-label={`${t('wallet.studio.colors.colorSelector')} ${label}`}
         title={value}
       />
       {isOpen && (
@@ -165,7 +165,7 @@ function ColorPickerPopover({
               onChange={handleNativeChange}
               className="w-8 h-8 rounded border border-neutral-300 dark:border-neutral-700 cursor-pointer p-0 overflow-hidden shrink-0"
             />
-            <span className="text-[11px] text-neutral-500 dark:text-neutral-400">Personalizado</span>
+            <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{t('wallet.studio.colors.custom')}</span>
           </div>
         </div>
       )}
@@ -232,10 +232,10 @@ function ColorInput({
             type="button"
             onClick={showAutoForeground}
             className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-[11px] font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-            title="Sugerir color de texto legible"
+            title={t('wallet.studio.colors.autoSuggest')}
           >
             <WandIcon className="w-3 h-3" />
-            Auto
+            {t('wallet.studio.colors.auto')}
           </button>
         )}
       </div>
@@ -261,8 +261,8 @@ function ColorInput({
               type="button"
               onClick={handleCopy}
               className="p-1.5 rounded-md text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              aria-label="Copiar color"
-              title="Copiar color"
+              aria-label={t('wallet.studio.colors.copyColor')}
+              title={t('wallet.studio.colors.copyColor')}
             >
               {copied ? <CheckIcon className="w-3.5 h-3.5 text-green-600" /> : <CopyIcon className="w-3.5 h-3.5" />}
             </button>
@@ -384,7 +384,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
 
       <div className="space-y-3">
         {COLOR_FIELDS.map((field) => (
-          <ColorInput key={field.key} config={field} value={colors[field.key]} onChange={handleColorChange(field.key)} showAutoForeground={field.key === 'background' ? handleAutoForeground : undefined} />
+          <ColorInput key={field.key} config={{ key: field.key, label: t(field.labelKey), description: t(field.descKey) }} value={colors[field.key]} onChange={handleColorChange(field.key)} showAutoForeground={field.key === 'background' ? handleAutoForeground : undefined} />
         ))}
       </div>
 
