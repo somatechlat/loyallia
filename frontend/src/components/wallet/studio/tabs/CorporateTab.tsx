@@ -5,20 +5,19 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { useI18n } from '@/lib/i18n';
-import { useCallback } from 'react';
 import type { CorporateDiscountCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { useI18n } from '@/lib/i18n';
 
 export interface CorporateTabProps {
   config: CorporateDiscountCardConfig;
   onChange: (config: Partial<CorporateDiscountCardConfig>) => void;
 }
 
-const BADGE_STYLES: Array<{ value: CorporateDiscountCardConfig['badgeStyle']; label: string }> = [
-  { value: 'corporate', label: 'Corporativo' },
-  { value: 'standard', label: 'Estándar' },
-  { value: 'minimal', label: 'Minimal' },
+const BADGE_STYLES: Array<{ value: CorporateDiscountCardConfig['badgeStyle']; labelKey: string }> = [
+  { value: 'corporate', labelKey: 'wallet.studio.corporate.corporate' },
+  { value: 'standard', labelKey: 'wallet.studio.corporate.standard' },
+  { value: 'minimal', labelKey: 'wallet.studio.corporate.minimal' },
 ];
 
 export function CorporateTab({ config, onChange }: CorporateTabProps) {
@@ -43,43 +42,40 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-        t('wallet.studio.corporate.configTitle')
+        {t('wallet.studio.corporate.title')}
       </h3>
 
-      {/* Company name */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.corporate.companyName')
+          {t('wallet.studio.corporate.companyName')}
         </label>
         <input
           type="text"
           value={config.companyName}
           onChange={handleTextChange('companyName')}
-          placeholder="Ej: Acme Corp"
+          placeholder={t('wallet.studio.corporate.namePlaceholder')}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="company-name-input"
         />
       </div>
 
-      {/* Company logo URL */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.corporate.companyLogoUrl')
+          {t('wallet.studio.corporate.companyLogoUrl')}
         </label>
         <input
           type="text"
           value={config.companyLogoUrl ?? ''}
           onChange={handleTextChange('companyLogoUrl')}
-          placeholder="Ej: https://miempresa.com/logo.png"
+          placeholder={t('wallet.studio.corporate.companyLogoUrlPlaceholder')}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="company-logo-url-input"
         />
       </div>
 
-      {/* Corporate discount percentage */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.corporate.discountPercentage')
+          {t('wallet.studio.corporate.discountPercentage')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -104,7 +100,6 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
         </div>
       </div>
 
-      {/* Employee ID required */}
       <div className="space-y-1">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -115,15 +110,14 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
             data-testid="employee-id-toggle"
           />
           <span className="text-xs text-neutral-700 dark:text-neutral-300">
-            t('wallet.studio.corporate.requireEmployeeId')
+            {t('wallet.studio.corporate.employeeIdRequired')}
           </span>
         </label>
       </div>
 
-      {/* Building icon */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.corporate.buildingIcon')
+          {t('wallet.studio.corporate.buildingIcon')}
         </label>
         <IconPicker
           value={config.buildingIcon ?? ''}
@@ -132,10 +126,9 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
         />
       </div>
 
-      {/* Department badge */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.corporate.departmentBadge')
+          {t('wallet.studio.corporate.departmentBadge')}
         </label>
         <IconPicker
           value={config.departmentBadge ?? ''}
@@ -144,10 +137,9 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
         />
       </div>
 
-      {/* ID badge color */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.corporate.idBadgeColor')
+          {t('wallet.studio.corporate.idBadgeColor')}
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -161,10 +153,9 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
         </div>
       </div>
 
-      {/* Badge style */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.corporate.badgeStyle')
+          {t('wallet.studio.corporate.badgeStyle')}
         </label>
         <div className="flex gap-2">
           {BADGE_STYLES.map((opt) => (
@@ -179,13 +170,12 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
               }`}
               data-testid={`badge-style-${opt.value}`}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Security seal */}
       <div className="space-y-1">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -196,7 +186,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
             data-testid="security-seal-toggle"
           />
           <span className="text-xs text-neutral-700 dark:text-neutral-300">
-            t('wallet.studio.corporate.securitySeal')
+            {t('wallet.studio.corporate.securitySeal')}
           </span>
         </label>
       </div>
