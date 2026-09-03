@@ -376,9 +376,6 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI }: ImagesTabProps) 
       if (type === 'wideLogo') { patch.wideLogo = asset; }
       onUpdateImages(patch);
     } catch (err: unknown) {
-      const msg = err instanceof Error && err.message === 'UPLOAD_FAILED'
-        ? t('wallet.studio.upload.uploadError')
-        : t('wallet.studio.upload.uploadError');
       console.error('[ImagesTab] Additional image upload failed:', err);
     }
   }, [onUpdateImages, t]);
