@@ -20,7 +20,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default function CampaignTable({ campaigns, loading, onNewCampaign }: CampaignTableProps) {
   const { t, locale } = useI18n();
-  const dateLocale = locale === "en" ? "en-US" : locale === "de" ? "de-DE" : locale === "fr" ? "fr-FR" : "es-EC";
+  const dateLocale = locale === "en" ? "en-US" : "es-EC";
 
   const STATUS_LABEL: Record<string, string> = {
     sent: t("campaigns.statusSent"),
