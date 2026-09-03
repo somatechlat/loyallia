@@ -15,10 +15,17 @@
  * Runs in the 'designer' project (OWNER role).
  */
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
-import { getE2EBaseURL } from '../helpers/e2e-safety';
-import { getOwnerToken } from '../helpers/designer-auth';
+import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 
 test.use({ storageState: '.auth/owner.json' });
+
+/** Login as owner and cache the token for API calls. */
+let _ownerToken: string | null = null;
+async function getOwnerToken(request: APIRequestContext): Promise<string> {
+  if (_ownerToken) return _ownerToken;
+  _ownerToken = await loginRole(request, 'owner');
+  return _ownerToken;
+}
 
 const BASE_API = getE2EBaseURL();
 const UNIQUE_PREFIX = `E2E Preview ${Date.now()}`;
