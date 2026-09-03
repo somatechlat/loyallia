@@ -185,6 +185,7 @@ function ColorInput({
   onChange: (color: string) => void;
   showAutoForeground?: () => void;
 }) {
+  const { t } = useI18n();
   const [hexInput, setHexInput] = useState(value.toUpperCase());
   const [copied, setCopied] = useState(false);
 
