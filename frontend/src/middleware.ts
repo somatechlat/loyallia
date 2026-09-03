@@ -27,7 +27,9 @@ export function middleware(request: NextRequest) {
     }
 
     if (isAuthRoute && token) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        // Logged-in users shouldn't see auth pages. Redirect to home; the
+        // role-based rules below bounce SUPER_ADMIN/STAFF to their landing.
+        return NextResponse.redirect(new URL('/', request.url));
     }
 
     if (token && isProtected) {
@@ -37,18 +39,18 @@ export function middleware(request: NextRequest) {
                 const payload = JSON.parse(atob(parts[1]));
                 const role = (payload.role || '') as string;
 
-                if (role === 'staff' && !pathname.startsWith('/scanner')) {
+                if (role === 'STAFF' && !pathname.startsWith('/scanner')) {
                     return NextResponse.redirect(new URL('/scanner/scan', request.url));
                 }
-                if (role === 'superadmin' && !pathname.startsWith('/superadmin')) {
+                if (role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) {
                     return NextResponse.redirect(new URL('/superadmin', request.url));
                 }
-                if (role !== 'superadmin' && pathname.startsWith('/superadmin')) {
+                if (role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) {
                     return NextResponse.redirect(new URL('/', request.url));
                 }
                 const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation'];
                 const isOwnerOnly = OWNER_ONLY_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
-                if (isOwnerOnly && role !== 'owner' && role !== 'superadmin') {
+                if (isOwnerOnly && role !== 'OWNER' && role !== 'SUPER_ADMIN') {
                     return NextResponse.redirect(new URL('/', request.url));
                 }
             }
